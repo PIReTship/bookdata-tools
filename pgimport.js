@@ -141,8 +141,10 @@ client.connect(function(err) {
             client.query('COMMIT', cb)
         }
     ], (err) => {
-        client.end(() => {
+        console.info("finished processing, now done");
+        client.end((e2) => {
             if (err) throw err;
+            if (e2) throw e2;
         });
     });
 });
