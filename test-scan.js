@@ -3,7 +3,7 @@ const zlib = require('zlib');
 const fs = require('fs');
 const through = require('through2');
 const fws = require('flush-write-stream');
-const decodeLines = require('./lib/decode.js');
+const io = require('./lib/io.js');
 
 const options = require('yargs').argv;
 
@@ -31,14 +31,19 @@ const throughput = {
     }
 };
 
+io.openFile(infn, (err, stream) => {
+    if (err) throw err;
+    stream.pipe(zlib.createUnzip())
+        .pipe(io.decodeLines())
+        .pipe(fws.obj((rec, enc, cb) => {
+            throughput.advance(Object.keys(rec).length);
+            cb();
+        }), (cb) => {
+            throughput.print();
+            console.info("finished");
+            cb();
+        });
+})
+
 fs.createReadStream(infn)
-    .pipe(zlib.createUnzip())
-    .pipe(decodeLines())
-    .pipe(fws.obj((rec, enc, cb) => {
-        throughput.advance(Object.keys(rec).length);
-        cb();
-    }), (cb) => {
-        throughput.print();
-        console.info("finished");
-        cb();
-    });
+    
