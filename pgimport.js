@@ -1,15 +1,17 @@
 "use strict";
 
+const util = require('util');
 const zlib = require('zlib');
 const fs = require('fs');
 const through = require('through2');
 const fws = require('flush-write-stream');
-const decodeLines = require('./lib/decode');
 const pg = require('pg');
 const async = require('async');
 const throughput = require('./lib/throughput');
+const io = require('./lib/io');
 
 const options = require('yargs').argv;
+const date = options.date || '2016-07-31';
 
 var ninserts = 0;
 
@@ -17,134 +19,114 @@ var autp = throughput('authors');
 var wtp = throughput('works');
 var etp = throughput('editions');
 
+/**
+ * Pipe that runs PostgreSQL queries.
+ */
+function runQueries(client, finished) {
+  var nqueries = 0;
+  var started = false;
+
+  function write(data, enc, next) {
+    async.series([
+      (cb) => {
+        if (started) {
+          cb();
+        } else {
+          console.info('starting');
+          client.query('BEGIN ISOLATION LEVEL READ UNCOMMITTED', (err) => {
+            started = true;
+            console.info('started transaction');
+            cb(err);
+          });
+        }
+      },
+      (cb) => client.query(data, cb),
+      (cb) => {
+        nqueries += 1;
+        if (nqueries % 10000 === 0) {
+          console.info('committing');
+          async.series([
+            (cb) => client.query('COMMIT', cb),
+            (cb) => client.query('BEGIN ISOLATION LEVEL READ UNCOMMITTED', cb)
+          ], cb);
+        } else {
+          process.nextTick(cb);
+        }
+      }
+    ], next);
+  }
+
+  function flush(cb) {
+    client.query('COMMIT', (err) => {
+      process.nextTick(finished, err, nqueries);
+    });
+  }
+
+  return fws.obj(write, flush);
+}
+
 const imports = {
-    authors: function (done) {
-        fs.createReadStream('data/ol_dump_authors_2016-07-31.txt.gz')
-            .pipe(zlib.createUnzip())
-            .pipe(decodeLines())
-            .pipe(fws.obj((rec, enc, cb) => {
-                autp.advance();
-                client.query('INSERT INTO authors (author_key, author_name, author_data) VALUES ($1, $2, $3)',
-                            [rec.key, rec.name, JSON.stringify(rec)],
-                            (err) => {
-                                if (err) return cb(err);
-                                ninserts += 1;
-                                if (ninserts % 10000 == 0) {
-                                    async.series([
-                                        (cb) => client.query('COMMIT', cb),
-                                        (cb) => client.query('BEGIN ISOLATION LEVEL READ UNCOMMITTED', cb)
-                                    ], cb);
-                                } else {
-                                    cb();
-                                }
-                            });
-            }), (cb) => {
-                console.info("finished authors");
-                cb();
-            });
-    },
-    works: function (done) {
-        fs.createReadStream('data/ol_dump_works_2016-07-31.txt.gz')
-            .pipe(zlib.createUnzip())
-            .pipe(decodeLines())
-            .pipe(fws.obj((rec, enc, cb) => {
-                wtp.advance();
-                var actions = [
-                    (cb) => client.query('INSERT INTO works (work_key, work_title, work_data) VALUES ($1, $2, $3)',
-                                        [rec.key, rec.title, JSON.stringify(rec)], cb)
-                ];
-                if (rec.authors) {
-                    for (var au of rec.authors) {
-                        if (au.author) {
-                            actions.push((cb) => {
-                                client.query('INSERT INTO work_authors_tmp (work_key, author_key) VALUES ($1, $2)',
-                                            [rec.key, au.author.key], cb);
-                            });
-                        }
-                    }
-                }
-                async.series(actions, (err) => {
-                    if (err) return cb(err);
-                    ninserts += 1;
-                    if (ninserts % 10000 == 0) {
-                        async.series([
-                            (cb) => client.query('COMMIT', cb),
-                            (cb) => client.query('BEGIN ISOLATION LEVEL READ UNCOMMITTED', cb)
-                        ], cb);
-                    } else {
-                        cb();
-                    }
-                });
-            }), (cb) => {
-                console.info("finished works");
-                cb();
-            });
-    },
-    editions: function(done) {
-        fs.createReadStream('data/ol_dump_editions_2016-07-31.txt.gz')
-            .pipe(zlib.createUnzip())
-            .pipe(decodeLines())
-            .pipe(fws.obj((rec, enc, cb) => {
-                etp.advance();
-                var actions = [
-                    (cb) => client.query('INSERT INTO editions (edition_key, edition_title, edition_data) VALUES ($1, $2, $3)',
-                                        [rec.key, rec.title, JSON.stringify(rec)], cb)
-                ];
-                if (rec.works) {
-                    for (var w of rec.works) {
-                        actions.push((cb) => {
-                            client.query('INSERT INTO edition_works_tmp (edition_key, work_key) VALUES ($1, $2)',
-                                        [rec.key, w.key], cb);
-                        });
-                    }
-                }
-                if (rec.authors) {
-                    for (var au of rec.authors) {
-                        if (au.author) {
-                            actions.push((cb) => {
-                                client.query('INSERT INTO edition_authors_tmp (edition_key, author_key) VALUES ($1, $2)',
-                                            [rec.key, au.author.key], cb);
-                            });
-                        }
-                    }
-                }
-                async.series(actions, (err) => {
-                    if (err) return cb(err);
-                    ninserts += 1;
-                    if (ninserts % 10000 == 0) {
-                        async.series([
-                            (cb) => client.query('COMMIT', cb),
-                            (cb) => client.query('BEGIN ISOLATION LEVEL READ UNCOMMITTED', cb)
-                        ], cb);
-                    } else {
-                        cb();
-                    }
-                });
-            }), (cb) => {
-                console.info("finished editions");
-                cb();
-            });
-    }
+  authors: function (rec) {
+    return {
+      text: 'INSERT INTO authors (author_key, author_name, author_data) VALUES ($1, $2, $3)',
+      name: 'insert-author',
+      values: [rec.key, rec.name, JSON.stringify(rec)]
+    };
+  }, 
+  works: function (rec) {
+    return {
+      text: 'INSERT INTO works (work_key, work_title, work_data) VALUES ($1, $2, $3)',
+      name: 'insert-work',
+      values: [rec.key, rec.title, JSON.stringify(rec)]
+    };               
+  },
+  editions: function(rec) {
+    return {
+      text: 'INSERT INTO editions (edition_key, edition_title, edition_data) VALUES ($1, $2, $3)',
+      name: 'insert-edition',
+      values: [rec.key, rec.title, JSON.stringify(rec)]
+    };
+  }
 };
 
-const client = new pg.Client();
+function doImport(name, callback) {
+  const proc = imports[name];
+  if (proc === undefined) {
+    return callback(new Error("no such import " + name));
+  }
+  const client = new pg.Client(options['db-url']);
 
-client.connect(function(err) {
-    if (err) throw err;
-    
-    async.series([
-        (cb) => client.query('BEGIN ISOLATION LEVEL READ UNCOMMITTED', cb),
-        (cb) => {
-            async.parallel(options._.map((k) => imports[k], cb))
-        },
-        (cb) => {
-            client.query('COMMIT', cb)
-        }
-    ], (err) => {
-        console.info("finished processing, now done");
-        client.end((e2) => {
-            if (err) throw err;
-            if (e2) throw e2;
-        });
+  async.waterfall([
+    client.connect.bind(client),
+    (_, cb) => io.openFile(util.format("data/ol_dump_%s_%s.txt.gz", name, date), cb),
+    (stream, cb) => {
+      stream.pipe(zlib.createUnzip())
+            .pipe(io.decodeLines())
+            .pipe(through.obj((rec, enc, cb) => {
+              cb(null, proc(rec));
+            }))
+            .pipe(runQueries(client, cb));
+    }
+  ], (err) => {
+    if (err) {
+      console.error("error running %s: %s", name, err);
+    } else {
+      console.info("finished %s", name);
+    }
+    client.end((e2) => {
+      if (err) {
+        callback(err);
+      } else if (e2) {
+        callback(e2);
+      } else {
+        callback();
+      }
     });
+  });
+}
+
+async.parallel(options._.map((n) => (cb) => doImport(n, cb)), (err) => {
+  if (err) {
+    throw err;
+  }
 });
