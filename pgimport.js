@@ -32,10 +32,8 @@ function runQueries(client, finished) {
         if (started) {
           cb();
         } else {
-          console.info('starting');
           client.query('BEGIN ISOLATION LEVEL READ UNCOMMITTED', (err) => {
             started = true;
-            console.info('started transaction');
             cb(err);
           });
         }
@@ -44,7 +42,6 @@ function runQueries(client, finished) {
       (cb) => {
         nqueries += 1;
         if (nqueries % 10000 === 0) {
-          console.info('committing');
           async.series([
             (cb) => client.query('COMMIT', cb),
             (cb) => client.query('BEGIN ISOLATION LEVEL READ UNCOMMITTED', cb)
