@@ -30,9 +30,6 @@ ALTER TABLE works ADD PRIMARY KEY (work_id);
 ALTER TABLE works ADD CONSTRAINT work_key_uq UNIQUE (work_key);
 ALTER TABLE editions ADD PRIMARY KEY (edition_id);
 ALTER TABLE editions ADD CONSTRAINT edition_key_uq UNIQUE (edition_key);
-ANALYZE authors;
-ANALYZE works;
-ANALYZE editions;
 
 -- Set up work-author join table
 DROP TABLE IF EXISTS work_authors CASCADE;
@@ -44,7 +41,7 @@ CREATE TABLE work_authors (
 INSERT INTO work_authors (work_id, author_id)
 SELECT work_id, author_id
 FROM authors
-JOIN (SELECT work_id, json_array_elements((work_data->'authors')::json) #>> '{author,key}' AS author_key FROM works) w
+JOIN (SELECT work_id, jsonb_array_elements((work_data->'authors')) #>> '{author,key}' AS author_key FROM works) w
     USING (author_key);
 
 CREATE INDEX work_author_wk_idx ON work_authors (work_id);
@@ -62,10 +59,12 @@ CREATE TABLE edition_authors (
 INSERT INTO edition_authors (edition_id, author_id)
 SELECT edition_id, author_id
 FROM authors
-JOIN (SELECT edition_id, json_array_elements((edition_data->'authors')::json) #>> '{author,key}' AS author_key FROM editions) w
+JOIN (SELECT edition_id, jsonb_array_elements((edition_data->'authors')) ->> 'key' AS author_key FROM editions) w
     USING (author_key);
 
 CREATE INDEX edition_author_ed_idx ON edition_authors (edition_id);
 CREATE INDEX edition_author_au_idx ON edition_authors (author_id);
 ALTER TABLE edition_authors ADD CONSTRAINT edition_authors_ed_fk FOREIGN KEY (edition_id) REFERENCES editions;
 ALTER TABLE edition_authors ADD CONSTRAINT edition_authors_au_fk FOREIGN KEY (author_id) REFERENCES authors;
+
+ANALYZE;
