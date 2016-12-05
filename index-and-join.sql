@@ -49,9 +49,11 @@ ALTER TABLE edition_works ADD CONSTRAINT edition_work_wk_fk FOREIGN KEY (work_id
 -- Extract ISBNs
 DROP TABLE IF EXISTS edition_isbn;
 CREATE TABLE edition_isbn
-AS SELECT edition_id, isbn
-  FROM (SELECT edition_id, jsonb_array_elements_text(edition_data->'isbn_10' || edition_data->'isbn_13') AS isbn
-        FROM editions) ed_isbn;
+AS SELECT edition_id, jsonb_array_elements_text(edition_data->'isbn_10') AS isbn
+   FROM editions
+   UNION
+   SELECT edition_id, jsonb_array_elements_text(edition_data->'isbn_13') AS isbn
+   FROM editions;
 
 CREATE INDEX edition_isbn_ed_idx ON edition_isbn (edition_id);
 CREATE INDEX edition_isbn_idx ON edition_isbn (isbn);
