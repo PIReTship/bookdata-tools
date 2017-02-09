@@ -1,0 +1,6 @@
+CREATE TABLE az_ratings (
+  user_key VARCHAR NOT NULL,
+  asin VARCHAR NOT NULL,
+  rating REAL NOT NULL,
+  rating_time TIMESTAMP NOT NULL
+);

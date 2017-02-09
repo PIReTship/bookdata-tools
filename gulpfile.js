@@ -1,5 +1,6 @@
 const gulp = require('gulp');
 const gutil = require('gulp-util');
+const cp = require('child_process');
 
 const pgimport = require('./pgimport');
 
@@ -13,3 +14,9 @@ exports.importOpenLib = gulp.parallel(
   exports.importEditions
 );
 exports.importOpenLib.description = 'Import all OpenLib data';
+
+exports.azImport = function() {
+  return cp.spawn(psql, ['-c', "\\copy az_ratings FROM 'data/ratings_Books.csv' WITH CSV"], {
+    stdio: ['ignore', process.stdout, process.stderr]
+  });
+};
