@@ -9,6 +9,7 @@ const pg = require('pg');
 const async = require('async');
 const throughput = require('./lib/throughput');
 const io = require('./lib/io');
+const runQueries = require('./lib/query-eval-stream');
 
 const options = require('yargs').argv;
 const date = options.date || '2016-07-31';
@@ -18,49 +19,6 @@ var ninserts = 0;
 var autp = throughput('authors');
 var wtp = throughput('works');
 var etp = throughput('editions');
-
-/**
- * Pipe that runs PostgreSQL queries.
- */
-function runQueries(client, finished) {
-  var nqueries = 0;
-  var started = false;
-
-  function write(data, enc, next) {
-    async.series([
-      (cb) => {
-        if (started) {
-          cb();
-        } else {
-          client.query('BEGIN ISOLATION LEVEL READ UNCOMMITTED', (err) => {
-            started = true;
-            cb(err);
-          });
-        }
-      },
-      (cb) => client.query(data, cb),
-      (cb) => {
-        nqueries += 1;
-        if (nqueries % 10000 === 0) {
-          async.series([
-            (cb) => client.query('COMMIT', cb),
-            (cb) => client.query('BEGIN ISOLATION LEVEL READ UNCOMMITTED', cb)
-          ], cb);
-        } else {
-          process.nextTick(cb);
-        }
-      }
-    ], next);
-  }
-
-  function flush(cb) {
-    client.query('COMMIT', (err) => {
-      process.nextTick(finished, err, nqueries);
-    });
-  }
-
-  return fws.obj(write, flush);
-}
 
 const imports = {
   authors: function (rec) {
