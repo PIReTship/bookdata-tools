@@ -10,9 +10,9 @@ const async = require('async');
 const throughput = require('./lib/throughput');
 const io = require('./lib/io');
 const runQueries = require('./lib/query-eval-stream');
+const gutil = require('gulp-util');
 
-const options = require('yargs').argv;
-const date = options.date || '2016-07-31';
+const date = gutil.env.date || '2016-07-31';
 
 var ninserts = 0;
 
@@ -49,7 +49,7 @@ function doImport(name, callback) {
   if (proc === undefined) {
     return callback(new Error("no such import " + name));
   }
-  const client = new pg.Client(options['db-url']);
+  const client = new pg.Client(gutil.env['db-url']);
 
   async.waterfall([
     client.connect.bind(client),
