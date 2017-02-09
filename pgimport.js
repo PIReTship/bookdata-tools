@@ -122,8 +122,6 @@ function doImport(name, callback) {
   });
 }
 
-async.parallel(options._.map((n) => (cb) => doImport(n, cb)), (err) => {
-  if (err) {
-    throw err;
-  }
-});
+for (let name of Object.keys(imports)) {
+  module.exports[name] = doImport.bind(null, name);
+}
