@@ -19,6 +19,18 @@ CREATE INDEX work_author_au_idx ON work_authors (author_id);
 ALTER TABLE work_authors ADD CONSTRAINT work_author_wk_fk FOREIGN KEY (work_id) REFERENCES works;
 ALTER TABLE work_authors ADD CONSTRAINT work_author_au_fk FOREIGN KEY (author_id) REFERENCES authors;
 
+DROP TABLE IF EXISTS work_first_author CASCADE;
+CREATE TABLE work_first_author
+AS SELECT work_id, author_id
+   FROM authors
+     JOIN (SELECT work_id, work_data #>> '{authors,0,author,key}' AS author_key FROM works) w
+     USING (author_key);
+
+CREATE INDEX work_first_author_wk_idx ON work_first_author (work_id);
+CREATE INDEX work_first_author_au_idx ON work_first_author (author_id);
+ALTER TABLE work_first_author ADD CONSTRAINT work_first_author_wk_fk FOREIGN KEY (work_id) REFERENCES works;
+ALTER TABLE work_first_author ADD CONSTRAINT work_first_author_au_fk FOREIGN KEY (author_id) REFERENCES authors;
+
 -- Set up edition-author join table
 DROP TABLE IF EXISTS edition_authors;
 CREATE TABLE edition_authors
@@ -32,6 +44,19 @@ CREATE INDEX edition_author_ed_idx ON edition_authors (edition_id);
 CREATE INDEX edition_author_au_idx ON edition_authors (author_id);
 ALTER TABLE edition_authors ADD CONSTRAINT edition_author_wk_fk FOREIGN KEY (edition_id) REFERENCES editions;
 ALTER TABLE edition_authors ADD CONSTRAINT edition_author_au_fk FOREIGN KEY (author_id) REFERENCES authors;
+
+DROP TABLE IF EXISTS edition_first_author;
+CREATE TABLE edition_first_author
+AS SELECT edition_id, author_id
+   FROM authors
+     JOIN (SELECT edition_id, edition_data #>> '{authors,0,key}' AS author_key
+           FROM editions) e
+     USING (author_key);
+
+CREATE INDEX edition_first_author_ed_idx ON edition_first_author (edition_id);
+CREATE INDEX edition_first_author_au_idx ON edition_first_author (author_id);
+ALTER TABLE edition_first_author ADD CONSTRAINT edition_first_author_wk_fk FOREIGN KEY (edition_id) REFERENCES editions;
+ALTER TABLE edition_first_author ADD CONSTRAINT edition_first_author_au_fk FOREIGN KEY (author_id) REFERENCES authors;
 
 -- Set up edition-work join table
 DROP TABLE IF EXISTS edition_works;
