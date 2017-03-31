@@ -15,8 +15,13 @@ exports.importOpenLib = gulp.parallel(
 );
 exports.importOpenLib.description = 'Import all OpenLib data';
 
-exports.azImport = function() {
+exports.importAmazon = function() {
   return cp.spawn(psql, ['-c', "\\copy az_ratings FROM 'data/ratings_Books.csv' WITH CSV"], {
     stdio: ['ignore', process.stdout, process.stderr]
   });
 };
+
+exports.importBX = function() {
+  const bxi = require('./lib/bximport');
+  return bxi('data/BX-Book-Ratings.csv');
+}
