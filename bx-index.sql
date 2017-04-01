@@ -11,7 +11,7 @@ REFRESH MATERIALIZED VIEW isbn_book_id;
 
 DROP VIEW IF EXISTS bx_book_info;
 CREATE VIEW bx_book_info
-  AS SELECT isbn, ib.book_id AS book_id, author_id, author_name
+  AS SELECT DISTINCT isbn, ib.book_id AS book_id, author_id, author_name
      FROM bx_ratings JOIN isbn_book_id ib USING (isbn)
        LEFT OUTER JOIN (SELECT isbn, (array_remove(array_agg(author_id), NULL))[1] AS author_id
                         FROM bx_ratings JOIN edition_isbn USING (isbn)
