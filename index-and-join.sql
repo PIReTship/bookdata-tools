@@ -84,4 +84,28 @@ CREATE INDEX edition_isbn_ed_idx ON edition_isbn (edition_id);
 CREATE INDEX edition_isbn_idx ON edition_isbn (isbn);
 ALTER TABLE edition_isbn ADD CONSTRAINT edition_work_ed_fk FOREIGN KEY (edition_id) REFERENCES editions;
 
+-- Make ID mapping
+-- ID mod 3 is type: 0 synthetic, 1 work id, 2 edition id
+DROP TABLE IF EXISTS isbn_info;
+CREATE TABLE isbn_info
+  AS SELECT isbn, edition_id, work_id, COALESCE(work_id * 3 - 2, edition_id * 3 - 1) AS book_id
+  FROM edition_isbn
+  LEFT OUTER JOIN (SELECT edition_id, MIN(work_id) AS work_id
+                   FROM edition_works
+                   GROUP BY edition_id) AS ew USING (edition_id);
+
+CREATE INDEX isbn_info_isbn_idx ON isbn_info (isbn);
+CREATE INDEX isbn_info_edition_idx ON isbn_info (edition_id);
+CREATE INDEX isbn_info_work_idx ON isbn_info (work_id);
+CREATE INDEX isbn_info_book_idx ON isbn_info (book_id);
+
+CREATE SEQUENCE synthetic_book_id_seq;
+
+DROP MATERIALIZED VIEW IF EXISTS isbn_book_id;
+CREATE MATERIALIZED VIEW isbn_book_id
+  AS SELECT isbn, MIN(book_id) AS book_id FROM isbn_info GROUP BY isbn;
+
+CREATE INDEX isbn_book_id_isbn_idx ON isbn_book_id (isbn);
+CREATE INDEX isbn_book_id_idx ON isbn_book_id (book_id);
+
 ANALYZE;
