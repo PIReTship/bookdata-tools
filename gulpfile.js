@@ -29,12 +29,18 @@ exports.importBX = function() {
   return bxi('data/BX-Book-Ratings.csv');
 };
 
-exports.exportAmazon = lkexport.amazon;
-exports.exportBXExplicit = lkexport.bxExplicit;
-exports.exportBXAll = lkexport.bxAll;
-exports.export = gulp.parallel(
-  (cb) => fs.mkdir('out', cb),
-  () => lkexport.amazon('out/amazon.csv'),
-  () => lkexport.bxAll('out/bx-all.csv'),
-  () => lkexport.bxExplicit('out/bx-explicit.csv')
-);
+exports.export = gulp.series(
+  function mkdir(cb) {
+    fs.mkdir('out', (err) => {
+      if (err && err.code != 'EEXIST') {
+        cb(err);
+      } else {
+        cb();
+      }
+    })
+  },
+  gulp.parallel(
+    function amazon() { return lkexport.amazon('out/amazon.csv.gz') },
+    function bxAll() { return lkexport.bxAll('out/bx-all.csv.gz') },
+    function bxExplicit() { return lkexport.bxExplicit('out/bx-explicit.csv.gz') }
+  ));
