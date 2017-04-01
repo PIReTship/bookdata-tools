@@ -1,8 +1,11 @@
+const fs = require('fs');
+
 const gulp = require('gulp');
 const gutil = require('gulp-util');
 const cp = require('child_process');
 
 const pgimport = require('./pgimport');
+const lkexport = require('./lib/lkexport');
 
 exports.importAuthors = pgimport.authors;
 exports.importWorks = pgimport.works;
@@ -24,4 +27,14 @@ exports.importAmazon = function() {
 exports.importBX = function() {
   const bxi = require('./lib/bximport');
   return bxi('data/BX-Book-Ratings.csv');
-}
+};
+
+exports.exportAmazon = lkexport.amazon;
+exports.exportBXExplicit = lkexport.bxExplicit;
+exports.exportBXAll = lkexport.bxAll;
+exports.export = gulp.parallel(
+  (cb) => fs.mkdir('out', cb),
+  () => lkexport.amazon('out/amazon.csv'),
+  () => lkexport.bxAll('out/bx-all.csv'),
+  () => lkexport.bxExplicit('out/bx-explicit.csv')
+);
