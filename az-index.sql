@@ -21,7 +21,7 @@ ANALYZE isbn_info, isbn_book_id;
 
 DROP VIEW IF EXISTS az_book_info;
 CREATE VIEW az_book_info
-  AS SELECT asin, ib.book_id AS book_id, author_id, author_name
+  AS SELECT DISTINCT asin, ib.book_id AS book_id, author_id, author_name
      FROM az_ratings JOIN isbn_book_id ib ON (asin = isbn)
        LEFT OUTER JOIN (SELECT isbn, (array_remove(array_agg(author_id), NULL))[1] AS author_id
                         FROM az_ratings JOIN edition_isbn ON (isbn = asin)
