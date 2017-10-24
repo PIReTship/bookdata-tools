@@ -4,12 +4,12 @@ const gulp = require('gulp');
 const gutil = require('gulp-util');
 const cp = require('child_process');
 
-const pgimport = require('./pgimport');
+const olimport = require('./lib/ol-import');
 const lkexport = require('./lib/lkexport');
 
-exports.importAuthors = pgimport.authors;
-exports.importWorks = pgimport.works;
-exports.importEditions = pgimport.editions;
+exports.importAuthors = olimport.authors;
+exports.importWorks = olimport.works;
+exports.importEditions = olimport.editions;
 
 exports.importOpenLib = gulp.parallel(
   exports.importAuthors,
