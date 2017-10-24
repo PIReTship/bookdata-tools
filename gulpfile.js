@@ -29,6 +29,11 @@ exports.importBX = function() {
   return bxi('data/BX-Book-Ratings.csv');
 };
 
+exports.importVIAF = function(done) {
+  var viaf = require('./lib/viaf-import');
+  viaf.import('data/viaf/viaf-20171001-clusters-marc21.xml.gz', done);
+};
+
 exports.export = gulp.series(
   function mkdir(cb) {
     fs.mkdir('out', (err) => {
