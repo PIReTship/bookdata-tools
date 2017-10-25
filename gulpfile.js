@@ -45,7 +45,7 @@ exports.export = gulp.series(
     })
   },
   gulp.parallel(
-    function amazon() { return lkexport.amazon('out/amazon.csv.gz') },
-    function bxAll() { return lkexport.bxAll('out/bx-all.csv.gz') },
-    function bxExplicit() { return lkexport.bxExplicit('out/bx-explicit.csv.gz') }
+    function amazon() { return lkexport.amazon('out/az-ratings.csv') },
+    function bxAll() { return lkexport.bxAll('out/bx-implicit.csv') },
+    function bxExplicit() { return lkexport.bxExplicit('out/bx-ratings.csv') }
   ));
