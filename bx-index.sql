@@ -14,7 +14,7 @@ CREATE VIEW bx_book_info
   AS SELECT DISTINCT isbn, ib.book_id AS book_id, author_id, author_name
      FROM bx_ratings JOIN isbn_book_id ib USING (isbn)
        LEFT OUTER JOIN (SELECT isbn, (array_remove(array_agg(author_id), NULL))[1] AS author_id
-                        FROM bx_ratings JOIN edition_isbn USING (isbn)
-                          JOIN edition_first_author USING (edition_id)
+                        FROM bx_ratings JOIN ol_edition_isbn USING (isbn)
+                          JOIN ol_edition_first_author USING (edition_id)
                         GROUP BY isbn) auth USING (isbn)
-       LEFT OUTER JOIN authors USING (author_id);
+       LEFT OUTER JOIN ol_author USING (author_id);

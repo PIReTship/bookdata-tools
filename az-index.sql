@@ -24,7 +24,7 @@ CREATE VIEW az_book_info
   AS SELECT DISTINCT asin, ib.book_id AS book_id, author_id, author_name
      FROM az_ratings JOIN isbn_book_id ib ON (asin = isbn)
        LEFT OUTER JOIN (SELECT isbn, (array_remove(array_agg(author_id), NULL))[1] AS author_id
-                        FROM az_ratings JOIN edition_isbn ON (isbn = asin)
-                          JOIN edition_first_author USING (edition_id)
+                        FROM az_ratings JOIN ol_edition_isbn ON (isbn = asin)
+                          JOIN ol_edition_first_author USING (edition_id)
                         GROUP BY isbn) auth USING (isbn)
-       LEFT OUTER JOIN authors USING (author_id);
+       LEFT OUTER JOIN ol_author USING (author_id);

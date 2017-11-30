@@ -32,7 +32,7 @@ WITH res_stats AS (SELECT author_id, author_name,
                      COUNT(distinct viaf_au_id) AS au_count,
                      COUNT(distinct NULLIF(viaf_au_gender, 'unknown')) AS gender_count
                    FROM rated_authors
-                     JOIN authors USING (author_id)
+                     JOIN ol_author USING (author_id)
                      LEFT OUTER JOIN viaf_author_name ON (viaf_au_name = author_name)
                      LEFT OUTER JOIN viaf_author_gender USING (viaf_au_id)
                    GROUP BY author_id, author_name)
@@ -51,7 +51,7 @@ DROP MATERIALIZED VIEW IF EXISTS author_resolution;
 CREATE MATERIALIZED VIEW author_resolution AS
   SELECT author_id, author_name, resolve_gender(viaf_au_gender) AS author_gender
   FROM rated_authors
-  JOIN authors USING (author_id)
+  JOIN ol_author USING (author_id)
   LEFT OUTER JOIN viaf_author_name ON (viaf_au_name = author_name)
   LEFT OUTER JOIN viaf_author_gender USING (viaf_au_id)
   GROUP BY author_id, author_name;
