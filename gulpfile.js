@@ -31,7 +31,7 @@ exports.importBX = function() {
 
 exports.importVIAF = function(done) {
   var viaf = require('./lib/viaf-import');
-  viaf.import('data/viaf/viaf-20171001-clusters-marc21.xml.gz', done);
+  viaf.import('data/viaf/viaf-20171106-clusters-marc21.xml.gz', done);
 };
 
 exports.export = gulp.series(
