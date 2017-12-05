@@ -16,13 +16,14 @@ INSERT INTO isbn_info (isbn, book_id)
   FROM az_ratings
     LEFT JOIN isbn_info ON (asin = isbn)
   WHERE book_id IS NULL;
-REFRESH MATERIALIZED VIEW isbn_book_id;
-ANALYZE isbn_info, isbn_book_id;
+REFRESH MATERIALIZED VIEW ol_isbn_book_id;
+ANALYZE isbn_info;
+ANALYZE ol_isbn_book_id;
 
 DROP VIEW IF EXISTS az_book_info;
 CREATE VIEW az_book_info
   AS SELECT DISTINCT asin, ib.book_id AS book_id, author_id, author_name
-     FROM az_ratings JOIN isbn_book_id ib ON (asin = isbn)
+     FROM az_ratings JOIN ol_isbn_book_id ib ON (asin = isbn)
        LEFT OUTER JOIN (SELECT isbn, (array_remove(array_agg(author_id), NULL))[1] AS author_id
                         FROM az_ratings JOIN ol_edition_isbn ON (isbn = asin)
                           JOIN ol_edition_first_author USING (edition_id)
