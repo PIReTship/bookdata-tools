@@ -101,11 +101,11 @@ CREATE INDEX isbn_info_book_idx ON isbn_info (book_id);
 
 CREATE SEQUENCE synthetic_book_id_seq;
 
-DROP MATERIALIZED VIEW IF EXISTS ol_isbn_book_id;
-CREATE MATERIALIZED VIEW ol_isbn_book_id
+DROP MATERIALIZED VIEW IF EXISTS isbn_book_id;
+CREATE MATERIALIZED VIEW isbn_book_id
   AS SELECT isbn, MIN(book_id) AS book_id FROM isbn_info GROUP BY isbn;
 
-CREATE INDEX isbn_book_id_isbn_idx ON ol_isbn_book_id (isbn);
-CREATE INDEX isbn_book_id_idx ON ol_isbn_book_id (book_id);
+CREATE INDEX isbn_book_id_isbn_idx ON isbn_book_id (isbn);
+CREATE INDEX isbn_book_id_idx ON isbn_book_id (book_id);
 
 ANALYZE;
