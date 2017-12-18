@@ -18,3 +18,18 @@ CREATE VIEW bx_book_info
                           JOIN ol_edition_first_author USING (edition_id)
                         GROUP BY isbn) auth USING (isbn)
        LEFT OUTER JOIN ol_author USING (author_id);
+
+DROP MATERIALIZED VIEW IF EXISTS bx_explicit_ratings;
+CREATE MATERIALIZED VIEW bx_explicit_ratings
+  AS SELECT user_id, book_id, MEDIAN(rating) AS rating, COUNT(rating) AS nratings
+     FROM bx_ratings
+       JOIN isbn_book_id USING (isbn)
+     WHERE rating > 0
+     GROUP BY user_id, book_id;
+
+DROP MATERIALIZED VIEW IF EXISTS bx_all_ratings;
+CREATE MATERIALIZED VIEW bx_all_ratings
+  AS SELECT user_id, book_id, MEDIAN(rating) AS rating, COUNT(rating) AS nratings
+     FROM bx_ratings
+       JOIN isbn_book_id USING (isbn)
+     GROUP BY user_id, book_id;

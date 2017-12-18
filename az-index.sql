@@ -29,3 +29,11 @@ CREATE VIEW az_book_info
                           JOIN ol_edition_first_author USING (edition_id)
                         GROUP BY isbn) auth USING (isbn)
        LEFT OUTER JOIN ol_author USING (author_id);
+
+DROP MATERIALIZED VIEW IF EXISTS az_export_ratings;
+CREATE MATERIALIZED VIEW az_export_ratings
+  AS SELECT user_id, book_id, MEDIAN(rating) AS rating, COUNT(rating) AS nratings
+     FROM az_ratings
+       JOIN az_users USING (user_key)
+       JOIN isbn_book_id ON (asin = isbn)
+     GROUP BY user_id, book_id
