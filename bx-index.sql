@@ -15,10 +15,11 @@ ANALYZE ol_book_first_author;
 
 DROP VIEW IF EXISTS bx_book_info;
 CREATE VIEW bx_book_info
-  AS SELECT DISTINCT isbn, ib.book_id AS book_id, author_id, author_name
+  AS SELECT DISTINCT ib.book_id AS book_id, isbn, author_id, author_name, author_gender
      FROM bx_ratings JOIN isbn_book_id ib USING (isbn)
        LEFT OUTER JOIN ol_book_first_author USING (book_id)
-       LEFT OUTER JOIN ol_author USING (author_id);
+       LEFT OUTER JOIN ol_author USING (author_id)
+       LEFT OUTER JOIN author_resolution;
 
 DROP MATERIALIZED VIEW IF EXISTS bx_explicit_ratings;
 CREATE MATERIALIZED VIEW bx_explicit_ratings

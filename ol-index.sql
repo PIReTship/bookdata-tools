@@ -131,6 +131,6 @@ AS SELECT book_id, first_value(author_id) OVER (PARTITION BY book_id ORDER BY ed
      JOIN ol_edition_first_author USING (edition_id)
      JOIN ol_edition_meta USING (edition_id)
    WHERE author_id IS NOT NULL;
-CREATE INDEX book_first_atuhor_book_idx ON ol_book_first_author (book_id);
+CREATE INDEX book_first_author_book_idx ON ol_book_first_author (book_id);
 
 ANALYZE;

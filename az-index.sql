@@ -24,10 +24,11 @@ ANALYZE ol_book_first_author;
 
 DROP VIEW IF EXISTS az_book_info;
 CREATE VIEW az_book_info
-  AS SELECT DISTINCT asin, ib.book_id AS book_id, author_id, author_name
+  AS SELECT DISTINCT ib.book_id AS book_id, asin, author_id, author_name, author_gender
      FROM az_ratings JOIN isbn_book_id ib ON (asin = isbn)
        LEFT OUTER JOIN ol_book_first_author USING (book_id)
-       LEFT OUTER JOIN ol_author USING (author_id);
+       LEFT OUTER JOIN ol_author USING (author_id)
+       LEFT OUTER JOIN author_resolution;
 
 DROP MATERIALIZED VIEW IF EXISTS az_export_ratings;
 CREATE MATERIALIZED VIEW az_export_ratings
