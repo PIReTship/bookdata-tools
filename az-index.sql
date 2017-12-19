@@ -28,10 +28,10 @@ CREATE VIEW az_book_info
      FROM az_ratings JOIN isbn_book_id ib ON (asin = isbn)
        LEFT OUTER JOIN ol_book_first_author USING (book_id)
        LEFT OUTER JOIN ol_author USING (author_id)
-       LEFT OUTER JOIN author_resolution;
+       LEFT OUTER JOIN author_resolution USING (author_id);
 
-DROP MATERIALIZED VIEW IF EXISTS az_export_ratings;
-CREATE MATERIALIZED VIEW az_export_ratings
+DROP VIEW IF EXISTS az_export_ratings;
+CREATE VIEW az_export_ratings
   AS SELECT user_id, book_id, MEDIAN(rating) AS rating, COUNT(rating) AS nratings
      FROM az_ratings
        JOIN az_users USING (user_key)

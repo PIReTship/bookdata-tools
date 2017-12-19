@@ -19,18 +19,18 @@ CREATE VIEW bx_book_info
      FROM bx_ratings JOIN isbn_book_id ib USING (isbn)
        LEFT OUTER JOIN ol_book_first_author USING (book_id)
        LEFT OUTER JOIN ol_author USING (author_id)
-       LEFT OUTER JOIN author_resolution;
+       LEFT OUTER JOIN author_resolution USING (author_id);
 
-DROP MATERIALIZED VIEW IF EXISTS bx_explicit_ratings;
-CREATE MATERIALIZED VIEW bx_explicit_ratings
+DROP VIEW IF EXISTS bx_explicit_ratings;
+CREATE VIEW bx_explicit_ratings
   AS SELECT user_id, book_id, MEDIAN(rating) AS rating, COUNT(rating) AS nratings
      FROM bx_ratings
        JOIN isbn_book_id USING (isbn)
      WHERE rating > 0
      GROUP BY user_id, book_id;
 
-DROP MATERIALIZED VIEW IF EXISTS bx_all_ratings;
-CREATE MATERIALIZED VIEW bx_all_ratings
+DROP VIEW IF EXISTS bx_all_ratings;
+CREATE VIEW bx_all_ratings
   AS SELECT user_id, book_id, MEDIAN(rating) AS rating, COUNT(rating) AS nratings
      FROM bx_ratings
        JOIN isbn_book_id USING (isbn)
