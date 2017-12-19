@@ -8,15 +8,16 @@ INSERT INTO isbn_info (isbn, book_id)
     LEFT JOIN isbn_info USING (isbn)
   WHERE book_id IS NULL;
 REFRESH MATERIALIZED VIEW isbn_book_id;
+ANALYZE isbn_info;
+ANALYZE isbn_book_id;
+REFRESH MATERIALIZED VIEW ol_book_first_author;
+ANALYZE ol_book_first_author;
 
 DROP VIEW IF EXISTS bx_book_info;
 CREATE VIEW bx_book_info
   AS SELECT DISTINCT isbn, ib.book_id AS book_id, author_id, author_name
      FROM bx_ratings JOIN isbn_book_id ib USING (isbn)
-       LEFT OUTER JOIN (SELECT isbn, (array_remove(array_agg(author_id), NULL))[1] AS author_id
-                        FROM bx_ratings JOIN ol_edition_isbn USING (isbn)
-                          JOIN ol_edition_first_author USING (edition_id)
-                        GROUP BY isbn) auth USING (isbn)
+       LEFT OUTER JOIN ol_book_first_author USING (book_id)
        LEFT OUTER JOIN ol_author USING (author_id);
 
 DROP MATERIALIZED VIEW IF EXISTS bx_explicit_ratings;

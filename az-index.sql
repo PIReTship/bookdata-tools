@@ -19,15 +19,14 @@ INSERT INTO isbn_info (isbn, book_id)
 REFRESH MATERIALIZED VIEW isbn_book_id;
 ANALYZE isbn_info;
 ANALYZE isbn_book_id;
+REFRESH MATERIALIZED VIEW ol_book_first_author;
+ANALYZE ol_book_first_author;
 
 DROP VIEW IF EXISTS az_book_info;
 CREATE VIEW az_book_info
   AS SELECT DISTINCT asin, ib.book_id AS book_id, author_id, author_name
      FROM az_ratings JOIN isbn_book_id ib ON (asin = isbn)
-       LEFT OUTER JOIN (SELECT isbn, (array_remove(array_agg(author_id), NULL))[1] AS author_id
-                        FROM az_ratings JOIN ol_edition_isbn ON (isbn = asin)
-                          JOIN ol_edition_first_author USING (edition_id)
-                        GROUP BY isbn) auth USING (isbn)
+       LEFT OUTER JOIN ol_book_first_author USING (book_id)
        LEFT OUTER JOIN ol_author USING (author_id);
 
 DROP MATERIALIZED VIEW IF EXISTS az_export_ratings;
@@ -36,4 +35,4 @@ CREATE MATERIALIZED VIEW az_export_ratings
      FROM az_ratings
        JOIN az_users USING (user_key)
        JOIN isbn_book_id ON (asin = isbn)
-     GROUP BY user_id, book_id
+     GROUP BY user_id, book_id;

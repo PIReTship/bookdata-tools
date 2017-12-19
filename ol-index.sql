@@ -71,6 +71,21 @@ CREATE INDEX edition_work_au_idx ON ol_edition_work (work_id);
 ALTER TABLE ol_edition_work ADD CONSTRAINT edition_work_ed_fk FOREIGN KEY (edition_id) REFERENCES ol_edition;
 ALTER TABLE ol_edition_work ADD CONSTRAINT edition_work_wk_fk FOREIGN KEY (work_id) REFERENCES ol_work;
 
+-- Set up work and author summary info
+DROP MATERIALIZED VIEW IF EXISTS ol_work_meta;
+CREATE MATERIALIZED VIEW ol_work_meta
+  AS SELECT work_id, work_key, length(work_data::text) AS work_desc_length
+    FROM ol_work;
+CREATE INDEX work_meta_work_idx ON ol_work_meta (work_id);
+CREATE INDEX work_meta_key_idx ON ol_work_meta (work_key);
+
+DROP MATERIALIZED VIEW IF EXISTS ol_edition_meta;
+CREATE MATERIALIZED VIEW ol_edition_meta
+AS SELECT edition_id, edition_key, length(edition_data::text) AS edition_desc_length
+   FROM ol_edition;
+CREATE INDEX edition_meta_edition_idx ON ol_edition_meta (edition_id);
+CREATE INDEX edition_meta_key_idx ON ol_edition_meta (edition_key);
+
 -- Extract ISBNs
 DROP TABLE IF EXISTS ol_edition_isbn;
 CREATE TABLE ol_edition_isbn
@@ -107,5 +122,15 @@ CREATE MATERIALIZED VIEW isbn_book_id
 
 CREATE INDEX isbn_book_id_isbn_idx ON isbn_book_id (isbn);
 CREATE INDEX isbn_book_id_idx ON isbn_book_id (book_id);
+
+DROP MATERIALIZED VIEW IF EXISTS ol_book_first_author;
+CREATE MATERIALIZED VIEW ol_book_first_author
+AS SELECT book_id, first_value(author_id) OVER (PARTITION BY book_id ORDER BY edition_desc_length) AS author_id
+   FROM isbn_book_id
+     JOIN ol_edition_isbn USING (isbn)
+     JOIN ol_edition_first_author USING (edition_id)
+     JOIN ol_edition_meta USING (edition_id)
+   WHERE author_id IS NOT NULL;
+CREATE INDEX book_first_atuhor_book_idx ON ol_book_first_author (book_id);
 
 ANALYZE;
