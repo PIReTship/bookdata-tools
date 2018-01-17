@@ -59,3 +59,8 @@ CREATE MATERIALIZED VIEW author_resolution AS
   GROUP BY author_id, author_name;
 CREATE INDEX au_res_au_idx ON author_resolution (author_id);
 ANALYZE author_resolution;
+
+DROP VIEW IF EXISTS rated_book_author;
+CREATE VIEW rated_book_author
+  AS SELECT book_id, author_id, author_name, author_gender
+  FROM ol_book_first_author JOIN author_resolution USING (author_id);

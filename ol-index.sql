@@ -7,29 +7,29 @@ ALTER TABLE ol_edition ADD PRIMARY KEY (edition_id);
 ALTER TABLE ol_edition ADD CONSTRAINT edition_key_uq UNIQUE (edition_key);
 
 -- Set up work-author join table
-DROP TABLE IF EXISTS work_authors CASCADE;
-CREATE TABLE work_authors
+DROP TABLE IF EXISTS ol_work_authors CASCADE;
+CREATE TABLE ol_work_authors
 AS SELECT work_id, author_id
    FROM ol_author
      JOIN (SELECT work_id, jsonb_array_elements((work_data->'authors')) #>> '{author,key}' AS author_key FROM ol_work) w
      USING (author_key);
 
-CREATE INDEX work_author_wk_idx ON work_authors (work_id);
-CREATE INDEX work_author_au_idx ON work_authors (author_id);
-ALTER TABLE work_authors ADD CONSTRAINT work_author_wk_fk FOREIGN KEY (work_id) REFERENCES ol_work;
-ALTER TABLE work_authors ADD CONSTRAINT work_author_au_fk FOREIGN KEY (author_id) REFERENCES ol_author;
+CREATE INDEX work_author_wk_idx ON ol_work_authors (work_id);
+CREATE INDEX work_author_au_idx ON ol_work_authors (author_id);
+ALTER TABLE ol_work_authors ADD CONSTRAINT work_author_wk_fk FOREIGN KEY (work_id) REFERENCES ol_work;
+ALTER TABLE ol_work_authors ADD CONSTRAINT work_author_au_fk FOREIGN KEY (author_id) REFERENCES ol_author;
 
-DROP TABLE IF EXISTS work_first_author CASCADE;
+DROP TABLE IF EXISTS ol_work_first_author CASCADE;
 CREATE TABLE work_first_author
 AS SELECT work_id, author_id
    FROM ol_author
      JOIN (SELECT work_id, work_data #>> '{authors,0,author,key}' AS author_key FROM ol_work) w
      USING (author_key);
 
-CREATE INDEX work_first_author_wk_idx ON work_first_author (work_id);
-CREATE INDEX work_first_author_au_idx ON work_first_author (author_id);
-ALTER TABLE work_first_author ADD CONSTRAINT work_first_author_wk_fk FOREIGN KEY (work_id) REFERENCES ol_work;
-ALTER TABLE work_first_author ADD CONSTRAINT work_first_author_au_fk FOREIGN KEY (author_id) REFERENCES ol_author;
+CREATE INDEX work_first_author_wk_idx ON ol_work_first_author (work_id);
+CREATE INDEX work_first_author_au_idx ON ol_work_first_author (author_id);
+ALTER TABLE ol_work_first_author ADD CONSTRAINT work_first_author_wk_fk FOREIGN KEY (work_id) REFERENCES ol_work;
+ALTER TABLE ol_work_first_author ADD CONSTRAINT work_first_author_au_fk FOREIGN KEY (author_id) REFERENCES ol_author;
 
 -- Set up edition-author join table
 DROP TABLE IF EXISTS ol_edition_author;
@@ -123,9 +123,9 @@ CREATE MATERIALIZED VIEW isbn_book_id
 CREATE INDEX isbn_book_id_isbn_idx ON isbn_book_id (isbn);
 CREATE INDEX isbn_book_id_idx ON isbn_book_id (book_id);
 
-DROP MATERIALIZED VIEW IF EXISTS ol_book_first_author;
+DROP MATERIALIZED VIEW IF EXISTS ol_book_first_author CASCADE;
 CREATE MATERIALIZED VIEW ol_book_first_author
-AS SELECT book_id, first_value(author_id) OVER (PARTITION BY book_id ORDER BY edition_desc_length) AS author_id
+AS SELECT DISTINCT book_id, first_value(author_id) OVER (PARTITION BY book_id ORDER BY edition_desc_length) AS author_id
    FROM isbn_book_id
      JOIN ol_edition_isbn USING (isbn)
      JOIN ol_edition_first_author USING (edition_id)
