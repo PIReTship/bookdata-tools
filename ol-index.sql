@@ -133,4 +133,11 @@ AS SELECT DISTINCT book_id, first_value(author_id) OVER (PARTITION BY book_id OR
    WHERE author_id IS NOT NULL;
 CREATE INDEX book_first_author_book_idx ON ol_book_first_author (book_id);
 
+DROP MATERIALIZED VIEW IF EXISTS ol_work_subject CASCADE;
+CREATE MATERIALIZED VIEW ol_work_subject
+AS SELECT work_id, jsonb_array_elements_text(work_data->'subjects') AS subject
+  FROM ol_work;
+CREATE INDEX ol_work_subject_work_idx ON ol_work_subject (work_id);
+CREATE INDEX ol_work_subject_subj_idx ON ol_work_subject (subject);
+
 ANALYZE;
