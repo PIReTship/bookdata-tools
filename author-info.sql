@@ -3,8 +3,8 @@
 DROP MATERIALIZED VIEW IF EXISTS rated_authors;
 CREATE MATERIALIZED VIEW rated_authors AS
   SELECT author_id, COUNT(distinct book_id) AS num_books
-  FROM (SELECT DISTINCT book_id FROM az_ratings JOIN isbn_book_id ib ON (asin = isbn)
-        UNION SELECT DISTINCT book_id FROM bx_ratings JOIN isbn_book_id ib USING (isbn)) bids
+  FROM (SELECT book_id FROM az_ratings JOIN isbn_book_id ib ON (asin = isbn)
+        UNION DISTINCT SELECT book_id FROM bx_ratings JOIN isbn_book_id ib USING (isbn)) bids
     JOIN ol_book_first_author USING (book_id)
   WHERE author_id IS NOT NULL
   GROUP BY author_id;
