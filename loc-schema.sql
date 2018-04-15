@@ -6,7 +6,7 @@ CREATE TABLE loc_marc_records (
 CREATE TABLE loc_marc_fields (
   rec_id INTEGER NOT NULL,
   fid INTEGER NOT NULL,
-  field VARCHAR,
+  field VARCHAR NOT NULL,
   ind1 VARCHAR,
   ind2 VARCHAR,
   subfield VARCHAR,
