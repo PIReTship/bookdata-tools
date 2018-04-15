@@ -45,10 +45,7 @@ exports.convertVIAF = function() {
 
 exports.importLOC = function() {
   var loc = require('./lib/loc-import');
-  return gulp.src('data/LOC/BooksAll.*.gz', {read: false})
-             .pipe(miss.to.obj((file, enc, cb) => {
-               loc.import(file.path, args['db-url']).then(() => cb(), cb);
-             }));
+  return loc.import('data/LOC/BooksAll.*.gz');
 };
 
 function convertLOC() {
