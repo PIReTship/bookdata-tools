@@ -1,8 +1,10 @@
 const fs = require('fs');
 
 const gulp = require('gulp');
-const gutil = require('gulp-util');
 const cp = require('child_process');
+const miss = require('mississippi');
+
+const args = require('minimist')(process.argv.slice(2));
 
 const olimport = require('./lib/ol-import');
 const lkexport = require('./lib/lkexport');
@@ -29,9 +31,17 @@ exports.importBX = function() {
   return bxi('data/BX-Book-Ratings.csv');
 };
 
-exports.importVIAF = function(done) {
+exports.importVIAF = function() {
   var viaf = require('./lib/viaf-import');
-  viaf.import('data/viaf/viaf-20171106-clusters-marc21.xml.gz', done);
+  return viaf.import('data/viaf/viaf-20171106-clusters-marc21.xml.gz', args['db-url']);
+};
+
+exports.importLOC = function() {
+  var loc = require('./lib/loc-import');
+  return gulp.src('data/LOC/BooksAll.*.gz', {read: false})
+             .pipe(miss.to.obj((file, enc, cb) => {
+               loc.import(file.path, args['db-url']).then(() => cb(), cb);
+             }));
 };
 
 exports.export = gulp.series(
