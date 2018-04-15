@@ -1,8 +1,3 @@
-DROP TABLE IF EXISTS viaf_marc_record CASCADE;
-CREATE TABLE viaf_marc_record ( 
-  rec_id SERIAL PRIMARY KEY,
-  viaf_au_id VARCHAR NOT NULL UNIQUE
-);
 DROP TABLE IF EXISTS viaf_marc_field CASCADE;
 CREATE TABLE viaf_marc_field (
   rec_id INTEGER NOT NULL,
