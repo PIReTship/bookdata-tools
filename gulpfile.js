@@ -46,46 +46,11 @@ exports.importLOC = function() {
              }));
 };
 
-exports.convertLOC = async function() {
+function convertLOC() {
   var loc = require('./lib/loc-import');
-  let marc = require('./lib/parse-marc');
-  let io = require('./lib/io');
-  let zlib = require('zlib');
-
-  let files = await new Promise((ok, fail) => {
-    let fns = [];
-    gulp.src('data/LOC/BooksAll.*.gz', {read: false})
-        .pipe(miss.to.obj((file, enc, cb) => {
-          fns.push(file.path);
-          cb();
-        }, (cb) => {
-          ok(fns);
-          cb();
-        }));
-  });
-  log.info('have %d files', files.length);
-
-  let out = marc.renderPostgresText();
-  let fout = fs.createWriteStream('data/LOC.tsv.gz');
-  out.pipe(zlib.createGzip()).pipe(fout);
-
-  await Promise.each(files, (fn) => new Promise((ok, fail) => {
-    log.info('parsing %s', fn);
-    let input = io.openFile(fn);
-    let parse = input.pipe(zlib.createUnzip())
-                     .pipe(marc.parseCollection());
-    parse.on('end', ok);
-    parse.on('error', fail);
-    parse.pipe(out, {end: false});
-  }));
-  log.info('lol');
-  return new Promise((ok, fail) => {
-    out.end(null, null, (err) => {
-      if (err) fail(err)
-      else ok();
-    });
-  });
+  return loc.convert('data/LOC/BooksAll.*.gz', 'data/LOC.tsv.gz');
 };
+exports.convertLOC = convertLOC;
 
 exports.export = gulp.series(
   function mkdir(cb) {
