@@ -38,6 +38,11 @@ exports.importVIAF = function() {
   return viaf.import('data/viaf-20180401-clusters-marc21.xml.gz', args['db-url']);
 };
 
+exports.convertVIAF = function() {
+  var viaf = require('./lib/viaf-import');
+  return viaf.convert('data/viaf-20180401-clusters-marc21.xml.gz', 'data/viaf.tsv.gz');
+};
+
 exports.importLOC = function() {
   var loc = require('./lib/loc-import');
   return gulp.src('data/LOC/BooksAll.*.gz', {read: false})
