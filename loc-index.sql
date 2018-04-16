@@ -1,6 +1,17 @@
 -- Index MARC fields
 CREATE INDEX loc_marc_field_rec_idx ON loc_marc_field (rec_id);
-ALTER TABLE loc_marc_field ADD CONSTRAINT FOREIGN KEY (rec_id) REFERENCES loc_marc_record (rec_id);
+
+-- Pull out control numbers
+CREATE MATERIALIZED VIEW loc_marc_cn
+  AS SELECT rec_id, trim(contents) AS control
+  FROM loc_marc_field
+  WHERE tag = '001';
+CREATE MATERIALIZED VIEW loc_lccn
+  AS SELECT rec_id, trim(contents) AS lccn
+  FROM loc_marc_field
+  WHERE tag = '010';
+CREATE MATERIALIZED VIEW loc_isbn
+  AS SELECT rec_id,
 
 -- Index ISBNs
 CREATE MATERIALIZED VIEW loc_isbn
