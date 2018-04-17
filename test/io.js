@@ -113,4 +113,13 @@ describe('decodeLines()', () => {
     lines.write(b(''));
     lines.end();
   });
+  
+  it('should handle some json', (done) => {
+    fromValue(b('"wumpus"\n"splintercat"\n')).pipe(io.decodeLines(JSON.parse))
+                 .pipe(makeArray((err, arr) => {
+      if (err) return done(err);
+      assert.deepEqual(arr, ['wumpus', 'splintercat']);
+      done();
+    }));
+  });
 })
