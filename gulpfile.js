@@ -11,9 +11,11 @@ const args = require('minimist')(process.argv.slice(2));
 const olimport = require('./lib/ol-import');
 const lkexport = require('./lib/lkexport');
 
-exports.importAuthors = olimport.authors;
-exports.importWorks = olimport.works;
-exports.importEditions = olimport.editions;
+const olDate = args['ol-date'] || '2017-10-01';
+
+exports.importAuthors = () => olimport.authors(olDate);
+exports.importWorks = () => olimport.works(olDate);
+exports.importEditions = () => olimport.editions(olDate);
 
 exports.importOpenLib = gulp.parallel(
   exports.importAuthors,
