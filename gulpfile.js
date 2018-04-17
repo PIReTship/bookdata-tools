@@ -40,21 +40,27 @@ exports.importVIAF = function() {
   return viaf.import('data/viaf-20180401-clusters-marc21.xml.gz');
 };
 
-exports.convertVIAF = function() {
-  var viaf = require('./lib/viaf-import');
-  return viaf.convert('data/viaf-20180401-clusters-marc21.xml.gz', 'data/viaf.tsv.gz');
-};
-
 exports.importLOC = function() {
   var loc = require('./lib/loc-import');
   return loc.import('data/LOC/BooksAll.*.gz');
 };
 
-function convertLOC() {
-  var loc = require('./lib/loc-import');
-  return loc.convert('data/LOC/BooksAll.*.gz', 'data/LOC.tsv.gz');
+exports.indexLOC = function() {
+  return new Promise((ok, fail) => {
+    let script = fs.createReadStream('loc-index.sql');
+    script.on('open', () => {
+      let p = cp.spawn('psql', [], {
+        stdio: [script, process.stdout, process.stderr]
+      });
+      p.on('exit', (code, sig) => {
+        if (sig) fail(new Error('psql exited with signal ' + sig));
+        else if (code) fail(new Error('psql exited with code ' + code));
+        else ok();
+      });
+      p.on('error', fail);
+    });
+  });
 };
-exports.convertLOC = convertLOC;
 
 exports.export = gulp.series(
   function mkdir(cb) {
