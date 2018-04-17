@@ -61,9 +61,9 @@ CREATE INDEX loc_book_lccn_idx ON loc_book (lccn);
 ANALYZE loc_book;
 
 -- Index ISBNs
--- CREATE MATERIALIZED VIEW loc_isbn
---   AS SELECT rec_id, substring(contents from '^\s*([0-9A-Z]*)') AS isbn
---   FROM loc_marc_field
---   WHERE tag = '020';
--- CREATE INDEX loc_isbn_rec_idx ON loc_isbn (rec_id);
--- CREATE INDEX loc_isbn_isbn_idx ON loc_isbn (isbn);
+CREATE MATERIALIZED VIEW loc_isbn
+  AS SELECT rec_id, replace(substring(contents from '^\s*(?:ISBN:?\s*)?([0-9A-Z-]*)'), '-', '') AS isbn
+  FROM loc_book JOIN loc_marc_field USING (rec_id)
+  WHERE tag = '020' AND sf_code = 'a' AND contents ~ '^\s*(?:ISBN:?\s*)?([0-9A-Z-]*)';
+CREATE INDEX loc_isbn_rec_idx ON loc_isbn (rec_id);
+CREATE INDEX loc_isbn_isbn_idx ON loc_isbn (isbn);
