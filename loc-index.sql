@@ -6,15 +6,21 @@ CREATE MATERIALIZED VIEW loc_marc_cn
   AS SELECT rec_id, trim(contents) AS control
   FROM loc_marc_field
   WHERE tag = '001';
+CREATE INDEX loc_marc_cn_rec_idx ON loc_marc_cn (rec_id);
 CREATE MATERIALIZED VIEW loc_lccn
   AS SELECT rec_id, trim(contents) AS lccn
   FROM loc_marc_field
   WHERE tag = '010';
-CREATE MATERIALIZED VIEW loc_007_cat
+CREATE INDEX loc_lccn_rec_idx ON loc_lccn (rec_id);
+CREATE VIEW loc_leader
+  AS SELECT rec_id, contents AS leader
+  FROM loc_marc_field
+  WHERE tag = 'LDR';
+CREATE VIEW loc_007_cat
   AS SELECT rec_id, LEFT(contents, 1) AS cat_type
   FROM loc_marc_field
   WHERE tag = '007';
-CREATE MATERIALIZED VIEW loc_006_form
+CREATE VIEW loc_006_form
   AS SELECT rec_id, LEFT(contents, 1) AS form
   FROM loc_marc_field
   WHERE tag = '006';
