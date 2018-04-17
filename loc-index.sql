@@ -1,5 +1,5 @@
 -- Index MARC fields
-CREATE INDEX loc_marc_field_rec_idx ON loc_marc_field (rec_id);
+CREATE INDEX loc_marc_field_rec_idx ON loc_marc_field (rec_id);;
 
 -- Pull out control numbers
 CREATE MATERIALIZED VIEW loc_marc_cn
@@ -7,11 +7,13 @@ CREATE MATERIALIZED VIEW loc_marc_cn
   FROM loc_marc_field
   WHERE tag = '001';
 CREATE INDEX loc_marc_cn_rec_idx ON loc_marc_cn (rec_id);
+ANALYZE loc_marc_cn;
 CREATE MATERIALIZED VIEW loc_lccn
   AS SELECT rec_id, trim(contents) AS lccn
   FROM loc_marc_field
   WHERE tag = '010';
 CREATE INDEX loc_lccn_rec_idx ON loc_lccn (rec_id);
+ANALYZE loc_lccn;
 CREATE VIEW loc_leader
   AS SELECT rec_id, contents AS leader
   FROM loc_marc_field
@@ -24,6 +26,39 @@ CREATE VIEW loc_006_form
   AS SELECT rec_id, LEFT(contents, 1) AS form
   FROM loc_marc_field
   WHERE tag = '006';
+CREATE VIEW loc_record_codes
+  AS SELECT rec_id,
+       SUBSTR(contents, 6, 1) AS status,
+       SUBSTR(contents, 7, 1) AS rec_type,
+       substr(CONTENTS, 8, 1) AS bib_level
+  FROM loc_marc_field WHERE tag = 'LDR';
+CREATE VIEW loc_gov_type
+  AS SELECT rec_id, SUBSTR(pd.contents, 29, 1) AS gd_type
+     FROM loc_record_codes
+       LEFT JOIN (SELECT rec_id, contents FROM loc_marc_field WHERE tag = '008') pd USING (rec_id)
+     WHERE rec_type IN ('a', 't');
+
+CREATE MATERIALIZED VIEW loc_record_info
+  AS SELECT rec_id, control AS marc_cn, lccn, status, rec_type, bib_level
+  FROM loc_marc_cn
+  LEFT JOIN loc_lccn USING (rec_id)
+  JOIN loc_record_codes lrc USING (rec_id);
+CREATE INDEX loc_record_rec_idx ON loc_record_info (rec_id);
+CREATE INDEX loc_record_control_idx ON loc_record_info (marc_cn);
+CREATE INDEX loc_record_lccn_idx ON loc_record_info (lccn);
+ANALYZE loc_record_info;
+
+-- A book is any text (MARC type a or t) that is not coded as a government document
+CREATE MATERIALIZED VIEW loc_book
+  AS SELECT rec_id, marc_cn, lccn, status, rec_type, bib_level
+  FROM loc_record_info
+  LEFT JOIN (SELECT rec_id, contents FROM loc_marc_field WHERE tag = '008') pd USING (rec_id)
+  WHERE rec_type IN ('a', 't')
+  AND (pd.contents IS NULL OR SUBSTRING(pd.contents, 29, 1) IN ('|', ' '));
+CREATE INDEX loc_book_rec_idx ON loc_book (rec_id);
+CREATE INDEX loc_book_control_idx ON loc_book (marc_cn);
+CREATE INDEX loc_book_lccn_idx ON loc_book (lccn);
+ANALYZE loc_book;
 
 -- Index ISBNs
 -- CREATE MATERIALIZED VIEW loc_isbn
