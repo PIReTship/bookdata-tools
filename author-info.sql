@@ -28,6 +28,15 @@ CREATE AGGREGATE resolve_gender(gender VARCHAR) (
   INITCOND = 'unknown'
 );
 
+DROP MATERIALIZED VIEW IF EXISTS loc_author_resolution;
+CREATE MATERIALIZED VIEW loc_author_resolution
+  AS SELECT ln.rec_id, ag.gender AS gender
+     FROM loc_book JOIN loc_author_name ln USING (rec_id)
+       LEFT JOIN (SELECT rec_id, resolve_gender(gender) AS gender
+                  FROM viaf_author_name vn JOIN viaf_author_gender vg USING (rec_id)
+                  GROUP BY rec_id) ag USING (rec_id);
+CREATE INDEX loc_author_resolution_rec_idx ON loc_author_resolution (rec_id);
+
 DROP MATERIALIZED VIEW IF EXISTS author_resolution_summary;
 CREATE MATERIALIZED VIEW author_resolution_summary AS
 WITH res_stats AS (SELECT author_id, author_name,

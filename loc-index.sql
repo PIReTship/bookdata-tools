@@ -61,12 +61,30 @@ CREATE INDEX loc_book_lccn_idx ON loc_book (lccn);
 ANALYZE loc_book;
 
 -- Index ISBNs
+DROP MATERIALIZED VIEW IF EXISTS loc_isbn;
 CREATE MATERIALIZED VIEW loc_isbn
-  AS SELECT rec_id, replace(substring(contents from '^\s*(?:ISBN:?\s*)?([0-9A-Z-]*)'), '-', '') AS isbn
+  AS SELECT rec_id, replace(substring(contents from '^\s*(?:ISBN:?\s*)?([0-9X-]+)'), '-', '') AS isbn
   FROM loc_book JOIN loc_marc_field USING (rec_id)
-  WHERE tag = '020' AND sf_code = 'a' AND contents ~ '^\s*(?:ISBN:?\s*)?([0-9A-Z-]*)';
+  WHERE tag = '020' AND sf_code = 'a' AND contents ~ '^\s*(?:ISBN:?\s*)?([0-9X-]+)';
 CREATE INDEX loc_isbn_rec_idx ON loc_isbn (rec_id);
 CREATE INDEX loc_isbn_isbn_idx ON loc_isbn (isbn);
+
+-- Construct ISBN peers
+DROP MATERIALIZED VIEW IF EXISTS loc_isbn_peer;
+CREATE MATERIALIZED VIEW loc_isbn_peer
+  AS WITH RECURSIVE
+      peer (isbn1, isbn2) AS (SELECT li1.isbn, li2.isbn
+                              FROM loc_isbn li1
+                                JOIN loc_isbn li2 USING (rec_id)
+                              WHERE li1.isbn != li2.isbn
+                              UNION DISTINCT
+                              SELECT p.isbn1, li2.isbn
+                              FROM peer p
+                                JOIN loc_isbn li1 ON (p.isbn1 = li1.isbn)
+                                JOIN loc_isbn li2 USING (rec_id)
+                              WHERE li1.isbn != li2.isbn)
+  SELECT isbn1, isbn2 FROM peer;
+CREATE INDEX loc_isbn_peer_i1_idx ON loc_isbn_peer (isbn1);
 
 -- Extract authors
 CREATE MATERIALIZED VIEW loc_author_name
