@@ -67,3 +67,11 @@ CREATE MATERIALIZED VIEW loc_isbn
   WHERE tag = '020' AND sf_code = 'a' AND contents ~ '^\s*(?:ISBN:?\s*)?([0-9A-Z-]*)';
 CREATE INDEX loc_isbn_rec_idx ON loc_isbn (rec_id);
 CREATE INDEX loc_isbn_isbn_idx ON loc_isbn (isbn);
+
+-- Extract authors
+CREATE MATERIALIZED VIEW loc_author_name
+  AS SELECT rec_id, regexp_replace(contents, '\W+$', '') AS name
+  FROM loc_marc_field
+  WHERE tag = '100' AND sf_code = 'a';
+CREATE INDEX loc_author_name_rec_idx ON loc_author_name (rec_id);
+CREATE INDEX loc_author_name_name_idx ON loc_author_name (name);
