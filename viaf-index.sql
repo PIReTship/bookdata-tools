@@ -1,7 +1,7 @@
 CREATE INDEX viaf_marc_field_rec_idx ON viaf_marc_field (rec_id);
 
 CREATE MATERIALIZED VIEW viaf_author_name
-  AS SELECT rec_id, contents AS name
+  AS SELECT rec_id, regexp_replace(contents, '\W+$', '') AS name
   FROM viaf_marc_field
   WHERE TAG = '700' AND sf_code = 'a';
 CREATE INDEX viaf_author_rec_idx ON viaf_author_name (rec_id);
