@@ -9,9 +9,9 @@ CREATE MATERIALIZED VIEW loc_marc_cn
 CREATE INDEX loc_marc_cn_rec_idx ON loc_marc_cn (rec_id);
 ANALYZE loc_marc_cn;
 CREATE MATERIALIZED VIEW loc_lccn
-  AS SELECT rec_id, trim(contents) AS lccn
+  AS SELECT DISTINCT rec_id, trim(contents) AS lccn
   FROM loc_marc_field
-  WHERE tag = '010';
+  WHERE tag = '010' AND sf_code = 'a';
 CREATE INDEX loc_lccn_rec_idx ON loc_lccn (rec_id);
 ANALYZE loc_lccn;
 CREATE VIEW loc_leader
