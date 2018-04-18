@@ -76,7 +76,6 @@ CREATE MATERIALIZED VIEW loc_isbn_peer
       peer (isbn1, isbn2) AS (SELECT li1.isbn, li2.isbn
                               FROM loc_isbn li1
                                 JOIN loc_isbn li2 USING (rec_id)
-                              WHERE li1.isbn != li2.isbn
                               UNION DISTINCT
                               SELECT p.isbn1, li2.isbn
                               FROM peer p
