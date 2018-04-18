@@ -84,6 +84,18 @@ CREATE MATERIALIZED VIEW loc_isbn_peer
                               WHERE li1.isbn != li2.isbn)
   SELECT isbn1, isbn2 FROM peer;
 CREATE INDEX loc_isbn_peer_i1_idx ON loc_isbn_peer (isbn1);
+CREATE INDEX loc_isbn_peer_i2_idx ON loc_isbn_peer (isbn2);
+
+-- Now we need to identify a book ID for each ISBN cluster.
+-- Our peer graph is not quite symmetrical; however, if we look up an isbn1, we find its entire peer group in isbn2
+-- Approach: make a number for each ISBN, join to peers. Group by isbn2 and take the minimum book ID for each ISBN
+DROP MATERIALIZED VIEW IF EXISTS loc_isbn_bookid;
+CREATE MATERIALIZED VIEW loc_isbn_bookid
+  AS SELECT isbn2 AS isbn, MIN(rec_id) AS book_id
+     FROM loc_isbn JOIN loc_isbn_peer ON (isbn = isbn2)
+     GROUP BY isbn2;
+CREATE INDEX loc_isbn_bookid_idx ON loc_isbn_bookid (book_id);
+CREATE INDEX loc_isbn_bookid_isbn_idx ON loc_isbn_bookid (isbn);
 
 -- Extract authors
 CREATE MATERIALIZED VIEW loc_author_name
