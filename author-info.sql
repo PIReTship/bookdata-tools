@@ -17,8 +17,8 @@ CREATE AGGREGATE resolve_gender(gender VARCHAR) (
   INITCOND = 'unknown'
 );
 
-DROP MATERIALIZED VIEW IF EXISTS loc_book_author_gender;
-CREATE MATERIALIZED VIEW loc_book_author_gender
+DROP TABLE IF EXISTS loc_book_author_gender;
+CREATE TABLE loc_book_author_gender
   AS SELECT book_id,
        case when count(an.name) = 0 then 'no-loc-author'
          when count(vn.rec_id) = 0 then 'no-viaf-author'
@@ -31,4 +31,4 @@ CREATE MATERIALIZED VIEW loc_book_author_gender
        LEFT JOIN viaf_author_name vn USING (name)
        LEFT JOIN viaf_author_gender vg ON (vn.rec_id = vg.rec_id)
      GROUP BY book_id;
-CREATE INDEX loc_book_author_gender_book_idx ON loc_book_author_gender (book_id);
+CREATE UNIQUE INDEX loc_book_author_gender_book_idx ON loc_book_author_gender (book_id);

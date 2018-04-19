@@ -1,6 +1,6 @@
 CREATE INDEX viaf_marc_field_rec_idx ON viaf_marc_field (rec_id);
 
-DROP TABLE IF EXISTS viaf_author_name;
+DROP TABLE IF EXISTS viaf_author_name CASCADE;
 CREATE TABLE viaf_author_name (
   rec_id INTEGER NOT NULL,
   ind VARCHAR(1) NOT NULL,
