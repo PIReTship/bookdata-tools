@@ -8,32 +8,20 @@ CREATE TABLE az_users (
   user_key VARCHAR NOT NULL,
   UNIQUE (user_key)
 );
-INSERT INTO az_users (user_key) SELECT DISTINCT user_key FROM az_ratings;
+INSERT INTO az_users (user_key) SELECT DISTINCT user_key FROM az_ratings
 ANALYZE az_users;
 
-INSERT INTO isbn_info (isbn, book_id)
-  SELECT asin, nextval('synthetic_book_id_seq') * 3
-  FROM az_ratings
-    LEFT JOIN isbn_info ON (asin = isbn)
-  WHERE book_id IS NULL;
-REFRESH MATERIALIZED VIEW isbn_book_id;
-ANALYZE isbn_info;
-ANALYZE isbn_book_id;
-REFRESH MATERIALIZED VIEW ol_book_first_author;
-ANALYZE ol_book_first_author;
+INSERT INTO isbn_bookid (isbn, book_id)
+    WITH bad_isbns AS (SELECT DISTINCT asin
+                       FROM az_ratings br
+                       WHERE NOT EXISTS (SELECT * FROM isbn_bookid ib WHERE ib.isbn = br.asin))
+    SELECT asin, nextval('synthetic_book_id') FROM bad_isbns;
+ANALYZE isbn_bookid;
 
-DROP VIEW IF EXISTS az_book_info;
-CREATE VIEW az_book_info
-  AS SELECT DISTINCT ib.book_id AS book_id, asin, author_id, author_name, author_gender
-     FROM az_ratings JOIN isbn_book_id ib ON (asin = isbn)
-       LEFT OUTER JOIN ol_book_first_author USING (book_id)
-       LEFT OUTER JOIN ol_author USING (author_id)
-       LEFT OUTER JOIN author_resolution USING (author_id);
-
-DROP VIEW IF EXISTS az_export_ratings;
-CREATE VIEW az_export_ratings
+DROP VIEW IF EXISTS az_all_ratings;
+CREATE VIEW az_all_ratings
   AS SELECT user_id, book_id, MEDIAN(rating) AS rating, COUNT(rating) AS nratings
      FROM az_ratings
        JOIN az_users USING (user_key)
-       JOIN isbn_book_id ON (asin = isbn)
+       JOIN isbn_bookid ON (asin = isbn)
      GROUP BY user_id, book_id;

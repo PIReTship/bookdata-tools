@@ -104,3 +104,14 @@ CREATE MATERIALIZED VIEW loc_author_name
   WHERE tag = '100' AND sf_code = 'a';
 CREATE INDEX loc_author_name_rec_idx ON loc_author_name (rec_id);
 CREATE INDEX loc_author_name_name_idx ON loc_author_name (name);
+
+-- Set up Book ID tables
+DROP TABLE IF EXISTS isbn_bookid;
+CREATE TABLE isbn_bookid (
+  isbn VARCHAR PRIMARY KEY,
+  book_id INTEGER NOT NULL
+);
+CREATE INDEX isbn_bookid_idx ON isbn_bookid (book_id);
+INSERT INTO isbn_bookid SELECT isbn, book_id FROM loc_isbn_bookid;
+DROP SEQUENCe IF EXISTS synthetic_book_id;
+CREATE SEQUENCE synthetic_book_id INCREMENT BY -1 START WITH -1;
