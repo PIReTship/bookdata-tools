@@ -12,6 +12,10 @@ INSERT INTO viaf_author_name
   WHERE TAG = '700' AND sf_code = 'a';
 CREATE INDEX viaf_author_rec_idx ON viaf_author_name (rec_id);
 CREATE INDEX viaf_author_name_idx ON viaf_author_name (name);
+INSERT INTO viaf_author_name
+  SELECT rec_id, 'S', regexp_replace(name, '^(.*), (.*)', '\2 \1')
+  FROM viaf_author_name
+  WHERE ind = '1';
 
 CREATE MATERIALIZED VIEW viaf_author_gender
   AS SELECT rec_id, contents AS gender
