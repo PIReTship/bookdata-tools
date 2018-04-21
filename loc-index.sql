@@ -61,16 +61,16 @@ CREATE INDEX loc_book_lccn_idx ON loc_book (lccn);
 ANALYZE loc_book;
 
 -- Index ISBNs
-DROP MATERIALIZED VIEW IF EXISTS loc_isbn;
+DROP MATERIALIZED VIEW IF EXISTS loc_isbn CASCADE;
 CREATE MATERIALIZED VIEW loc_isbn
-  AS SELECT rec_id, replace(substring(contents from '^\s*(?:ISBN:?\s*)?([0-9X-]+)'), '-', '') AS isbn
+  AS SELECT rec_id, upper(replace(substring(contents from '^\s*(?:(?:ISBN)?[:;z]?\s*)?([0-9Xx-]+)'), '-', '')) AS isbn
   FROM loc_book JOIN loc_marc_field USING (rec_id)
-  WHERE tag = '020' AND sf_code = 'a' AND contents ~ '^\s*(?:ISBN:?\s*)?([0-9X-]+)';
+  WHERE tag = '020' AND sf_code = 'a' AND contents ~ '^\s*(?:(?:ISBN)?[:;z]?\s*)?([0-9Xx-]+)';
 CREATE INDEX loc_isbn_rec_idx ON loc_isbn (rec_id);
 CREATE INDEX loc_isbn_isbn_idx ON loc_isbn (isbn);
 
 -- Construct ISBN peers
-DROP MATERIALIZED VIEW IF EXISTS loc_isbn_peer;
+DROP MATERIALIZED VIEW IF EXISTS loc_isbn_peer CASCADE;
 CREATE MATERIALIZED VIEW loc_isbn_peer
   AS WITH RECURSIVE
       peer (isbn1, isbn2) AS (SELECT li1.isbn, li2.isbn
@@ -86,17 +86,6 @@ CREATE MATERIALIZED VIEW loc_isbn_peer
 CREATE INDEX loc_isbn_peer_i1_idx ON loc_isbn_peer (isbn1);
 CREATE INDEX loc_isbn_peer_i2_idx ON loc_isbn_peer (isbn2);
 
--- Now we need to identify a book ID for each ISBN cluster.
--- Our peer graph is not quite symmetrical; however, if we look up an isbn1, we find its entire peer group in isbn2
--- Approach: make a number for each ISBN, join to peers. Group by isbn2 and take the minimum book ID for each ISBN
-DROP MATERIALIZED VIEW IF EXISTS loc_isbn_bookid;
-CREATE MATERIALIZED VIEW loc_isbn_bookid
-  AS SELECT isbn2 AS isbn, MIN(rec_id) AS book_id
-     FROM loc_isbn JOIN loc_isbn_peer ON (isbn = isbn2)
-     GROUP BY isbn2;
-CREATE INDEX loc_isbn_bookid_idx ON loc_isbn_bookid (book_id);
-CREATE INDEX loc_isbn_bookid_isbn_idx ON loc_isbn_bookid (isbn);
-
 -- Extract authors
 CREATE MATERIALIZED VIEW loc_author_name
   AS SELECT rec_id, regexp_replace(contents, '\W+$', '') AS name
@@ -106,12 +95,15 @@ CREATE INDEX loc_author_name_rec_idx ON loc_author_name (rec_id);
 CREATE INDEX loc_author_name_name_idx ON loc_author_name (name);
 
 -- Set up Book ID tables
-DROP TABLE IF EXISTS isbn_bookid;
+DROP TABLE IF EXISTS isbn_bookid CASCADE;
 CREATE TABLE isbn_bookid (
   isbn VARCHAR PRIMARY KEY,
   book_id INTEGER NOT NULL
 );
+INSERT INTO isbn_bookid
+  SELECT isbn2 AS isbn, MIN(rec_id) AS book_id
+  FROM loc_isbn JOIN loc_isbn_peer ON (isbn = isbn2)
+  GROUP BY isbn2;
 CREATE INDEX isbn_bookid_idx ON isbn_bookid (book_id);
-INSERT INTO isbn_bookid SELECT isbn, book_id FROM loc_isbn_bookid;
-DROP SEQUENCe IF EXISTS synthetic_book_id;
+DROP SEQUENCE IF EXISTS synthetic_book_id;
 CREATE SEQUENCE synthetic_book_id INCREMENT BY -1 START WITH -1;
