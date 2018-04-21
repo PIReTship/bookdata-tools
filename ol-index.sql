@@ -89,10 +89,10 @@ CREATE INDEX ol_edition_meta_key_idx ON ol_edition_meta (edition_key);
 -- Extract ISBNs
 DROP TABLE IF EXISTS ol_edition_isbn;
 CREATE TABLE ol_edition_isbn
-AS SELECT edition_id, jsonb_array_elements_text(edition_data->'isbn_10') AS isbn
+AS SELECT edition_id, upper(jsonb_array_elements_text(edition_data->'isbn_10')) AS isbn
    FROM ol_edition
    UNION
-   SELECT edition_id, jsonb_array_elements_text(edition_data->'isbn_13') AS isbn
+   SELECT edition_id, upper(jsonb_array_elements_text(edition_data->'isbn_13')) AS isbn
    FROM ol_edition;
 
 CREATE INDEX edition_isbn_ed_idx ON ol_edition_isbn (edition_id);
