@@ -99,39 +99,33 @@ CREATE INDEX edition_isbn_ed_idx ON ol_edition_isbn (edition_id);
 CREATE INDEX edition_isbn_idx ON ol_edition_isbn (isbn);
 ALTER TABLE ol_edition_isbn ADD CONSTRAINT edition_work_ed_fk FOREIGN KEY (edition_id) REFERENCES ol_edition;
 
--- Make ID mapping
--- ID mod 3 is type: 0 synthetic, 1 work id, 2 edition id
-DROP TABLE IF EXISTS ol_isbn_info;
-CREATE TABLE ol_isbn_info
-  AS SELECT isbn, edition_id, work_id, COALESCE(work_id * 3 - 2, edition_id * 3 - 1) AS book_id
-  FROM ol_edition_isbn
-  LEFT OUTER JOIN (SELECT edition_id, MIN(work_id) AS work_id
-                   FROM ol_edition_work
-                   GROUP BY edition_id) AS ew USING (edition_id);
+DROP TABLE IF EXISTS ol_isbn_links;
+CREATE TABLE ol_isbn_links (
+  isbn VARCHAR NOT NULL,
+  edition_id INTEGER NOT NULL,
+  work_id INTEGER NULL,
+  book_code INTEGER NOT NULL
+);
+INSERT INTO ol_isbn_links
+  SELECT isbn, edition_id, work_id,
+       COALESCE(100000000 + work_id, 200000000 + edition_id)
+    FROM ol_edition_isbn LEFT JOIN ol_edition_work USING (edition_id);
+CREATE INDEX ol_isbn_link_ed_idx ON ol_isbn_links (edition_id);
+CREATE INDEX ol_isbn_link_wk_idx ON ol_isbn_links (work_id);
+CREATE INDEX ol_isbn_link_bc_idx ON ol_isbn_links (book_code);
+CREATE INDEX ol_isbn_link_isbn_idx ON ol_isbn_links (isbn);
+ALTER TABLE ol_isbn_links ADD CONSTRAINT ol_link_work_fk FOREIGN KEY (work_id) REFERENCES ol_work;
+ALTER TABLE ol_isbn_links ADD CONSTRAINT ol_link_ed_fk FOREIGN KEY (edition_id) REFERENCES ol_edition;
 
-CREATE INDEX ol_isbn_info_isbn_idx ON ol_isbn_info (isbn);
-CREATE INDEX ol_isbn_info_edition_idx ON ol_isbn_info (edition_id);
-CREATE INDEX ol_isbn_info_work_idx ON ol_isbn_info (work_id);
-CREATE INDEX ol_isbn_info_book_idx ON ol_isbn_info (book_id);
-
-CREATE SEQUENCE ol_synthetic_book_id_seq;
-
-DROP MATERIALIZED VIEW IF EXISTS ol_isbn_book_id;
-CREATE MATERIALIZED VIEW ol_isbn_book_id
-  AS SELECT isbn, MIN(book_id) AS book_id FROM isbn_info GROUP BY isbn;
-
-CREATE INDEX ol_isbn_book_id_isbn_idx ON ol_isbn_book_id (isbn);
-CREATE INDEX ol_isbn_book_id_idx ON ol_isbn_book_id (book_id);
-
-DROP MATERIALIZED VIEW IF EXISTS ol_book_first_author CASCADE;
-CREATE MATERIALIZED VIEW ol_book_first_author
-AS SELECT DISTINCT book_id, first_value(author_id) OVER (PARTITION BY book_id ORDER BY edition_desc_length) AS author_id
-   FROM ol_isbn_book_id
-     JOIN ol_edition_isbn USING (isbn)
-     JOIN ol_edition_first_author USING (edition_id)
-     JOIN ol_edition_meta USING (edition_id)
-   WHERE author_id IS NOT NULL;
-CREATE INDEX book_first_author_book_idx ON ol_book_first_author (book_id);
+-- DROP MATERIALIZED VIEW IF EXISTS ol_book_first_author CASCADE;
+-- CREATE MATERIALIZED VIEW ol_book_first_author
+-- AS SELECT DISTINCT book_id, first_value(author_id) OVER (PARTITION BY book_id ORDER BY edition_desc_length) AS author_id
+--    FROM ol_isbn_book_id
+--      JOIN ol_edition_isbn USING (isbn)
+--      JOIN ol_edition_first_author USING (edition_id)
+--      JOIN ol_edition_meta USING (edition_id)
+--    WHERE author_id IS NOT NULL;
+-- CREATE INDEX book_first_author_book_idx ON ol_book_first_author (book_id);
 
 DROP MATERIALIZED VIEW IF EXISTS ol_work_subject CASCADE;
 CREATE MATERIALIZED VIEW ol_work_subject
