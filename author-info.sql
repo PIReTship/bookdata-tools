@@ -25,7 +25,7 @@ CREATE TABLE loc_book_author_gender
          when count(vg.gender) = 0 then 'no-gender'
          else resolve_gender(vg.gender)
        end AS gender
-     FROM loc_isbn_bookid
+     FROM loc_isbn_book_id
        JOIN loc_isbn USING (isbn)
        LEFT JOIN loc_author_name an USING (rec_id)
        LEFT JOIN viaf_author_name vn USING (name)

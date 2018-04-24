@@ -95,15 +95,15 @@ CREATE INDEX loc_author_name_rec_idx ON loc_author_name (rec_id);
 CREATE INDEX loc_author_name_name_idx ON loc_author_name (name);
 
 -- Set up Book ID tables
-DROP TABLE IF EXISTS isbn_bookid CASCADE;
-CREATE TABLE isbn_bookid (
+DROP TABLE IF EXISTS loc_isbn_book_id CASCADE;
+CREATE TABLE loc_isbn_book_id (
   isbn VARCHAR PRIMARY KEY,
   book_id INTEGER NOT NULL
 );
-INSERT INTO isbn_bookid
+INSERT INTO loc_isbn_book_id
   SELECT isbn2 AS isbn, MIN(rec_id) AS book_id
   FROM loc_isbn JOIN loc_isbn_peer ON (isbn = isbn2)
   GROUP BY isbn2;
-CREATE INDEX isbn_bookid_idx ON isbn_bookid (book_id);
+CREATE INDEX loc_isbn_book_id_idx ON loc_isbn_book_id (book_id);
 DROP SEQUENCE IF EXISTS synthetic_book_id;
 CREATE SEQUENCE synthetic_book_id INCREMENT BY -1 START WITH -1;

@@ -99,23 +99,32 @@ CREATE INDEX edition_isbn_ed_idx ON ol_edition_isbn (edition_id);
 CREATE INDEX edition_isbn_idx ON ol_edition_isbn (isbn);
 ALTER TABLE ol_edition_isbn ADD CONSTRAINT edition_work_ed_fk FOREIGN KEY (edition_id) REFERENCES ol_edition;
 
-DROP TABLE IF EXISTS ol_isbn_links;
-CREATE TABLE ol_isbn_links (
-  isbn VARCHAR NOT NULL,
+DROP TABLE IF EXISTS ol_isbn_id CASCADE;
+CREATE TABLE ol_isbn_id (
+  isbn_id SERIAL PRIMARY KEY,
+  isbn VARCHAR NOT NULL
+);
+INSERT INTO ol_isbn_id (isbn) SELECT DISTINCT isbn FROM ol_edition_isbn;
+CREATE INDEX ol_isbn_id_isbn_uq ON ol_isbn_id USING HASH (isbn);
+ANALYZE ol_isbn_id;
+
+DROP TABLE IF EXISTS ol_isbn_link;
+CREATE TABLE ol_isbn_link (
+  isbn_id INTEGER NOT NULL,
   edition_id INTEGER NOT NULL,
   work_id INTEGER NULL,
   book_code INTEGER NOT NULL
 );
-INSERT INTO ol_isbn_links
-  SELECT isbn, edition_id, work_id,
+INSERT INTO ol_isbn_link
+  SELECT isbn_id, edition_id, work_id,
        COALESCE(100000000 + work_id, 200000000 + edition_id)
-    FROM ol_edition_isbn LEFT JOIN ol_edition_work USING (edition_id);
-CREATE INDEX ol_isbn_link_ed_idx ON ol_isbn_links (edition_id);
-CREATE INDEX ol_isbn_link_wk_idx ON ol_isbn_links (work_id);
-CREATE INDEX ol_isbn_link_bc_idx ON ol_isbn_links (book_code);
-CREATE INDEX ol_isbn_link_isbn_idx ON ol_isbn_links (isbn);
-ALTER TABLE ol_isbn_links ADD CONSTRAINT ol_link_work_fk FOREIGN KEY (work_id) REFERENCES ol_work;
-ALTER TABLE ol_isbn_links ADD CONSTRAINT ol_link_ed_fk FOREIGN KEY (edition_id) REFERENCES ol_edition;
+    FROM ol_isbn_id JOIN ol_edition_isbn USING (isbn) LEFT JOIN ol_edition_work USING (edition_id);
+CREATE INDEX ol_isbn_link2_ed_idx ON ol_isbn_link (edition_id);
+CREATE INDEX ol_isbn_link2_wk_idx ON ol_isbn_link (work_id);
+CREATE INDEX ol_isbn_link2_bc_idx ON ol_isbn_link (book_code);
+CREATE INDEX ol_isbn_link2_isbn_idx ON ol_isbn_link (isbn_id);
+ALTER TABLE ol_isbn_link ADD CONSTRAINT ol_isbn_link_work_fk FOREIGN KEY (work_id) REFERENCES ol_work;
+ALTER TABLE ol_isbn_link ADD CONSTRAINT ol_isbn_link_ed_fk FOREIGN KEY (edition_id) REFERENCES ol_edition;
 
 -- DROP MATERIALIZED VIEW IF EXISTS ol_book_first_author CASCADE;
 -- CREATE MATERIALIZED VIEW ol_book_first_author
