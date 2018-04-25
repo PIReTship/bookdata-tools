@@ -5,25 +5,48 @@ using namespace Rcpp;
 #include <algorithm>
 #include <unordered_map>
 #include <iostream>
+#include <chrono>
+
+typedef std::chrono::steady_clock timer;
+
+std::string time_since(const timer::time_point& start) {
+    timer::time_point now = timer::now();
+    timer::duration elapsed = now - start;
+    double eticks = elapsed.count();
+    eticks *= timer::duration::period::num;
+    eticks /= timer::duration::period::den;
+    
+    char array[64];
+    std::snprintf(array, 64, "[%8.2f] ", eticks);
+    return std::string(array);
+}
 
 // [[Rcpp::export]]
-IntegerVector compute_clusters(IntegerVector isbns, IntegerVector init, IntegerVector lefts, IntegerVector rights)
+DataFrame compute_clusters(DataFrame init_clusters, DataFrame edges)
 {
+    IntegerVector isbns = init_clusters["isbn"];
+    IntegerVector init = init_clusters["cluster"];
+    IntegerVector lefts = edges["left_isbn"];
+    IntegerVector rights = edges["right_isbn"];
+    
     std::unordered_map<int, int> cluster_map;
     int nisbns = isbns.length();
     int nedges = lefts.length();
+    Function message("message");
 
     for (int i = 0; i < nisbns; i++) {
         int isbn = isbns[i];
         cluster_map[isbn] = init[i];
     }
 
+    auto start = timer::now();
     int nchanged = nedges;
     int iter = 0;
     while (nchanged > 0) {
         nchanged = 0;
         iter += 1;
-        std::cerr <<": starting iteration " <<iter <<" at " <<std::endl;
+        message(time_since(start), "starting iteration ", iter);
+        // Rcpp::Rcerr <<": starting iteration " <<iter <<" at " <<std::endl;
         for (int i = 0; i < nedges; i++) {
             int left = lefts[i];
             int right = rights[i];
@@ -35,12 +58,13 @@ IntegerVector compute_clusters(IntegerVector isbns, IntegerVector init, IntegerV
             }
         }
 
-        std::cerr <<"iteration " <<iter <<" changed " <<nchanged <<" memberships "<<std::endl;
+        message(time_since(start), "iteration ", iter, " changed ", nchanged, " memberships");
+        // Rcpp::Rcerr <<"iteration " <<iter <<" changed " <<nchanged <<" memberships "<<std::endl;
     }
 
     IntegerVector out(nisbns);
     for (int i = 0; i < nisbns; i++) {
         out[i] = cluster_map[isbns[i]];
     }
-    return out;
+    return DataFrame::create(Named("isbn") = isbns, Named("cluster") = out);
 }
