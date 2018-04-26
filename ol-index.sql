@@ -104,7 +104,10 @@ CREATE TABLE ol_isbn_id (
   isbn_id SERIAL PRIMARY KEY,
   isbn VARCHAR NOT NULL
 );
-INSERT INTO ol_isbn_id (isbn) SELECT DISTINCT isbn FROM ol_edition_isbn;
+INSERT INTO ol_isbn_id (isbn) 
+SELECT DISTINCT regexp_replace(isbn, '[- ]', '')
+FROM ol_edition_isbn
+WHERE char_length(regexp_replace(isbn, '[- ]', '')) IN (10, 13);
 CREATE INDEX ol_isbn_id_isbn_uq ON ol_isbn_id USING HASH (isbn);
 ANALYZE ol_isbn_id;
 

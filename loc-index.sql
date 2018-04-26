@@ -63,28 +63,16 @@ ANALYZE loc_book;
 -- Index ISBNs
 DROP MATERIALIZED VIEW IF EXISTS loc_isbn CASCADE;
 CREATE MATERIALIZED VIEW loc_isbn
-  AS SELECT rec_id, upper(replace(substring(contents from '^\s*(?:(?:ISBN)?[:;z]?\s*)?([0-9Xx-]+)'), '-', '')) AS isbn
-  FROM loc_book JOIN loc_marc_field USING (rec_id)
-  WHERE tag = '020' AND sf_code = 'a' AND contents ~ '^\s*(?:(?:ISBN)?[:;z]?\s*)?([0-9Xx-]+)';
+  AS 
+  SELECT rec_id, isbn
+  FROM loc_book
+  JOIN (SELECT rec_id, upper(regexp_replace(substring(contents from '^\s*(?:(?:ISBN)?[:;z]?\s*)?([0-9Xx -]+)'), '[ -]', '')) AS isbn
+        FROM loc_marc_field
+        WHERE tag = '020' AND sf_code = 'a' AND contents ~ '^\s*(?:(?:ISBN)?[:;z]?\s*)?([0-9Xx-]+)') isbns
+    USING (rec_id)
+  WHERE char_length(isbn) IN (10, 13);
 CREATE INDEX loc_isbn_rec_idx ON loc_isbn (rec_id);
 CREATE INDEX loc_isbn_isbn_idx ON loc_isbn (isbn);
-
--- Construct ISBN peers
-DROP MATERIALIZED VIEW IF EXISTS loc_isbn_peer CASCADE;
-CREATE MATERIALIZED VIEW loc_isbn_peer
-  AS WITH RECURSIVE
-      peer (isbn1, isbn2) AS (SELECT li1.isbn, li2.isbn
-                              FROM loc_isbn li1
-                                JOIN loc_isbn li2 USING (rec_id)
-                              UNION DISTINCT
-                              SELECT p.isbn1, li2.isbn
-                              FROM peer p
-                                JOIN loc_isbn li1 ON (p.isbn1 = li1.isbn)
-                                JOIN loc_isbn li2 USING (rec_id)
-                              WHERE li1.isbn != li2.isbn)
-  SELECT isbn1, isbn2 FROM peer;
-CREATE INDEX loc_isbn_peer_i1_idx ON loc_isbn_peer (isbn1);
-CREATE INDEX loc_isbn_peer_i2_idx ON loc_isbn_peer (isbn2);
 
 -- Extract authors
 CREATE MATERIALIZED VIEW loc_author_name
@@ -93,17 +81,3 @@ CREATE MATERIALIZED VIEW loc_author_name
   WHERE tag = '100' AND sf_code = 'a';
 CREATE INDEX loc_author_name_rec_idx ON loc_author_name (rec_id);
 CREATE INDEX loc_author_name_name_idx ON loc_author_name (name);
-
--- Set up Book ID tables
-DROP TABLE IF EXISTS loc_isbn_book_id CASCADE;
-CREATE TABLE loc_isbn_book_id (
-  isbn VARCHAR PRIMARY KEY,
-  book_id INTEGER NOT NULL
-);
-INSERT INTO loc_isbn_book_id
-  SELECT isbn2 AS isbn, MIN(rec_id) AS book_id
-  FROM loc_isbn JOIN loc_isbn_peer ON (isbn = isbn2)
-  GROUP BY isbn2;
-CREATE INDEX loc_isbn_book_id_idx ON loc_isbn_book_id (book_id);
-DROP SEQUENCE IF EXISTS synthetic_book_id;
-CREATE SEQUENCE synthetic_book_id INCREMENT BY -1 START WITH -1;
