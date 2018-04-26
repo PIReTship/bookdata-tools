@@ -11,17 +11,17 @@ CREATE TABLE az_users (
 INSERT INTO az_users (user_key) SELECT DISTINCT user_key FROM az_ratings
 ANALYZE az_users;
 
-INSERT INTO loc_isbn_book_id (isbn, book_id)
-    WITH bad_isbns AS (SELECT DISTINCT asin
-                       FROM az_ratings br
-                       WHERE NOT EXISTS (SELECT * FROM loc_isbn_book_id ib WHERE ib.isbn = br.asin))
-    SELECT asin, nextval('loc_synthetic_book_id') FROM bad_isbns;
-ANALYZE loc_isbn_book_id;
+INSERT INTO isbn_id (isbn)
+  SELECT DISTINCT asin
+  FROM az_ratings WHERE asin NOT IN (SELECT isbn FROM isbn_id);
+ANALYZE isbn_id;
 
 DROP VIEW IF EXISTS az_loc_ratings;
 CREATE VIEW az_loc_ratings
-  AS SELECT user_id, book_id, MEDIAN(rating) AS rating, COUNT(rating) AS nratings
+  AS SELECT user_id, COALESCE(cluster, bc_of_isbn(isbn_id)) AS book_id,
+       MEDIAN(rating) AS rating, COUNT(rating) AS nratings
      FROM az_ratings
        JOIN az_users USING (user_key)
-       JOIN loc_isbn_book_id ON (asin = isbn)
-     GROUP BY user_id, book_id;
+       JOIN isbn_id ON (isbn = asin)
+       LEFT JOIN loc_isbn_cluster USING (isbn_id)
+     GROUP BY user_id, COALESCE(cluster, bc_of_isbn(isbn_id));

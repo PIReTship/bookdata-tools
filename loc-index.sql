@@ -61,18 +61,26 @@ CREATE INDEX loc_book_lccn_idx ON loc_book (lccn);
 ANALYZE loc_book;
 
 -- Index ISBNs
-DROP MATERIALIZED VIEW IF EXISTS loc_isbn CASCADE;
-CREATE MATERIALIZED VIEW loc_isbn
-  AS 
-  SELECT rec_id, isbn
-  FROM loc_book
-  JOIN (SELECT rec_id, upper(regexp_replace(substring(contents from '^\s*(?:(?:ISBN)?[:;z]?\s*)?([0-9Xx -]+)'), '[ -]', '')) AS isbn
-        FROM loc_marc_field
-        WHERE tag = '020' AND sf_code = 'a' AND contents ~ '^\s*(?:(?:ISBN)?[:;z]?\s*)?([0-9Xx-]+)') isbns
-    USING (rec_id)
-  WHERE char_length(isbn) IN (10, 13);
-CREATE INDEX loc_isbn_rec_idx ON loc_isbn (rec_id);
-CREATE INDEX loc_isbn_isbn_idx ON loc_isbn (isbn);
+DROP MATERIALIZED VIEW IF EXISTS loc_rec_extracted_isbn;
+CREATE MATERIALIZED VIEW loc_rec_extracted_isbn AS
+  SELECT rec_id, upper(regexp_replace(substring(contents from '^\s*(?:(?:ISBN)?[:;z]?\s*)?([0-9 -]+[0-9Xx])'), '[- ]', '')) AS isbn
+  FROM loc_marc_field
+  WHERE tag = '020' AND sf_code = 'a';
+
+INSERT INTO isbn_id (isbn)
+  WITH isbns AS (SELECT DISTINCT isbn FROM loc_rec_extracted_isbn WHERE isbn IS NOT NULL AND char_length(isbn) IN (10,13))
+  SELECT isbn FROM isbns
+  WHERE isbn NOT IN (SELECT isbn FROM isbn_id);
+ANALYZE isbn_id;
+
+DROP TABLE IF EXISTS loc_rec_isbn;
+CREATE TABLE loc_rec_isbn
+  AS SELECT rec_id, isbn_id
+     FROM loc_book JOIN loc_rec_extracted_isbn USING (rec_id) JOIN isbn_id USING (isbn)
+     WHERE isbn IS NOT NULl AND char_length(isbn) IN (10,13);
+CREATE INDEX loc_rec_isbn_rec_idx ON loc_rec_isbn (rec_id);
+CREATE INDEX loc_rec_isbn_isbn_idx ON loc_rec_isbn (isbn_id);
+ANALYZE loc_rec_isbn;
 
 -- Extract authors
 CREATE MATERIALIZED VIEW loc_author_name
