@@ -86,30 +86,54 @@ AS SELECT edition_id, edition_key, length(edition_data::text) AS edition_desc_le
 CREATE INDEX ol_edition_meta_edition_idx ON ol_edition_meta (edition_id);
 CREATE INDEX ol_edition_meta_key_idx ON ol_edition_meta (edition_key);
 
--- Extract ISBNs
+-- Extract ISBNs (and ASINs)
+DROP MATERIALIZED VIEW IF EXISTS ol_edition_isbn10;
+CREATE MATERIALIZED VIEW ol_edition_isbn10
+  AS SELECT edition_id, jsonb_array_elements_text(edition_data->'isbn_10') AS isbn
+     FROM ol_edition;
+DROP MATERIALIZED VIEW IF EXISTS ol_edition_isbn13;
+CREATE MATERIALIZED VIEW ol_edition_isbn13
+  AS SELECT edition_id, jsonb_array_elements_text(edition_data->'isbn_13') AS isbn
+     FROM ol_edition;
+DROP MATERIALIZED VIEW IF EXISTS ol_edition_asin;
+CREATE MATERIALIZED VIEW ol_edition_asin
+  AS SELECT edition_id, jsonb_array_elements_text(edition_data#>'{identifiers,amazon}') AS asin
+     FROM ol_edition;
+
+-- Integrate ISBN/ASIN identifiers
 DROP TABLE IF EXISTS ol_edition_isbn;
-CREATE TABLE ol_edition_isbn
-AS SELECT edition_id, upper(jsonb_array_elements_text(edition_data->'isbn_10')) AS isbn
-   FROM ol_edition
-   UNION
-   SELECT edition_id, upper(jsonb_array_elements_text(edition_data->'isbn_13')) AS isbn
-   FROM ol_edition;
+CREATE TABLE ol_edition_isbn (
+  edition_id INTEGER NOT NULL,
+  isbn VARCHAR NOT NULL
+);
+
+INSERT INTO ol_edition_isbn
+  SELECT edition_id, isbn
+  FROM (SELECT edition_id,
+          regexp_replace(substring(upper(isbn) from '^\s*(?:(?:ISBN)?[:;z]?\s*)?([0-9 -]+[0-9X])'), '[- ]', '') AS isbn
+        FROM ol_edition_isbn10) isbns
+  WHERE isbn IS NOT NULL AND char_length(isbn) IN (10,13);
+INSERT INTO ol_edition_isbn
+  SELECT edition_id, isbn
+  FROM (SELECT edition_id,
+          regexp_replace(substring(upper(isbn) from '^\s*(?:(?:ISBN)?[:;z]?\s*)?([0-9 -]+[0-9X])'), '[- ]', '') AS isbn
+        FROM ol_edition_isbn13) isbns
+  WHERE isbn IS NOT NULL AND char_length(isbn) IN (10,13);
+-- Don't bother with this, there are only 4K ASINs in the database
+-- INSERT INTO ol_edition_isbn
+--   SELECT edition_id, regexp_replace(upper(asin), '[- ]', '')
+--   FROM ol_edition_asin
+--   WHERE regexp_replace(upper(asin), '[- ]', '') ~ '^[A-Z0-9]{10}$';
 
 CREATE INDEX edition_isbn_ed_idx ON ol_edition_isbn (edition_id);
 CREATE INDEX edition_isbn_idx ON ol_edition_isbn (isbn);
 ALTER TABLE ol_edition_isbn ADD CONSTRAINT edition_work_ed_fk FOREIGN KEY (edition_id) REFERENCES ol_edition;
+ANALYZE ol_edition_isbn;
 
-DROP TABLE IF EXISTS ol_isbn_id CASCADE;
-CREATE TABLE ol_isbn_id (
-  isbn_id SERIAL PRIMARY KEY,
-  isbn VARCHAR NOT NULL
-);
-INSERT INTO ol_isbn_id (isbn) 
-SELECT DISTINCT regexp_replace(isbn, '[- ]', '')
-FROM ol_edition_isbn
-WHERE char_length(regexp_replace(isbn, '[- ]', '')) IN (10, 13);
-CREATE INDEX ol_isbn_id_isbn_uq ON ol_isbn_id USING HASH (isbn);
-ANALYZE ol_isbn_id;
+INSERT INTO isbn_id (isbn)
+  SELECT DISTINCT isbn FROM ol_edition_isbn
+  WHERE isbn NOT IN (SELECT isbn FROM isbn_id);
+ANALYZE isbn_id;
 
 DROP TABLE IF EXISTS ol_isbn_link;
 CREATE TABLE ol_isbn_link (
@@ -120,14 +144,15 @@ CREATE TABLE ol_isbn_link (
 );
 INSERT INTO ol_isbn_link
   SELECT isbn_id, edition_id, work_id,
-       COALESCE(100000000 + work_id, 200000000 + edition_id)
-    FROM ol_isbn_id JOIN ol_edition_isbn USING (isbn) LEFT JOIN ol_edition_work USING (edition_id);
-CREATE INDEX ol_isbn_link2_ed_idx ON ol_isbn_link (edition_id);
-CREATE INDEX ol_isbn_link2_wk_idx ON ol_isbn_link (work_id);
-CREATE INDEX ol_isbn_link2_bc_idx ON ol_isbn_link (book_code);
-CREATE INDEX ol_isbn_link2_isbn_idx ON ol_isbn_link (isbn_id);
+       COALESCE(bc_of_work(work_id), bc_of_edition(edition_id))
+    FROM isbn_id JOIN ol_edition_isbn USING (isbn) LEFT JOIN ol_edition_work USING (edition_id);
+CREATE INDEX ol_isbn_link_ed_idx ON ol_isbn_link (edition_id);
+CREATE INDEX ol_isbn_link_wk_idx ON ol_isbn_link (work_id);
+CREATE INDEX ol_isbn_link_bc_idx ON ol_isbn_link (book_code);
+CREATE INDEX ol_isbn_link_isbn_idx ON ol_isbn_link (isbn_id);
 ALTER TABLE ol_isbn_link ADD CONSTRAINT ol_isbn_link_work_fk FOREIGN KEY (work_id) REFERENCES ol_work;
 ALTER TABLE ol_isbn_link ADD CONSTRAINT ol_isbn_link_ed_fk FOREIGN KEY (edition_id) REFERENCES ol_edition;
+ANALYZE ol_isbn_link;
 
 -- DROP MATERIALIZED VIEW IF EXISTS ol_book_first_author CASCADE;
 -- CREATE MATERIALIZED VIEW ol_book_first_author
@@ -145,5 +170,3 @@ AS SELECT work_id, jsonb_array_elements_text(work_data->'subjects') AS subject
   FROM ol_work;
 CREATE INDEX ol_work_subject_work_idx ON ol_work_subject (work_id);
 CREATE INDEX ol_work_subject_subj_idx ON ol_work_subject (subject);
-
-ANALYZE;
