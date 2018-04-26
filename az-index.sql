@@ -15,11 +15,11 @@ INSERT INTO loc_isbn_book_id (isbn, book_id)
     WITH bad_isbns AS (SELECT DISTINCT asin
                        FROM az_ratings br
                        WHERE NOT EXISTS (SELECT * FROM loc_isbn_book_id ib WHERE ib.isbn = br.asin))
-    SELECT asin, nextval('synthetic_book_id') FROM bad_isbns;
+    SELECT asin, nextval('loc_synthetic_book_id') FROM bad_isbns;
 ANALYZE loc_isbn_book_id;
 
-DROP VIEW IF EXISTS az_all_ratings;
-CREATE VIEW az_all_ratings
+DROP VIEW IF EXISTS az_loc_ratings;
+CREATE VIEW az_loc_ratings
   AS SELECT user_id, book_id, MEDIAN(rating) AS rating, COUNT(rating) AS nratings
      FROM az_ratings
        JOIN az_users USING (user_key)

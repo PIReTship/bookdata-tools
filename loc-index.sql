@@ -105,5 +105,5 @@ INSERT INTO loc_isbn_book_id
   FROM loc_isbn JOIN loc_isbn_peer ON (isbn = isbn2)
   GROUP BY isbn2;
 CREATE INDEX loc_isbn_book_id_idx ON loc_isbn_book_id (book_id);
-DROP SEQUENCE IF EXISTS synthetic_book_id;
-CREATE SEQUENCE synthetic_book_id INCREMENT BY -1 START WITH -1;
+DROP SEQUENCE IF EXISTS loc_synthetic_book_id;
+CREATE SEQUENCE loc_synthetic_book_id INCREMENT BY -1 START WITH -1;

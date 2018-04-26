@@ -119,10 +119,10 @@ INSERT INTO ol_isbn_link
   SELECT isbn_id, edition_id, work_id,
        COALESCE(100000000 + work_id, 200000000 + edition_id)
     FROM ol_isbn_id JOIN ol_edition_isbn USING (isbn) LEFT JOIN ol_edition_work USING (edition_id);
-CREATE INDEX ol_isbn_link2_ed_idx ON ol_isbn_link (edition_id);
-CREATE INDEX ol_isbn_link2_wk_idx ON ol_isbn_link (work_id);
-CREATE INDEX ol_isbn_link2_bc_idx ON ol_isbn_link (book_code);
-CREATE INDEX ol_isbn_link2_isbn_idx ON ol_isbn_link (isbn_id);
+CREATE INDEX ol_isbn_link_ed_idx ON ol_isbn_link (edition_id);
+CREATE INDEX ol_isbn_link_wk_idx ON ol_isbn_link (work_id);
+CREATE INDEX ol_isbn_link_bc_idx ON ol_isbn_link (book_code);
+CREATE INDEX ol_isbn_link_isbn_idx ON ol_isbn_link (isbn_id);
 ALTER TABLE ol_isbn_link ADD CONSTRAINT ol_isbn_link_work_fk FOREIGN KEY (work_id) REFERENCES ol_work;
 ALTER TABLE ol_isbn_link ADD CONSTRAINT ol_isbn_link_ed_fk FOREIGN KEY (edition_id) REFERENCES ol_edition;
 
