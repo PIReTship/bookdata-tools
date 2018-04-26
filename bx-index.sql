@@ -32,3 +32,22 @@ CREATE VIEW bx_loc_all_ratings
        JOIN isbn_id USING (isbn)
        LEFT JOIN loc_isbn_cluster USING (isbn_id)
      GROUP BY user_id, book_id;
+
+DROP VIEW IF EXISTS bx_explicit_ratings;
+CREATE VIEW bx_explicit_ratings
+  AS SELECT user_id, COALESCE(cluster, bc_of_isbn(isbn_id)) AS book_id,
+                     MEDIAN(rating) AS rating, COUNT(rating) AS nratings
+     FROM bx_ratings
+       JOIN isbn_id USING (isbn)
+       LEFT JOIN isbn_cluster USING (isbn_id)
+     WHERE rating > 0
+     GROUP BY user_id, book_id;
+
+DROP VIEW IF EXISTS bx_all_ratings;
+CREATE VIEW bx_all_ratings
+  AS SELECT user_id, COALESCE(cluster, bc_of_isbn(isbn_id)) AS book_id,
+                     MEDIAN(rating) AS rating, COUNT(rating) AS nratings
+     FROM bx_ratings
+       JOIN isbn_id USING (isbn)
+       LEFT JOIN isbn_cluster USING (isbn_id)
+     GROUP BY user_id, book_id;

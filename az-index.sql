@@ -25,3 +25,13 @@ CREATE VIEW az_loc_ratings
        JOIN isbn_id ON (isbn = asin)
        LEFT JOIN loc_isbn_cluster USING (isbn_id)
      GROUP BY user_id, COALESCE(cluster, bc_of_isbn(isbn_id));
+
+DROP VIEW IF EXISTS az_export_ratings;
+CREATE VIEW az_export_ratings
+  AS SELECT user_id, COALESCE(cluster, bc_of_isbn(isbn_id)) AS book_id,
+                     MEDIAN(rating) AS rating, COUNT(rating) AS nratings
+     FROM az_ratings
+       JOIN az_users USING (user_key)
+       JOIN isbn_id ON (isbn = asin)
+       LEFT JOIN isbn_cluster USING (isbn_id)
+     GROUP BY user_id, COALESCE(cluster, bc_of_isbn(isbn_id));
