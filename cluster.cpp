@@ -24,7 +24,7 @@ std::string time_since(const timer::time_point& start) {
 // [[Rcpp::export]]
 DataFrame compute_clusters(DataFrame init_clusters, DataFrame edges)
 {
-    IntegerVector isbns = init_clusters["isbn"];
+    IntegerVector isbns = init_clusters["isbn_id"];
     IntegerVector init = init_clusters["cluster"];
     IntegerVector lefts = edges["left_isbn"];
     IntegerVector rights = edges["right_isbn"];
@@ -46,7 +46,6 @@ DataFrame compute_clusters(DataFrame init_clusters, DataFrame edges)
         nchanged = 0;
         iter += 1;
         message(time_since(start), "starting iteration ", iter);
-        // Rcpp::Rcerr <<": starting iteration " <<iter <<" at " <<std::endl;
         for (int i = 0; i < nedges; i++) {
             int left = lefts[i];
             int right = rights[i];
@@ -59,12 +58,11 @@ DataFrame compute_clusters(DataFrame init_clusters, DataFrame edges)
         }
 
         message(time_since(start), "iteration ", iter, " changed ", nchanged, " memberships");
-        // Rcpp::Rcerr <<"iteration " <<iter <<" changed " <<nchanged <<" memberships "<<std::endl;
     }
 
     IntegerVector out(nisbns);
     for (int i = 0; i < nisbns; i++) {
         out[i] = cluster_map[isbns[i]];
     }
-    return DataFrame::create(Named("isbn") = isbns, Named("cluster") = out);
+    return DataFrame::create(Named("isbn_id") = isbns, Named("cluster") = out);
 }
