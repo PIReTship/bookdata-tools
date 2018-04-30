@@ -32,8 +32,8 @@ CREATE TABLE loc_cluster_author_gender
      GROUP BY cluster;
 CREATE UNIQUE INDEX loc_cluster_author_gender_book_idx ON loc_cluster_author_gender (cluster);
 
-DROP TABLE IF EXISTS cluster_author_gender;
-CREATE TABLE cluster_author_gender
+DROP TABLE IF EXISTS cluster_loc_author_gender;
+CREATE TABLE cluster_loc_author_gender
   AS SELECT cluster,
        case
        when count(an.name) = 0 then 'no-loc-author'
@@ -47,7 +47,7 @@ CREATE TABLE cluster_author_gender
        LEFT JOIN viaf_author_name vn USING (name)
        LEFT JOIN viaf_author_gender vg ON (vn.rec_id = vg.rec_id)
      GROUP BY cluster;
-CREATE UNIQUE INDEX cluster_author_gender_book_idx ON cluster_author_gender (cluster);
+CREATE UNIQUE INDEX cluster_author_gender_book_idx ON cluster_loc_author_gender (cluster);
 
 DROP MATERIALIZED VIEW IF EXISTS rated_book CASCADE;
 CREATE MATERIALIZED VIEW rated_book AS
@@ -76,18 +76,18 @@ CREATE INDEX cluster_author_name_cluster_idx ON cluster_author_name (cluster);
 CREATE INDEX cluster_author_name_idx ON cluster_author_name (author_name);
 ANALYZE cluster_author_name;
 
-DROP TABLE IF EXISTS integrated_rated_author_gender;
-CREATE TABLE integrated_rated_author_gender
+DROP TABLE IF EXISTS cluster_author_gender;
+CREATE TABLE cluster_author_gender
   AS SELECT cluster,
        case
-       when cluster > 9e8 then 'no-record'
        when count(an.author_name) = 0 then 'no-loc-author'
        when count(vn.rec_id) = 0 then 'no-viaf-author'
        when count(vg.gender) = 0 then 'no-gender'
        else resolve_gender(vg.gender)
        end AS gender
-     FROM rated_book
+     FROM (SELECT DISTINCT cluster FROM isbn_cluster WHERE cluster < bc_of_isbn(0)) cl
        LEFT JOIN cluster_author_name an USING (cluster)
        LEFT JOIN viaf_author_name vn ON (name = author_name)
        LEFT JOIN viaf_author_gender vg ON (vn.rec_id = vg.rec_id)
      GROUP BY cluster;
+CREATE UNIQUE INDEX cluster_author_gender_book_idx ON cluster_author_gender (cluster);
