@@ -154,6 +154,27 @@ ALTER TABLE ol_isbn_link ADD CONSTRAINT ol_isbn_link_work_fk FOREIGN KEY (work_i
 ALTER TABLE ol_isbn_link ADD CONSTRAINT ol_isbn_link_ed_fk FOREIGN KEY (edition_id) REFERENCES ol_edition;
 ANALYZE ol_isbn_link;
 
+-- Set up a general author names table, for all known names
+DROP TABLE IF EXISTS ol_author_name CASCADE;
+CREATE TABLE ol_author_name (
+  author_id INTEGER NOT NULL,
+  author_name VARCHAR NOT NULL,
+  name_source VARCHAR NOT NULL
+);
+INSERT INTO ol_author_name
+SELECT author_id, author_name, 'name'
+FROM ol_author WHERE author_name IS NOT NULL;
+INSERT INTO ol_author_name
+SELECT author_id, author_data ->> 'personal_name', 'personal'
+FROM ol_author WHERE author_data ? 'personal_name';
+INSERT INTO ol_author_name
+    SELECT author_id, jsonb_array_elements_text(author_data -> 'alternate_names'),
+      'alternate'
+FROM ol_author WHERE author_data ? 'alternate_names';
+CREATE INDEX ol_author_name_idx ON ol_author_name (author_id);
+CREATE INDEX ol_author_name_name_idx ON ol_author_name (author_name);
+ANALYZE ol_author_name;
+
 -- DROP MATERIALIZED VIEW IF EXISTS ol_book_first_author CASCADE;
 -- CREATE MATERIALIZED VIEW ol_book_first_author
 -- AS SELECT DISTINCT book_id, first_value(author_id) OVER (PARTITION BY book_id ORDER BY edition_desc_length) AS author_id
