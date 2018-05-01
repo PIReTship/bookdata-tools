@@ -47,7 +47,7 @@ CREATE TABLE cluster_loc_author_gender
        LEFT JOIN viaf_author_name vn USING (name)
        LEFT JOIN viaf_author_gender vg ON (vn.rec_id = vg.rec_id)
      GROUP BY cluster;
-CREATE UNIQUE INDEX cluster_author_gender_book_idx ON cluster_loc_author_gender (cluster);
+CREATE UNIQUE INDEX cluster_loc_author_gender_book_idx ON cluster_loc_author_gender (cluster);
 
 DROP MATERIALIZED VIEW IF EXISTS rated_book CASCADE;
 CREATE MATERIALIZED VIEW rated_book AS
@@ -60,24 +60,42 @@ CREATE INDEX rated_book_cluster_idx ON rated_book (cluster);
 CREATE INDEX rated_book_isbn_idx ON rated_book (isbn_id);
 ANALYZE rated_book;
 
-CREATE MATERIALIZED VIEW cluster_author_name AS
-  SELECT cluster, author_name
+DROP MATERIALIZED VIEW IF EXISTS cluster_ol_author_name;
+CREATE MATERIALIZED VIEW cluster_ol_author_name AS
+  SELECT DISTINCT cluster, author_name
   FROM isbn_cluster
     JOIN ol_isbn_link USING (isbn_id)
     JOIN ol_edition USING (edition_id)
     JOIN ol_edition_author USING (edition_id)
-    JOIN ol_author_name USING (author_id)
-  UNION DISTINCT
-  SELECT cluster, name
+    JOIN ol_author_name USING (author_id);
+
+DROP MATERIALIZED VIEW IF EXISTS cluster_ol_first_author_name;
+CREATE MATERIALIZED VIEW cluster_ol_first_author_name AS
+  SELECT DISTINCT cluster, author_name
+  FROM isbn_cluster
+    JOIN ol_isbn_link USING (isbn_id)
+    JOIN ol_edition USING (edition_id)
+    JOIN ol_edition_first_author USING (edition_id)
+    JOIN ol_author_name USING (author_id);
+
+DROP MATERIALIZED VIEW IF EXISTS cluster_loc_first_author_name;
+CREATE MATERIALIZED VIEW cluster_loc_author_name AS
+  SELECT DISTINCT cluster, name AS author_name
   FROM isbn_cluster
     JOIN loc_rec_isbn USING (isbn_id)
     JOIN loc_author_name USING (rec_id);
-CREATE INDEX cluster_author_name_cluster_idx ON cluster_author_name (cluster);
-CREATE INDEX cluster_author_name_idx ON cluster_author_name (author_name);
-ANALYZE cluster_author_name;
 
-DROP TABLE IF EXISTS cluster_author_gender;
-CREATE TABLE cluster_author_gender
+DROP MATERIALIZED VIEW IF EXISTS cluster_first_author_name;
+CREATE MATERIALIZED VIEW cluster_first_author_name AS
+  SELECT cluster, author_name FROM cluster_loc_first_author_name
+  UNION DISTINCT
+  SELECT cluster, author_name FROM cluster_ol_first_author_name;
+CREATE INDEX cluster_first_author_name_cluster_idx ON cluster_first_author_name (cluster);
+CREATE INDEX cluster_first_author_name_idx ON cluster_first_author_name (author_name);
+ANALYZE cluster_first_author_name;
+
+DROP TABLE IF EXISTS cluster_first_author_gender;
+CREATE TABLE cluster_first_author_gender
   AS SELECT cluster,
        case
        when count(an.author_name) = 0 then 'no-loc-author'
@@ -86,8 +104,9 @@ CREATE TABLE cluster_author_gender
        else resolve_gender(vg.gender)
        end AS gender
      FROM (SELECT DISTINCT cluster FROM isbn_cluster WHERE cluster < bc_of_isbn(0)) cl
-       LEFT JOIN cluster_author_name an USING (cluster)
+       LEFT JOIN cluster_first_author_name an USING (cluster)
        LEFT JOIN viaf_author_name vn ON (name = author_name)
        LEFT JOIN viaf_author_gender vg ON (vn.rec_id = vg.rec_id)
      GROUP BY cluster;
-CREATE UNIQUE INDEX cluster_author_gender_book_idx ON cluster_author_gender (cluster);
+CREATE UNIQUE INDEX cluster_first_author_gender_book_idx ON cluster_first_author_gender (cluster);
+ANALYZE cluster_first_author_gender;
