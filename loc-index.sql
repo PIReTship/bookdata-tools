@@ -89,3 +89,11 @@ CREATE MATERIALIZED VIEW loc_author_name
   WHERE tag = '100' AND sf_code = 'a';
 CREATE INDEX loc_author_name_rec_idx ON loc_author_name (rec_id);
 CREATE INDEX loc_author_name_name_idx ON loc_author_name (name);
+
+-- Extract publication years
+CREATE MATERIALIZED VIEW loc_pub_year
+  AS SELECT rec_id, substring(contents from '(\d\d\d\d)') AS pub_year
+  FROM loc_marc_field
+  WHERE tag = '260' AND sf_code = 'c' AND substring(contents from '(\d\d\d\d)') IS NOT NULL;
+CREATE INDEX loc_pub_year_rec_idx ON loc_pub_year (rec_id);
+ANALYZE loc_pub_year;
