@@ -51,6 +51,7 @@ Start tying the data together:
 Clustering is done by the `ClusterISBNs.r` script:
 
     Rscript ClusterISBNs.r
+    psql <load-clusters.sql
 
 With the clusters in place, we're ready to index the rating data:
 
