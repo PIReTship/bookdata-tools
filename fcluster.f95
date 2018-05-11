@@ -1,14 +1,15 @@
-subroutine compute_clusters(nc, clusters, ne, ls, rs)
+subroutine compute_clusters(nc, clusters, ne, ls, rs, iter)
   implicit none
   integer nc, ne
   integer clusters(nc)
   integer ls(ne), rs(ne)
+  integer iter
   integer left, right
 
   integer nchanged
-  integer iter
   integer i
-  
+
+  nchanged = ne
   iter = 0
 
   do while (nchanged > 0)
