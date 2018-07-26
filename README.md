@@ -2,7 +2,7 @@ This repository contains the code to import and integrate the book and rating da
 
 ## Requirements
 
-- PostgreSQL 10 (9.x may also work)
+- PostgreSQL 10 [orafce](https://github.com/orafce/orafce)
 - Node.js (tested on Carbon, the 8.x LTS line)
 - R with the Tidyverse and RPostgreSQL
 - `psql` executable on the machine where the import scripts will run
