@@ -73,8 +73,7 @@ INSERT INTO isbn_id (isbn)
   WHERE isbn NOT IN (SELECT isbn FROM isbn_id);
 ANALYZE isbn_id;
 
-DROP TABLE IF EXISTS loc_rec_isbn;
-CREATE TABLE loc_rec_isbn
+CREATE MATERIALIZED VIEW loc_rec_isbn
   AS SELECT rec_id, isbn_id
      FROM loc_book JOIN loc_rec_extracted_isbn USING (rec_id) JOIN isbn_id USING (isbn)
      WHERE isbn IS NOT NULl AND char_length(isbn) IN (10,13);

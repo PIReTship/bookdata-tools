@@ -10,6 +10,7 @@ const args = require('minimist')(process.argv.slice(2));
 
 const olimport = require('./lib/ol-import');
 const lkexport = require('./lib/lkexport');
+const grimport = require('./lib/goodreads')
 
 const olDate = args['ol-date'] || '2017-10-01';
 
@@ -25,10 +26,15 @@ exports.importOpenLib = gulp.parallel(
 exports.importOpenLib.description = 'Import all OpenLib data';
 
 exports.importAmazon = function() {
-  return cp.spawn('psql', ['-c', "\\copy az_ratings FROM 'data/ratings_Books.csv' WITH CSV"], {
+  return cp.spawn('psql', ['-c', "\\copy az_raw_ratings FROM 'data/ratings_Books.csv' WITH CSV"], {
     stdio: ['ignore', process.stdout, process.stderr]
   });
 };
+
+exports.importGoodReads = gulp.parallel(
+  grimport.importAuthors, grimport.importBooks, grimport.importWorks,
+  grimport.importInteractions
+);
 
 exports.importBX = function() {
   const bxi = require('./lib/bximport');
