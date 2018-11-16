@@ -9,7 +9,6 @@ const log = require('gulplog');
 const args = require('minimist')(process.argv.slice(2));
 
 const olimport = require('./lib/ol-import');
-const lkexport = require('./lib/lkexport');
 const grimport = require('./lib/goodreads')
 
 const olDate = args['ol-date'] || '2017-10-01';
@@ -67,19 +66,3 @@ exports.indexLOC = function() {
     });
   });
 };
-
-exports.export = gulp.series(
-  function mkdir(cb) {
-    fs.mkdir('out', (err) => {
-      if (err && err.code != 'EEXIST') {
-        cb(err);
-      } else {
-        cb();
-      }
-    })
-  },
-  gulp.parallel(
-    function amazon() { return lkexport.amazon('out/az-ratings.csv') },
-    function bxAll() { return lkexport.bxAll('out/bx-implicit.csv') },
-    function bxExplicit() { return lkexport.bxExplicit('out/bx-ratings.csv') }
-  ));
