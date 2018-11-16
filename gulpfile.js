@@ -42,7 +42,7 @@ exports.importBX = function() {
 
 exports.importVIAF = function() {
   var viaf = require('./lib/viaf-import');
-  return viaf.import('data/viaf-20180401-clusters-marc21.xml.gz');
+  return viaf.import('data/viaf-20181104-clusters-marc21.xml.gz');
 };
 
 exports.importLOC = function() {
