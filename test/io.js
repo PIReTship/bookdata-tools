@@ -1,9 +1,29 @@
 const assert = require('assert');
 const stream = require('stream');
+const crypto = require('crypto');
+const expect = require('expect.js');
+const miss = require('mississippi');
 
 const fromValue = require('stream-from-value');
 
 const io = require('../lib/io');
+
+function randomStream(bytes) {
+  let total = 0;
+  
+  return miss.from(function(size, next) {
+    let max = Math.min(size, bytes - total);
+    let n = Math.random() * 412 + 100;
+    n = Math.min(n, max);
+    if (n == 0) {
+        return next(null, null);
+    }
+    crypto.randomBytes(n, (err, buf) => {
+      total += buf.length;
+      next(err, buf);
+    });
+  });
+}
 
 function b(s) {
   return Buffer.from(s);
@@ -121,5 +141,24 @@ describe('decodeLines()', () => {
       assert.deepEqual(arr, ['wumpus', 'splintercat']);
       done();
     }));
+  });
+  
+  it('should handle many random bytes', (done) => {
+    let nbytes = 100000;
+    randomStream(nbytes).pipe(io.decodeLines((b) => b.length))
+                        .pipe(makeArray((err, arr) => {
+                           if (err) return done(err);
+                           let len = 0;
+                           for (let e of arr) {
+                             len += e + 1
+                           }
+                           // allow for missing/present final newline
+                           // if we have a final newline: then each thing has a newline
+                           // if we do not: then we are short one newline
+                           expect(len).to.be.below(nbytes+2);
+                           expect(len).to.be.above(nbytes-1);
+                           done();
+                        }));
+
   });
 })
