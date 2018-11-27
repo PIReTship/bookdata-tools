@@ -6,7 +6,7 @@ const fromValue = require('stream-from-value');
 const io = require('../lib/io');
 
 function b(s) {
-  return new Buffer(s);
+  return Buffer.from(s);
 }
 
 function makeArray(done) {
