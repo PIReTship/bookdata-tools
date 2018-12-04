@@ -47,7 +47,7 @@ fn process_delim_file<R: BufRead, W: Write>(r: &mut R, w: &mut W) -> io::Result<
 
 fn write_codes<W: Write>(w: &mut W, rno: i32, fno: i32, tag: &[u8], fld: Option<&Field>) -> io::Result<()> {
   let ids = format!("{}\t{}\t", rno, fno);
-  w.write_all(ids.as_str().as_bytes());
+  w.write_all(ids.as_str().as_bytes())?;
   w.write_all(tag)?;
   w.write_all(b"\t")?;
   match fld {
