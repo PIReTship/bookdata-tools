@@ -13,7 +13,7 @@ bin_dir = tgt_dir / 'release'
 def pipeline(steps, outfile=None):
     last = sp.DEVNULL
     if outfile is not None:
-        outfd = os.open(outfile, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
+        outfd = os.open(outfile, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o666)
     else:
         outfd = None
     
