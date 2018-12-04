@@ -10,7 +10,7 @@ use structopt::StructOpt;
 use std::fs::File;
 use std::path::PathBuf;
 use flate2::read::GzDecoder;
-use indicatif::ProgressBar;
+use indicatif::{ProgressBar, ProgressStyle};
 
 use bookdata::pgutils::write_encoded;
 use bookdata::tsv::split_first;
@@ -45,6 +45,8 @@ fn main() -> io::Result<()> {
 
   let mut fs = File::open(opt.infile)?;
   let pb = ProgressBar::new(fs.metadata()?.len());
+  pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {percent:.bold} {bar} {bytes}/{total_bytes} (eta: {eta})"));
+
   let mut pbr = pb.wrap_read(fs);
   let mut gzf = GzDecoder::new(pbr);
   let mut bfs = BufReader::new(gzf);
