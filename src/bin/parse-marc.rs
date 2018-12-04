@@ -89,7 +89,7 @@ fn write_data<W: Write>(w: &mut W, buf: &[u8]) -> io::Result<()> {
         start = i + 1;
         w.write_all(b"\\t")?;
       },
-      c => ()
+      _ => ()
     }
   }
   if start < buf.len() {
@@ -118,7 +118,7 @@ fn process_record<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, lno: &
             *lno += 1
           },
           "leader" => {
-            write_codes(out, *lno, fno, b"LDR", None);
+            write_codes(out, *lno, fno, b"LDR", None).expect("output error");
             output = true;
           },
           "controlfield" => {
@@ -150,7 +150,6 @@ fn process_record<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, lno: &
             assert!(tag.len() > 0, "no tag found for data field");
             assert!(ind1.len() > 0, "no ind1 found for data field");
             assert!(ind2.len() > 0, "no ind2 found for data field");
-            output = true;
           },
           "subfield" => {
             fno += 1;
