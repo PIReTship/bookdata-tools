@@ -48,7 +48,7 @@ def build(c, debug=False):
 def init_viaf(c):
     "Initialize the VIAF schema"
     print('initializing VIAF schema')
-    c.run('psql -f init_viaf')
+    c.run('psql -f viaf-schema.sql')
 
 
 @task(build)
