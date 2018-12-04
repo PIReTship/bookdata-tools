@@ -1,24 +1,23 @@
 -- Initial table creation with no constraints or indexes
-DROP TABLE IF EXISTS ol_author;
-CREATE TABLE ol_author (
+CREATE SCHEMA IF NOT EXISTS ol;
+
+DROP TABLE IF EXISTS ol.author;
+CREATE TABLE ol.author (
     author_id SERIAL NOT NULL,
     author_key VARCHAR(100) NOT NULL,
-    author_name VARCHAR,
     author_data JSONB NOT NULL
 );
 
-DROP TABLE IF EXISTS ol_work CASCADE;
-CREATE TABLE ol_work (
+DROP TABLE IF EXISTS ol.work CASCADE;
+CREATE TABLE ol.work (
     work_id SERIAL NOT NULL,
     work_key VARCHAR(100) NOT NULL,
-    work_title VARCHAR,
     work_data JSONB NOT NULL
 );
 
-DROP TABLE IF EXISTS ol_edition CASCADE;
-CREATE TABLE ol_edition (
+DROP TABLE IF EXISTS ol.edition CASCADE;
+CREATE TABLE ol.edition (
     edition_id SERIAL NOT NULL,
     edition_key VARCHAR(100) NOT NULL,
-    edition_title VARCHAR,
     edition_data JSONB NOT NULL
 );
