@@ -1,5 +1,6 @@
 extern crate structopt;
 extern crate flate2;
+extern crate indicatif;
 extern crate bookdata;
 
 use std::io::prelude::*;
@@ -9,6 +10,7 @@ use structopt::StructOpt;
 use std::fs::File;
 use std::path::PathBuf;
 use flate2::read::GzDecoder;
+use indicatif::ProgressBar;
 
 use bookdata::pgutils::write_encoded;
 use bookdata::tsv::split_first;
@@ -16,8 +18,8 @@ use bookdata::tsv::split_first;
 #[derive(StructOpt, Debug)]
 #[structopt(name="clean-openlib")]
 struct Opt {
-  #[structopt(name = "FILE", parse(from_os_str))]
-  infile: Option<PathBuf>
+  #[structopt(name = "INPUT", parse(from_os_str))]
+  infile: PathBuf
 }
 
 fn process<R: BufRead, W: Write>(src: &mut R, dst: &mut W) -> io::Result<()> {
@@ -41,19 +43,11 @@ fn main() -> io::Result<()> {
   let stdout = io::stdout();
   let mut out = stdout.lock();
 
-  match opt.infile {
-    Some(f) => {
-      let mut fs = File::open(f)?;
-      let mut gzf = GzDecoder::new(fs);
-      let mut bfs = BufReader::new(gzf);
-      process(&mut bfs, &mut out)?;
-    },
-    None => {
-      let si = io::stdin();
-      let mut src = si.lock();
-      process(&mut src, &mut out)?;
-    }
-  }
+  let mut fs = File::open(opt.infile)?;
+  let pb = ProgressBar::new(fs.metadata()?.len());
+  let mut pbr = pb.wrap_read(fs);
+  let mut gzf = GzDecoder::new(pbr);
+  let mut bfs = BufReader::new(gzf);
 
-  Ok(())
+  process(&mut bfs, &mut out)
 }
