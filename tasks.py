@@ -63,9 +63,7 @@ def convert_ol_authors(c, date='2018-10-31', progress=True):
     outfile = data_dir / f'ol_dump_authors_{date}.psql.gz'
 
     pipeline([
-        ['pv', infile],
-        ['gunzip'],
-        [bin_dir / 'clean-openlib'],
+        [bin_dir / 'clean-openlib', infile],
         ['gzip']
     ], outfile=outfile)
 
