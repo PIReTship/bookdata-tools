@@ -2,6 +2,7 @@
 extern crate structopt;
 extern crate quick_xml;
 extern crate flate2;
+extern crate bookdata;
 
 use std::io::prelude::*;
 use std::io::{self, BufReader};
@@ -12,6 +13,9 @@ use structopt::StructOpt;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use flate2::read::GzDecoder;
+
+use bookdata::pgutils::write_encoded;
+use bookdata::tsv::split_first;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name="parse-marc")]
@@ -30,16 +34,9 @@ fn process_delim_file<R: BufRead, W: Write>(r: &mut R, w: &mut W) -> io::Result<
   let mut count = 0;
   for line in r.lines() {
     let lstr = line?;
-    match lstr.find('\t') {
-      Some(i) => {
-        let (id, xml) = lstr.split_at(i);
-        let mut parse = Reader::from_str(xml);
-        process_record(&mut parse, w, &mut count);
-      },
-      None => {
-        panic!("invalid line");
-      }
-    }
+    let (_id, xml) = split_first(&lstr).expect("invalid line");
+    let mut parse = Reader::from_str(xml);
+    process_record(&mut parse, w, &mut count);
   }
 
   Ok(count)
@@ -62,38 +59,6 @@ fn write_codes<W: Write>(w: &mut W, rno: i32, fno: i32, tag: &[u8], fld: Option<
     None => {
       w.write_all(b"\\N\t\\N\t\\N\t")?;
     }
-  }
-  Ok(())
-}
-
-fn write_data<W: Write>(w: &mut W, buf: &[u8]) -> io::Result<()> {
-  let mut start = 0;
-  for i in 0..buf.len() {
-    match buf[i] {
-      b'\\' => {
-        w.write_all(&buf[start..i])?;
-        start = i + 1;
-        w.write_all(b"\\\\")?;
-      },
-      b'\r' => {
-        w.write_all(&buf[start..i])?;
-        start = i + 1;
-      },
-      b'\n' => {
-        w.write_all(&buf[start..i])?;
-        start = i + 1;
-        w.write_all(b"\\n")?;
-      },
-      b'\t' => {
-        w.write_all(&buf[start..i])?;
-        start = i + 1;
-        w.write_all(b"\\t")?;
-      },
-      _ => ()
-    }
-  }
-  if start < buf.len() {
-    w.write_all(&buf[start..])?;
   }
   Ok(())
 }
@@ -187,7 +152,7 @@ fn process_record<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, lno: &
       Ok(Event::Text(e)) => {
         if output {
           let t = e.unescaped().expect("decode error");
-          write_data(out, &t).expect("output error")
+          write_encoded(out, &t).expect("output error")
         }
       },
       Ok(Event::Eof) => break,
