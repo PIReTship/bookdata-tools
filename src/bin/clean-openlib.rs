@@ -45,7 +45,7 @@ fn main() -> io::Result<()> {
 
   let fs = File::open(opt.infile)?;
   let pb = ProgressBar::new(fs.metadata()?.len());
-  pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {percent:.bold} {bar} {bytes}/{total_bytes} (eta: {eta})"));
+  pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
 
   let pbr = pb.wrap_read(fs);
   let gzf = GzDecoder::new(pbr);
