@@ -44,6 +44,13 @@ def build(c, debug=False):
         c.run('cargo build --release')
 
 
+@task
+def init_viaf(c):
+    "Initialize the VIAF schema"
+    print('initializing VIAF schema')
+    c.run('psql -f init_viaf')
+
+
 @task(build)
 def convert_viaf(c, date='20181104', progress=True):
     infile = data_dir / f'viaf-{date}-clusters-marc21.xml.gz'
@@ -53,7 +60,19 @@ def convert_viaf(c, date='20181104', progress=True):
         [bin_dir / 'parse-marc', infile],
         ['gzip']
     ], outfile=outfile)
-    
+
+
+@task(build, init_viaf)
+def import_viaf(c, date='20181104', progress=True):
+    "Import VIAF data"
+    infile = data_dir / f'viaf-{date}-clusters-marc21.xml.gz'
+    print('importing VIAF data from %s', infile)
+
+    pipeline([
+        [bin_dir / 'parse-marc', infile],
+        ['psql', '-c', '\\copy viaf_marc_field FROM STDIN']
+    ])
+
 
 @task(build)
 def convert_ol_authors(c, date='2018-10-31', progress=True):
