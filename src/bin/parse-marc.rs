@@ -2,6 +2,7 @@
 extern crate structopt;
 extern crate quick_xml;
 extern crate flate2;
+extern crate indicatif;
 extern crate bookdata;
 
 use std::io::prelude::*;
@@ -13,6 +14,7 @@ use structopt::StructOpt;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use flate2::read::GzDecoder;
+use indicatif::{ProgressBar, ProgressStyle};
 
 use bookdata::pgutils::write_encoded;
 use bookdata::tsv::split_first;
@@ -21,7 +23,7 @@ use bookdata::tsv::split_first;
 #[structopt(name="parse-marc")]
 struct Opt {
   #[structopt(name = "FILE", parse(from_os_str))]
-  infile: Option<PathBuf>
+  infile: PathBuf
 }
 
 struct Field<'a> {
@@ -166,20 +168,14 @@ fn main() -> io::Result<()> {
   let opt = Opt::from_args();
   let out = io::stdout();
   let mut outlock = out.lock();
-  match opt.infile {
-    Some(f) => {
-      eprintln!("reading from compressed file {:?}", f);
-      let mut fs = File::open(f)?;
-      let mut gzf = GzDecoder::new(fs);
-      let mut bfs = BufReader::new(gzf);
-      process_delim_file(&mut bfs, &mut outlock)?;
-      Ok(())
-    },
-    None => {
-      let mut input = io::stdin();
-      let mut lock = input.lock();
-      process_delim_file(&mut lock, &mut outlock)?;
-      Ok(())
-    }
-  }
+
+  eprintln!("reading from compressed file {:?}", opt.infile);
+  let fs = File::open(opt.infile)?;
+  let pb = ProgressBar::new(fs.metadata()?.len());
+  pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {percent:.bold} {bar} {bytes}/{total_bytes} (eta: {eta})"));
+  let pbr = pb.wrap_read(fs);
+  let gzf = GzDecoder::new(pbr);
+  let mut bfs = BufReader::new(gzf);
+  process_delim_file(&mut bfs, &mut outlock)?;
+  Ok(())
 }

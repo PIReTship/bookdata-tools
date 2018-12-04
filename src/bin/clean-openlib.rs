@@ -43,12 +43,12 @@ fn main() -> io::Result<()> {
   let stdout = io::stdout();
   let mut out = stdout.lock();
 
-  let mut fs = File::open(opt.infile)?;
+  let fs = File::open(opt.infile)?;
   let pb = ProgressBar::new(fs.metadata()?.len());
   pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {percent:.bold} {bar} {bytes}/{total_bytes} (eta: {eta})"));
 
-  let mut pbr = pb.wrap_read(fs);
-  let mut gzf = GzDecoder::new(pbr);
+  let pbr = pb.wrap_read(fs);
+  let gzf = GzDecoder::new(pbr);
   let mut bfs = BufReader::new(gzf);
 
   process(&mut bfs, &mut out)
