@@ -119,7 +119,6 @@ fn process_record<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, lno: &
             assert!(ind2.len() > 0, "no ind2 found for data field");
           },
           "subfield" => {
-            fno += 1;
             let mut done = false;
             for ar in e.attributes() {
               let a = ar.expect("decode error");
