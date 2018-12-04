@@ -50,9 +50,7 @@ def convert_viaf(c, date='20181104', progress=True):
     outfile = data_dir / f'viaf-{date}-clusters.psql.gz'
 
     pipeline([
-        ['pv', infile],
-        ['gunzip'],
-        [bin_dir / 'parse-marc'],
+        [bin_dir / 'parse-marc', infile],
         ['gzip']
     ], outfile=outfile)
     
@@ -74,9 +72,7 @@ def convert_ol_editions(c, date='2018-10-31', progress=True):
     outfile = data_dir / f'ol_dump_editions_{date}.psql.gz'
 
     pipeline([
-        ['pv', infile],
-        ['gunzip'],
-        [bin_dir / 'clean-openlib'],
+        [bin_dir / 'clean-openlib', infile],
         ['gzip']
     ], outfile=outfile)
 
@@ -87,9 +83,7 @@ def convert_ol_works(c, date='2018-10-31', progress=True):
     outfile = data_dir / f'ol_dump_works_{date}.psql.gz'
 
     pipeline([
-        ['pv', infile],
-        ['gunzip'],
-        [bin_dir / 'clean-openlib'],
+        [bin_dir / 'clean-openlib', infile],
         ['gzip']
     ], outfile=outfile)
 
