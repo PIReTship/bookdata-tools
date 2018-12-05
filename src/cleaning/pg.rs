@@ -1,7 +1,8 @@
 use std::io::{self, Write};
 use std::str;
 
-pub fn write_encoded<W: Write>(w: &mut W, buf: &[u8]) -> io::Result<()> {
+/// Write text with PostgreSQL text format encoding.
+pub fn write_pgencoded<W: Write>(w: &mut W, buf: &[u8]) -> io::Result<()> {
   let mut start = 0;
   for i in 0..buf.len() {
     match buf[i] {
@@ -36,7 +37,7 @@ pub fn write_encoded<W: Write>(w: &mut W, buf: &[u8]) -> io::Result<()> {
 #[test]
 fn it_writes_empty() {
   let mut vec = Vec::new();
-  write_encoded(&mut vec, b"").unwrap();
+  write_pgencoded(&mut vec, b"").unwrap();
 
   assert_eq!(vec.len(), 0);
 }
@@ -44,7 +45,7 @@ fn it_writes_empty() {
 #[test]
 fn it_writes_str() {
   let mut vec = Vec::new();
-  write_encoded(&mut vec, b"foo").unwrap();
+  write_pgencoded(&mut vec, b"foo").unwrap();
 
   assert_eq!(str::from_utf8(&vec).unwrap(), "foo");
 }
@@ -52,7 +53,7 @@ fn it_writes_str() {
 #[test]
 fn encode_backslash() {
   let mut vec = Vec::new();
-  write_encoded(&mut vec, b"\\").unwrap();
+  write_pgencoded(&mut vec, b"\\").unwrap();
 
   assert_eq!(str::from_utf8(&vec).unwrap(), "\\\\");
 }
@@ -60,7 +61,7 @@ fn encode_backslash() {
 #[test]
 fn encode_tab() {
   let mut vec = Vec::new();
-  write_encoded(&mut vec, b"\t").unwrap();
+  write_pgencoded(&mut vec, b"\t").unwrap();
 
   assert_eq!(str::from_utf8(&vec).unwrap(), "\\t");
 }
@@ -68,7 +69,7 @@ fn encode_tab() {
 #[test]
 fn encode_nl() {
   let mut vec = Vec::new();
-  write_encoded(&mut vec, b"\n").unwrap();
+  write_pgencoded(&mut vec, b"\n").unwrap();
 
   assert_eq!(str::from_utf8(&vec).unwrap(), "\\n");
 }
@@ -76,7 +77,7 @@ fn encode_nl() {
 #[test]
 fn skip_cr() {
   let mut vec = Vec::new();
-  write_encoded(&mut vec, b"\r").unwrap();
+  write_pgencoded(&mut vec, b"\r").unwrap();
 
   assert_eq!(str::from_utf8(&vec).unwrap(), "");
 }
@@ -84,7 +85,7 @@ fn skip_cr() {
 #[test]
 fn embedded() {
   let mut vec = Vec::new();
-  write_encoded(&mut vec, b"foo\nbar\\wombat").unwrap();
+  write_pgencoded(&mut vec, b"foo\nbar\\wombat").unwrap();
 
   assert_eq!(str::from_utf8(&vec).unwrap(), "foo\\nbar\\\\wombat");
 }

@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use flate2::bufread::MultiGzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
 
-use bookdata::pgutils::write_encoded;
+use bookdata::cleaning::{write_pgencoded, clean_json};
 use bookdata::tsv::split_first;
 
 #[derive(StructOpt, Debug)]
@@ -23,15 +23,17 @@ struct Opt {
 }
 
 fn process<R: BufRead, W: Write>(src: &mut R, dst: &mut W) -> io::Result<()> {
+  let mut jsbuf = String::new();
   for line in src.lines() {
     let ls = line?;
     let (_ty, rest) = split_first(&ls).expect("bad line");
     let (key, rest) = split_first(rest).expect("bad line");
     let (_ver, rest) = split_first(rest).expect("bad line");
     let (_stamp, json) = split_first(rest).expect("bad line");
+    clean_json(json, &mut jsbuf);
     dst.write_all(key.as_bytes())?;
     dst.write_all(b"\t")?;
-    write_encoded(dst, json.as_bytes())?;
+    write_pgencoded(dst, jsbuf.as_bytes())?;
     dst.write_all(b"\n")?;
   }
 

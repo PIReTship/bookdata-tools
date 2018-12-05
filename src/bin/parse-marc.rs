@@ -15,7 +15,7 @@ use quick_xml::events::Event;
 use flate2::bufread::MultiGzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
 
-use bookdata::pgutils::write_encoded;
+use bookdata::cleaning::write_pgencoded;
 use bookdata::tsv::split_first;
 
 #[derive(StructOpt, Debug)]
@@ -152,7 +152,7 @@ fn process_record<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, lno: &
       Ok(Event::Text(e)) => {
         if output {
           let t = e.unescaped().expect("decode error");
-          write_encoded(out, &t).expect("output error")
+          write_pgencoded(out, &t).expect("output error")
         }
       },
       Ok(Event::Eof) => break,
