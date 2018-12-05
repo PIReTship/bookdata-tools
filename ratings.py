@@ -38,3 +38,11 @@ def import_bx_ratings(c):
     finally:
         dbc.close()
 
+
+@task
+def import_az_ratings(c):
+    "Import Amazon ratings"
+    print('Resetting Amazon schema')
+    c.run('psql -f az-schema.sql')
+    print('Importing Amazon ratings')
+    c.run("psql -c '\\copy az_raw_ratings FROM \\'data/ratings_Books.csv\\' WITH CSV'")

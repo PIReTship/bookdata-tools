@@ -9,7 +9,7 @@ data_dir = Path('data')
 tgt_dir = Path('target')
 bin_dir = tgt_dir / 'release'
 
-from bx import *
+from ratings import *
 
 
 def pipeline(steps, outfile=None):
