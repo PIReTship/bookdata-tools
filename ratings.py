@@ -53,7 +53,7 @@ def import_az(c, force=False):
       [s.bin_dir / 'pcat', s.data_dir / 'ratings_Books.csv'],
       ['psql', '-c', '\\copy az_raw_ratings FROM STDIN (FORMAT CSV)']
     ])
-    s.finish('bx-ratings')
+    s.finish('az-ratings')
 
 
 @task(s.init, s.build)
