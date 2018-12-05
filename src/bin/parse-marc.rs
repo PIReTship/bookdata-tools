@@ -13,7 +13,7 @@ use std::str;
 use structopt::StructOpt;
 use quick_xml::Reader;
 use quick_xml::events::Event;
-use flate2::read::GzDecoder;
+use flate2::bufread::MultiGzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
 
 use bookdata::pgutils::write_encoded;
@@ -24,6 +24,32 @@ use bookdata::tsv::split_first;
 struct Opt {
   #[structopt(name = "FILE", parse(from_os_str))]
   infile: PathBuf
+}
+
+struct DbgRead<R: Read> {
+  delegate: R,
+  lead: String
+}
+
+impl<R: Read> DbgRead<R> {
+  fn new(r: R, ld: &str) -> DbgRead<R> {
+    DbgRead { delegate: r, lead: ld.to_string() }
+  }
+}
+
+impl<R: Read> Read for DbgRead<R> {
+  fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+    match self.delegate.read(buf) {
+      Ok(sz) => {
+        eprintln!("{}: read {} of {} wanted bytes", self.lead, sz, buf.len());
+        Ok(sz)
+      },
+      Err(e) => {
+        eprintln!("{}: read of {} errored: {:?}", self.lead, buf.len(), e);
+        Err(e)
+      }
+    }
+  }
 }
 
 struct Field<'a> {
@@ -173,7 +199,8 @@ fn main() -> io::Result<()> {
   let pb = ProgressBar::new(fs.metadata()?.len());
   pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
   let pbr = pb.wrap_read(fs);
-  let gzf = GzDecoder::new(pbr);
+  let pbr = BufReader::new(pbr);
+  let gzf = MultiGzDecoder::new(pbr);
   let mut bfs = BufReader::new(gzf);
   process_delim_file(&mut bfs, &mut outlock)?;
   Ok(())
