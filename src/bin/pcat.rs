@@ -3,7 +3,6 @@ extern crate structopt;
 
 use structopt::StructOpt;
 
-use std::io::prelude::*;
 use std::io;
 use std::fs::File;
 use std::path::PathBuf;
