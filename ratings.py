@@ -1,5 +1,6 @@
 from io import StringIO
 import csv
+import subprocess as sp
 
 import numpy as np
 from tqdm import tqdm
@@ -45,4 +46,7 @@ def import_az_ratings(c):
     print('Resetting Amazon schema')
     c.run('psql -f az-schema.sql')
     print('Importing Amazon ratings')
-    c.run("psql -c '\\copy az_raw_ratings FROM \\'data/ratings_Books.csv\\' WITH CSV'")
+    r = sp.run(['psql', '-c', "\\copy az_raw_ratings FROM 'data/ratings_Books.csv' WITH CSV"])
+    if r.returncode:
+        raise RuntimeError('psql exited with code {}'.format(r.returncode))
+
