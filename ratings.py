@@ -11,9 +11,10 @@ from invoke import task
 import support as s
 
 
-@task
-def import_bx(c):
+@task(s.init)
+def import_bx(c, force=False):
     "Import BookCrossing ratings"
+    s.start('bx-ratings', force=force)
     print("initializing BX schema")
     c.run('psql -f bx-schema.sql')
     print("cleaning BX rating data")
@@ -31,20 +32,20 @@ def import_bx(c):
     print('importing BX to database')
     data = bytes(barr)
     rd = StringIO(data.decode('utf8'))
-    dbc = psycopg2.connect("")
-    try:
+
+    with s.database() as dbc:
         # with dbc encapsulates a transaction
         with dbc, dbc.cursor() as cur:
             for row in tqdm(csv.DictReader(rd)):
                 cur.execute('INSERT INTO bx_raw_ratings (user_id, isbn, rating) VALUES (%s, %s, %s)',
                             (row['User-ID'], row['ISBN'], row['Book-Rating']))
-    finally:
-        dbc.close()
+            s.finish('bx-ratings', dbc)
 
 
-@task(s.build)
-def import_az(c):
+@task(s.init, s.build)
+def import_az(c, force=False):
     "Import Amazon ratings"
+    s.start('az-ratings', force=force)
     print('Resetting Amazon schema')
     c.run('psql -f az-schema.sql')
     print('Importing Amazon ratings')
@@ -52,11 +53,13 @@ def import_az(c):
       [s.bin_dir / 'pcat', s.data_dir / 'ratings_Books.csv'],
       ['psql', '-c', '\\copy az_raw_ratings FROM STDIN (FORMAT CSV)']
     ])
+    s.finish('bx-ratings')
 
 
-@task(s.build)
-def import_gr(c):
+@task(s.init, s.build)
+def import_gr(c, force=False):
     "Import GoodReads ratings"
+    s.start('gr-data', force=force)
     print('Resetting GoodReads schema')
     c.run('psql -f gr-schema.sql')
     print('Importing GoodReads books')
@@ -79,3 +82,4 @@ def import_gr(c):
       [s.bin_dir / 'clean-json', s.data_dir / 'goodreads_interactions.json.gz'],
       ['psql', '-c', '\\copy gr_raw_interaction (gr_int_data) FROM STDIN']
     ])
+    s.finish('gr-data')
