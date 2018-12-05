@@ -3,6 +3,7 @@ from pathlib import Path
 import subprocess as sp
 import os
 
+import numpy as np
 from invoke import task
 
 data_dir = Path('data')
@@ -51,17 +52,6 @@ def init_viaf(c):
     c.run('psql -f viaf-schema.sql')
 
 
-@task(build)
-def convert_viaf(c, date='20181104', progress=True):
-    infile = data_dir / f'viaf-{date}-clusters-marc21.xml.gz'
-    outfile = data_dir / f'viaf-{date}-clusters.psql.gz'
-
-    pipeline([
-        [bin_dir / 'parse-marc', infile],
-        ['gzip']
-    ], outfile=outfile)
-
-
 @task(build, init_viaf)
 def import_viaf(c, date='20181104', progress=True):
     "Import VIAF data"
@@ -74,38 +64,67 @@ def import_viaf(c, date='20181104', progress=True):
     ])
 
 
+@task
+def init_ol(c):
+    "Initialize the OpenLibrary schema"
+    print('initializing OpenLibrary schema')
+    c.run('psql -f ol-schema.sql')
+
+
 @task(build)
-def convert_ol_authors(c, date='2018-10-31', progress=True):
+def import_ol_authors(c, date='2018-10-31', progress=True):
     infile = data_dir / f'ol_dump_authors_{date}.txt.gz'
-    outfile = data_dir / f'ol_dump_authors_{date}.psql.gz'
 
     pipeline([
         [bin_dir / 'clean-openlib', infile],
-        ['gzip']
-    ], outfile=outfile)
+        ['psql', '-c', '\\copy ol_author (author_key, author_data) FROM STDIN']
+    ])
 
 
 @task(build)
-def convert_ol_editions(c, date='2018-10-31', progress=True):
+def import_ol_editions(c, date='2018-10-31', progress=True):
     infile = data_dir / f'ol_dump_editions_{date}.txt.gz'
-    outfile = data_dir / f'ol_dump_editions_{date}.psql.gz'
 
     pipeline([
         [bin_dir / 'clean-openlib', infile],
-        ['gzip']
-    ], outfile=outfile)
+        ['psql', '-c', '\\copy ol_edition (edition_key, edition_data) FROM STDIN']
+    ])
 
 
 @task(build)
-def convert_ol_works(c, date='2018-10-31', progress=True):
+def import_ol_works(c, date='2018-10-31', progress=True):
     infile = data_dir / f'ol_dump_works_{date}.txt.gz'
-    outfile = data_dir / f'ol_dump_works_{date}.psql.gz'
 
     pipeline([
         [bin_dir / 'clean-openlib', infile],
-        ['gzip']
-    ], outfile=outfile)
+        ['psql', '-c', '\\copy ol_work (work_key, work_data) FROM STDIN']
+    ])
 
+
+@task(build)
+def import_bx_ratings(c):
+    "Import BookCrossing ratings"
+    print("initializing BX schema")
+    c.run('psql -f bx-schema.sql')
+    print("cleaning BX rating data")
+    with open('data/BX-Book-Ratings.csv') as bf:
+        data = bf.read()
+    barr = np.frombuffer(data, dtype='u1')
+    # delete bytes that are too big
+    barr = barr[barr < 128]
+    # convert to LF
+    barr = barr[barr != ord('\r')]
+    # change delimiter to tab
+    barr[barr == ord(';')] = ord('\t')i
+
+    # write
+    data = bytes(barr)
+    psql = sp.Popen(['psql', '-c', '\\copy bx_raw_ratings FROM STDIN'],
+                    stdin=sp.PIPE)
+    psql.stdin.write(data)
+    rc = psql.wait()
+    if rc:
+        raise RuntimeError('psql exited with code %d', rc)
 
 if __name__ == '__main__':
     import invoke.program

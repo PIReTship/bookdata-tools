@@ -3,7 +3,6 @@ DROP TABLE IF EXISTS ol_author;
 CREATE TABLE ol_author (
     author_id SERIAL NOT NULL,
     author_key VARCHAR(100) NOT NULL,
-    author_name VARCHAR,
     author_data JSONB NOT NULL
 );
 
@@ -11,7 +10,6 @@ DROP TABLE IF EXISTS ol_work CASCADE;
 CREATE TABLE ol_work (
     work_id SERIAL NOT NULL,
     work_key VARCHAR(100) NOT NULL,
-    work_title VARCHAR,
     work_data JSONB NOT NULL
 );
 
@@ -19,6 +17,5 @@ DROP TABLE IF EXISTS ol_edition CASCADE;
 CREATE TABLE ol_edition (
     edition_id SERIAL NOT NULL,
     edition_key VARCHAR(100) NOT NULL,
-    edition_title VARCHAR,
     edition_data JSONB NOT NULL
 );
