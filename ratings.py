@@ -10,7 +10,7 @@ from invoke import task
 
 
 @task
-def import_bx_ratings(c):
+def import_bx(c):
     "Import BookCrossing ratings"
     print("initializing BX schema")
     c.run('psql -f bx-schema.sql')
@@ -41,7 +41,7 @@ def import_bx_ratings(c):
 
 
 @task
-def import_az_ratings(c):
+def import_az(c):
     "Import Amazon ratings"
     print('Resetting Amazon schema')
     c.run('psql -f az-schema.sql')
