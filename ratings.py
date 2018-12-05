@@ -8,6 +8,8 @@ import psycopg2
 
 from invoke import task
 
+import support as s
+
 
 @task
 def import_bx(c):
@@ -40,13 +42,13 @@ def import_bx(c):
         dbc.close()
 
 
-@task
+@task(s.build)
 def import_az(c):
     "Import Amazon ratings"
     print('Resetting Amazon schema')
     c.run('psql -f az-schema.sql')
     print('Importing Amazon ratings')
-    r = sp.run(['psql', '-c', "\\copy az_raw_ratings FROM 'data/ratings_Books.csv' WITH CSV"])
-    if r.returncode:
-        raise RuntimeError('psql exited with code {}'.format(r.returncode))
-
+    s.pipeline([
+      [s.bin_dir / 'pcat', s.data_dir / 'ratings_Books.csv'],
+      ['psql', '-c', '\\copy az_raw_ratings FROM STDIN (FORMAT CSV)']
+    ])
