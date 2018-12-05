@@ -19,12 +19,15 @@ use bookdata::tsv::split_first;
 #[derive(StructOpt, Debug)]
 #[structopt(name="clean-openlib")]
 struct Opt {
+  /// Parse OpenLib files instead of straight JSON lines
+  #[structopt(long="openlib")]
+  openlib: bool,
   /// Input file
   #[structopt(name = "INPUT", parse(from_os_str))]
   infile: PathBuf
 }
 
-fn process<R: BufRead, W: Write>(src: &mut R, dst: &mut W) -> io::Result<()> {
+fn process_openlib<R: BufRead, W: Write>(src: &mut R, dst: &mut W) -> io::Result<()> {
   let mut jsbuf = String::new();
   for line in src.lines() {
     let ls = line?;
@@ -35,6 +38,18 @@ fn process<R: BufRead, W: Write>(src: &mut R, dst: &mut W) -> io::Result<()> {
     clean_json(json, &mut jsbuf);
     dst.write_all(key.as_bytes())?;
     dst.write_all(b"\t")?;
+    write_pgencoded(dst, jsbuf.as_bytes())?;
+    dst.write_all(b"\n")?;
+  }
+
+  Ok(())
+}
+
+fn process_raw<R: BufRead, W: Write>(src: &mut R, dst: &mut W) -> io::Result<()> {
+  let mut jsbuf = String::new();
+  for line in src.lines() {
+    let json = line?;
+    clean_json(&json, &mut jsbuf);
     write_pgencoded(dst, jsbuf.as_bytes())?;
     dst.write_all(b"\n")?;
   }
@@ -56,5 +71,9 @@ fn main() -> io::Result<()> {
   let gzf = MultiGzDecoder::new(pbr);
   let mut bfs = BufReader::new(gzf);
 
-  process(&mut bfs, &mut out)
+  if opt.openlib {
+    process_openlib(&mut bfs, &mut out)
+  } else {
+    process_raw(&mut bfs, &mut out)
+  }
 }
