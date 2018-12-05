@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import subprocess as sp
 from invoke import task
@@ -11,9 +12,11 @@ def build(c, debug=False):
     "Compile the Rust support executables"
     global bin_dir
     if debug:
+        print('compiling support executables in debug mode')
         c.run('cargo build')
         bin_dir = tgt_dir / 'debug'
     else:
+        print('compiling support executables')
         c.run('cargo build --release')
 
 

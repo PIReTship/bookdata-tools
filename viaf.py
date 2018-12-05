@@ -16,7 +16,7 @@ def import_viaf(c, date='20181104'):
     print('importing VIAF data from %s', infile)
 
     s.pipeline([
-        [s.bin_dir / 'parse-marc', infile],
+        [s.bin_dir / 'parse-marc', '--line-mode', infile],
         ['psql', '-c', '\\copy viaf_marc_field FROM STDIN']
     ])
 
