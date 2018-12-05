@@ -134,8 +134,8 @@ def cluster(c, force=False):
         FROM ol_isbn_link
     ''', s.db_url())
     all_isbn_recs = pd.concat([
-        loc_rec_isbns.assign(record=lambda df: df.record + numspaces['rec']),
-        ol_rec_edges
+        loc_isbn_recs.assign(record=lambda df: df.record + s.numspaces['rec']),
+        ol_isbn_recs
     ])
 
     _log.info('clustering %d ISBN records', len(all_isbn_recs))
