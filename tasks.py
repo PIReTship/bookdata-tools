@@ -2,9 +2,12 @@ import sys
 from pathlib import Path
 import subprocess as sp
 import os
+import logging
 
 from invoke import task, Collection
 import ratings, support, viaf, openlib, loc
+
+logging.basicConfig(stream=sys.stderr)
 
 
 ns = Collection()

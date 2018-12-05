@@ -4,10 +4,37 @@ from pathlib import Path
 import subprocess as sp
 from invoke import task
 import psycopg2
+import logging
+
+_log = logging.getLogger(__name__)
 
 data_dir = Path('data')
 tgt_dir = Path('target')
 bin_dir = tgt_dir / 'release'
+numspaces = dict(work=100000000, edition=200000000, rec=300000000, isbn=900000000)
+
+def db_url():
+    if 'DB_URL' in os.environ:
+        return os.environ['DB_URL']
+    
+    host = os.environ.get('PGHOST', 'localhost')
+    port = os.environ.get('PGPORT', None)
+    db = os.environ['PGDATABASE']
+    user = os.environ.get('PGUSER', None)
+    pw = os.environ.get('PGPASSWORD', None)
+
+    url = 'postgresql://'
+    if user:
+        url += user
+        if pw:
+            url += ':' + pw
+        url += '@'
+    url += host
+    if port:
+        url += ':' + port
+    url += '/' + db
+    return url
+
 
 @task
 def init(c):
@@ -22,11 +49,11 @@ def build(c, debug=False):
     "Compile the Rust support executables"
     global bin_dir
     if debug:
-        print('compiling support executables in debug mode')
+        _log.info('compiling support executables in debug mode')
         c.run('cargo build')
         bin_dir = tgt_dir / 'debug'
     else:
-        print('compiling support executables')
+        _log.info('compiling support executables')
         c.run('cargo build --release')
 
 
@@ -39,6 +66,7 @@ def pipeline(steps, outfile=None):
 
     procs = []
     for step in steps[:-1]:
+        _log.debug('running %s', step)
         proc = sp.Popen(step, stdin=last, stdout=sp.PIPE)
         last = proc.stdout
         procs.append(proc)
@@ -49,7 +77,7 @@ def pipeline(steps, outfile=None):
     for p, s in zip(procs, steps):
         rc = p.wait()
         if rc != 0:
-            print(f'{s[0]} exited with code {rc}', file=sys.stderr)
+            _log.error(f'{s[0]} exited with code {rc}')
             raise RuntimeError('subprocess failed')
 
 
@@ -61,6 +89,7 @@ class database:
 
     def __enter__(self):
         if self.connection is None:
+            _log.debug('connecting to database')
             self.connection = psycopg2.connect("")
             self.need_close = True
 
@@ -71,11 +100,13 @@ class database:
 
     def __exit__(self, *args):
         if self.need_close:
+            _log.debug('closing DB connection')
             self.connection.close()
             self.need_close = False
 
 
 def check_prereq(step, dbc=None):
+    _log.debug('checking prereq %s', step)
     with database(dbc=dbc, autocommit=True) as db:
         with db.cursor() as cur:
             cur.execute('''
@@ -84,11 +115,12 @@ def check_prereq(step, dbc=None):
             ''', [step])
             res = cur.fetchone()
             if not res:
-                print('prerequisite step', step, 'not completed', file=sys.stderr)
+                _log.error('prerequisite step %s not completed', step)
                 raise RuntimeError('prerequisites not met')
 
 
 def start(step, force=False, fail=True, dbc=None):
+    _log.debug('starting step %s', step)
     with database(dbc=dbc, autocommit=True) as db:
         with db.cursor() as cur:
             cur.execute('''
@@ -99,16 +131,15 @@ def start(step, force=False, fail=True, dbc=None):
             if res:
                 date, = res
                 if date:
-                    print('step {} already completed at {}'.format(step, date),
-                          file=sys.stderr)
+                    _log.error('step %s already completed at %s', step, date)
                     if force:
-                        print('continuing anyway', file=sys.stderr)
+                        _log.warn('continuing anyway')
                     elif fail:
                         raise RuntimeError('step {} already completed'.format(step))
                     else:
                         return False
                 else:
-                    print('WARNING: step', step, 'already started, did it fail?')
+                    _log.info('WARNING: step %s already started, did it fail?', step)
             cur.execute('''
                 INSERT INTO import_status (step)
                 VALUES (%s)
@@ -120,6 +151,7 @@ def start(step, force=False, fail=True, dbc=None):
 
 
 def finish(step, dbc=None):
+    _log.debug('finishing step %s')
     with database(dbc=dbc, autocommit=True) as db:
         with db.cursor() as cur:
             cur.execute('''
