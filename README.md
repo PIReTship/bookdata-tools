@@ -2,12 +2,22 @@ This repository contains the code to import and integrate the book and rating da
 
 ## Requirements
 
-- PostgreSQL 10 [orafce](https://github.com/orafce/orafce)
-- Node.js (tested on Carbon, the 8.x LTS line)
-- R with the Tidyverse and RPostgreSQL
+- PostgreSQL 10 or later with [orafce](https://github.com/orafce/orafce)
+- Python 3.6 or later with the following packages:
+    - psycopg2
+    - invoke
+    - numpy
+    - tqdm
+    - pandas
+    - sqlalchemy
+    - numba
+- A Rust compiler
 - `psql` executable on the machine where the import scripts will run
 - 300GB disk space for the database
 - 20-30GB disk for data files
+
+The `environment-linux-x64.yml` file defines an Anaconda environment that contains all the required
+packages, with the exception of the PostgreSQL server and client executables.
 
 All scripts read database connection info from the standard PostgreSQL client environment variables:
 
@@ -16,9 +26,33 @@ All scripts read database connection info from the standard PostgreSQL client en
 - `PGUSER`
 - `PGPASSWORD`
 
+## Running Import Tasks
+
+The import process is scripted with [invoke](http://www.pyinvoke.org).  The first tasks to run are
+the import tasks:
+
+    invoke loc.import
+    invoke viaf.import
+    invoke openlib.import-authors openlib.import-works openlib.import-editions
+    invoke ratings.import-az
+    invoke ratings.import-bx
+    invoke ratings.import-gr
+
+Once all the data is imported, you can begin to run the indexing and linking tasks:
+
+    invoke viaf.index
+    invoke loc.index
+    invoke openlib.index
+    invoke analyze.clusters
+    invoke ratings.index
+    invoke analyze.authors
+
+The tasks keep track of the import status in an `import_status` table, and will
+keep you from running tasks in the wrong order.
+
 ## Setting Up Schemas
 
-The `-schema` files contain the base schemas for the data to import:
+The `-schema` files contain the base schemas for the data:
 
 - `common-schema.sql` — common tables
 - `loc-schema.sql` — Library of Congress catalog tables
@@ -26,38 +60,4 @@ The `-schema` files contain the base schemas for the data to import:
 - `viaf-schema.sql` — VIAF tables
 - `az-schema.sql` — Amazon rating schema
 - `bx-schema.sql` — BookCrossing rating data schema
-
-## Importing Data
-
-The importer is run with Gulp.
-
-    npm install
-    npx gulp importOpenLib
-    npx gulp importLOC
-    npx gulp importVIAF
-    npx gulp importBX
-    npx gulp importAmazon
-
-The full import takes 1–3 days.
-
-## Indexing and Integrating
-
-Start tying the data together:
-
-    psql <viaf-index.sql
-    psql <loc-index.sql
-    psql <ol-index.sql
-
-Clustering is done by the `ClusterISBNs.r` script:
-
-    Rscript ClusterISBNs.r
-    psql <load-clusters.sql
-
-With the clusters in place, we're ready to index the rating data:
-
-    psql <az-index.sql
-    psql <bx-index.sql
-
-And finally, compute author information for ISBN clusters:
-
-    psql <author-info.sql
+- `gr-schema.sql` — GoodReads data schema
