@@ -9,7 +9,7 @@ use std::io::{self, BufReader};
 use structopt::StructOpt;
 use std::fs::File;
 use std::path::PathBuf;
-use flate2::read::GzDecoder;
+use flate2::bufread::MultiGzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
 
 use bookdata::pgutils::write_encoded;
@@ -48,7 +48,8 @@ fn main() -> io::Result<()> {
   pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
 
   let pbr = pb.wrap_read(fs);
-  let gzf = GzDecoder::new(pbr);
+  let pbr = BufReader::new(pbr);
+  let gzf = MultiGzDecoder::new(pbr);
   let mut bfs = BufReader::new(gzf);
 
   process(&mut bfs, &mut out)
