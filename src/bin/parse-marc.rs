@@ -18,11 +18,16 @@ use indicatif::{ProgressBar, ProgressStyle};
 use bookdata::cleaning::write_pgencoded;
 use bookdata::tsv::split_first;
 
+/// Parse MARC files into records for a PostgreSQL table.
 #[derive(StructOpt, Debug)]
 #[structopt(name="parse-marc")]
 struct Opt {
+  /// Activate line mode, e.g. for VIAF
+  #[structopt(short="L", long="line-mode")]
+  linemode: bool,
+  /// Input files to parse (GZ-compressed)
   #[structopt(name = "FILE", parse(from_os_str))]
-  infile: PathBuf
+  files: Vec<PathBuf>
 }
 
 struct Field<'a> {
@@ -31,19 +36,32 @@ struct Field<'a> {
   code: &'a [u8]
 }
 
-fn process_delim_file<R: BufRead, W: Write>(r: &mut R, w: &mut W) -> io::Result<i32> {
-  let mut count = 0;
+/// Process a tab-delimited line file.  VIAF provides their files in this format;
+/// each line is a tab-separated pair of the VIAF ID and a single `record` instance.
+fn process_delim_file<R: BufRead, W: Write>(r: &mut R, w: &mut W, init: usize) -> io::Result<usize> {
+  let mut count = init;
   for line in r.lines() {
     let lstr = line?;
     let (_id, xml) = split_first(&lstr).expect("invalid line");
     let mut parse = Reader::from_str(xml);
-    process_record(&mut parse, w, &mut count);
+    let old = count;
+    process_records(&mut parse, w, &mut count);
+    // we should only have one record per file
+    assert_eq!(count, old+1);
   }
 
   Ok(count)
 }
 
-fn write_codes<W: Write>(w: &mut W, rno: i32, fno: i32, tag: &[u8], fld: Option<&Field>) -> io::Result<()> {
+/// Process a file containing a MARC collection.
+fn process_marc_file<R: BufRead, W: Write>(r: &mut R, w: &mut W, init: usize) -> io::Result<usize> {
+  let mut count = init;
+  let mut parse = Reader::from_reader(r);
+  process_records(&mut parse, w, &mut count);
+  Ok(count)
+}
+
+fn write_codes<W: Write>(w: &mut W, rno: usize, fno: i32, tag: &[u8], fld: Option<&Field>) -> io::Result<()> {
   let ids = format!("{}\t{}\t", rno, fno);
   w.write_all(ids.as_str().as_bytes())?;
   w.write_all(tag)?;
@@ -68,7 +86,7 @@ fn write_nl<W: Write>(w: &mut W) -> io::Result<()> {
   w.write_all(b"\n")
 }
 
-fn process_record<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, lno: &mut i32) {
+fn process_records<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, lno: &mut usize) {
   let mut buf = Vec::new();
   let mut output = false;
   let mut fno = 0;
@@ -166,15 +184,25 @@ fn main() -> io::Result<()> {
   let opt = Opt::from_args();
   let out = io::stdout();
   let mut outlock = out.lock();
+  let mut count = 0;
 
-  eprintln!("reading from compressed file {:?}", opt.infile);
-  let fs = File::open(opt.infile)?;
-  let pb = ProgressBar::new(fs.metadata()?.len());
-  pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
-  let pbr = pb.wrap_read(fs);
-  let pbr = BufReader::new(pbr);
-  let gzf = MultiGzDecoder::new(pbr);
-  let mut bfs = BufReader::new(gzf);
-  process_delim_file(&mut bfs, &mut outlock)?;
+  for inf in opt.files {
+    let inf = inf.as_path();
+    eprintln!("reading from compressed file {:?}", inf);
+    let fs = File::open(inf)?;
+    let pb = ProgressBar::new(fs.metadata()?.len());
+    pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
+    let pbr = pb.wrap_read(fs);
+    let pbr = BufReader::new(pbr);
+    let gzf = MultiGzDecoder::new(pbr);
+    let mut bfs = BufReader::new(gzf);
+    let nrecs = if opt.linemode {
+      process_delim_file(&mut bfs, &mut outlock, count)?
+    } else {
+      process_marc_file(&mut bfs, &mut outlock, count)?
+    };
+    eprintln!("processed {} records from {:?}", nrecs, inf);
+    count += nrecs;
+  }
   Ok(())
 }

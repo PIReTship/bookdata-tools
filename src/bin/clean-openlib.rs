@@ -15,9 +15,11 @@ use indicatif::{ProgressBar, ProgressStyle};
 use bookdata::cleaning::{write_pgencoded, clean_json};
 use bookdata::tsv::split_first;
 
+/// Process OpenLib data into format suitable for PostgreSQL import.
 #[derive(StructOpt, Debug)]
 #[structopt(name="clean-openlib")]
 struct Opt {
+  /// Input file
   #[structopt(name = "INPUT", parse(from_os_str))]
   infile: PathBuf
 }
