@@ -101,13 +101,13 @@ def import_ol_works(c, date='2018-10-31', progress=True):
     ])
 
 
-@task(build)
+@task
 def import_bx_ratings(c):
     "Import BookCrossing ratings"
     print("initializing BX schema")
     c.run('psql -f bx-schema.sql')
     print("cleaning BX rating data")
-    with open('data/BX-Book-Ratings.csv') as bf:
+    with open('data/BX-Book-Ratings.csv', 'rb') as bf:
         data = bf.read()
     barr = np.frombuffer(data, dtype='u1')
     # delete bytes that are too big
@@ -115,9 +115,10 @@ def import_bx_ratings(c):
     # convert to LF
     barr = barr[barr != ord('\r')]
     # change delimiter to tab
-    barr[barr == ord(';')] = ord('\t')i
+    barr[barr == ord(';')] = ord('\t')
 
     # write
+    print('importing BX to database')
     data = bytes(barr)
     psql = sp.Popen(['psql', '-c', '\\copy bx_raw_ratings FROM STDIN'],
                     stdin=sp.PIPE)
