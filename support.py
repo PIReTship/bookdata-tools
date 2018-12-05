@@ -12,7 +12,9 @@ bin_dir = tgt_dir / 'release'
 @task
 def init(c):
     "Make sure initial database structure are in place"
-    c.run("psql -f common-schema.sql")
+    if start('init', fail=False):
+        c.run("psql -f common-schema.sql")
+        finish('init')
 
 
 @task
@@ -66,7 +68,7 @@ class database:
                 self.connection.set_session(autocommit=True)
 
         return self.connection
-    
+
     def __exit__(self, *args):
         if self.need_close:
             self.connection.close()
@@ -86,7 +88,7 @@ def check_prereq(step, dbc=None):
                 raise RuntimeError('prerequisites not met')
 
 
-def start(step, force=False, dbc=None):
+def start(step, force=False, fail=True, dbc=None):
     with database(dbc=dbc, autocommit=True) as db:
         with db.cursor() as cur:
             cur.execute('''
@@ -101,16 +103,20 @@ def start(step, force=False, dbc=None):
                           file=sys.stderr)
                     if force:
                         print('continuing anyway', file=sys.stderr)
-                    else:
+                    elif fail:
                         raise RuntimeError('step {} already completed'.format(step))
+                    else:
+                        return False
                 else:
                     print('WARNING: step', step, 'already started, did it fail?')
             cur.execute('''
                 INSERT INTO import_status (step)
                 VALUES (%s)
                 ON CONFLICT (step)
-                DO UPDATE started_at = now(), finished_at = NULL
+                DO UPDATE SET started_at = now(), finished_at = NULL
             ''', [step])
+
+    return True
 
 
 def finish(step, dbc=None):
