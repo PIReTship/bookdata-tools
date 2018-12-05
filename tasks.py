@@ -3,12 +3,13 @@ from pathlib import Path
 import subprocess as sp
 import os
 
-import numpy as np
 from invoke import task
 
 data_dir = Path('data')
 tgt_dir = Path('target')
 bin_dir = tgt_dir / 'release'
+
+from bx import *
 
 
 def pipeline(steps, outfile=None):
@@ -17,13 +18,13 @@ def pipeline(steps, outfile=None):
         outfd = os.open(outfile, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o666)
     else:
         outfd = None
-    
+
     procs = []
     for step in steps[:-1]:
         proc = sp.Popen(step, stdin=last, stdout=sp.PIPE)
         last = proc.stdout
         procs.append(proc)
-    
+
     proc = sp.Popen(steps[-1], stdin=last, stdout=outfd)
     procs.append(proc)
 
@@ -100,31 +101,6 @@ def import_ol_works(c, date='2018-10-31', progress=True):
         ['psql', '-c', '\\copy ol_work (work_key, work_data) FROM STDIN']
     ])
 
-
-@task(build)
-def import_bx_ratings(c):
-    "Import BookCrossing ratings"
-    print("initializing BX schema")
-    c.run('psql -f bx-schema.sql')
-    print("cleaning BX rating data")
-    with open('data/BX-Book-Ratings.csv') as bf:
-        data = bf.read()
-    barr = np.frombuffer(data, dtype='u1')
-    # delete bytes that are too big
-    barr = barr[barr < 128]
-    # convert to LF
-    barr = barr[barr != ord('\r')]
-    # change delimiter to tab
-    barr[barr == ord(';')] = ord('\t')i
-
-    # write
-    data = bytes(barr)
-    psql = sp.Popen(['psql', '-c', '\\copy bx_raw_ratings FROM STDIN'],
-                    stdin=sp.PIPE)
-    psql.stdin.write(data)
-    rc = psql.wait()
-    if rc:
-        raise RuntimeError('psql exited with code %d', rc)
 
 if __name__ == '__main__':
     import invoke.program
