@@ -13,7 +13,7 @@ def init(c):
 def import_loc(c):
     "Import the LOC data"
     loc = s.data_dir / 'LOC'
-    files = loc.glob('BooksAll.2014.part*.xml.gz')
+    files = list(loc.glob('BooksAll.2014.part*.xml.gz'))
     print('importing LOC data from', len(files), 'files')
     s.pipeline([
         [s.bin_dir / 'parse-marc'] + files,
