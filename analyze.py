@@ -1,4 +1,5 @@
 import logging
+import subprocess as sp
 
 import pandas as pd
 import numpy as np
@@ -57,9 +58,32 @@ def _make_clusters(clusters, ls, rs):
     return iters
 
 
+def _import_clusters(tbl, file):
+    sql = f'''
+        DROP TABLE IF EXISTS {tbl} CASCADE;
+        CREATE TABLE {tbl} (
+            isbn_id INTEGER NOT NULL,
+            cluster INTEGER NOT NULL
+        );
+        \copy {tbl} FROM '{file}' WITH (FORMAT CSV);
+        ALTER TABLE {tbl} ADD PRIMARY KEY (isbn_id);
+        CREATE INDEX {tbl}_idx ON {tbl} (cluster);
+        ANALYZE {tbl};
+    '''
+    _log.info('running psql for %s', tbl)
+    kid = sp.Popen(['psql', '-a'], stdin=sp.PIPE)
+    kid.stdin.write(sql)
+    kid.communicate()
+    if kid.wait() != 0:
+        _log.error('psql exited with code %d', rc)
+        raise RuntimeError('psql error')
+
+
 @task(s.init)
 def cluster_loc(c, force=False):
     "Cluster ISBNs using only the LOC data"
+    s.check_prereq('loc-index')
+    s.start('loc-cluster')
     _log.info('reading LOC ISBN records')
     loc_isbn_recs = pd.read_sql('''
         SELECT isbn_id, rec_id AS record
@@ -68,7 +92,56 @@ def cluster_loc(c, force=False):
     _log.info('clustering %d ISBN records', len(loc_isbn_recs))
     loc_clusters = cluster_isbns(loc_isbn_recs)
     _log.info('writing ISBN records')
+    loc_clusters.to_csv(s.data_dir / 'clusters-loc.csv', index=False, header=False)
+    _log.info('importing ISBN records')
+    _import_clusters('loc_sbn_cluster', s.data_dir / 'clusters-loc.csv')
+    s.finish('loc-cluster')
+
+
+@task(s.init)
+def cluster_ol(c, force=False):
+    "Cluster ISBNs using only the OpenLibrary data"
+    s.check_prereq('ol-index')
+    s.start('ol-cluster')
+    _log.info('reading OpenLibrary ISBN records')
+    ol_isbn_recs = pd.read_sql('''
+        SELECT isbn_id, book_code AS record
+        FROM ol_isbn_link
+    ''', s.db_url())
+    _log.info('clustering %d ISBN records', len(ol_isbn_recs))
+    loc_clusters = cluster_isbns(ol_isbn_recs)
+    _log.info('writing ISBN records')
+    loc_clusters.to_csv(s.data_dir / 'clusters-ol.csv', index=False, header=False)
+    _log.info('importing ISBN records')
+    _import_clusters('ol_isbn_cluster', s.data_dir / 'clusters-ol.csv')
+    s.finish('loc-cluster')
 
 @task(s.init)
 def cluster(c, force=False):
     "Cluster ISBNs"
+    s.check_prereq('ol-index')
+    s.check_prereq('loc-index')
+    s.start('cluster')
+    
+    _log.info('reading LOC ISBN records')
+    loc_isbn_recs = pd.read_sql('''
+        SELECT isbn_id, rec_id AS record
+        FROM loc_rec_isbn
+    ''', s.db_url())
+    _log.info('reading OpenLibrary ISBN records')
+    ol_isbn_recs = pd.read_sql('''
+        SELECT isbn_id, book_code AS record
+        FROM ol_isbn_link
+    ''', s.db_url())
+    all_isbn_recs = pd.concat([
+        loc_rec_isbns.assign(record=lambda df: df.record + numspaces['rec']),
+        ol_rec_edges
+    ])
+
+    _log.info('clustering %d ISBN records', len(all_isbn_recs))
+    loc_clusters = cluster_isbns(all_isbn_recs)
+    _log.info('writing ISBN records')
+    loc_clusters.to_csv(s.data_dir / 'clusters.csv', index=False, header=False)
+    _log.info('importing ISBN records')
+    _import_clusters('isbn_cluster', s.data_dir / 'clusters.csv')
+    s.finish('cluster')

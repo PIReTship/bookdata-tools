@@ -5,7 +5,7 @@ import os
 import logging
 
 from invoke import task, Collection
-import ratings, support, viaf, openlib, loc
+import ratings, support, viaf, openlib, loc, analyze
 
 logging.basicConfig(stream=sys.stderr)
 
@@ -16,6 +16,7 @@ ns.add_collection(ratings)
 ns.add_collection(viaf)
 ns.add_collection(openlib)
 ns.add_collection(loc)
+ns.add_collection(analyze)
 
 if __name__ == '__main__':
     import invoke.program
