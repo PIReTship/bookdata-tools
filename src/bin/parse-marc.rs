@@ -26,32 +26,6 @@ struct Opt {
   infile: PathBuf
 }
 
-struct DbgRead<R: Read> {
-  delegate: R,
-  lead: String
-}
-
-impl<R: Read> DbgRead<R> {
-  fn new(r: R, ld: &str) -> DbgRead<R> {
-    DbgRead { delegate: r, lead: ld.to_string() }
-  }
-}
-
-impl<R: Read> Read for DbgRead<R> {
-  fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-    match self.delegate.read(buf) {
-      Ok(sz) => {
-        eprintln!("{}: read {} of {} wanted bytes", self.lead, sz, buf.len());
-        Ok(sz)
-      },
-      Err(e) => {
-        eprintln!("{}: read of {} errored: {:?}", self.lead, buf.len(), e);
-        Err(e)
-      }
-    }
-  }
-}
-
 struct Field<'a> {
   ind1: &'a [u8],
   ind2: &'a [u8],
