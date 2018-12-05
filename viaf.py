@@ -17,3 +17,12 @@ def import_viaf(c, date='20181104', force=False):
         ['psql', '-c', '\\copy viaf_marc_field FROM STDIN']
     ])
     s.finish('viaf')
+
+@task(s.init)
+def index(c, force=False):
+    "Index VIAF data"
+    s.check_prereq('viaf')
+    s.start('viaf-index', force=force)
+    print('building VIAF indexes')
+    c.run('psql -af viaf-index.sql')
+    s.finish('viaf-index')
