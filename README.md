@@ -43,7 +43,9 @@ Once all the data is imported, you can begin to run the indexing and linking tas
     invoke viaf.index
     invoke loc.index
     invoke openlib.index
-    invoke analyze.clusters
+    invoke analyze.cluster-loc
+    invoke analyze.cluster-ol
+    invoke analyze.cluster
     invoke ratings.index
     invoke analyze.authors
 
