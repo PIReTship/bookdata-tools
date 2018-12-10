@@ -1,10 +1,10 @@
 -- Create indexes and constraints
 ALTER TABLE ol_author ADD PRIMARY KEY (author_id);
-ALTER TABLE ol_author ADD CONSTRAINT author_key_uq UNIQUE (author_key);
+CREATE INDEX ol_author_key_idx ON ol_author (author_key);
 ALTER TABLE ol_work ADD PRIMARY KEY (work_id);
-ALTER TABLE ol_work ADD CONSTRAINT work_key_uq UNIQUE (work_key);
+CREATE INDEX ol_work_key_idx ON ol_work (work_key);
 ALTER TABLE ol_edition ADD PRIMARY KEY (edition_id);
-ALTER TABLE ol_edition ADD CONSTRAINT edition_key_uq UNIQUE (edition_key);
+CREATE INDEX ol_edition_key_idx ON ol_edition (edition_key);
 
 -- Set up work-author join table
 DROP TABLE IF EXISTS ol_work_authors CASCADE;

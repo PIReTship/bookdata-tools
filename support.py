@@ -131,15 +131,16 @@ def start(step, force=False, fail=True, dbc=None):
             if res:
                 date, = res
                 if date:
-                    _log.error('step %s already completed at %s', step, date)
                     if force:
-                        _log.warn('continuing anyway')
+                        _log.warning('step %s already completed at %s, continuing anyway', step, date)
                     elif fail:
+                        _log.error('step %s already completed at %s', step, date)
                         raise RuntimeError('step {} already completed'.format(step))
                     else:
+                        _log.info('step %s already completed at %s', step, date)
                         return False
                 else:
-                    _log.info('WARNING: step %s already started, did it fail?', step)
+                    _log.warning('step %s already started, did it fail?', step)
             cur.execute('''
                 INSERT INTO import_status (step)
                 VALUES (%s)
