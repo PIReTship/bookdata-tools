@@ -100,6 +100,7 @@ def _export_isbns(scope, file):
     query = rec_queries[scope]
     if file.exists():
         _log.info('%s already exists, not re-exporting', file)
+        return
     _log.info('exporting ISBNs from %s to %s', rec_names[scope], file)
     tmp = file.with_name('.tmp.' + file.name)
     with s.database(autocommit=True) as db, db.cursor() as cur, gzip.open(tmp, 'w', 4) as out:
@@ -111,6 +112,7 @@ def _export_edges(scope, file):
     query = rec_edge_queries[scope]
     if file.exists():
         _log.info('%s already exists, not re-exporting', file)
+        return
     _log.info('exporting ISBN-ISBN edges from %s to %s', rec_names[scope], file)
     tmp = file.with_name('.tmp.' + file.name)
     with s.database(autocommit=True) as db, db.cursor() as cur, gzip.open(tmp, 'w', 4) as out:
