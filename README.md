@@ -34,19 +34,22 @@ the import tasks:
     invoke loc.import
     invoke viaf.import
     invoke openlib.import-authors openlib.import-works openlib.import-editions
+    invoke goodreads.import
     invoke ratings.import-az
     invoke ratings.import-bx
-    invoke ratings.import-gr
 
 Once all the data is imported, you can begin to run the indexing and linking tasks:
 
     invoke viaf.index
     invoke loc.index
     invoke openlib.index
+    invoke goodreads.index-books
     invoke analyze.cluster-loc
     invoke analyze.cluster-ol
+    invoke analyze.cluster-gr
     invoke analyze.cluster
     invoke ratings.index
+    invoke goodreads.index-ratings
     invoke analyze.authors
 
 The tasks keep track of the import status in an `import_status` table, and will

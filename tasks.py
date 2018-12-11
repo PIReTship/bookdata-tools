@@ -5,7 +5,7 @@ import os
 import logging
 
 from invoke import task, Collection
-import ratings, support, viaf, openlib, loc, analyze
+import ratings, support, viaf, openlib, loc, analyze, goodreads
 from colorama import Fore as F, Back as B, Style as S
 
 _log = logging.getLogger(__package__)
@@ -37,6 +37,7 @@ ns.add_collection(viaf)
 ns.add_collection(openlib)
 ns.add_collection(loc)
 ns.add_collection(analyze)
+ns.add_collection(goodreads)
 
 if __name__ == '__main__':
     import invoke.program
