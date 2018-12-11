@@ -19,14 +19,17 @@ def cluster_isbns(isbn_recs):
     isbns = isbn_recs.groupby('isbn_id').record.min()
     isbns = isbns.reset_index(name='cluster')
     isbns['ino'] = np.arange(len(isbns), dtype=np.int32)
-    intbl = pd.merge(isbn_recs, isbns.loc[:, ['isbn_id', 'ino']])
-    left = intbl.loc[:, ['record', 'ino']].rename(columns={'ino': 'left'})
-    right = intbl.loc[:, ['record', 'ino']].rename(columns={'ino': 'right'})
-    _log.info('making edge table')
-    edges = pd.merge(left, right)
+    inos = isbns.loc[:, ['isbn_id', 'ino']].set_index('isbn_id')
+    intbl = isbn_recs.join(inos, on='isbn_id')
+
+    _log.info('making edge table from %d rows', len(intbl))
+    intbl = intbl.loc[:, ['record', 'ino']]
+    intbl = intbl.set_index('record')
+    edges = intbl.join(intbl, lsuffix='_left', rsuffix='_right')
+
     _log.info('clustering')
-    iters = _make_clusters(isbns.cluster.values, edges.left.values, edges.right.values)
-    _log.info('clustered in %d iterations', iters)
+    iters = _make_clusters(isbns.cluster.values, edges.ino_left.values, edges.ino_right.values)
+    _log.info('produced %d clusters in %d iterations', isbns.cluster.nunique(), iters)
     return isbns
 
 
@@ -44,7 +47,7 @@ def _make_clusters(clusters, ls, rs):
     """
     iters = 0
     nchanged = len(ls)
-    
+
     while nchanged > 0:
         nchanged = 0
         iters = iters + 1
@@ -54,7 +57,7 @@ def _make_clusters(clusters, ls, rs):
             if clusters[left] < clusters[right]:
                 clusters[right] = clusters[left]
                 nchanged += 1
-                
+
     return iters
 
 
@@ -72,10 +75,11 @@ def _import_clusters(tbl, file):
         ANALYZE {tbl};
     '''
     _log.info('running psql for %s', tbl)
-    kid = sp.Popen(['psql', '-v', 'ON_ERROR_STOP=on' '-a'], stdin=sp.PIPE)
+    kid = sp.Popen(['psql', '-v', 'ON_ERROR_STOP=on', '-a'], stdin=sp.PIPE)
     kid.stdin.write(sql.encode('ascii'))
     kid.communicate()
-    if kid.wait() != 0:
+    rc = kid.wait()
+    if rc:
         _log.error('psql exited with code %d', rc)
         raise RuntimeError('psql error')
 
