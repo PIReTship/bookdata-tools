@@ -1,5 +1,7 @@
 import logging
 import subprocess as sp
+import gzip
+from functools import reduce
 from humanize import naturalsize, intcomma
 
 import pandas as pd
@@ -57,7 +59,7 @@ def cluster_isbns(isbn_recs, edges):
     assert np.all(edges.left_ino >= 0)
     edges = edges.assign(right_ino=index.get_indexer(edges.right_isbn).astype('i4'))
     assert np.all(edges.right_ino >= 0)
-    
+
     _log.info('clustering')
     iters = _make_clusters(clusters, edges.left_ino.values, edges.right_ino.values)
     isbns = isbns.reset_index(name='cluster')
@@ -94,6 +96,28 @@ def _make_clusters(clusters, ls, rs):
     return iters
 
 
+def _export_isbns(scope, file):
+    query = rec_queries[scope]
+    if file.exists():
+        _log.info('%s already exists, not re-exporting', file)
+    _log.info('exporting ISBNs from %s to %s', rec_names[scope], file)
+    tmp = file.with_name('.tmp.' + file.name)
+    with s.database(autocommit=True) as db, db.cursor() as cur, gzip.open(tmp, 'w', 4) as out:
+        cur.copy_expert(f'COPY ({query}) TO STDOUT WITH CSV HEADER', out)
+    tmp.replace(file)
+
+
+def _export_edges(scope, file):
+    query = rec_edge_queries[scope]
+    if file.exists():
+        _log.info('%s already exists, not re-exporting', file)
+    _log.info('exporting ISBN-ISBN edges from %s to %s', rec_names[scope], file)
+    tmp = file.with_name('.tmp.' + file.name)
+    with s.database(autocommit=True) as db, db.cursor() as cur, gzip.open(tmp, 'w', 4) as out:
+        cur.copy_expert(f'COPY ({query}) TO STDOUT WITH CSV HEADER', out)
+    tmp.replace(file)
+
+
 def _import_clusters(tbl, file):
     sql = f'''
         DROP TABLE IF EXISTS {tbl} CASCADE;
@@ -116,25 +140,6 @@ def _import_clusters(tbl, file):
         raise RuntimeError('psql error')
 
 
-def _read_recs(scope):
-    _log.info('reading ISBN records from %s', rec_names[scope])
-    recs = pd.concat(df.apply(lambda c: c.astype('i4'))
-                     for df in pd.read_sql(rec_queries[scope], s.db_url(), chunksize=10000))
-    _log.info('read %s ISBN records from %s (%s)', intcomma(len(recs)), rec_names[scope],
-              naturalsize(recs.memory_usage(index=True, deep=True).sum()))
-    
-    return recs
-
-def _read_edges(scope):
-    _log.info('reading ISBN-ISBN edges from %s', rec_names[scope])
-    edges = pd.concat(df.apply(lambda c: c.astype('i4'))
-                      for df in pd.read_sql(rec_edge_queries[scope], s.db_url(), chunksize=10000))
-    _log.info('read %s edges from %s (%s)', intcomma(len(edges)), rec_names[scope],
-              naturalsize(edges.memory_usage(index=True, deep=True).sum()))
-
-    return edges
-
-
 @task(s.init)
 def cluster(c, scope=None, force=False):
     "Cluster ISBNs"
@@ -148,19 +153,30 @@ def cluster(c, scope=None, force=False):
         scopes = list(rec_names.keys())
     else:
         step = f'{scope}-cluster'
-        fn = f'clusters-{scope}.csv'
+        fn = f'{scope}-clusters.csv'
         table = f'{scope}_isbn_cluster'
         scopes = [scope]
-    
+
     for scope in scopes:
         s.check_prereq(prereqs[scope])
 
     s.start(step, force=force)
 
-    isbn_recs = pd.concat((_read_recs(scope) for scope in scopes),
-                          ignore_index=True)
-    isbn_edges = pd.concat((_read_edges(scope) for scope in scopes),
-                           ignore_index=True)
+    isbn_recs = []
+    isbn_edges = []
+    for scope in scopes:
+        i_fn = s.data_dir / f'{scope}-isbns.csv.gz'
+        _export_isbns(scope, i_fn)
+        _log.info('reading ISBNs from %s', i_fn)
+        isbn_recs.append(pd.read_csv(i_fn))
+
+        e_fn = s.data_dir / f'{scope}-edges.csv.gz'
+        _export_edges(scope, e_fn)
+        _log.info('reading edges from %s', e_fn)
+        isbn_edges.append(pd.read_csv(e_fn))
+
+    isbn_recs = pd.concat(isbn_recs, ignore_index=True)
+    isbn_edges = pd.concat(isbn_edges, ignore_index=True)
 
     _log.info('clustering %s ISBN records with %s edges',
               intcomma(len(isbn_recs)), intcomma(len(isbn_edges)))
