@@ -1,5 +1,6 @@
-extern crate indicatif;
+#[macro_use]
 extern crate structopt;
+extern crate indicatif;
 
 use structopt::StructOpt;
 
