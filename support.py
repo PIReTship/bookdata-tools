@@ -63,6 +63,29 @@ def build(c, debug=False):
         c.run('cargo build --release')
 
 
+@task
+def clean(c):
+    "Clean up intermediate & generated files"
+    _log.info('cleaning Rust build')
+    c.run('cargo clean')
+    _log.info('cleaning cluster CSV')
+    for f in data_dir.glob('clusters-*.csv'):
+        _log.debug('rm %s', f)
+        f.unlink()
+
+
+@task
+def test(c, debug=False):
+    "Run tests on the import & support code."
+    global bin_dir
+    if debug:
+        _log.info('testing support executables in debug mode')
+        c.run('cargo test')
+    else:
+        _log.info('testing support executables')
+        c.run('cargo test --release')
+
+
 def pipeline(steps, outfile=None):
     last = sp.DEVNULL
     if outfile is not None:
