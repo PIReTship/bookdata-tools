@@ -1,5 +1,6 @@
 import logging
 import subprocess as sp
+from humanize import naturalsize
 
 import pandas as pd
 import numpy as np
@@ -21,11 +22,14 @@ def cluster_isbns(isbn_recs):
     isbns['ino'] = np.arange(len(isbns), dtype=np.int32)
     inos = isbns.loc[:, ['isbn_id', 'ino']].set_index('isbn_id')
     intbl = isbn_recs.join(inos, on='isbn_id')
+    _log.info('ISBN table takes %s', naturalsize(intbl.memory_usage(index=True, deep=True).sum()))
 
     _log.info('making edge table from %d rows', len(intbl))
     intbl = intbl.loc[:, ['record', 'ino']]
     intbl = intbl.set_index('record')
     edges = intbl.join(intbl, lsuffix='_left', rsuffix='_right')
+    _log.info('edge table has %d rows in %s', len(edges),
+              naturalsize(edges.memory_usage(index=True, deep=True).sum()))
 
     _log.info('clustering')
     iters = _make_clusters(isbns.cluster.values, edges.ino_left.values, edges.ino_right.values)
@@ -94,6 +98,8 @@ def cluster_loc(c, force=False):
         SELECT isbn_id, rec_id AS record
         FROM loc_rec_isbn
     ''', s.db_url())
+    loc_isbn_recs = loc_isbn_recs.apply(lambda c: c.astype('i4'))
+    loc_isbn_recs.info(memory_usage='deep')
     _log.info('clustering %d ISBN records', len(loc_isbn_recs))
     loc_clusters = cluster_isbns(loc_isbn_recs)
     _log.info('writing ISBN records')
@@ -112,7 +118,7 @@ def cluster_ol(c, force=False):
     ol_isbn_recs = pd.read_sql('''
         SELECT isbn_id, book_code AS record
         FROM ol_isbn_link
-    ''', s.db_url())
+    ''', s.db_url()).apply(lambda c: c.astype('i4'))
     _log.info('clustering %d ISBN records', len(ol_isbn_recs))
     loc_clusters = cluster_isbns(ol_isbn_recs)
     _log.info('writing ISBN records')
@@ -144,25 +150,26 @@ def cluster_gr(c, force=False):
 @task(s.init)
 def cluster(c, force=False):
     "Cluster ISBNs"
-    s.check_prereq('gr-index')
     s.check_prereq('loc-index')
+    s.check_prereq('ol-index')
+    s.check_prereq('gr-index-books')
     s.start('cluster')
-    
+
     _log.info('reading LOC ISBN records')
     loc_isbn_recs = pd.read_sql('''
         SELECT isbn_id, rec_id AS record
         FROM loc_rec_isbn
-    ''', s.db_url())
+    ''', s.db_url()).apply(lambda c: c.astype('i4'))
     _log.info('reading OpenLibrary ISBN records')
     ol_isbn_recs = pd.read_sql('''
         SELECT isbn_id, book_code AS record
         FROM ol_isbn_link
-    ''', s.db_url())
+    ''', s.db_url()).apply(lambda c: c.astype('i4'))
     _log.info('reading GoodReads ISBN records')
     gr_isbn_recs = pd.read_sql('''
         SELECT isbn_id, COALESCE(bc_of_gr_work(gr_work_id), bc_of_gr_book(gr_book_id)) AS record
         FROM gr_book_isbn JOIN gr_book_ids USING (gr_book_id)
-    ''', s.db_url())
+    ''', s.db_url()).apply(lambda c: c.astype('i4'))
     all_isbn_recs = pd.concat([
         loc_isbn_recs.assign(record=lambda df: df.record + s.numspaces['rec']),
         ol_isbn_recs,
