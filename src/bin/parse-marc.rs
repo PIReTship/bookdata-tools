@@ -1,3 +1,4 @@
+#[macro_use]
 extern crate structopt;
 extern crate quick_xml;
 extern crate flate2;
