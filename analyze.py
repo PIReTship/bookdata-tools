@@ -95,7 +95,7 @@ def cluster_loc(c, force=False):
     _log.info('writing ISBN records')
     loc_clusters[['isbn_id', 'cluster']].to_csv(s.data_dir / 'clusters-loc.csv', index=False, header=False)
     _log.info('importing ISBN records')
-    _import_clusters('loc_sbn_cluster', s.data_dir / 'clusters-loc.csv')
+    _import_clusters('loc_isbn_cluster', s.data_dir / 'clusters-loc.csv')
     s.finish('loc-cluster')
 
 
@@ -115,12 +115,32 @@ def cluster_ol(c, force=False):
     loc_clusters[['isbn_id', 'cluster']].to_csv(s.data_dir / 'clusters-ol.csv', index=False, header=False)
     _log.info('importing ISBN records')
     _import_clusters('ol_isbn_cluster', s.data_dir / 'clusters-ol.csv')
-    s.finish('loc-cluster')
+    s.finish('ol-cluster')
+
+
+@task(s.init)
+def cluster_gr(c, force=False):
+    "Cluster ISBNs using only the GoodReads data"
+    s.check_prereq('gr-index-books')
+    s.start('gr-cluster')
+    _log.info('reading GoodReads ISBN records')
+    gr_isbn_recs = pd.read_sql('''
+        SELECT isbn_id, COALESCE(bc_of_gr_work(gr_work_id), bc_of_gr_book(gr_book_id)) AS record
+        FROM gr_book_isbn JOIN gr_book_ids USING (gr_book_id)
+    ''', s.db_url())
+    _log.info('clustering %d ISBN records', len(gr_isbn_recs))
+    loc_clusters = cluster_isbns(gr_isbn_recs)
+    _log.info('writing ISBN records')
+    loc_clusters[['isbn_id', 'cluster']].to_csv(s.data_dir / 'clusters-gr.csv', index=False, header=False)
+    _log.info('importing ISBN records')
+    _import_clusters('gr_isbn_cluster', s.data_dir / 'clusters-gr.csv')
+    s.finish('gr-cluster')
+
 
 @task(s.init)
 def cluster(c, force=False):
     "Cluster ISBNs"
-    s.check_prereq('ol-index')
+    s.check_prereq('gr-index')
     s.check_prereq('loc-index')
     s.start('cluster')
     
@@ -134,9 +154,15 @@ def cluster(c, force=False):
         SELECT isbn_id, book_code AS record
         FROM ol_isbn_link
     ''', s.db_url())
+    _log.info('reading GoodReads ISBN records')
+    gr_isbn_recs = pd.read_sql('''
+        SELECT isbn_id, COALESCE(bc_of_gr_work(gr_work_id), bc_of_gr_book(gr_book_id)) AS record
+        FROM gr_book_isbn JOIN gr_book_ids USING (gr_book_id)
+    ''', s.db_url())
     all_isbn_recs = pd.concat([
         loc_isbn_recs.assign(record=lambda df: df.record + s.numspaces['rec']),
-        ol_isbn_recs
+        ol_isbn_recs,
+        gr_isbn_recs
     ])
 
     _log.info('clustering %d ISBN records', len(all_isbn_recs))

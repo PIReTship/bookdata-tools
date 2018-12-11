@@ -109,13 +109,22 @@ def index_bx(c, force=False):
     s.finish('bx-index')
 
 @task(s.init)
+def index_gr_books(c, force=False):
+    s.check_prereq('gr-data')
+    s.start('gr-index-books', force=force)
+    _log.info('building GoodReads indexes')
+    c.run('psql -af gr-index-books.sql')
+    s.finish('gr-index-books')
+
+
+@task(s.init)
 def index_gr(c, force=False):
     "Index GoodReads data"
     s.check_prereq('gr-data')
     s.check_prereq('cluster')
     s.start('gr-index', force=force)
     _log.info('building GoodReads indexes')
-    c.run('psql -af az-index.sql')
+    c.run('psql -af gr-index.sql')
     s.finish('gr-index')
 
 @task(s.init, index_az, index_bx, index_gr)

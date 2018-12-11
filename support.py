@@ -11,7 +11,9 @@ _log = logging.getLogger(__name__)
 data_dir = Path('data')
 tgt_dir = Path('target')
 bin_dir = tgt_dir / 'release'
-numspaces = dict(work=100000000, edition=200000000, rec=300000000, isbn=900000000)
+numspaces = dict(work=100000000, edition=200000000, rec=300000000,
+                 gr_work=400000000, gr_book=500000000,
+                 isbn=900000000)
 
 def db_url():
     if 'DB_URL' in os.environ:
