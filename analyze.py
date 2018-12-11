@@ -1,6 +1,6 @@
 import logging
 import subprocess as sp
-from humanize import naturalsize
+from humanize import naturalsize, intcomma
 
 import pandas as pd
 import numpy as np
@@ -26,31 +26,43 @@ rec_queries = {
         FROM gr_book_isbn
     '''
 }
+rec_edge_queries = {
+    'loc': '''
+        SELECT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
+        FROM loc_rec_isbn l JOIN loc_rec_isbn r ON (l.rec_id = r.rec_id)
+    ''',
+    'ol': '''
+        SELECT isbn_id, book_code AS record
+        FROM ol_isbn_link
+    ''',
+    'gr': '''
+        SELECT isbn_id, book_code AS record
+        FROM gr_book_isbn
+    '''
+}
 prereqs = {'loc': 'loc-index', 'ol': 'ol-index', 'gr': 'gr-index-books'}
 
 
-def cluster_isbns(isbn_recs):
+def cluster_isbns(isbn_recs, edges):
     """
     Compute ISBN clusters.
     """
     _log.info('initializing isbn vector')
     isbns = isbn_recs.groupby('isbn_id').record.min()
-    isbns = isbns.reset_index(name='cluster')
-    isbns['ino'] = np.arange(len(isbns), dtype=np.int32)
-    inos = isbns.loc[:, ['isbn_id', 'ino']].set_index('isbn_id')
-    intbl = isbn_recs.join(inos, on='isbn_id')
-    _log.info('ISBN table takes %s', naturalsize(intbl.memory_usage(index=True, deep=True).sum()))
+    index = isbns.index
+    clusters = isbns.values
 
-    _log.info('making edge table from %d rows', len(intbl))
-    intbl = intbl.loc[:, ['record', 'ino']]
-    intbl = intbl.set_index('record')
-    edges = intbl.join(intbl, lsuffix='_left', rsuffix='_right')
-    _log.info('edge table has %d rows in %s', len(edges),
-              naturalsize(edges.memory_usage(index=True, deep=True).sum()))
-
+    _log.info('mapping edge IDs')
+    edges = edges.assign(left_ino=index.get_indexer(edges.left_isbn).astype('i4'))
+    assert np.all(edges.left_ino >= 0)
+    edges = edges.assign(right_ino=index.get_indexer(edges.right_isbn).astype('i4'))
+    assert np.all(edges.right_ino >= 0)
+    
     _log.info('clustering')
-    iters = _make_clusters(isbns.cluster.values, edges.ino_left.values, edges.ino_right.values)
-    _log.info('produced %d clusters in %d iterations', isbns.cluster.nunique(), iters)
+    iters = _make_clusters(clusters, edges.left_ino.values, edges.right_ino.values)
+    isbns = isbns.reset_index(name='cluster')
+    _log.info('produced %s clusters in %d iterations', 
+              intcommas(isbns.cluster.nunique()), iters)
     return isbns.loc[:, ['isbn_id', 'cluster']]
 
 
@@ -105,11 +117,21 @@ def _import_clusters(tbl, file):
         raise RuntimeError('psql error')
 
 
-def _read_edges(scope):
-    _log.info('reading %s ISBN records', rec_names[scope])
+def _read_recs(scope):
+    _log.info('reading ISBN records from %s', rec_names[scope])
     recs = pd.read_sql(rec_queries[scope], s.db_url()).apply(lambda c: c.astype('i4'))
-    _log.info('read %d ISBN records from %s', len(recs), rec_names[scope])
+    _log.info('read %s ISBN records from %s (%s)', intcomma(len(recs)), rec_names[scope],
+              naturalsize(recs.memory_usage(index=True, deep=True).sum()))
+    
     return recs
+
+def _read_edges(scope):
+    _log.info('reading ISBN-ISBN edges from %s', rec_names[scope])
+    edges = pd.read_sql(rec_edge_queries[scope], s.db_url()).apply(lambda c: c.astype('i4'))
+    _log.info('read %s edges from %s (%s)', intcomma(len(edges)), rec_names[scope],
+              naturalsize(edges.memory_usage(index=True, deep=True).sum()))
+
+    return edges
 
 
 @task(s.init)
@@ -134,10 +156,12 @@ def cluster(c, scope=None, force=False):
 
     s.start(step, force=force)
 
-    isbn_recs = pd.concat(_read_edges(scope) for scope in scopes)
+    isbn_recs = pd.concat(_read_recs(scope) for scope in scopes)
+    isbn_edges = pd.concat(_read_edges(scope) for scope in scopes)
 
-    _log.info('clustering %d ISBN records', len(isbn_recs))
-    loc_clusters = cluster_isbns(isbn_recs)
+    _log.info('clustering %s ISBN records with %s edges',
+              intcomma(len(isbn_recs)), intcomma(len(isbn_edges)))
+    loc_clusters = cluster_isbns(isbn_recs, isbn_edges)
     _log.info('writing ISBN records to %s', fn)
     loc_clusters.to_csv(s.data_dir / fn, index=False, header=False)
     _log.info('importing ISBN records')

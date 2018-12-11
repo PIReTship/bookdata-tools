@@ -11,6 +11,9 @@ This repository contains the code to import and integrate the book and rating da
     - pandas
     - sqlalchemy
     - numba
+    - colorama
+    - chromalog
+    - humanize
 - A Rust compiler
 - `psql` executable on the machine where the import scripts will run
 - 300GB disk space for the database
@@ -44,9 +47,9 @@ Once all the data is imported, you can begin to run the indexing and linking tas
     invoke loc.index
     invoke openlib.index
     invoke goodreads.index-books
-    invoke analyze.cluster-loc
-    invoke analyze.cluster-ol
-    invoke analyze.cluster-gr
+    invoke analyze.cluster --scope loc
+    invoke analyze.cluster --scope ol
+    invoke analyze.cluster --scope gr
     invoke analyze.cluster
     invoke ratings.index
     invoke goodreads.index-ratings
