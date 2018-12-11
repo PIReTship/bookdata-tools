@@ -11,7 +11,7 @@ def init(c, force=False):
     "Initialize the OpenLibrary schema"
     if s.start('ol-init', fail=False, force=force):
         _log.info('initializing OpenLibrary schema')
-        c.run('psql -f ol-schema.sql')
+        s.psql(c, 'ol-schema.sql')
         s.finish('ol-init')
 
 
@@ -66,5 +66,5 @@ def index(c, force=False):
     s.check_prereq('ol-authors')
     s.start('ol-index', force=force)
     _log.info('building OpenLibrary indexes')
-    c.run('psql -af ol-index.sql')
+    s.psql(c, 'ol-index.sql')
     s.finish('ol-index')

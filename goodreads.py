@@ -12,7 +12,7 @@ def import_data(c, force=False):
     "Import GoodReads rating and book data"
     s.start('gr-data', force=force)
     _log.info('Resetting GoodReads schema')
-    c.run('psql -f gr-schema.sql')
+    s.psql(c, 'gr-schema.sql')
     _log.info('Importing GoodReads books')
     s.pipeline([
       [s.bin_dir / 'clean-json', s.data_dir / 'goodreads_books.json.gz'],
@@ -42,7 +42,7 @@ def index_books(c, force=False):
     s.check_prereq('gr-data')
     s.start('gr-index-books', force=force)
     _log.info('building GoodReads indexes')
-    c.run('psql -af gr-index-books.sql')
+    s.psql(c, 'gr-index-books.sql')
     s.finish('gr-index-books')
 
 
@@ -53,5 +53,5 @@ def index_ratings(c, force=False):
     s.check_prereq('cluster')
     s.start('gr-index-ratings', force=force)
     _log.info('building GoodReads indexes')
-    c.run('psql -af gr-index-ratings.sql')
+    s.psql(c, 'gr-index-ratings.sql')
     s.finish('gr-index-ratings')

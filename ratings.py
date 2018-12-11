@@ -19,7 +19,7 @@ def import_bx(c, force=False):
     "Import BookCrossing ratings"
     s.start('bx-ratings', force=force)
     _log.info("initializing BX schema")
-    c.run('psql -f bx-schema.sql')
+    s.psql(c, 'bx-schema.sql')
     _log.info("cleaning BX rating data")
     with open('data/BX-Book-Ratings.csv', 'rb') as bf:
         data = bf.read()
@@ -50,7 +50,7 @@ def import_az(c, force=False):
     "Import Amazon ratings"
     s.start('az-ratings', force=force)
     _log.info('Resetting Amazon schema')
-    c.run('psql -f az-schema.sql')
+    s.psql(c, 'az-schema.sql')
     _log.info('Importing Amazon ratings')
     s.pipeline([
       [s.bin_dir / 'pcat', s.data_dir / 'ratings_Books.csv'],
@@ -66,7 +66,7 @@ def index_az(c, force=False):
     s.check_prereq('cluster')
     s.start('az-index', force=force)
     _log.info('building Amazon indexes')
-    c.run('psql -af az-index.sql')
+    s.psql(c, 'az-index.sql')
     s.finish('az-index')
 
 @task(s.init)
@@ -76,7 +76,7 @@ def index_bx(c, force=False):
     s.check_prereq('cluster')
     s.start('bx-index', force=force)
     _log.info('building Amazon indexes')
-    c.run('psql -af bx-index.sql')
+    s.psql(c, 'bx-index.sql')
     s.finish('bx-index')
 
 @task(s.init, index_az, index_bx)

@@ -72,7 +72,7 @@ def _import_clusters(tbl, file):
         ANALYZE {tbl};
     '''
     _log.info('running psql for %s', tbl)
-    kid = sp.Popen(['psql', '-a'], stdin=sp.PIPE)
+    kid = sp.Popen(['psql', '-v', 'ON_ERROR_STOP=on' '-a'], stdin=sp.PIPE)
     kid.stdin.write(sql.encode('ascii'))
     kid.communicate()
     if kid.wait() != 0:

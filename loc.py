@@ -11,7 +11,7 @@ def import_loc(c, force=False):
     "Import the LOC data"
     s.start('loc', force=force)
     _log.info('initializing LOC schema')
-    c.run('psql -f loc-schema.sql')
+    s.psql(c, 'loc-schema.sql')
     loc = s.data_dir / 'LOC'
     files = list(loc.glob('BooksAll.2014.part*.xml.gz'))
     _log.info('importing LOC data from', len(files), 'files')
@@ -27,5 +27,5 @@ def index(c, force=False):
     s.check_prereq('loc')
     s.start('loc-index', force=force)
     _log.info('building LOC indexes')
-    c.run('psql -af loc-index.sql')
+    s.psql(c, 'loc-index.sql')
     s.finish('loc-index')

@@ -38,11 +38,15 @@ def db_url():
     return url
 
 
+def psql(c, script):
+    c.run(f'psql -v ON_ERROR_STOP=on -f {script}')
+
+
 @task
 def init(c):
     "Make sure initial database structure are in place"
     if start('init', fail=False):
-        c.run("psql -f common-schema.sql")
+        psql(c, 'common-schema.sql')
         finish('init')
 
 

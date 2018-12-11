@@ -11,7 +11,7 @@ def import_viaf(c, date='20181104', force=False):
     "Import VIAF data"
     s.start('viaf', force=force)
     _log.info('initializing VIAF schema')
-    c.run('psql -f viaf-schema.sql')
+    s.psql(c, 'viaf-schema.sql')
     infile = s.data_dir / f'viaf-{date}-clusters-marc21.xml.gz'
     _log.info('importing VIAF data from %s', infile)
 
