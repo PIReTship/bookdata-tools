@@ -118,7 +118,8 @@ def _import_clusters(tbl, file):
 
 def _read_recs(scope):
     _log.info('reading ISBN records from %s', rec_names[scope])
-    recs = pd.read_sql(rec_queries[scope], s.db_url()).apply(lambda c: c.astype('i4'))
+    recs = pd.concat(df.apply(lambda c: c.astype('i4'))
+                     for df in pd.read_sql(rec_queries[scope], s.db_url(), chunksize=10000))
     _log.info('read %s ISBN records from %s (%s)', intcomma(len(recs)), rec_names[scope],
               naturalsize(recs.memory_usage(index=True, deep=True).sum()))
     
@@ -126,7 +127,8 @@ def _read_recs(scope):
 
 def _read_edges(scope):
     _log.info('reading ISBN-ISBN edges from %s', rec_names[scope])
-    edges = pd.read_sql(rec_edge_queries[scope], s.db_url()).apply(lambda c: c.astype('i4'))
+    edges = pd.concat(df.apply(lambda c: c.astype('i4'))
+                      for df in pd.read_sql(rec_edge_queries[scope], s.db_url(), chunksize=10000))
     _log.info('read %s edges from %s (%s)', intcomma(len(edges)), rec_names[scope],
               naturalsize(edges.memory_usage(index=True, deep=True).sum()))
 
