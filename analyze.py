@@ -32,12 +32,12 @@ rec_edge_queries = {
         FROM loc_rec_isbn l JOIN loc_rec_isbn r ON (l.rec_id = r.rec_id)
     ''',
     'ol': '''
-        SELECT isbn_id, book_code AS record
-        FROM ol_isbn_link
+        SELECT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
+        FROM ol_isbn_link l JOIN ol_isbn_link r ON (l.book_code = r.book_code)
     ''',
     'gr': '''
-        SELECT isbn_id, book_code AS record
-        FROM gr_book_isbn
+        SELECT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
+        FROM gr_book_isbn l JOIN gr_book_isbn r ON (l.book_code = r.book_code)
     '''
 }
 prereqs = {'loc': 'loc-index', 'ol': 'ol-index', 'gr': 'gr-index-books'}
