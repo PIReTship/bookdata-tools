@@ -7,7 +7,6 @@ ALTER TABLE ol_edition ADD PRIMARY KEY (edition_id);
 CREATE INDEX ol_edition_key_idx ON ol_edition (edition_key);
 
 -- Set up work-author join table
-DROP TABLE IF EXISTS ol_work_authors CASCADE;
 CREATE TABLE ol_work_authors
 AS SELECT work_id, author_id
    FROM ol_author
@@ -19,7 +18,6 @@ CREATE INDEX work_author_au_idx ON ol_work_authors (author_id);
 ALTER TABLE ol_work_authors ADD CONSTRAINT work_author_wk_fk FOREIGN KEY (work_id) REFERENCES ol_work;
 ALTER TABLE ol_work_authors ADD CONSTRAINT work_author_au_fk FOREIGN KEY (author_id) REFERENCES ol_author;
 
-DROP TABLE IF EXISTS ol_work_first_author CASCADE;
 CREATE TABLE ol_work_first_author
 AS SELECT work_id, author_id
    FROM ol_author
@@ -32,7 +30,6 @@ ALTER TABLE ol_work_first_author ADD CONSTRAINT work_first_author_wk_fk FOREIGN 
 ALTER TABLE ol_work_first_author ADD CONSTRAINT work_first_author_au_fk FOREIGN KEY (author_id) REFERENCES ol_author;
 
 -- Set up edition-author join table
-DROP TABLE IF EXISTS ol_edition_author;
 CREATE TABLE ol_edition_author
 AS SELECT edition_id, author_id
    FROM ol_author
@@ -45,7 +42,6 @@ CREATE INDEX edition_author_au_idx ON ol_edition_author (author_id);
 ALTER TABLE ol_edition_author ADD CONSTRAINT edition_author_wk_fk FOREIGN KEY (edition_id) REFERENCES ol_edition;
 ALTER TABLE ol_edition_author ADD CONSTRAINT edition_author_au_fk FOREIGN KEY (author_id) REFERENCES ol_author;
 
-DROP TABLE IF EXISTS ol_edition_first_author;
 CREATE TABLE ol_edition_first_author
 AS SELECT edition_id, author_id
    FROM ol_author
@@ -59,7 +55,6 @@ ALTER TABLE ol_edition_first_author ADD CONSTRAINT edition_first_author_wk_fk FO
 ALTER TABLE ol_edition_first_author ADD CONSTRAINT edition_first_author_au_fk FOREIGN KEY (author_id) REFERENCES ol_author;
 
 -- Set up edition-work join table
-DROP TABLE IF EXISTS ol_edition_work;
 CREATE TABLE ol_edition_work
 AS SELECT edition_id, work_id
    FROM ol_work
@@ -72,14 +67,12 @@ ALTER TABLE ol_edition_work ADD CONSTRAINT edition_work_ed_fk FOREIGN KEY (editi
 ALTER TABLE ol_edition_work ADD CONSTRAINT edition_work_wk_fk FOREIGN KEY (work_id) REFERENCES ol_work;
 
 -- Set up work and author summary info
-DROP MATERIALIZED VIEW IF EXISTS ol_work_meta;
 CREATE MATERIALIZED VIEW ol_work_meta
   AS SELECT work_id, work_key, length(work_data::text) AS work_desc_length
     FROM ol_work;
 CREATE INDEX ol_work_meta_work_idx ON ol_work_meta (work_id);
 CREATE INDEX ol_work_meta_key_idx ON ol_work_meta (work_key);
 
-DROP MATERIALIZED VIEW IF EXISTS ol_edition_meta;
 CREATE MATERIALIZED VIEW ol_edition_meta
 AS SELECT edition_id, edition_key, length(edition_data::text) AS edition_desc_length
    FROM ol_edition;
@@ -87,21 +80,17 @@ CREATE INDEX ol_edition_meta_edition_idx ON ol_edition_meta (edition_id);
 CREATE INDEX ol_edition_meta_key_idx ON ol_edition_meta (edition_key);
 
 -- Extract ISBNs (and ASINs)
-DROP MATERIALIZED VIEW IF EXISTS ol_edition_isbn10;
 CREATE MATERIALIZED VIEW ol_edition_isbn10
   AS SELECT edition_id, jsonb_array_elements_text(edition_data->'isbn_10') AS isbn
      FROM ol_edition;
-DROP MATERIALIZED VIEW IF EXISTS ol_edition_isbn13;
 CREATE MATERIALIZED VIEW ol_edition_isbn13
   AS SELECT edition_id, jsonb_array_elements_text(edition_data->'isbn_13') AS isbn
      FROM ol_edition;
-DROP MATERIALIZED VIEW IF EXISTS ol_edition_asin;
 CREATE MATERIALIZED VIEW ol_edition_asin
   AS SELECT edition_id, jsonb_array_elements_text(edition_data#>'{identifiers,amazon}') AS asin
      FROM ol_edition;
 
 -- Integrate ISBN/ASIN identifiers
-DROP TABLE IF EXISTS ol_edition_isbn;
 CREATE TABLE ol_edition_isbn (
   edition_id INTEGER NOT NULL,
   isbn VARCHAR NOT NULL
@@ -135,7 +124,6 @@ INSERT INTO isbn_id (isbn)
   WHERE isbn NOT IN (SELECT isbn FROM isbn_id);
 ANALYZE isbn_id;
 
-DROP TABLE IF EXISTS ol_isbn_link;
 CREATE TABLE ol_isbn_link (
   isbn_id INTEGER NOT NULL,
   edition_id INTEGER NOT NULL,
@@ -155,7 +143,6 @@ ALTER TABLE ol_isbn_link ADD CONSTRAINT ol_isbn_link_ed_fk FOREIGN KEY (edition_
 ANALYZE ol_isbn_link;
 
 -- Set up a general author names table, for all known names
-DROP TABLE IF EXISTS ol_author_name CASCADE;
 CREATE TABLE ol_author_name (
   author_id INTEGER NOT NULL,
   author_name VARCHAR NOT NULL,
@@ -185,7 +172,6 @@ ANALYZE ol_author_name;
 --    WHERE author_id IS NOT NULL;
 -- CREATE INDEX book_first_author_book_idx ON ol_book_first_author (book_id);
 
-DROP MATERIALIZED VIEW IF EXISTS ol_work_subject CASCADE;
 CREATE MATERIALIZED VIEW ol_work_subject
 AS SELECT work_id, jsonb_array_elements_text(work_data->'subjects') AS subject
   FROM ol_work;
