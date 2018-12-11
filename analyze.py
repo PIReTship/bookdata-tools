@@ -152,7 +152,7 @@ def cluster(c, scope=None, force=False):
         scopes = [scope]
     
     for scope in scopes:
-        s.check_prereq(f'{scope}-index')
+        s.check_prereq(prereqs[scope])
 
     s.start(step, force=force)
 

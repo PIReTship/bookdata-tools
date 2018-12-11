@@ -16,8 +16,8 @@ This repository contains the code to import and integrate the book and rating da
     - humanize
 - A Rust compiler
 - `psql` executable on the machine where the import scripts will run
-- 300GB disk space for the database
-- 20-30GB disk for data files
+- 500GB disk space for the database
+- 30GB disk space for data files
 
 The `environment-linux-x64.yml` file defines an Anaconda environment that contains all the required
 packages, with the exception of the PostgreSQL server and client executables.
