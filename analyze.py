@@ -62,7 +62,7 @@ def cluster_isbns(isbn_recs, edges):
     iters = _make_clusters(clusters, edges.left_ino.values, edges.right_ino.values)
     isbns = isbns.reset_index(name='cluster')
     _log.info('produced %s clusters in %d iterations', 
-              intcommas(isbns.cluster.nunique()), iters)
+              intcomma(isbns.cluster.nunique()), iters)
     return isbns.loc[:, ['isbn_id', 'cluster']]
 
 
@@ -96,7 +96,6 @@ def _make_clusters(clusters, ls, rs):
 
 def _import_clusters(tbl, file):
     sql = f'''
-        \\set on_error_stop true
         DROP TABLE IF EXISTS {tbl} CASCADE;
         CREATE TABLE {tbl} (
             isbn_id INTEGER NOT NULL,
@@ -156,8 +155,10 @@ def cluster(c, scope=None, force=False):
 
     s.start(step, force=force)
 
-    isbn_recs = pd.concat(_read_recs(scope) for scope in scopes)
-    isbn_edges = pd.concat(_read_edges(scope) for scope in scopes)
+    isbn_recs = pd.concat((_read_recs(scope) for scope in scopes),
+                          ignore_index=True)
+    isbn_edges = pd.concat((_read_edges(scope) for scope in scopes),
+                           ignore_index=True)
 
     _log.info('clustering %s ISBN records with %s edges',
               intcomma(len(isbn_recs)), intcomma(len(isbn_edges)))
