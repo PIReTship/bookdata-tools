@@ -11,6 +11,23 @@ from invoke import task
 
 _log = logging.getLogger(__name__)
 
+rec_names = {'loc': 'LOC', 'ol': 'OpenLibrary', 'gr': 'GoodReads'}
+rec_queries = {
+    'loc': '''
+        SELECT isbn_id, bc_of_loc_rec(rec_id) AS record
+        FROM loc_rec_isbn
+    ''',
+    'ol': '''
+        SELECT isbn_id, book_code AS record
+        FROM ol_isbn_link
+    ''',
+    'gr': '''
+        SELECT isbn_id, book_code AS record
+        FROM gr_book_isbn
+    '''
+}
+prereqs = {'loc': 'loc-index', 'ol': 'ol-index', 'gr': 'gr-index-books'}
+
 
 def cluster_isbns(isbn_recs):
     """
@@ -34,7 +51,7 @@ def cluster_isbns(isbn_recs):
     _log.info('clustering')
     iters = _make_clusters(isbns.cluster.values, edges.ino_left.values, edges.ino_right.values)
     _log.info('produced %d clusters in %d iterations', isbns.cluster.nunique(), iters)
-    return isbns
+    return isbns.loc[:, ['isbn_id', 'cluster']]
 
 
 @njit
@@ -88,98 +105,41 @@ def _import_clusters(tbl, file):
         raise RuntimeError('psql error')
 
 
-@task(s.init)
-def cluster_loc(c, force=False):
-    "Cluster ISBNs using only the LOC data"
-    s.check_prereq('loc-index')
-    s.start('loc-cluster', force=force)
-    _log.info('reading LOC ISBN records')
-    loc_isbn_recs = pd.read_sql('''
-        SELECT isbn_id, rec_id AS record
-        FROM loc_rec_isbn
-    ''', s.db_url())
-    loc_isbn_recs = loc_isbn_recs.apply(lambda c: c.astype('i4'))
-    loc_isbn_recs.info(memory_usage='deep')
-    _log.info('clustering %d ISBN records', len(loc_isbn_recs))
-    loc_clusters = cluster_isbns(loc_isbn_recs)
-    _log.info('writing ISBN records')
-    loc_clusters[['isbn_id', 'cluster']].to_csv(s.data_dir / 'clusters-loc.csv', index=False, header=False)
-    _log.info('importing ISBN records')
-    _import_clusters('loc_isbn_cluster', s.data_dir / 'clusters-loc.csv')
-    s.finish('loc-cluster')
+def _read_edges(scope):
+    _log.info('reading %s ISBN records', rec_names[scope])
+    recs = pd.read_sql(rec_queries[scope], s.db_url()).apply(lambda c: c.astype('i4'))
+    _log.info('read %d ISBN records from %s', len(recs), rec_names[scope])
+    return recs
 
 
 @task(s.init)
-def cluster_ol(c, force=False):
-    "Cluster ISBNs using only the OpenLibrary data"
-    s.check_prereq('ol-index')
-    s.start('ol-cluster')
-    _log.info('reading OpenLibrary ISBN records')
-    ol_isbn_recs = pd.read_sql('''
-        SELECT isbn_id, book_code AS record
-        FROM ol_isbn_link
-    ''', s.db_url()).apply(lambda c: c.astype('i4'))
-    _log.info('clustering %d ISBN records', len(ol_isbn_recs))
-    loc_clusters = cluster_isbns(ol_isbn_recs)
-    _log.info('writing ISBN records')
-    loc_clusters[['isbn_id', 'cluster']].to_csv(s.data_dir / 'clusters-ol.csv', index=False, header=False)
-    _log.info('importing ISBN records')
-    _import_clusters('ol_isbn_cluster', s.data_dir / 'clusters-ol.csv')
-    s.finish('ol-cluster')
-
-
-@task(s.init)
-def cluster_gr(c, force=False):
-    "Cluster ISBNs using only the GoodReads data"
-    s.check_prereq('gr-index-books')
-    s.start('gr-cluster')
-    _log.info('reading GoodReads ISBN records')
-    gr_isbn_recs = pd.read_sql('''
-        SELECT isbn_id, COALESCE(bc_of_gr_work(gr_work_id), bc_of_gr_book(gr_book_id)) AS record
-        FROM gr_book_isbn JOIN gr_book_ids USING (gr_book_id)
-    ''', s.db_url())
-    _log.info('clustering %d ISBN records', len(gr_isbn_recs))
-    loc_clusters = cluster_isbns(gr_isbn_recs)
-    _log.info('writing ISBN records')
-    loc_clusters[['isbn_id', 'cluster']].to_csv(s.data_dir / 'clusters-gr.csv', index=False, header=False)
-    _log.info('importing ISBN records')
-    _import_clusters('gr_isbn_cluster', s.data_dir / 'clusters-gr.csv')
-    s.finish('gr-cluster')
-
-
-@task(s.init)
-def cluster(c, force=False):
+def cluster(c, scope=None, force=False):
     "Cluster ISBNs"
     s.check_prereq('loc-index')
     s.check_prereq('ol-index')
     s.check_prereq('gr-index-books')
-    s.start('cluster')
+    if scope is None:
+        step = 'cluster'
+        fn = 'clusters.csv'
+        table = 'isbn_cluster'
+        scopes = list(rec_names.keys())
+    else:
+        step = f'{scope}-cluster'
+        fn = f'clusters-{scope}.csv'
+        table = f'{scope}_isbn_cluster'
+        scopes = [scope]
+    
+    for scope in scopes:
+        s.check_prereq(f'{scope}-index')
 
-    _log.info('reading LOC ISBN records')
-    loc_isbn_recs = pd.read_sql('''
-        SELECT isbn_id, rec_id AS record
-        FROM loc_rec_isbn
-    ''', s.db_url()).apply(lambda c: c.astype('i4'))
-    _log.info('reading OpenLibrary ISBN records')
-    ol_isbn_recs = pd.read_sql('''
-        SELECT isbn_id, book_code AS record
-        FROM ol_isbn_link
-    ''', s.db_url()).apply(lambda c: c.astype('i4'))
-    _log.info('reading GoodReads ISBN records')
-    gr_isbn_recs = pd.read_sql('''
-        SELECT isbn_id, COALESCE(bc_of_gr_work(gr_work_id), bc_of_gr_book(gr_book_id)) AS record
-        FROM gr_book_isbn JOIN gr_book_ids USING (gr_book_id)
-    ''', s.db_url()).apply(lambda c: c.astype('i4'))
-    all_isbn_recs = pd.concat([
-        loc_isbn_recs.assign(record=lambda df: df.record + s.numspaces['rec']),
-        ol_isbn_recs,
-        gr_isbn_recs
-    ])
+    s.start(step, force=force)
 
-    _log.info('clustering %d ISBN records', len(all_isbn_recs))
-    loc_clusters = cluster_isbns(all_isbn_recs)
-    _log.info('writing ISBN records')
-    loc_clusters.to_csv(s.data_dir / 'clusters.csv', index=False, header=False)
+    isbn_recs = pd.concat(_read_edges(scope) for scope in scopes)
+
+    _log.info('clustering %d ISBN records', len(isbn_recs))
+    loc_clusters = cluster_isbns(isbn_recs)
+    _log.info('writing ISBN records to %s', fn)
+    loc_clusters.to_csv(s.data_dir / fn, index=False, header=False)
     _log.info('importing ISBN records')
-    _import_clusters('isbn_cluster', s.data_dir / 'clusters.csv')
-    s.finish('cluster')
+    _import_clusters(table, s.data_dir / fn)
+    s.finish(step)

@@ -43,10 +43,11 @@ WHERE gr_isbn13 IS NOT NULL AND gr_isbn13 NOT IN (SELECT isbn FROM isbn_id);
 
 -- Map ISBNs to book IDs
 CREATE TABLE gr_book_isbn
-  AS SELECT gr_book_id, isbn_id
+  AS SELECT gr_book_id, isbn_id, COALESCE(bc_of_gr_work(gr_work_id), bc_of_gr_book(gr_book_id)) AS book_code
   FROM gr_book_ids, isbn_id
   WHERE isbn = gr_isbn OR isbn = gr_isbn13;
 CREATE INDEX gr_book_isbn_book_idx ON gr_book_isbn (gr_book_id);
 CREATE INDEX gr_book_isbn_isbn_idx ON gr_book_isbn (isbn_id);
+CREATE INDEX gr_book_isbn_code_idx ON gr_book_isbn (book_code);
 ALTER TABLE gr_book_isbn ADD CONSTRAINT gr_book_isbn_book_fk FOREIGN KEY (gr_book_id) REFERENCES gr_book_ids (gr_book_id);
 ALTER TABLE gr_book_isbn ADD CONSTRAINT gr_book_isbn_isbn_fk FOREIGN KEY (isbn_id) REFERENCES isbn_id (isbn_id);
