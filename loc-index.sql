@@ -61,7 +61,6 @@ CREATE INDEX loc_book_lccn_idx ON loc_book (lccn);
 ANALYZE loc_book;
 
 -- Index ISBNs
-DROP MATERIALIZED VIEW IF EXISTS loc_rec_extracted_isbn;
 CREATE MATERIALIZED VIEW loc_rec_extracted_isbn AS
   SELECT rec_id, upper(regexp_replace(substring(contents from '^\s*(?:(?:ISBN)?[:;z]?\s*)?([0-9 -]+[0-9Xx])'), '[- ]', '')) AS isbn
   FROM loc_marc_field
