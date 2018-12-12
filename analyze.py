@@ -114,13 +114,17 @@ def _export_isbns(scope, file):
 
 def _export_edges(scope, file):
     query = rec_edge_queries[scope]
+    query = query.strip().replace('\n', ' ')
     if file.exists():
         _log.info('%s already exists, not re-exporting', file)
         return
     _log.info('exporting ISBN-ISBN edges from %s to %s', rec_names[scope], file)
     tmp = file.with_name('.tmp.' + file.name)
-    with s.database(autocommit=True) as db, db.cursor() as cur, gzip.open(tmp, 'wb', 4) as out:
-        cur.copy_expert(f'COPY ({query}) TO STDOUT WITH CSV HEADER', out)
+    s.pipeline([
+        ['psql', '-v', 'ON_ERROR_STOP=on', '-c',
+         f'\\copy ({query}) TO STDOUT WITH CSV HEADER'],
+        ['gzip', '-4']
+    ], outfile=tmp)
     tmp.replace(file)
 
 

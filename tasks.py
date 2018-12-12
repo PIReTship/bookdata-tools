@@ -10,11 +10,13 @@ from colorama import Fore as F, Back as B, Style as S
 
 _log = logging.getLogger(__package__)
 
+_log_fmt = '%(asctime)s %(levelname)s %(name)s: %(message)s'
+_log_date = '%H:%M:%S'
 try:
     import chromalog
-    chromalog.basicConfig(stream=sys.stderr, level=logging.INFO, format='%(levelname)s %(name)s: %(message)s')
+    chromalog.basicConfig(stream=sys.stderr, level=logging.INFO, format=_log_fmt, datefmt=_log_date)
 except ImportError:
-    logging.basicConfig(stream=sys.stderr, level=logging.INFO, format='%(levelname)s %(name)s: %(message)s')
+    logging.basicConfig(stream=sys.stderr, level=logging.INFO, format=_log_fmt, datefmt=_log_date)
     _log.warning('chromalog not found, using plain logs')
 
 

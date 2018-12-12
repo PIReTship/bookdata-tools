@@ -69,9 +69,16 @@ def clean(c):
     _log.info('cleaning Rust build')
     c.run('cargo clean')
     _log.info('cleaning cluster CSV')
-    for f in data_dir.glob('clusters-*.csv'):
+    for f in data_dir.glob('*clusters.csv'):
         _log.debug('rm %s', f)
         f.unlink()
+    for f in data_dir.glob('*-edges.csv.gz'):
+        _log.debug('rm %s', f)
+        f.unlink()
+    for f in data_dir.glob('*-isbns.csv.gz'):
+        _log.debug('rm %s', f)
+        f.unlink()
+
 
 
 @task
