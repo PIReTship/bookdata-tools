@@ -16,29 +16,29 @@ _log = logging.getLogger(__name__)
 rec_names = {'loc': 'LOC', 'ol': 'OpenLibrary', 'gr': 'GoodReads'}
 rec_queries = {
     'loc': '''
-        SELECT isbn_id, bc_of_loc_rec(rec_id) AS record
-        FROM loc_rec_isbn
+        SELECT isbn_id, MIN(bc_of_loc_rec(rec_id)) AS record
+        FROM loc_rec_isbn GROUP BY isbn_id
     ''',
     'ol': '''
-        SELECT isbn_id, book_code AS record
-        FROM ol_isbn_link
+        SELECT DISTINCT isbn_id, MIN(book_code) AS record
+        FROM ol_isbn_link GROUP BY isbn_id
     ''',
     'gr': '''
-        SELECT isbn_id, book_code AS record
-        FROM gr_book_isbn
+        SELECT DISTINCT isbn_id, MIN(book_code) AS record
+        FROM gr_book_isbn GROUP BY isbn_id
     '''
 }
 rec_edge_queries = {
     'loc': '''
-        SELECT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
+        SELECT DISTINCT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
         FROM loc_rec_isbn l JOIN loc_rec_isbn r ON (l.rec_id = r.rec_id)
     ''',
     'ol': '''
-        SELECT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
+        SELECT DISTINCT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
         FROM ol_isbn_link l JOIN ol_isbn_link r ON (l.book_code = r.book_code)
     ''',
     'gr': '''
-        SELECT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
+        SELECT DISTINCT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
         FROM gr_book_isbn l JOIN gr_book_isbn r ON (l.book_code = r.book_code)
     '''
 }
@@ -98,13 +98,17 @@ def _make_clusters(clusters, ls, rs):
 
 def _export_isbns(scope, file):
     query = rec_queries[scope]
+    query = query.strip().replace('\n', ' ')
     if file.exists():
         _log.info('%s already exists, not re-exporting', file)
         return
     _log.info('exporting ISBNs from %s to %s', rec_names[scope], file)
     tmp = file.with_name('.tmp.' + file.name)
-    with s.database(autocommit=True) as db, db.cursor() as cur, gzip.open(tmp, 'wb', 4) as out:
-        cur.copy_expert(f'COPY ({query}) TO STDOUT WITH CSV HEADER', out)
+    s.pipeline([
+        ['psql', '-v', 'ON_ERROR_STOP=on', '-c',
+         f'\\copy ({query}) TO STDOUT WITH CSV HEADER'],
+        ['gzip', '-4']
+    ], outfile=tmp)
     tmp.replace(file)
 
 
