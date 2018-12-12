@@ -103,7 +103,7 @@ def _export_isbns(scope, file):
         return
     _log.info('exporting ISBNs from %s to %s', rec_names[scope], file)
     tmp = file.with_name('.tmp.' + file.name)
-    with s.database(autocommit=True) as db, db.cursor() as cur, gzip.open(tmp, 'w', 4) as out:
+    with s.database(autocommit=True) as db, db.cursor() as cur, gzip.open(tmp, 'wb', 4) as out:
         cur.copy_expert(f'COPY ({query}) TO STDOUT WITH CSV HEADER', out)
     tmp.replace(file)
 
@@ -115,7 +115,7 @@ def _export_edges(scope, file):
         return
     _log.info('exporting ISBN-ISBN edges from %s to %s', rec_names[scope], file)
     tmp = file.with_name('.tmp.' + file.name)
-    with s.database(autocommit=True) as db, db.cursor() as cur, gzip.open(tmp, 'w', 4) as out:
+    with s.database(autocommit=True) as db, db.cursor() as cur, gzip.open(tmp, 'wb', 4) as out:
         cur.copy_expert(f'COPY ({query}) TO STDOUT WITH CSV HEADER', out)
     tmp.replace(file)
 
@@ -170,12 +170,12 @@ def cluster(c, scope=None, force=False):
         i_fn = s.data_dir / f'{scope}-isbns.csv.gz'
         _export_isbns(scope, i_fn)
         _log.info('reading ISBNs from %s', i_fn)
-        isbn_recs.append(pd.read_csv(i_fn))
+        isbn_recs.append(pd.read_csv(i_fn, dtype='i4'))
 
         e_fn = s.data_dir / f'{scope}-edges.csv.gz'
         _export_edges(scope, e_fn)
         _log.info('reading edges from %s', e_fn)
-        isbn_edges.append(pd.read_csv(e_fn))
+        isbn_edges.append(pd.read_csv(e_fn, dtype='i4'))
 
     isbn_recs = pd.concat(isbn_recs, ignore_index=True)
     isbn_edges = pd.concat(isbn_edges, ignore_index=True)
