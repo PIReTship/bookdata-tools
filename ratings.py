@@ -75,7 +75,7 @@ def index_bx(c, force=False):
     s.check_prereq('bx-ratings')
     s.check_prereq('cluster')
     s.start('bx-index', force=force)
-    _log.info('building Amazon indexes')
+    _log.info('building BX indexes')
     s.psql(c, 'bx-index.sql')
     s.finish('bx-index')
 
