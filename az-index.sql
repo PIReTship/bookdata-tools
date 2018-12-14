@@ -8,7 +8,7 @@ CREATE TABLE az_users (
   user_key VARCHAR NOT NULL,
   UNIQUE (user_key)
 );
-INSERT INTO az_users (user_key) SELECT DISTINCT user_key FROM az_ratings;
+INSERT INTO az_users (user_key) SELECT DISTINCT user_key FROM az_raw_ratings;
 ANALYZE az_users;
 
 INSERT INTO isbn_id (isbn)
@@ -16,11 +16,13 @@ INSERT INTO isbn_id (isbn)
   FROM az_ratings WHERE asin NOT IN (SELECT isbn FROM isbn_id);
 ANALYZE isbn_id;
 
-DROP VIEW IF EXISTS az_ratings;
-CREATE VIEW az_ratings
+DROP VIEW IF EXISTS az_rating;
+CREATE VIEW az_rating
   AS SELECT user_id, COALESCE(cluster, bc_of_isbn(isbn_id)) AS book_id,
-                     MEDIAN(rating) AS rating, COUNT(rating) AS nratings
-     FROM az_ratings
+                     MEDIAN(rating) AS med_rating,
+                     (array_agg(rating ORDER BY rating_time DESC))[1] AS last_rating,
+                     COUNT(rating) AS nratings
+     FROM az_raw_ratings
        JOIN az_users USING (user_key)
        JOIN isbn_id ON (isbn = asin)
        LEFT JOIN isbn_cluster USING (isbn_id)

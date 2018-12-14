@@ -1,3 +1,11 @@
+-- index book clusters since those can't be done before indexing
+CREATE MATERIALIZED VIEW IF NOT EXISTS gr_book_cluster
+  AS SELECT DISTINCT gr_book_id, cluster
+     FROM gr_book_isbn JOIN isbn_cluster USING (isbn_id);
+CREATE UNIQUE INDEX IF NOT EXISTS gr_book_cluster_book_idx ON gr_book_cluster (gr_book_id);
+CREATE INDEX IF NOT EXISTS gr_book_cluster_cluster_idx ON gr_book_cluster (cluster);
+ANALYZE gr_book_cluster;
+
 -- users
 CREATE TABLE IF NOT EXISTS gr_user (
   gr_user_rid SERIAL PRIMARY KEY,
@@ -31,29 +39,45 @@ EXCEPTION
 END;
 $$;
 CREATE INDEX IF NOT EXISTS gr_interaction_book_idx ON gr_interaction (book_id);
-CREATE INDEX IF NOT EXISTS gr_interaction_user_idx ON gr_interaction (user_id);
+CREATE INDEX IF NOT EXISTS gr_interaction_user_idx ON gr_interaction (gr_user_rid);
+DO $$
+BEGIN
+    ALTER TABLE gr_interaction ADD CONSTRAINT gr_interaction_book_fk FOREIGN KEY (book_id) REFERENCES gr_book_ids (gr_book_id);
+EXCEPTION
+    WHEN duplicate_object THEN
+        RAISE NOTICE 'book FK already exists';
+END;
+$$;
+DO $$
+BEGIN
+    ALTER TABLE gr_interaction ADD CONSTRAINT gr_interaction_user_fk FOREIGN KEY (gr_user_rid) REFERENCES gr_user (gr_user_rid);
+EXCEPTION
+    WHEN duplicate_object THEN
+        RAISE NOTICE 'user FK already exists';
+END;
+$$;
 ANALYZE gr_interaction;
-
--- users
-CREATE TABLE IF NOT EXISTS gr_user (
-  gr_user_rid SERIAL PRIMARY KEY,
-  gr_user_id VARCHAR NOT NULL
-);
-INSERT INTO gr_user (gr_user_id)
-  SELECT DISTINCT user_id
-  FROM gr_interaction LEFT JOIN gr_user ON (gr_user_id = user_id)
-  WHERE gr_user_rid IS NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS gr_user_id_idx ON gr_user (gr_user_id);
-ANALYZE gr_user;
 
 -- ratings
 CREATE MATERIALIZED VIEW IF NOT EXISTS gr_rating
-  AS SELECT gr_user_rid AS user_id, cluster AS book_id, MEDIAN(rating) AS rating, COUNT(rating) AS nratings
-  FROM gr_interaction
-  JOIN gr_user ON (user_id = gr_user_id)
-  JOIN gr_book_isbn ON (gr_book_id = book_id)
-  JOIN isbn_cluster USING (isbn_id)
-  WHERE rating > 0
-  GROUP BY gr_user_rid, cluster;
-CREATE INDEX gr_rating_user_idx ON gr_rating (user_id);
-CREATE INDEX gr_rating_item_idx ON gr_rating (book_id);
+  AS SELECT gr_user_rid AS user_id, cluster AS book_id,
+            MEDIAN(rating) AS med_rating,
+            (array_agg(rating ORDER BY date_updated DESC))[1] AS last_rating,
+            COUNT(rating) AS nratings
+     FROM gr_interaction
+            JOIN gr_book_cluster ON (gr_book_id = book_id)
+     WHERE rating > 0
+     GROUP BY gr_user_rid, cluster;
+CREATE INDEX IF NOT EXISTS gr_rating_user_idx ON gr_rating (user_id);
+CREATE INDEX IF NOT EXISTS gr_rating_item_idx ON gr_rating (book_id);
+ANALYZE gr_rating;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS gr_add_action
+  AS SELECT gr_user_rid AS user_id, cluster AS book_id,
+            COUNT(rating) AS nactions
+     FROM gr_interaction
+            JOIN gr_book_cluster ON (gr_book_id = book_id)
+     GROUP BY gr_user_rid, cluster;
+CREATE INDEX IF NOT EXISTS gr_add_action_user_idx ON gr_add_action (user_id);
+CREATE INDEX IF NOT EXISTS gr_add_action_item_idx ON gr_add_action (book_id);
+ANALYZE gr_add_action;

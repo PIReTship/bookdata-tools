@@ -18,9 +18,9 @@ CREATE TABLE gr_book_ids
   AS SELECT gr_book_rid,
             NULLIF(work_id, '')::int AS gr_work_id,
             book_id AS gr_book_id,
-            NULLIF(asin, '') AS gr_asin,
-            NULLIF(isbn, '') AS gr_isbn,
-            NULLIF(isbn13, '') AS gr_isbn13
+            NULLIF(trim(both from asin), '') AS gr_asin,
+            NULLIF(trim(both from isbn), '') AS gr_isbn,
+            NULLIF(trim(both from isbn13), '') AS gr_isbn13
      FROM gr_raw_book,
           jsonb_to_record(gr_book_data) AS x(work_id VARCHAR, book_id INTEGER, asin VARCHAR, isbn VARCHAR, isbn13 VARCHAR);
 ALTER TABLE gr_book_ids ADD CONSTRAINT gr_book_id_pk PRIMARY KEY (gr_book_rid);
@@ -51,3 +51,4 @@ CREATE INDEX gr_book_isbn_isbn_idx ON gr_book_isbn (isbn_id);
 CREATE INDEX gr_book_isbn_code_idx ON gr_book_isbn (book_code);
 ALTER TABLE gr_book_isbn ADD CONSTRAINT gr_book_isbn_book_fk FOREIGN KEY (gr_book_id) REFERENCES gr_book_ids (gr_book_id);
 ALTER TABLE gr_book_isbn ADD CONSTRAINT gr_book_isbn_isbn_fk FOREIGN KEY (isbn_id) REFERENCES isbn_id (isbn_id);
+ANALYZE gr_book_isbn;
