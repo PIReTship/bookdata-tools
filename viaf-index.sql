@@ -1,5 +1,23 @@
 CREATE INDEX viaf_marc_field_rec_idx ON viaf_marc_field (rec_id);
 
+CREATE VIEW viaf_record_codes
+  AS SELECT rec_id,
+       SUBSTR(contents, 6, 1) AS status,
+       SUBSTR(contents, 7, 1) AS rec_type,
+       substr(CONTENTS, 8, 1) AS bib_level
+  FROM viaf_marc_field WHERE tag = 'LDR';
+CREATE MATERIALIZED VIEW viaf_marc_cn
+  AS SELECT rec_id, trim(contents) AS control
+  FROM viaf_marc_field
+  WHERE tag = '001';
+CREATE INDEX viaf_marc_cn_rec_idx ON viaf_marc_cn (rec_id);
+ANALYZE viaf_marc_cn;
+CREATE MATERIALIZED VIEW viaf_isbn
+AS SELECT rec_id, TRIM(contents) AS isbn
+   FROM viaf_marc_field WHERE tag = '901' AND sf_code = 'a';
+CREATE INDEX viaf_isbn_rec_idx ON viaf_isbn (rec_id);
+CREATE INDEX viaf_isbn_isbn_idx ON viaf_isbn (isbn);
+
 DROP TABLE IF EXISTS viaf_author_name CASCADE;
 CREATE TABLE viaf_author_name (
   rec_id INTEGER NOT NULL,
