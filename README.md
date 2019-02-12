@@ -29,6 +29,17 @@ All scripts read database connection info from the standard PostgreSQL client en
 - `PGUSER`
 - `PGPASSWORD`
 
+## Downloading Data Files
+
+This imports the following data sets:
+
+-   Library of Congress MDSConnect Open MARC Records — get the XML files from <https://www.loc.gov/cds/products/MDSConnect-books_all.html>
+    and save them into the `data/LOC` directory.
+-   Virtual Internet Authority File - get the MARC 21 XML data file from <http://viaf.org/viaf/data/> and save it into the `data` directory.
+-   OpenLibrary Dump - get the editions, works, and authors dumps from <https://openlibrary.org/developers/dumps> and save them in `data`.
+-   Amazon Ratings - get the 'ratings only' data for _Books_ from <http://jmcauley.ucsd.edu/data/amazon/> and save it in `data`.
+-   BookCrossing - get the BX-Book-Ratings CSV file from <http://www2.informatik.uni-freiburg.de/~cziegler/BX/> and save it in `data`   
+
 ## Running Import Tasks
 
 The import process is scripted with [invoke](http://www.pyinvoke.org).  The first tasks to run are
