@@ -1,5 +1,5 @@
 -- Index MARC fields
-CREATE INDEX loc_marc_field_rec_idx ON loc_marc_field (rec_id);;
+CREATE INDEX loc_marc_field_rec_idx ON loc_marc_field (rec_id);
 
 -- Pull out control numbers
 CREATE MATERIALIZED VIEW loc_marc_cn
