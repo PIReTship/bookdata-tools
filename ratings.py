@@ -40,7 +40,7 @@ def import_bx(c, force=False):
         # with dbc encapsulates a transaction
         with dbc, dbc.cursor() as cur:
             for row in tqdm(csv.DictReader(rd)):
-                cur.execute('INSERT INTO bx_raw_ratings (user_id, isbn, rating) VALUES (%s, %s, %s)',
+                cur.execute('INSERT INTO bx.raw_ratings (user_id, isbn, rating) VALUES (%s, %s, %s)',
                             (row['User-ID'], row['ISBN'], row['Book-Rating']))
             s.finish('bx-ratings', dbc)
 
@@ -54,7 +54,7 @@ def import_az(c, force=False):
     _log.info('Importing Amazon ratings')
     s.pipeline([
       [s.bin_dir / 'pcat', s.data_dir / 'ratings_Books.csv'],
-      ['psql', '-c', '\\copy az_raw_ratings FROM STDIN (FORMAT CSV)']
+      ['psql', '-c', '\\copy az.raw_ratings FROM STDIN (FORMAT CSV)']
     ])
     s.finish('az-ratings')
 
