@@ -21,8 +21,8 @@ def import_loc(c, force=False):
     ])
     s.finish('loc')
 
-@task(s.build, s.init, name='import-names')
-def import_loc(c, force=False):
+@task(s.build, s.init)
+def import_names(c, force=False):
     "Import the LOC MDS name data"
     s.start('loc-mds-names', force=force)
     _log.info('initializing LOC schema')
