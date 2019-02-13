@@ -164,7 +164,7 @@ def cluster(c, scope=None, force=False):
     else:
         step = f'{scope}-cluster'
         fn = f'{scope}-clusters.csv'
-        table = f'{scope}_isbn_cluster'
+        table = f'{scope}.isbn_cluster'
         scopes = [scope]
 
     for scope in scopes:
