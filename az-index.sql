@@ -1,6 +1,6 @@
-CREATE INDEX IF NOT EXISTS az_rating_user_idx ON az_ratings (user_key);
-CREATE INDEX IF NOT EXISTS az_rating_asin_idx ON az_ratings (asin);
-ANALYZE az_ratings;
+CREATE INDEX IF NOT EXISTS az_rating_user_idx ON az_raw_ratings (user_key);
+CREATE INDEX IF NOT EXISTS az_rating_asin_idx ON az_raw_ratings (asin);
+ANALYZE az_raw_ratings;
 
 DROP TABLE IF EXISTS az_users CASCADE;
 CREATE TABLE az_users (
