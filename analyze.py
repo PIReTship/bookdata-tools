@@ -13,11 +13,11 @@ from invoke import task
 
 _log = logging.getLogger(__name__)
 
-rec_names = {'loc': 'LOC', 'ol': 'OpenLibrary', 'gr': 'GoodReads'}
+rec_names = {'locmds': 'LOC-MDS', 'ol': 'OpenLibrary', 'gr': 'GoodReads'}
 rec_queries = {
-    'loc': '''
+    'locmds': '''
         SELECT isbn_id, MIN(bc_of_loc_rec(rec_id)) AS record
-        FROM loc_rec_isbn GROUP BY isbn_id
+        FROM locmds.book_rec_isbn GROUP BY isbn_id
     ''',
     'ol': '''
         SELECT DISTINCT isbn_id, MIN(book_code) AS record
@@ -29,9 +29,9 @@ rec_queries = {
     '''
 }
 rec_edge_queries = {
-    'loc': '''
+    'locmds': '''
         SELECT DISTINCT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
-        FROM loc_rec_isbn l JOIN loc_rec_isbn r ON (l.rec_id = r.rec_id)
+        FROM locmds.book_rec_isbn l JOIN locmds.book_rec_isbn r ON (l.rec_id = r.rec_id)
     ''',
     'ol': '''
         SELECT DISTINCT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
@@ -153,7 +153,7 @@ def _import_clusters(tbl, file):
 @task(s.init)
 def cluster(c, scope=None, force=False):
     "Cluster ISBNs"
-    s.check_prereq('loc-index')
+    s.check_prereq('loc-mds-book-index')
     s.check_prereq('ol-index')
     s.check_prereq('gr-index-books')
     if scope is None:
