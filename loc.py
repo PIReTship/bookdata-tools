@@ -10,8 +10,18 @@ _log = logging.getLogger(__name__)
 def init(c, force=False):
     if s.start('loc-mds-init', force=force, fail=False):
         _log.info('initializing LOC schema')
-        s.psql(c, 'loc-schema.sql')
+        s.psql(c, 'loc-mds-schema.sql')
         s.finish('loc-mds-init')
+    else:
+        _log.info('LOC schema initialized')
+
+
+@task(s.build, s.init)
+def init_id(c, force=False):
+    if s.start('loc-id-init', force=force, fail=False):
+        _log.info('initializing LOC schema')
+        s.psql(c, 'loc-id-schema.sql')
+        s.finish('loc-id-init')
     else:
         _log.info('LOC schema initialized')
 
