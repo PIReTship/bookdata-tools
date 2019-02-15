@@ -10,7 +10,7 @@ extern crate postgres;
 extern crate ntriple;
 
 use std::io::prelude::*;
-use std::io::BufReader;
+use std::io::{BufReader, BufWriter};
 use std::collections::HashMap;
 
 use structopt::StructOpt;
@@ -50,15 +50,15 @@ struct Opt {
   outdir: PathBuf
 }
 
-struct NodeIndex {
+struct NodeIndex<W: Write> {
   table: HashMap<String,i64>,
   max: i64,
-  file: fs::File,
+  file: W,
   name: String
 }
 
-impl NodeIndex {
-  fn create(out: fs::File, name: &str) -> NodeIndex {
+impl<W: Write> NodeIndex<W> {
+  fn create(out: W, name: &str) -> NodeIndex<W> {
     NodeIndex {
       table: HashMap::new(),
       max: 0,
@@ -117,13 +117,13 @@ impl NodeIndex {
   }
 }
 
-struct LitWriter {
-  file: fs::File,
+struct LitWriter<W: Write> {
+  file: W,
   last: i64
 }
 
-impl LitWriter {
-  fn create(out: fs::File) -> LitWriter {
+impl<W: Write> LitWriter<W> {
+  fn create(out: W) -> LitWriter<W> {
     LitWriter {
       file: out, last: 0
     }
@@ -139,7 +139,7 @@ impl LitWriter {
   }
 }
 
-fn obj_id(nodes: &mut NodeIndex, lits: &mut LitWriter, obj: &Object) -> Result<i64> {
+fn obj_id<W: Write>(nodes: &mut NodeIndex<W>, lits: &mut LitWriter<W>, obj: &Object) -> Result<i64> {
   match obj {
     Object::IriRef(iri) => nodes.node_id(iri),
     Object::BNode(key) => nodes.blank_id(key),
@@ -147,10 +147,12 @@ fn obj_id(nodes: &mut NodeIndex, lits: &mut LitWriter, obj: &Object) -> Result<i
   }
 } 
 
-fn open_out(dir: &Path, name: &str) -> Result<fs::File> {
+fn open_out(dir: &Path, name: &str) -> Result<BufWriter<fs::File>> {
   let mut buf = dir.to_path_buf();
   buf.push(name);
-  Ok(fs::OpenOptions::new().write(true).create(true).open(buf)?)
+  let file = fs::OpenOptions::new().write(true).create(true).open(buf)?;
+  let file = BufWriter::new(file);
+  Ok(file)
 }
 
 fn main() -> Result<()> {
