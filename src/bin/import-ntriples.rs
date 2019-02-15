@@ -10,8 +10,7 @@ extern crate postgres;
 extern crate ntriple;
 
 use std::io::prelude::*;
-use std::io::{self, BufReader};
-use std::error::Error;
+use std::io::BufReader;
 use std::collections::HashMap;
 
 use structopt::StructOpt;
@@ -94,7 +93,7 @@ impl NodeIndex {
     let id = *id;
     if id > self.max {
       self.max = id;
-      write!(&mut self.file, "{}\t{}\n", id, iri);
+      write!(&mut self.file, "{}\t{}\n", id, iri)?;
     }
     Ok(id)
   }
@@ -176,15 +175,15 @@ fn main() -> Result<()> {
     fs::create_dir_all(&outp)?;
   }
 
-  let mut node_out = open_out(&outp, "nodes.txt")?;
-  let mut lit_out = open_out(&outp, "literals.txt")?;
+  let node_out = open_out(&outp, "nodes.txt")?;
+  let lit_out = open_out(&outp, "literals.txt")?;
   let mut triples_out = open_out(&outp, "triples.txt")?;
 
   let mut nodes = NodeIndex::create(node_out, member.name());
   let mut lits = LitWriter::create(lit_out);
 
   let db = bookdata::db::db_open(&opt.db_url)?;
-  nodes.load(&db, &opt);
+  nodes.load(&db, &opt)?;
   info!("database has {} nodes", nodes.table.len());
 
   let pb = ProgressBar::new(member.size());
