@@ -2,17 +2,15 @@ use std::io;
 use std::fmt;
 use std::error::Error;
 
-macro_attr! {
-  #[derive(Debug, EnumFromInner!)]
-  pub enum BDError {
-    IO(io::Error),
-    XML(quick_xml::Error),
-    UTF8(std::str::Utf8Error),
-    RDFNT(ntriple::parser::ParseError),
-    PSQL(postgres::error::Error),
-    Boxed(Box<Error>),
-    Misc(String)
-  }
+#[derive(Debug, From)]
+pub enum BDError {
+  IO(io::Error),
+  XML(quick_xml::Error),
+  UTF8(std::str::Utf8Error),
+  RDFNT(ntriple::parser::ParseError),
+  PSQL(postgres::error::Error),
+  Boxed(Box<Error>),
+  Misc(String)
 }
 
 impl fmt::Display for BDError {
