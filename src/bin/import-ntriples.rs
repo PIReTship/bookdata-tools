@@ -190,7 +190,8 @@ fn main() -> Result<()> {
 
   let pb = ProgressBar::new(member.size());
   pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
-  let pbr = pb.wrap_read(member);
+  let pbr = BufReader::new(member);
+  let pbr = pb.wrap_read(pbr);
   let pbr = BufReader::new(pbr);
   for line in pbr.lines() {
     let triple = triple_line(&line?)?;
