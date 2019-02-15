@@ -194,8 +194,16 @@ fn main() -> Result<()> {
   pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
   let pbr = pb.wrap_read(member);
   let pbr = BufReader::new(pbr);
+  let mut lno = 0;
   for line in pbr.lines() {
-    let triple = triple_line(&line?)?;
+    lno += 1;
+    let triple = match triple_line(&line?) {
+      Ok(tr) => tr,
+      Err(e) => {
+        error!("line {}: {:?}", lno, e);
+        return Err(bookdata::BDError::from(e));
+      }
+    };
     match triple {
       Some(tr) => {
         let s_id = nodes.subj_id(&tr.subject)?;
