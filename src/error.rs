@@ -31,7 +31,6 @@ macro_rules! wrap_error {
 
 wrap_error!(std::env::VarError);
 wrap_error!(log::SetLoggerError);
-wrap_error!(postgres::tls::native_tls::native_tls::Error);
 wrap_error!(zip::result::ZipError);
 
 pub fn err(msg: &str) -> BDError {
