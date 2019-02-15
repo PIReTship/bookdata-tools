@@ -12,6 +12,7 @@ extern crate ntriple;
 use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
 use std::collections::HashMap;
+use std::process::Command;
 
 use structopt::StructOpt;
 use std::fs;
@@ -161,6 +162,7 @@ fn main() -> Result<()> {
 
   let inf = opt.infile.as_path();
   let fs = fs::File::open(inf)?;
+  let fs = BufReader::new(fs);
   let mut zf = ZipArchive::new(fs)?;
   if zf.len() > 1 {
     error!("{:?}: more than one member file", inf);
@@ -190,8 +192,7 @@ fn main() -> Result<()> {
 
   let pb = ProgressBar::new(member.size());
   pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
-  let pbr = BufReader::new(member);
-  let pbr = pb.wrap_read(pbr);
+  let pbr = pb.wrap_read(member);
   let pbr = BufReader::new(pbr);
   for line in pbr.lines() {
     let triple = triple_line(&line?)?;
