@@ -88,19 +88,19 @@ def import_id_auth(c, force=False, convert_only=False):
 
     _log.info('importing nodes')
     s.pipeline([
-        [s.bin_dir / 'pcat', auth_dir / 'nodes.txt'],
+        [s.bin_dir / 'pcat', '-d', 'snappy', auth_dir / 'nodes.snappy'],
         ['psql', '-c', '\\copy locid.nodes FROM STDIN']
     ])
 
     _log.info('importing literals')
     s.pipeline([
-        [s.bin_dir / 'pcat', auth_dir / 'literals.txt'],
+        [s.bin_dir / 'pcat', '-d', 'snappy', auth_dir / 'literals.snappy'],
         ['psql', '-c', '\\copy locid.literals FROM STDIN']
     ])
 
     _log.info('importing triples')
     s.pipeline([
-        [s.bin_dir / 'pcat', auth_dir / 'triples.txt'],
+        [s.bin_dir / 'pcat', '-d', 'snappy', auth_dir / 'triples.snappy'],
         ['psql', '-c', '\\copy locid.auth_triple FROM STDIN']
     ])
     s.finish('loc-id-names')
@@ -121,19 +121,19 @@ def import_id_work(c, force=False, convert_only=False):
 
     _log.info('importing nodes')
     s.pipeline([
-        [s.bin_dir / 'pcat', auth_dir / 'nodes.txt'],
+        [s.bin_dir / 'pcat', '-d', 'snappy', auth_dir / 'nodes.snappy'],
         ['psql', '-c', '\\copy locid.nodes FROM STDIN']
     ])
 
     _log.info('importing literals')
     s.pipeline([
-        [s.bin_dir / 'pcat', auth_dir / 'literals.txt'],
+        [s.bin_dir / 'pcat', '-d', 'snappy', auth_dir / 'literals.snappy'],
         ['psql', '-c', '\\copy locid.literals FROM STDIN']
     ])
 
     _log.info('importing triples')
     s.pipeline([
-        [s.bin_dir / 'pcat', auth_dir / 'triples.txt'],
+        [s.bin_dir / 'pcat', '-d', 'snappy', auth_dir / 'triples.snappy'],
         ['psql', '-c', '\\copy locid.work_triple FROM STDIN']
     ])
     s.finish('loc-id-works')

@@ -8,6 +8,7 @@ extern crate bookdata;
 extern crate zip;
 extern crate postgres;
 extern crate ntriple;
+extern crate snap;
 
 use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
@@ -148,12 +149,13 @@ fn obj_id<W: Write>(nodes: &mut NodeIndex<W>, lits: &mut LitWriter<W>, obj: &Obj
   }
 } 
 
-fn open_out(dir: &Path, name: &str) -> Result<BufWriter<fs::File>> {
+fn open_out(dir: &Path, name: &str) -> Result<Box<Write>> {
   let mut buf = dir.to_path_buf();
   buf.push(name);
   let file = fs::OpenOptions::new().write(true).create(true).open(buf)?;
+  let file = snap::Writer::new(file);
   let file = BufWriter::new(file);
-  Ok(file)
+  Ok(Box::new(file))
 }
 
 fn main() -> Result<()> {
@@ -179,9 +181,9 @@ fn main() -> Result<()> {
     fs::create_dir_all(&outp)?;
   }
 
-  let node_out = open_out(&outp, "nodes.txt")?;
-  let lit_out = open_out(&outp, "literals.txt")?;
-  let mut triples_out = open_out(&outp, "triples.txt")?;
+  let node_out = open_out(&outp, "nodes.snappy")?;
+  let lit_out = open_out(&outp, "literals.snappy")?;
+  let mut triples_out = open_out(&outp, "triples.snappy")?;
 
   let mut nodes = NodeIndex::create(node_out, member.name());
   let mut lits = LitWriter::create(lit_out);

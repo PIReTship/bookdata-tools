@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate structopt;
 extern crate indicatif;
+extern crate snap;
 
 use structopt::StructOpt;
 
@@ -15,6 +16,9 @@ const PB_STYLE: &'static str = "{prefix}: {elapsed_precise} {bar} {percent}% {by
 #[derive(StructOpt, Debug)]
 #[structopt(name="pcat")]
 struct Opt {
+  /// Decompress input files
+  #[structopt(short="d", long="decompress")]
+  decompress: Option<String>,
   /// Input file
   #[structopt(name = "FILE", parse(from_os_str))]
   infiles: Vec<PathBuf>
@@ -33,6 +37,14 @@ fn main() {
     pb.set_style(ProgressStyle::default_bar().template(PB_STYLE));
     pb.set_prefix(fstr);
     let mut pbr = pb.wrap_read(fs);
-    io::copy(&mut pbr, &mut out).expect(&format!("{}: copy error", fstr));
+    let mut decomp: Box<io::Read> = match &(opt.decompress) {
+      None => Box::new(pbr),
+      Some(mode) => if mode == "snappy" {
+        Box::new(snap::Reader::new(pbr))
+      } else {
+        panic!("unknown compression mode {}", mode)
+      }
+    };
+    io::copy(&mut decomp, &mut out).expect(&format!("{}: copy error", fstr));
   }
 }
