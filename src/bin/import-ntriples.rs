@@ -25,10 +25,7 @@ use ntriple::parser::triple_line;
 use ntriple::{Subject, Predicate, Object};
 
 use bookdata::cleaning::{write_pgencoded};
-use bookdata::tsv::split_first;
-use bookdata::log_init;
-
-type Result<T> = std::result::Result<T, Box<std::error::Error>>;
+use bookdata::{log_init, Result};
 
 /// Import n-triples RDF (e.g. from LOC) into a database.
 #[derive(StructOpt, Debug)]
@@ -166,10 +163,10 @@ fn main() -> Result<()> {
   let mut zf = ZipArchive::new(fs)?;
   if zf.len() > 1 {
     error!("{:?}: more than one member file", inf);
-    return Err(Box::<Error>::from("too many input files"));
+    return Err(bookdata::err("too many input files"))
   } else if zf.len() == 0 {
     error!("{:?}: empty input archive", inf);
-    return Err(Box::<Error>::from("empty input archive"));
+    return Err(bookdata::err("empty input archive"));
   }
   let member = zf.by_index(0)?;
   info!("processing member {:?} with {} bytes", member.name(), member.size());
