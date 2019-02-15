@@ -198,11 +198,13 @@ fn main() -> Result<()> {
   let pbr = BufReader::new(pbr);
   let mut lno = 0;
   for line in pbr.lines() {
+    let line = line?;
     lno += 1;
-    let triple = match triple_line(&line?) {
+    let triple = match triple_line(&line) {
       Ok(tr) => tr,
       Err(e) => {
-        error!("line {}: {:?}", lno, e);
+        error!("error on line {}: {:?}", lno, e);
+        error!("invalid line contained: {}", line);
         return Err(bookdata::BDError::from(e));
       }
     };
