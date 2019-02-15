@@ -40,7 +40,7 @@ def db_url():
 
 def psql(c, script):
     c.run(f'psql -v ON_ERROR_STOP=on -f {script}')
-
+    
 
 @task
 def init(c):

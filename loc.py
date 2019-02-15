@@ -6,7 +6,7 @@ import support as s
 _log = logging.getLogger(__name__)
 
 
-@task(s.build, s.init)
+@task(s.init)
 def init(c, force=False):
     if s.start('loc-mds-init', force=force, fail=False):
         _log.info('initializing LOC schema')
@@ -16,7 +16,7 @@ def init(c, force=False):
         _log.info('LOC schema initialized')
 
 
-@task(s.build, s.init)
+@task(s.init)
 def init_id(c, force=False):
     if s.start('loc-id-init', force=force, fail=False):
         _log.info('initializing LOC schema')
@@ -52,6 +52,7 @@ def import_names(c, force=False):
     ])
     s.finish('loc-mds-names')
 
+
 @task(s.init)
 def index_books(c, force=False):
     "Index LOC MDS books data"
@@ -61,6 +62,7 @@ def index_books(c, force=False):
     s.psql(c, 'loc-mds-index-books.sql')
     s.finish('loc-mds-book-index')
 
+
 @task(s.init)
 def index_names(c, force=False):
     "Index LOC MDS name data"
@@ -69,3 +71,65 @@ def index_names(c, force=False):
     _log.info('building LOC name indexes')
     s.psql(c, 'loc-mds-index-names.sql')
     s.finish('loc-mds-name-index')
+
+
+@task(s.build, s.init, init_id)
+def import_id_auth(c, force=False, convert_only=False):
+    s.start('loc-id-names', force=force)
+    loc = s.data_dir / 'LOC'
+    auth = loc / 'authoritiesnames.nt.both.zip'
+    auth_dir = loc / 'authorities'
+    _log.info('converting authority ntriples to PSQL')
+    c.run(f'{s.bin_dir}/import-ntriples --db-schema locid {auth} {auth_dir}')
+    if convert_only:
+        return
+
+    _log.info('importing nodes')
+    s.pipeline([
+        [s.bin_dir / 'pcat', auth_dir / 'nodes.txt'],
+        ['psql', '-c', '\\copy locid.nodes FROM STDIN']
+    ])
+
+    _log.info('importing literals')
+    s.pipeline([
+        [s.bin_dir / 'pcat', auth_dir / 'literals.txt'],
+        ['psql', '-c', '\\copy locid.literals FROM STDIN']
+    ])
+
+    _log.info('importing triples')
+    s.pipeline([
+        [s.bin_dir / 'pcat', auth_dir / 'triples.txt'],
+        ['psql', '-c', '\\copy locid.auth_triple FROM STDIN']
+    ])
+    s.finish('loc-id-names')
+
+
+@task(s.build, s.init, init_id)
+def import_id_work(c, force=False, convert_only=False):
+    s.start('loc-id-works', force=force)
+    loc = s.data_dir / 'LOC'
+    auth = loc / 'bibframeworks.nt.zip'
+    auth_dir = loc / 'works'
+    _log.info('converting BIBFRAME ntriples to PSQL')
+    c.run(f'{s.bin_dir}/import-ntriples --db-schema locid {auth} {auth_dir}')
+    if convert_only:
+        return
+
+    _log.info('importing nodes')
+    s.pipeline([
+        [s.bin_dir / 'pcat', auth_dir / 'nodes.txt'],
+        ['psql', '-c', '\\copy locid.nodes FROM STDIN']
+    ])
+
+    _log.info('importing literals')
+    s.pipeline([
+        [s.bin_dir / 'pcat', auth_dir / 'literals.txt'],
+        ['psql', '-c', '\\copy locid.literals FROM STDIN']
+    ])
+
+    _log.info('importing triples')
+    s.pipeline([
+        [s.bin_dir / 'pcat', auth_dir / 'triples.txt'],
+        ['psql', '-c', '\\copy locid.work_triple FROM STDIN']
+    ])
+    s.finish('loc-id-works')

@@ -3,7 +3,6 @@ extern crate log;
 
 extern crate quick_xml;
 extern crate postgres;
-extern crate streaming_iterator;
 
 pub mod cleaning;
 pub mod tsv;

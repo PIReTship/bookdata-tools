@@ -21,3 +21,10 @@ CREATE TABLE locid.auth_triple (
     pred_id BIGINT NOT NULL, -- REFERENCES nodes
     object_id BIGINT NOT NULL -- either a node or a literal
 );
+
+--- BIBRAME work triples
+CREATE TABLE locid.work_triple (
+    subject_id BIGINT NOT NULL, -- REFERENCES nodes
+    pred_id BIGINT NOT NULL, -- REFERENCES nodes
+    object_id BIGINT NOT NULL -- either a node or a literal
+);
