@@ -13,7 +13,6 @@ extern crate snap;
 use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
 use std::collections::HashMap;
-use std::process::Command;
 
 use structopt::StructOpt;
 use std::fs;
@@ -200,22 +199,18 @@ fn main() -> Result<()> {
   for line in pbr.lines() {
     let line = line?;
     lno += 1;
-    let triple = match triple_line(&line) {
-      Ok(tr) => tr,
-      Err(e) => {
-        error!("error on line {}: {:?}", lno, e);
-        error!("invalid line contained: {}", line);
-        return Err(bookdata::BDError::from(e));
-      }
-    };
-    match triple {
-      Some(tr) => {
+    match triple_line(&line) {
+      Ok(Some(tr)) => {
         let s_id = nodes.subj_id(&tr.subject)?;
         let p_id = nodes.pred_id(&tr.predicate)?;
         let o_id = obj_id(&mut nodes, &mut lits, &tr.object)?;
         write!(&mut triples_out, "{}\t{}\t{}\n", s_id, p_id, o_id)?
+      },
+      Ok(None) => (),
+      Err(e) => {
+        pb.println(format!("error on line {}: {:?}", lno, e));
+        error!("invalid line contained: {}", line);
       }
-      None => ()
     };
   }
 
