@@ -1,5 +1,4 @@
 use std::io::{self, Write};
-use std::str;
 
 /// Write text with PostgreSQL text format encoding.
 pub fn write_pgencoded<W: Write>(w: &mut W, buf: &[u8]) -> io::Result<()> {
