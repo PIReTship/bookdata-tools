@@ -74,15 +74,16 @@ def index_names(c, force=False):
 
 
 @task(s.build, s.init, init_id)
-def import_id_auth(c, force=False, convert_only=False):
+def import_id_auth(c, force=False, convert_only=False, convert=True):
     s.start('loc-id-names', force=force)
     loc = s.data_dir / 'LOC'
     auth = loc / 'authoritiesnames.nt.both.zip'
     auth_dir = loc / 'authorities'
-    _log.info('converting authority ntriples to PSQL')
-    s.pipeline([
-        [s.bin_dir / 'import-ntriples', '--db-schema', 'locid', auth, auth_dir]
-    ])
+    if convert:
+        _log.info('converting authority ntriples to PSQL')
+        s.pipeline([
+            [s.bin_dir / 'import-ntriples', '--db-schema', 'locid', auth, auth_dir]
+        ])
     if convert_only:
         return
 
@@ -107,15 +108,16 @@ def import_id_auth(c, force=False, convert_only=False):
 
 
 @task(s.build, s.init, init_id)
-def import_id_work(c, force=False, convert_only=False):
+def import_id_work(c, force=False, convert_only=False, convert=True):
     s.start('loc-id-works', force=force)
     loc = s.data_dir / 'LOC'
     auth = loc / 'bibframeworks.nt.zip'
     auth_dir = loc / 'works'
-    _log.info('converting BIBFRAME ntriples to PSQL')
-    s.pipeline([
-        [s.bin_dir / 'import-ntriples', '--db-schema', 'locid', auth, auth_dir]
-    ])
+    if convert:
+        _log.info('converting BIBFRAME ntriples to PSQL')
+        s.pipeline([
+            [s.bin_dir / 'import-ntriples', '--db-schema', 'locid', auth, auth_dir]
+        ])
     if convert_only:
         return
 
