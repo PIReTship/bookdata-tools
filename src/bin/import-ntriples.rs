@@ -129,6 +129,20 @@ impl<W: Write> LitWriter<W> {
     }
   }
 
+  fn load(&mut self, db: &Connection, opt: &Opt) -> Result<()> {
+    let tbl = match &(opt.db_schema) {
+      Some(s) => format!("{}.literals", s),
+      None => "literals".to_string()
+    };
+    let min_lit_query = format!("SELECT COALESCE(MIN(lit_id), 0) FROM {}", tbl);
+    for row in &db.query(&min_lit_query, &[])? {
+      let min: i64 = row.get(0);
+      self.last = -min;
+    }
+    info!("database has min literal ID {}", -self.last);
+    Ok(())
+  }
+
   fn lit_id(&mut self, lit: &str) -> Result<i64> {
     let id = self.last + 1;
     self.last += 1;
@@ -188,6 +202,7 @@ fn main() -> Result<()> {
 
   let db = bookdata::db::db_open(&opt.db_url)?;
   nodes.load(&db, &opt)?;
+  lits.load(&db, &opt)?;
   info!("database has {} nodes", nodes.table.len());
 
   let pb = ProgressBar::new(member.size());
