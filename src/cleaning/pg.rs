@@ -1,3 +1,4 @@
+use std::str;
 use std::io::{self, Write};
 
 /// Write text with PostgreSQL text format encoding.
