@@ -221,9 +221,12 @@ fn main() -> Result<()> {
         write!(&mut triples_out, "{}\t{}\t{}\n", s_id, p_id, o_id)?
       },
       Ok(None) => (),
-      Err(e) => {
-        pb.println(format!("error on line {}: {:?}", lno, e));
+      Err(ref e) if pb.is_hidden() => {
+        error!("error on line {}: {:?}", lno, e);
         error!("invalid line contained: {}", line);
+      },
+      Err(ref e) => {
+        pb.println(format!("error on line {}: {:?}", lno, e));
       }
     };
   }
