@@ -72,6 +72,7 @@ impl<W: Write> NodeIndex<W> {
       Some(s) => format!("{}.nodes", s),
       None => "nodes".to_string()
     };
+    info!("querying last used node ID");
     let max_iri_query = format!("SELECT COALESCE(MAX(node_id), 0) FROM {}", tbl);
     for row in &db.query(&max_iri_query, &[])? {
       self.max = row.get(0);
@@ -80,11 +81,13 @@ impl<W: Write> NodeIndex<W> {
 
     let query = format!("SELECT node_id, node_iri FROM {} WHERE node_iri NOT LIKE 'blank://%'", tbl);
     
+    info!("loading IRI node references");
     for row in &db.query(&query, &[])? {
       let id: i64 = row.get(0);
       let iri: String = row.get(1);
       self.table.insert(iri, id);
     }
+    info!("database has {} nodes", self.table.len());
     Ok(())
   }
 
@@ -135,6 +138,7 @@ impl<W: Write> LitWriter<W> {
       None => "literals".to_string()
     };
     let min_lit_query = format!("SELECT COALESCE(MIN(lit_id), 0) FROM {}", tbl);
+    info!("querying last used literal ID");
     for row in &db.query(&min_lit_query, &[])? {
       let min: i64 = row.get(0);
       self.last = -min;
@@ -203,7 +207,6 @@ fn main() -> Result<()> {
   let db = bookdata::db::db_open(&opt.db_url)?;
   nodes.load(&db, &opt)?;
   lits.load(&db, &opt)?;
-  info!("database has {} nodes", nodes.table.len());
 
   let pb = ProgressBar::new(member.size());
   pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
