@@ -73,10 +73,8 @@ impl<W: Write> IdGenerator<W> {
 
   fn node_id(&mut self, iri: &str) -> Result<Uuid> {
     let uuid = Uuid::new_v5(&Uuid::NAMESPACE_URL, iri.as_bytes());
-    if !self.seen_uuids.contains(&uuid) {
+    if self.seen_uuids.insert(uuid) {
       write!(&mut self.node_file, "{}\t{}\n", uuid, iri)?;
-    } else {
-      self.seen_uuids.insert(uuid);
     }
     Ok(uuid)
   }
@@ -93,7 +91,7 @@ impl<W: Write> IdGenerator<W> {
     self.lit_file.write_all(b"\n")?;
     Ok(uuid)
   }
-  
+
   fn subj_id(&mut self, sub: &Subject) -> Result<Uuid> {
     match sub {
       Subject::IriRef(iri) => self.node_id(iri),
