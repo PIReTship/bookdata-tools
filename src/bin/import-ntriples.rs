@@ -8,10 +8,11 @@ extern crate zip;
 extern crate postgres;
 extern crate ntriple;
 extern crate snap;
+extern crate uuid;
 
 use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 use structopt::StructOpt;
 use std::fs;
@@ -19,6 +20,7 @@ use std::path::{Path, PathBuf};
 use zip::read::ZipArchive;
 use indicatif::{ProgressBar, ProgressStyle};
 use postgres::Connection;
+use uuid::Uuid;
 
 use ntriple::parser::triple_line;
 use ntriple::{Subject, Predicate, Object};
@@ -50,120 +52,69 @@ struct Opt {
   outdir: PathBuf
 }
 
-struct NodeIndex<W: Write> {
-  table: HashMap<String,i64>,
-  max: i64,
-  file: W,
-  name: String
+struct IdGenerator<W: Write> {
+  blank_ns: Uuid,
+  node_file: W,
+  lit_file: W,
+  seen_uuids: HashSet<Uuid>
 }
 
-impl<W: Write> NodeIndex<W> {
-  fn create(out: W, name: &str) -> NodeIndex<W> {
-    NodeIndex {
-      table: HashMap::new(),
-      max: 0,
-      file: out,
-      name: name.to_string()
+impl<W: Write> IdGenerator<W> {
+  fn create(node_out: W, lit_out: W, name: &str) -> IdGenerator<W> {
+    let ns_ns = Uuid::new_v5(&Uuid::NAMESPACE_URL, "https://boisestate.github.io/bookdata/ns/blank".as_bytes());
+    let blank_ns = Uuid::new_v5(&ns_ns, name.as_bytes());
+    IdGenerator {
+      blank_ns: blank_ns,
+      node_file: node_out,
+      lit_file: lit_out,
+      seen_uuids: HashSet::new()
     }
   }
 
-  fn load(&mut self, db: &Connection, opt: &Opt) -> Result<()> {
-    let tbl = match &(opt.db_schema) {
-      Some(s) => format!("{}.nodes", s),
-      None => "nodes".to_string()
-    };
-    info!("querying last used node ID");
-    let max_iri_query = format!("SELECT COALESCE(MAX(node_id), 0) FROM {}", tbl);
-    for row in &db.query(&max_iri_query, &[])? {
-      self.max = row.get(0);
+  fn node_id(&mut self, iri: &str) -> Result<Uuid> {
+    let uuid = Uuid::new_v5(&Uuid::NAMESPACE_URL, iri.as_bytes());
+    if !self.seen_uuids.contains(&uuid) {
+      write!(&mut self.node_file, "{}\t{}\n", uuid, iri)?;
+    } else {
+      self.seen_uuids.insert(uuid);
     }
-    info!("database has max node ID {}", self.max);
-
-    let query = format!("SELECT node_id, node_iri FROM {} WHERE node_iri NOT LIKE 'blank://%'", tbl);
-    
-    info!("loading IRI node references");
-    for row in &db.query(&query, &[])? {
-      let id: i64 = row.get(0);
-      let iri: String = row.get(1);
-      self.table.insert(iri, id);
-    }
-    info!("database has {} nodes", self.table.len());
-    Ok(())
+    Ok(uuid)
   }
 
-  fn node_id(&mut self, iri: &str) -> Result<i64> {
-    let id = self.table.entry(iri.to_string()).or_insert(self.max + 1);
-    let id = *id;
-    if id > self.max {
-      self.max = id;
-      write!(&mut self.file, "{}\t{}\n", id, iri)?;
-    }
-    Ok(id)
+  fn blank_id(&self, key: &str) -> Result<Uuid> {
+    let uuid = Uuid::new_v5(&self.blank_ns, key.as_bytes());
+    Ok(uuid)
   }
 
-  fn blank_id(&mut self, key: &str) -> Result<i64> {
-    let iri = format!("blank://{}/{}", self.name, key);
-    self.node_id(&iri)
+  fn lit_id(&mut self, lit: &str) -> Result<Uuid> {
+    let uuid = Uuid::new_v4();
+    write!(&mut self.lit_file, "{}\t", uuid)?;
+    write_pgencoded(&mut self.lit_file, lit.as_bytes())?;
+    self.lit_file.write_all(b"\n")?;
+    Ok(uuid)
   }
   
-  fn subj_id(&mut self, sub: &Subject) -> Result<i64> {
+  fn subj_id(&mut self, sub: &Subject) -> Result<Uuid> {
     match sub {
       Subject::IriRef(iri) => self.node_id(iri),
       Subject::BNode(key) => self.blank_id(key)
     }
   }
 
-  fn pred_id(&mut self, pred: &Predicate) -> Result<i64> {
+  fn pred_id(&mut self, pred: &Predicate) -> Result<Uuid> {
     match pred {
       Predicate::IriRef(iri) => self.node_id(iri)
     }
   }
-}
 
-struct LitWriter<W: Write> {
-  file: W,
-  last: i64
-}
-
-impl<W: Write> LitWriter<W> {
-  fn create(out: W) -> LitWriter<W> {
-    LitWriter {
-      file: out, last: 0
+  fn obj_id(&mut self, obj: &Object) -> Result<Uuid> {
+    match obj {
+      Object::IriRef(iri) => self.node_id(iri),
+      Object::BNode(key) => self.blank_id(key),
+      Object::Lit(l) => self.lit_id(&l.data)
     }
   }
-
-  fn load(&mut self, db: &Connection, opt: &Opt) -> Result<()> {
-    let tbl = match &(opt.db_schema) {
-      Some(s) => format!("{}.literals", s),
-      None => "literals".to_string()
-    };
-    let min_lit_query = format!("SELECT COALESCE(MIN(lit_id), 0) FROM {}", tbl);
-    info!("querying last used literal ID");
-    for row in &db.query(&min_lit_query, &[])? {
-      let min: i64 = row.get(0);
-      self.last = -min;
-    }
-    info!("database has min literal ID {}", -self.last);
-    Ok(())
-  }
-
-  fn lit_id(&mut self, lit: &str) -> Result<i64> {
-    let id = self.last + 1;
-    self.last += 1;
-    write!(&mut self.file, "{}\t", -id)?;
-    write_pgencoded(&mut self.file, lit.as_bytes())?;
-    self.file.write_all(b"\n")?;
-    Ok(-id)
-  }
 }
-
-fn obj_id<W: Write>(nodes: &mut NodeIndex<W>, lits: &mut LitWriter<W>, obj: &Object) -> Result<i64> {
-  match obj {
-    Object::IriRef(iri) => nodes.node_id(iri),
-    Object::BNode(key) => nodes.blank_id(key),
-    Object::Lit(l) => lits.lit_id(&l.data)
-  }
-} 
 
 fn open_out(dir: &Path, name: &str) -> Result<Box<Write>> {
   let mut buf = dir.to_path_buf();
@@ -201,12 +152,7 @@ fn main() -> Result<()> {
   let lit_out = open_out(&outp, "literals.snappy")?;
   let mut triples_out = open_out(&outp, "triples.snappy")?;
 
-  let mut nodes = NodeIndex::create(node_out, member.name());
-  let mut lits = LitWriter::create(lit_out);
-
-  let db = bookdata::db::db_open(&opt.db_url)?;
-  nodes.load(&db, &opt)?;
-  lits.load(&db, &opt)?;
+  let mut idg = IdGenerator::create(node_out, lit_out, member.name());
 
   let pb = ProgressBar::new(member.size());
   pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
@@ -218,9 +164,9 @@ fn main() -> Result<()> {
     lno += 1;
     match triple_line(&line) {
       Ok(Some(tr)) => {
-        let s_id = nodes.subj_id(&tr.subject)?;
-        let p_id = nodes.pred_id(&tr.predicate)?;
-        let o_id = obj_id(&mut nodes, &mut lits, &tr.object)?;
+        let s_id = idg.subj_id(&tr.subject)?;
+        let p_id = idg.pred_id(&tr.predicate)?;
+        let o_id = idg.obj_id(&tr.object)?;
         write!(&mut triples_out, "{}\t{}\t{}\n", s_id, p_id, o_id)?
       },
       Ok(None) => (),
