@@ -150,8 +150,12 @@ impl Drop for NodeSink {
   fn drop(&mut self) {
     self.send.send(NodeMsg::Close).unwrap();
     if let Some(thread) = self.thread.take() {
-      let saved = thread.join().unwrap();
-      info!("saved {} nodes", saved);
+      match thread.join() {
+        Ok(n) => info!("saved {} nodes", n),
+        Err(e) => error!("node save thread failed: {:?}", e)
+      };
+    } else {
+      error!("node sink already dropped");
     }
   }
 }

@@ -22,6 +22,7 @@ pub fn db_open(url: &Option<String>) -> Result<Connection> {
 
 pub struct CopyTarget {
   writer: Option<PipeWriter>,
+  name: String,
   thread: Option<thread::JoinHandle<u64>>
 }
 
@@ -41,8 +42,12 @@ impl Drop for CopyTarget {
       std::mem::drop(w);
     }
     if let Some(thread) = self.thread.take() {
-      let n = thread.join().unwrap();
-      info!("wrote {} lines", n);
+      match thread.join() {
+        Ok(n) => info!("{}: wrote {} lines", self.name, n),
+        Err(e) => error!("{}: error: {:?}", self.name, e)
+      };
+    } else {
+      error!("{} already shut down", self.name);
     }
   }
 }
@@ -63,6 +68,7 @@ pub fn copy_target(url: &Option<String>, query: &str, name: &str) -> Result<Copy
   })?;
   Ok(CopyTarget {
     writer: Some(writer),
+    name: name.to_string(),
     thread: Some(jh)
   })
 }
