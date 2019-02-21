@@ -22,7 +22,7 @@ use zip::read::ZipArchive;
 use indicatif::{ProgressBar, ProgressStyle};
 use uuid::Uuid;
 
-use ntriple::parser::triple_line;
+use ntriple::parser::quiet_line;
 use ntriple::{Subject, Predicate, Object};
 
 use crossbeam_channel::{Sender, Receiver, bounded};
@@ -257,7 +257,7 @@ fn main() -> Result<()> {
   for line in pbr.lines() {
     let line = line?;
     lno += 1;
-    match triple_line(&line) {
+    match quiet_line(&line) {
       Ok(Some(tr)) => {
         let s_id = idg.subj_id(&tr.subject)?;
         let p_id = idg.pred_id(&tr.predicate)?;
