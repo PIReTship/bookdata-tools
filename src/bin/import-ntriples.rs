@@ -9,10 +9,12 @@ extern crate postgres;
 extern crate ntriple;
 extern crate snap;
 extern crate uuid;
+extern crate crossbeam_channel;
 
 use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
 use std::collections::HashSet;
+use std::thread;
 
 use structopt::StructOpt;
 use std::fs;
@@ -25,8 +27,11 @@ use uuid::Uuid;
 use ntriple::parser::triple_line;
 use ntriple::{Subject, Predicate, Object};
 
+use crossbeam_channel::{Sender, Receiver, bounded};
+
 use bookdata::cleaning::{write_pgencoded};
 use bookdata::{log_init, Result};
+use bookdata::db;
 
 /// Import n-triples RDF (e.g. from LOC) into a database.
 #[derive(StructOpt, Debug)]
@@ -44,6 +49,9 @@ struct Opt {
   /// Database schema
   #[structopt(long="db-schema")]
   db_schema: Option<String>,
+  /// Database table
+  #[structopt(short="t", long="table")]
+  table: String,
   /// Input file
   #[structopt(name = "INPUT", parse(from_os_str))]
   infile: PathBuf,
@@ -52,30 +60,127 @@ struct Opt {
   outdir: PathBuf
 }
 
+/// Message for saving nodes in the other thread
+#[derive(Debug)]
+enum NodeMsg {
+  SaveNode(Uuid, String),
+  Close
+}
+
+/// Sink for saving nodes
+struct NodeSink {
+  thread: Option<thread::JoinHandle<u64>>,
+  send: Sender<NodeMsg>
+}
+
+/// Node sink worker code
+struct NodePlumber {
+  seen: HashSet<Uuid>,
+  query: String,
+  source: Receiver<NodeMsg>,
+}
+
+impl NodePlumber {
+  fn create(src: Receiver<NodeMsg>, schema: &str) -> NodePlumber {
+    NodePlumber {
+      seen: HashSet::new(),
+      query: format!("INSERT INTO {}.nodes (node_id, node_iri) VALUES ($1, $2) ON CONFLICT DO NOTHING", schema),
+      source: src
+    }
+  }
+
+  /// Listen for messages and store in the database
+  fn run(&mut self, url: &Option<String>) -> Result<u64> {
+    let db = db::db_open(url)?;
+    let mut added = 0;
+    let mut done = false;
+    while !done {
+      let txn = db.transaction()?;
+      let (n, eos) = self.run_batch(&txn)?;
+      debug!("committing {} new additions", n);
+      txn.commit()?;
+      added += n;
+      done = eos;
+    }
+    Ok(added)
+  }
+
+  /// Run a single batch of inserts
+  fn run_batch(&mut self, db: &postgres::GenericConnection) -> Result<(u64, bool)> {
+    let stmt = db.prepare_cached(&self.query)?;
+    let mut n = 0;
+    while n < 5000 {
+      match self.source.recv()? {
+        NodeMsg::SaveNode(id, iri) => {
+          let idstr = id.to_simple_ref().to_string();
+          if self.seen.insert(id) {
+            n += stmt.execute(&[&idstr, &iri])?;
+          }
+        },
+        NodeMsg::Close => {
+          return Ok((n, true));
+        }
+      }
+    };
+    Ok((n, false))
+  }
+}
+
+impl NodeSink {
+  fn create(url: &Option<String>, ns: &str) -> NodeSink {
+    let url = url.as_ref().map(|s| s.clone());
+    let ns = ns.to_string();
+    let (tx, rx) = bounded(1000);
+
+    let jh = thread::spawn(move || {
+      let mut plumber = NodePlumber::create(rx, &ns);
+      plumber.run(&url).unwrap()
+    });
+
+    NodeSink {
+      thread: Some(jh),
+      send: tx
+    }
+  }
+
+  fn save(&self, id: &Uuid, iri: &str) -> Result<()> {
+    match self.send.send(NodeMsg::SaveNode(*id, iri.to_string())) {
+      Ok(_) => Ok(()),
+      Err(_) => Err(bookdata::err("node channel disconnected"))
+    }
+  }
+}
+
+impl Drop for NodeSink {
+  fn drop(&mut self) {
+    self.send.send(NodeMsg::Close).unwrap();
+    if let Some(thread) = self.thread.take() {
+      let saved = thread.join().unwrap();
+      info!("saved {} nodes", saved);
+    }
+  }
+}
+
 struct IdGenerator<W: Write> {
   blank_ns: Uuid,
-  node_file: W,
-  lit_file: W,
-  seen_uuids: HashSet<Uuid>
+  node_sink: NodeSink,
+  lit_file: W
 }
 
 impl<W: Write> IdGenerator<W> {
-  fn create(node_out: W, lit_out: W, name: &str) -> IdGenerator<W> {
+  fn create(nodes: NodeSink, lit_out: W, name: &str) -> IdGenerator<W> {
     let ns_ns = Uuid::new_v5(&Uuid::NAMESPACE_URL, "https://boisestate.github.io/bookdata/ns/blank".as_bytes());
     let blank_ns = Uuid::new_v5(&ns_ns, name.as_bytes());
     IdGenerator {
       blank_ns: blank_ns,
-      node_file: node_out,
-      lit_file: lit_out,
-      seen_uuids: HashSet::new()
+      node_sink: nodes,
+      lit_file: lit_out
     }
   }
 
   fn node_id(&mut self, iri: &str) -> Result<Uuid> {
     let uuid = Uuid::new_v5(&Uuid::NAMESPACE_URL, iri.as_bytes());
-    if self.seen_uuids.insert(uuid) {
-      write!(&mut self.node_file, "{}\t{}\n", uuid, iri)?;
-    }
+    self.node_sink.save(&uuid, iri)?;
     Ok(uuid)
   }
 
@@ -114,15 +219,6 @@ impl<W: Write> IdGenerator<W> {
   }
 }
 
-fn open_out(dir: &Path, name: &str) -> Result<Box<Write>> {
-  let mut buf = dir.to_path_buf();
-  buf.push(name);
-  let file = fs::OpenOptions::new().write(true).create(true).open(buf)?;
-  let file = snap::Writer::new(file);
-  let file = BufWriter::new(file);
-  Ok(Box::new(file))
-}
-
 fn main() -> Result<()> {
   let opt = Opt::from_args();
   log_init(opt.quiet, opt.verbose)?;
@@ -146,11 +242,17 @@ fn main() -> Result<()> {
     fs::create_dir_all(&outp)?;
   }
 
-  let node_out = open_out(&outp, "nodes.snappy")?;
-  let lit_out = open_out(&outp, "literals.snappy")?;
-  let mut triples_out = open_out(&outp, "triples.snappy")?;
+  let schema = opt.db_schema.unwrap_or("public".to_string());
 
-  let mut idg = IdGenerator::create(node_out, lit_out, member.name());
+  let node_sink = NodeSink::create(&opt.db_url, &schema);
+  let lit_query = format!("COPY {}.literals FROM STDIN", schema);
+  let lit_out = db::copy_target(&opt.db_url, &lit_query)?;
+  let lit_out = BufWriter::new(lit_out);
+  let triple_query = format!("COPY {}.{} FROM STDIN", schema, opt.table);
+  let triples_out = db::copy_target(&opt.db_url, &triple_query)?;
+  let mut triples_out = BufWriter::new(triples_out);
+
+  let mut idg = IdGenerator::create(node_sink, lit_out, member.name());
 
   let pb = ProgressBar::new(member.size());
   pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));

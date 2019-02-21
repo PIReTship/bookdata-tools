@@ -6,6 +6,8 @@ extern crate quick_xml;
 extern crate postgres;
 extern crate ntriple;
 extern crate zip;
+extern crate os_pipe;
+extern crate crossbeam_channel;
 
 mod error;
 pub mod cleaning;

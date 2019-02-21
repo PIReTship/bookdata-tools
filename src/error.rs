@@ -1,6 +1,7 @@
 use std::io;
 use std::fmt;
 use std::error::Error;
+use crossbeam_channel;
 
 #[derive(Debug, From)]
 pub enum BDError {
@@ -32,6 +33,7 @@ macro_rules! wrap_error {
 wrap_error!(std::env::VarError);
 wrap_error!(log::SetLoggerError);
 wrap_error!(zip::result::ZipError);
+wrap_error!(crossbeam_channel::RecvError);
 
 pub fn err(msg: &str) -> BDError {
   BDError::Misc(msg.to_string())
