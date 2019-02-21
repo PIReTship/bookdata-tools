@@ -1,6 +1,3 @@
-#[macro_use]
-use log;
-
 use error::Result;
 
 use std::io::prelude::*;
