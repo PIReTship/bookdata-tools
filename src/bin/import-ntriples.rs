@@ -7,7 +7,6 @@ extern crate bookdata;
 extern crate zip;
 extern crate postgres;
 extern crate ntriple;
-extern crate snap;
 extern crate uuid;
 extern crate crossbeam_channel;
 
@@ -54,10 +53,7 @@ struct Opt {
   table: String,
   /// Input file
   #[structopt(name = "INPUT", parse(from_os_str))]
-  infile: PathBuf,
-  /// Output directory
-  #[structopt(name = "OUTPUT", parse(from_os_str))]
-  outdir: PathBuf
+  infile: PathBuf
 }
 
 /// Message for saving nodes in the other thread
@@ -112,9 +108,8 @@ impl NodePlumber {
     while n < 5000 {
       match self.source.recv()? {
         NodeMsg::SaveNode(id, iri) => {
-          let idstr = id.to_simple_ref().to_string();
           if self.seen.insert(id) {
-            n += stmt.execute(&[&idstr, &iri])?;
+            n += stmt.execute(&[&id, &iri])?;
           }
         },
         NodeMsg::Close => {
@@ -132,10 +127,11 @@ impl NodeSink {
     let ns = ns.to_string();
     let (tx, rx) = bounded(1000);
 
-    let jh = thread::spawn(move || {
+    let tb = thread::Builder::new().name("insert-nodes".to_string());
+    let jh = tb.spawn(move || {
       let mut plumber = NodePlumber::create(rx, &ns);
       plumber.run(&url).unwrap()
-    });
+    }).unwrap();
 
     NodeSink {
       thread: Some(jh),
@@ -169,8 +165,8 @@ struct IdGenerator<W: Write> {
 
 impl<W: Write> IdGenerator<W> {
   fn create(nodes: NodeSink, lit_out: W, name: &str) -> IdGenerator<W> {
-    let ns_ns = Uuid::new_v5(&Uuid::NAMESPACE_URL, "https://boisestate.github.io/bookdata/ns/blank".as_bytes());
-    let blank_ns = Uuid::new_v5(&ns_ns, name.as_bytes());
+    let ns_ns = Uuid::new_v5(&uuid::NAMESPACE_URL, "https://boisestate.github.io/bookdata/ns/blank");
+    let blank_ns = Uuid::new_v5(&ns_ns, name);
     IdGenerator {
       blank_ns: blank_ns,
       node_sink: nodes,
@@ -179,13 +175,13 @@ impl<W: Write> IdGenerator<W> {
   }
 
   fn node_id(&mut self, iri: &str) -> Result<Uuid> {
-    let uuid = Uuid::new_v5(&Uuid::NAMESPACE_URL, iri.as_bytes());
+    let uuid = Uuid::new_v5(&uuid::NAMESPACE_URL, iri);
     self.node_sink.save(&uuid, iri)?;
     Ok(uuid)
   }
 
   fn blank_id(&self, key: &str) -> Result<Uuid> {
-    let uuid = Uuid::new_v5(&self.blank_ns, key.as_bytes());
+    let uuid = Uuid::new_v5(&self.blank_ns, key);
     Ok(uuid)
   }
 
@@ -236,11 +232,7 @@ fn main() -> Result<()> {
   }
   let member = zf.by_index(0)?;
   info!("processing member {:?} with {} bytes", member.name(), member.size());
-  
-  let outp = opt.outdir.as_path();
-  if !outp.is_dir() {
-    fs::create_dir_all(&outp)?;
-  }
+
 
   let schema = opt.db_schema.unwrap_or("public".to_string());
 

@@ -20,9 +20,9 @@ CREATE TABLE locid.literals (
 --- Authority record triples
 DROP TABLE IF EXISTS locid.auth_triple;
 CREATE TABLE locid.auth_triple (
-    subject_id BIGINT NOT NULL, -- REFERENCES nodes
-    pred_id BIGINT NOT NULL, -- REFERENCES nodes
-    object_id BIGINT NOT NULL -- either a node or a literal
+    subject_id UUID NOT NULL, -- REFERENCES nodes
+    pred_id UUID NOT NULL, -- REFERENCES nodes
+    object_id UUID NOT NULL -- either a node or a literal
 );
 
 --- BIBRAME work triples

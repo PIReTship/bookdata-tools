@@ -18,12 +18,12 @@ fn main() {
 
   let ns = match opt.namespace {
     None => uuid::Uuid::nil(),
-    Some(ref s) if s == "url" => uuid::Uuid::NAMESPACE_URL,
-    Some(ref s) => uuid::Uuid::new_v5(&uuid::Uuid::nil(), s.as_bytes())
+    Some(ref s) if s == "url" => uuid::NAMESPACE_URL,
+    Some(ref s) => uuid::Uuid::new_v5(&uuid::Uuid::nil(), s)
   };
 
   for s in opt.string {
-    let u = uuid::Uuid::new_v5(&ns, s.as_bytes());
+    let u = uuid::Uuid::new_v5(&ns, &s);
     println!("{}\t{}", u, s);
   }
 }
