@@ -246,10 +246,10 @@ fn main() -> Result<()> {
 
   let node_sink = NodeSink::create(&opt.db_url, &schema);
   let lit_query = format!("COPY {}.literals FROM STDIN", schema);
-  let lit_out = db::copy_target(&opt.db_url, &lit_query)?;
+  let lit_out = db::copy_target(&opt.db_url, &lit_query, "literals")?;
   let lit_out = BufWriter::new(lit_out);
   let triple_query = format!("COPY {}.{} FROM STDIN", schema, opt.table);
-  let triples_out = db::copy_target(&opt.db_url, &triple_query)?;
+  let triples_out = db::copy_target(&opt.db_url, &triple_query, "triples")?;
   let mut triples_out = BufWriter::new(triples_out);
 
   let mut idg = IdGenerator::create(node_sink, lit_out, member.name());

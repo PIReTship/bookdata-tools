@@ -48,17 +48,18 @@ impl Drop for CopyTarget {
 }
 
 /// Open a writer to copy data into PostgreSQL
-pub fn copy_target(url: &Option<String>, query: &str) -> Result<CopyTarget> {
+pub fn copy_target(url: &Option<String>, query: &str, name: &str) -> Result<CopyTarget> {
   let url = url.as_ref().map(|s| s.clone());
   let query = query.to_string();
   let (mut reader, writer) = pipe()?;
   
-  let jh = thread::spawn(move || {
+  let tb = thread::Builder::new().name(name.to_string());
+  let jh = tb.spawn(move || {
     let query = query;
     let db = db_open(&url).unwrap();
     let stmt = db.prepare(&query).unwrap();
     stmt.copy_in(&[], &mut reader).unwrap()
-  });
+  })?;
   Ok(CopyTarget {
     writer: Some(writer),
     thread: Some(jh)
