@@ -82,28 +82,9 @@ def import_id_auth(c, force=False, convert_only=False, convert=True):
     if convert:
         _log.info('converting authority ntriples to PSQL')
         s.pipeline([
-            [s.bin_dir / 'import-ntriples', '--db-schema', 'locid', auth, auth_dir]
+            [s.bin_dir / 'import-ntriples', '--db-schema', 'locid', '--table', 'auth_triple', auth]
         ])
-    if convert_only:
-        return
 
-    _log.info('importing nodes')
-    s.pipeline([
-        [s.bin_dir / 'pcat', '-d', 'snappy', auth_dir / 'nodes.snappy'],
-        ['psql', '-c', '\\copy locid.nodes FROM STDIN']
-    ])
-
-    _log.info('importing literals')
-    s.pipeline([
-        [s.bin_dir / 'pcat', '-d', 'snappy', auth_dir / 'literals.snappy'],
-        ['psql', '-c', '\\copy locid.literals FROM STDIN']
-    ])
-
-    _log.info('importing triples')
-    s.pipeline([
-        [s.bin_dir / 'pcat', '-d', 'snappy', auth_dir / 'triples.snappy'],
-        ['psql', '-c', '\\copy locid.auth_triple FROM STDIN']
-    ])
     s.finish('loc-id-names')
 
 
@@ -116,26 +97,7 @@ def import_id_work(c, force=False, convert_only=False, convert=True):
     if convert:
         _log.info('converting BIBFRAME ntriples to PSQL')
         s.pipeline([
-            [s.bin_dir / 'import-ntriples', '--db-schema', 'locid', auth, auth_dir]
+            [s.bin_dir / 'import-ntriples', '--db-schema', 'locid', '--table', 'work_triple', auth]
         ])
-    if convert_only:
-        return
 
-    _log.info('importing nodes')
-    s.pipeline([
-        [s.bin_dir / 'pcat', '-d', 'snappy', auth_dir / 'nodes.snappy'],
-        ['psql', '-c', '\\copy locid.nodes FROM STDIN']
-    ])
-
-    _log.info('importing literals')
-    s.pipeline([
-        [s.bin_dir / 'pcat', '-d', 'snappy', auth_dir / 'literals.snappy'],
-        ['psql', '-c', '\\copy locid.literals FROM STDIN']
-    ])
-
-    _log.info('importing triples')
-    s.pipeline([
-        [s.bin_dir / 'pcat', '-d', 'snappy', auth_dir / 'triples.snappy'],
-        ['psql', '-c', '\\copy locid.work_triple FROM STDIN']
-    ])
     s.finish('loc-id-works')
