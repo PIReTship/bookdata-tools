@@ -17,10 +17,9 @@ use std::thread;
 
 use structopt::StructOpt;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
 use zip::read::ZipArchive;
 use indicatif::{ProgressBar, ProgressStyle};
-use postgres::Connection;
 use uuid::Uuid;
 
 use ntriple::parser::triple_line;

@@ -1,3 +1,4 @@
+#[cfg(test)]
 use std::str;
 use std::io::{self, Write};
 

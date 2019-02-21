@@ -21,7 +21,7 @@ pub fn db_open(url: &Option<String>) -> Result<Connection> {
 }
 
 pub struct CopyTarget {
-  writer: Option<os_pipe::PipeWriter>,
+  writer: Option<PipeWriter>,
   thread: Option<thread::JoinHandle<u64>>
 }
 
@@ -57,6 +57,7 @@ pub fn copy_target(url: &Option<String>, query: &str, name: &str) -> Result<Copy
   let jh = tb.spawn(move || {
     let query = query;
     let db = db_open(&url).unwrap();
+    info!("preparing {}", query);
     let stmt = db.prepare(&query).unwrap();
     stmt.copy_in(&[], &mut reader).unwrap()
   })?;
