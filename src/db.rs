@@ -1,19 +1,73 @@
-use error::Result;
+use error::{Result, err};
 
 use std::io::prelude::*;
 use os_pipe::{pipe, PipeWriter};
 use postgres::{Connection, TlsMode};
+use structopt::StructOpt;
 
 use std::thread;
 
-pub fn db_open(url: &Option<String>) -> Result<Connection> {
-  let env = std::env::var("DB_URL");
-  let url = match url {
-    Some(u) => u.clone(),
-    None => env?
-  };
+pub trait ConnectInfo {
+  fn db_url(&self) -> Result<String>;
+}
 
-  info!("connecting to database {}", url);
+impl ConnectInfo for String {
+  fn db_url(&self) -> Result<String> {
+    Ok(self.clone())
+  }
+}
+
+impl ConnectInfo for Option<String> {
+  fn db_url(&self) -> Result<String> {
+    match self {
+      Some(ref s) => Ok(s.clone()),
+      None => Err(err("no URL provided"))
+    }
+  }
+}
+
+/// Database options
+#[derive(StructOpt, Debug, Clone)]
+pub struct DbOpts {
+  /// Database URL to connect to
+  #[structopt(long="db-url")]
+  db_url: Option<String>,
+
+  /// Database schema
+  #[structopt(long="db-schema")]
+  db_schema: Option<String>
+}
+
+impl DbOpts {
+  /// Open the database connection
+  pub fn open(&self) -> Result<Connection> {
+    let url = self.url()?;
+    connect(&url)
+  }
+
+  pub fn url<'a>(&'a self) -> Result<String> {
+    Ok(match self.db_url {
+      Some(ref s) => s.clone(),
+      None => std::env::var("DB_URL")?
+    })
+  }
+
+  /// Get the DB schema
+  pub fn schema<'a>(&'a self) -> &'a str {
+    match self.db_schema {
+      Some(ref s) => s,
+      None => "public"
+    }
+  }
+}
+
+impl ConnectInfo for DbOpts {
+  fn db_url(&self) -> Result<String> {
+    self.url()
+  }
+}
+
+pub fn connect(url: &str) -> Result<Connection> {
   Ok(Connection::connect(url, TlsMode::None)?)
 }
 
@@ -50,15 +104,15 @@ impl Drop for CopyTarget {
 }
 
 /// Open a writer to copy data into PostgreSQL
-pub fn copy_target(url: &Option<String>, query: &str, name: &str) -> Result<CopyTarget> {
-  let url = url.as_ref().map(|s| s.clone());
+pub fn copy_target(url: &str, query: &str, name: &str) -> Result<CopyTarget> {
+  let url = url.to_string();
   let query = query.to_string();
   let (mut reader, writer) = pipe()?;
   
   let tb = thread::Builder::new().name(name.to_string());
   let jh = tb.spawn(move || {
     let query = query;
-    let db = db_open(&url).unwrap();
+    let db = connect(&url).unwrap();
     info!("preparing {}", query);
     let stmt = db.prepare(&query).unwrap();
     stmt.copy_in(&[], &mut reader).unwrap()

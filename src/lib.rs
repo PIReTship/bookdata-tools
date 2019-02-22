@@ -2,6 +2,7 @@
 extern crate log;
 #[macro_use] extern crate derive_more;
 
+extern crate structopt;
 extern crate quick_xml;
 extern crate postgres;
 extern crate ntriple;
@@ -18,7 +19,21 @@ pub use error::BDError;
 pub use error::Result;
 pub use error::err;
 
-/// Initialize logging
-pub fn log_init(quiet: bool, level: usize) -> Result<()> {
-  Ok(stderrlog::new().verbosity(level + 2).quiet(quiet).init()?)
+use structopt::StructOpt;
+
+#[derive(StructOpt, Debug)]
+pub struct LogOpts {
+  /// Verbose mode (-v, -vv, -vvv, etc.)
+  #[structopt(short="v", long="verbose", parse(from_occurrences))]
+  verbose: usize,
+  /// Silence output
+  #[structopt(short="q", long="quiet")]
+  quiet: bool
+}
+
+impl LogOpts {
+  /// Initialize logging
+  pub fn init(&self) -> Result<()> {
+    Ok(stderrlog::new().verbosity(self.verbose + 2).quiet(self.quiet).init()?)
+  }
 }

@@ -28,26 +28,20 @@ use ntriple::{Subject, Predicate, Object};
 use crossbeam_channel::{Sender, Receiver, bounded};
 
 use bookdata::cleaning::{write_pgencoded};
-use bookdata::{log_init, Result};
+use bookdata::{LogOpts, Result};
 use bookdata::db;
 
 /// Import n-triples RDF (e.g. from LOC) into a database.
 #[derive(StructOpt, Debug)]
 #[structopt(name="import-ntriples")]
 struct Opt {
-  /// Verbose mode (-v, -vv, -vvv, etc.)
-  #[structopt(short="v", long="verbose", parse(from_occurrences))]
-  verbose: usize,
-  /// Silence output
-  #[structopt(short="q", long="quiet")]
-  quiet: bool,
-  /// Database URL to connect to
-  #[structopt(long="db-url")]
-  db_url: Option<String>,
-  /// Database schema
-  #[structopt(long="db-schema")]
-  db_schema: Option<String>,
-  /// Database table
+  #[structopt(flatten)]
+  logging: LogOpts,
+
+  #[structopt(flatten)]
+  db: db::DbOpts,
+
+  /// Database table for storing triples
   #[structopt(short="t", long="table")]
   table: String,
   /// Input file
@@ -85,8 +79,8 @@ impl NodePlumber {
   }
 
   /// Listen for messages and store in the database
-  fn run(&mut self, url: &Option<String>) -> Result<u64> {
-    let db = db::db_open(url)?;
+  fn run(&mut self, url: &str) -> Result<u64> {
+    let db = db::connect(url)?;
     let mut added = 0;
     let mut done = false;
     while !done {
@@ -121,14 +115,14 @@ impl NodePlumber {
 }
 
 impl NodeSink {
-  fn create(url: &Option<String>, ns: &str) -> NodeSink {
-    let url = url.as_ref().map(|s| s.clone());
-    let ns = ns.to_string();
+  fn create(db: &db::DbOpts) -> NodeSink {
+    let opts = db.clone();
     let (tx, rx) = bounded(1000);
 
     let tb = thread::Builder::new().name("insert-nodes".to_string());
     let jh = tb.spawn(move || {
-      let mut plumber = NodePlumber::create(rx, &ns);
+      let mut plumber = NodePlumber::create(rx, opts.schema());
+      let url = opts.url().unwrap();
       plumber.run(&url).unwrap()
     }).unwrap();
 
@@ -220,7 +214,7 @@ impl<W: Write> IdGenerator<W> {
 
 fn main() -> Result<()> {
   let opt = Opt::from_args();
-  log_init(opt.quiet, opt.verbose)?;
+  opt.logging.init()?;
 
   let inf = opt.infile.as_path();
   let fs = fs::File::open(inf)?;
@@ -237,14 +231,14 @@ fn main() -> Result<()> {
   info!("processing member {:?} with {} bytes", member.name(), member.size());
 
 
-  let schema = opt.db_schema.unwrap_or("public".to_string());
+  let schema = opt.db.schema();
 
-  let node_sink = NodeSink::create(&opt.db_url, &schema);
+  let node_sink = NodeSink::create(&opt.db);
   let lit_query = format!("COPY {}.literals FROM STDIN", schema);
-  let lit_out = db::copy_target(&opt.db_url, &lit_query, "literals")?;
+  let lit_out = db::copy_target(&opt.db.url()?, &lit_query, "literals")?;
   let lit_out = BufWriter::new(lit_out);
   let triple_query = format!("COPY {}.{} FROM STDIN", schema, opt.table);
-  let triples_out = db::copy_target(&opt.db_url, &triple_query, "triples")?;
+  let triples_out = db::copy_target(&opt.db.url()?, &triple_query, "triples")?;
   let mut triples_out = BufWriter::new(triples_out);
 
   let mut idg = IdGenerator::create(node_sink, lit_out, member.name());
