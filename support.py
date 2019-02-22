@@ -45,7 +45,14 @@ def psql(c, script):
 @task
 def init(c):
     "Make sure initial database structure are in place"
-    if start('init', fail=False):
+    try:
+        is_initialized = not start('init', fail=False)
+    except psycopg2.Error as e:
+        _log.warning('PostgreSQL error: %s', e)
+        _log.info('Will try to initialize database')
+        is_initialized = False
+
+    if not is_initialized:
         psql(c, 'common-schema.sql')
         finish('init')
 
@@ -195,7 +202,10 @@ def finish(step, dbc=None):
                 UPDATE import_status
                 SET finished_at = now()
                 WHERE step = %s
+                RETURNING finished_at - started_at
             ''', [step])
-            ct = cur.rowcount
-            if ct != 1:
+            row = cur.fetchrow()
+            if row is None:
                 raise RuntimeError("couldn't update step!")
+            elapsed, = row
+            _log.info('finished step %s in %s', step, elapsed)
