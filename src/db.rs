@@ -104,8 +104,8 @@ impl Drop for CopyTarget {
 }
 
 /// Open a writer to copy data into PostgreSQL
-pub fn copy_target(url: &str, query: &str, name: &str) -> Result<CopyTarget> {
-  let url = url.to_string();
+pub fn copy_target<U: ConnectInfo>(ci: &U, query: &str, name: &str) -> Result<CopyTarget> {
+  let url = ci.db_url()?;
   let query = query.to_string();
   let (mut reader, writer) = pipe()?;
   

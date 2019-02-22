@@ -1,3 +1,5 @@
+#[macro_use] extern crate log;
+
 extern crate structopt;
 extern crate quick_xml;
 extern crate flate2;
@@ -15,14 +17,24 @@ use quick_xml::events::Event;
 use flate2::bufread::MultiGzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
 
-use bookdata::{Result, err};
+use bookdata::{Result, err, LogOpts};
 use bookdata::cleaning::write_pgencoded;
 use bookdata::tsv::split_first;
+use bookdata::db::{DbOpts, copy_target};
 
 /// Parse MARC files into records for a PostgreSQL table.
 #[derive(StructOpt, Debug)]
 #[structopt(name="parse-marc")]
 struct Opt {
+  #[structopt(flatten)]
+  logging: LogOpts,
+
+  #[structopt(flatten)]
+  db: DbOpts,
+
+  #[structopt(short="-t", long="table")]
+  table: String,
+
   /// Activate line mode, e.g. for VIAF
   #[structopt(short="L", long="line-mode")]
   linemode: bool,
@@ -183,13 +195,16 @@ fn process_records<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, start
 
 fn main() -> Result<()> {
   let opt = Opt::from_args();
-  let out = io::stdout();
-  let mut outlock = out.lock();
+  opt.logging.init()?;
+  
+  let query = format!("COPY {}.{} FROM STDIN", opt.db.schema(), opt.table);
+  let mut out = copy_target(&opt.db, &query, "marc-field")?;
+
   let mut count = 0;
 
   for inf in opt.files {
     let inf = inf.as_path();
-    eprintln!("reading from compressed file {:?}", inf);
+    info!("reading from compressed file {:?}", inf);
     let fs = File::open(inf)?;
     let pb = ProgressBar::new(fs.metadata()?.len());
     pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
@@ -198,17 +213,17 @@ fn main() -> Result<()> {
     let gzf = MultiGzDecoder::new(pbr);
     let mut bfs = BufReader::new(gzf);
     let nrecs = if opt.linemode {
-      process_delim_file(&mut bfs, &mut outlock, count)
+      process_delim_file(&mut bfs, &mut out, count)
     } else {
-      process_marc_file(&mut bfs, &mut outlock, count)
+      process_marc_file(&mut bfs, &mut out, count)
     };
     match nrecs {
       Ok(n) => {
-        eprintln!("processed {} records from {:?}", n, inf);
+        info!("processed {} records from {:?}", n, inf);
         count += n;
       },
       Err(e) => {
-        eprintln!("error in {:?}: {}", inf, e);
+        error!("error in {:?}: {}", inf, e);
         return Err(e)
       }
     }
