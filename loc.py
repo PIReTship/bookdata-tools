@@ -32,7 +32,7 @@ def import_books(c, force=False):
     s.start('loc-mds-books', force=force)
     loc = s.data_dir / 'LOC'
     files = list(loc.glob('BooksAll.2014.part*.xml.gz'))
-    _log.info('importing LOC data from', len(files), 'files')
+    _log.info('importing LOC data from %d files', len(files))
     s.pipeline([
         [s.bin_dir / 'parse-marc', '--db-schema', 'locmds', '-t', 'book_marc_field'] + files
     ])
