@@ -24,8 +24,7 @@ def import_authors(c, date='2018-10-31', force=False):
     _log.info('importing OL authors from', infile)
 
     s.pipeline([
-        [s.bin_dir / 'clean-json', '--openlib', infile],
-        ['psql', '-c', '\\copy ol.author (author_key, author_data) FROM STDIN']
+        [s.bin_dir / 'import-json', '--truncate', 'openlib', 'author', infile]
     ])
     s.finish('ol-authors')
 
@@ -39,8 +38,7 @@ def import_editions(c, date='2018-10-31', force=False):
     _log.info('importing OL editions from', infile)
 
     s.pipeline([
-        [s.bin_dir / 'clean-json', '--openlib', infile],
-        ['psql', '-c', '\\copy ol.edition (edition_key, edition_data) FROM STDIN']
+        [s.bin_dir / 'import-json', '--truncate', 'openlib', 'edition', infile]
     ])
     s.finish('ol-editions')
 
@@ -53,8 +51,7 @@ def import_works(c, date='2018-10-31', force=False):
     infile = s.data_dir / f'ol_dump_works_{date}.txt.gz'
 
     s.pipeline([
-        [s.bin_dir / 'clean-json', '--openlib', infile],
-        ['psql', '-c', '\\copy ol.work (work_key, work_data) FROM STDIN']
+        [s.bin_dir / 'import-json', '--truncate', 'openlib', 'work', infile]
     ])
     s.finish('ol-works')
 

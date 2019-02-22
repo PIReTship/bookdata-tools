@@ -59,6 +59,14 @@ impl DbOpts {
       None => "public"
     }
   }
+
+  /// Change the default schema
+  pub fn default_schema(self, default: &str) -> DbOpts {
+    DbOpts {
+      db_url: self.db_url,
+      db_schema: self.db_schema.or_else(|| Some(default.to_string()))
+    }
+  }
 }
 
 impl ConnectInfo for DbOpts {
