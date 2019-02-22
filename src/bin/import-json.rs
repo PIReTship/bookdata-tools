@@ -101,8 +101,8 @@ impl ImportType {
 
   fn schema(&self) -> &'static str {
     match self {
-      ImportType::OpenLib(_) => "openlib",
-      ImportType::GoodReads(_) => "goodreads",
+      ImportType::OpenLib(_) => "ol",
+      ImportType::GoodReads(_) => "gr",
     }
   }
 

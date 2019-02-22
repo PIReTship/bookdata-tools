@@ -21,7 +21,7 @@ def import_authors(c, date='2018-10-31', force=False):
     s.check_prereq('ol-init')
     s.start('ol-authors', force=force)
     infile = s.data_dir / f'ol_dump_authors_{date}.txt.gz'
-    _log.info('importing OL authors from', infile)
+    _log.info('importing OL authors from %s', infile)
 
     s.pipeline([
         [s.bin_dir / 'import-json', '--truncate', 'openlib', 'author', infile]
@@ -35,7 +35,7 @@ def import_editions(c, date='2018-10-31', force=False):
     s.check_prereq('ol-init')
     s.start('ol-editions', force=force)
     infile = s.data_dir / f'ol_dump_editions_{date}.txt.gz'
-    _log.info('importing OL editions from', infile)
+    _log.info('importing OL editions from %s', infile)
 
     s.pipeline([
         [s.bin_dir / 'import-json', '--truncate', 'openlib', 'edition', infile]
@@ -49,6 +49,7 @@ def import_works(c, date='2018-10-31', force=False):
     s.check_prereq('ol-init')
     s.start('ol-works', force=force)
     infile = s.data_dir / f'ol_dump_works_{date}.txt.gz'
+    _log.info('importing works from %s', infile)
 
     s.pipeline([
         [s.bin_dir / 'import-json', '--truncate', 'openlib', 'work', infile]
