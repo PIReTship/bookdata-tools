@@ -20,7 +20,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use bookdata::{Result, err, LogOpts};
 use bookdata::cleaning::write_pgencoded;
 use bookdata::tsv::split_first;
-use bookdata::db::{DbOpts, copy_target};
+use bookdata::db::{DbOpts, copy_target, truncate_table};
 
 /// Parse MARC files into records for a PostgreSQL table.
 #[derive(StructOpt, Debug)]
@@ -196,20 +196,12 @@ fn process_records<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, start
   Ok(recid - start)
 }
 
-fn truncate_table(dbo: &DbOpts, table: &str) -> Result<()> {
-  let db = dbo.open()?;
-  let q = format!("TRUNCATE {}.{}", dbo.schema(), table);
-  info!("running {}", q);
-  db.execute(&q, &[])?;
-  Ok(())
-}
-
 fn main() -> Result<()> {
   let opt = Opt::from_args();
   opt.logging.init()?;
 
   if opt.truncate {
-    truncate_table(&opt.db, &opt.table)?;
+    truncate_table(&opt.db, &opt.table, &opt.db.schema())?;
   }
 
   let query = format!("COPY {}.{} FROM STDIN", opt.db.schema(), opt.table);

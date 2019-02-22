@@ -80,7 +80,7 @@ def import_id_auth(c, force=False, convert_only=False, convert=True):
     if convert:
         _log.info('converting authority ntriples to PSQL')
         s.pipeline([
-            [s.bin_dir / 'import-ntriples', '--db-schema', 'locid', '--table', 'auth_triple', auth]
+            [s.bin_dir / 'import-ntriples', '--db-schema', 'locid', '--table', 'auth_triple', '--truncate', auth]
         ])
 
     s.finish('loc-id-names')
@@ -95,7 +95,7 @@ def import_id_work(c, force=False, convert_only=False, convert=True):
     if convert:
         _log.info('converting BIBFRAME ntriples to PSQL')
         s.pipeline([
-            [s.bin_dir / 'import-ntriples', '--db-schema', 'locid', '--table', 'work_triple', auth]
+            [s.bin_dir / 'import-ntriples', '--db-schema', 'locid', '--table', 'work_triple', '--truncate', auth]
         ])
 
     s.finish('loc-id-works')

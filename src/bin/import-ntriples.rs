@@ -44,6 +44,10 @@ struct Opt {
   /// Database table for storing triples
   #[structopt(short="t", long="table")]
   table: String,
+  /// Truncate the database table
+  #[structopt(long="truncate")]
+  truncate: bool,
+
   /// Input file
   #[structopt(name = "INPUT", parse(from_os_str))]
   infile: PathBuf
@@ -215,6 +219,10 @@ impl<W: Write> IdGenerator<W> {
 fn main() -> Result<()> {
   let opt = Opt::from_args();
   opt.logging.init()?;
+
+  if opt.truncate {
+    db::truncate_table(&opt.db, &opt.table, &opt.db.schema())?;
+  }
 
   let inf = opt.infile.as_path();
   let fs = fs::File::open(inf)?;

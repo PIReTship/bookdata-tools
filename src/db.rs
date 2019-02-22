@@ -104,7 +104,7 @@ impl Drop for CopyTarget {
 }
 
 /// Open a writer to copy data into PostgreSQL
-pub fn copy_target<U: ConnectInfo>(ci: &U, query: &str, name: &str) -> Result<CopyTarget> {
+pub fn copy_target<C: ConnectInfo>(ci: &C, query: &str, name: &str) -> Result<CopyTarget> {
   let url = ci.db_url()?;
   let query = query.to_string();
   let (mut reader, writer) = pipe()?;
@@ -122,4 +122,14 @@ pub fn copy_target<U: ConnectInfo>(ci: &U, query: &str, name: &str) -> Result<Co
     name: name.to_string(),
     thread: Some(jh)
   })
+}
+
+/// Truncate a table
+pub fn truncate_table<C: ConnectInfo>(ci: &C, table: &str, schema: &str) -> Result<()> {
+  let url = ci.db_url()?;
+  let db = connect(&url)?;
+  let q = format!("TRUNCATE {}.{}", schema, table);
+  info!("running {}", q);
+  db.execute(&q, &[])?;
+  Ok(())
 }
