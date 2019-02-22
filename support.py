@@ -204,7 +204,7 @@ def finish(step, dbc=None):
                 WHERE step = %s
                 RETURNING finished_at - started_at
             ''', [step])
-            row = cur.fetchrow()
+            row = cur.fetchone()
             if row is None:
                 raise RuntimeError("couldn't update step!")
             elapsed, = row

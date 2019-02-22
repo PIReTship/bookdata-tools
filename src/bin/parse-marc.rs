@@ -7,7 +7,7 @@ extern crate indicatif;
 extern crate bookdata;
 
 use std::io::prelude::*;
-use std::io::{self, BufReader};
+use std::io::{self, BufReader, BufWriter};
 use std::fs::File;
 use std::path::PathBuf;
 use std::str;
@@ -34,6 +34,9 @@ struct Opt {
 
   #[structopt(short="-t", long="table")]
   table: String,
+
+  #[structopt(long="truncate")]
+  truncate: bool,
 
   /// Activate line mode, e.g. for VIAF
   #[structopt(short="L", long="line-mode")]
@@ -193,12 +196,25 @@ fn process_records<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, start
   Ok(recid - start)
 }
 
+fn truncate_table(dbo: &DbOpts, table: &str) -> Result<()> {
+  let db = dbo.open()?;
+  let q = format!("TRUNCATE {}.{}", dbo.schema(), table);
+  info!("running {}", q);
+  db.execute(&q, &[])?;
+  Ok(())
+}
+
 fn main() -> Result<()> {
   let opt = Opt::from_args();
   opt.logging.init()?;
-  
+
+  if opt.truncate {
+    truncate_table(&opt.db, &opt.table)?;
+  }
+
   let query = format!("COPY {}.{} FROM STDIN", opt.db.schema(), opt.table);
-  let mut out = copy_target(&opt.db, &query, "marc-field")?;
+  let out = copy_target(&opt.db, &query, "marc-field")?;
+  let mut out = BufWriter::new(out);
 
   let mut count = 0;
 
