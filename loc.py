@@ -104,7 +104,7 @@ def import_id_work(c, force=False, convert_only=False, convert=True):
 @task(s.init)
 def index_id_triples(c, force=False):
     "Create basic indexes on LOC ID data"
-    s.check_prereq('loc-id-triple-index')
+    s.check_prereq('loc-id-init')
     s.start('loc-id-triple-index', force=force)
     _log.info('building LOC name indexes')
     s.psql(c, 'loc-id-triple-index.sql')
