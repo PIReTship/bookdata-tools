@@ -31,6 +31,9 @@ use bookdata::cleaning::{write_pgencoded};
 use bookdata::{LogOpts, Result};
 use bookdata::db;
 
+const NODE_BATCH_SIZE: u64 = 20000;
+const NODE_QUEUE_SIZE: usize = 2500;
+
 /// Import n-triples RDF (e.g. from LOC) into a database.
 #[derive(StructOpt, Debug)]
 #[structopt(name="import-ntriples")]
@@ -102,7 +105,7 @@ impl NodePlumber {
   fn run_batch(&mut self, db: &postgres::GenericConnection) -> Result<(u64, bool)> {
     let stmt = db.prepare_cached(&self.query)?;
     let mut n = 0;
-    while n < 5000 {
+    while n < NODE_BATCH_SIZE {
       match self.source.recv()? {
         NodeMsg::SaveNode(id, iri) => {
           if self.seen.insert(id) {
@@ -121,7 +124,7 @@ impl NodePlumber {
 impl NodeSink {
   fn create(db: &db::DbOpts) -> NodeSink {
     let opts = db.clone();
-    let (tx, rx) = bounded(1000);
+    let (tx, rx) = bounded(NODE_QUEUE_SIZE);
 
     let tb = thread::Builder::new().name("insert-nodes".to_string());
     let jh = tb.spawn(move || {
