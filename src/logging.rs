@@ -27,17 +27,16 @@ impl Log for LogEnv {
     let pass = unsafe {
       record.level() <= LOGGER.filter
     };
-    if pass {
-      let msg = format!("{} - {}", record.level(), record.args());
+    if !pass { return; }
+    let msg = format!("{} - {}", record.level(), record.args());
 
-      let pb_ptr = self.progress.load(Ordering::Relaxed);
-      if pb_ptr.is_null() {
-        eprintln!("{}", msg);
-      } else {
-        unsafe {
-          let pb = &*pb_ptr;
-          pb.println(msg)
-        }
+    let pb_ptr = self.progress.load(Ordering::Relaxed);
+    if pb_ptr.is_null() {
+      eprintln!("{}", msg);
+    } else {
+      unsafe {
+        let pb = &*pb_ptr;
+        pb.println(msg)
       }
     }
   }
