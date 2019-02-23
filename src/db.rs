@@ -149,6 +149,7 @@ impl CopyRequest {
     query
   }
 
+  /// Open a writer for a copy request
   pub fn open(self) -> Result<CopyTarget> {
     let query = self.query();
     let (mut reader, writer) = pipe()?;
@@ -158,7 +159,9 @@ impl CopyRequest {
     let jh = tb.spawn(move || {
       let query = query;
       let db = connect(&self.db_url).unwrap();
-      let tx = db.transaction().unwrap();
+      let mut cfg = postgres::transaction::Config::new();
+      cfg.isolation_level(postgres::transaction::IsolationLevel::ReadUncommitted);
+      let tx = db.transaction_with(&cfg).unwrap();
       if self.truncate {
         let tq = format!("TRUNCATE {}", self.table());
         info!("running {}", tq);
@@ -179,6 +182,10 @@ impl CopyRequest {
   }
 }
 
+/// Writer for copy-in operations
+/// 
+/// This writer writes to the copy-in for PostgreSQL.  It is unbuffered; you usually
+/// want to wrap it in a `BufWriter`.
 pub struct CopyTarget {
   writer: Option<PipeWriter>,
   name: String,

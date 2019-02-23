@@ -88,12 +88,15 @@ impl NodePlumber {
   /// Listen for messages and store in the database
   fn run(&mut self, url: &str) -> Result<u64> {
     let db = db::connect(url)?;
+    let mut cfg = postgres::transaction::Config::new();
+    cfg.isolation_level(postgres::transaction::IsolationLevel::ReadUncommitted);
     let mut added = 0;
     let mut done = false;
     while !done {
-      let txn = db.transaction()?;
+      let txn = db.transaction_with(&cfg)?;
+      txn.execute("SET LOCAL synchronous_commit TO OFF", &[])?;
       let (n, eos) = self.run_batch(&txn)?;
-      debug!("committing {} new additions", n);
+      debug!("committing {} new nodes", n);
       txn.commit()?;
       added += n;
       done = eos;
