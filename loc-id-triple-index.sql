@@ -1,4 +1,4 @@
-DO $$ 
+DO $$
 DECLARE
   st_time timestamp;
 BEGIN
