@@ -2,7 +2,7 @@
 ALTER TABLE gr.raw_book ADD CONSTRAINT gr_raw_book_pk PRIMARY KEY (gr_book_rid);
 ALTER TABLE gr.raw_work ADD CONSTRAINT gr_raw_work_pk PRIMARY KEY (gr_work_rid);
 ALTER TABLE gr.raw_author ADD CONSTRAINT gr_raw_author_pk PRIMARY KEY (gr_author_rid);
-ALTER TABLE gr.raw_interaction ADD CONSTRAINT gr_raw_interaction_pk PRIMARY KEY (gr_int_rid);
+ALTER TABLE gr.raw_interaction ADD CONSTRAINT gr_raw_interaction_pk PRIMARY KEY (gr_interaction_rid);
 
 -- Extract work identifiers from GoodReads work records
 CREATE TABLE gr.work_ids

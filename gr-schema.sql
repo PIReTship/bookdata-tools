@@ -1,8 +1,9 @@
-CREATE SCHEMA IF NOT EXISTS gr;
+DROP SCHEMA IF EXISTS gr CASCADE;
+CREATE SCHEMA gr;
 
 CREATE TABLE gr.raw_interaction (
-  gr_int_rid SERIAL NOT NULL,
-  gr_int_data JSONB NOT NULL
+  gr_interaction_rid SERIAL NOT NULL,
+  gr_interaction_data JSONB NOT NULL
 );
 CREATE TABLE gr.raw_book (
   gr_book_rid SERIAL NOT NULL,

@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS gr.user_info (
   gr_user_id VARCHAR NOT NULL
 );
 CREATE TEMPORARY TABLE gr_new_users
-  AS SELECT gr_int_data->>'user_id' AS gr_user_id
-     FROM gr_raw_interaction LEFT JOIN gr.user_info ON (gr_user_id = gr_int_data->>'user_id')
+  AS SELECT gr_interaction_data->>'user_id' AS gr_user_id
+     FROM gr_raw_interaction LEFT JOIN gr.user_info ON (gr_user_id = gr_interaction_data->>'user_id')
      WHERE gr_user_rid IS NULL;
 INSERT INTO gr.user_info (gr_user_id)
 SELECT DISTINCT gr_user_id FROM gr_new_users;
@@ -23,16 +23,16 @@ ANALYZE gr.user_info;
 
 -- Rating data
 CREATE TABLE IF NOT EXISTS gr.interaction
-  AS SELECT gr_int_rid, book_id, gr_user_rid, rating, (gr_int_data->'isRead')::boolean AS is_read, date_added, date_updated
+  AS SELECT gr_interaction_rid, book_id, gr_user_rid, rating, (gr_interaction_data->'isRead')::boolean AS is_read, date_added, date_updated
      FROM gr_raw_interaction,
-          jsonb_to_record(gr_int_data) AS
+          jsonb_to_record(gr_interaction_data) AS
               x(book_id INTEGER, user_id VARCHAR, rating INTEGER,
                 date_added TIMESTAMP WITH TIME ZONE, date_updated TIMESTAMP WITH TIME ZONE),
           gr.user_info
      WHERE user_id = gr_user_id;
 DO $$
 BEGIN
-    ALTER TABLE gr.interaction ADD CONSTRAINT gr_interaction_pk PRIMARY KEY (gr_int_rid);
+    ALTER TABLE gr.interaction ADD CONSTRAINT gr_interaction_pk PRIMARY KEY (gr_interaction_rid);
 EXCEPTION
     WHEN invalid_table_definition THEN
         RAISE NOTICE 'primary key already exists';
