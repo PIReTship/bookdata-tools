@@ -20,6 +20,12 @@ impl fmt::Display for BDError {
   }
 }
 
+impl From<log::SetLoggerError> for BDError {
+  fn from(_sle: log::SetLoggerError) -> BDError {
+    err("cannot set logger")
+  }
+}
+
 macro_rules! wrap_error {
   ($et:ty) => {
     impl From<$et> for BDError {
@@ -31,7 +37,6 @@ macro_rules! wrap_error {
 }
 
 wrap_error!(std::env::VarError);
-wrap_error!(log::SetLoggerError);
 wrap_error!(zip::result::ZipError);
 wrap_error!(crossbeam_channel::RecvError);
 
