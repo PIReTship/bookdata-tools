@@ -30,7 +30,6 @@ use crossbeam_channel::{Sender, Receiver, bounded};
 use bookdata::cleaning::{write_pgencoded};
 use bookdata::{LogOpts, Result};
 use bookdata::db;
-use bookdata::logging;
 
 const NODE_BATCH_SIZE: u64 = 20000;
 const NODE_QUEUE_SIZE: usize = 2500;
@@ -247,7 +246,7 @@ fn main() -> Result<()> {
   let lit_cpy = lit_cpy.with_schema(opt.db.schema());
   let lit_out = lit_cpy.open()?;
   let lit_out = BufWriter::new(lit_out);
-
+  
   let triple_cpy = db::CopyRequest::new(&opt.db, &opt.table)?.with_name("triples");
   let triple_cpy = triple_cpy.with_schema(opt.db.schema());
   let triple_cpy = triple_cpy.truncate(opt.truncate);
@@ -260,7 +259,6 @@ fn main() -> Result<()> {
   pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
   let pbr = pb.wrap_read(member);
   let pbr = BufReader::new(pbr);
-  logging::set_progress(&pb);
   let mut lno = 0;
   for line in pbr.lines() {
     let line = line?;
@@ -282,8 +280,6 @@ fn main() -> Result<()> {
       }
     };
   }
-  pb.finish();
-  logging::clear_progress();
 
   Ok(())
 }
