@@ -20,7 +20,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use bookdata::{Result, err, LogOpts};
 use bookdata::cleaning::write_pgencoded;
 use bookdata::tsv::split_first;
-use bookdata::db::{DbOpts, copy_target, truncate_table};
+use bookdata::db::{DbOpts, CopyRequest};
 
 /// Parse MARC files into records for a PostgreSQL table.
 #[derive(StructOpt, Debug)]
@@ -200,12 +200,10 @@ fn main() -> Result<()> {
   let opt = Opt::from_args();
   opt.logging.init()?;
 
-  if opt.truncate {
-    truncate_table(&opt.db, &opt.table, &opt.db.schema())?;
-  }
-
-  let query = format!("COPY {}.{} FROM STDIN", opt.db.schema(), opt.table);
-  let out = copy_target(&opt.db, &query, "marc-field")?;
+  let req = CopyRequest::new(&opt.db, &opt.table)?;
+  let req = req.with_schema(opt.db.schema());
+  let req = req.truncate(opt.truncate);
+  let out = req.open()?;
   let mut out = BufWriter::new(out);
 
   let mut count = 0;

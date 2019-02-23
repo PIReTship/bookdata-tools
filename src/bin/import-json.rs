@@ -15,7 +15,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 use bookdata::cleaning::{write_pgencoded, clean_json};
 use bookdata::tsv::split_first;
-use bookdata::db::{DbOpts, truncate_table, copy_target};
+use bookdata::db::{DbOpts, CopyRequest};
 use bookdata::{Result, LogOpts, err};
 
 #[derive(StructOpt, Debug)]
@@ -113,12 +113,10 @@ impl ImportType {
     }
   }
 
-  fn query(&self, schema: &str) -> String {
+  fn columns(&self) -> Vec<String> {
     match self {
-      ImportType::OpenLib(ref ii) =>
-        format!("COPY {schema}.{table} ({table}_key, {table}_data) FROM STDIN", schema=schema, table=ii.table),
-      ImportType::GoodReads(ref ii) =>
-        format!("COPY {schema}.raw_{table} (gr_{table}_data) FROM STDIN", schema=schema, table=ii.table)
+      ImportType::OpenLib(ref ii) => vec![format!("{}_key", ii.table), format!("{}_data", ii.table)],
+      ImportType::GoodReads(ref ii) => vec![format!("gr_{}_data", ii.table)]
     }
   }
 
@@ -135,10 +133,6 @@ fn main() -> Result<()> {
   opt.logging.init()?;
   let dbo = opt.db.default_schema(opt.dataset.schema());
 
-  if opt.truncate {
-    truncate_table(&dbo, &opt.dataset.table_name(), dbo.schema())?;
-  }
-
   let infn = &opt.dataset.info().infile;
   info!("reading from {:?}", infn);
   let fs = File::open(infn)?;
@@ -150,7 +144,13 @@ fn main() -> Result<()> {
   let gzf = MultiGzDecoder::new(pbr);
   let mut bfs = BufReader::new(gzf);
 
-  let out = copy_target(&dbo, &opt.dataset.query(dbo.schema()), "copy")?;
+  let req = CopyRequest::new(&dbo, &opt.dataset.table_name())?;
+  let req = req.with_schema(dbo.schema());
+  let columns = opt.dataset.columns();
+  let cref: Vec<&str> = columns.iter().map(String::as_str).collect();
+  let req = req.with_columns(&cref);
+  let req = req.truncate(opt.truncate);
+  let out = req.open()?;
   let mut out = BufWriter::new(out);
 
   let n = opt.dataset.import(&mut bfs, &mut out)?;

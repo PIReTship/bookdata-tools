@@ -223,10 +223,6 @@ fn main() -> Result<()> {
   let opt = Opt::from_args();
   opt.logging.init()?;
 
-  if opt.truncate {
-    db::truncate_table(&opt.db, &opt.table, &opt.db.schema())?;
-  }
-
   let inf = opt.infile.as_path();
   let fs = fs::File::open(inf)?;
   let fs = BufReader::new(fs);
@@ -241,15 +237,17 @@ fn main() -> Result<()> {
   let member = zf.by_index(0)?;
   info!("processing member {:?} with {} bytes", member.name(), member.size());
 
-
-  let schema = opt.db.schema();
-
   let node_sink = NodeSink::create(&opt.db);
-  let lit_query = format!("COPY {}.literals FROM STDIN", schema);
-  let lit_out = db::copy_target(&opt.db.url()?, &lit_query, "literals")?;
+
+  let lit_cpy = db::CopyRequest::new(&opt.db, "literals")?.with_name("literals");
+  let lit_cpy = lit_cpy.with_schema(opt.db.schema());
+  let lit_out = lit_cpy.open()?;
   let lit_out = BufWriter::new(lit_out);
-  let triple_query = format!("COPY {}.{} FROM STDIN", schema, opt.table);
-  let triples_out = db::copy_target(&opt.db.url()?, &triple_query, "triples")?;
+  
+  let triple_cpy = db::CopyRequest::new(&opt.db, &opt.table)?.with_name("triples");
+  let triple_cpy = triple_cpy.with_schema(opt.db.schema());
+  let triple_cpy = triple_cpy.truncate(opt.truncate);
+  let triples_out = triple_cpy.open()?;
   let mut triples_out = BufWriter::new(triples_out);
 
   let mut idg = IdGenerator::create(node_sink, lit_out, member.name());

@@ -79,6 +79,106 @@ pub fn connect(url: &str) -> Result<Connection> {
   Ok(Connection::connect(url, TlsMode::None)?)
 }
 
+pub struct CopyRequest {
+  db_url: String,
+  schema: Option<String>,
+  table: String,
+  columns: Option<Vec<String>>,
+  truncate: bool,
+  name: String
+}
+
+impl CopyRequest {
+  pub fn new<C: ConnectInfo>(db: &C, table: &str) -> Result<CopyRequest> {
+    Ok(CopyRequest {
+      db_url: db.db_url()?,
+      schema: None,
+      table: table.to_string(),
+      columns: None,
+      truncate: false,
+      name: "copy".to_string()
+    })
+  }
+
+  pub fn with_schema(self, schema: &str) -> CopyRequest {
+    CopyRequest {
+      schema: Some(schema.to_string()),
+      ..self
+    }
+  }
+
+  pub fn with_columns(self, columns: &[&str]) -> CopyRequest {
+    let mut cvec = Vec::with_capacity(columns.len());
+    for c in columns {
+      cvec.push(c.to_string());
+    }
+    CopyRequest {
+      columns: Some(cvec),
+      ..self
+    }
+  }
+
+  pub fn with_name(self, name: &str) -> CopyRequest {
+    CopyRequest {
+      name: name.to_string(),
+      ..self
+    }
+  }
+
+  pub fn truncate(self, trunc: bool) -> CopyRequest {
+    CopyRequest {
+      truncate: trunc,
+      ..self
+    }
+  }
+
+  pub fn table(&self) -> String {
+    match self.schema {
+      Some(ref s) => format!("{}.{}", s, self.table),
+      None => self.table.clone()
+    }
+  }
+
+  fn query(&self) -> String {
+    let mut query = format!("COPY {}", self.table());
+    if let Some(ref cs) = self.columns {
+      let s = format!(" ({})", cs.join(", "));
+      query.push_str(&s);
+    }
+    query.push_str(" FROM STDIN");
+    query
+  }
+
+  pub fn open(self) -> Result<CopyTarget> {
+    let query = self.query();
+    let (mut reader, writer) = pipe()?;
+    
+    let name = self.name.clone();
+    let tb = thread::Builder::new().name(name.clone());
+    let jh = tb.spawn(move || {
+      let query = query;
+      let db = connect(&self.db_url).unwrap();
+      let tx = db.transaction().unwrap();
+      if self.truncate {
+        let tq = format!("TRUNCATE {}", self.table());
+        info!("running {}", tq);
+        tx.execute(&tq, &[]).unwrap();
+      }
+      info!("preparing {}", query);
+      let stmt = tx.prepare(&query).unwrap();
+      let n = stmt.copy_in(&[], &mut reader).unwrap();
+      info!("committing copy");
+      tx.commit().unwrap();
+      n
+    })?;
+    Ok(CopyTarget {
+      writer: Some(writer),
+      name: name,
+      thread: Some(jh)
+    })
+  }
+}
+
 pub struct CopyTarget {
   writer: Option<PipeWriter>,
   name: String,
@@ -111,33 +211,39 @@ impl Drop for CopyTarget {
   }
 }
 
-/// Open a writer to copy data into PostgreSQL
-pub fn copy_target<C: ConnectInfo>(ci: &C, query: &str, name: &str) -> Result<CopyTarget> {
-  let url = ci.db_url()?;
-  let query = query.to_string();
-  let (mut reader, writer) = pipe()?;
-  
-  let tb = thread::Builder::new().name(name.to_string());
-  let jh = tb.spawn(move || {
-    let query = query;
-    let db = connect(&url).unwrap();
-    info!("preparing {}", query);
-    let stmt = db.prepare(&query).unwrap();
-    stmt.copy_in(&[], &mut reader).unwrap()
-  })?;
-  Ok(CopyTarget {
-    writer: Some(writer),
-    name: name.to_string(),
-    thread: Some(jh)
-  })
+#[test]
+fn cr_initial_correct() {
+  let cr = CopyRequest::new(&("foo".to_string()), "wombat").unwrap();
+  assert_eq!(cr.name, "copy");
+  assert_eq!(cr.db_url, "foo");
+  assert_eq!(cr.table, "wombat");
+  assert!(cr.columns.is_none());
+  assert!(cr.schema.is_none());
+  assert!(!cr.truncate);
+  assert_eq!(cr.query(), "COPY wombat FROM STDIN");
 }
 
-/// Truncate a table
-pub fn truncate_table<C: ConnectInfo>(ci: &C, table: &str, schema: &str) -> Result<()> {
-  let url = ci.db_url()?;
-  let db = connect(&url)?;
-  let q = format!("TRUNCATE {}.{}", schema, table);
-  info!("running {}", q);
-  db.execute(&q, &[])?;
-  Ok(())
+#[test]
+fn cr_set_name() {
+  let cr = CopyRequest::new(&("foo".to_string()), "wombat").unwrap();
+  let cr = cr.with_name("bob");
+  assert_eq!(cr.name, "bob");
+  assert_eq!(cr.db_url, "foo");
+  assert_eq!(cr.table, "wombat");
+  assert!(cr.columns.is_none());
+  assert!(cr.schema.is_none());
+  assert!(!cr.truncate);
+}
+
+#[test]
+fn cr_schema_propagated() {
+  let cr = CopyRequest::new(&("foo".to_string()), "wombat").unwrap();
+  let cr = cr.with_schema("pizza");
+  assert_eq!(cr.name, "copy");
+  assert_eq!(cr.db_url, "foo");
+  assert_eq!(cr.table, "wombat");
+  assert!(cr.columns.is_none());
+  assert_eq!(cr.schema.as_ref().expect("no schema"), "pizza");
+  assert!(!cr.truncate);
+  assert_eq!(cr.query(), "COPY pizza.wombat FROM STDIN");
 }
