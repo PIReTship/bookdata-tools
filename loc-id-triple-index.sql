@@ -7,10 +7,10 @@ BEGIN
   CREATE INDEX IF NOT EXISTS node_iri_idx ON locid.nodes (node_iri);
   ANALYZE locid.nodes;
   RAISE NOTICE 'Indexed node IRIs in %', now() - st_time;
-END; 
+END;
 $$;
 
-DO $$ 
+DO $$
 DECLARE
   st_time timestamp;
 BEGIN
