@@ -2,21 +2,20 @@ use structopt::StructOpt;
 use indicatif::ProgressBar;
 use log::*;
 
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicPtr, Ordering};
+use std::ptr;
 
 use error::Result;
 
 static mut LOGGER: LogEnv = LogEnv {
-  filter: LevelFilter::Info
+  filter: LevelFilter::Info,
+  progress: AtomicPtr::new(ptr::null_mut())
 };
 
-lazy_static! {
-  static ref LOG_PB: Mutex<Option<ProgressBar>> = Mutex::new(None);
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct LogEnv {
-  filter: LevelFilter
+  filter: LevelFilter,
+  progress: AtomicPtr<ProgressBar>
 }
 
 impl Log for LogEnv {
@@ -30,11 +29,15 @@ impl Log for LogEnv {
     };
     if !pass { return; }
     let msg = format!("{} - {}", record.level(), record.args());
-    let lock = LOG_PB.lock().unwrap();
-    let progress = &*lock;
-    match progress {
-      Some(ref pb) => pb.println(msg),
-      None => eprintln!("{}", msg)
+
+    let pb_ptr = self.progress.load(Ordering::Relaxed);
+    if pb_ptr.is_null() {
+      eprintln!("{}", msg);
+    } else {
+      unsafe {
+        let pb = &*pb_ptr;
+        pb.println(msg)
+      }
     }
   }
 
@@ -78,15 +81,16 @@ impl LogOpts {
 }
 
 pub fn set_progress(pb: &ProgressBar) {
-  let mut lock = LOG_PB.lock().unwrap();
-  let opb = &mut *lock;
-  let _old = opb.replace(pb.clone());
+  let pbb = Box::new(pb.clone());
+  unsafe {
+    LOGGER.progress.store(Box::leak(pbb), Ordering::Relaxed);
+  }
 }
 
 pub fn clear_progress() {
-  let mut lock = LOG_PB.lock().unwrap();
-  let opb = &mut *lock;
-  let _old = opb.take();
+  unsafe {
+    LOGGER.progress.store(ptr::null_mut(), Ordering::Relaxed);
+  }
 }
 
 #[test]
