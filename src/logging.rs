@@ -7,33 +7,29 @@ use std::ptr;
 
 use error::Result;
 
-static mut LOGGER: LogEnv = LogEnv {
-  filter: LevelFilter::Info,
-  progress: AtomicPtr::new(ptr::null_mut())
-};
+static mut LOG_LEVEL: LevelFilter = LevelFilter::Info;
+static LOG_PB: AtomicPtr<ProgressBar> = AtomicPtr::new(ptr::null_mut());
+static LOGGER: LogEnv = LogEnv {};
 
-#[derive(Debug)]
-struct LogEnv {
-  filter: LevelFilter,
-  progress: AtomicPtr<ProgressBar>
-}
+struct LogEnv {}
 
 impl Log for LogEnv {
   fn enabled(&self, metadata: &Metadata) -> bool {
-    metadata.level() <= self.filter
+    unsafe {
+      metadata.level() <= LOG_LEVEL
+    }
   }
 
   fn log(&self, record: &Record) {
     let pass = unsafe {
-      record.level() <= LOGGER.filter
+      record.level() <= LOG_LEVEL
     };
     if pass {
-      let msg = format!("{} - {}", record.level(), record.args());
-
-      let pb_ptr = self.progress.load(Ordering::Relaxed);
+      let pb_ptr = LOG_PB.load(Ordering::Relaxed);
       if pb_ptr.is_null() {
-        eprintln!("{}", msg);
+        eprintln!("[{:>5}] {}", record.level(), record.args());
       } else {
+        let msg = format!("[{:>5}] {}", record.level(), record.args());
         unsafe {
           let pb = &*pb_ptr;
           pb.println(msg)
@@ -70,12 +66,15 @@ impl LogOpts {
   pub fn init(&self) -> Result<()> {
     unsafe {
       if self.quiet {
-        LOGGER.filter = LevelFilter::Off;
+        LOG_LEVEL = LevelFilter::Off;
       }
       for _i in 0..self.verbose {
-        LOGGER.filter = verbosify(LOGGER.filter);
+        LOG_LEVEL = verbosify(LOG_LEVEL);
       }
-      log::set_logger(&LOGGER)?;
+    }
+    set_logger(&LOGGER)?;
+    unsafe {
+      set_max_level(LOG_LEVEL);
     }
     Ok(())
   }
@@ -83,22 +82,18 @@ impl LogOpts {
 
 pub fn set_progress(pb: &ProgressBar) {
   let pbb = Box::new(pb.clone());
-  unsafe {
-    LOGGER.progress.store(Box::leak(pbb), Ordering::Relaxed);
-  }
+  LOG_PB.store(Box::leak(pbb), Ordering::Relaxed);
 }
 
 pub fn clear_progress() {
-  unsafe {
-    LOGGER.progress.store(ptr::null_mut(), Ordering::Relaxed);
-  }
+  LOG_PB.store(ptr::null_mut(), Ordering::Relaxed);
 }
 
 #[test]
 fn test_default_logenv() {
-  let env = unsafe { &LOGGER };
-
-  assert!(Level::Info <= env.filter);
-  assert!(Level::Warn <= env.filter);
-  assert!(Level::Debug > env.filter);
+  unsafe {
+    assert!(Level::Info <= LOG_LEVEL);
+    assert!(Level::Warn <= LOG_LEVEL);
+    assert!(Level::Debug > LOG_LEVEL);
+  }
 }
