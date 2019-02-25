@@ -1,6 +1,6 @@
-#[macro_use]
-extern crate log;
+#[macro_use] extern crate log;
 #[macro_use] extern crate derive_more;
+#[macro_use] extern crate lazy_static;
 
 extern crate structopt;
 extern crate quick_xml;
@@ -9,31 +9,16 @@ extern crate ntriple;
 extern crate zip;
 extern crate os_pipe;
 extern crate crossbeam_channel;
+extern crate console;
+extern crate indicatif;
 
 mod error;
 pub mod cleaning;
 pub mod tsv;
 pub mod db;
+pub mod logging;
 
 pub use error::BDError;
 pub use error::Result;
 pub use error::err;
-
-use structopt::StructOpt;
-
-#[derive(StructOpt, Debug)]
-pub struct LogOpts {
-  /// Verbose mode (-v, -vv, -vvv, etc.)
-  #[structopt(short="v", long="verbose", parse(from_occurrences))]
-  verbose: usize,
-  /// Silence output
-  #[structopt(short="q", long="quiet")]
-  quiet: bool
-}
-
-impl LogOpts {
-  /// Initialize logging
-  pub fn init(&self) -> Result<()> {
-    Ok(stderrlog::new().verbosity(self.verbose + 2).quiet(self.quiet).init()?)
-  }
-}
+pub use logging::LogOpts;
