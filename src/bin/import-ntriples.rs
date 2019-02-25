@@ -73,6 +73,7 @@ struct NodeSink {
 struct NodePlumber {
   seen: HashSet<Uuid>,
   query: String,
+  table: String,
   source: Receiver<NodeMsg>,
 }
 
@@ -81,6 +82,7 @@ impl NodePlumber {
     NodePlumber {
       seen: HashSet::new(),
       query: format!("INSERT INTO {}.nodes (node_id, node_iri) VALUES ($1, $2) ON CONFLICT DO NOTHING", schema),
+      table: format!("{}.nodes", schema),
       source: src
     }
   }
@@ -88,6 +90,12 @@ impl NodePlumber {
   /// Listen for messages and store in the database
   fn run(&mut self, url: &str) -> Result<u64> {
     let db = db::connect(url)?;
+    let warm_tq = format!("SELECT pg_prewarm('{}', 'read')", self.table);
+    let warm_iq = format!("SELECT pg_prewarm(indexrelid) FROM pg_index WHERE indrelid = '{}'::regclass", self.table);
+    let ntb = db.execute(&warm_tq, &[])?;
+    info!("prewarmed {} node table blocks", ntb);
+    let nib = db.execute(&warm_iq, &[])?;
+    info!("prewarmed {} node index blocks", nib);
     let mut cfg = postgres::transaction::Config::new();
     cfg.isolation_level(postgres::transaction::IsolationLevel::ReadUncommitted);
     let mut added = 0;

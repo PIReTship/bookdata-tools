@@ -2,7 +2,8 @@ This repository contains the code to import and integrate the book and rating da
 
 ## Requirements
 
-- PostgreSQL 10 or later with [orafce](https://github.com/orafce/orafce)
+- PostgreSQL 10 or later with [orafce](https://github.com/orafce/orafce) and `pg_prewarm` (from the
+  PostgreSQL Contrib package) installed.
 - Python 3.6 or later with the following packages:
     - psycopg2
     - invoke
@@ -14,7 +15,7 @@ This repository contains the code to import and integrate the book and rating da
     - colorama
     - chromalog
     - humanize
-- A Rust compiler
+- A Rust compiler (available from Anaconda)
 - `psql` executable on the machine where the import scripts will run
 - 500GB disk space for the database
 - 30GB disk space for data files

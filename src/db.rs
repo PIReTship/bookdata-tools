@@ -192,6 +192,37 @@ pub struct CopyTarget {
   thread: Option<thread::JoinHandle<u64>>
 }
 
+impl CopyTarget {
+  pub fn close(mut self) -> Result<u64> {
+    self.do_close(true)
+  }
+
+  fn do_close(&mut self, warn: bool) -> Result<u64> {
+    if let Some(w) = self.writer.take() {
+      std::mem::drop(w);
+    }
+    if let Some(thread) = self.thread.take() {
+      match thread.join() {
+        Ok(n) => {
+          info!("{}: wrote {} lines", self.name, n);
+          Ok(n)
+        }
+        Err(e) => {
+          error!("{}: error: {:?}", self.name, e);
+          Err(err("worker thread failed"))
+        }
+      }
+    } else {
+      if warn {
+        error!("{} already shut down", self.name);
+      } else {
+        debug!("{} already shut down", self.name);
+      }
+      Ok(0)
+    }
+  }
+}
+
 impl Write for CopyTarget {
   fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
     self.writer.as_ref().expect("writer missing").write(buf)
@@ -204,17 +235,7 @@ impl Write for CopyTarget {
 
 impl Drop for CopyTarget {
   fn drop(&mut self) {
-    if let Some(w) = self.writer.take() {
-      std::mem::drop(w);
-    }
-    if let Some(thread) = self.thread.take() {
-      match thread.join() {
-        Ok(n) => info!("{}: wrote {} lines", self.name, n),
-        Err(e) => error!("{}: error: {:?}", self.name, e)
-      };
-    } else {
-      error!("{} already shut down", self.name);
-    }
+    self.do_close(false).unwrap();
   }
 }
 
