@@ -9,7 +9,7 @@ CREATE TABLE gr.work_ids
   AS SELECT gr_work_rid, (gr_work_data->>'work_id')::int AS gr_work_id
      FROM gr.raw_work;
 ALTER TABLE gr.work_ids ADD CONSTRAINT gr_work_id_pk PRIMARY KEY (gr_work_rid);
-CREATE UNIQUE INDEX gr.work_id_idx ON gr.work_ids (gr_work_id);
+CREATE UNIQUE INDEX work_id_idx ON gr.work_ids (gr_work_id);
 ALTER TABLE gr.work_ids ADD CONSTRAINT gr_work_id_fk FOREIGN KEY (gr_work_rid) REFERENCES gr.raw_work (gr_work_rid);
 ANALYZE gr.work_ids;
 
@@ -24,11 +24,11 @@ CREATE TABLE gr.book_ids
      FROM gr.raw_book,
           jsonb_to_record(gr_book_data) AS x(work_id VARCHAR, book_id INTEGER, asin VARCHAR, isbn VARCHAR, isbn13 VARCHAR);
 ALTER TABLE gr.book_ids ADD CONSTRAINT gr_book_id_pk PRIMARY KEY (gr_book_rid);
-CREATE UNIQUE INDEX gr.book_id_idx ON gr.book_ids (gr_book_id);
-CREATE INDEX gr.book_work_idx ON gr.book_ids (gr_work_id);
-CREATE INDEX gr.book_asin_idx ON gr.book_ids (gr_asin);
-CREATE INDEX gr.book_isbn_idx ON gr.book_ids (gr_isbn);
-CREATE INDEX gr.book_isbn13_idx ON gr.book_ids (gr_isbn13);
+CREATE UNIQUE INDEX book_id_idx ON gr.book_ids (gr_book_id);
+CREATE INDEX book_work_idx ON gr.book_ids (gr_work_id);
+CREATE INDEX book_asin_idx ON gr.book_ids (gr_asin);
+CREATE INDEX book_isbn_idx ON gr.book_ids (gr_isbn);
+CREATE INDEX book_isbn13_idx ON gr.book_ids (gr_isbn13);
 ALTER TABLE gr.book_ids ADD CONSTRAINT gr_book_id_fk FOREIGN KEY (gr_book_rid) REFERENCES gr.raw_book (gr_book_rid);
 ALTER TABLE gr.book_ids ADD CONSTRAINT gr_book_id_work_fk FOREIGN KEY (gr_work_id) REFERENCES gr.work_ids (gr_work_id);
 ANALYZE gr.book_ids;
@@ -46,9 +46,9 @@ CREATE TABLE gr.book_isbn
   AS SELECT gr_book_id, isbn_id, COALESCE(bc_of_gr_work(gr_work_id), bc_of_gr_book(gr_book_id)) AS book_code
   FROM gr.book_ids, isbn_id
   WHERE isbn = gr_isbn OR isbn = gr_isbn13;
-CREATE INDEX gr.book_isbn_book_idx ON gr.book_isbn (gr_book_id);
-CREATE INDEX gr.book_isbn_isbn_idx ON gr.book_isbn (isbn_id);
-CREATE INDEX gr.book_isbn_code_idx ON gr.book_isbn (book_code);
+CREATE INDEX book_isbn_book_idx ON gr.book_isbn (gr_book_id);
+CREATE INDEX book_isbn_isbn_idx ON gr.book_isbn (isbn_id);
+CREATE INDEX book_isbn_code_idx ON gr.book_isbn (book_code);
 ALTER TABLE gr.book_isbn ADD CONSTRAINT gr_book_isbn_book_fk FOREIGN KEY (gr_book_id) REFERENCES gr.book_ids (gr_book_id);
 ALTER TABLE gr.book_isbn ADD CONSTRAINT gr_book_isbn_isbn_fk FOREIGN KEY (isbn_id) REFERENCES isbn_id (isbn_id);
 ANALYZE gr.book_isbn;
