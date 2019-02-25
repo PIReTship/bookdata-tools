@@ -41,6 +41,11 @@ ns.add_collection(loc)
 ns.add_collection(analyze)
 ns.add_collection(goodreads)
 
+if 'DB_URL' not in os.environ and 'PGDATABASE' in os.environ:
+        dbu = support.db_url()
+        _log.info('initializing DB_URL=%s', dbu)
+        os.environ['DB_URL'] = dbu
+
 if __name__ == '__main__':
     import invoke.program
     program = invoke.program.Program()
