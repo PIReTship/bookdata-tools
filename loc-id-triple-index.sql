@@ -31,6 +31,7 @@ BEGIN
   CREATE INDEX IF NOT EXISTS auth_subject_idx ON locid.auth_triple (subject_id);
   CREATE INDEX IF NOT EXISTS auth_object_idx ON locid.auth_triple (object_id);
   CLUSTER locid.auth_triple ON auth_subject_idx;
+  ANALYZE locid.auth_triple;
   RAISE NOTICE 'Indexed authority table in %', now() - st_time;
 END;
 $$;
@@ -44,6 +45,7 @@ BEGIN
   CREATE INDEX IF NOT EXISTS work_subject_idx ON locid.work_triple (subject_id);
   CREATE INDEX IF NOT EXISTS work_object_idx ON locid.work_triple (object_id);
   CLUSTER locid.work_triple ON work_subject_idx;
+  ANALYZE locid.work_triple;
   RAISE NOTICE 'Indexed BIBFRAME work table in %', now() - st_time;
 END;
 $$;
