@@ -19,6 +19,9 @@ BEGIN
   ALTER TABLE locid.literals ADD CONSTRAINT literal_pkey PRIMARY KEY (lit_id);
   ANALYZE locid.literals;
   RAISE NOTICE 'Added literal PK in %', now() - st_time;
+EXCEPTION
+  WHEN invalid_table_definition THEN
+    RAISE NOTICE 'primary key already exists' USING TABLE = 'locid.literals';
 END;
 $$;
 
@@ -30,7 +33,7 @@ BEGIN
   st_time := now();
   CREATE INDEX IF NOT EXISTS auth_subject_idx ON locid.auth_triple (subject_id);
   CREATE INDEX IF NOT EXISTS auth_object_idx ON locid.auth_triple (object_id);
-  CLUSTER locid.auth_triple ON auth_subject_idx;
+  CLUSTER locid.auth_triple USING auth_subject_idx;
   ANALYZE locid.auth_triple;
   RAISE NOTICE 'Indexed authority table in %', now() - st_time;
 END;
@@ -44,7 +47,7 @@ BEGIN
   st_time := now();
   CREATE INDEX IF NOT EXISTS work_subject_idx ON locid.work_triple (subject_id);
   CREATE INDEX IF NOT EXISTS work_object_idx ON locid.work_triple (object_id);
-  CLUSTER locid.work_triple ON work_subject_idx;
+  CLUSTER locid.work_triple USING work_subject_idx;
   ANALYZE locid.work_triple;
   RAISE NOTICE 'Indexed BIBFRAME work table in %', now() - st_time;
 END;
