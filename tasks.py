@@ -22,7 +22,7 @@ except ImportError:
 
 @task
 def status(c):
-    with support.database() as db, db.cursor() as cur:
+    with support.database(autocommit=True) as db, db.cursor() as cur:
         cur.execute('SELECT step, started_at, finished_at, finished_at - started_at AS elapsed FROM import_status ORDER BY started_at')
         for step, start, end, time in cur:
             if end:

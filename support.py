@@ -18,7 +18,7 @@ numspaces = dict(work=100000000, edition=200000000, rec=300000000,
 def db_url():
     if 'DB_URL' in os.environ:
         return os.environ['DB_URL']
-    
+
     host = os.environ.get('PGHOST', 'localhost')
     port = os.environ.get('PGPORT', None)
     db = os.environ['PGDATABASE']
@@ -40,7 +40,7 @@ def db_url():
 
 def psql(c, script):
     c.run(f'psql -v ON_ERROR_STOP=on -f {script}')
-    
+
 
 @task
 def init(c):
@@ -153,7 +153,7 @@ def check_prereq(step, dbc=None):
     with database(dbc=dbc, autocommit=True) as db:
         with db.cursor() as cur:
             cur.execute('''
-                SELECT finished_at FROM import_status 
+                SELECT finished_at FROM import_status
                 WHERE step = %s AND finished_at IS NOT NULL
             ''', [step])
             res = cur.fetchone()
@@ -167,7 +167,7 @@ def start(step, force=False, fail=True, dbc=None):
     with database(dbc=dbc, autocommit=True) as db:
         with db.cursor() as cur:
             cur.execute('''
-                SELECT finished_at FROM import_status 
+                SELECT finished_at FROM import_status
                 WHERE step = %s
             ''', [step])
             res = cur.fetchone()
