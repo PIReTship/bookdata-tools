@@ -344,4 +344,4 @@ class SqlScript:
 
             elapsed = time.perf_counter() - start
             elapsed = timedelta(seconds=elapsed)
-            _log.info('Finished ‘%s’in %s', step.label, elapsed)
+            _log.info('Finished ‘%s’ in %s', step.label, elapsed)
