@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess as sp
 from invoke import task
 import psycopg2
+import psycopg2.errorcodes
 import logging
 from datetime import timedelta
 
@@ -333,7 +334,8 @@ class SqlScript:
                     dbc.commit()
                 except psycopg2.Error as e:
                     if e.pgcode in step.allowed_errors:
-                        _log.info('Failed with acceptable error %s', e.pgcode)
+                        _log.info('Failed with acceptable error %s (%s)',
+                                  e.pgcode, psycopg2.errorcodes.lookup(e.pgcode))
                     else:
                         _log.error('%s failed: %s', step.label, e)
                         if e.pgerror:
