@@ -1,5 +1,8 @@
+--- #step Create VIAF schema
 CREATE SCHEMA IF NOT EXISTS viaf;
+--- #step Delete old table
 DROP TABLE IF EXISTS viaf.marc_field CASCADE;
+--- #step Create VIAF marc field table
 CREATE TABLE viaf.marc_field (
   rec_id INTEGER NOT NULL,
   fld_no INTEGER NOT NULL,

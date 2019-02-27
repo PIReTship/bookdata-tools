@@ -11,7 +11,7 @@ def import_viaf(c, date='20181104', force=False):
     "Import VIAF data"
     s.start('viaf-import', force=force)
     _log.info('initializing VIAF schema')
-    s.psql(c, 'viaf-schema.sql')
+    s.psql(c, 'viaf-schema.sql', True)
     infile = s.data_dir / f'viaf-{date}-clusters-marc21.xml.gz'
     _log.info('importing VIAF data from %s', infile)
 
@@ -26,5 +26,5 @@ def index(c, force=False):
     s.check_prereq('viaf-import')
     s.start('viaf-index', force=force)
     _log.info('building VIAF indexes')
-    c.run('psql -af viaf-index.sql')
+    s.psql(c, 'viaf-index.sql', True)
     s.finish('viaf-index')
