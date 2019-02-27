@@ -1,10 +1,14 @@
-import sys
 import os
+import time
+from typing import NamedTuple, List
+from more_itertools import peekable
+import re
 from pathlib import Path
 import subprocess as sp
 from invoke import task
 import psycopg2
 import logging
+from datetime import timedelta
 
 _log = logging.getLogger(__name__)
 
@@ -38,8 +42,15 @@ def db_url():
     return url
 
 
-def psql(c, script):
-    c.run(f'psql -v ON_ERROR_STOP=on -f {script}')
+def psql(c, script, staged=False):
+    if staged:
+        with open(script, encoding='utf8') as f:
+            parsed = SqlScript(f)
+        with database() as dbc:
+            parsed.execute(dbc)
+    else:
+        _log.info('running script %s', script)
+        c.run(f'psql -v ON_ERROR_STOP=on -f {script}')
 
 
 @task
@@ -87,7 +98,6 @@ def clean(c):
         f.unlink()
 
 
-
 @task
 def test(c, debug=False):
     "Run tests on the import & support code."
@@ -125,7 +135,7 @@ def pipeline(steps, outfile=None):
 
 
 class database:
-    def __init__(self, autocommit = False, dbc=None):
+    def __init__(self, autocommit=False, dbc=None):
         self.autocommit = autocommit
         self.connection = dbc
         self.need_close = False
@@ -175,7 +185,8 @@ def start(step, force=False, fail=True, dbc=None):
                 date, = res
                 if date:
                     if force:
-                        _log.warning('step %s already completed at %s, continuing anyway', step, date)
+                        _log.warning('step %s already completed at %s, continuing anyway',
+                                     step, date)
                     elif fail:
                         _log.error('step %s already completed at %s', step, date)
                         raise RuntimeError('step {} already completed'.format(step))
@@ -209,3 +220,126 @@ def finish(step, dbc=None):
                 raise RuntimeError("couldn't update step!")
             elapsed, = row
             _log.info('finished step %s in %s', step, elapsed)
+
+
+class ScriptChunk(NamedTuple):
+    label: str
+    allowed_errors: List[str]
+    src: str
+
+
+class SqlScript:
+    """
+    Class for processing & executing SQL scripts.
+    """
+
+    _sep_re = re.compile(r'^---\s*(?P<inst>.*)')
+    _icode_re = re.compile(r'#(?P<code>\w+)\s*(?P<args>.*\S)\s*$')
+
+    chunks: List[ScriptChunk]
+
+    def __init__(self, file):
+        if hasattr(file, 'read'):
+            self._parse(peekable(file))
+        else:
+            with open(file, 'r', encoding='utf8') as f:
+                self._parse(peekable(f))
+
+    def _parse(self, lines):
+        self.chunks = []
+        next_chunk = self._parse_chunk(lines, len(self.chunks) + 1)
+        while next_chunk is not None:
+            if next_chunk:
+                self.chunks.append(next_chunk)
+            next_chunk = self._parse_chunk(lines, len(self.chunks) + 1)
+
+    @classmethod
+    def _parse_chunk(cls, lines: peekable, n: int):
+        qlines = []
+        errs = []
+        label = None
+
+        label, errs = cls._read_header(lines)
+        qlines = cls._read_query(lines)
+
+        # end of file, do we have a chunk?
+        if qlines:
+            if label is None:
+                label = f'Step {n}'
+            return ScriptChunk(label=label, allowed_errors=errs, src='\n'.join(qlines))
+        elif qlines is not None:
+            return False  # empty chunk
+
+    @classmethod
+    def _read_header(cls, lines: peekable):
+        label = None
+        errs = []
+
+        line = lines.peek(None)
+        while line is not None:
+            hm = cls._sep_re.match(line)
+            if hm is None:
+                break
+
+            next(lines)  # eat line
+            line = lines.peek(None)
+
+            inst = hm.group('inst')
+            cm = cls._icode_re.match(inst)
+            if cm is None:
+                continue
+            code = cm.group('code')
+            args = cm.group('args')
+            if code == 'step':
+                label = args
+            elif code == 'allow':
+                err = getattr(psycopg2.errorcodes, args.upper())
+                _log.debug('step allows error %s (%s)', args, err)
+                errs.append(err)
+            else:
+                _log.error('unrecognized query instruction %s', code)
+                raise ValueError(f'invalid query instruction {code}')
+
+        return label, errs
+
+    @classmethod
+    def _read_query(cls, lines: peekable):
+        qls = []
+
+        line = lines.peek(None)
+        while line is not None and not cls._sep_re.match(line):
+            qls.append(next(lines))
+            line = lines.peek(None)
+
+        # trim lines
+        while qls and not qls[0].strip():
+            qls.pop(0)
+        while qls and not qls[-1].strip():
+            qls.pop(-1)
+
+        if qls or line is not None:
+            return qls
+        else:
+            return None  # end of file
+
+    def execute(self, dbc):
+        for step in self.chunks:
+            start = time.perf_counter()
+            _log.info('Running ‘%s’', step.label)
+            _log.debug('Query: %s', step.src)
+            with dbc, dbc.cursor() as cur:
+                try:
+                    cur.execute(step.src)
+                    dbc.commit()
+                except psycopg2.Error as e:
+                    if e.pgcode in step.allowed_errors:
+                        _log.info('Failed with acceptable error %s', e.pgcode)
+                    else:
+                        _log.error('%s failed: %s', step.label, e)
+                        if e.pgerror:
+                            _log.info('Query diagnostics:\n%s', e.pgerror)
+                        raise e
+
+            elapsed = time.perf_counter() - start
+            elapsed = timedelta(seconds=elapsed)
+            _log.info('Finished ‘%s’in %s', step.label, elapsed)

@@ -1,20 +1,30 @@
--- Index GoodReads book data
+--- #step Add book PK
+--- #allow invalid_table_definition
 ALTER TABLE gr.raw_book ADD CONSTRAINT gr_raw_book_pk PRIMARY KEY (gr_book_rid);
+--- #step Add work PK
+--- #allow invalid_table_definition
 ALTER TABLE gr.raw_work ADD CONSTRAINT gr_raw_work_pk PRIMARY KEY (gr_work_rid);
+--- #step Add author PK
+--- #allow invalid_table_definition
 ALTER TABLE gr.raw_author ADD CONSTRAINT gr_raw_author_pk PRIMARY KEY (gr_author_rid);
+--- #step Add interaction PK
+--- #allow invalid_table_definition
 ALTER TABLE gr.raw_interaction ADD CONSTRAINT gr_raw_interaction_pk PRIMARY KEY (gr_interaction_rid);
 
--- Extract work identifiers from GoodReads work records
-CREATE TABLE gr.work_ids
+--- #step Extract work identifiers
+CREATE TABLE IF NOT EXISTS gr.work_ids
   AS SELECT gr_work_rid, (gr_work_data->>'work_id')::int AS gr_work_id
      FROM gr.raw_work;
+
+--- #step Index work identifiers
+--- #allow duplicate_object
+CREATE UNIQUE INDEX IF NOT EXISTS work_id_idx ON gr.work_ids (gr_work_id);
 ALTER TABLE gr.work_ids ADD CONSTRAINT gr_work_id_pk PRIMARY KEY (gr_work_rid);
-CREATE UNIQUE INDEX work_id_idx ON gr.work_ids (gr_work_id);
 ALTER TABLE gr.work_ids ADD CONSTRAINT gr_work_id_fk FOREIGN KEY (gr_work_rid) REFERENCES gr.raw_work (gr_work_rid);
 ANALYZE gr.work_ids;
 
--- Extract book identifiers from GoodReads book records
-CREATE TABLE gr.book_ids
+--- #step Extract book identifiers
+CREATE TABLE IF NOT EXISTS gr.book_ids
   AS SELECT gr_book_rid,
             NULLIF(work_id, '')::int AS gr_work_id,
             book_id AS gr_book_id,
@@ -23,6 +33,10 @@ CREATE TABLE gr.book_ids
             NULLIF(trim(both from isbn13), '') AS gr_isbn13
      FROM gr.raw_book,
           jsonb_to_record(gr_book_data) AS x(work_id VARCHAR, book_id INTEGER, asin VARCHAR, isbn VARCHAR, isbn13 VARCHAR);
+
+--- #step Index book identifiers
+--- #allow invalid_table_definition
+-- If we have completed this step, the PK add will fail with invalid table definition
 ALTER TABLE gr.book_ids ADD CONSTRAINT gr_book_id_pk PRIMARY KEY (gr_book_rid);
 CREATE UNIQUE INDEX book_id_idx ON gr.book_ids (gr_book_id);
 CREATE INDEX book_work_idx ON gr.book_ids (gr_work_id);
@@ -33,7 +47,7 @@ ALTER TABLE gr.book_ids ADD CONSTRAINT gr_book_id_fk FOREIGN KEY (gr_book_rid) R
 ALTER TABLE gr.book_ids ADD CONSTRAINT gr_book_id_work_fk FOREIGN KEY (gr_work_id) REFERENCES gr.work_ids (gr_work_id);
 ANALYZE gr.book_ids;
 
--- Update ISBN ID records with the ISBNs seen in GoodReads
+--- #step Update ISBN ID records with new ISBNs from GoodReads
 INSERT INTO isbn_id (isbn)
 SELECT DISTINCT gr_isbn FROM gr.book_ids
 WHERE gr_isbn IS NOT NULL AND gr_isbn NOT IN (SELECT isbn FROM isbn_id);
@@ -41,11 +55,14 @@ INSERT INTO isbn_id (isbn)
 SELECT gr_isbn13 FROM gr.book_ids
 WHERE gr_isbn13 IS NOT NULL AND gr_isbn13 NOT IN (SELECT isbn FROM isbn_id);
 
--- Map ISBNs to book IDs
-CREATE TABLE gr.book_isbn
+--- #step Map ISBNs to book IDs
+CREATE TABLE IF NOT EXISTS gr.book_isbn
   AS SELECT gr_book_id, isbn_id, COALESCE(bc_of_gr_work(gr_work_id), bc_of_gr_book(gr_book_id)) AS book_code
   FROM gr.book_ids, isbn_id
   WHERE isbn = gr_isbn OR isbn = gr_isbn13;
+--- #step Index GoodReads ISBNs
+--- #allow duplicate_object
+-- this will fail promptly with duplicate object if the index already exists
 CREATE INDEX book_isbn_book_idx ON gr.book_isbn (gr_book_id);
 CREATE INDEX book_isbn_isbn_idx ON gr.book_isbn (isbn_id);
 CREATE INDEX book_isbn_code_idx ON gr.book_isbn (book_code);
