@@ -1,6 +1,6 @@
 --- #step Index MARC record IDs
 CREATE INDEX If NOT EXISTS marc_field_rec_idx ON viaf.marc_field (rec_id);
-VACUUM ANALYZE viaf.marc_field;
+ANALYZE viaf.marc_field;
 
 --- #step Extract control numbers
 CREATE OR REPLACE VIEW viaf.record_codes
