@@ -107,5 +107,5 @@ def index_id_triples(c, force=False):
     s.check_prereq('loc-id-init')
     s.start('loc-id-triple-index', force=force)
     _log.info('building LOC name indexes')
-    s.psql(c, 'loc-id-triple-index.sql')
+    s.psql(c, 'loc-id-triple-index.sql', staged=True)
     s.finish('loc-id-triple-index')
