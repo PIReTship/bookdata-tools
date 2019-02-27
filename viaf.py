@@ -23,7 +23,7 @@ def import_viaf(c, date='20181104', force=False):
 @task(s.init)
 def index(c, force=False):
     "Index VIAF data"
-    s.check_prereq('viaf')
+    s.check_prereq('viaf-import')
     s.start('viaf-index', force=force)
     _log.info('building VIAF indexes')
     c.run('psql -af viaf-index.sql')
