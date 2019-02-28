@@ -9,6 +9,8 @@ from invoke import task
 import psycopg2
 import psycopg2.errorcodes
 import logging
+import inspect
+import ast
 from datetime import timedelta
 
 _log = logging.getLogger(__name__)
@@ -345,3 +347,33 @@ class SqlScript:
             elapsed = time.perf_counter() - start
             elapsed = timedelta(seconds=elapsed)
             _log.info('Finished ‘%s’ in %s', step.label, elapsed)
+
+
+def _get_tasks(ns):
+    for t in ns.tasks.values():
+        yield (t.name, t)
+    for cn, c in ns.collections.items():
+        yield from ((f'{cn}.{tn}', t) for (tn, t) in _get_tasks(c))
+
+
+def _get_task_stage(task):
+    func = task.body
+    _re = re.compile(r"\s*s\.finish\('(?P<step>.*)'[\),]")
+    lines, n = inspect.getsourcelines(func)
+    for line in lines:
+        m = _re.match(line)
+        if m:
+            return m.group('step')
+
+
+def get_steps(ns):
+    steps = {}
+
+    for name, task in _get_tasks(ns):
+        _log.debug('looking for steps in %s', task)
+        step = _get_task_stage(task)
+        if step:
+            _log.debug('found step %s', step)
+            steps[step] = name
+
+    return steps
