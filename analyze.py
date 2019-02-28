@@ -35,7 +35,7 @@ class scope_locmds:
 
 class scope_ol:
     name = 'OpenLibrary'
-    preqreq = 'ol-index'
+    prereq = 'ol-index'
 
     node_query = dedent('''
         SELECT DISTINCT isbn_id, MIN(book_code) AS record
