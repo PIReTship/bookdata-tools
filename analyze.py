@@ -165,7 +165,7 @@ def _import_clusters(dbc, schema, frame):
                 cluster INTEGER NOT NULL
             )
         ''').format(schema_i))
-        _log.info('loading %d clusters into {}.isbn_cluster', len(frame), schema)
+        _log.info('loading %d clusters into %s.isbn_cluster', len(frame), schema)
         save_table(dbc, sql.SQL('{}.isbn_cluster').format(schema_i), frame)
         cur.execute(sql.SQL('ALTER TABLE {}.isbn_cluster ADD PRIMARY KEY (isbn_id)').format(schema_i))
         cur.execute(sql.SQL('CREATE INDEX isbn_cluster_idx ON {}.isbn_cluster (cluster)').format(schema_i))
