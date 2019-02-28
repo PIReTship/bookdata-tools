@@ -10,15 +10,14 @@ This repository contains the code to import and integrate the book and rating da
     - numpy
     - tqdm
     - pandas
-    - sqlalchemy
     - numba
     - colorama
     - chromalog
     - humanize
 - A Rust compiler (available from Anaconda)
 - `psql` executable on the machine where the import scripts will run
-- 500GB disk space for the database
-- 30GB disk space for data files
+- 1TB disk space for the database
+- 100GB disk space for data files
 
 The `environment-linux-x64.yml` file defines an Anaconda environment that contains all the required
 packages, with the exception of the PostgreSQL server and client executables.
@@ -41,7 +40,7 @@ This imports the following data sets:
 -   Virtual Internet Authority File - get the MARC 21 XML data file from <http://viaf.org/viaf/data/> and save it into the `data` directory.
 -   OpenLibrary Dump - get the editions, works, and authors dumps from <https://openlibrary.org/developers/dumps> and save them in `data`.
 -   Amazon Ratings - get the 'ratings only' data for _Books_ from <http://jmcauley.ucsd.edu/data/amazon/> and save it in `data`.
--   BookCrossing - get the BX-Book-Ratings CSV file from <http://www2.informatik.uni-freiburg.de/~cziegler/BX/> and save it in `data`   
+-   BookCrossing - get the BX-Book-Ratings CSV file from <http://www2.informatik.uni-freiburg.de/~cziegler/BX/> and save it in `data`
 
 ## Running Import Tasks
 
