@@ -1,8 +1,12 @@
+import os
 import logging
 import subprocess as sp
 import gzip
+import threading
+from textwrap import dedent
 from functools import reduce
 from humanize import naturalsize, intcomma
+from psycopg2 import sql
 
 import pandas as pd
 import numpy as np
@@ -13,36 +17,90 @@ from invoke import task
 
 _log = logging.getLogger(__name__)
 
-rec_names = {'locmds': 'LOC-MDS', 'ol': 'OpenLibrary', 'gr': 'GoodReads'}
-rec_queries = {
-    'locmds': '''
+
+class scope_locmds:
+    name = 'LOC-MDS'
+    prereq = 'loc-mds-book-index'
+
+    node_query = dedent('''
         SELECT isbn_id, MIN(bc_of_loc_rec(rec_id)) AS record
         FROM locmds.book_rec_isbn GROUP BY isbn_id
-    ''',
-    'ol': '''
-        SELECT DISTINCT isbn_id, MIN(book_code) AS record
-        FROM ol_isbn_link GROUP BY isbn_id
-    ''',
-    'gr': '''
-        SELECT DISTINCT isbn_id, MIN(book_code) AS record
-        FROM gr_book_isbn GROUP BY isbn_id
-    '''
-}
-rec_edge_queries = {
-    'locmds': '''
+    ''')
+
+    edge_query = dedent('''
         SELECT DISTINCT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
         FROM locmds.book_rec_isbn l JOIN locmds.book_rec_isbn r ON (l.rec_id = r.rec_id)
-    ''',
-    'ol': '''
+    ''')
+
+
+class scope_ol:
+    name = 'OpenLibrary'
+    prereq = 'ol-index'
+
+    node_query = dedent('''
+        SELECT DISTINCT isbn_id, MIN(book_code) AS record
+        FROM ol_isbn_link GROUP BY isbn_id
+    ''')
+
+    edge_query = dedent('''
         SELECT DISTINCT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
         FROM ol_isbn_link l JOIN ol_isbn_link r ON (l.book_code = r.book_code)
-    ''',
-    'gr': '''
+    ''')
+
+
+class scope_gr:
+    name = 'GoodReads'
+    prereq = 'gr-index-books'
+
+    node_query = dedent('''
+        SELECT DISTINCT isbn_id, MIN(book_code) AS record
+        FROM gr_book_isbn GROUP BY isbn_id
+    ''')
+
+    edge_query = dedent('''
         SELECT DISTINCT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
         FROM gr_book_isbn l JOIN gr_book_isbn r ON (l.book_code = r.book_code)
-    '''
-}
-prereqs = {'loc': 'loc-index', 'ol': 'ol-index', 'gr': 'gr-index-books'}
+    ''')
+
+
+_all_scopes = ['locmds', 'ol', 'gr']
+
+def get_scope(name):
+    return globals()[f'scope_{name}']
+
+
+class _LoadThread(threading.Thread):
+    def __init__(self, dbc, query, dir='out'):
+        super().__init__()
+        self.database = dbc
+        self.query = query
+        rfd, wfd = os.pipe()
+        self.reader = os.fdopen(rfd)
+        self.writer = os.fdopen(wfd, 'w')
+        self.chan = self.writer if dir == 'out' else self.reader
+
+    def run(self):
+        with self.chan, self.database.cursor() as cur:
+            cur.copy_expert(self.query, self.chan)
+
+
+def load_table(dbc, query):
+    cq = sql.SQL('COPY ({}) TO STDOUT WITH CSV HEADER')
+    q = sql.SQL(query)
+    thread = _LoadThread(dbc, cq.format(q))
+    thread.start()
+    data = pd.read_csv(thread.reader)
+    thread.join()
+    return data
+
+
+def save_table(dbc, table, data: pd.DataFrame):
+    cq = sql.SQL('COPY {} FROM STDIN WITH CSV')
+    thread = _LoadThread(dbc, cq.format(table), 'in')
+    thread.start()
+    data.to_csv(thread.writer, header=False, index=False)
+    thread.writer.close()
+    thread.join()
 
 
 def cluster_isbns(isbn_recs, edges):
@@ -63,7 +121,7 @@ def cluster_isbns(isbn_recs, edges):
     _log.info('clustering')
     iters = _make_clusters(clusters, edges.left_ino.values, edges.right_ino.values)
     isbns = isbns.reset_index(name='cluster')
-    _log.info('produced %s clusters in %d iterations', 
+    _log.info('produced %s clusters in %d iterations',
               intcomma(isbns.cluster.nunique()), iters)
     return isbns.loc[:, ['isbn_id', 'cluster']]
 
@@ -96,103 +154,58 @@ def _make_clusters(clusters, ls, rs):
     return iters
 
 
-def _export_isbns(scope, file):
-    query = rec_queries[scope]
-    query = query.strip().replace('\n', ' ')
-    if file.exists():
-        _log.info('%s already exists, not re-exporting', file)
-        return
-    _log.info('exporting ISBNs from %s to %s', rec_names[scope], file)
-    tmp = file.with_name('.tmp.' + file.name)
-    s.pipeline([
-        ['psql', '-v', 'ON_ERROR_STOP=on', '-c',
-         f'\\copy ({query}) TO STDOUT WITH CSV HEADER'],
-        ['gzip', '-4']
-    ], outfile=tmp)
-    tmp.replace(file)
-
-
-def _export_edges(scope, file):
-    query = rec_edge_queries[scope]
-    query = query.strip().replace('\n', ' ')
-    if file.exists():
-        _log.info('%s already exists, not re-exporting', file)
-        return
-    _log.info('exporting ISBN-ISBN edges from %s to %s', rec_names[scope], file)
-    tmp = file.with_name('.tmp.' + file.name)
-    s.pipeline([
-        ['psql', '-v', 'ON_ERROR_STOP=on', '-c',
-         f'\\copy ({query}) TO STDOUT WITH CSV HEADER'],
-        ['gzip', '-4']
-    ], outfile=tmp)
-    tmp.replace(file)
-
-
-def _import_clusters(tbl, file):
-    sql = f'''
-        DROP TABLE IF EXISTS {tbl} CASCADE;
-        CREATE TABLE {tbl} (
-            isbn_id INTEGER NOT NULL,
-            cluster INTEGER NOT NULL
-        );
-        \copy {tbl} FROM '{file}' WITH (FORMAT CSV);
-        ALTER TABLE {tbl} ADD PRIMARY KEY (isbn_id);
-        CREATE INDEX {tbl}_idx ON {tbl} (cluster);
-        ANALYZE {tbl};
-    '''
-    _log.info('running psql for %s', tbl)
-    kid = sp.Popen(['psql', '-v', 'ON_ERROR_STOP=on', '-a'], stdin=sp.PIPE)
-    kid.stdin.write(sql.encode('ascii'))
-    kid.communicate()
-    rc = kid.wait()
-    if rc:
-        _log.error('psql exited with code %d', rc)
-        raise RuntimeError('psql error')
+def _import_clusters(dbc, schema, frame):
+    schema_i = sql.Identifier(schema)
+    with dbc, dbc.cursor() as cur:
+        _log.info('creating cluster table')
+        cur.execute(sql.SQL('DROP TABLE IF EXISTS {}.isbn_cluster CASCADE').format(schema_i))
+        cur.execute(sql.SQL('''
+            CREATE TABLE {}.isbn_cluster (
+                isbn_id INTEGER NOT NULL,
+                cluster INTEGER NOT NULL
+            )
+        ''').format(schema_i))
+        _log.info('loading %d clusters into %s.isbn_cluster', len(frame), schema)
+        save_table(dbc, sql.SQL('{}.isbn_cluster').format(schema_i), frame)
+        cur.execute(sql.SQL('ALTER TABLE {}.isbn_cluster ADD PRIMARY KEY (isbn_id)').format(schema_i))
+        cur.execute(sql.SQL('CREATE INDEX isbn_cluster_idx ON {}.isbn_cluster (cluster)').format(schema_i))
+        cur.execute(sql.SQL('ANALYZE {}.isbn_cluster').format(schema_i))
 
 
 @task(s.init)
 def cluster(c, scope=None, force=False):
     "Cluster ISBNs"
-    s.check_prereq('loc-mds-book-index')
-    s.check_prereq('ol-index')
-    s.check_prereq('gr-index-books')
-    if scope is None:
-        step = 'cluster'
-        fn = 'clusters.csv'
-        table = 'isbn_cluster'
-        scopes = list(rec_names.keys())
-    else:
-        step = f'{scope}-cluster'
-        fn = f'{scope}-clusters.csv'
-        table = f'{scope}.isbn_cluster'
-        scopes = [scope]
+    with s.database(autocommit=True) as db:
+        if scope is None:
+            step = 'cluster'
+            schema = 'public'
+            scopes = _all_scopes
+        else:
+            step = f'{scope}-cluster'
+            schema = scope
+            scopes = [scope]
 
-    for scope in scopes:
-        s.check_prereq(prereqs[scope])
+        for scope in scopes:
+            s.check_prereq(get_scope(scope).prereq)
 
-    s.start(step, force=force)
+        s.start(step, force=force)
 
-    isbn_recs = []
-    isbn_edges = []
-    for scope in scopes:
-        i_fn = s.data_dir / f'{scope}-isbns.csv.gz'
-        _export_isbns(scope, i_fn)
-        _log.info('reading ISBNs from %s', i_fn)
-        isbn_recs.append(pd.read_csv(i_fn, dtype='i4'))
+        isbn_recs = []
+        isbn_edges = []
+        for scope in scopes:
+            sco = get_scope(scope)
+            _log.info('reading ISBNs for %s', scope)
+            isbn_recs.append(load_table(db, sco.node_query))
 
-        e_fn = s.data_dir / f'{scope}-edges.csv.gz'
-        _export_edges(scope, e_fn)
-        _log.info('reading edges from %s', e_fn)
-        isbn_edges.append(pd.read_csv(e_fn, dtype='i4'))
+            _log.info('reading edges for %s', scope)
+            isbn_edges.append(load_table(db, sco.edge_query))
 
-    isbn_recs = pd.concat(isbn_recs, ignore_index=True)
-    isbn_edges = pd.concat(isbn_edges, ignore_index=True)
+        isbn_recs = pd.concat(isbn_recs, ignore_index=True)
+        isbn_edges = pd.concat(isbn_edges, ignore_index=True)
 
-    _log.info('clustering %s ISBN records with %s edges',
-              intcomma(len(isbn_recs)), intcomma(len(isbn_edges)))
-    loc_clusters = cluster_isbns(isbn_recs, isbn_edges)
-    _log.info('writing ISBN records to %s', fn)
-    loc_clusters.to_csv(s.data_dir / fn, index=False, header=False)
-    _log.info('importing ISBN records')
-    _import_clusters(table, s.data_dir / fn)
-    s.finish(step)
+        _log.info('clustering %s ISBN records with %s edges',
+                  intcomma(len(isbn_recs)), intcomma(len(isbn_edges)))
+        loc_clusters = cluster_isbns(isbn_recs, isbn_edges)
+        _log.info('saving cluster records to database')
+        _import_clusters(db, schema, loc_clusters)
+        s.finish(step)

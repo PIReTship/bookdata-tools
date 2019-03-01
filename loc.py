@@ -76,7 +76,6 @@ def import_id_auth(c, force=False, convert_only=False, convert=True):
     s.start('loc-id-names', force=force)
     loc = s.data_dir / 'LOC'
     auth = loc / 'authoritiesnames.nt.both.zip'
-    auth_dir = loc / 'authorities'
     if convert:
         _log.info('converting authority ntriples to PSQL')
         s.pipeline([
@@ -91,7 +90,6 @@ def import_id_work(c, force=False, convert_only=False, convert=True):
     s.start('loc-id-works', force=force)
     loc = s.data_dir / 'LOC'
     auth = loc / 'bibframeworks.nt.zip'
-    auth_dir = loc / 'works'
     if convert:
         _log.info('converting BIBFRAME ntriples to PSQL')
         s.pipeline([
@@ -107,5 +105,5 @@ def index_id_triples(c, force=False):
     s.check_prereq('loc-id-init')
     s.start('loc-id-triple-index', force=force)
     _log.info('building LOC name indexes')
-    s.psql(c, 'loc-id-triple-index.sql')
+    s.psql(c, 'loc-id-triple-index.sql', staged=True)
     s.finish('loc-id-triple-index')

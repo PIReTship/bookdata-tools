@@ -1,54 +1,20 @@
-DO $$
-DECLARE
-  st_time timestamp;
-BEGIN
-  RAISE NOTICE 'Indexing node IRIs' USING TABLE = 'locid.nodes';
-  st_time := now();
-  CREATE INDEX IF NOT EXISTS node_iri_idx ON locid.nodes (node_iri);
-  ANALYZE locid.nodes;
-  RAISE NOTICE 'Indexed node IRIs in %', now() - st_time;
-END;
-$$;
+--- #step Index node IRIs
+CREATE INDEX IF NOT EXISTS node_iri_idx ON locid.nodes (node_iri);
+ANALYZE locid.nodes;
 
-DO $$
-DECLARE
-  st_time timestamp;
-BEGIN
-  RAISE NOTICE 'Adding literal PK' USING TABLE = 'locid.literals';
-  st_time := now();
-  ALTER TABLE locid.literals ADD CONSTRAINT literal_pkey PRIMARY KEY (lit_id);
-  ANALYZE locid.literals;
-  RAISE NOTICE 'Added literal PK in %', now() - st_time;
-EXCEPTION
-  WHEN invalid_table_definition THEN
-    RAISE NOTICE 'primary key already exists' USING TABLE = 'locid.literals';
-END;
-$$;
+--- #step Add PK to literals
+--- #allow invalid_table_definition
+ALTER TABLE locid.literals ADD CONSTRAINT literal_pkey PRIMARY KEY (lit_id);
+ANALYZE locid.literals;
 
-DO $$
-DECLARE
-  st_time timestamp;
-BEGIN
-  RAISE NOTICE 'Indexing authority subjects and objects' USING TABLE = 'locid.auth_triple';
-  st_time := now();
-  CREATE INDEX IF NOT EXISTS auth_subject_idx ON locid.auth_triple (subject_id);
-  CREATE INDEX IF NOT EXISTS auth_object_idx ON locid.auth_triple (object_id);
-  CLUSTER locid.auth_triple USING auth_subject_idx;
-  ANALYZE locid.auth_triple;
-  RAISE NOTICE 'Indexed authority table in %', now() - st_time;
-END;
-$$;
+--- #step Index authority subjects and objects
+CREATE INDEX IF NOT EXISTS auth_subject_idx ON locid.auth_triple (subject_id);
+CREATE INDEX IF NOT EXISTS auth_object_idx ON locid.auth_triple (object_id);
+CLUSTER locid.auth_triple USING auth_subject_idx;
+ANALYZE locid.auth_triple;
 
-DO $$
-DECLARE
-  st_time timestamp;
-BEGIN
-  RAISE NOTICE 'Indexing BIBFRAME work subjects and objects' USING TABLE = 'locid.work_triple';
-  st_time := now();
-  CREATE INDEX IF NOT EXISTS work_subject_idx ON locid.work_triple (subject_id);
-  CREATE INDEX IF NOT EXISTS work_object_idx ON locid.work_triple (object_id);
-  CLUSTER locid.work_triple USING work_subject_idx;
-  ANALYZE locid.work_triple;
-  RAISE NOTICE 'Indexed BIBFRAME work table in %', now() - st_time;
-END;
-$$;
+--- #step Index work subjects and objects
+CREATE INDEX IF NOT EXISTS work_subject_idx ON locid.work_triple (subject_id);
+CREATE INDEX IF NOT EXISTS work_object_idx ON locid.work_triple (object_id);
+CLUSTER locid.work_triple USING work_subject_idx;
+ANALYZE locid.work_triple;
