@@ -12,7 +12,7 @@ extern crate crossbeam_channel;
 
 use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::thread;
 
 use structopt::StructOpt;
@@ -32,7 +32,8 @@ use bookdata::{LogOpts, Result};
 use bookdata::db;
 use bookdata::logging;
 
-const NODE_BATCH_SIZE: i32 = 20000;
+const NODE_BATCH_SIZE: u64 = 20000;
+const NODE_QUEUE_SIZE: usize = 2500;
 
 /// Import n-triples RDF (e.g. from LOC) into a database.
 #[derive(StructOpt, Debug)]
@@ -64,133 +65,154 @@ enum NodeMsg {
 }
 
 /// Sink for saving nodes
-struct NodeTable<'a> {
-  db: &'a postgres::Connection,
-  tx: Option<postgres::transaction::Transaction<'a>>,
-  insert: postgres::stmt::Statement<'a>,
-  lookup: postgres::stmt::Statement<'a>,
-  tx_cfg: postgres::transaction::Config,
-  inserted: i32,
-  seen: HashMap<Uuid,i32>
+struct NodeSink {
+  thread: Option<thread::JoinHandle<u64>>,
+  send: Sender<NodeMsg>
 }
 
-enum Target<'a> {
-  Triple(i32),
-  Literal(&'a str)
+/// Node sink worker code
+struct NodePlumber {
+  seen: HashSet<Uuid>,
+  query: String,
+  table: String,
+  source: Receiver<NodeMsg>,
 }
 
-impl <'a> NodeTable<'a> {
-  fn create(opts: &db::DbOpts, db: &'a postgres::Connection) -> Result<NodeTable<'a>> {
-    let table = format!("{}.nodes", opts.schema());
+impl NodePlumber {
+  fn create(src: Receiver<NodeMsg>, schema: &str) -> NodePlumber {
+    NodePlumber {
+      seen: HashSet::new(),
+      query: format!("INSERT INTO {}.nodes (node_uuid, node_iri) VALUES ($1, $2) ON CONFLICT DO NOTHING", schema),
+      table: format!("{}.nodes", schema),
+      source: src
+    }
+  }
 
-    let warm_tq = format!("SELECT pg_prewarm('{}', 'read')", table);
-    let warm_iq = format!("SELECT pg_prewarm(indexrelid) FROM pg_index WHERE indrelid = '{}'::regclass", table);
+  /// Listen for messages and store in the database
+  fn run(&mut self, url: &str) -> Result<u64> {
+    let db = db::connect(url)?;
+    let warm_tq = format!("SELECT pg_prewarm('{}', 'read')", self.table);
+    let warm_iq = format!("SELECT pg_prewarm(indexrelid) FROM pg_index WHERE indrelid = '{}'::regclass", self.table);
     let ntb = db.execute(&warm_tq, &[])?;
     info!("prewarmed {} node table blocks", ntb);
     let nib = db.execute(&warm_iq, &[])?;
     info!("prewarmed {} node index blocks", nib);
-
-    let insert = format!("INSERT INTO {}.nodes (node_uuid, node_iri) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING node_id", opts.schema());
-    let lookup = format!("SELECT node_id FROM {}.nodes WHERE node_uuid = $1", opts.schema());
-
     let mut cfg = postgres::transaction::Config::new();
     cfg.isolation_level(postgres::transaction::IsolationLevel::ReadUncommitted);
+    let mut added = 0;
+    let mut done = false;
+    while !done {
     let txn = db.transaction_with(&cfg)?;
-
-    Ok(NodeTable {
-      db: db,
-      tx: Some(txn),
-      insert: db.prepare_cached(&insert)?,
-      lookup: db.prepare_cached(&lookup)?,
-      tx_cfg: cfg,
-      inserted: 0,
-      seen: HashMap::new()
-    })
+      txn.execute("SET LOCAL synchronous_commit TO OFF", &[])?;
+      let (n, eos) = self.run_batch(&txn)?;
+      debug!("committing {} new nodes", n);
+      txn.commit()?;
+      added += n;
+      done = eos;
+    }
+    Ok(added)
   }
 
-  fn intern(&mut self, uuid: &Uuid, iri: &str) -> Result<i32> {
-    let id = self.seen.get(&uuid);
-    match id {
-      Some(id) => Ok(*id),
-      None => {
-        let mut res = self.insert.query(&[&uuid, &iri])?;
-        if res.is_empty() {
-          // oops we must search
-          res = self.lookup.query(&[&uuid])?;
-        } else {
-          self.inserted += 1;
-          if self.inserted % NODE_BATCH_SIZE == 0 {
-            if let Some(tx) = self.tx.take() {
-              debug!("commiting nodes after {} inserts", self.inserted);
-              tx.commit()?;
-              let tx = self.db.transaction_with(&self.tx_cfg)?;
-              self.tx = Some(tx);
-            } else {
-              panic!("transaction state mismatch");
-            }
+  /// Run a single batch of inserts
+  fn run_batch(&mut self, db: &postgres::GenericConnection) -> Result<(u64, bool)> {
+    let stmt = db.prepare_cached(&self.query)?;
+    let mut n = 0;
+    while n < NODE_BATCH_SIZE {
+      match self.source.recv()? {
+        NodeMsg::SaveNode(id, iri) => {
+          if self.seen.insert(id) {
+            n += stmt.execute(&[&id, &iri])?;
           }
+        },
+        NodeMsg::Close => {
+          return Ok((n, true));
         }
-        assert!(res.len() == 1);
-        let id: i32 = res.get(0).get(0);
-        self.seen.insert(*uuid, id);
-        Ok(id)
+      }
+    };
+    Ok((n, false))
+  }
+}
+
+impl NodeSink {
+  fn create(db: &db::DbOpts) -> NodeSink {
+    let opts = db.clone();
+    let (tx, rx) = bounded(NODE_QUEUE_SIZE);
+
+    let tb = thread::Builder::new().name("insert-nodes".to_string());
+    let jh = tb.spawn(move || {
+      let mut plumber = NodePlumber::create(rx, opts.schema());
+      let url = opts.url().unwrap();
+      plumber.run(&url).unwrap()
+    }).unwrap();
+
+    NodeSink {
+      thread: Some(jh),
+      send: tx
       }
     }
+
+  fn save(&self, id: &Uuid, iri: &str) -> Result<()> {
+    match self.send.send(NodeMsg::SaveNode(*id, iri.to_string())) {
+      Ok(_) => Ok(()),
+      Err(_) => Err(bookdata::err("node channel disconnected"))
   }
 }
+}
 
-impl <'a> Drop for NodeTable<'a> {
+impl Drop for NodeSink {
   fn drop(&mut self) {
-    if let Some(tx) = self.tx.take() {
-      tx.commit();
+    self.send.send(NodeMsg::Close).unwrap();
+    if let Some(thread) = self.thread.take() {
+      match thread.join() {
+        Ok(n) => info!("saved {} nodes", n),
+        Err(e) => error!("node save thread failed: {:?}", e)
+      };
+    } else {
+      error!("node sink already dropped");
     }
-    info!("saved {} nodes", self.inserted);
   }
 }
 
-struct IdGenerator<'db> {
+struct IdGenerator {
   blank_ns: Uuid,
-  node_table: &'db mut NodeTable<'db>,
-  blank_ids: HashMap<Uuid,i32>,
-  blank_last: i32
+  node_sink: NodeSink
 }
 
-impl<'db> IdGenerator<'db> {
-  fn create(nodes: &'db mut NodeTable<'db>, name: &str) -> IdGenerator<'db> {
+#[derive(Debug)]
+enum Target<'a> {
+  Node(Uuid),
+  Literal(&'a ntriple::Literal)
+}
+
+impl IdGenerator {
+  fn create(nodes: NodeSink, name: &str) -> IdGenerator {
     let ns_ns = Uuid::new_v5(&uuid::NAMESPACE_URL, "https://boisestate.github.io/bookdata/ns/blank");
     let blank_ns = Uuid::new_v5(&ns_ns, name);
     IdGenerator {
       blank_ns: blank_ns,
-      node_table: nodes,
-      blank_ids: HashMap::new(),
-      blank_last: 0
+      node_sink: nodes
     }
   }
 
-  fn node_id(&mut self, iri: &str) -> Result<i32> {
+  fn node_id(&mut self, iri: &str) -> Result<Uuid> {
     let uuid = Uuid::new_v5(&uuid::NAMESPACE_URL, iri);
-    let id = self.node_table.intern(&uuid, iri)?;
-    Ok(id)
+    self.node_sink.save(&uuid, iri)?;
+    Ok(uuid)
   }
 
-  fn blank_id(&mut self, key: &str) -> Result<i32> {
+  fn blank_id(&self, key: &str) -> Result<Uuid> {
     let uuid = Uuid::new_v5(&self.blank_ns, key);
-    let id = self.blank_ids.entry(uuid).or_insert_with(|| {
-      let n = self.blank_last - 1;
-      self.blank_last = n;
-      n
-    });
-    Ok(*id)
+    Ok(uuid)
   }
 
-  fn subj_id(&mut self, sub: &Subject) -> Result<i32> {
+  fn subj_id(&mut self, sub: &Subject) -> Result<Uuid> {
     match sub {
       Subject::IriRef(iri) => self.node_id(iri),
       Subject::BNode(key) => self.blank_id(key)
     }
   }
 
-  fn pred_id(&mut self, pred: &Predicate) -> Result<i32> {
+  fn pred_id(&mut self, pred: &Predicate) -> Result<Uuid> {
     match pred {
       Predicate::IriRef(iri) => self.node_id(iri)
     }
@@ -198,9 +220,9 @@ impl<'db> IdGenerator<'db> {
 
   fn obj_id<'a>(&mut self, obj: &'a Object) -> Result<Target<'a>> {
     match obj {
-      Object::IriRef(iri) => self.node_id(iri).map(Target::Triple),
-      Object::BNode(key) => self.blank_id(key).map(Target::Triple),
-      Object::Lit(l) => Ok(Target::Literal(&l.data))
+      Object::IriRef(iri) => self.node_id(iri).map(Target::Node),
+      Object::BNode(key) => self.blank_id(key).map(Target::Node),
+      Object::Lit(l) => Ok(Target::Literal(&l))
     }
   }
 }
@@ -223,23 +245,22 @@ fn main() -> Result<()> {
   let member = zf.by_index(0)?;
   info!("processing member {:?} with {} bytes", member.name(), member.size());
 
-  let db = opt.db.open()?;
-  let node_table = NodeTable::create(&opt.db, &db)?;
+  let node_sink = NodeSink::create(&opt.db);
 
-  let lit_tbl = format!("{}_literal", opt.prefix);
+  let lit_tbl = format!("{}_literals", opt.prefix);
   let lit_cpy = db::CopyRequest::new(&opt.db, &lit_tbl)?.with_name("literals");
   let lit_cpy = lit_cpy.with_schema(opt.db.schema());
   let lit_out = lit_cpy.open()?;
   let mut lit_out = BufWriter::new(lit_out);
 
-  let triple_tbl = format!("{}_triple", opt.prefix);
+  let triple_tbl = format!("{}_triples", opt.prefix);
   let triple_cpy = db::CopyRequest::new(&opt.db, &triple_tbl)?.with_name("triples");
   let triple_cpy = triple_cpy.with_schema(opt.db.schema());
   let triple_cpy = triple_cpy.truncate(opt.truncate);
   let triples_out = triple_cpy.open()?;
   let mut triples_out = BufWriter::new(triples_out);
 
-  let mut idg = IdGenerator::create(&mut node_table, member.name());
+  let mut idg = IdGenerator::create(node_sink, member.name());
 
   let pb = ProgressBar::new(member.size());
   pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
@@ -254,16 +275,26 @@ fn main() -> Result<()> {
       Ok(Some(tr)) => {
         let s_id = idg.subj_id(&tr.subject)?;
         let p_id = idg.pred_id(&tr.predicate)?;
-        match idg.obj_id(&tr.object)? {
-          Target::Triple(o_id) => {
-            write!(&mut triples_out, "{}\t{}\t{}\n", s_id, p_id, o_id)?;
+        let o_id = idg.obj_id(&tr.object)?;
+        match o_id {
+          Target::Node(oid) => {
+            write!(&mut triples_out, "{}\t{}\t{}\n", s_id, p_id, oid)?;
           },
-          Target::Literal(ref lv) => {
+          Target::Literal(l) => {
             write!(&mut lit_out, "{}\t{}\t", s_id, p_id)?;
-            write_pgencoded(&mut lit_out, lv.as_bytes())?;
-            write!(&mut lit_out, "\n")?;
+            write_pgencoded(&mut lit_out, l.data.as_bytes())?;
+            match l.data_type {
+              ntriple::TypeLang::Lang(ref s) => {
+                write!(&mut lit_out, "\t")?;
+                write_pgencoded(&mut lit_out, s.as_bytes())?;
+                write!(&mut lit_out, "\n")?;
+              },
+              _ => {
+                write!(&mut lit_out, "\t\\N\n")?;
+              }
+            }
           }
-        }
+        };
       },
       Ok(None) => (),
       Err(ref e) => {

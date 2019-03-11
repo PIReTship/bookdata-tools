@@ -12,34 +12,34 @@ CREATE TABLE locid.nodes (
 );
 
 --- Authority record triples
-DROP TABLE IF EXISTS locid.auth_triple;
-CREATE TABLE locid.auth_triple (
-    subject_id INTEGER NOT NULL,
-    pred_id INTEGER NOT NULL,
-    object_id INTEGER NOT NULL
+DROP TABLE IF EXISTS locid.auth_triples;
+CREATE TABLE locid.auth_triples (
+    subject_id UUID NOT NULL,
+    pred_id UUID NOT NULL,
+    object_id UUID NOT NULL
 );
 
-DROP TABLE IF EXISTS locid.auth_literal;
-CREATE TABLE locid.auth_literal (
-    subject_id INTEGER NOT NULL,
-    pred_id INTEGER NOT NULL,
+DROP TABLE IF EXISTS locid.auth_literals;
+CREATE TABLE locid.auth_literals (
+    subject_id UUID NOT NULL,
+    pred_id UUID NOT NULL,
     lit_value TEXT NOT NULL,
     lit_lang VARCHAR NOT NULL
 );
 
 
 --- BIBRAME work triples
-DROP TABLE IF EXISTS locid.work_triple;
-CREATE TABLE locid.work_triple (
-    subject_id INTEGER NOT NULL,
-    pred_id INTEGER NOT NULL,
-    object_id INTEGER NOT NULL
+DROP TABLE IF EXISTS locid.work_triples;
+CREATE TABLE locid.work_triples (
+    subject_id UUID NOT NULL,
+    pred_id UUID NOT NULL,
+    object_id UUID NOT NULL
 );
 
-DROP TABLE IF EXISTS locid.work_literal;
-CREATE TABLE locid.work_literal (
-    subject_id INTEGER NOT NULL,
-    pred_id INTEGER NOT NULL,
+DROP TABLE IF EXISTS locid.work_literals;
+CREATE TABLE locid.work_literals (
+    subject_id UUID NOT NULL,
+    pred_id UUID NOT NULL,
     lit_value TEXT NOT NULL,
     lit_lang VARCHAR NOT NULL
 );
