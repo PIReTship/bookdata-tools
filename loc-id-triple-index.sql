@@ -39,7 +39,7 @@ END;
 $ln$;
 
 CREATE OR REPLACE FUNCTION locid.common_node(alias VARCHAR) RETURNS UUID
-  LANGUAGE SQL STABLE
+  LANGUAGE SQL STABLE PARALLEL SAFE COST 10
   AS $$
   SELECT node_id FROM locid.node_aliases WHERE node_alias = alias;
   $$;
