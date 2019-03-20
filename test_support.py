@@ -10,6 +10,7 @@ def test_single_query():
     assert len(script.chunks) == 1
     assert script.chunks[0].allowed_errors == []
     assert script.chunks[0].src == query
+    assert script.chunks[0].use_transaction
 
 
 def test_two_queries():
@@ -24,6 +25,7 @@ SELECT fish FROM chips;
     assert script.chunks[0].allowed_errors == []
     assert script.chunks[1].src.strip() == 'SELECT fish FROM chips;'
     assert script.chunks[1].allowed_errors == []
+    assert script.chunks[0].use_transaction
 
 
 def test_label_query():
@@ -36,6 +38,19 @@ SELECT * FROM pizza;
     assert script.chunks[0].src.strip() == 'SELECT * FROM pizza;'
     assert script.chunks[0].allowed_errors == []
     assert script.chunks[0].label == 'Select from pizza'
+    assert script.chunks[0].use_transaction
+
+
+def test_notx_query():
+    query = '''
+--- #notx
+SELECT * FROM pizza;
+'''
+    script = s.SqlScript(StringIO(query))
+    assert len(script.chunks) == 1
+    assert script.chunks[0].src.strip() == 'SELECT * FROM pizza;'
+    assert script.chunks[0].allowed_errors == []
+    assert not script.chunks[0].use_transaction
 
 
 def test_allow_errors():

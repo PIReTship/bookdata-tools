@@ -229,6 +229,7 @@ class ScriptChunk(NamedTuple):
     label: str
     allowed_errors: List[str]
     src: str
+    use_transaction: bool = True
 
 
 class SqlScript:
@@ -237,7 +238,7 @@ class SqlScript:
     """
 
     _sep_re = re.compile(r'^---\s*(?P<inst>.*)')
-    _icode_re = re.compile(r'#(?P<code>\w+)\s*(?P<args>.*\S)\s*$')
+    _icode_re = re.compile(r'#(?P<code>\w+)\s*(?P<args>.*\S)?\s*$')
 
     chunks: List[ScriptChunk]
 
@@ -259,17 +260,15 @@ class SqlScript:
     @classmethod
     def _parse_chunk(cls, lines: peekable, n: int):
         qlines = []
-        errs = []
-        label = None
 
-        label, errs = cls._read_header(lines)
+        chunk = cls._read_header(lines)
         qlines = cls._read_query(lines)
 
         # end of file, do we have a chunk?
         if qlines:
-            if label is None:
-                label = f'Step {n}'
-            return ScriptChunk(label=label, allowed_errors=errs, src='\n'.join(qlines))
+            if chunk.label is None:
+                chunk = chunk._replace(label=f'Step {n}')
+            return chunk._replace(src='\n'.join(qlines))
         elif qlines is not None:
             return False  # empty chunk
 
@@ -277,6 +276,7 @@ class SqlScript:
     def _read_header(cls, lines: peekable):
         label = None
         errs = []
+        tx = True
 
         line = lines.peek(None)
         while line is not None:
@@ -299,11 +299,15 @@ class SqlScript:
                 err = getattr(psycopg2.errorcodes, args.upper())
                 _log.debug('step allows error %s (%s)', args, err)
                 errs.append(err)
+            elif code == 'notx':
+                _log.debug('chunk will run outside a transaction')
+                tx = False
             else:
                 _log.error('unrecognized query instruction %s', code)
                 raise ValueError(f'invalid query instruction {code}')
 
-        return label, errs
+        return ScriptChunk(label=label, allowed_errors=errs, src=None,
+                           use_transaction=tx)
 
     @classmethod
     def _read_query(cls, lines: peekable):
@@ -330,23 +334,35 @@ class SqlScript:
             start = time.perf_counter()
             _log.info('Running ‘%s’', step.label)
             _log.debug('Query: %s', step.src)
-            with dbc, dbc.cursor() as cur:
+            if step.use_transaction:
+                with dbc, dbc.cursor() as cur:
+                    self._run_query(step, dbc, cur, True)
+            else:
                 try:
-                    cur.execute(step.src)
-                    dbc.commit()
-                except psycopg2.Error as e:
-                    if e.pgcode in step.allowed_errors:
-                        _log.info('Failed with acceptable error %s (%s)',
-                                  e.pgcode, psycopg2.errorcodes.lookup(e.pgcode))
-                    else:
-                        _log.error('%s failed: %s', step.label, e)
-                        if e.pgerror:
-                            _log.info('Query diagnostics:\n%s', e.pgerror)
-                        raise e
+                    dbc.autocommit = True
+                    with dbc.cursor() as cur:
+                        self._run_query(step, dbc, cur, False)
+                finally:
+                    dbc.autocommit = False
 
             elapsed = time.perf_counter() - start
             elapsed = timedelta(seconds=elapsed)
             _log.info('Finished ‘%s’ in %s', step.label, elapsed)
+
+    def _run_query(self, step, dbc, cur, commit):
+        try:
+            cur.execute(step.src)
+            if commit:
+                dbc.commit()
+        except psycopg2.Error as e:
+            if e.pgcode in step.allowed_errors:
+                _log.info('Failed with acceptable error %s (%s)',
+                          e.pgcode, psycopg2.errorcodes.lookup(e.pgcode))
+            else:
+                _log.error('%s failed: %s', step.label, e)
+                if e.pgerror:
+                    _log.info('Query diagnostics:\n%s', e.pgerror)
+                raise e
 
 
 def _get_tasks(ns):
