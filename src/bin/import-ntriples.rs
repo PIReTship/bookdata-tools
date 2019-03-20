@@ -250,6 +250,7 @@ fn main() -> Result<()> {
   let lit_tbl = format!("{}_literals", opt.prefix);
   let lit_cpy = db::CopyRequest::new(&opt.db, &lit_tbl)?.with_name("literals");
   let lit_cpy = lit_cpy.with_schema(opt.db.schema());
+  let lit_cpy = lit_cpy.truncate(opt.truncate);
   let lit_out = lit_cpy.open()?;
   let mut lit_out = BufWriter::new(lit_out);
 

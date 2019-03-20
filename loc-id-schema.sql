@@ -24,7 +24,7 @@ CREATE TABLE locid.auth_literals (
     subject_id UUID NOT NULL,
     pred_id UUID NOT NULL,
     lit_value TEXT NOT NULL,
-    lit_lang VARCHAR NOT NULL
+    lit_lang VARCHAR NULL
 );
 
 
@@ -41,5 +41,5 @@ CREATE TABLE locid.work_literals (
     subject_id UUID NOT NULL,
     pred_id UUID NOT NULL,
     lit_value TEXT NOT NULL,
-    lit_lang VARCHAR NOT NULL
+    lit_lang VARCHAR NULL
 );
