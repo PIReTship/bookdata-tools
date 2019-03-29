@@ -45,10 +45,10 @@ struct Opt {
   #[structopt(flatten)]
   db: db::DbOpts,
 
-  /// Database table for storing triples
-  #[structopt(short="t", long="table")]
-  table: String,
-  /// Truncate the database table
+  /// Database table prefix for data
+  #[structopt(short="p", long="prefix")]
+  prefix: String,
+  /// Truncate the database tables
   #[structopt(long="truncate")]
   truncate: bool,
 
@@ -82,7 +82,7 @@ impl NodePlumber {
   fn create(src: Receiver<NodeMsg>, schema: &str) -> NodePlumber {
     NodePlumber {
       seen: HashSet::new(),
-      query: format!("INSERT INTO {}.nodes (node_id, node_iri) VALUES ($1, $2) ON CONFLICT DO NOTHING", schema),
+      query: format!("INSERT INTO {}.nodes (node_uuid, node_iri) VALUES ($1, $2) ON CONFLICT DO NOTHING", schema),
       table: format!("{}.nodes", schema),
       source: src
     }
@@ -102,7 +102,7 @@ impl NodePlumber {
     let mut added = 0;
     let mut done = false;
     while !done {
-      let txn = db.transaction_with(&cfg)?;
+    let txn = db.transaction_with(&cfg)?;
       txn.execute("SET LOCAL synchronous_commit TO OFF", &[])?;
       let (n, eos) = self.run_batch(&txn)?;
       debug!("committing {} new nodes", n);
@@ -148,15 +148,15 @@ impl NodeSink {
     NodeSink {
       thread: Some(jh),
       send: tx
+      }
     }
-  }
 
   fn save(&self, id: &Uuid, iri: &str) -> Result<()> {
     match self.send.send(NodeMsg::SaveNode(*id, iri.to_string())) {
       Ok(_) => Ok(()),
       Err(_) => Err(bookdata::err("node channel disconnected"))
-    }
   }
+}
 }
 
 impl Drop for NodeSink {
@@ -173,20 +173,24 @@ impl Drop for NodeSink {
   }
 }
 
-struct IdGenerator<W: Write> {
+struct IdGenerator {
   blank_ns: Uuid,
-  node_sink: NodeSink,
-  lit_file: W
+  node_sink: NodeSink
 }
 
-impl<W: Write> IdGenerator<W> {
-  fn create(nodes: NodeSink, lit_out: W, name: &str) -> IdGenerator<W> {
+#[derive(Debug)]
+enum Target<'a> {
+  Node(Uuid),
+  Literal(&'a ntriple::Literal)
+}
+
+impl IdGenerator {
+  fn create(nodes: NodeSink, name: &str) -> IdGenerator {
     let ns_ns = Uuid::new_v5(&uuid::NAMESPACE_URL, "https://boisestate.github.io/bookdata/ns/blank");
     let blank_ns = Uuid::new_v5(&ns_ns, name);
     IdGenerator {
       blank_ns: blank_ns,
-      node_sink: nodes,
-      lit_file: lit_out
+      node_sink: nodes
     }
   }
 
@@ -198,14 +202,6 @@ impl<W: Write> IdGenerator<W> {
 
   fn blank_id(&self, key: &str) -> Result<Uuid> {
     let uuid = Uuid::new_v5(&self.blank_ns, key);
-    Ok(uuid)
-  }
-
-  fn lit_id(&mut self, lit: &str) -> Result<Uuid> {
-    let uuid = Uuid::new_v4();
-    write!(&mut self.lit_file, "{}\t", uuid)?;
-    write_pgencoded(&mut self.lit_file, lit.as_bytes())?;
-    self.lit_file.write_all(b"\n")?;
     Ok(uuid)
   }
 
@@ -222,11 +218,11 @@ impl<W: Write> IdGenerator<W> {
     }
   }
 
-  fn obj_id(&mut self, obj: &Object) -> Result<Uuid> {
+  fn obj_id<'a>(&mut self, obj: &'a Object) -> Result<Target<'a>> {
     match obj {
-      Object::IriRef(iri) => self.node_id(iri),
-      Object::BNode(key) => self.blank_id(key),
-      Object::Lit(l) => self.lit_id(&l.data)
+      Object::IriRef(iri) => self.node_id(iri).map(Target::Node),
+      Object::BNode(key) => self.blank_id(key).map(Target::Node),
+      Object::Lit(l) => Ok(Target::Literal(&l))
     }
   }
 }
@@ -251,18 +247,21 @@ fn main() -> Result<()> {
 
   let node_sink = NodeSink::create(&opt.db);
 
-  let lit_cpy = db::CopyRequest::new(&opt.db, "literals")?.with_name("literals");
+  let lit_tbl = format!("{}_literals", opt.prefix);
+  let lit_cpy = db::CopyRequest::new(&opt.db, &lit_tbl)?.with_name("literals");
   let lit_cpy = lit_cpy.with_schema(opt.db.schema());
+  let lit_cpy = lit_cpy.truncate(opt.truncate);
   let lit_out = lit_cpy.open()?;
-  let lit_out = BufWriter::new(lit_out);
+  let mut lit_out = BufWriter::new(lit_out);
 
-  let triple_cpy = db::CopyRequest::new(&opt.db, &opt.table)?.with_name("triples");
+  let triple_tbl = format!("{}_triples", opt.prefix);
+  let triple_cpy = db::CopyRequest::new(&opt.db, &triple_tbl)?.with_name("triples");
   let triple_cpy = triple_cpy.with_schema(opt.db.schema());
   let triple_cpy = triple_cpy.truncate(opt.truncate);
   let triples_out = triple_cpy.open()?;
   let mut triples_out = BufWriter::new(triples_out);
 
-  let mut idg = IdGenerator::create(node_sink, lit_out, member.name());
+  let mut idg = IdGenerator::create(node_sink, member.name());
 
   let pb = ProgressBar::new(member.size());
   pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
@@ -278,15 +277,30 @@ fn main() -> Result<()> {
         let s_id = idg.subj_id(&tr.subject)?;
         let p_id = idg.pred_id(&tr.predicate)?;
         let o_id = idg.obj_id(&tr.object)?;
-        write!(&mut triples_out, "{}\t{}\t{}\n", s_id, p_id, o_id)?
+        match o_id {
+          Target::Node(oid) => {
+            write!(&mut triples_out, "{}\t{}\t{}\n", s_id, p_id, oid)?;
+          },
+          Target::Literal(l) => {
+            write!(&mut lit_out, "{}\t{}\t", s_id, p_id)?;
+            write_pgencoded(&mut lit_out, l.data.as_bytes())?;
+            match l.data_type {
+              ntriple::TypeLang::Lang(ref s) => {
+                write!(&mut lit_out, "\t")?;
+                write_pgencoded(&mut lit_out, s.as_bytes())?;
+                write!(&mut lit_out, "\n")?;
+              },
+              _ => {
+                write!(&mut lit_out, "\t\\N\n")?;
+              }
+            }
+          }
+        };
       },
       Ok(None) => (),
-      Err(ref e) if pb.is_hidden() => {
+      Err(ref e) => {
         error!("error on line {}: {:?}", lno, e);
         error!("invalid line contained: {}", line);
-      },
-      Err(ref e) => {
-        pb.println(format!("error on line {}: {:?}", lno, e));
       }
     };
   }

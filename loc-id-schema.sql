@@ -6,29 +6,40 @@ CREATE SCHEMA IF NOT EXISTS locid;
 --- Nodes
 DROP TABLE IF EXISTS locid.nodes;
 CREATE TABLE locid.nodes (
-    node_id UUID PRIMARY KEY,
-    node_iri VARCHAR NOT NULL
-);
-
---- Literals
-DROP TABLE IF EXISTS locid.literals;
-CREATE TABLE locid.literals (
-    lit_id UUID NOT NULL,
-    lit_value TEXT NOT NULL
+    node_id SERIAL PRIMARY KEY,
+    node_uuid UUID NOT NULL UNIQUE,
+    node_iri VARCHAR
 );
 
 --- Authority record triples
-DROP TABLE IF EXISTS locid.auth_triple;
-CREATE TABLE locid.auth_triple (
-    subject_id UUID NOT NULL, -- REFERENCES nodes
-    pred_id UUID NOT NULL, -- REFERENCES nodes
-    object_id UUID NOT NULL -- either a node or a literal
+DROP TABLE IF EXISTS locid.auth_triples;
+CREATE TABLE locid.auth_triples (
+    subject_id UUID NOT NULL,
+    pred_id UUID NOT NULL,
+    object_id UUID NOT NULL
 );
 
+DROP TABLE IF EXISTS locid.auth_literals;
+CREATE TABLE locid.auth_literals (
+    subject_id UUID NOT NULL,
+    pred_id UUID NOT NULL,
+    lit_value TEXT NOT NULL,
+    lit_lang VARCHAR NULL
+);
+
+
 --- BIBRAME work triples
-DROP TABLE IF EXISTS locid.work_triple;
-CREATE TABLE locid.work_triple (
-    subject_id UUID NOT NULL, -- REFERENCES nodes
-    pred_id UUID NOT NULL, -- REFERENCES nodes
-    object_id UUID NOT NULL -- either a node or a literal
+DROP TABLE IF EXISTS locid.work_triples;
+CREATE TABLE locid.work_triples (
+    subject_id UUID NOT NULL,
+    pred_id UUID NOT NULL,
+    object_id UUID NOT NULL
+);
+
+DROP TABLE IF EXISTS locid.work_literals;
+CREATE TABLE locid.work_literals (
+    subject_id UUID NOT NULL,
+    pred_id UUID NOT NULL,
+    lit_value TEXT NOT NULL,
+    lit_lang VARCHAR NULL
 );
