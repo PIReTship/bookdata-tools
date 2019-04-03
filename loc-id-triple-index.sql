@@ -9,9 +9,11 @@ VACUUM ANALYZE locid.nodes;
 CREATE INDEX IF NOT EXISTS auth_subject_idx ON locid.auth_triples (subject_id);
 CREATE INDEX IF NOT EXISTS auth_object_idx ON locid.auth_triples (object_id);
 
---- #step Analyze auth tables
+--- #step Analyze auth triples
 --- #notx
 VACUUM ANALYZE locid.auth_triples;
+--- #step Analyze auth literals
+--- #notx
 VACUUM ANALYZE locid.auth_literals;
 
 --- #step Index authority literal subjects
@@ -26,9 +28,11 @@ ANALYZE locid.work_triples;
 CREATE INDEX IF NOT EXISTS work_lit_subject_idx ON locid.work_literals (subject_id);
 ANALYZE locid.work_literals;
 
---- #step Analyze work tables
+--- #step Analyze work triples
 --- #notx
 VACUUM ANALYZE locid.work_triples;
+--- #step Analyze work literals
+--- #notx
 VACUUM ANALYZE locid.work_literals;
 
 --- #step Index well-known nodes
@@ -54,7 +58,7 @@ $ln$;
 CREATE OR REPLACE FUNCTION locid.common_node(alias VARCHAR) RETURNS UUID
   LANGUAGE SQL STABLE PARALLEL SAFE COST 10
   AS $$
-  SELECT node_id FROM locid.node_aliases WHERE node_alias = alias;
+  SELECT node_uuid FROM locid.node_aliases WHERE node_alias = alias;
   $$;
 
 CALL locid.alias_node('label', 'http://www.w3.org/2000/01/rdf-schema#label');
