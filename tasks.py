@@ -28,10 +28,14 @@ def status(c):
         cur.execute('SELECT step, started_at, finished_at, finished_at - started_at AS elapsed FROM import_status ORDER BY started_at')
         for step, start, end, time in cur:
             recorded.add(step)
-            if end:
-                print(f'{S.BRIGHT}{step}{S.RESET_ALL}: {F.GREEN}finished{S.RESET_ALL} at {end} (took {time})')
+            if step in steps:
+                dfn = f' (defined in {steps[step]})'
             else:
-                print(f'{S.BRIGHT}{step}{S.RESET_ALL}: {F.YELLOW}started{S.RESET_ALL} at {start}')
+                dfn = ''
+            if end:
+                print(f'{S.BRIGHT}{step}{S.RESET_ALL}: {F.GREEN}finished{S.RESET_ALL} at {end} (took {time}){dfn}')
+            else:
+                print(f'{S.BRIGHT}{step}{S.RESET_ALL}: {F.YELLOW}started{S.RESET_ALL} at {start}{dfn}')
 
     for step in sorted(k for k in steps.keys() if k not in recorded):
         task = steps[step]

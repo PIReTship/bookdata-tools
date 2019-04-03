@@ -48,6 +48,6 @@ def index_ratings(c, force=False):
     s.check_prereq('gr-data')
     s.check_prereq('cluster')
     s.start('gr-index-ratings', force=force)
-    _log.info('building GoodReads indexes')
+    _log.info('building GoodReads rating data indexes')
     s.psql(c, 'gr-index-ratings.sql', True)
     s.finish('gr-index-ratings')
