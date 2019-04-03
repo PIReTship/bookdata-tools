@@ -39,12 +39,12 @@ class scope_ol:
 
     node_query = dedent('''
         SELECT DISTINCT isbn_id, MIN(book_code) AS record
-        FROM ol_isbn_link GROUP BY isbn_id
+        FROM ol.isbn_link GROUP BY isbn_id
     ''')
 
     edge_query = dedent('''
         SELECT DISTINCT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
-        FROM ol_isbn_link l JOIN ol_isbn_link r ON (l.book_code = r.book_code)
+        FROM ol.isbn_link l JOIN ol.isbn_link r ON (l.book_code = r.book_code)
     ''')
 
 
