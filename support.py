@@ -150,7 +150,7 @@ class database:
             self.need_close = True
 
             if self.autocommit:
-                self.connection.set_session(autocommit=True)
+                self.connection.autocommit = True
 
         return self.connection
 
@@ -338,12 +338,8 @@ class SqlScript:
                 with dbc, dbc.cursor() as cur:
                     self._run_query(step, dbc, cur, True)
             else:
-                try:
-                    dbc.autocommit = True
-                    with dbc.cursor() as cur:
-                        self._run_query(step, dbc, cur, False)
-                finally:
-                    dbc.autocommit = False
+                with database(autocommit=True) as db2, db2.cursor() as cur:
+                    self._run_query(step, db2, cur, False)
 
             elapsed = time.perf_counter() - start
             elapsed = timedelta(seconds=elapsed)
