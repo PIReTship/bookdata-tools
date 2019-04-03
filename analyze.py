@@ -70,6 +70,9 @@ def get_scope(name):
 
 
 class _LoadThread(threading.Thread):
+    """
+    Thread worker for copying database results to a stream we can read.
+    """
     def __init__(self, dbc, query, dir='out'):
         super().__init__()
         self.database = dbc
