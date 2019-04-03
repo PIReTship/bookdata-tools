@@ -1,7 +1,7 @@
 --- #step Index book clusters
 CREATE MATERIALIZED VIEW IF NOT EXISTS gr.book_cluster
   AS SELECT DISTINCT gr_book_id, cluster
-     FROM gr_book_isbn JOIN isbn_cluster USING (isbn_id);
+     FROM gr.book_isbn JOIN isbn_cluster USING (isbn_id);
 CREATE UNIQUE INDEX IF NOT EXISTS book_cluster_book_idx ON gr.book_cluster (gr_book_id);
 CREATE INDEX IF NOT EXISTS book_cluster_cluster_idx ON gr.book_cluster (cluster);
 ANALYZE gr.book_cluster;
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS gr.user_info (
 );
 CREATE TEMPORARY TABLE gr_new_users
   AS SELECT gr_interaction_data->>'user_id' AS gr_user_id
-     FROM gr_raw_interaction LEFT JOIN gr.user_info ON (gr_user_id = gr_interaction_data->>'user_id')
+     FROM gr.raw_interaction LEFT JOIN gr.user_info ON (gr_user_id = gr_interaction_data->>'user_id')
      WHERE gr_user_rid IS NULL;
 INSERT INTO gr.user_info (gr_user_id)
 SELECT DISTINCT gr_user_id FROM gr_new_users;
@@ -24,7 +24,7 @@ ANALYZE gr.user_info;
 --- #step Extract interaction data
 CREATE TABLE IF NOT EXISTS gr.interaction
   AS SELECT gr_interaction_rid, book_id, gr_user_rid, rating, (gr_interaction_data->'isRead')::boolean AS is_read, date_added, date_updated
-     FROM gr_raw_interaction,
+     FROM gr.raw_interaction,
           jsonb_to_record(gr_interaction_data) AS
               x(book_id INTEGER, user_id VARCHAR, rating INTEGER,
                 date_added TIMESTAMP WITH TIME ZONE, date_updated TIMESTAMP WITH TIME ZONE),
