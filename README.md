@@ -6,7 +6,8 @@ If you use these scripts in any published reseaerch, cite [our paper](https://md
 
 **Note:** the limitations section of the paper contains important information about
 the limitations of the data these scripts compile.  **Do not use this data or tools
-without understanding those limitations**.
+without understanding those limitations**.  In particular, VIAF's gender information
+is incomplete and, in a number of cases, incorrect.
 
 ## Requirements
 
