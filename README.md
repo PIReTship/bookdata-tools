@@ -25,7 +25,7 @@ The `environment.yml` file defines an Anaconda environment that contains all the
 
 All scripts read database connection info from the standard PostgreSQL client environment variables:
 
-- `PGDATGABASE`
+- `PGDATABASE`
 - `PGHOST`
 - `PGUSER`
 - `PGPASSWORD`
