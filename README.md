@@ -1,5 +1,13 @@
 This repository contains the code to import and integrate the book and rating data that we work with.
 
+If you use these scripts in any published reseaerch, cite [our paper](https://md.ekstrandom.net/pubs/book-author-gender):
+
+> Michael D. Ekstrand, Mucun Tian, Mohammed R. Imran Kazi, Hoda Mehrpouyan, and Daniel Kluver. 2018. Exploring Author Gender in Book Rating and Recommendation. In *Proceedings of the 12th ACM Conference on Recommender Systems* (RecSys '18). ACM, pp. 242–250. DOI:[10.1145/3240323.3240373](https://doi.org/10.1145/3240323.3240373). arXiv:[1808.07586v1](https://arxiv.org/abs/1808.07586v1) [cs.IR].
+
+**Note:** the limitations section of the paper contains important information about
+the limitations of the data these scripts compile.  **Do not use this data or tools
+without understanding those limitations**.
+
 ## Requirements
 
 - PostgreSQL 10 or later with [orafce](https://github.com/orafce/orafce) and `pg_prewarm` (from the
@@ -59,7 +67,8 @@ This imports the following data sets:
 The import process is scripted with [invoke](http://www.pyinvoke.org).  The first tasks to run are
 the import tasks:
 
-    invoke loc.import
+    invoke loc.import-books
+    invoke loc.import-names
     invoke viaf.import
     invoke openlib.import-authors openlib.import-works openlib.import-editions
     invoke goodreads.import
@@ -69,7 +78,8 @@ the import tasks:
 Once all the data is imported, you can begin to run the indexing and linking tasks:
 
     invoke viaf.index
-    invoke loc.index
+    invoke loc.index-books
+    invoke loc.index-names
     invoke openlib.index
     invoke goodreads.index-books
     invoke analyze.cluster --scope loc
@@ -88,9 +98,10 @@ keep you from running tasks in the wrong order.
 The `-schema` files contain the base schemas for the data:
 
 - `common-schema.sql` — common tables
-- `loc-schema.sql` — Library of Congress catalog tables
+- `loc-mds-schema.sql` — Library of Congress catalog tables
 - `ol-schema.sql` — OpenLibrary book data
 - `viaf-schema.sql` — VIAF tables
 - `az-schema.sql` — Amazon rating schema
 - `bx-schema.sql` — BookCrossing rating data schema
 - `gr-schema.sql` — GoodReads data schema
+- `loc-ids-schema.sql` - LOC ID schemas
