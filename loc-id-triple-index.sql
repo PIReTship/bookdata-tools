@@ -66,4 +66,7 @@ CALL locid.alias_node('auth-label', 'http://www.loc.gov/mads/rdf/v1#authoritativ
 CALL locid.alias_node('gender', 'http://www.loc.gov/mads/rdf/v1#gender');
 CALL locid.alias_node('concept', 'http://www.w3.org/2004/02/skos/core#Concept');
 CALL locid.alias_node('type', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
+CALL locid.alias_node('isbn', 'http://id.loc.gov/ontologies/bibframe/Isbn');
+CALL locid.alias_node('value', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+CALL locid.alias_node('bf-id-by', 'http://id.loc.gov/ontologies/bibframe/identifiedBy');
 ANALYSE locid.node_aliases;
