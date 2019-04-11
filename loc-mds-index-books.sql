@@ -1,7 +1,7 @@
--- Index MARC fields
-CREATE INDEX book_marc_field_rec_idx ON locmds.book_marc_field (rec_id);
+--- #step Index MARC fields
+CREATE INDEX IF NOT EXISTS book_marc_field_rec_idx ON locmds.book_marc_field (rec_id);
 
--- Pull out control numbers
+--- #step Pull out control numbers
 CREATE MATERIALIZED VIEW locmds.book_marc_cn
   AS SELECT rec_id, trim(contents) AS control
   FROM locmds.book_marc_field
@@ -60,7 +60,7 @@ CREATE INDEX book_control_idx ON locmds.book (marc_cn);
 CREATE INDEX book_lccn_idx ON locmds.book (lccn);
 ANALYZE locmds.book;
 
--- Index ISBNs
+--- #step Index ISBNs
 CREATE MATERIALIZED VIEW locmds.book_extracted_isbn AS
   SELECT rec_id, upper(regexp_replace(substring(contents from '^\s*(?:(?:ISBN)?[:;z]?\s*)?([0-9 -]+[0-9Xx])'), '[- ]', '')) AS isbn
   FROM locmds.book_marc_field

@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS gr.interaction
      WHERE user_id = gr_user_id;
 
 --- #step Index interaction data
---- #allow invaliid_table_definition
+--- #allow invalid_table_definition
 -- if this step is already done, first ALTER TABLE will fail
 ALTER TABLE gr.interaction ADD CONSTRAINT gr_interaction_pk PRIMARY KEY (gr_interaction_rid);
 CREATE INDEX IF NOT EXISTS interaction_book_idx ON gr.interaction (book_id);
