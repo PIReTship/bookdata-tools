@@ -19,8 +19,9 @@ This repository contains the code to import and integrate the book and rating da
 - 1TB disk space for the database
 - 100GB disk space for data files
 
-The `environment-linux-x64.yml` file defines an Anaconda environment that contains all the required
-packages, with the exception of the PostgreSQL server and client executables.
+The `environment.yml` file defines an Anaconda environment that contains all the required packages except for the PostgreSQL server. It can be set up with:
+
+    conda env create -f environment.yml
 
 All scripts read database connection info from the standard PostgreSQL client environment variables:
 
@@ -28,6 +29,17 @@ All scripts read database connection info from the standard PostgreSQL client en
 - `PGHOST`
 - `PGUSER`
 - `PGPASSWORD`
+
+## Initializing and Configuring the Database
+
+After creating your database, initialize the extensions (as the database superuser):
+
+    CREATE EXTENSION orafce;
+    CREATE EXTENSION pg_prewarm;
+
+The default PostgreSQL performance configuration settings will probably not be
+very effective; we recommend turning on parallelism and increasing work memory,
+at a minimum.
 
 ## Downloading Data Files
 
