@@ -67,7 +67,7 @@ def index_names(c, force=False):
     s.check_prereq('loc-mds-names')
     s.start('loc-mds-name-index', force=force)
     _log.info('building LOC name indexes')
-    s.psql(c, 'loc-mds-index-names.sql')
+    s.psql(c, 'loc-mds-index-names.sql', True)
     s.finish('loc-mds-name-index')
 
 

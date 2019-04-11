@@ -1,5 +1,5 @@
 --- Schema for consolidating and calibrating author gender info
-
+--- #step Create functions
 CREATE OR REPLACE FUNCTION merge_gender(cgender VARCHAR, ngender VARCHAR) RETURNS VARCHAR
 IMMUTABLE STRICT PARALLEL SAFE
 AS $$ SELECT CASE
@@ -10,6 +10,7 @@ AS $$ SELECT CASE
              END
 $$ LANGUAGE SQL;
 
+DROP AGGREGATE IF EXISTS resolve_gender(VARCHAR);
 CREATE AGGREGATE resolve_gender(gender VARCHAR) (
   SFUNC = merge_gender,
   STYPE = VARCHAR,
@@ -26,8 +27,8 @@ CREATE TABLE locmds.cluster_author_gender
          else resolve_gender(vg.gender)
        end AS gender
      FROM locmds.isbn_cluster
-       JOIN locmds.rec_isbn USING (isbn_id)
-       LEFT JOIN locmds.author_name an USING (rec_id)
+       JOIN locmds.book_rec_isbn USING (isbn_id)
+       LEFT JOIN locmds.book_author_name an USING (rec_id)
        LEFT JOIN viaf.author_name vn USING (name)
        LEFT JOIN viaf.author_gender vg ON (vn.rec_id = vg.rec_id)
      GROUP BY cluster;
@@ -44,8 +45,8 @@ CREATE TABLE cluster_loc_author_gender
        else resolve_gender(vg.gender)
        end AS gender
      FROM isbn_cluster
-       JOIN locmds.rec_isbn ri USING (isbn_id)
-       LEFT JOIN locmds.author_name an USING (rec_id)
+       JOIN locmds.book_rec_isbn ri USING (isbn_id)
+       LEFT JOIN locmds.book_author_name an USING (rec_id)
        LEFT JOIN viaf.author_name vn USING (name)
        LEFT JOIN viaf.author_gender vg ON (vn.rec_id = vg.rec_id)
      GROUP BY cluster;
@@ -90,8 +91,8 @@ DROP MATERIALIZED VIEW IF EXISTS cluster_loc_first_author_name;
 CREATE MATERIALIZED VIEW cluster_loc_author_name AS
   SELECT DISTINCT cluster, name AS author_name
   FROM isbn_cluster
-    JOIN locmds.rec_isbn USING (isbn_id)
-    JOIN locmds.author_name USING (rec_id);
+    JOIN locmds.book_rec_isbn USING (isbn_id)
+    JOIN locmds.book_author_name USING (rec_id);
 
 --- #step Extract book first-author names from all available book-author data
 DROP MATERIALIZED VIEW IF EXISTS cluster_first_author_name;

@@ -212,3 +212,16 @@ def cluster(c, scope=None, force=False):
         _log.info('saving cluster records to database')
         _import_clusters(db, schema, loc_clusters)
         s.finish(step)
+
+
+@task(s.init)
+def book_authors(c, force=False):
+    "Analyze book authors"
+    s.check_prereq('az-index')
+    s.check_prereq('bx-index')
+    s.check_prereq('viaf-index')
+    s.check_prereq('loc-mds-book-index')
+    s.start('book-authors', force=force)
+    _log.info('Analzye book authors')
+    s.psql(c, 'author-info.sql', True)
+    s.finish('book-authors')
