@@ -99,6 +99,20 @@ def import_id_work(c, force=False, convert_only=False, convert=True):
     s.finish('loc-id-works')
 
 
+@task(s.build, s.init, init_id)
+def import_id_instance(c, force=False, convert_only=False, convert=True):
+    s.start('loc-id-instances', force=force)
+    loc = s.data_dir / 'LOC'
+    auth = loc / 'bibframeinstances.nt.zip'
+    if convert:
+        _log.info('converting BIBFRAME ntriples to PSQL')
+        s.pipeline([
+            [s.bdtool, 'import-ntriples', '--db-schema', 'locid', '--prefix', 'instance', '--truncate', auth]
+        ])
+
+    s.finish('loc-id-instances')
+
+
 @task(s.init)
 def index_id_triples(c, force=False):
     "Create basic indexes on LOC ID data"

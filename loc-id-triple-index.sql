@@ -35,6 +35,22 @@ VACUUM ANALYZE locid.work_triples;
 --- #notx
 VACUUM ANALYZE locid.work_literals;
 
+--- #step Index instance subjects and objects
+CREATE INDEX IF NOT EXISTS instance_subject_idx ON locid.instance_triples (subject_id);
+CREATE INDEX IF NOT EXISTS instance_object_idx ON locid.instance_triples (object_id);
+ANALYZE locid.instance_triples;
+
+--- #step Index instance literal subjects
+CREATE INDEX IF NOT EXISTS instance_lit_subject_idx ON locid.instance_literals (subject_id);
+ANALYZE locid.instance_literals;
+
+--- #step Analyze instance triples
+--- #notx
+VACUUM ANALYZE locid.instance_triples;
+--- #step Analyze instance literals
+--- #notx
+VACUUM ANALYZE locid.instance_literals;
+
 --- #step Index well-known nodes
 CREATE TABLE IF NOT EXISTS locid.node_aliases (
   node_alias VARCHAR UNIQUE NOT NULL,

@@ -43,3 +43,19 @@ CREATE TABLE locid.work_literals (
     lit_value TEXT NOT NULL,
     lit_lang VARCHAR NULL
 );
+
+--- BIBRAME instance triples
+DROP TABLE IF EXISTS locid.instance_triples;
+CREATE TABLE locid.instance_triples (
+    subject_id UUID NOT NULL,
+    pred_id UUID NOT NULL,
+    object_id UUID NOT NULL
+);
+
+DROP TABLE IF EXISTS locid.instance_literals;
+CREATE TABLE locid.instance_literals (
+    subject_id UUID NOT NULL,
+    pred_id UUID NOT NULL,
+    lit_value TEXT NOT NULL,
+    lit_lang VARCHAR NULL
+);
