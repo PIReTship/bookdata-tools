@@ -1,16 +1,11 @@
-#[macro_use] extern crate log;
-
-extern crate structopt;
-extern crate quick_xml;
-extern crate flate2;
-extern crate indicatif;
-extern crate bookdata;
-
 use std::io::prelude::*;
 use std::io::{self, BufReader, BufWriter};
 use std::fs::File;
 use std::path::PathBuf;
 use std::str;
+
+use log::*;
+
 use structopt::StructOpt;
 use quick_xml::Reader;
 use quick_xml::events::Event;

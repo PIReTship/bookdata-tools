@@ -1,23 +1,13 @@
-extern crate structopt;
-#[macro_use]
-extern crate log;
-extern crate flate2;
-extern crate indicatif;
-extern crate bookdata;
-extern crate zip;
-extern crate postgres;
-extern crate ntriple;
-extern crate uuid;
-extern crate crossbeam_channel;
-
 use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
 use std::collections::HashSet;
 use std::thread;
-
-use structopt::StructOpt;
 use std::fs;
 use std::path::{PathBuf};
+
+use log::*;
+
+use structopt::StructOpt;
 use zip::read::ZipArchive;
 use indicatif::{ProgressBar, ProgressStyle};
 use uuid::Uuid;

@@ -5,7 +5,7 @@ use log::*;
 use std::sync::atomic::{AtomicPtr, Ordering};
 use std::ptr;
 
-use error::Result;
+use crate::error::Result;
 
 static mut LOG_LEVEL: LevelFilter = LevelFilter::Info;
 static LOG_PB: AtomicPtr<ProgressBar> = AtomicPtr::new(ptr::null_mut());

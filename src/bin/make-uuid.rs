@@ -1,6 +1,3 @@
-extern crate structopt;
-extern crate uuid;
-
 use structopt::StructOpt;
 use uuid::Uuid;
 

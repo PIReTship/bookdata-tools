@@ -1,6 +1,3 @@
-extern crate structopt;
-extern crate indicatif;
-
 use structopt::StructOpt;
 
 use std::io;

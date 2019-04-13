@@ -1,6 +1,4 @@
-#[macro_use] extern crate log;
-extern crate structopt;
-extern crate bookdata;
+use log::*;
 
 use structopt::StructOpt;
 use bookdata::LogOpts;
