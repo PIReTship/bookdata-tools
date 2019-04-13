@@ -34,7 +34,10 @@ enum Command {
   pcat(pcat::Options),
   /// Make a UUID
   #[structopt(name="make-uuid")]
-  make_uuid(make_uuid::Options)
+  make_uuid(make_uuid::Options),
+  /// Parse a MARC XML file
+  #[structopt(name="parse-marc")]
+  parse_marc(parse_marc::Options)
 }
 
 fn main() -> Result<()> {
@@ -42,6 +45,7 @@ fn main() -> Result<()> {
   opt.logging.init()?;
   match opt.command {
     Command::pcat(opts) => pcat::exec(opts),
-    Command::make_uuid(opts) => make_uuid::exec(opts)
+    Command::make_uuid(opts) => make_uuid::exec(opts),
+    Command::parse_marc(opts) => parse_marc::exec(opts)
   }
 }
