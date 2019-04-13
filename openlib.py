@@ -24,7 +24,7 @@ def import_authors(c, date='2018-10-31', force=False):
     _log.info('importing OL authors from %s', infile)
 
     s.pipeline([
-        [s.bin_dir / 'import-json', '--truncate', 'openlib', 'author', infile]
+        [s.bdtool, 'import-json', '--truncate', 'openlib', 'author', infile]
     ])
     s.finish('ol-authors')
 
@@ -38,7 +38,7 @@ def import_editions(c, date='2018-10-31', force=False):
     _log.info('importing OL editions from %s', infile)
 
     s.pipeline([
-        [s.bin_dir / 'import-json', '--truncate', 'openlib', 'edition', infile]
+        [s.bdtool, 'import-json', '--truncate', 'openlib', 'edition', infile]
     ])
     s.finish('ol-editions')
 
@@ -52,7 +52,7 @@ def import_works(c, date='2018-10-31', force=False):
     _log.info('importing works from %s', infile)
 
     s.pipeline([
-        [s.bin_dir / 'import-json', '--truncate', 'openlib', 'work', infile]
+        [s.bdtool, 'import-json', '--truncate', 'openlib', 'work', infile]
     ])
     s.finish('ol-works')
 
