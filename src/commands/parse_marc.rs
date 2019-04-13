@@ -16,11 +16,12 @@ use crate::error::{Result, err};
 use crate::cleaning::write_pgencoded;
 use crate::tsv::split_first;
 use crate::db::{DbOpts, CopyRequest};
+use super::Command;
 
 /// Parse MARC files into records for a PostgreSQL table.
 #[derive(StructOpt, Debug)]
 #[structopt(name="parse-marc")]
-pub struct Options {
+pub struct ParseMarc {
   #[structopt(flatten)]
   db: DbOpts,
 
@@ -188,40 +189,42 @@ fn process_records<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, start
   Ok(recid - start)
 }
 
-pub fn exec(opt: Options) -> Result<()> {
-  let req = CopyRequest::new(&opt.db, &opt.table)?;
-  let req = req.with_schema(opt.db.schema());
-  let req = req.truncate(opt.truncate);
-  let out = req.open()?;
-  let mut out = BufWriter::new(out);
+impl Command for ParseMarc {
+  fn exec(self) -> Result<()> {
+    let req = CopyRequest::new(&self.db, &self.table)?;
+    let req = req.with_schema(self.db.schema());
+    let req = req.truncate(self.truncate);
+    let out = req.open()?;
+    let mut out = BufWriter::new(out);
 
-  let mut count = 0;
+    let mut count = 0;
 
-  for inf in opt.files {
-    let inf = inf.as_path();
-    info!("reading from compressed file {:?}", inf);
-    let fs = File::open(inf)?;
-    let pb = ProgressBar::new(fs.metadata()?.len());
-    pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
-    let pbr = pb.wrap_read(fs);
-    let pbr = BufReader::new(pbr);
-    let gzf = MultiGzDecoder::new(pbr);
-    let mut bfs = BufReader::new(gzf);
-    let nrecs = if opt.linemode {
-      process_delim_file(&mut bfs, &mut out, count)
-    } else {
-      process_marc_file(&mut bfs, &mut out, count)
-    };
-    match nrecs {
-      Ok(n) => {
-        info!("processed {} records from {:?}", n, inf);
-        count += n;
-      },
-      Err(e) => {
-        error!("error in {:?}: {}", inf, e);
-        return Err(e)
+    for inf in self.files {
+      let inf = inf.as_path();
+      info!("reading from compressed file {:?}", inf);
+      let fs = File::open(inf)?;
+      let pb = ProgressBar::new(fs.metadata()?.len());
+      pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
+      let pbr = pb.wrap_read(fs);
+      let pbr = BufReader::new(pbr);
+      let gzf = MultiGzDecoder::new(pbr);
+      let mut bfs = BufReader::new(gzf);
+      let nrecs = if self.linemode {
+        process_delim_file(&mut bfs, &mut out, count)
+      } else {
+        process_marc_file(&mut bfs, &mut out, count)
+      };
+      match nrecs {
+        Ok(n) => {
+          info!("processed {} records from {:?}", n, inf);
+          count += n;
+        },
+        Err(e) => {
+          error!("error in {:?}: {}", inf, e);
+          return Err(e)
+        }
       }
     }
+    Ok(())
   }
-  Ok(())
 }

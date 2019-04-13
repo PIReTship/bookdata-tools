@@ -21,6 +21,7 @@ use crate::cleaning::{write_pgencoded};
 use crate::error::{Result, err};
 use crate::db;
 use crate::logging;
+use super::Command;
 
 const NODE_BATCH_SIZE: u64 = 20000;
 const NODE_QUEUE_SIZE: usize = 2500;
@@ -28,7 +29,7 @@ const NODE_QUEUE_SIZE: usize = 2500;
 /// Import n-triples RDF (e.g. from LOC) into a database.
 #[derive(StructOpt, Debug)]
 #[structopt(name="import-ntriples")]
-pub struct Options {
+pub struct ImportNtriples {
   #[structopt(flatten)]
   db: db::DbOpts,
 
@@ -214,82 +215,84 @@ impl IdGenerator {
   }
 }
 
-pub fn exec(opt: Options) -> Result<()> {
-  let inf = opt.infile.as_path();
-  let fs = fs::File::open(inf)?;
-  let fs = BufReader::new(fs);
-  let mut zf = ZipArchive::new(fs)?;
-  if zf.len() > 1 {
-    error!("{:?}: more than one member file", inf);
-    return Err(err("too many input files"))
-  } else if zf.len() == 0 {
-    error!("{:?}: empty input archive", inf);
-    return Err(err("empty input archive"));
-  }
-  let member = zf.by_index(0)?;
-  info!("processing member {:?} with {} bytes", member.name(), member.size());
+impl Command for ImportNtriples {
+  fn exec(self) -> Result<()> {
+    let inf = self.infile.as_path();
+    let fs = fs::File::open(inf)?;
+    let fs = BufReader::new(fs);
+    let mut zf = ZipArchive::new(fs)?;
+    if zf.len() > 1 {
+      error!("{:?}: more than one member file", inf);
+      return Err(err("too many input files"))
+    } else if zf.len() == 0 {
+      error!("{:?}: empty input archive", inf);
+      return Err(err("empty input archive"));
+    }
+    let member = zf.by_index(0)?;
+    info!("processing member {:?} with {} bytes", member.name(), member.size());
 
-  let node_sink = NodeSink::create(&opt.db);
+    let node_sink = NodeSink::create(&self.db);
 
-  let lit_tbl = format!("{}_literals", opt.prefix);
-  let lit_cpy = db::CopyRequest::new(&opt.db, &lit_tbl)?.with_name("literals");
-  let lit_cpy = lit_cpy.with_schema(opt.db.schema());
-  let lit_cpy = lit_cpy.truncate(opt.truncate);
-  let lit_out = lit_cpy.open()?;
-  let mut lit_out = BufWriter::new(lit_out);
+    let lit_tbl = format!("{}_literals", self.prefix);
+    let lit_cpy = db::CopyRequest::new(&self.db, &lit_tbl)?.with_name("literals");
+    let lit_cpy = lit_cpy.with_schema(self.db.schema());
+    let lit_cpy = lit_cpy.truncate(self.truncate);
+    let lit_out = lit_cpy.open()?;
+    let mut lit_out = BufWriter::new(lit_out);
 
-  let triple_tbl = format!("{}_triples", opt.prefix);
-  let triple_cpy = db::CopyRequest::new(&opt.db, &triple_tbl)?.with_name("triples");
-  let triple_cpy = triple_cpy.with_schema(opt.db.schema());
-  let triple_cpy = triple_cpy.truncate(opt.truncate);
-  let triples_out = triple_cpy.open()?;
-  let mut triples_out = BufWriter::new(triples_out);
+    let triple_tbl = format!("{}_triples", self.prefix);
+    let triple_cpy = db::CopyRequest::new(&self.db, &triple_tbl)?.with_name("triples");
+    let triple_cpy = triple_cpy.with_schema(self.db.schema());
+    let triple_cpy = triple_cpy.truncate(self.truncate);
+    let triples_out = triple_cpy.open()?;
+    let mut triples_out = BufWriter::new(triples_out);
 
-  let mut idg = IdGenerator::create(node_sink, member.name());
+    let mut idg = IdGenerator::create(node_sink, member.name());
 
-  let pb = ProgressBar::new(member.size());
-  pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
-  let pbr = pb.wrap_read(member);
-  let pbr = BufReader::new(pbr);
-  logging::set_progress(&pb);
-  let mut lno = 0;
-  for line in pbr.lines() {
-    let line = line?;
-    lno += 1;
-    match quiet_line(&line) {
-      Ok(Some(tr)) => {
-        let s_id = idg.subj_id(&tr.subject)?;
-        let p_id = idg.pred_id(&tr.predicate)?;
-        let o_id = idg.obj_id(&tr.object)?;
-        match o_id {
-          Target::Node(oid) => {
-            write!(&mut triples_out, "{}\t{}\t{}\n", s_id, p_id, oid)?;
-          },
-          Target::Literal(l) => {
-            write!(&mut lit_out, "{}\t{}\t", s_id, p_id)?;
-            write_pgencoded(&mut lit_out, l.data.as_bytes())?;
-            match l.data_type {
-              ntriple::TypeLang::Lang(ref s) => {
-                write!(&mut lit_out, "\t")?;
-                write_pgencoded(&mut lit_out, s.as_bytes())?;
-                write!(&mut lit_out, "\n")?;
-              },
-              _ => {
-                write!(&mut lit_out, "\t\\N\n")?;
+    let pb = ProgressBar::new(member.size());
+    pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
+    let pbr = pb.wrap_read(member);
+    let pbr = BufReader::new(pbr);
+    logging::set_progress(&pb);
+    let mut lno = 0;
+    for line in pbr.lines() {
+      let line = line?;
+      lno += 1;
+      match quiet_line(&line) {
+        Ok(Some(tr)) => {
+          let s_id = idg.subj_id(&tr.subject)?;
+          let p_id = idg.pred_id(&tr.predicate)?;
+          let o_id = idg.obj_id(&tr.object)?;
+          match o_id {
+            Target::Node(oid) => {
+              write!(&mut triples_out, "{}\t{}\t{}\n", s_id, p_id, oid)?;
+            },
+            Target::Literal(l) => {
+              write!(&mut lit_out, "{}\t{}\t", s_id, p_id)?;
+              write_pgencoded(&mut lit_out, l.data.as_bytes())?;
+              match l.data_type {
+                ntriple::TypeLang::Lang(ref s) => {
+                  write!(&mut lit_out, "\t")?;
+                  write_pgencoded(&mut lit_out, s.as_bytes())?;
+                  write!(&mut lit_out, "\n")?;
+                },
+                _ => {
+                  write!(&mut lit_out, "\t\\N\n")?;
+                }
               }
             }
-          }
-        };
-      },
-      Ok(None) => (),
-      Err(ref e) => {
-        error!("error on line {}: {:?}", lno, e);
-        error!("invalid line contained: {}", line);
-      }
-    };
-  }
-  pb.finish();
-  logging::clear_progress();
+          };
+        },
+        Ok(None) => (),
+        Err(ref e) => {
+          error!("error on line {}: {:?}", lno, e);
+          error!("invalid line contained: {}", line);
+        }
+      };
+    }
+    pb.finish();
+    logging::clear_progress();
 
-  Ok(())
+    Ok(())
+  }
 }

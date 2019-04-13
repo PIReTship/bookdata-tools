@@ -13,6 +13,7 @@ use crate::cleaning::{write_pgencoded, clean_json};
 use crate::tsv::split_first;
 use crate::db::{DbOpts, CopyRequest};
 use crate::error::{Result, err};
+use super::Command;
 
 #[derive(StructOpt, Debug)]
 struct ImportInfo {
@@ -36,7 +37,7 @@ enum ImportType {
 /// Process OpenLib data into format suitable for PostgreSQL import.
 #[derive(StructOpt, Debug)]
 #[structopt(name="import-json")]
-pub struct Options {
+pub struct ImportJson {
   #[structopt(flatten)]
   db: DbOpts,
 
@@ -121,30 +122,32 @@ impl ImportType {
   }
 }
 
-pub fn exec(opt: Options) -> Result<()> {
-  let dbo = opt.db.default_schema(opt.dataset.schema());
+impl Command for ImportJson {
+  fn exec(self) -> Result<()> {
+    let dbo = self.db.default_schema(self.dataset.schema());
 
-  let infn = &opt.dataset.info().infile;
-  info!("reading from {:?}", infn);
-  let fs = File::open(infn)?;
-  let pb = ProgressBar::new(fs.metadata()?.len());
-  pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
+    let infn = &self.dataset.info().infile;
+    info!("reading from {:?}", infn);
+    let fs = File::open(infn)?;
+    let pb = ProgressBar::new(fs.metadata()?.len());
+    pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
 
-  let pbr = pb.wrap_read(fs);
-  let pbr = BufReader::new(pbr);
-  let gzf = MultiGzDecoder::new(pbr);
-  let mut bfs = BufReader::new(gzf);
+    let pbr = pb.wrap_read(fs);
+    let pbr = BufReader::new(pbr);
+    let gzf = MultiGzDecoder::new(pbr);
+    let mut bfs = BufReader::new(gzf);
 
-  let req = CopyRequest::new(&dbo, &opt.dataset.table_name())?;
-  let req = req.with_schema(dbo.schema());
-  let columns = opt.dataset.columns();
-  let cref: Vec<&str> = columns.iter().map(String::as_str).collect();
-  let req = req.with_columns(&cref);
-  let req = req.truncate(opt.truncate);
-  let out = req.open()?;
-  let mut out = BufWriter::new(out);
+    let req = CopyRequest::new(&dbo, &self.dataset.table_name())?;
+    let req = req.with_schema(dbo.schema());
+    let columns = self.dataset.columns();
+    let cref: Vec<&str> = columns.iter().map(String::as_str).collect();
+    let req = req.with_columns(&cref);
+    let req = req.truncate(self.truncate);
+    let out = req.open()?;
+    let mut out = BufWriter::new(out);
 
-  let n = opt.dataset.import(&mut bfs, &mut out)?;
-  info!("loaded {} records", n);
-  Ok(())
+    let n = self.dataset.import(&mut bfs, &mut out)?;
+    info!("loaded {} records", n);
+    Ok(())
+  }
 }
