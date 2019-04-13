@@ -37,7 +37,10 @@ enum Command {
   make_uuid(make_uuid::Options),
   /// Parse a MARC XML file
   #[structopt(name="parse-marc")]
-  parse_marc(parse_marc::Options)
+  parse_marc(parse_marc::Options),
+  /// Import JSON data
+  #[structopt(name="import-json")]
+  import_json(import_json::Options)
 }
 
 fn main() -> Result<()> {
@@ -46,6 +49,7 @@ fn main() -> Result<()> {
   match opt.command {
     Command::pcat(opts) => pcat::exec(opts),
     Command::make_uuid(opts) => make_uuid::exec(opts),
-    Command::parse_marc(opts) => parse_marc::exec(opts)
+    Command::parse_marc(opts) => parse_marc::exec(opts),
+    Command::import_json(opts) => import_json::exec(opts)
   }
 }

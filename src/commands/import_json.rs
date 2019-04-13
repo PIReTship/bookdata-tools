@@ -9,10 +9,10 @@ use structopt::StructOpt;
 use flate2::bufread::MultiGzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
 
-use bookdata::cleaning::{write_pgencoded, clean_json};
-use bookdata::tsv::split_first;
-use bookdata::db::{DbOpts, CopyRequest};
-use bookdata::{Result, LogOpts, err};
+use crate::cleaning::{write_pgencoded, clean_json};
+use crate::tsv::split_first;
+use crate::db::{DbOpts, CopyRequest};
+use crate::error::{Result, err};
 
 #[derive(StructOpt, Debug)]
 struct ImportInfo {
@@ -36,10 +36,7 @@ enum ImportType {
 /// Process OpenLib data into format suitable for PostgreSQL import.
 #[derive(StructOpt, Debug)]
 #[structopt(name="import-json")]
-struct Opt {
-  #[structopt(flatten)]
-  logging: LogOpts,
-
+pub struct Options {
   #[structopt(flatten)]
   db: DbOpts,
 
@@ -124,9 +121,7 @@ impl ImportType {
   }
 }
 
-fn main() -> Result<()> {
-  let opt = Opt::from_args();
-  opt.logging.init()?;
+pub fn exec(opt: Options) -> Result<()> {
   let dbo = opt.db.default_schema(opt.dataset.schema());
 
   let infn = &opt.dataset.info().infile;
