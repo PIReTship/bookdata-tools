@@ -12,18 +12,15 @@ use quick_xml::events::Event;
 use flate2::bufread::MultiGzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
 
-use bookdata::{Result, err, LogOpts};
-use bookdata::cleaning::write_pgencoded;
-use bookdata::tsv::split_first;
-use bookdata::db::{DbOpts, CopyRequest};
+use crate::error::{Result, err};
+use crate::cleaning::write_pgencoded;
+use crate::tsv::split_first;
+use crate::db::{DbOpts, CopyRequest};
 
 /// Parse MARC files into records for a PostgreSQL table.
 #[derive(StructOpt, Debug)]
 #[structopt(name="parse-marc")]
-struct Opt {
-  #[structopt(flatten)]
-  logging: LogOpts,
-
+pub struct Options {
   #[structopt(flatten)]
   db: DbOpts,
 
@@ -191,10 +188,7 @@ fn process_records<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, start
   Ok(recid - start)
 }
 
-fn main() -> Result<()> {
-  let opt = Opt::from_args();
-  opt.logging.init()?;
-
+pub fn exec(opt: Options) -> Result<()> {
   let req = CopyRequest::new(&opt.db, &opt.table)?;
   let req = req.with_schema(opt.db.schema());
   let req = req.truncate(opt.truncate);

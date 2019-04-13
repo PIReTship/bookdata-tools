@@ -1,18 +1,18 @@
 use structopt::StructOpt;
 use uuid::Uuid;
 
+use crate::error::Result;
+
 #[derive(StructOpt, Debug)]
 #[structopt(name="make-uuid")]
-struct Opt {
+pub struct Options {
   #[structopt(short="n", long="namespace")]
   namespace: Option<String>,
   #[structopt(name = "STRING")]
   string: Vec<String>
 }
 
-fn main() {
-  let opt = Opt::from_args();
-
+pub fn exec(opt: Options) -> Result<()> {
   let ns = match opt.namespace {
     None => Uuid::nil(),
     Some(ref s) if s == "url" => uuid::NAMESPACE_URL,
@@ -23,4 +23,6 @@ fn main() {
     let u = Uuid::new_v5(&ns, &s);
     println!("{}\t{}", u, s);
   }
+
+  Ok(())
 }

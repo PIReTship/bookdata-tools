@@ -53,7 +53,7 @@ def import_az(c, force=False):
     s.psql(c, 'az-schema.sql')
     _log.info('Importing Amazon ratings')
     s.pipeline([
-      [s.bin_dir / 'pcat', s.data_dir / 'ratings_Books.csv'],
+      [s.bdtool, 'pcat', s.data_dir / 'ratings_Books.csv'],
       ['psql', '-c', '\\copy az.raw_ratings FROM STDIN (FORMAT CSV)']
     ])
     s.finish('az-ratings')

@@ -18,6 +18,8 @@ _log = logging.getLogger(__name__)
 data_dir = Path('data')
 tgt_dir = Path('target')
 bin_dir = tgt_dir / 'release'
+bdtool = bin_dir / 'bookdata'
+
 numspaces = dict(work=100000000, edition=200000000, rec=300000000,
                  gr_work=400000000, gr_book=500000000,
                  isbn=900000000)
@@ -74,11 +76,9 @@ def init(c):
 @task
 def build(c, debug=False):
     "Compile the Rust support executables"
-    global bin_dir
     if debug:
         _log.info('compiling support executables in debug mode')
         c.run('cargo build')
-        bin_dir = tgt_dir / 'debug'
     else:
         _log.info('compiling support executables')
         c.run('cargo build --release')
@@ -104,7 +104,6 @@ def clean(c):
 @task
 def test(c, debug=False):
     "Run tests on the import & support code."
-    global bin_dir
     if debug:
         _log.info('testing support executables in debug mode')
         c.run('cargo test')
