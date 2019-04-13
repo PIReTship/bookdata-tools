@@ -35,7 +35,10 @@ enum Command {
   parse_marc(parse_marc::Options),
   /// Import JSON data
   #[structopt(name="import-json")]
-  import_json(import_json::Options)
+  import_json(import_json::Options),
+  /// Import RDF ntriples
+  #[structopt(name="import-ntriples")]
+  import_ntriples(import_ntriples::Options)
 }
 
 fn main() -> Result<()> {
@@ -45,6 +48,7 @@ fn main() -> Result<()> {
     Command::pcat(opts) => pcat::exec(opts),
     Command::make_uuid(opts) => make_uuid::exec(opts),
     Command::parse_marc(opts) => parse_marc::exec(opts),
-    Command::import_json(opts) => import_json::exec(opts)
+    Command::import_json(opts) => import_json::exec(opts),
+    Command::import_ntriples(opts) => import_ntriples::exec(opts)
   }
 }

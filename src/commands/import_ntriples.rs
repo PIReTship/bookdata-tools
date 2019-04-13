@@ -17,10 +17,10 @@ use ntriple::{Subject, Predicate, Object};
 
 use crossbeam_channel::{Sender, Receiver, bounded};
 
-use bookdata::cleaning::{write_pgencoded};
-use bookdata::{LogOpts, Result};
-use bookdata::db;
-use bookdata::logging;
+use crate::cleaning::{write_pgencoded};
+use crate::error::{Result, err};
+use crate::db;
+use crate::logging;
 
 const NODE_BATCH_SIZE: u64 = 20000;
 const NODE_QUEUE_SIZE: usize = 2500;
@@ -28,10 +28,7 @@ const NODE_QUEUE_SIZE: usize = 2500;
 /// Import n-triples RDF (e.g. from LOC) into a database.
 #[derive(StructOpt, Debug)]
 #[structopt(name="import-ntriples")]
-struct Opt {
-  #[structopt(flatten)]
-  logging: LogOpts,
-
+pub struct Options {
   #[structopt(flatten)]
   db: db::DbOpts,
 
@@ -144,7 +141,7 @@ impl NodeSink {
   fn save(&self, id: &Uuid, iri: &str) -> Result<()> {
     match self.send.send(NodeMsg::SaveNode(*id, iri.to_string())) {
       Ok(_) => Ok(()),
-      Err(_) => Err(bookdata::err("node channel disconnected"))
+      Err(_) => Err(err("node channel disconnected"))
   }
 }
 }
@@ -217,20 +214,17 @@ impl IdGenerator {
   }
 }
 
-fn main() -> Result<()> {
-  let opt = Opt::from_args();
-  opt.logging.init()?;
-
+pub fn exec(opt: Options) -> Result<()> {
   let inf = opt.infile.as_path();
   let fs = fs::File::open(inf)?;
   let fs = BufReader::new(fs);
   let mut zf = ZipArchive::new(fs)?;
   if zf.len() > 1 {
     error!("{:?}: more than one member file", inf);
-    return Err(bookdata::err("too many input files"))
+    return Err(err("too many input files"))
   } else if zf.len() == 0 {
     error!("{:?}: empty input archive", inf);
-    return Err(bookdata::err("empty input archive"));
+    return Err(err("empty input archive"));
   }
   let member = zf.by_index(0)?;
   info!("processing member {:?} with {} bytes", member.name(), member.size());
