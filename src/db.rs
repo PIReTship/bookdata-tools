@@ -1,6 +1,9 @@
-use error::{Result, err};
+use crate::error::{Result, err};
 
 use std::io::prelude::*;
+
+use log::*;
+
 use os_pipe::{pipe, PipeWriter};
 use postgres::{Connection, TlsMode};
 use structopt::StructOpt;
@@ -153,7 +156,7 @@ impl CopyRequest {
   pub fn open(self) -> Result<CopyTarget> {
     let query = self.query();
     let (mut reader, writer) = pipe()?;
-    
+
     let name = self.name.clone();
     let tb = thread::Builder::new().name(name.clone());
     let jh = tb.spawn(move || {
@@ -183,7 +186,7 @@ impl CopyRequest {
 }
 
 /// Writer for copy-in operations
-/// 
+///
 /// This writer writes to the copy-in for PostgreSQL.  It is unbuffered; you usually
 /// want to wrap it in a `BufWriter`.
 pub struct CopyTarget {

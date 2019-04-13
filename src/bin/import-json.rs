@@ -1,15 +1,11 @@
-#[macro_use] extern crate log;
-extern crate structopt;
-extern crate flate2;
-extern crate indicatif;
-extern crate bookdata;
-
 use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
-
-use structopt::StructOpt;
 use std::fs::File;
 use std::path::PathBuf;
+
+use log::*;
+
+use structopt::StructOpt;
 use flate2::bufread::MultiGzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
 
@@ -50,7 +46,7 @@ struct Opt {
   /// Truncate the table before importing
   #[structopt(long="truncate")]
   truncate: bool,
-  
+
   /// Specify the type of dataset to work on
   #[structopt(subcommand)]
   dataset: ImportType
