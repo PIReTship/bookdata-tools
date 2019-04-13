@@ -14,7 +14,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 use error::Result;
 use logging::LogOpts;
-use commands::pcat;
+use commands::*;
 
 /// BookData import tools
 #[derive(StructOpt, Debug)]
@@ -31,13 +31,17 @@ struct Opt {
 #[allow(non_camel_case_types)]
 enum Command {
   /// Output a file with a progress bar
-  pcat(pcat::Options)
+  pcat(pcat::Options),
+  /// Make a UUID
+  #[structopt(name="make-uuid")]
+  make_uuid(make_uuid::Options)
 }
 
 fn main() -> Result<()> {
   let opt = Opt::from_args();
   opt.logging.init()?;
   match opt.command {
-    Command::pcat(opts) => pcat::exec(opts)
+    Command::pcat(opts) => pcat::exec(opts),
+    Command::make_uuid(opts) => make_uuid::exec(opts)
   }
 }
