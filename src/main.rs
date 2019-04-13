@@ -7,11 +7,6 @@ mod commands;
 
 use structopt::StructOpt;
 
-use std::io;
-use std::fs::File;
-use std::path::PathBuf;
-use indicatif::{ProgressBar, ProgressStyle};
-
 use error::Result;
 use logging::LogOpts;
 use commands::*;
