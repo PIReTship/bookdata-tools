@@ -1,4 +1,6 @@
 This repository contains the code to import and integrate the book and rating data that we work with.
+It imports and integrates data from several sources in a single PostgreSQL database; import scripts
+are primarily in Python, with Rust code for high-throughput processing of raw data files.
 
 If you use these scripts in any published reseaerch, cite [our paper](https://md.ekstrandom.net/pubs/book-author-gender):
 
@@ -23,10 +25,12 @@ is incomplete and, in a number of cases, incorrect.
     - colorama
     - chromalog
     - humanize
-- A Rust compiler (available from Anaconda)
+- The Rust compiler (available from Anaconda)
 - `psql` executable on the machine where the import scripts will run
 - 2TB disk space for the database
 - 100GB disk space for data files
+
+It is best if you do not store the data files on the same disk as your PostgreSQL database.
 
 The `environment.yml` file defines an Anaconda environment that contains all the required packages except for the PostgreSQL server. It can be set up with:
 
