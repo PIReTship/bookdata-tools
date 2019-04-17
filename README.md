@@ -25,7 +25,7 @@ is incomplete and, in a number of cases, incorrect.
     - humanize
 - A Rust compiler (available from Anaconda)
 - `psql` executable on the machine where the import scripts will run
-- 1TB disk space for the database
+- 2TB disk space for the database
 - 100GB disk space for data files
 
 The `environment.yml` file defines an Anaconda environment that contains all the required packages except for the PostgreSQL server. It can be set up with:
