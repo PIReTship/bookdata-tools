@@ -12,21 +12,20 @@ CREATE INDEX IF NOT EXISTS auth_object_idx ON locid.auth_triples (object_id);
 --- #step Analyze auth triples
 --- #notx
 VACUUM ANALYZE locid.auth_triples;
---- #step Analyze auth literals
---- #notx
-VACUUM ANALYZE locid.auth_literals;
 
 --- #step Index authority literal subjects
 CREATE INDEX IF NOT EXISTS auth_lit_subject_idx ON locid.auth_literals (subject_id);
 
+--- #step Analyze auth literals
+--- #notx
+VACUUM ANALYZE locid.auth_literals;
+
 --- #step Index work subjects and objects
 CREATE INDEX IF NOT EXISTS work_subject_idx ON locid.work_triples (subject_id);
 CREATE INDEX IF NOT EXISTS work_object_idx ON locid.work_triples (object_id);
-ANALYZE locid.work_triples;
 
 --- #step Index work literal subjects
 CREATE INDEX IF NOT EXISTS work_lit_subject_idx ON locid.work_literals (subject_id);
-ANALYZE locid.work_literals;
 
 --- #step Analyze work triples
 --- #notx
@@ -38,11 +37,9 @@ VACUUM ANALYZE locid.work_literals;
 --- #step Index instance subjects and objects
 CREATE INDEX IF NOT EXISTS instance_subject_idx ON locid.instance_triples (subject_id);
 CREATE INDEX IF NOT EXISTS instance_object_idx ON locid.instance_triples (object_id);
-ANALYZE locid.instance_triples;
 
 --- #step Index instance literal subjects
 CREATE INDEX IF NOT EXISTS instance_lit_subject_idx ON locid.instance_literals (subject_id);
-ANALYZE locid.instance_literals;
 
 --- #step Analyze instance triples
 --- #notx
@@ -83,6 +80,6 @@ CALL locid.alias_node('gender', 'http://www.loc.gov/mads/rdf/v1#gender');
 CALL locid.alias_node('concept', 'http://www.w3.org/2004/02/skos/core#Concept');
 CALL locid.alias_node('type', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
 CALL locid.alias_node('isbn', 'http://id.loc.gov/ontologies/bibframe/Isbn');
-CALL locid.alias_node('value', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+CALL locid.alias_node('value', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#value');
 CALL locid.alias_node('bf-id-by', 'http://id.loc.gov/ontologies/bibframe/identifiedBy');
 ANALYSE locid.node_aliases;
