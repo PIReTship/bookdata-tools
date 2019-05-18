@@ -117,7 +117,24 @@ def import_id_instance(c, force=False, convert_only=False, convert=True):
 def index_id_triples(c, force=False):
     "Create basic indexes on LOC ID data"
     s.check_prereq('loc-id-init')
+    s.check_prereq('loc-id-names')
+    s.check_prereq('loc-id-instances')
+    s.check_prereq('loc-id-works')
+    s.check_prereq('loc-id-instances')
     s.start('loc-id-triple-index', force=force)
     _log.info('building LOC name indexes')
     s.psql(c, 'loc-id-triple-index.sql', staged=True)
     s.finish('loc-id-triple-index')
+
+
+@task(s.init)
+def index_id_books(c, force=False):
+    "Create book indexes on LOC ID data"
+    s.check_prereq('loc-id-init')
+    s.check_prereq('loc-id-works')
+    s.check_prereq('loc-id-instances')
+    s.check_prereq('loc-id-triple-index')
+    s.start('loc-id-book-index', force=force)
+    _log.info('building LOC name indexes')
+    s.psql(c, 'loc-id-book-index.sql', staged=True)
+    s.finish('loc-id-book-index')
