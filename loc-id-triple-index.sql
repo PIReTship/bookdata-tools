@@ -74,6 +74,7 @@ CREATE OR REPLACE FUNCTION locid.common_node(alias VARCHAR) RETURNS UUID
   SELECT node_uuid FROM locid.node_aliases WHERE node_alias = alias;
   $$;
 
+CALL locid.alias_node('instance-of', 'http://id.loc.gov/ontologies/bibframe/instanceOf');
 CALL locid.alias_node('label', 'http://www.w3.org/2000/01/rdf-schema#label');
 CALL locid.alias_node('auth-label', 'http://www.loc.gov/mads/rdf/v1#authoritativeLabel');
 CALL locid.alias_node('gender', 'http://www.loc.gov/mads/rdf/v1#gender');
@@ -82,4 +83,6 @@ CALL locid.alias_node('type', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
 CALL locid.alias_node('isbn', 'http://id.loc.gov/ontologies/bibframe/Isbn');
 CALL locid.alias_node('value', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#value');
 CALL locid.alias_node('bf-id-by', 'http://id.loc.gov/ontologies/bibframe/identifiedBy');
+CALL locid.alias_node('work', 'http://id.loc.gov/ontologies/bibframe/Work');
+CALL locid.alias_node('instance', 'http://id.loc.gov/ontologies/bibframe/Instance');
 ANALYSE locid.node_aliases;

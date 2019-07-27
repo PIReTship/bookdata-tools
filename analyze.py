@@ -63,6 +63,19 @@ class scope_gr:
     ''')
 
 
+class scope_loc:
+    name = 'LOC'
+    prereq = 'loc-id-book-index'
+
+    node_query = dedent('''
+
+    ''')
+
+    edge_query = dedent('''
+
+    ''')
+
+
 _all_scopes = ['locmds', 'ol', 'gr']
 
 def get_scope(name):
