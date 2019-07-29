@@ -57,7 +57,7 @@ def index_books(c, force=False):
     s.check_prereq('loc-mds-books')
     s.start('loc-mds-book-index', force=force)
     _log.info('building LOC indexes')
-    s.psql(c, 'loc-mds-index-books.sql')
+    s.psql(c, 'loc-mds-index-books.sql', staged=True)
     s.finish('loc-mds-book-index')
 
 
