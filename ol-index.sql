@@ -120,8 +120,7 @@ WITH
         FROM ol.edition)
 INSERT INTO ol.edition_isbn
   SELECT edition_id, isbn
-  FROM (SELECT edition_id,
-          regexp_replace(substring(upper(isbn) from '^\s*(?:(?:ISBN)?[:;z]?\s*)?([0-9 -]+[0-9X])'), '[- ]', '') AS isbn
+  FROM (SELECT edition_id, extract_isbn(isbn) AS isbn
         FROM ol_edition_isbn10) isbns
   WHERE isbn IS NOT NULL AND char_length(isbn) IN (10,13);
 
@@ -131,8 +130,7 @@ WITH
         FROM ol.edition)
 INSERT INTO ol.edition_isbn
   SELECT edition_id, isbn
-  FROM (SELECT edition_id,
-          regexp_replace(substring(upper(isbn) from '^\s*(?:(?:ISBN)?[:;z]?\s*)?([0-9 -]+[0-9X])'), '[- ]', '') AS isbn
+  FROM (SELECT edition_id, extract_isbn(isbn) AS isbn
         FROM ol_edition_isbn13) isbns
   WHERE isbn IS NOT NULL AND char_length(isbn) IN (10,13);
 

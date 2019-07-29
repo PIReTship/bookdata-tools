@@ -62,7 +62,7 @@ ANALYZE locmds.book;
 
 --- #step Index ISBNs
 CREATE MATERIALIZED VIEW locmds.book_extracted_isbn AS
-  SELECT rec_id, upper(regexp_replace(substring(contents from '^\s*(?:(?:ISBN)?[:;z]?\s*)?([0-9 -]+[0-9Xx])'), '[- ]', '')) AS isbn
+  SELECT rec_id, extract_isbn(contents) AS isbn
   FROM locmds.book_marc_field
   WHERE tag = '020' AND sf_code = 'a';
 

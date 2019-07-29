@@ -41,3 +41,12 @@ CREATE OR REPLACE FUNCTION bc_of_isbn(id INTEGER) RETURNS INTEGER
 AS $$ SELECT $1 + 900000000 $$
 LANGUAGE SQL
 IMMUTABLE STRICT PARALLEL SAFE;
+
+-- ExtractISBN function
+CREATE OR REPLACE FUNCTION extract_isbn(raw_isbn VARCHAR) RETURNS VARCHAR
+LANGUAGE SQL IMMUTABLE PARALLEL SAFE COST 5
+AS $$
+SELECT upper(regexp_replace(substring(regexp_replace(raw_isbn, '[^[:alnum:]_ -]', '') from
+    '^\s*(?:(?:(?:ISBN)?[a-zA-Z]+?|\(\d+\))\s*)?([0-9 -]+[0-9Xx])'
+), '[- ]', ''))
+$$;
