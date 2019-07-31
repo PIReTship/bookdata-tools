@@ -23,7 +23,7 @@ ANALYZE gr.user_info;
 
 --- #step Extract interaction data
 CREATE TABLE IF NOT EXISTS gr.interaction
-  AS SELECT gr_interaction_rid, book_id AS gr_book_id, gr_work_id, gr_user_rid, rating, (gr_interaction_data->'isRead')::boolean AS is_read, date_added, date_updated
+  AS SELECT gr_interaction_rid, book_id AS gr_book_id, gr_user_rid, rating, (gr_interaction_data->'isRead')::boolean AS is_read, date_added, date_updated
      FROM gr.raw_interaction,
           jsonb_to_record(gr_interaction_data) AS
               x(book_id INTEGER, user_id VARCHAR, rating INTEGER,
@@ -42,7 +42,7 @@ LEFT JOIN gr.book_ids bid USING (gr_book_id);
 ALTER TABLE gr.interaction ADD CONSTRAINT gr_interaction_pk PRIMARY KEY (gr_interaction_rid);
 CREATE INDEX IF NOT EXISTS interaction_book_idx ON gr.interaction (gr_book_id);
 CREATE INDEX IF NOT EXISTS interaction_user_idx ON gr.interaction (gr_user_rid);
-ALTER TABLE gr.interaction ADD CONSTRAINT gr_interaction_book_fk FOREIGN KEY (gr_book_id) REFERENCES gr_book_ids (gr_book_id);
+ALTER TABLE gr.interaction ADD CONSTRAINT gr_interaction_book_fk FOREIGN KEY (gr_book_id) REFERENCES gr.book_ids (gr_book_id);
 ALTER TABLE gr.interaction ADD CONSTRAINT gr_interaction_user_fk FOREIGN KEY (gr_user_rid) REFERENCES gr.user_info (gr_user_rid);
 ANALYZE gr.interaction;
 

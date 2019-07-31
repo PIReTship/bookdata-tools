@@ -74,6 +74,12 @@ CREATE OR REPLACE FUNCTION locid.common_node(alias VARCHAR) RETURNS UUID
   SELECT node_uuid FROM locid.node_aliases WHERE node_alias = alias;
   $$;
 
+CREATE OR REPLACE FUNCTION node_uuid(iri VARCHAR) RETURNS UUID
+LANGUAGE SQL IMMUTABLE PARALLEL SAFE
+AS $$
+SELECT uuid_generate_v5(uuid_ns_url(), iri);
+$$;
+
 CALL locid.alias_node('instance-of', 'http://id.loc.gov/ontologies/bibframe/instanceOf');
 CALL locid.alias_node('label', 'http://www.w3.org/2000/01/rdf-schema#label');
 CALL locid.alias_node('auth-label', 'http://www.loc.gov/mads/rdf/v1#authoritativeLabel');
@@ -86,3 +92,8 @@ CALL locid.alias_node('bf-id-by', 'http://id.loc.gov/ontologies/bibframe/identif
 CALL locid.alias_node('work', 'http://id.loc.gov/ontologies/bibframe/Work');
 CALL locid.alias_node('instance', 'http://id.loc.gov/ontologies/bibframe/Instance');
 ANALYSE locid.node_aliases;
+
+
+--- #step Set up partial indexes
+CREATE INDEX instance_id_by_idx ON locid.instance_triples (object_id)
+  WHERE pred_id = uuid_generate_v5(uuid_ns_url(), 'http://id.loc.gov/ontologies/bibframe/identifiedBy');
