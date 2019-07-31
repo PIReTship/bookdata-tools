@@ -4,6 +4,11 @@ CREATE TABLE IF NOT EXISTS import_status (
     finished_at TIMESTAMP NULL
 );
 
+CREATE TABLE IF NOT EXISTS source_file (
+  filename VARCHAR NOT NULL PRIMARY KEY,
+  checksum VARCHAR NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS isbn_id (
   isbn_id SERIAL PRIMARY KEY,
   isbn VARCHAR NOT NULL UNIQUE
