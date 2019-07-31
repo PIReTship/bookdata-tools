@@ -65,7 +65,7 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS gr.add_action
   AS SELECT gr_user_rid AS user_id, cluster AS book_id,
             COUNT(rating) AS nactions
      FROM gr.interaction
-            JOIN gr.book_cluster ON (gr_book_id = book_id)
+            JOIN gr.book_cluster USING (gr_book_id)
      GROUP BY gr_user_rid, cluster;
 CREATE INDEX IF NOT EXISTS add_action_user_idx ON gr.add_action (user_id);
 CREATE INDEX IF NOT EXISTS add_action_item_idx ON gr.add_action (book_id);
