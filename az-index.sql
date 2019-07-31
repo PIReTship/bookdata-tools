@@ -19,8 +19,9 @@ ANALYZE isbn_id;
 DROP VIEW IF EXISTS az.rating;
 CREATE VIEW az.rating
   AS SELECT user_id, COALESCE(cluster, bc_of_isbn(isbn_id)) AS book_id,
-                     MEDIAN(rating) AS med_rating,
+                     MEDIAN(rating) AS rating,
                      (array_agg(rating ORDER BY rating_time DESC))[1] AS last_rating,
+                     MEDIAN(rating_time) AS timestamp,
                      COUNT(rating) AS nratings
      FROM az.raw_ratings
        JOIN az.user_ids USING (user_key)
