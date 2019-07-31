@@ -138,3 +138,21 @@ def index_id_books(c, force=False):
     _log.info('building LOC name indexes')
     s.psql(c, 'loc-id-book-index.sql', staged=True)
     s.finish('loc-id-book-index')
+
+
+@task(s.init, s.build)
+def record_mds_files(c):
+    files = list((s.data_dir / 'LOC').glob('BooksAll.2014.*.xml.gz'))
+    files.append(s.data_dir / 'LOC' / 'Names.2014.combined.xml.gz')
+    s.booktool(c, 'hash', *files)
+
+
+@task(s.init, s.build)
+def record_id_files(c):
+    fns = [
+        'authoritiesnames.nt.both.zip',
+        'bibframeinstances.nt.zip',
+        'bibframeworks.nt.zip'
+    ]
+    files = [s.data_dir / 'LOC' / fn for fn in fns]
+    s.booktool(c, 'hash', *files)

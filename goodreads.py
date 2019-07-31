@@ -51,3 +51,9 @@ def index_ratings(c, force=False):
     _log.info('building GoodReads rating data indexes')
     s.psql(c, 'gr-index-ratings.sql', True)
     s.finish('gr-index-ratings')
+
+
+@task(s.init, s.build)
+def record_files(c):
+    files = [s.data_dir / f'goodreads_{f}.json.gz' for f in ['books', 'book_works', 'book_authors', 'interactions']]
+    s.booktool(c, 'hash', *files)

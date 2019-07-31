@@ -5,6 +5,8 @@ import support as s
 
 _log = logging.getLogger(__name__)
 
+dft_date = '2018-10-31'
+
 
 @task(s.init)
 def init(c, force=False):
@@ -16,7 +18,7 @@ def init(c, force=False):
 
 
 @task(s.build, s.init)
-def import_authors(c, date='2018-10-31', force=False):
+def import_authors(c, date=dft_date, force=False):
     "Import OpenLibrary authors"
     s.check_prereq('ol-init')
     s.start('ol-authors', force=force)
@@ -30,7 +32,7 @@ def import_authors(c, date='2018-10-31', force=False):
 
 
 @task(s.build, s.init)
-def import_editions(c, date='2018-10-31', force=False):
+def import_editions(c, date=dft_date, force=False):
     "Import OpenLibrary editions"
     s.check_prereq('ol-init')
     s.start('ol-editions', force=force)
@@ -44,7 +46,7 @@ def import_editions(c, date='2018-10-31', force=False):
 
 
 @task(s.build, s.init)
-def import_works(c, date='2018-10-31', force=False):
+def import_works(c, date=dft_date, force=False):
     "Import OpenLibrary works"
     s.check_prereq('ol-init')
     s.start('ol-works', force=force)
@@ -66,3 +68,9 @@ def index(c, force=False):
     _log.info('building OpenLibrary indexes')
     s.psql(c, 'ol-index.sql')
     s.finish('ol-index')
+
+
+@task(s.init, s.build)
+def record_files(c, date=dft_date):
+    files = [s.data_dir / f'ol_dump_{x}_{date}.txt.gz' for x in ['authors', 'editions', 'works']]
+    s.booktool(c, 'hash', *files)

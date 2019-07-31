@@ -48,6 +48,12 @@ def db_url():
     return url
 
 
+def booktool(c, *args):
+    tool = bin_dir / 'bookdata'
+    tool = os.fspath(tool)
+    sp.run([tool] + list(args), check=True)
+
+
 def psql(c, script, staged=False):
     if staged:
         with open(script, encoding='utf8') as f:
