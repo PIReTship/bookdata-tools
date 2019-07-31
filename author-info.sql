@@ -18,7 +18,7 @@ CREATE AGGREGATE resolve_gender(gender VARCHAR) (
 );
 
 --- #step Compute author genders for LOC clusters
-DROP TABLE IF EXISTS locmds.cluster_author_gender;
+--- #allow duplicate_table
 CREATE TABLE locmds.cluster_author_gender
   AS SELECT cluster,
        case when count(an.name) = 0 then 'no-loc-author'
@@ -35,7 +35,7 @@ CREATE TABLE locmds.cluster_author_gender
 CREATE UNIQUE INDEX loc_cluster_author_gender_book_idx ON locmds.cluster_author_gender (cluster);
 
 --- #step Create MV of rated books
-DROP MATERIALIZED VIEW IF EXISTS rated_book CASCADE;
+--- #allow duplicate_table
 CREATE MATERIALIZED VIEW rated_book AS
 SELECT DISTINCT cluster, isbn_id
   FROM (SELECT book_id AS cluster FROM bx.add_action
@@ -60,7 +60,7 @@ CREATE MATERIALIZED VIEW cluster_ol_first_author_name AS
 
 --- #step Extract book first-author names from LOC MDS
 DROP MATERIALIZED VIEW IF EXISTS cluster_loc_first_author_name;
-CREATE MATERIALIZED VIEW cluster_loc_author_name AS
+CREATE MATERIALIZED VIEW cluster_loc_first_author_name AS
   SELECT DISTINCT cluster, name AS author_name
   FROM isbn_cluster
     JOIN locmds.book_rec_isbn USING (isbn_id)
@@ -77,8 +77,7 @@ CREATE INDEX cluster_first_author_name_idx ON cluster_first_author_name (author_
 ANALYZE cluster_first_author_name;
 
 --- #step Compute genders of first authors form all available data
-DROP TABLE IF EXISTS cluster_first_author_gender;
-CREATE TABLE cluster_first_author_gender
+CREATE TABLE IF NOT EXISTS cluster_first_author_gender
   AS SELECT cluster,
        case
        when count(an.author_name) = 0 then 'no-loc-author'
@@ -91,5 +90,5 @@ CREATE TABLE cluster_first_author_gender
        LEFT JOIN viaf.author_name vn ON (name = author_name)
        LEFT JOIN viaf.author_gender vg ON (vn.rec_id = vg.rec_id)
      GROUP BY cluster;
-CREATE UNIQUE INDEX cluster_first_author_gender_book_idx ON cluster_first_author_gender (cluster);
+CREATE UNIQUE INDEX IF NOT EXISTS cluster_first_author_gender_book_idx ON cluster_first_author_gender (cluster);
 ANALYZE cluster_first_author_gender;

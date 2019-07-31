@@ -355,7 +355,8 @@ class SqlScript:
                 _log.info('Failed with acceptable error %s (%s)',
                           e.pgcode, psycopg2.errorcodes.lookup(e.pgcode))
             else:
-                _log.error('%s failed: %s', step.label, e)
+                _log.error('Error in "%s": %s: %s',
+                           step.label, psycopg2.errorcodes.lookup(e.pgcode), e)
                 if e.pgerror:
                     _log.info('Query diagnostics:\n%s', e.pgerror)
                 raise e
