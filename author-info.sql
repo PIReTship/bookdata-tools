@@ -34,24 +34,6 @@ CREATE TABLE locmds.cluster_author_gender
      GROUP BY cluster;
 CREATE UNIQUE INDEX loc_cluster_author_gender_book_idx ON locmds.cluster_author_gender (cluster);
 
---- #step Compute author genders for global clusters, using LOC author records
-DROP TABLE IF EXISTS cluster_loc_author_gender;
-CREATE TABLE cluster_loc_author_gender
-  AS SELECT cluster,
-       case
-       when count(an.name) = 0 then 'no-loc-author'
-       when count(vn.rec_id) = 0 then 'no-viaf-author'
-       when count(vg.gender) = 0 then 'no-gender'
-       else resolve_gender(vg.gender)
-       end AS gender
-     FROM isbn_cluster
-       JOIN locmds.book_rec_isbn ri USING (isbn_id)
-       LEFT JOIN locmds.book_author_name an USING (rec_id)
-       LEFT JOIN viaf.author_name vn USING (name)
-       LEFT JOIN viaf.author_gender vg ON (vn.rec_id = vg.rec_id)
-     GROUP BY cluster;
-CREATE UNIQUE INDEX cluster_loc_author_gender_book_idx ON cluster_loc_author_gender (cluster);
-
 --- #step Create MV of rated books
 DROP MATERIALIZED VIEW IF EXISTS rated_book CASCADE;
 CREATE MATERIALIZED VIEW rated_book AS
@@ -65,16 +47,6 @@ SELECT DISTINCT cluster, isbn_id
 CREATE INDEX rated_book_cluster_idx ON rated_book (cluster);
 CREATE INDEX rated_book_isbn_idx ON rated_book (isbn_id);
 ANALYZE rated_book;
-
---- #step Extract book author names from OL
-DROP MATERIALIZED VIEW IF EXISTS cluster_ol_author_name;
-CREATE MATERIALIZED VIEW cluster_ol_author_name AS
-  SELECT DISTINCT cluster, author_name
-  FROM isbn_cluster
-    JOIN ol.isbn_link USING (isbn_id)
-    JOIN ol.edition USING (edition_id)
-    JOIN ol.edition_author USING (edition_id)
-    JOIN ol.author_name USING (author_id);
 
 --- #step Extract book first-author names from OL
 DROP MATERIALIZED VIEW IF EXISTS cluster_ol_first_author_name;

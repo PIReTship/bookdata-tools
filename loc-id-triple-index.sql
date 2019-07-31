@@ -73,7 +73,7 @@ CREATE OR REPLACE FUNCTION locid.common_node(alias VARCHAR) RETURNS UUID
   AS $$
   SELECT node_uuid FROM locid.node_aliases WHERE node_alias = alias;
   $$;
-  
+
 CALL locid.alias_node('instance-of', 'http://id.loc.gov/ontologies/bibframe/instanceOf');
 CALL locid.alias_node('label', 'http://www.w3.org/2000/01/rdf-schema#label');
 CALL locid.alias_node('auth-label', 'http://www.loc.gov/mads/rdf/v1#authoritativeLabel');
@@ -86,3 +86,33 @@ CALL locid.alias_node('bf-id-by', 'http://id.loc.gov/ontologies/bibframe/identif
 CALL locid.alias_node('work', 'http://id.loc.gov/ontologies/bibframe/Work');
 CALL locid.alias_node('instance', 'http://id.loc.gov/ontologies/bibframe/Instance');
 ANALYSE locid.node_aliases;
+
+--- #step Extract identifiable instance nodes
+CREATE MATERIALIZED VIEW IF NOT EXISTS locid.instance_node_triples AS
+SELECT sn.node_id AS subject_id, pn.node_id AS pred_id, object_uuid
+FROM locid.instance_triples
+JOIN locid.nodes sn ON (sn.node_uuid = subject_uuid)
+JOIN locid.nodes pn ON (pn.node_uuid = pred_uuid);
+CREATE INDEX IF NOT EXISTS instance_node_trip_subject_idx ON locid.instance_node_triples (subject_id);
+CREATE INDEX IF NOT EXISTS instance_node_trip_object_idx ON locid.instance_node_triples (object_uuid);
+ANALYZE locid.instance_node_triples;
+
+--- #step Extract identifiable work nodes
+CREATE MATERIALIZED VIEW IF NOT EXISTS locid.work_node_triples AS
+SELECT sn.node_id AS subject_id, pn.node_id AS pred_id, object_uuid
+FROM locid.work_triples
+JOIN locid.nodes sn ON (sn.node_uuid = subject_uuid)
+JOIN locid.nodes pn ON (pn.node_uuid = pred_uuid);
+CREATE INDEX IF NOT EXISTS work_node_trip_subject_idx ON locid.work_node_triples (subject_id);
+CREATE INDEX IF NOT EXISTS work_node_trip_object_idx ON locid.work_node_triples (object_uuid);
+ANALYZE locid.work_node_triples;
+
+--- #step Extract identifiable auth nodes
+CREATE MATERIALIZED VIEW IF NOT EXISTS locid.auth_node_triples AS
+SELECT sn.node_id AS subject_id, pn.node_id AS pred_id, object_uuid
+FROM locid.auth_triples
+JOIN locid.nodes sn ON (sn.node_uuid = subject_uuid)
+JOIN locid.nodes pn ON (pn.node_uuid = pred_uuid);
+CREATE INDEX IF NOT EXISTS auth_node_trip_subject_idx ON locid.auth_node_triples (subject_id);
+CREATE INDEX IF NOT EXISTS auth_node_trip_object_idx ON locid.auth_node_triples (object_uuid);
+ANALYZE locid.auth_node_triples;
