@@ -50,3 +50,11 @@ SELECT upper(regexp_replace(substring(regexp_replace(raw_isbn, '[^[:alnum:]_ -]'
     '^\s*(?:(?:(?:ISBN)?[a-zA-Z]+?|\(\d+\))\s*)?([0-9 -]+[0-9Xx])'
 ), '[- ]', ''))
 $$;
+
+
+-- Node IRIs to UUIDs
+CREATE OR REPLACE FUNCTION node_uuid(iri VARCHAR) RETURNS UUID
+LANGUAGE SQL IMMUTABLE PARALLEL SAFE
+AS $$
+SELECT uuid_generate_v5(uuid_ns_url(), iri);
+$$;
