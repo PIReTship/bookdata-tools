@@ -17,11 +17,13 @@ VACUUM ANALYZE locid.instance_entity;
 --- #step Extract work IRIs
 DROP MATERIALIZED VIEW IF EXISTS locid.work_entity CASCADE;
 CREATE MATERIALIZED VIEW locid.work_entity AS
-SELECT sn.node_id AS work_id, subject_uuid AS work_uuid,
+SELECT DISTINCT wt.subject_id AS work_id,
+  sn.subject_uuid AS work_uuid,
   sn.node_iri AS work_iri
-FROM locid.work_triples
-JOIN locid.nodes sn ON (subject_uuid = sn.node_uuid)
-WHERE pred_uuid = node_uuid('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
+FROM locid.work_node_triples
+JOIN locid.nodes sn ON (subject_id = sn.node_id)
+JOIN locid.nodes pn ON (pred_id = pn.node_id)
+WHERE pn.node_iri = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
   AND object_uuid = node_uuid('http://id.loc.gov/ontologies/bibframe/Work');
 CREATE INDEX work_inst_id_idx ON locid.work_entity (work_id);
 CREATE INDEX work_inst_uuid_idx ON locid.work_entity (work_uuid);
