@@ -6,26 +6,26 @@ CREATE INDEX IF NOT EXISTS node_iri_idx ON locid.nodes (node_iri);
 VACUUM ANALYZE locid.nodes;
 
 --- #step Index authority subjects and objects
-CREATE INDEX IF NOT EXISTS auth_subject_idx ON locid.auth_triples (subject_id);
-CREATE INDEX IF NOT EXISTS auth_object_idx ON locid.auth_triples (object_id);
+CREATE INDEX IF NOT EXISTS auth_subject_uuidx ON locid.auth_triples (subject_uuid);
+CREATE INDEX IF NOT EXISTS auth_object_uuidx ON locid.auth_triples (object_uuid);
 
 --- #step Analyze auth triples
 --- #notx
 VACUUM ANALYZE locid.auth_triples;
 
 --- #step Index authority literal subjects
-CREATE INDEX IF NOT EXISTS auth_lit_subject_idx ON locid.auth_literals (subject_id);
+CREATE INDEX IF NOT EXISTS auth_lit_subject_uuidx ON locid.auth_literals (subject_uuid);
 
 --- #step Analyze auth literals
 --- #notx
 VACUUM ANALYZE locid.auth_literals;
 
 --- #step Index work subjects and objects
-CREATE INDEX IF NOT EXISTS work_subject_idx ON locid.work_triples (subject_id);
-CREATE INDEX IF NOT EXISTS work_object_idx ON locid.work_triples (object_id);
+CREATE INDEX IF NOT EXISTS work_subject_uuidx ON locid.work_triples (subject_uuid);
+CREATE INDEX IF NOT EXISTS work_object_uuidx ON locid.work_triples (object_uuid);
 
 --- #step Index work literal subjects
-CREATE INDEX IF NOT EXISTS work_lit_subject_idx ON locid.work_literals (subject_id);
+CREATE INDEX IF NOT EXISTS work_lit_subject_uuidx ON locid.work_literals (subject_uuid);
 
 --- #step Analyze work triples
 --- #notx
@@ -35,11 +35,11 @@ VACUUM ANALYZE locid.work_triples;
 VACUUM ANALYZE locid.work_literals;
 
 --- #step Index instance subjects and objects
-CREATE INDEX IF NOT EXISTS instance_subject_idx ON locid.instance_triples (subject_id);
-CREATE INDEX IF NOT EXISTS instance_object_idx ON locid.instance_triples (object_id);
+CREATE INDEX IF NOT EXISTS instance_subject_uuidx ON locid.instance_triples (subject_uuid);
+CREATE INDEX IF NOT EXISTS instance_object_uuidx ON locid.instance_triples (object_uuid);
 
 --- #step Index instance literal subjects
-CREATE INDEX IF NOT EXISTS instance_lit_subject_idx ON locid.instance_literals (subject_id);
+CREATE INDEX IF NOT EXISTS instance_lit_subject_uuidx ON locid.instance_literals (subject_uuid);
 
 --- #step Analyze instance triples
 --- #notx
@@ -95,5 +95,5 @@ ANALYSE locid.node_aliases;
 
 
 --- #step Set up partial indexes
-CREATE INDEX instance_id_by_idx ON locid.instance_triples (object_id)
-  WHERE pred_id = uuid_generate_v5(uuid_ns_url(), 'http://id.loc.gov/ontologies/bibframe/identifiedBy');
+CREATE INDEX instance_id_by_idx ON locid.instance_triples (object_uuid)
+  WHERE pred_uuid = uuid_generate_v5(uuid_ns_url(), 'http://id.loc.gov/ontologies/bibframe/identifiedBy');

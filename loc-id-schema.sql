@@ -14,15 +14,15 @@ CREATE TABLE locid.nodes (
 --- Authority record triples
 DROP TABLE IF EXISTS locid.auth_triples;
 CREATE TABLE locid.auth_triples (
-    subject_id UUID NOT NULL,
-    pred_id UUID NOT NULL,
-    object_id UUID NOT NULL
+    subject_uuid UUID NOT NULL,
+    pred_uuid UUID NOT NULL,
+    object_uuid UUID NOT NULL
 );
 
 DROP TABLE IF EXISTS locid.auth_literals;
 CREATE TABLE locid.auth_literals (
-    subject_id UUID NOT NULL,
-    pred_id UUID NOT NULL,
+    subject_uuid UUID NOT NULL,
+    pred_uuid UUID NOT NULL,
     lit_value TEXT NOT NULL,
     lit_lang VARCHAR NULL
 );
@@ -31,15 +31,15 @@ CREATE TABLE locid.auth_literals (
 --- BIBRAME work triples
 DROP TABLE IF EXISTS locid.work_triples;
 CREATE TABLE locid.work_triples (
-    subject_id UUID NOT NULL,
-    pred_id UUID NOT NULL,
-    object_id UUID NOT NULL
+    subject_uuid UUID NOT NULL,
+    pred_uuid UUID NOT NULL,
+    object_uuid UUID NOT NULL
 );
 
 DROP TABLE IF EXISTS locid.work_literals;
 CREATE TABLE locid.work_literals (
-    subject_id UUID NOT NULL,
-    pred_id UUID NOT NULL,
+    subject_uuid UUID NOT NULL,
+    pred_uuid UUID NOT NULL,
     lit_value TEXT NOT NULL,
     lit_lang VARCHAR NULL
 );
@@ -47,15 +47,15 @@ CREATE TABLE locid.work_literals (
 --- BIBRAME instance triples
 DROP TABLE IF EXISTS locid.instance_triples;
 CREATE TABLE locid.instance_triples (
-    subject_id UUID NOT NULL,
-    pred_id UUID NOT NULL,
-    object_id UUID NOT NULL
+    subject_uuid UUID NOT NULL,
+    pred_uuid UUID NOT NULL,
+    object_uuid UUID NOT NULL
 );
 
 DROP TABLE IF EXISTS locid.instance_literals;
 CREATE TABLE locid.instance_literals (
-    subject_id UUID NOT NULL,
-    pred_id UUID NOT NULL,
+    subject_uuid UUID NOT NULL,
+    pred_uuid UUID NOT NULL,
     lit_value TEXT NOT NULL,
     lit_lang VARCHAR NULL
 );
