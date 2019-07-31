@@ -74,6 +74,12 @@ CREATE OR REPLACE FUNCTION locid.common_node(alias VARCHAR) RETURNS UUID
   SELECT node_uuid FROM locid.node_aliases WHERE node_alias = alias;
   $$;
 
+CREATE OR REPLACE FUNCTION locid.common_nodeid(alias VARCHAR) RETURNS INTEGER
+  LANGUAGE SQL STABLE PARALLEL SAFE COST 10
+  AS $$
+  SELECT node_id FROM locid.node_aliases WHERE node_alias = alias;
+  $$;
+
 CALL locid.alias_node('instance-of', 'http://id.loc.gov/ontologies/bibframe/instanceOf');
 CALL locid.alias_node('label', 'http://www.w3.org/2000/01/rdf-schema#label');
 CALL locid.alias_node('auth-label', 'http://www.loc.gov/mads/rdf/v1#authoritativeLabel');
