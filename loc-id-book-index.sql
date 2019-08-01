@@ -1,11 +1,12 @@
 --- #step Extract instance IRIs
 DROP MATERIALIZED VIEW IF EXISTS locid.instance_entity CASCADE;
 CREATE MATERIALIZED VIEW locid.instance_entity AS
-SELECT DISTINCT sn.node_id AS instance_id, subject_uuid AS instance_uuid,
+SELECT DISTINCT it.subject_id AS instance_id, sn.node_uuid AS instance_uuid,
   sn.node_iri AS instance_iri
-FROM locid.instance_triples
-JOIN locid.nodes sn ON (subject_uuid = sn.node_uuid)
-WHERE pred_uuid = node_uuid('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
+FROM locid.instance_node_triples it
+JOIN locid.nodes sn ON (subject_id = sn.node_id)
+JOIN locid.nodes pn ON (pred_id = pn.node_id)
+WHERE pn.node_iri = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
   AND object_uuid = node_uuid('http://id.loc.gov/ontologies/bibframe/Instance');
 CREATE UNIQUE INDEX instance_inst_id_idx ON locid.instance_entity (instance_id);
 CREATE UNIQUE INDEX instance_inst_uuid_idx ON locid.instance_entity (instance_uuid);
@@ -18,9 +19,9 @@ VACUUM ANALYZE locid.instance_entity;
 DROP MATERIALIZED VIEW IF EXISTS locid.work_entity CASCADE;
 CREATE MATERIALIZED VIEW locid.work_entity AS
 SELECT DISTINCT wt.subject_id AS work_id,
-  sn.subject_uuid AS work_uuid,
+  sn.node_uuid AS work_uuid,
   sn.node_iri AS work_iri
-FROM locid.work_node_triples
+FROM locid.work_node_triples wt
 JOIN locid.nodes sn ON (subject_id = sn.node_id)
 JOIN locid.nodes pn ON (pred_id = pn.node_id)
 WHERE pn.node_iri = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
@@ -35,14 +36,16 @@ VACUUM ANALYZE locid.work_entity;
 --- #step Extract instance/work relationships
 DROP MATERIALIZED VIEW IF EXISTS locid.instance_work CASCADE;
 CREATE MATERIALIZED VIEW locid.instance_work AS
-SELECT DISTINCT isn.node_id as instance_id, isn.node_uuid as instance_uuid,
-  wsn.node_id AS work_id, wsn.node_uuid AS work_uuid
-FROM locid.instance_triples it
-JOIN locid.nodes isn ON (isn.node_uuid = it.subject_uuid)
-JOIN locid.nodes wsn ON (wsn.node_uuid = it.object_uuid)
-JOIN locid.work_entity we ON (it.object_uuid = we.work_uuid);
+SELECT DISTINCT ie.instance_id, ie.instance_uuid,
+  we.work_id AS work_id, we.work_uuid
+FROM locid.instance_entity ie
+JOIN locid.instance_node_triples it ON (ie.instance_id = it.subject_id)
+JOIN locid.work_entity we ON (it.object_uuid = we.work_uuid)
+JOIN locid.nodes pn ON (pn.node_id = it.pred_id)
+WHERE pn.node_iri = 'http://id.loc.gov/ontologies/bibframe/instanceOf';
 CREATE INDEX instance_work_instance_idx ON locid.instance_work (instance_uuid);
 CREATE INDEX instance_work_work_idx ON locid.instance_work (work_uuid);
+ANALYZE locid.instance_work;
 
 --- #step Index instance ISBNs
 DROP MATERIALIZED VIEW IF EXISTS locid.instance_ext_isbn CASCADE;
@@ -54,10 +57,10 @@ FROM locid.instance_triples tt
 JOIN locid.instance_literals il USING (subject_uuid)
 WHERE
   -- subject is of type ISBN
-  tt.pred_uuid = locid.common_node('type')
-  AND tt.object_uuid = locid.common_node('isbn')
+  tt.pred_uuid = node_uuid('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
+  AND tt.object_uuid = node_uuid('http://id.loc.gov/ontologies/bibframe/Isbn')
   -- we have a literal value
-  AND il.pred_uuid = locid.common_node('value');
+  AND il.pred_uuid = node_uuid('http://www.w3.org/1999/02/22-rdf-syntax-ns#value');
 CREATE INDEX instance_ext_isbn_node_idx ON locid.instance_ext_isbn (subject_uuid);
 ANALYZE locid.instance_ext_isbn;
 
@@ -71,10 +74,10 @@ FROM locid.work_triples tt
 JOIN locid.work_literals wl USING (subject_uuid)
 WHERE
   -- subject is of type ISBN
-  tt.pred_uuid = locid.common_node('type')
-  AND tt.object_uuid = locid.common_node('isbn')
+  tt.pred_uuid = node_uuid('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
+  AND tt.object_uuid = node_uuid('http://id.loc.gov/ontologies/bibframe/Isbn')
   -- we have a literal value
-  AND wl.pred_uuid = locid.common_node('value');
+  AND il.pred_uuid = node_uuid('http://www.w3.org/1999/02/22-rdf-syntax-ns#value');
 CREATE INDEX work_ext_isbn_node_idx ON locid.work_ext_isbn (subject_uuid);
 ANALYZE locid.work_ext_isbn;
 
@@ -96,10 +99,11 @@ DROP MATERIALIZED VIEW IF EXISTS locid.instance_isbn CASCADE;
 CREATE MATERIALIZED VIEW locid.instance_isbn AS
 SELECT instance_id, instance_uuid, isbn_id
 FROM locid.instance_ext_isbn xi
-JOIN locid.instance_triples it ON (xi.subject_uuid = it.object_uuid)
-JOIN locid.instance_entity ON (it.subject_uuid = instance_uuid)
+JOIN locid.instance_node_triples it ON (xi.subject_uuid = it.object_uuid)
+JOIN locid.instance_entity ON (it.subject_id = instance_id)
+JOIN locid.nodes pn ON (it.pred_id = pn.node_id)
 JOIN isbn_id USING (isbn)
-WHERE it.pred_uuid = locid.common_node('bf-id-by');
+WHERE node_iri = 'http://id.loc.gov/ontologies/bibframe/identifiedBy';
 CREATE INDEX instance_isbn_idx ON locid.instance_isbn (instance_id);
 CREATE INDEX instance_isbn_node_idx ON locid.instance_isbn (instance_uuid);
 CREATE INDEX instance_isbn_isbn_idx ON locid.instance_isbn (isbn_id);
@@ -112,7 +116,7 @@ FROM (locid.work_ext_isbn xi
 JOIN locid.work_triples wt ON (xi.subject_uuid = wt.object_uuid))
 JOIN locid.work_entity ON (wt.subject_uuid = work_uuid)
 JOIN isbn_id USING (isbn)
-WHERE wt.pred_uuid = locid.common_node('bf-id-by');
+WHERE wt.pred_uuid = node_uuid('http://id.loc.gov/ontologies/bibframe/identifiedBy');
 CREATE INDEX work_isbn_idx ON locid.work_isbn (work_id);
 CREATE INDEX work_isbn_node_idx ON locid.work_isbn (work_uuid);
 CREATE INDEX work_isbn_isbn_idx ON locid.work_isbn (isbn_id);
