@@ -106,6 +106,12 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS ol.edition_isbn13
 CREATE MATERIALIZED VIEW IF NOT EXISTS ol.edition_asin
   AS SELECT edition_id, jsonb_array_elements_text(edition_data#>'{identifiers,amazon}') AS asin
      FROM ol.edition;
+CREATE MATERIALIZED VIEW IF NOT EXISTS ol.edition_lccn
+  AS SELECT edition_id, jsonb_array_elements_text(edition_data->'lccn') AS lccn
+     FROM ol.edition;
+CREATE MATERIALIZED VIEW IF NOT EXISTS ol.edition_gr_bid
+  AS SELECT edition_id, jsonb_array_elements_text(edition_data#>'{identifiers,goodreads}') AS gr_book_rid
+     FROM ol.edition;
 
 --- #step Integrate ISBN/ASIN identifiers
 DROP TABLE IF EXISTS ol.edition_isbn CASCADE;
