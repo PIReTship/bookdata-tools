@@ -83,3 +83,10 @@ def index_bx(c, force=False):
 def index(c):
     "Index all rating data"
     _log.info('done')
+
+
+@task(s.init, s.build)
+def record_files(c):
+    files = ['ratings_Books.csv', 'BX-Book-Ratings.csv']
+    files = [s.data_dir / f for f in files]
+    s.booktool(c, 'hash', *files)

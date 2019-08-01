@@ -1,3 +1,14 @@
+--- #step Index authority entities
+DROP MATERIALIZED VIEW IF EXISTS locid.auth_entity CASCADE;
+CREATE MATERIALIZED VIEW locid.auth_entity AS
+SELECT ant.subject_id AS auth_id, sn.node_uuid AS auth_uuid, sn.node_iri AS auth_iri
+FROM locid.auth_node_triples ant
+JOIN locid.nodes sn ON (ant.subject_id = sn.node_id)
+JOIN locid.nodes pn ON (ant.pred_id = pn.node_id)
+LEFT OUTER JOIN locid.nodes obn ON (ant.object_uuid = obn.node_uuid)
+WHERE pn.node_iri = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+  AND ant.object_uuid = node_uuid('http://www.loc.gov/mads/rdf/v1#Authority');
+
 --- #step Create auth labels
 CREATE TABLE IF NOT EXISTS locid.auth_node_label (
   subject_uuid UUID NOT NULL,
