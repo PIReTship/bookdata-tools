@@ -10,6 +10,7 @@ WHERE pn.node_iri = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
   AND object_uuid = node_uuid('http://id.loc.gov/ontologies/bibframe/Instance');
 CREATE UNIQUE INDEX instance_inst_id_idx ON locid.instance_entity (instance_id);
 CREATE UNIQUE INDEX instance_inst_uuid_idx ON locid.instance_entity (instance_uuid);
+CREATE INDEX instance_inst_iri_idx ON locid.instance_entity (instance_iri);
 
 --- #step Analyze instance IRIs
 --- #notx
@@ -28,6 +29,7 @@ WHERE pn.node_iri = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
   AND object_uuid = node_uuid('http://id.loc.gov/ontologies/bibframe/Work');
 CREATE INDEX work_inst_id_idx ON locid.work_entity (work_id);
 CREATE INDEX work_inst_uuid_idx ON locid.work_entity (work_uuid);
+CREATE INDEX work_inst_iri_idx ON locid.work_entity (work_iri);
 
 --- #step Analyze work IRIs
 --- #notx

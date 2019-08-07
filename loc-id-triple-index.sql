@@ -48,6 +48,44 @@ VACUUM ANALYZE locid.instance_triples;
 --- #notx
 VACUUM ANALYZE locid.instance_literals;
 
+--- #step Extract instance node types
+DROP MATERIALIZED VIEW IF EXISTS locid.instances_node_type;
+CREATE MATERIALIZED VIEW locid.instance_node_type AS
+SELECT DISTINCT subject_uuid, object_uuid
+FROM locid.instance_triples
+WHERE pred_uuid = node_uuid('http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
+CREATE INDEX int_subj_idx ON locid.instance_node_type (subject_uuid);
+CREATE INDEX int_obj_idx ON locid.instance_node_type (object_uuid);
+
+--- #step Analyze instance node types
+--- #notx
+VACUUM ANALYZE locid.instance_node_type;
+
+--- #step Extract work node types
+DROP MATERIALIZED VIEW IF EXISTS locid.work_node_type;
+CREATE MATERIALIZED VIEW locid.work_node_type AS
+SELECT DISTINCT subject_uuid, object_uuid
+FROM locid.work_triples
+WHERE pred_uuid = node_uuid('http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
+CREATE INDEX work_subj_idx ON locid.work_node_type (subject_uuid);
+
+--- #step Analyze work node types
+--- #notx
+VACUUM ANALYZE locid.work_node_type;
+
+--- #step Extract authority node types
+DROP MATERIALIZED VIEW IF EXISTS locid.auth_node_type;
+CREATE MATERIALIZED VIEW locid.auth_node_type AS
+SELECT DISTINCT subject_uuid, object_uuid
+FROM locid.auth_triples
+WHERE pred_uuid = node_uuid('http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
+CREATE INDEX auth_subj_idx ON locid.auth_node_type (subject_uuid);
+CREATE INDEX auth_obj_idx ON locid.auth_node_type (object_uuid);
+
+--- #step Analyze auth node types
+--- #notx
+VACUUM ANALYZE locid.auth_node_type;
+
 --- #step Index well-known nodes
 CREATE TABLE IF NOT EXISTS locid.node_aliases (
   node_alias VARCHAR UNIQUE NOT NULL,

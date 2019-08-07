@@ -9,6 +9,25 @@ LEFT OUTER JOIN locid.nodes obn ON (ant.object_uuid = obn.node_uuid)
 WHERE pn.node_iri = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
   AND ant.object_uuid = node_uuid('http://www.loc.gov/mads/rdf/v1#Authority');
 
+--- #step Extract contributions from works
+--- #allow duplicate_object
+-- This view will map internal contribution node UUIDs to object UUIDs
+-- referencing the 'agent' (contributor).
+CREATE MATERIALIZED VIEW locid.work_contribution AS
+SELECT DISTINCT wt.subject_uuid, wt.object_uuid
+FROM locid.work_triples wt
+  -- we need to check the role
+  JOIN locid.work_triples rt USING (subject_uuid)
+  -- and the type - we want primary contributions
+  JOIN locid.work_node_type tt USING (subject_uuid)
+WHERE wt.pred_uuid = node_uuid('http://id.loc.gov/ontologies/bibframe/agent')
+  AND rt.pred_uuid = node_uuid('http://id.loc.gov/ontologies/bibframe/role')
+  AND rt.object_uuid = node_uuid('http://id.loc.gov/vocabulary/relators/ctb')
+  AND tt.object_uuid = node_uuid('http://id.loc.gov/ontologies/bflc/PrimaryContribution');
+CREATE INDEX wc_subj_idx ON locid.work_contribution (subject_uuid);
+CREATE INDEX wc_obj_idx ON locid.work_contribution (object_uuid);
+ANALYZE locid.work_triples;
+
 --- #step Create auth labels
 CREATE TABLE IF NOT EXISTS locid.auth_node_label (
   subject_uuid UUID NOT NULL,
