@@ -78,7 +78,7 @@ class scope_locid:
     ''')
 
 
-_all_scopes = ['ol', 'gr', 'locid']
+_all_scopes = ['ol', 'gr', 'locmds']
 
 def get_scope(name):
     return globals()[f'scope_{name}']
