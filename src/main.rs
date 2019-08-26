@@ -5,9 +5,10 @@ mod db;
 mod logging;
 mod commands;
 
+use log::*;
 use structopt::StructOpt;
 
-use error::Result;
+use error::{Result, err};
 use logging::LogOpts;
 use commands::*;
 
@@ -16,35 +17,25 @@ use commands::*;
 #[structopt(name="bookdata")]
 struct Opt {
   #[structopt(flatten)]
-  logging: LogOpts,
-
-  #[structopt(subcommand)]
-  command: Command
-}
-
-#[derive(StructOpt, Debug)]
-#[allow(non_camel_case_types)]
-enum Command {
-  /// Output a file with a progress bar
-  pcat(pcat::Options),
-  /// Make a UUID
-  #[structopt(name="make-uuid")]
-  make_uuid(make_uuid::Options),
-  /// Parse a MARC XML file
-  #[structopt(name="parse-marc")]
-  parse_marc(parse_marc::Options),
-  /// Import JSON data
-  #[structopt(name="import-json")]
-  import_json(import_json::Options)
+  logging: LogOpts
 }
 
 fn main() -> Result<()> {
-  let opt = Opt::from_args();
-  opt.logging.init()?;
-  match opt.command {
-    Command::pcat(opts) => pcat::exec(opts),
-    Command::make_uuid(opts) => make_uuid::exec(opts),
-    Command::parse_marc(opts) => parse_marc::exec(opts),
-    Command::import_json(opts) => import_json::exec(opts)
+  let mut app = Opt::clap();
+  let cmds = commands();
+  for cmd in &cmds {
+    app = app.subcommand(cmd.app().clone());
   }
+  let matches = app.get_matches();
+
+  let opt = Opt::from_clap(&matches);
+  opt.logging.init()?;
+  let (sc_name, sc_app) = matches.subcommand();
+  debug!("subcommand name {}", sc_name);
+  for cmd in &cmds {
+    if cmd.name() == sc_name {
+      cmd.run(sc_app.ok_or(err("no options"))?)?
+    }
+  }
+  Ok(())
 }

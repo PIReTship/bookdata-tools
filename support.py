@@ -22,6 +22,7 @@ bdtool = bin_dir / 'bookdata'
 
 numspaces = dict(work=100000000, edition=200000000, rec=300000000,
                  gr_work=400000000, gr_book=500000000,
+                 loc_work=600000000, loc_instance=700000000,
                  isbn=900000000)
 
 def db_url():
@@ -45,6 +46,12 @@ def db_url():
         url += ':' + port
     url += '/' + db
     return url
+
+
+def booktool(c, *args):
+    tool = bin_dir / 'bookdata'
+    tool = os.fspath(tool)
+    sp.run([tool] + list(args), check=True)
 
 
 def psql(c, script, staged=False):
@@ -354,7 +361,8 @@ class SqlScript:
                 _log.info('Failed with acceptable error %s (%s)',
                           e.pgcode, psycopg2.errorcodes.lookup(e.pgcode))
             else:
-                _log.error('%s failed: %s', step.label, e)
+                _log.error('Error in "%s": %s: %s',
+                           step.label, psycopg2.errorcodes.lookup(e.pgcode), e)
                 if e.pgerror:
                     _log.info('Query diagnostics:\n%s', e.pgerror)
                 raise e

@@ -27,8 +27,10 @@ is incomplete and, in a number of cases, incorrect.
     - humanize
 - The Rust compiler (available from Anaconda)
 - `psql` executable on the machine where the import scripts will run
-- 500GB disk space for the database
-- 50GB disk space for data files
+- 2TB disk space for the database
+- 100GB disk space for data files
+
+It is best if you do not store the data files on the same disk as your PostgreSQL database.
 
 It is best if you do not store the data files on the same disk as your PostgreSQL database.
 
@@ -60,6 +62,8 @@ This imports the following data sets:
 
 -   Library of Congress MDSConnect Open MARC Records — get the XML files from <https://www.loc.gov/cds/products/MDSConnect-books_all.html>
     and save them into the `data/LOC` directory.
+-   LoC MDSConnect Name Authorities - get the Combined XML file from <https://www.loc.gov/cds/products/MDSConnect-name_authorities.html>
+    and save it in `data/LOC`.
 -   Virtual Internet Authority File - get the MARC 21 XML data file from <http://viaf.org/viaf/data/> and save it into the `data` directory.
 -   OpenLibrary Dump - get the editions, works, and authors dumps from <https://openlibrary.org/developers/dumps> and save them in `data`.
 -   Amazon Ratings - get the 'ratings only' data for _Books_ from <http://jmcauley.ucsd.edu/data/amazon/> and save it in `data`.
@@ -71,8 +75,10 @@ The import process is scripted with [invoke](http://www.pyinvoke.org).  The firs
 the import tasks:
 
     invoke loc.import-books
+    invoke loc.import-names
     invoke viaf.import
     invoke openlib.import-authors openlib.import-works openlib.import-editions
+    invoke goodreads.import
     invoke ratings.import-az
     invoke ratings.import-bx
 
@@ -80,12 +86,16 @@ Once all the data is imported, you can begin to run the indexing and linking tas
 
     invoke viaf.index
     invoke loc.index-books
+    invoke loc.index-names
     invoke openlib.index
+    invoke goodreads.index-books
     invoke analyze.cluster --scope loc
     invoke analyze.cluster --scope ol
+    invoke analyze.cluster --scope gr
     invoke analyze.cluster
     invoke ratings.index
-    invoke analyze.book-authors
+    invoke goodreads.index-ratings
+    invoke analyze.authors
 
 The tasks keep track of the import status in an `import_status` table, and will
 keep you from running tasks in the wrong order.
@@ -100,3 +110,5 @@ The `-schema` files contain the base schemas for the data:
 - `viaf-schema.sql` — VIAF tables
 - `az-schema.sql` — Amazon rating schema
 - `bx-schema.sql` — BookCrossing rating data schema
+- `gr-schema.sql` — GoodReads data schema
+- `loc-ids-schema.sql` - LOC ID schemas

@@ -5,7 +5,7 @@ import os
 import logging
 
 from invoke import task, Collection
-import ratings, support, viaf, openlib, loc, analyze
+import ratings, support, viaf, openlib, loc, analyze, goodreads
 from colorama import Fore as F, Back as B, Style as S
 
 _log = logging.getLogger(__package__)
@@ -58,6 +58,13 @@ ns.add_collection(viaf)
 ns.add_collection(openlib)
 ns.add_collection(loc)
 ns.add_collection(analyze)
+ns.add_collection(goodreads)
+
+@task(ratings.record_files, viaf.record_files, openlib.record_files,
+      loc.record_id_files, loc.record_mds_files, goodreads.record_files)
+def record_files(c):
+    "Record file hashes in the database"
+    pass
 
 if 'DB_URL' not in os.environ and 'PGDATABASE' in os.environ:
         dbu = support.db_url()

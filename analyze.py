@@ -38,7 +38,7 @@ class scope_ol:
     prereq = 'ol-index'
 
     node_query = dedent('''
-        SELECT DISTINCT isbn_id, MIN(book_code) AS record
+        SELECT isbn_id, MIN(book_code) AS record
         FROM ol.isbn_link GROUP BY isbn_id
     ''')
 
@@ -47,7 +47,38 @@ class scope_ol:
         FROM ol.isbn_link l JOIN ol.isbn_link r ON (l.book_code = r.book_code)
     ''')
 
-_all_scopes = ['locmds', 'ol']
+
+class scope_gr:
+    name = 'GoodReads'
+    prereq = 'gr-index-books'
+
+    node_query = dedent('''
+        SELECT DISTINCT isbn_id, MIN(book_code) AS record
+        FROM gr.book_isbn GROUP BY isbn_id
+    ''')
+
+    edge_query = dedent('''
+        SELECT DISTINCT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
+        FROM gr.book_isbn l JOIN gr.book_isbn r ON (l.book_code = r.book_code)
+    ''')
+
+
+class scope_locid:
+    name = 'LOC'
+    prereq = 'loc-id-book-index'
+
+    node_query = dedent('''
+        SELECT isbn_id, MIN(book_code) AS record
+        FROM locid.isbn_link GROUP BY isbn_id
+    ''')
+
+    edge_query = dedent('''
+        SELECT DISTINCT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
+        FROM locid.isbn_link l JOIN locid.isbn_link r ON (l.book_code = r.book_code)
+    ''')
+
+
+_all_scopes = ['ol', 'gr', 'locmds']
 
 def get_scope(name):
     return globals()[f'scope_{name}']
@@ -199,13 +230,15 @@ def cluster(c, scope=None, force=False):
 
 
 @task(s.init)
-def book_authors(c, force=False):
-    "Analyze book authors"
+def book_author_names(c, force=False):
+    "Analyze book authors (name-based linking)"
     s.check_prereq('az-index')
     s.check_prereq('bx-index')
     s.check_prereq('viaf-index')
     s.check_prereq('loc-mds-book-index')
-    s.start('book-authors', force=force)
+    s.check_prereq('gr-index-ratings')
+    s.check_prereq('cluster')
+    s.start('book-author-names', force=force)
     _log.info('Analzye book authors')
     s.psql(c, 'author-info.sql', True)
-    s.finish('book-authors')
+    s.finish('book-author-names')

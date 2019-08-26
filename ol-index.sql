@@ -106,6 +106,12 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS ol.edition_isbn13
 CREATE MATERIALIZED VIEW IF NOT EXISTS ol.edition_asin
   AS SELECT edition_id, jsonb_array_elements_text(edition_data#>'{identifiers,amazon}') AS asin
      FROM ol.edition;
+CREATE MATERIALIZED VIEW IF NOT EXISTS ol.edition_lccn
+  AS SELECT edition_id, jsonb_array_elements_text(edition_data->'lccn') AS lccn
+     FROM ol.edition;
+CREATE MATERIALIZED VIEW IF NOT EXISTS ol.edition_gr_bid
+  AS SELECT edition_id, jsonb_array_elements_text(edition_data#>'{identifiers,goodreads}') AS gr_book_rid
+     FROM ol.edition;
 
 --- #step Integrate ISBN/ASIN identifiers
 DROP TABLE IF EXISTS ol.edition_isbn CASCADE;
@@ -120,8 +126,7 @@ WITH
         FROM ol.edition)
 INSERT INTO ol.edition_isbn
   SELECT edition_id, isbn
-  FROM (SELECT edition_id,
-          regexp_replace(substring(upper(isbn) from '^\s*(?:(?:ISBN)?[:;z]?\s*)?([0-9 -]+[0-9X])'), '[- ]', '') AS isbn
+  FROM (SELECT edition_id, extract_isbn(isbn) AS isbn
         FROM ol_edition_isbn10) isbns
   WHERE isbn IS NOT NULL AND char_length(isbn) IN (10,13);
 
@@ -131,8 +136,7 @@ WITH
         FROM ol.edition)
 INSERT INTO ol.edition_isbn
   SELECT edition_id, isbn
-  FROM (SELECT edition_id,
-          regexp_replace(substring(upper(isbn) from '^\s*(?:(?:ISBN)?[:;z]?\s*)?([0-9 -]+[0-9X])'), '[- ]', '') AS isbn
+  FROM (SELECT edition_id, extract_isbn(isbn) AS isbn
         FROM ol_edition_isbn13) isbns
   WHERE isbn IS NOT NULL AND char_length(isbn) IN (10,13);
 
