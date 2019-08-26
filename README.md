@@ -99,16 +99,3 @@ Once all the data is imported, you can begin to run the indexing and linking tas
 
 The tasks keep track of the import status in an `import_status` table, and will
 keep you from running tasks in the wrong order.
-
-## Setting Up Schemas
-
-The `-schema` files contain the base schemas for the data:
-
-- `common-schema.sql` — common tables
-- `loc-mds-schema.sql` — Library of Congress catalog tables
-- `ol-schema.sql` — OpenLibrary book data
-- `viaf-schema.sql` — VIAF tables
-- `az-schema.sql` — Amazon rating schema
-- `bx-schema.sql` — BookCrossing rating data schema
-- `gr-schema.sql` — GoodReads data schema
-- `loc-ids-schema.sql` - LOC ID schemas
