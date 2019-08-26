@@ -8,6 +8,10 @@ JOIN locid.nodes pn ON (ant.pred_id = pn.node_id)
 LEFT OUTER JOIN locid.nodes obn ON (ant.object_uuid = obn.node_uuid)
 WHERE pn.node_iri = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
   AND ant.object_uuid = node_uuid('http://www.loc.gov/mads/rdf/v1#Authority');
+CREATE INDEX auth_entity_idx ON locid.auth_entity (auth_id);
+CREATE INDEX auth_entity_uuidx ON locid.auth_entity (auth_uuid);
+CREATE INDEX auth_entity_iri_idx ON locid.auth_entity (auth_iri);
+ANALYZE locid.auth_entity;
 
 --- #step Extract contributions from works
 --- #allow duplicate_object
