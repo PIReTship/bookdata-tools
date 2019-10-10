@@ -1,4 +1,6 @@
+import os
 import sys
+from pathlib import Path
 import pathlib
 import logging
 
@@ -7,6 +9,11 @@ _simple_format = logging.Formatter('{asctime} [{levelname:7s}] {name} {message}'
                                    style='{')
 
 _initialized = False
+
+data_dir = Path('data')
+tgt_dir = Path('target')
+bin_dir = tgt_dir / 'release'
+bdtool = bin_dir / 'bookdata'
 
 
 def setup(debug=False):

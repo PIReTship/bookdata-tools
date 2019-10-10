@@ -1,19 +1,10 @@
-CREATE TABLE IF NOT EXISTS import_status (
-    step VARCHAR PRIMARY KEY,
-    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    finished_at TIMESTAMP NULL
-);
-
-CREATE TABLE IF NOT EXISTS source_file (
-  filename VARCHAR NOT NULL PRIMARY KEY,
-  checksum VARCHAR NOT NULL
-);
-
+--- #step ISBN ID storage
 CREATE TABLE IF NOT EXISTS isbn_id (
   isbn_id SERIAL PRIMARY KEY,
   isbn VARCHAR NOT NULL UNIQUE
 );
 
+--- #step Functions for book code numberspaces
 CREATE OR REPLACE FUNCTION bc_of_work(wk INTEGER) RETURNS INTEGER
 AS $$ SELECT $1 + 100000000 $$
 LANGUAGE SQL
@@ -47,7 +38,7 @@ AS $$ SELECT $1 + 900000000 $$
 LANGUAGE SQL
 IMMUTABLE STRICT PARALLEL SAFE;
 
--- ExtractISBN function
+--- #step ExtractISBN function
 CREATE OR REPLACE FUNCTION extract_isbn(raw_isbn VARCHAR) RETURNS VARCHAR
 LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE COST 5
 AS $$
@@ -56,8 +47,7 @@ SELECT upper(regexp_replace(substring(regexp_replace(raw_isbn, '[^[:alnum:]_ -]'
 ), '[- ]', ''))
 $$;
 
-
--- Node IRIs to UUIDs
+--- #step Node IRI to UUID conversion
 CREATE OR REPLACE FUNCTION node_uuid(iri VARCHAR) RETURNS UUID
 LANGUAGE SQL IMMUTABLE PARALLEL SAFE
 AS $$
