@@ -32,7 +32,7 @@ from bookdata import script_log
 from bookdata import db
 
 opts = docopt(__doc__)
-_log = script_log(__file__, opts.get('--verbose'))
+_log = script_log(__name__, opts.get('--verbose'))
 
 
 script_file = Path(opts.get('SCRIPT'))

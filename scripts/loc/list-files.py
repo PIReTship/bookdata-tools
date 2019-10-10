@@ -11,7 +11,7 @@ import html5lib
 from bookdata import script_log
 from docopt import docopt
 
-_log = script_log(__file__)
+_log = script_log(__name__)
 
 args = docopt(__doc__)
 

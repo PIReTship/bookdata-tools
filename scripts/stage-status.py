@@ -15,7 +15,7 @@ import sys
 from docopt import docopt
 from bookdata import db, script_log
 
-_log = script_log(__file__)
+_log = script_log(__name__)
 opts = docopt(__doc__)
 
 timestamps = opts.get('--timestamps')

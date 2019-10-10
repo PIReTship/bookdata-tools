@@ -38,14 +38,13 @@ def script_log(name, debug=False):
     Initialize logging and get a logger for a script.
 
     Args:
-        name(str): The ``__file__`` of the script being run.
+        name(str): The ``__name__`` of the script being run.
         debug(bool): whether to enable debug logging to the console
     """
 
     if not _initialized:
         setup(debug)
 
-    name = pathlib.Path(name).stem
     logger = logging.getLogger(name)
 
     return logger

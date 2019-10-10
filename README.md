@@ -84,6 +84,11 @@ Individual steps can be run with their corresponding `.dvc` files.
 
 The import code consists of Python, Rust, and SQL code, wired together with DVC.
 
+### Python Scripts
+
+Python scripts live under `scripts`, as a Python package.  They should not be launched directly, but
+rather via `run.py`, which will make sure the environment is set up properly for them.
+
 ### DVC Usage and Stage Files
 
 In order to allow DVC to be aware of current database state, we use a little bit of an unconventional
