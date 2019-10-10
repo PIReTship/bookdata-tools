@@ -1,8 +1,10 @@
 """
 Usage:
-    stage-status.py [-o FILE] STAGE
+    stage-status.py [options] STAGE
 
 Options:
+    --timestamps
+        Include timestamps in stage status.
     -o FILE
         Write output to FILE.
     STAGE
@@ -16,6 +18,7 @@ from bookdata import db, script_log
 _log = script_log(__file__)
 opts = docopt(__doc__)
 
+timestamps = opts.get('--timestamps')
 
 stage = opts.get('STAGE')
 out = opts.get('-o', None)
@@ -40,7 +43,8 @@ with db.connect() as dbc, dbc.cursor() as cur:
 
     _log.info('stage %s finished at %s', stage, end)
     print('STAGE', stage, file=sf)
-    print('START', start, file=sf)
+    if timestamps:
+        print('START', start, file=sf)
 
     cur.execute('''
         SELECT filename, checksum
@@ -52,7 +56,8 @@ with db.connect() as dbc, dbc.cursor() as cur:
     for fn, fh in cur:
         print('SOURCE', fn, fh, file=sf)
 
-    print('FINISH', end, file=sf)
+    if timestamps:
+        print('FINISH', end, file=sf)
     if hash:
         print('HASH', hash, file=sf)
 
