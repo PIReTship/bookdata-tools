@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS source_file (
 CREATE TABLE IF NOT EXISTS stage_file (
   stage_name VARCHAR NOT NULL REFERENCES stage_status,
   filename VARCHAR NOT NULL REFERENCES source_file,
+  checksum VARCHAR NULL,
   PRIMARY KEY (stage_status, source_file)
 );
 

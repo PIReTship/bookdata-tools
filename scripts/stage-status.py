@@ -53,9 +53,9 @@ with db.connect() as dbc:
             print('START', start, file=sf)
 
         cur.execute('''
-            SELECT filename, checksum
-            FROM source_file
-            JOIN stage_file USING (filename)
+            SELECT filename, COALESCE(link.checksum, src.checksum)
+            FROM source_file src
+            JOIN stage_file link USING (filename)
             WHERE stage_name = %s
             ORDER BY filename
         ''', [stage])
