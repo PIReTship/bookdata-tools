@@ -7,9 +7,6 @@ ALTER TABLE gr.raw_work ADD CONSTRAINT gr_raw_work_pk PRIMARY KEY (gr_work_rid);
 --- #step Add author PK
 --- #allow invalid_table_definition
 ALTER TABLE gr.raw_author ADD CONSTRAINT gr_raw_author_pk PRIMARY KEY (gr_author_rid);
---- #step Add interaction PK
---- #allow invalid_table_definition
-ALTER TABLE gr.raw_interaction ADD CONSTRAINT gr_raw_interaction_pk PRIMARY KEY (gr_interaction_rid);
 
 --- #step Extract work identifiers
 CREATE TABLE IF NOT EXISTS gr.work_ids
@@ -69,3 +66,9 @@ CREATE INDEX book_isbn_code_idx ON gr.book_isbn (book_code);
 ALTER TABLE gr.book_isbn ADD CONSTRAINT gr_book_isbn_book_fk FOREIGN KEY (gr_book_id) REFERENCES gr.book_ids (gr_book_id);
 ALTER TABLE gr.book_isbn ADD CONSTRAINT gr_book_isbn_isbn_fk FOREIGN KEY (isbn_id) REFERENCES isbn_id (isbn_id);
 ANALYZE gr.book_isbn;
+
+--- #step Save stage deps
+INSERT INTO stage_dep (stage_name, dep_name, dep_key)
+SELECT 'gr-index-books', stage_name, stage_key
+FROM stage_status
+WHERE stage_name IN ('gr-books', 'gr-works', 'gr-authors');

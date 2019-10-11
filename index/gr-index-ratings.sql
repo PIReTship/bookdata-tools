@@ -1,3 +1,7 @@
+--- #step Add interaction PK
+--- #allow invalid_table_definition
+ALTER TABLE gr.raw_interaction ADD CONSTRAINT gr_raw_interaction_pk PRIMARY KEY (gr_interaction_rid);
+
 --- #step Index book clusters
 CREATE MATERIALIZED VIEW IF NOT EXISTS gr.book_cluster
   AS SELECT DISTINCT gr_book_id, cluster
