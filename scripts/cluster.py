@@ -27,8 +27,9 @@ from bookdata import db, script_log
 _log = script_log(__name__)
 
 
-class scope_locmds:
+class scope_loc_mds:
     name = 'LOC-MDS'
+    schema = 'locmds'
 
     node_query = dedent('''
         SELECT isbn_id, MIN(bc_of_loc_rec(rec_id)) AS record
@@ -43,6 +44,7 @@ class scope_locmds:
 
 class scope_ol:
     name = 'OpenLibrary'
+    schema = 'ol'
 
     node_query = dedent('''
         SELECT isbn_id, MIN(book_code) AS record
@@ -57,6 +59,7 @@ class scope_ol:
 
 class scope_gr:
     name = 'GoodReads'
+    schema = 'gr'
 
     node_query = dedent('''
         SELECT DISTINCT isbn_id, MIN(book_code) AS record
@@ -69,8 +72,9 @@ class scope_gr:
     ''')
 
 
-class scope_locid:
+class scope_loc_id:
     name = 'LOC'
+    schema = 'locid'
 
     node_query = dedent('''
         SELECT isbn_id, MIN(book_code) AS record
@@ -83,11 +87,12 @@ class scope_locid:
     ''')
 
 
-_all_scopes = ['ol', 'gr', 'locmds']
+_all_scopes = ['ol', 'gr', 'loc-mds']
 
 
 def get_scope(name):
-    return globals()[f'scope_{name}']
+    n = name.replace('-', '_')
+    return globals()[f'scope_{n}']
 
 
 def cluster_isbns(isbn_recs, edges):
@@ -142,20 +147,21 @@ def _make_clusters(clusters, ls, rs):
 
 
 def _import_clusters(dbc, schema, frame):
-    schema_i = sql.Identifier(schema)
-    _log.info('creating cluster table')
-    cur.execute(sql.SQL('DROP TABLE IF EXISTS {}.isbn_cluster CASCADE').format(schema_i))
-    cur.execute(sql.SQL('''
-        CREATE TABLE {}.isbn_cluster (
-            isbn_id INTEGER NOT NULL,
-            cluster INTEGER NOT NULL
-        )
-    ''').format(schema_i))
-    _log.info('loading %d clusters into %s.isbn_cluster', len(frame), schema)
-    db.save_table(dbc, sql.SQL('{}.isbn_cluster').format(schema_i), frame)
-    cur.execute(sql.SQL('ALTER TABLE {}.isbn_cluster ADD PRIMARY KEY (isbn_id)').format(schema_i))
-    cur.execute(sql.SQL('CREATE INDEX isbn_cluster_idx ON {}.isbn_cluster (cluster)').format(schema_i))
-    cur.execute(sql.SQL('ANALYZE {}.isbn_cluster').format(schema_i))
+    with dbc.cursor() as cur:
+        schema_i = sql.Identifier(schema)
+        _log.info('creating cluster table')
+        cur.execute(sql.SQL('DROP TABLE IF EXISTS {}.isbn_cluster CASCADE').format(schema_i))
+        cur.execute(sql.SQL('''
+            CREATE TABLE {}.isbn_cluster (
+                isbn_id INTEGER NOT NULL,
+                cluster INTEGER NOT NULL
+            )
+        ''').format(schema_i))
+        _log.info('loading %d clusters into %s.isbn_cluster', len(frame), schema)
+        db.save_table(dbc, sql.SQL('{}.isbn_cluster').format(schema_i), frame)
+        cur.execute(sql.SQL('ALTER TABLE {}.isbn_cluster ADD PRIMARY KEY (isbn_id)').format(schema_i))
+        cur.execute(sql.SQL('CREATE INDEX isbn_cluster_idx ON {}.isbn_cluster (cluster)').format(schema_i))
+        cur.execute(sql.SQL('ANALYZE {}.isbn_cluster').format(schema_i))
 
 
 def _hash_frame(df):
@@ -171,7 +177,7 @@ def cluster(scope, txout):
         _log.info('preparing to cluster scope %s', scope)
         if scope:
             step = f'{scope}-cluster'
-            schema = scope
+            schema = get_scope(scope).schema
             scopes = [scope]
         else:
             step = 'cluster'
@@ -204,7 +210,7 @@ def cluster(scope, txout):
                       number(len(isbn_recs)), number(len(isbn_edges)))
             loc_clusters = cluster_isbns(isbn_recs, isbn_edges)
             _log.info('saving cluster records to database')
-            _import_clusters(db, schema, loc_clusters)
+            _import_clusters(dbc, schema, loc_clusters)
 
             c_hash = _hash_frame(loc_clusters)
             print('WRITE CLUSTERS', c_hash, file=txout)
