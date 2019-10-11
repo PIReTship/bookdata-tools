@@ -94,6 +94,25 @@ def start_stage(cur, stage):
     cur.execute('DELETE FROM stage_file WHERE stage_name = %s', [stage])
 
 
+def record_file(cur, file, hash, stage=None):
+    """
+    Record a file and optionally associate it with a stage.
+    """
+    if hasattr(cur, 'cursor'):
+        # this is a connection
+        with cur, cur.cursor() as c:
+            stage_file(c, stage)
+    _log.info('recording checksum %s for file %s', hash, file)
+    cur.execute("""
+        INSERT INTO source_file (filename, checksum)
+        VALUES (%(file)s, %(hash)s)
+        ON CONFLICT (filename)
+        DO UPDATE SET checksum = %(hash)s, reg_time = NOW()
+        """, {'file': file, 'hash': hash})
+    if stage is not None:
+        cur.execute("INSERT INTO stage_file (stage_name, filename) VALUES (%s, %s)", [stage, file])
+
+
 def finish_stage(cur, stage, key=None):
     if hasattr(cur, 'cursor'):
         # this is a connection
