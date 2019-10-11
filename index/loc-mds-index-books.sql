@@ -85,7 +85,7 @@ CREATE INDEX IF NOT EXISTS book_rec_isbn_rec_idx ON locmds.book_rec_isbn (rec_id
 CREATE INDEX IF NOT EXISTS book_rec_isbn_isbn_idx ON locmds.book_rec_isbn (isbn_id);
 ANALYZE locmds.book_rec_isbn;
 
--- Extract authors
+--- #step Extract authors
 CREATE MATERIALIZED VIEW IF NOT EXISTS locmds.book_author_name
   AS SELECT rec_id, regexp_replace(contents, '\W+$', '') AS name
   FROM locmds.book_marc_field
@@ -93,10 +93,16 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS locmds.book_author_name
 CREATE INDEX IF NOT EXISTS book_author_name_rec_idx ON locmds.book_author_name (rec_id);
 CREATE INDEX IF NOT EXISTS book_author_name_name_idx ON locmds.book_author_name (name);
 
--- Extract publication years
+--= #step Extract publication years
 CREATE MATERIALIZED VIEW IF NOT EXISTS locmds.book_pub_year
   AS SELECT rec_id, substring(contents from '(\d\d\d\d)') AS pub_year
   FROM locmds.book_marc_field
   WHERE tag = '260' AND sf_code = 'c' AND substring(contents from '(\d\d\d\d)') IS NOT NULL;
 CREATE INDEX IF NOT EXISTS book_pub_year_rec_idx ON locmds.book_pub_year (rec_id);
 ANALYZE locmds.book_pub_year;
+
+--- #step Record step dependencies
+INSERT INTO stage_dep (stage_name, dep_name, dep_key)
+SELECT 'loc-mds-index-books', stage_name, stage_key
+FROM stage_status
+WHERE stage_name = 'loc-mds-books';
