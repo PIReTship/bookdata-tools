@@ -26,7 +26,7 @@ its various parts together.
     - numba
     - colorama
     - chromalog
-    - humanize
+    - natural
     - dvc
 - The Rust compiler (available from Anaconda)
 - 2TB disk space for the database

@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from datetime import timedelta
 from typing import NamedTuple, List
 from docopt import docopt
+from natural.date import compress as compress_date
 
 from more_itertools import peekable
 import psycopg2, psycopg2.errorcodes
@@ -281,6 +282,7 @@ class SqlScript:
             dbc: the database connection.
             transcript: a file to receive the run transcript.
         """
+        all_st = time.perf_counter()
         for step in self.chunks:
             start = time.perf_counter()
             _log.info('Running ‘%s’', step.label)
@@ -300,7 +302,11 @@ class SqlScript:
 
             elapsed = time.perf_counter() - start
             elapsed = timedelta(seconds=elapsed)
-            _log.info('Finished ‘%s’ in %s', step.label, elapsed)
+            print('CHUNK ELAPSED', elapsed, file=transcript)
+            _log.info('Finished ‘%s’ in %s', step.label, compress_date(elapsed))
+        elapsed = time.perf_counter() - all_st
+        elasped = timedelta(seconds=elapsed)
+        _log.info('Script completed in %s', compress_date(elapsed))
 
     def describe(self):
         for step in self.chunks:
@@ -318,6 +324,7 @@ class SqlScript:
                     print('STMT', describe_statement(sql), file=transcript)
                 cur.execute(str(sql))
                 elapsed = time.perf_counter() - start
+                elapsed = timedelta(seconds=elapsed)
                 rows = cur.rowcount
                 if transcript is not None:
                     print('ELAPSED', elapsed, file=transcript)
@@ -325,10 +332,10 @@ class SqlScript:
                     if transcript is not None:
                         print('ROWS', rows, file=transcript)
                     _log.info('finished %s in %s (%d rows)', describe_statement(sql),
-                              timedelta(seconds=elapsed), rows)
+                              compress_date(elapsed), rows)
                 else:
                     _log.info('finished %s in %s (%d rows)', describe_statement(sql),
-                              timedelta(seconds=elapsed), rows)
+                              compress_date(elapsed), rows)
             if commit:
                 dbc.commit()
         except psycopg2.Error as e:

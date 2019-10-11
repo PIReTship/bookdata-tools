@@ -34,7 +34,6 @@ from bookdata import db
 opts = docopt(__doc__)
 _log = script_log(__name__, opts.get('--verbose'))
 
-
 script_file = Path(opts.get('SCRIPT'))
 
 tfile = opts.get('-T', None)

@@ -5,7 +5,7 @@ import gzip
 import threading
 from textwrap import dedent
 from functools import reduce
-from humanize import naturalsize, intcomma
+from natural.number import number
 from psycopg2 import sql
 
 import pandas as pd
@@ -140,7 +140,7 @@ def cluster_isbns(isbn_recs, edges):
     iters = _make_clusters(clusters, edges.left_ino.values, edges.right_ino.values)
     isbns = isbns.reset_index(name='cluster')
     _log.info('produced %s clusters in %d iterations',
-              intcomma(isbns.cluster.nunique()), iters)
+              number(isbns.cluster.nunique()), iters)
     return isbns.loc[:, ['isbn_id', 'cluster']]
 
 
@@ -222,7 +222,7 @@ def cluster(c, scope=None, force=False):
         isbn_edges = pd.concat(isbn_edges, ignore_index=True)
 
         _log.info('clustering %s ISBN records with %s edges',
-                  intcomma(len(isbn_recs)), intcomma(len(isbn_edges)))
+                  number(len(isbn_recs)), number(len(isbn_edges)))
         loc_clusters = cluster_isbns(isbn_recs, isbn_edges)
         _log.info('saving cluster records to database')
         _import_clusters(db, schema, loc_clusters)
