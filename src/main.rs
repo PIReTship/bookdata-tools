@@ -2,6 +2,8 @@ mod error;
 mod cleaning;
 mod tsv;
 mod db;
+mod io;
+mod stage;
 mod logging;
 mod commands;
 

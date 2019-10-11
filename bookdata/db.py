@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS source_file (
 
 CREATE TABLE IF NOT EXISTS stage_file (
   stage_name VARCHAR NOT NULL REFERENCES stage_status,
-  filename VARCHAR NOT NULL REFERENCES source_file
+  filename VARCHAR NOT NULL REFERENCES source_file,
+  PRIMARY KEY (stage_status, source_file)
 );
 
 INSERT INTO stage_status (stage_name, started_at, finished_at, stage_key)

@@ -8,10 +8,13 @@ use log::*;
 use structopt::StructOpt;
 use flate2::bufread::MultiGzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
+use sha1::Sha1;
 
+use crate::io::{HashRead, HashWrite};
 use crate::cleaning::{write_pgencoded, clean_json};
 use crate::tsv::split_first;
 use crate::db::{DbOpts, CopyRequest};
+use crate::stage::StageOpts;
 use crate::error::{Result, err};
 use super::Command;
 
@@ -40,6 +43,9 @@ enum ImportType {
 pub struct ImportJson {
   #[structopt(flatten)]
   db: DbOpts,
+
+  #[structopt(flatten)]
+  stage: StageOpts,
 
   /// Truncate the table before importing
   #[structopt(long="truncate")]
@@ -126,13 +132,18 @@ impl Command for ImportJson {
   fn exec(self) -> Result<()> {
     let dbo = self.db.default_schema(self.dataset.schema());
 
+    let dbc = dbo.open()?;
+    self.stage.begin_stage(&dbc)?;
+
     let infn = &self.dataset.info().infile;
     info!("reading from {:?}", infn);
     let fs = File::open(infn)?;
     let pb = ProgressBar::new(fs.metadata()?.len());
     pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
 
-    let pbr = pb.wrap_read(fs);
+    let mut in_hash = Sha1::new();
+    let pbr = HashRead::create(fs, &mut in_hash);
+    let pbr = pb.wrap_read(pbr);
     let pbr = BufReader::new(pbr);
     let gzf = MultiGzDecoder::new(pbr);
     let mut bfs = BufReader::new(gzf);
@@ -144,10 +155,23 @@ impl Command for ImportJson {
     let req = req.with_columns(&cref);
     let req = req.truncate(self.truncate);
     let out = req.open()?;
-    let mut out = BufWriter::new(out);
+    let mut out_hash = Sha1::new();
+    let hout = HashWrite::create(out, &mut out_hash);
+    let mut buf_out = BufWriter::new(hout);
 
-    let n = self.dataset.import(&mut bfs, &mut out)?;
-    info!("loaded {} records", n);
+    let n = self.dataset.import(&mut bfs, &mut buf_out)?;
+    drop(buf_out);  // close the output file
+
+    let in_hash = in_hash.hexdigest();
+    let out_hash = out_hash.hexdigest();
+    let mut t_out = self.stage.open_transcript()?;
+    info!("loaded {} records with hash {}", n, out_hash);
+    writeln!(&mut t_out, "SOURCE {:?}", infn)?;
+    writeln!(&mut t_out, "SHASH {}", in_hash)?;
+    writeln!(&mut t_out, "HASH {}", out_hash)?;
+
+    self.stage.record_file(&dbc, infn, &in_hash)?;
+    self.stage.end_stage(&dbc, &Some(out_hash))?;
     Ok(())
   }
 }
