@@ -113,3 +113,18 @@ our memory of the import in the Git repository.
 The file `init.status` is an initial check for database initialization, and forces the creation of the
 meta-structures used for tracking stage status.  Everything touching the database should depend on it,
 directly or indirectly.
+
+### In-Database Status Tracking
+
+Import steps are tracked in the `stage_status` table in the database.  For completed stages, this can
+include a key (checksum, UUID, or other identifier) to identify a 'version' of the stage.  Stages
+can also have dependencies, which are solely used for computing the status of a stage (all actual
+dependency relationships are handled by DVC):
+
+- `stage_deps` tracks stage-to-stage dependencies, to say that one stage used another as input.
+- `stage_file` tracks stage-to-file dependencies, to say that a stage used a file as input.
+
+The `source_file` table tracks input file checksums.
+
+Projects using the book database can also use `stage_status` to obtain data version information, to
+see if they are up-to-date.

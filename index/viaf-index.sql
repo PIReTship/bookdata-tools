@@ -58,3 +58,9 @@ CREATE INDEX IF NOT EXISTS gender_rec_idx ON viaf.author_gender (rec_id);
 
 -- CREATE INDEX viaf_gender_id_idx ON viaf_author_gender (viaf_au_id);
 -- ALTER TABLE viaf_author_gender ADD CONSTRAINT viaf_au_id_fk FOREIGN KEY (viaf_au_id) REFERENCES viaf_author;
+
+--- #step Record index dependencies
+INSERT INTO stage_dep (stage_name, dep_name, dep_key)
+SELECT 'viaf-index', stage_name, stage_key
+FROM stage_status
+WHERE stage_name = 'viaf';

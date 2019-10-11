@@ -54,8 +54,8 @@ if opts.get('--dry-run'):
 else:
     with tfile.open('w') as txf, db.connect() as dbc:
         with dbc, dbc.cursor() as cur:
-            db.start_stage(cur, stage)
-            db.save_file(cur, script_file, stage)
+            db.begin_stage(cur, stage)
+            db.hash_and_record_file(cur, script_file, stage)
         script.execute(dbc, transcript=txf)
         with dbc, dbc.cursor() as cur:
-            db.finish_stage(cur, stage)
+            db.end_stage(cur, stage)

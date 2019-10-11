@@ -4,6 +4,7 @@ import re
 import time
 import logging
 import hashlib
+import threading
 from pathlib import Path
 from contextlib import contextmanager
 from datetime import timedelta
@@ -11,8 +12,11 @@ from typing import NamedTuple, List
 from docopt import docopt
 from natural.date import compress as compress_date
 
+import pandas as pd
+
 from more_itertools import peekable
 import psycopg2, psycopg2.errorcodes
+from psycopg2 import sql
 import sqlparse
 
 _log = logging.getLogger(__name__)
@@ -56,7 +60,7 @@ def connect():
         conn.close()
 
 
-def save_file(cur, path, stage=None):
+def hash_and_record_file(cur, path, stage=None):
     h = hashlib.md5()
     with open(path, 'rb') as f:
         data = f.read(8192 * 4)
@@ -79,11 +83,11 @@ def save_file(cur, path, stage=None):
         ''', [stage, path])
 
 
-def start_stage(cur, stage):
+def begin_stage(cur, stage):
     if hasattr(cur, 'cursor'):
         # this is a connection
         with cur, cur.cursor() as c:
-            start_stage(c, stage)
+            return begin_stage(c, stage)
     _log.info('starting or resetting stage %s', stage)
     cur.execute('''
         INSERT INTO stage_status (stage_name)
@@ -101,7 +105,7 @@ def record_file(cur, file, hash, stage=None):
     if hasattr(cur, 'cursor'):
         # this is a connection
         with cur, cur.cursor() as c:
-            stage_file(c, stage)
+            return record_file(c, stage)
     _log.info('recording checksum %s for file %s', hash, file)
     cur.execute("""
         INSERT INTO source_file (filename, checksum)
@@ -113,11 +117,11 @@ def record_file(cur, file, hash, stage=None):
         cur.execute("INSERT INTO stage_file (stage_name, filename) VALUES (%s, %s)", [stage, file])
 
 
-def finish_stage(cur, stage, key=None):
+def end_stage(cur, stage, key=None):
     if hasattr(cur, 'cursor'):
         # this is a connection
         with cur, cur.cursor() as c:
-            finish_stage(c, stage, key)
+            return end_stage(c, stage, key)
     _log.info('finishing stage %s', stage)
     cur.execute('''
         UPDATE stage_status
@@ -371,3 +375,51 @@ class SqlScript:
                     _log.info('Query diagnostics:\n%s', e.pgerror)
                 raise e
 
+
+class _LoadThread(threading.Thread):
+    """
+    Thread worker for copying database results to a stream we can read.
+    """
+    def __init__(self, dbc, query, dir='out'):
+        super().__init__()
+        self.database = dbc
+        self.query = query
+        rfd, wfd = os.pipe()
+        self.reader = os.fdopen(rfd)
+        self.writer = os.fdopen(wfd, 'w')
+        self.chan = self.writer if dir == 'out' else self.reader
+
+    def run(self):
+        with self.chan, self.database.cursor() as cur:
+            cur.copy_expert(self.query, self.chan)
+
+
+def load_table(dbc, query):
+    """
+    Load a query into a Pandas data frame.
+
+    This is substantially more efficient than Pandas ``read_sql``, because it directly
+    streams CSV data from the database instead of going through SQLAlchemy.
+    """
+    cq = sql.SQL('COPY ({}) TO STDOUT WITH CSV HEADER')
+    q = sql.SQL(query)
+    thread = _LoadThread(dbc, cq.format(q))
+    thread.start()
+    data = pd.read_csv(thread.reader)
+    thread.join()
+    return data
+
+
+def save_table(dbc, table, data: pd.DataFrame):
+    """
+    Save a table from a Pandas data frame.
+
+    This is substantially more efficient than Pandas ``read_sql``, because it directly
+    streams CSV data from the database instead of going through SQLAlchemy.
+    """
+    cq = sql.SQL('COPY {} FROM STDIN WITH CSV')
+    thread = _LoadThread(dbc, cq.format(table), 'in')
+    thread.start()
+    data.to_csv(thread.writer, header=False, index=False)
+    thread.writer.close()
+    thread.join()

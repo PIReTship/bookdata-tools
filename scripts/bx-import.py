@@ -48,7 +48,7 @@ with db.connect() as dbc:
     dh = hashlib.md5()
     # with dbc encapsulates a transaction
     with dbc, dbc.cursor() as cur:
-        db.start_stage(cur, 'bx-ratings')
+        db.begin_stage(cur, 'bx-ratings')
         db.record_file(cur, src_file, in_chk, 'bx-ratings')
         n = 0
         for row in tqdm(csv.DictReader(rd)):
@@ -59,7 +59,7 @@ with db.connect() as dbc:
                         (uid, isbn, rating))
             dh.update(f'{uid}\t{isbn}\t{rating}\n'.encode('utf8'))
             n += 1
-        db.finish_stage(cur, 'bx-ratings', key=dh.hexdigest())
+        db.end_stage(cur, 'bx-ratings', key=dh.hexdigest())
         print('INSERTED', n, dh.hexdigest(), file=tx_file)
 
 tx_file.close()
