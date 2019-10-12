@@ -23,7 +23,6 @@ its various parts together.
     - numpy
     - tqdm
     - pandas
-    - numba
     - colorama
     - chromalog
     - natural
