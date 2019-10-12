@@ -1,12 +1,15 @@
+--- #step Index ratings
 CREATE INDEX IF NOT EXISTS bx_rating_user_idx ON bx.raw_ratings (user_id);
 CREATE INDEX IF NOT EXISTS bx_rating_isbn_idx ON bx.raw_ratings (isbn);
 ANALYZE bx.raw_ratings;
 
+--- #step Extract ISBNs
 INSERT INTO isbn_id (isbn)
   SELECT DISTINCT isbn
   FROM bx.raw_ratings WHERE isbn NOT IN (SELECT isbn FROM isbn_id);
 ANALYZE isbn_id;
 
+--- #step Set up rating views
 DROP VIEW IF EXISTS bx.rating;
 CREATE VIEW bx.rating
   AS SELECT user_id, COALESCE(cluster, bc_of_isbn(isbn_id)) AS book_id,
@@ -25,3 +28,10 @@ CREATE VIEW bx.add_action
        JOIN isbn_id USING (isbn)
        LEFT JOIN isbn_cluster USING (isbn_id)
      GROUP BY user_id, book_id;
+
+
+--- #step Save stage deps
+INSERT INTO stage_dep (stage_name, dep_name, dep_key)
+SELECT 'bx-index', stage_name, stage_key
+FROM stage_status
+WHERE stage_name IN = 'bx-ratings';

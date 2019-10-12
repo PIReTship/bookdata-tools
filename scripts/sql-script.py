@@ -24,7 +24,7 @@ from datetime import timedelta
 from typing import NamedTuple, List
 from docopt import docopt
 
-import psycopg2
+import psycopg2, psycopg2.extensions, psycopg2.extras
 from more_itertools import peekable
 import sqlparse
 
@@ -33,6 +33,8 @@ from bookdata import db
 
 opts = docopt(__doc__)
 _log = script_log(__name__, opts.get('--verbose'))
+
+psycopg2.extensions.set_wait_callback(psycopg2.extras.wait_select)
 
 script_file = Path(opts.get('SCRIPT'))
 

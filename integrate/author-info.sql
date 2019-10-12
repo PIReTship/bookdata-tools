@@ -92,3 +92,9 @@ CREATE TABLE IF NOT EXISTS cluster_first_author_gender
      GROUP BY cluster;
 CREATE UNIQUE INDEX IF NOT EXISTS cluster_first_author_gender_book_idx ON cluster_first_author_gender (cluster);
 ANALYZE cluster_first_author_gender;
+
+--- #step Save stage deps
+INSERT INTO stage_dep (stage_name, dep_name, dep_key)
+SELECT 'author-info', stage_name, stage_key
+FROM stage_status
+WHERE stage_name IN ('cluster', 'loc-mds-cluster');
