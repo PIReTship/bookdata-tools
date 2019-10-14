@@ -86,7 +86,9 @@ The import code consists of Python, Rust, and SQL code, wired together with DVC.
 ### Python Scripts
 
 Python scripts live under `scripts`, as a Python package.  They should not be launched directly, but
-rather via `run.py`, which will make sure the environment is set up properly for them.
+rather via `run.py`, which will make sure the environment is set up properly for them:
+
+    python run.py sql-script [options] script.sql
 
 ### DVC Usage and Stage Files
 
@@ -127,3 +129,10 @@ The `source_file` table tracks input file checksums.
 
 Projects using the book database can also use `stage_status` to obtain data version information, to
 see if they are up-to-date.
+
+### Utility Code
+
+The `bookdata` package contains Python utility code, and the `src` directory contains a number
+of utility modules for use in the Rust code.  To the extent reasonable, we have tried to mirror
+design patterns and function names;  the Python `bookdata.db` module is split into separate
+`db` and `stage` modules in the Rust code.
