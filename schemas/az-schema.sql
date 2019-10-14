@@ -7,3 +7,8 @@ CREATE TABLE az.raw_ratings (
   rating REAL NOT NULL,
   rating_time BIGINT NOT NULL
 );
+
+INSERT INTO stage_dep (stage_name, dep_name, dep_key)
+SELECT 'ag-schema', stage_name, stage_key
+FROM stage_status
+WHERE stage_name = 'common-schema';

@@ -53,3 +53,13 @@ LANGUAGE SQL IMMUTABLE PARALLEL SAFE
 AS $$
 SELECT uuid_generate_v5(uuid_ns_url(), iri);
 $$;
+
+--- #step Log dependency
+INSERT INTO stage_dep (stage_name, dep_name, dep_key)
+SELECT 'common-schema', stage_name, stage_key
+FROM stage_status
+WHERE stage_name = 'init';
+
+UPDATE stage_status
+SET stage_key = uuid_generate_v4()
+WHERE stage_name = 'common-schema';

@@ -21,3 +21,8 @@ CREATE TABLE ol.edition (
     edition_key VARCHAR(100) NOT NULL,
     edition_data JSONB NOT NULL
 );
+
+INSERT INTO stage_dep (stage_name, dep_name, dep_key)
+SELECT 'ol-schema', stage_name, stage_key
+FROM stage_status
+WHERE stage_name = 'common-schema';

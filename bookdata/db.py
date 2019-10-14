@@ -125,7 +125,7 @@ def end_stage(cur, stage, key=None):
     _log.info('finishing stage %s', stage)
     cur.execute('''
         UPDATE stage_status
-        SET finished_at = NOW(), stage_key = %(key)s
+        SET finished_at = NOW(), stage_key = coalesce(%(key)s, stage_key)
         WHERE stage_name = %(stage)s
     ''', {'stage': stage, 'key': key})
 

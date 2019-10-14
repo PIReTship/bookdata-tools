@@ -59,3 +59,9 @@ CREATE TABLE locid.instance_literals (
     lit_value TEXT NOT NULL,
     lit_lang VARCHAR NULL
 );
+
+--- #step Register deps
+INSERT INTO stage_dep (stage_name, dep_name, dep_key)
+SELECT 'loc-id-schema', stage_name, stage_key
+FROM stage_status
+WHERE stage_name = 'common-schema';

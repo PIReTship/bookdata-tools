@@ -36,3 +36,8 @@ CREATE TABLE viaf.marc_field (
 --   viaf_au_gender_end VARCHAR NULL,
 --   viaf_au_gender_source VARCHAR NULL
 -- );
+
+INSERT INTO stage_dep (stage_name, dep_name, dep_key)
+SELECT 'viaf-schema', stage_name, stage_key
+FROM stage_status
+WHERE stage_name = 'common-schema';
