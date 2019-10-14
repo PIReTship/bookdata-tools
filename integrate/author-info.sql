@@ -1,3 +1,10 @@
+--- #dep bx-index
+--- #dep az-index
+--- #dep gr-index-ratings
+--- #dep cluster
+--- #dep loc-mds-cluster
+--- #dep viaf-index
+
 --- Schema for consolidating and calibrating author gender info
 --- #step Create functions
 CREATE OR REPLACE FUNCTION merge_gender(cgender VARCHAR, ngender VARCHAR) RETURNS VARCHAR

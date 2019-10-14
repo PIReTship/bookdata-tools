@@ -369,6 +369,8 @@ class SqlScript:
         _log.info('Script completed in %s', compress_date(elapsed))
 
     def describe(self):
+        for dep in self.deps:
+            _log.info('Dependency ‘%s’', dep)
         for step in self.chunks:
             _log.info('Chunk ‘%s’', step.label)
             for s in step.statements:

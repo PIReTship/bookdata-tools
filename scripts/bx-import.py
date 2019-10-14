@@ -50,6 +50,7 @@ with db.connect() as dbc:
     with dbc, dbc.cursor() as cur:
         db.begin_stage(cur, 'bx-ratings')
         db.record_file(cur, src_file, in_chk, 'bx-ratings')
+        db.record_dep(cur, 'bx-ratings', 'bx-schema')
         n = 0
         for row in tqdm(csv.DictReader(rd)):
             uid = row['User-ID']
