@@ -61,8 +61,10 @@ else:
             db.begin_stage(cur, stage)
             for dep in script.deps:
                 dhs = db.record_dep(cur, stage, dep)
+                # hash the dependency hashes
                 for d, h in dhs: key.update(h.encode('utf-8'))
             h = db.hash_and_record_file(cur, script_file, stage)
+            # hash the source file
             key.update(h.encode('utf-8'))
         script.execute(dbc, transcript=txf)
         with dbc, dbc.cursor() as cur:
