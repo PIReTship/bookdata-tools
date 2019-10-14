@@ -27,6 +27,7 @@ meta_schema = _ms_path.read_text()
 
 
 def db_url():
+    "Get the URL to connect to the database."
     if 'DB_URL' in os.environ:
         return os.environ['DB_URL']
 
@@ -61,6 +62,9 @@ def connect():
 
 
 def hash_and_record_file(cur, path, stage=None):
+    """
+    Compute the checksum of a file and record it in the database.
+    """
     h = hashlib.md5()
     with open(path, 'rb') as f:
         data = f.read(8192 * 4)
@@ -75,6 +79,9 @@ def hash_and_record_file(cur, path, stage=None):
 
 
 def begin_stage(cur, stage):
+    """
+    Record that a stage is beginning.
+    """
     if hasattr(cur, 'cursor'):
         # this is a connection
         with cur, cur.cursor() as c:
@@ -91,6 +98,9 @@ def begin_stage(cur, stage):
 
 
 def record_dep(cur, stage, dep):
+    """
+    Record a dependency for a stage.
+    """
     if hasattr(cur, 'cursor'):
         # this is a connection
         with cur, cur.cursor() as c:
@@ -126,6 +136,14 @@ def record_file(cur, file, hash, stage=None):
 
 
 def end_stage(cur, stage, key=None):
+    """
+    Record that an import stage has finished.
+
+    Args:
+        cur(psycopg2.connection or psycopg2.cursor): the database connection to use.
+        stage(string): the name of the stage.
+        key(string or None): the key (checksum or other key) to record.
+    """
     if hasattr(cur, 'cursor'):
         # this is a connection
         with cur, cur.cursor() as c:
@@ -146,7 +164,7 @@ def _tokens(s, start=-1, skip_ws=True, skip_cm=True):
 
 
 def describe_statement(s):
-    "Describe an SQL statement"
+    "Describe an SQL statement.  This utility function is used to summarize statements."
     label = s.get_type()
     li, lt = s.token_next(-1, skip_cm=True)
     if lt is None:
@@ -210,7 +228,19 @@ class ScriptChunk(NamedTuple):
 
 class SqlScript:
     """
-    Class for processing & executing SQL scripts.
+    Class for processing & executing SQL scripts with the following features ``psql``
+    does not have:
+
+    * Splitting the script into (named) steps, to commit chunks in transactions
+    * Recording metadata (currently just dependencies) for the script
+    * Allowing chunks to fail with specific errors
+
+    The last feature is to help with writing _idempotent_ scripts: by allowing a chunk
+    to fail with a known error (e.g. creating a constraint that already exists), you
+    can write a script that can run cleanly even if it has already been run.
+
+    Args:
+        file: the path to the SQL script to read.
     """
 
     _sep_re = re.compile(r'^---\s*(?P<inst>.*)')
