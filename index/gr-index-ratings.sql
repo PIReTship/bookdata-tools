@@ -1,3 +1,5 @@
+--- #dep gr-interactions
+--- #dep cluster
 --- #step Add interaction PK
 --- #allow invalid_table_definition
 ALTER TABLE gr.raw_interaction ADD CONSTRAINT gr_raw_interaction_pk PRIMARY KEY (gr_interaction_rid);
@@ -77,9 +79,3 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS gr.add_action
 CREATE INDEX IF NOT EXISTS add_action_user_idx ON gr.add_action (user_id);
 CREATE INDEX IF NOT EXISTS add_action_item_idx ON gr.add_action (book_id);
 ANALYZE gr.add_action;
-
---- #step Save stage deps
-INSERT INTO stage_dep (stage_name, dep_name, dep_key)
-SELECT 'gr-index-ratings', stage_name, stage_key
-FROM stage_status
-WHERE stage_name = 'gr-interactions';

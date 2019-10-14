@@ -1,3 +1,4 @@
+--- #dep common-schema
 CREATE SCHEMA IF NOT EXISTS locmds;
 
 DROP TABLE IF EXISTS locmds.book_marc_field CASCADE;
@@ -21,8 +22,3 @@ CREATE TABLE locmds.name_marc_field (
   sf_code VARCHAR,
   contents VARCHAR
 );
-
-INSERT INTO stage_dep (stage_name, dep_name, dep_key)
-SELECT 'loc-mds-schema', stage_name, stage_key
-FROM stage_status
-WHERE stage_name = 'common-schema';

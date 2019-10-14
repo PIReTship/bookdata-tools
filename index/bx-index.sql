@@ -1,3 +1,5 @@
+--- #dep bx-ratings
+--- #dep cluster
 --- #step Index ratings
 CREATE INDEX IF NOT EXISTS bx_rating_user_idx ON bx.raw_ratings (user_id);
 CREATE INDEX IF NOT EXISTS bx_rating_isbn_idx ON bx.raw_ratings (isbn);
@@ -28,10 +30,3 @@ CREATE VIEW bx.add_action
        JOIN isbn_id USING (isbn)
        LEFT JOIN isbn_cluster USING (isbn_id)
      GROUP BY user_id, book_id;
-
-
---- #step Save stage deps
-INSERT INTO stage_dep (stage_name, dep_name, dep_key)
-SELECT 'bx-index', stage_name, stage_key
-FROM stage_status
-WHERE stage_name = 'bx-ratings';

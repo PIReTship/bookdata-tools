@@ -1,3 +1,4 @@
+--- #dep loc-mds-names
 --- #step Index name MARC fields
 CREATE INDEX IF NOT EXISTS name_marc_field_rec_idx ON locmds.name_marc_field (rec_id);
 

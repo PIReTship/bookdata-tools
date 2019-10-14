@@ -1,3 +1,4 @@
+--- #dep common-schema
 DROP SCHEMA IF EXISTS gr CASCADE;
 CREATE SCHEMA gr;
 
@@ -17,8 +18,3 @@ CREATE TABLE gr.raw_author (
   gr_author_rid SERIAL NOT NULL,
   gr_author_data JSONB NOT NULL
 );
-
-INSERT INTO stage_dep (stage_name, dep_name, dep_key)
-SELECT 'gr-schema', stage_name, stage_key
-FROM stage_status
-WHERE stage_name = 'common-schema';

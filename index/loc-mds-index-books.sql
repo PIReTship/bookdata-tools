@@ -1,3 +1,4 @@
+--- #dep loc-mds-books
 --- #step Index MARC fields
 CREATE INDEX IF NOT EXISTS book_marc_field_rec_idx ON locmds.book_marc_field (rec_id);
 
@@ -100,9 +101,3 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS locmds.book_pub_year
   WHERE tag = '260' AND sf_code = 'c' AND substring(contents from '(\d\d\d\d)') IS NOT NULL;
 CREATE INDEX IF NOT EXISTS book_pub_year_rec_idx ON locmds.book_pub_year (rec_id);
 ANALYZE locmds.book_pub_year;
-
---- #step Record step dependencies
-INSERT INTO stage_dep (stage_name, dep_name, dep_key)
-SELECT 'loc-mds-index-books', stage_name, stage_key
-FROM stage_status
-WHERE stage_name = 'loc-mds-books';

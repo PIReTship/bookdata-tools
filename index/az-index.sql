@@ -1,3 +1,5 @@
+--- #dep az-ratings
+--- #dep cluster
 --- #step Index ratings
 CREATE INDEX IF NOT EXISTS az_rating_user_idx ON az.raw_ratings (user_key);
 CREATE INDEX IF NOT EXISTS az_rating_asin_idx ON az.raw_ratings (asin);
@@ -32,9 +34,3 @@ CREATE VIEW az.rating
        JOIN isbn_id ON (isbn = asin)
        LEFT JOIN isbn_cluster USING (isbn_id)
      GROUP BY user_id, COALESCE(cluster, bc_of_isbn(isbn_id));
-
---- #step Save stage deps
-INSERT INTO stage_dep (stage_name, dep_name, dep_key)
-SELECT 'az-index', stage_name, stage_key
-FROM stage_status
-WHERE stage_name = 'az-ratings';

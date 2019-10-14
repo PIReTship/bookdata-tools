@@ -70,17 +70,8 @@ def hash_and_record_file(cur, path, stage=None):
     hash = h.hexdigest()
     path = Path(path).as_posix()
     _log.info('recording file %s with hash %s', path, hash)
-    cur.execute('''
-        INSERT INTO source_file (filename, checksum)
-        VALUES (%(fn)s, %(hash)s)
-        ON CONFLICT (filename)
-        DO UPDATE SET reg_time = now(), checksum = %(hash)s
-    ''', {'fn': path, 'hash': hash})
-    if stage:
-        cur.execute('''
-            INSERT INTO stage_file (stage_name, filename)
-            VALUES (%s, %s)
-        ''', [stage, path])
+    record_file(cur, path, hash, stage)
+    return hash
 
 
 def begin_stage(cur, stage):
@@ -96,6 +87,23 @@ def begin_stage(cur, stage):
         DO UPDATE SET started_at = now(), finished_at = NULL, stage_key = NULL
     ''', [stage])
     cur.execute('DELETE FROM stage_file WHERE stage_name = %s', [stage])
+    cur.execute('DELETE FROM stage_dep WHERE stage_name = %s', [stage])
+
+
+def record_dep(cur, stage, dep):
+    if hasattr(cur, 'cursor'):
+        # this is a connection
+        with cur, cur.cursor() as c:
+            return record_dep(c, stage, dep)
+
+    _log.info('recording dep %s -> %s', stage, dep);
+    cur.execute('''
+        INSERT INTO stage_dep (stage_name, dep_name, dep_key)
+        SELECT %s, stage_name, stage_key
+        FROM stage_status WHERE stage_name = %s
+        RETURNING dep_name, dep_key
+    ''', [stage, dep])
+    return cur.fetchall()
 
 
 def record_file(cur, file, hash, stage=None):
@@ -219,11 +227,40 @@ class SqlScript:
 
     def _parse(self, lines):
         self.chunks = []
+        self.deps = self._parse_script_header(lines)
         next_chunk = self._parse_chunk(lines, len(self.chunks) + 1)
         while next_chunk is not None:
             if next_chunk:
                 self.chunks.append(next_chunk)
             next_chunk = self._parse_chunk(lines, len(self.chunks) + 1)
+
+    @classmethod
+    def _parse_script_header(cls, lines):
+        deps = []
+
+        line = lines.peek(None)
+        while line is not None:
+            hm = cls._sep_re.match(line)
+            if hm is None:
+                break
+
+            inst = hm.group('inst')
+            cm = cls._icode_re.match(inst)
+            if cm is None:
+                next(lines)  # eat line
+                continue
+
+            code = cm.group('code')
+            args = cm.group('args')
+            if code == 'dep':
+                deps.append(args)
+                next(lines)  # eat line
+            else:  # any other code, we're out of header
+                break
+
+            line = lines.peek(None)
+
+        return deps
 
     @classmethod
     def _parse_chunk(cls, lines: peekable, n: int):

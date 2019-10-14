@@ -16,6 +16,10 @@ pub struct StageOpts {
   #[structopt(long="stage", short="s")]
   stage: Option<String>,
 
+  /// Stage dependencies
+  #[structopt(long="stage-dep", short="D")]
+  deps: Vec<String>,
+
   /// Transcript file
   #[structopt(long="transcript", short="T")]
   transcript: Option<PathBuf>,
@@ -32,11 +36,16 @@ impl StageOpts {
                      ON CONFLICT (stage_name)
                      DO UPDATE SET started_at = now(), finished_at = NULL, stage_key = NULL",
                     &[s])?;
-        cxn.execute("DELETE FROM stage_file WHERE stage_name = $1", &[s])?
+        cxn.execute("DELETE FROM stage_file WHERE stage_name = $1", &[s])?;
+        cxn.execute("DELETE FROM stage_dep WHERE stage_name = $1", &[s])?;
+        for d in &self.deps {
+          cxn.execute("INSERT INTO stage_dep (stage_name, dep_name, dep_key)
+                       SELECT $1, stage_name, stage_key
+                       FROM stage_status WHERE stage_name = $2", &[s, &d])?;
+        }
       },
       None => {
         warn!("no stage specified");
-        0
       }
     };
     Ok(())

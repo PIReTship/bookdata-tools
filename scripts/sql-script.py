@@ -19,6 +19,7 @@ import os
 import sys
 import re
 import time
+import hashlib
 from pathlib import Path
 from datetime import timedelta
 from typing import NamedTuple, List
@@ -55,9 +56,14 @@ if opts.get('--dry-run'):
     script.describe()
 else:
     with tfile.open('w') as txf, db.connect() as dbc:
+        key = hashlib.md5()
         with dbc, dbc.cursor() as cur:
             db.begin_stage(cur, stage)
-            db.hash_and_record_file(cur, script_file, stage)
+            for dep in script.deps:
+                dhs = db.record_dep(cur, stage, dep)
+                for d, h in dhs: key.update(h.encode('utf-8'))
+            h = db.hash_and_record_file(cur, script_file, stage)
+            key.update(h.encode('utf-8'))
         script.execute(dbc, transcript=txf)
         with dbc, dbc.cursor() as cur:
-            db.end_stage(cur, stage)
+            db.end_stage(cur, stage, key=key.hexdigest())

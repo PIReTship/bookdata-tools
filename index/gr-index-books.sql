@@ -1,3 +1,6 @@
+--- #dep gr-books
+--- #dep gr-works
+--- #dep gr-authors
 --- #step Add book PK
 --- #allow invalid_table_definition
 ALTER TABLE gr.raw_book ADD CONSTRAINT gr_raw_book_pk PRIMARY KEY (gr_book_rid);
@@ -66,9 +69,3 @@ CREATE INDEX book_isbn_code_idx ON gr.book_isbn (book_code);
 ALTER TABLE gr.book_isbn ADD CONSTRAINT gr_book_isbn_book_fk FOREIGN KEY (gr_book_id) REFERENCES gr.book_ids (gr_book_id);
 ALTER TABLE gr.book_isbn ADD CONSTRAINT gr_book_isbn_isbn_fk FOREIGN KEY (isbn_id) REFERENCES isbn_id (isbn_id);
 ANALYZE gr.book_isbn;
-
---- #step Save stage deps
-INSERT INTO stage_dep (stage_name, dep_name, dep_key)
-SELECT 'gr-index-books', stage_name, stage_key
-FROM stage_status
-WHERE stage_name IN ('gr-books', 'gr-works', 'gr-authors');

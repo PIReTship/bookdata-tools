@@ -1,9 +1,6 @@
---- #step Save stage files
-INSERT INTO stage_dep (stage_name, dep_name, dep_key)
-SELECT 'ol-index', stage_name, stage_key
-FROM stage_status
-WHERE stage_name IN ('ol-authors', 'ol-editions', 'ol-works');
-
+--- #dep ol-authors
+--- #dep ol-editions
+--- #dep ol-works
 --- #step Index OL author table
 --- #allow invalid_table_definition
 CREATE INDEX IF NOT EXISTS author_key_idx ON ol.author (author_key);
