@@ -34,4 +34,4 @@ CREATE VIEW bx.add_action
 INSERT INTO stage_dep (stage_name, dep_name, dep_key)
 SELECT 'bx-index', stage_name, stage_key
 FROM stage_status
-WHERE stage_name IN = 'bx-ratings';
+WHERE stage_name = 'bx-ratings';

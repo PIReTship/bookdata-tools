@@ -37,4 +37,4 @@ CREATE VIEW az.rating
 INSERT INTO stage_dep (stage_name, dep_name, dep_key)
 SELECT 'az-index', stage_name, stage_key
 FROM stage_status
-WHERE stage_name IN = 'az-ratings';
+WHERE stage_name = 'az-ratings';
