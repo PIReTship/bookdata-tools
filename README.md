@@ -11,8 +11,10 @@ the limitations of the data these scripts compile.  **Do not use this data or to
 without understanding those limitations**.  In particular, VIAF's gender information
 is incomplete and, in a number of cases, incorrect.
 
-We use [Data Version Control](https://dvc.org) (`dvc`) to script the import and wire
-its various parts together.
+In addition, several of the data sets integrated by this project come from other sources
+with their own publications.  **If you use any of the rating data, cite the appropriate
+original source paper.**  For each data set below, we have provided a link to the page
+that describes the appropriate citation.
 
 ## Requirements
 
@@ -46,6 +48,10 @@ All scripts read database connection info from the standard PostgreSQL client en
 
 Alternatively, they will read from `DB_URL`.
 
+We use [Data Version Control](https://dvc.org) (`dvc`) to script the import and wire
+its various parts together.  A complete re-run, not including file download time, takes
+approximately **8 hours** on our hardware (24-core 2GHz Xeon, 128GiB RAM, spinning disks).
+
 ## Initializing and Configuring the Database
 
 After creating your database, initialize the extensions (as the database superuser):
@@ -62,12 +68,13 @@ at a minimum.
 
 This imports the following data sets:
 
--   Library of Congress MDSConnect Open MARC Records from <https://www.loc.gov/cds/products/MDSConnect-books_all.html>.
--   LoC MDSConnect Name Authorities from <https://www.loc.gov/cds/products/MDSConnect-name_authorities.html>.
--   Virtual Internet Authority File - get the MARC 21 XML data file from <http://viaf.org/viaf/data/>.
--   OpenLibrary Dump - the editions, works, and authors dumps from <https://openlibrary.org/developers/dumps>.
--   Amazon Ratings - get the 'ratings only' data for _Books_ from <http://jmcauley.ucsd.edu/data/amazon/> and save it in `data`.
--   BookCrossing - the BX-Book-Ratings CSV file from <http://www2.informatik.uni-freiburg.de/~cziegler/BX/>.
+-   Library of Congress MDSConnect Open MARC Records from <https://www.loc.gov/cds/products/MDSConnect-books_all.html> (auto-downloaded).
+-   LoC MDSConnect Name Authorities from <https://www.loc.gov/cds/products/MDSConnect-name_authorities.html> (auto-downloaded).
+-   Virtual Internet Authority File - get the MARC 21 XML data file from <http://viaf.org/viaf/data/> (**not** auto-downloaded).
+-   OpenLibrary Dump - the editions, works, and authors dumps from <https://openlibrary.org/developers/dumps> (auto-downloaded).
+-   Amazon Ratings - the 'ratings only' data for _Books_ from <http://jmcauley.ucsd.edu/data/amazon/> and save it in `data` (auto-downloaded).  **If you use this data, cite the paper.**
+-   BookCrossing - the BX-Book-Ratings CSV file from <http://www2.informatik.uni-freiburg.de/~cziegler/BX/> (auto-downloaded). **If you use this data, cite the paper.**
+-   GoodReads - the GoodReads books, works, authors, and *full interaction* files from <https://sites.google.com/eng.ucsd.edu/ucsdbookgraph/home> (**not** auto-downloaded).  **If you use this data, cite the paper.**
 
 Several of these files can be auto-downloaded with the DVC scripts; others will need to be manually downloaded.
 
