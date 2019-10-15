@@ -160,7 +160,8 @@ impl Command for ImportJson {
     let mut buf_out = BufWriter::new(hout);
 
     let n = self.dataset.import(&mut bfs, &mut buf_out)?;
-    drop(buf_out);  // close the output file
+    buf_out.flush()?;
+    drop(buf_out);
 
     let in_hash = in_hash.hexdigest();
     let out_hash = out_hash.hexdigest();

@@ -208,10 +208,6 @@ pub struct CopyTarget {
 }
 
 impl CopyTarget {
-  pub fn close(mut self) -> Result<u64> {
-    self.do_close(true)
-  }
-
   fn do_close(&mut self, warn: bool) -> Result<u64> {
     if let Some(w) = self.writer.take() {
       std::mem::drop(w);
