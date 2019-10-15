@@ -10,7 +10,6 @@ pub enum BDError {
   IO(io::Error),
   XML(quick_xml::Error),
   UTF8(std::str::Utf8Error),
-  RDFNT(ntriple::parser::ParseError),
   PSQL(postgres::error::Error),
   Boxed(Box<Error>),
   Misc(String)
