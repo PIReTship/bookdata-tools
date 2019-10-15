@@ -74,7 +74,6 @@ This imports the following data sets:
 -   OpenLibrary Dump - the editions, works, and authors dumps from <https://openlibrary.org/developers/dumps> (auto-downloaded).
 -   Amazon Ratings - the 'ratings only' data for _Books_ from <http://jmcauley.ucsd.edu/data/amazon/> and save it in `data` (auto-downloaded).  **If you use this data, cite the paper.**
 -   BookCrossing - the BX-Book-Ratings CSV file from <http://www2.informatik.uni-freiburg.de/~cziegler/BX/> (auto-downloaded). **If you use this data, cite the paper.**
--   GoodReads - the GoodReads books, works, authors, and *full interaction* files from <https://sites.google.com/eng.ucsd.edu/ucsdbookgraph/home> (**not** auto-downloaded).  **If you use this data, cite the paper.**
 
 Several of these files can be auto-downloaded with the DVC scripts; others will need to be manually downloaded.
 
