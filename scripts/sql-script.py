@@ -30,7 +30,7 @@ from more_itertools import peekable
 import sqlparse
 
 from bookdata import script_log
-from bookdata import db
+from bookdata import db, tracking
 
 opts = docopt(__doc__)
 _log = script_log(__name__, opts.get('--verbose'))
@@ -58,14 +58,14 @@ else:
     with tfile.open('w') as txf, db.connect() as dbc:
         key = hashlib.md5()
         with dbc, dbc.cursor() as cur:
-            db.begin_stage(cur, stage)
+            tracking.begin_stage(cur, stage)
             for dep in script.deps:
-                dhs = db.record_dep(cur, stage, dep)
+                dhs = tracking.record_dep(cur, stage, dep)
                 # hash the dependency hashes
                 for d, h in dhs: key.update(h.encode('utf-8'))
-            h = db.hash_and_record_file(cur, script_file, stage)
+            h = tracking.hash_and_record_file(cur, script_file, stage)
             # hash the source file
             key.update(h.encode('utf-8'))
         script.execute(dbc, transcript=txf)
         with dbc, dbc.cursor() as cur:
-            db.end_stage(cur, stage, key=key.hexdigest())
+            tracking.end_stage(cur, stage, key=key.hexdigest())

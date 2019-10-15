@@ -22,7 +22,7 @@ from docopt import docopt
 import pandas as pd
 import numpy as np
 
-from bookdata import db, script_log
+from bookdata import db, tracking, script_log
 
 _log = script_log(__name__)
 
@@ -185,7 +185,7 @@ def cluster(scope, txout):
             scopes = _all_scopes
 
         with dbc:
-            db.begin_stage(dbc, step)
+            tracking.begin_stage(dbc, step)
 
             isbn_recs = []
             isbn_edges = []
@@ -215,7 +215,7 @@ def cluster(scope, txout):
             c_hash = _hash_frame(loc_clusters)
             print('WRITE CLUSTERS', c_hash, file=txout)
 
-            db.end_stage(dbc, step, c_hash)
+            tracking.end_stage(dbc, step, c_hash)
 
 
 opts = docopt(__doc__)

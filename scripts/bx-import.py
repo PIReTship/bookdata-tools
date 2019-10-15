@@ -10,7 +10,7 @@ Options:
 """
 
 import hashlib
-from bookdata import script_log, db
+from bookdata import script_log, db, tracking
 from docopt import docopt
 
 import numpy as np
@@ -48,9 +48,9 @@ with db.connect() as dbc:
     dh = hashlib.md5()
     # with dbc encapsulates a transaction
     with dbc, dbc.cursor() as cur:
-        db.begin_stage(cur, 'bx-ratings')
-        db.record_file(cur, src_file, in_chk, 'bx-ratings')
-        db.record_dep(cur, 'bx-ratings', 'bx-schema')
+        tracking.begin_stage(cur, 'bx-ratings')
+        tracking.record_file(cur, src_file, in_chk, 'bx-ratings')
+        tracking.record_dep(cur, 'bx-ratings', 'bx-schema')
         n = 0
         for row in tqdm(csv.DictReader(rd)):
             uid = row['User-ID']
@@ -60,7 +60,7 @@ with db.connect() as dbc:
                         (uid, isbn, rating))
             dh.update(f'{uid}\t{isbn}\t{rating}\n'.encode('utf8'))
             n += 1
-        db.end_stage(cur, 'bx-ratings', key=dh.hexdigest())
+        tracking.end_stage(cur, 'bx-ratings', key=dh.hexdigest())
         print('INSERTED', n, dh.hexdigest(), file=tx_file)
 
 tx_file.close()
