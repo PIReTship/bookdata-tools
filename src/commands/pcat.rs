@@ -9,7 +9,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use sha1::Sha1;
 
 use crate::db::{DbOpts, CopyRequest};
-use crate::stage::StageOpts;
+use crate::tracking::StageOpts;
 use crate::io::{HashRead, HashWrite};
 use crate::error::Result;
 use super::Command;

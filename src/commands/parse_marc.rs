@@ -17,7 +17,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use crate::error::{Result, err};
 use crate::cleaning::write_pgencoded;
 use crate::tsv::split_first;
-use crate::stage::StageOpts;
+use crate::tracking::StageOpts;
 use crate::io::{HashWrite, HashRead};
 use crate::db::{DbOpts, CopyRequest};
 use super::Command;

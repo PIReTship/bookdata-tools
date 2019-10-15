@@ -14,7 +14,7 @@ use crate::io::{HashRead, HashWrite};
 use crate::cleaning::{write_pgencoded, clean_json};
 use crate::tsv::split_first;
 use crate::db::{DbOpts, CopyRequest};
-use crate::stage::StageOpts;
+use crate::tracking::StageOpts;
 use crate::error::{Result, err};
 use super::Command;
 
