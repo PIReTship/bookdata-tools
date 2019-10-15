@@ -141,5 +141,4 @@ see if they are up-to-date.
 
 The `bookdata` package contains Python utility code, and the `src` directory contains a number
 of utility modules for use in the Rust code.  To the extent reasonable, we have tried to mirror
-design patterns and function names;  the Python `bookdata.db` module is split into separate
-`db` and `stage` modules in the Rust code.
+design patterns and function names.
