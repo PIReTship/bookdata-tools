@@ -6,6 +6,8 @@ use std::str;
 
 use log::*;
 
+use sha1::Sha1;
+use glob::glob;
 use structopt::StructOpt;
 use quick_xml::Reader;
 use quick_xml::events::Event;
@@ -15,6 +17,8 @@ use indicatif::{ProgressBar, ProgressStyle};
 use crate::error::{Result, err};
 use crate::cleaning::write_pgencoded;
 use crate::tsv::split_first;
+use crate::tracking::StageOpts;
+use crate::io::{HashWrite, HashRead};
 use crate::db::{DbOpts, CopyRequest};
 use super::Command;
 
@@ -25,6 +29,9 @@ pub struct ParseMarc {
   #[structopt(flatten)]
   db: DbOpts,
 
+  #[structopt(flatten)]
+  stage: StageOpts,
+
   #[structopt(short="-t", long="table")]
   table: String,
 
@@ -34,6 +41,13 @@ pub struct ParseMarc {
   /// Activate line mode, e.g. for VIAF
   #[structopt(short="L", long="line-mode")]
   linemode: bool,
+
+  #[structopt(long="src-dir")]
+  src_dir: Option<PathBuf>,
+
+  #[structopt(long="src-prefix")]
+  src_prefix: Option<String>,
+
   /// Input files to parse (GZ-compressed)
   #[structopt(name = "FILE", parse(from_os_str))]
   files: Vec<PathBuf>
@@ -191,32 +205,44 @@ fn process_records<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, start
 
 impl Command for ParseMarc {
   fn exec(self) -> Result<()> {
+    let db = self.db.open()?;
     let req = CopyRequest::new(&self.db, &self.table)?;
     let req = req.with_schema(self.db.schema());
     let req = req.truncate(self.truncate);
     let out = req.open()?;
+    let mut out_h = Sha1::new();
+    let out = HashWrite::create(out, &mut out_h);
     let mut out = BufWriter::new(out);
+
+    self.stage.begin_stage(&db)?;
+    let mut tx = self.stage.open_transcript()?;
 
     let mut count = 0;
 
-    for inf in self.files {
+    for inf in self.find_files()? {
       let inf = inf.as_path();
       info!("reading from compressed file {:?}", inf);
       let fs = File::open(inf)?;
       let pb = ProgressBar::new(fs.metadata()?.len());
       pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
+      let mut in_h = Sha1::new();
       let pbr = pb.wrap_read(fs);
       let pbr = BufReader::new(pbr);
       let gzf = MultiGzDecoder::new(pbr);
+      let gzf = HashRead::create(gzf, &mut in_h);
       let mut bfs = BufReader::new(gzf);
       let nrecs = if self.linemode {
         process_delim_file(&mut bfs, &mut out, count)
       } else {
         process_marc_file(&mut bfs, &mut out, count)
       };
+      drop(bfs);
       match nrecs {
         Ok(n) => {
+          let in_h = in_h.hexdigest();
+          self.stage.record_file(&db, inf, &in_h)?;
           info!("processed {} records from {:?}", n, inf);
+          writeln!(&mut tx, "READ {:?} {} {}", inf, n, in_h)?;
           count += n;
         },
         Err(e) => {
@@ -225,6 +251,36 @@ impl Command for ParseMarc {
         }
       }
     }
+
+    drop(out);
+    let out_h = out_h.hexdigest();
+    writeln!(&mut tx, "COPY {}", out_h)?;
+    self.stage.end_stage(&db, &Some(out_h))?;
+
     Ok(())
+  }
+}
+
+impl ParseMarc {
+  fn find_files(&self) -> Result<Vec<PathBuf>> {
+    if let Some(ref dir) = self.src_dir {
+      let mut ds = dir.to_str().unwrap().to_string();
+      if let Some(ref pfx) = self.src_prefix {
+        ds.push_str("/");
+        ds.push_str(pfx);
+        ds.push_str("*.xml.gz");
+      } else {
+        ds.push_str("/*.xml.gz");
+      }
+      info!("scanning for files {}", ds);
+      let mut v = Vec::new();
+      for entry in glob(&ds)? {
+        let entry = entry?;
+        v.push(entry);
+      }
+      Ok(v)
+    } else {
+      Ok(self.files.clone())
+    }
   }
 }

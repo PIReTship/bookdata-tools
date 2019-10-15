@@ -11,32 +11,33 @@ the limitations of the data these scripts compile.  **Do not use this data or to
 without understanding those limitations**.  In particular, VIAF's gender information
 is incomplete and, in a number of cases, incorrect.
 
+In addition, several of the data sets integrated by this project come from other sources
+with their own publications.  **If you use any of the rating data, cite the appropriate
+original source paper.**  For each data set below, we have provided a link to the page
+that describes the appropriate citation.
+
 ## Requirements
 
 - PostgreSQL 10 or later with [orafce](https://github.com/orafce/orafce) and `pg_prewarm` (from the
   PostgreSQL Contrib package) installed.
 - Python 3.6 or later with the following packages:
     - psycopg2
-    - invoke
     - numpy
     - tqdm
     - pandas
-    - numba
     - colorama
     - chromalog
-    - humanize
+    - natural
+    - dvc
 - The Rust compiler (available from Anaconda)
-- `psql` executable on the machine where the import scripts will run
 - 2TB disk space for the database
 - 100GB disk space for data files
 
 It is best if you do not store the data files on the same disk as your PostgreSQL database.
 
-It is best if you do not store the data files on the same disk as your PostgreSQL database.
-
 The `environment.yml` file defines an Anaconda environment that contains all the required packages except for the PostgreSQL server. It can be set up with:
 
-    conda env create -f environment.yml
+    conda create -f environment.yml
 
 All scripts read database connection info from the standard PostgreSQL client environment variables:
 
@@ -45,12 +46,19 @@ All scripts read database connection info from the standard PostgreSQL client en
 - `PGUSER`
 - `PGPASSWORD`
 
+Alternatively, they will read from `DB_URL`.
+
+We use [Data Version Control](https://dvc.org) (`dvc`) to script the import and wire
+its various parts together.  A complete re-run, not including file download time, takes
+approximately **8 hours** on our hardware (24-core 2GHz Xeon, 128GiB RAM, spinning disks).
+
 ## Initializing and Configuring the Database
 
 After creating your database, initialize the extensions (as the database superuser):
 
     CREATE EXTENSION orafce;
     CREATE EXTENSION pg_prewarm;
+    CREATE EXTENSION "uuid-ossp";
 
 The default PostgreSQL performance configuration settings will probably not be
 very effective; we recommend turning on parallelism and increasing work memory,
@@ -60,42 +68,77 @@ at a minimum.
 
 This imports the following data sets:
 
--   Library of Congress MDSConnect Open MARC Records — get the XML files from <https://www.loc.gov/cds/products/MDSConnect-books_all.html>
-    and save them into the `data/LOC` directory.
--   LoC MDSConnect Name Authorities - get the Combined XML file from <https://www.loc.gov/cds/products/MDSConnect-name_authorities.html>
-    and save it in `data/LOC`.
--   Virtual Internet Authority File - get the MARC 21 XML data file from <http://viaf.org/viaf/data/> and save it into the `data` directory.
--   OpenLibrary Dump - get the editions, works, and authors dumps from <https://openlibrary.org/developers/dumps> and save them in `data`.
--   Amazon Ratings - get the 'ratings only' data for _Books_ from <http://jmcauley.ucsd.edu/data/amazon/> and save it in `data`.
--   BookCrossing - get the BX-Book-Ratings CSV file from <http://www2.informatik.uni-freiburg.de/~cziegler/BX/> and save it in `data`
+-   Library of Congress MDSConnect Open MARC Records from <https://www.loc.gov/cds/products/MDSConnect-books_all.html> (auto-downloaded).
+-   LoC MDSConnect Name Authorities from <https://www.loc.gov/cds/products/MDSConnect-name_authorities.html> (auto-downloaded).
+-   Virtual Internet Authority File - get the MARC 21 XML data file from <http://viaf.org/viaf/data/> (**not** auto-downloaded).
+-   OpenLibrary Dump - the editions, works, and authors dumps from <https://openlibrary.org/developers/dumps> (auto-downloaded).
+-   Amazon Ratings - the 'ratings only' data for _Books_ from <http://jmcauley.ucsd.edu/data/amazon/> and save it in `data` (auto-downloaded).  **If you use this data, cite the paper.**
+-   BookCrossing - the BX-Book-Ratings CSV file from <http://www2.informatik.uni-freiburg.de/~cziegler/BX/> (auto-downloaded). **If you use this data, cite the paper.**
+-   GoodReads - the GoodReads books, works, authors, and *full interaction* files from <https://sites.google.com/eng.ucsd.edu/ucsdbookgraph/home> (**not** auto-downloaded).  **If you use this data, cite the paper.**
 
-## Running Import Tasks
+Several of these files can be auto-downloaded with the DVC scripts; others will need to be manually downloaded.
 
-The import process is scripted with [invoke](http://www.pyinvoke.org).  The first tasks to run are
-the import tasks:
+## Running Everything
 
-    invoke loc.import-books
-    invoke loc.import-names
-    invoke viaf.import
-    invoke openlib.import-authors openlib.import-works openlib.import-editions
-    invoke goodreads.import
-    invoke ratings.import-az
-    invoke ratings.import-bx
+You can run the entire import process with:
 
-Once all the data is imported, you can begin to run the indexing and linking tasks:
+    dvc repro
 
-    invoke viaf.index
-    invoke loc.index-books
-    invoke loc.index-names
-    invoke openlib.index
-    invoke goodreads.index-books
-    invoke analyze.cluster --scope loc
-    invoke analyze.cluster --scope ol
-    invoke analyze.cluster --scope gr
-    invoke analyze.cluster
-    invoke ratings.index
-    invoke goodreads.index-ratings
-    invoke analyze.authors
+Individual steps can be run with their corresponding `.dvc` files.
 
-The tasks keep track of the import status in an `import_status` table, and will
-keep you from running tasks in the wrong order.
+## Layout
+
+The import code consists of Python, Rust, and SQL code, wired together with DVC.
+
+### Python Scripts
+
+Python scripts live under `scripts`, as a Python package.  They should not be launched directly, but
+rather via `run.py`, which will make sure the environment is set up properly for them:
+
+    python run.py sql-script [options] script.sql
+
+### DVC Usage and Stage Files
+
+In order to allow DVC to be aware of current database state, we use a little bit of an unconventional
+layout for many of our DVC scripts.  Many steps have two `.dvc` files with associated outputs:
+
+-   `step.dvc` runs import stage `step`.
+-   `step.transcript` is (consistent) output from running `step`, recording the actions taken.  It is
+    registered with DVC as the output of `step.dvc`.
+-   `step.status.dvc` is an *always-changed* DVC stage that depends on `step.transcript` and produces
+    `step.status`, to check the current status in the database of that import stage.
+-   `step.status` is an *uncached* output (so it isn't saved with DVC, and we also ignore it from Git)
+    that is registered as the output of `step.status.dvc`.  It contains a stable status dump from the
+    database, to check whether `step` is actually in the database or has changed in a meaningful way.
+
+Steps that depend on `step` then depend on `step.status`, *not* `step.trasncript`.
+
+The reason for this somewhat bizarre layoutis that if we just wrote the output files, and the database
+was reloaded or corrupted, the DVC status-checking logic would not be ableto keep track of it.  This
+double-file design allows us to make subsequent steps depend on the actual results of the import, not
+our memory of the import in the Git repository.
+
+The file `init.status` is an initial check for database initialization, and forces the creation of the
+meta-structures used for tracking stage status.  Everything touching the database should depend on it,
+directly or indirectly.
+
+### In-Database Status Tracking
+
+Import steps are tracked in the `stage_status` table in the database.  For completed stages, this can
+include a key (checksum, UUID, or other identifier) to identify a 'version' of the stage.  Stages
+can also have dependencies, which are solely used for computing the status of a stage (all actual
+dependency relationships are handled by DVC):
+
+- `stage_deps` tracks stage-to-stage dependencies, to say that one stage used another as input.
+- `stage_file` tracks stage-to-file dependencies, to say that a stage used a file as input.
+
+The `source_file` table tracks input file checksums.
+
+Projects using the book database can also use `stage_status` to obtain data version information, to
+see if they are up-to-date.
+
+### Utility Code
+
+The `bookdata` package contains Python utility code, and the `src` directory contains a number
+of utility modules for use in the Rust code.  To the extent reasonable, we have tried to mirror
+design patterns and function names.

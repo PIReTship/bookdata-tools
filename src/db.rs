@@ -87,6 +87,7 @@ pub struct CopyRequest {
   schema: Option<String>,
   table: String,
   columns: Option<Vec<String>>,
+  format: Option<String>,
   truncate: bool,
   name: String
 }
@@ -98,6 +99,7 @@ impl CopyRequest {
       schema: None,
       table: table.to_string(),
       columns: None,
+      format: None,
       truncate: false,
       name: "copy".to_string()
     })
@@ -117,6 +119,13 @@ impl CopyRequest {
     }
     CopyRequest {
       columns: Some(cvec),
+      ..self
+    }
+  }
+
+  pub fn with_format(self, format: &str) -> CopyRequest {
+    CopyRequest {
+      format: Some(format.to_string()),
       ..self
     }
   }
@@ -149,6 +158,9 @@ impl CopyRequest {
       query.push_str(&s);
     }
     query.push_str(" FROM STDIN");
+    if let Some(ref fmt) = self.format {
+      query.push_str(&format!(" (FORMAT {})", fmt));
+    }
     query
   }
 
@@ -196,10 +208,6 @@ pub struct CopyTarget {
 }
 
 impl CopyTarget {
-  pub fn close(mut self) -> Result<u64> {
-    self.do_close(true)
-  }
-
   fn do_close(&mut self, warn: bool) -> Result<u64> {
     if let Some(w) = self.writer.take() {
       std::mem::drop(w);
@@ -259,6 +267,18 @@ fn cr_set_name() {
   let cr = CopyRequest::new(&("foo".to_string()), "wombat").unwrap();
   let cr = cr.with_name("bob");
   assert_eq!(cr.name, "bob");
+  assert_eq!(cr.db_url, "foo");
+  assert_eq!(cr.table, "wombat");
+  assert!(cr.columns.is_none());
+  assert!(cr.schema.is_none());
+  assert!(!cr.truncate);
+}
+
+#[test]
+fn cr_set_format() {
+  let cr = CopyRequest::new(&("foo".to_string()), "wombat").unwrap();
+  let cr = cr.with_format("CSV");
+  assert_eq!(cr.format, Some("CSV".to_string()));
   assert_eq!(cr.db_url, "foo");
   assert_eq!(cr.table, "wombat");
   assert!(cr.columns.is_none());
