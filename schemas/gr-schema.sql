@@ -18,3 +18,7 @@ CREATE TABLE gr.raw_author (
   gr_author_rid SERIAL NOT NULL,
   gr_author_data JSONB NOT NULL
 );
+CREATE TABLE gr.raw_series (
+  gr_series_rid SERIAL NOT NULL,
+  gr_series_data JSONB NOT NULL
+);
