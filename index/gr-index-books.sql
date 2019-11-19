@@ -55,6 +55,11 @@ INSERT INTO isbn_id (isbn)
 SELECT gr_isbn13 FROM gr.book_ids
 WHERE gr_isbn13 IS NOT NULL AND gr_isbn13 NOT IN (SELECT isbn FROM isbn_id);
 
+--- #step Update ISBN ID records with ASINs from GoodReads
+INSERT INTO isbn_id (isbn)
+SELECT gr_asin FROM gr.book_ids
+WHERE gr_asin IS NOT NULL AND gr_asin NOT IN (SELECT isbn FROM isbn_id);
+
 --- #step Map ISBNs to book IDs
 CREATE TABLE IF NOT EXISTS gr.book_isbn
   AS SELECT gr_book_id, isbn_id, COALESCE(bc_of_gr_work(gr_work_id), bc_of_gr_book(gr_book_id)) AS book_code
