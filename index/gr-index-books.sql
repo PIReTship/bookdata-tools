@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS gr.work_ids
 
 --- #step Index work identifiers
 --- #allow duplicate_object
+--- #allow invalid_table_definition
 CREATE UNIQUE INDEX IF NOT EXISTS work_id_idx ON gr.work_ids (gr_work_id);
 ALTER TABLE gr.work_ids ADD CONSTRAINT gr_work_id_pk PRIMARY KEY (gr_work_rid);
 ALTER TABLE gr.work_ids ADD CONSTRAINT gr_work_id_fk FOREIGN KEY (gr_work_rid) REFERENCES gr.raw_work (gr_work_rid);
@@ -52,12 +53,12 @@ INSERT INTO isbn_id (isbn)
 SELECT DISTINCT gr_isbn FROM gr.book_ids
 WHERE gr_isbn IS NOT NULL AND gr_isbn NOT IN (SELECT isbn FROM isbn_id);
 INSERT INTO isbn_id (isbn)
-SELECT gr_isbn13 FROM gr.book_ids
+SELECT DISTINCT gr_isbn13 FROM gr.book_ids
 WHERE gr_isbn13 IS NOT NULL AND gr_isbn13 NOT IN (SELECT isbn FROM isbn_id);
 
 --- #step Update ISBN ID records with ASINs from GoodReads
 INSERT INTO isbn_id (isbn)
-SELECT gr_asin FROM gr.book_ids
+SELECT DISTINCT gr_asin FROM gr.book_ids
 WHERE gr_asin IS NOT NULL AND gr_asin NOT IN (SELECT isbn FROM isbn_id);
 
 --- #step Map ISBNs to book IDs
