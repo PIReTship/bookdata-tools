@@ -1,6 +1,7 @@
 --- #dep gr-books
 --- #dep gr-works
 --- #dep gr-authors
+--- #dep gr-book-genres
 --- #step Add book PK
 --- #allow invalid_table_definition
 ALTER TABLE gr.raw_book ADD CONSTRAINT gr_raw_book_pk PRIMARY KEY (gr_book_rid);
@@ -66,8 +67,10 @@ CREATE TABLE IF NOT EXISTS gr.book_isbn
   AS SELECT gr_book_id, isbn_id, COALESCE(bc_of_gr_work(gr_work_id), bc_of_gr_book(gr_book_id)) AS book_code
   FROM gr.book_ids, isbn_id
   WHERE isbn = gr_isbn OR isbn = gr_isbn13;
+
 --- #step Index GoodReads ISBNs
 --- #allow duplicate_object
+--- #allow duplicate_table
 -- this will fail promptly with duplicate object if the index already exists
 CREATE INDEX book_isbn_book_idx ON gr.book_isbn (gr_book_id);
 CREATE INDEX book_isbn_isbn_idx ON gr.book_isbn (isbn_id);
@@ -75,3 +78,12 @@ CREATE INDEX book_isbn_code_idx ON gr.book_isbn (book_code);
 ALTER TABLE gr.book_isbn ADD CONSTRAINT gr_book_isbn_book_fk FOREIGN KEY (gr_book_id) REFERENCES gr.book_ids (gr_book_id);
 ALTER TABLE gr.book_isbn ADD CONSTRAINT gr_book_isbn_isbn_fk FOREIGN KEY (isbn_id) REFERENCES isbn_id (isbn_id);
 ANALYZE gr.book_isbn;
+
+--- #step Index GoodReads book genres
+CREATE TABLE IF NOT EXISTS gr.book_genres
+  AS SELECT gr_book_rid, gr_book_id, key AS genre, value AS score
+       FROM gr.raw_book_genres, jsonb_each_text(gr_book_genres_data->'genres'),
+            gr.book_ids
+     WHERE gr_book_id = (gr_book_genres_data->>'book_id')::int;
+CREATE INDEX bg_book_rid ON gr.book_genres (gr_book_rid);
+CREATE INDEX bg_book_id ON gr.book_genres (gr_book_id);
