@@ -11,6 +11,9 @@ ALTER TABLE gr.raw_work ADD CONSTRAINT gr_raw_work_pk PRIMARY KEY (gr_work_rid);
 --- #step Add author PK
 --- #allow invalid_table_definition
 ALTER TABLE gr.raw_author ADD CONSTRAINT gr_raw_author_pk PRIMARY KEY (gr_author_rid);
+--- #step Add book-genre PK
+--- #allow invalid_table_definition
+ALTER TABLE gr.raw_book_genres ADD CONSTRAINT gr_raw_book_genres_pk PRIMARY KEY (gr_book_genres_rid);
 
 --- #step Extract work identifiers
 CREATE TABLE IF NOT EXISTS gr.work_ids
@@ -80,6 +83,7 @@ ALTER TABLE gr.book_isbn ADD CONSTRAINT gr_book_isbn_isbn_fk FOREIGN KEY (isbn_i
 ANALYZE gr.book_isbn;
 
 --- #step Index GoodReads book genres
+--- #allow duplicate_table
 CREATE TABLE IF NOT EXISTS gr.book_genres
   AS SELECT gr_book_rid, gr_book_id, key AS genre, value AS score
        FROM gr.raw_book_genres, jsonb_each_text(gr_book_genres_data->'genres'),
