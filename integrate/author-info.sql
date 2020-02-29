@@ -47,9 +47,7 @@ CREATE MATERIALIZED VIEW rated_book AS
 SELECT DISTINCT cluster, isbn_id
   FROM (SELECT book_id AS cluster FROM bx.add_action
         UNION DISTINCT
-        SELECT book_id AS cluster FROM az.rating
-        UNION DISTINCT
-        SELECT book_id AS cluster FROM gr.add_action) rated
+        SELECT book_id AS cluster FROM az.rating) rated
   LEFT JOIN isbn_cluster USING (cluster);
 CREATE INDEX rated_book_cluster_idx ON rated_book (cluster);
 CREATE INDEX rated_book_isbn_idx ON rated_book (isbn_id);
