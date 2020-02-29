@@ -74,6 +74,7 @@ This imports the following data sets:
 -   OpenLibrary Dump - the editions, works, and authors dumps from <https://openlibrary.org/developers/dumps> (auto-downloaded).
 -   Amazon Ratings - the 'ratings only' data for _Books_ from <http://jmcauley.ucsd.edu/data/amazon/> and save it in `data` (auto-downloaded).  **If you use this data, cite the paper.**
 -   BookCrossing - the BX-Book-Ratings CSV file from <http://www2.informatik.uni-freiburg.de/~cziegler/BX/> (auto-downloaded). **If you use this data, cite the paper.**
+-   GoodReads - the GoodReads books, works, authors, and *full interaction* files from <https://sites.google.com/eng.ucsd.edu/ucsdbookgraph/home> (**not** auto-downloaded).  **If you use this data, cite the paper.**
 
 Several of these files can be auto-downloaded with the DVC scripts; others will need to be manually downloaded.
 
@@ -141,3 +142,41 @@ see if they are up-to-date.
 The `bookdata` package contains Python utility code, and the `src` directory contains a number
 of utility modules for use in the Rust code.  To the extent reasonable, we have tried to mirror
 design patterns and function names.
+
+## Design for Datasets
+
+The general import philosophy is that we import the data into a PostgreSQL table in a raw form,
+only doing those conversions necessary to be able to access it with PostgreSQL commands and
+functions.  We then extract information from this raw form into other tables and materialized
+views to enable relational queries.
+
+Each data set's import process follows the following steps:
+
+1. Initialize the database schema, with an SQL script under `schemas/`.
+2. Import the raw data, controlled by DVC steps under `import/`.  This may be multiple steps;
+   for example, OpenLibrary has a separate import step for each file.  Actual import is usually
+   handled by Rust or Python code.
+3. Index the data into relational views and tables.  This is done by SQL scripts under `index/`.
+
+Data integration then happens after the data sets are indexed (mostly).
+
+## Book Identifiers
+
+Each data set comes with its own identification scheme for books:
+
+- LCCN
+- OpenLibrary key
+- ASIN
+- GoodReads book and work identifiers
+
+We integrate these through two steps.  First, we map ISBNs to numeric IDs with the `isbn_id` table.
+This table contains every ISBN (or ISBN-like thing, such as ASIN) we have seen and associates it
+with a unique identifier.
+
+Second, we map ISBN IDs to clusters with the `isbn_cluster` table.  A cluster is a collection of
+related ISBNs, such as the different editions of a work.  They correspond to GoodReads or OpenLibrary
+'works' (in fact, when a GoodReads or OpenLibrary work is available, it is used to generate the
+clusters).
+
+This allows us to connect ratings to metadata with maximal link coverage, by pulling in metadata
+across the whole book cluster.

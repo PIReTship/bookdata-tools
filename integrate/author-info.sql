@@ -1,5 +1,6 @@
 --- #dep bx-index
 --- #dep az-index
+--- #dep gr-index-ratings
 --- #dep cluster
 --- #dep loc-mds-cluster
 --- #dep viaf-index

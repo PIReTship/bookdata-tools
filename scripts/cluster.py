@@ -56,7 +56,38 @@ class scope_ol:
         FROM ol.isbn_link l JOIN ol.isbn_link r ON (l.book_code = r.book_code)
     ''')
 
-_all_scopes = ['ol', 'loc-mds']
+
+class scope_gr:
+    name = 'GoodReads'
+    schema = 'gr'
+
+    node_query = dedent('''
+        SELECT DISTINCT isbn_id, MIN(book_code) AS record
+        FROM gr.book_isbn GROUP BY isbn_id
+    ''')
+
+    edge_query = dedent('''
+        SELECT DISTINCT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
+        FROM gr.book_isbn l JOIN gr.book_isbn r ON (l.book_code = r.book_code)
+    ''')
+
+
+class scope_loc_id:
+    name = 'LOC'
+    schema = 'locid'
+
+    node_query = dedent('''
+        SELECT isbn_id, MIN(book_code) AS record
+        FROM locid.isbn_link GROUP BY isbn_id
+    ''')
+
+    edge_query = dedent('''
+        SELECT DISTINCT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
+        FROM locid.isbn_link l JOIN locid.isbn_link r ON (l.book_code = r.book_code)
+    ''')
+
+
+_all_scopes = ['ol', 'gr', 'loc-mds']
 
 
 def get_scope(name):
