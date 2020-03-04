@@ -72,9 +72,9 @@ This imports the following data sets:
 -   LoC MDSConnect Name Authorities from <https://www.loc.gov/cds/products/MDSConnect-name_authorities.html> (auto-downloaded).
 -   Virtual Internet Authority File - get the MARC 21 XML data file from <http://viaf.org/viaf/data/> (**not** auto-downloaded).
 -   OpenLibrary Dump - the editions, works, and authors dumps from <https://openlibrary.org/developers/dumps> (auto-downloaded).
--   Amazon Ratings - the 'ratings only' data for _Books_ from <http://jmcauley.ucsd.edu/data/amazon/> and save it in `data` (auto-downloaded).  **If you use this data, cite the paper on that site.**
+-   Amazon Ratings - the 'ratings only' data for _Books_ from <http://jmcauley.ucsd.edu/data/amazon/> and save it in `data` (**not** auto-downloaded - save CSV file in `data`).  **If you use this data, cite the paper on that site.**
 -   BookCrossing - the BX-Book-Ratings CSV file from <http://www2.informatik.uni-freiburg.de/~cziegler/BX/> (auto-downloaded). **If you use this data, cite the paper on that site.**
--   GoodReads - the GoodReads books, works, authors, and *full interaction* files from <https://sites.google.com/eng.ucsd.edu/ucsdbookgraph/home> (**not** auto-downloaded).  **If you use this data, cite the paper on that site.**
+-   GoodReads - the GoodReads books, works, authors, and *full interaction* files from <https://sites.google.com/eng.ucsd.edu/ucsdbookgraph/home> (**not** auto-downloaded - save GZip'd JSON files in `data`).  **If you use this data, cite the paper on that site.**
 
 Several of these files can be auto-downloaded with the DVC scripts; others will need to be manually downloaded.
 
