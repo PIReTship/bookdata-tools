@@ -1,3 +1,5 @@
+--- Schema for tables tracking the import process and related metadata
+
 CREATE TABLE IF NOT EXISTS stage_status (
     stage_name VARCHAR PRIMARY KEY,
     started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
