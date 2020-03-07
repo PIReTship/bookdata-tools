@@ -1,4 +1,5 @@
 --- #dep init
+--- #table isbn_id
 --- #step ISBN ID storage
 CREATE TABLE IF NOT EXISTS isbn_id (
   isbn_id SERIAL PRIMARY KEY,

@@ -1,4 +1,11 @@
 --- #dep common-schema
+--- #table gr.raw_interaction
+--- #table gr.raw_book
+--- #table gr.raw_work
+--- #table gr.raw_author
+--- #table gr.raw_series
+--- #table gr.raw_book_genres
+
 DROP SCHEMA IF EXISTS gr CASCADE;
 CREATE SCHEMA gr;
 

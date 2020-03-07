@@ -43,6 +43,7 @@ def begin_stage(cur, stage):
     ''', [stage])
     cur.execute('DELETE FROM stage_file WHERE stage_name = %s', [stage])
     cur.execute('DELETE FROM stage_dep WHERE stage_name = %s', [stage])
+    cur.execute('DELETE FROM stage_table WHERE stage_name = %s', [stage])
 
 
 def record_dep(cur, stage, dep):
@@ -62,6 +63,26 @@ def record_dep(cur, stage, dep):
         RETURNING dep_name, dep_key
     ''', [stage, dep])
     return cur.fetchall()
+
+
+def record_tbl(cur, stage, ns, tbl):
+    """
+    Record a table associated with a stage.
+    """
+    if hasattr(cur, 'cursor'):
+        # this is a connection
+        with cur, cur.cursor() as c:
+            return record_tbl(c, stage, ns, tbl)
+
+    _log.info('recording table %s -> %s.%s', stage, ns, tbl);
+    cur.execute('''
+        INSERT INTO stage_table (stage_name, st_ns, st_name)
+        VALUES (%s, %s, %s)
+    ''', [stage, ns, tbl])
+    cur.execute('''
+        SELECT oid, kind FROM stage_table_oids WHERE stage_name = %s AND st_ns = %s AND st_name = %s
+    ''', [stage, ns, tbl])
+    return cur.fetchone()
 
 
 def record_file(cur, file, hash, stage=None):

@@ -1,4 +1,7 @@
 --- #dep common-schema
+--- #table locmds.book_marc_field
+--- #table locmds.name_marc_field
+
 CREATE SCHEMA IF NOT EXISTS locmds;
 
 DROP TABLE IF EXISTS locmds.book_marc_field CASCADE;

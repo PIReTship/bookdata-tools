@@ -162,7 +162,7 @@ class SqlScript:
 
     def _parse(self, lines):
         self.chunks = []
-        self.deps = self._parse_script_header(lines)
+        self.deps, self.tables = self._parse_script_header(lines)
         next_chunk = self._parse_chunk(lines, len(self.chunks) + 1)
         while next_chunk is not None:
             if next_chunk:
@@ -172,6 +172,7 @@ class SqlScript:
     @classmethod
     def _parse_script_header(cls, lines):
         deps = []
+        tables = []
 
         line = lines.peek(None)
         while line is not None:
@@ -190,12 +191,20 @@ class SqlScript:
             if code == 'dep':
                 deps.append(args)
                 next(lines)  # eat line
+            elif code == 'table':
+                parts = args.split('.', 2)
+                if len(parts) > 1:
+                    ns, tbl = parts
+                    tables.append((ns, tbl))
+                else:
+                    tables.append(('public', args))
+                next(lines)  # eat line
             else:  # any other code, we're out of header
                 break
 
             line = lines.peek(None)
 
-        return deps
+        return deps, tables
 
     @classmethod
     def _parse_chunk(cls, lines: peekable, n: int):
