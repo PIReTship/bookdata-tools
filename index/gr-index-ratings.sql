@@ -1,5 +1,8 @@
 --- #dep gr-interactions
 --- #dep cluster
+--- #table gr.user_info
+--- #table gr.interaction
+--- #table gr.rating
 --- #step Add interaction PK
 --- #allow invalid_table_definition
 ALTER TABLE gr.raw_interaction ADD CONSTRAINT gr_raw_interaction_pk PRIMARY KEY (gr_interaction_rid);

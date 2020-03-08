@@ -1,4 +1,7 @@
 --- #dep viaf
+--- #table viaf.record_codes
+--- #table viaf.author_name
+--- #table viaf.author_gender
 --- #step Index MARC record IDs
 CREATE INDEX If NOT EXISTS marc_field_rec_idx ON viaf.marc_field (rec_id);
 ANALYZE viaf.marc_field;

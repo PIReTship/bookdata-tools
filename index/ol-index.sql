@@ -1,6 +1,8 @@
 --- #dep ol-authors
 --- #dep ol-editions
 --- #dep ol-works
+--- #table ol.work_authors
+--- #table ol.edition_work
 --- #step Index OL author table
 --- #allow invalid_table_definition
 CREATE INDEX IF NOT EXISTS author_key_idx ON ol.author (author_key);
