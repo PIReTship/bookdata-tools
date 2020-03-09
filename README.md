@@ -148,28 +148,39 @@ in `.dvc` files to run the import steps in the correct order.
 
 ### DVC Usage and Stage Files
 
-In order to allow DVC to be aware of current database state, we use a little bit of an unconventional
-layout for many of our DVC scripts.  Many steps have two `.dvc` files with associated outputs:
+Running the scripts here with raw `dvc` **does not work**.  You need to use the `dvc.sh` wrapper
+script, as in:
 
--   `step.dvc` runs import stage `step`.
--   `step.transcript` is (consistent) output from running `step`, recording the actions taken.  It is
-    registered with DVC as the output of `step.dvc`.
--   `step.status.dvc` is an *always-changed* DVC stage that depends on `step.transcript` and produces
-    `step.status`, to check the current status in the database of that import stage.
--   `step.status` is an *uncached* output (so it isn't saved with DVC, and we also ignore it from Git)
-    that is registered as the output of `step.status.dvc`.  It contains a stable status dump from the
-    database, to check whether `step` is actually in the database or has changed in a meaningful way.
+    ./dvc.sh repro
 
-Steps that depend on `step` then depend on `step.status`, *not* `step.transcript`.
+The wrapper script sets up DVC to recognize our special `pgstat://stage` URLs for tracking the
+status of database import stages in the live database.
+
+Import is structured as a concept of *stages* map almost 1:1 to our DVC step files.  They manage
+database-side tracking of data and status.
+
+Each import stage includes `pgstat://stage` as an *unached* output stage, as in:
+
+``` yaml
+outs:
+- path: pgstat://bx-import
+  cache: false
+```
+
+From the command line, uncached outptus are created by using `-O` instead of `-o`.
+
+Each script that requires another stage to be run first depends on `pgstat://stage` as a dependency.
+
+This wires together all of the dependencies, and uses the current state in the database instead of
+files that might become out-of-sync with the database to track import status.
+
+The stage name usually, but not always, matches the name of the `.dvc` file.  Some old stages do not,
+but please keep the names matching for all new stages going forwards.
 
 The reason for this somewhat bizarre layoutis that if we just wrote the output files, and the database
 was reloaded or corrupted, the DVC status-checking logic would not be ableto keep track of it.  This
 double-file design allows us to make subsequent steps depend on the actual results of the import, not
 our memory of the import in the Git repository.
-
-The file `init.status` is an initial check for database initialization, and forces the creation of the
-meta-structures used for tracking stage status.  Everything touching the database should depend on it,
-directly or indirectly.
 
 ### In-Database Status Tracking
 
