@@ -5,10 +5,13 @@ Support code for our custom DVC remote.
 import logging
 
 from urllib.parse import urlparse
+import hashlib
 
 from dvc.remote.base import RemoteBASE
 from dvc.output.base import OutputBase
 from dvc.dependency.base import DependencyBase
+
+from . import tracking
 
 _log = logging.getLogger('dvc.bgpatch')
 
@@ -21,27 +24,29 @@ class PGRemote(RemoteBASE):
     PARAM_CHECKSUM = 'md5'
 
     def __init__(self, *args, **kwargs):
-        _log.error('creating pgremote')
         super().__init__(*args, **kwargs)
 
     def get_file_checksum(self, path_info):
-        _log.error('checksum from {}', path_info)
-        raise NotImplementedError()
+        _log.debug('checksum from {}', path_info)
+        status = tracking.stage_status(path_info.bucket)
+        h = hashlib.md5()
+        h.update(status.encode('utf-8'))
+        return h.hexdigest()
 
     def copy(self, from_info, to_info):
-        _log.error('copy from %s', from_info)
-        _log.error('copy to %s', to_info)
+        _log.debug('copy from %s', from_info)
+        _log.debug('copy to %s', to_info)
         raise NotImplementedError()
 
     def exists(self, path_info):
-        _log.error('exists? {}', path_info)
-        _log.info('pi type {}', type(path_info))
-        _log.info('pi scheme {}', path_info.scheme)
-        _log.info('pi path {}', path_info.bucket)
-        raise NotImplementedError()
+        _log.debug('exists? {}', path_info)
+        return tracking.stage_exists(path_info.bucket)
+
+    def remove(self, path_info):
+        _log.info('asked to remove {}, ignoring', path_info)
 
     def _download(self, from_info, to_info, name, no_progress_bar):
-        _log.error('exists? {}', from_info)
+        _log.info('download requested for {}', from_info)
         raise NotImplementedError()
 
 
