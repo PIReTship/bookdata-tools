@@ -33,10 +33,12 @@ def db_url():
     if 'DB_URL' in os.environ:
         return os.environ['DB_URL']
 
+    repo = git.Repo(search_parent_directories=True)
+
     cfg = ConfigParser()
     _log.debug('reading config from db.cfg')
-    cfg.read(['db.cfg'])
-    repo = git.Repo()
+    cfg.read([repo.working_tree_dir + '/db.cfg'])
+
     branch = repo.head.reference.name
     _log.info('reading database config for branch %s', branch)
 
