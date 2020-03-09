@@ -54,6 +54,7 @@ def db_url():
 
     if db is None:
         _log.error('No database specified for branch %s', branch)
+        raise RuntimeError('no database specified')
 
     url = 'postgresql://'
     if user:
