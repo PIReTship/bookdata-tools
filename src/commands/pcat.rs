@@ -7,11 +7,11 @@ use std::path::{PathBuf, Path};
 use log::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use sha1::Sha1;
+use anyhow::Result;
 
 use crate::db::{DbOpts, CopyRequest};
 use crate::tracking::StageOpts;
 use crate::io::{HashRead, HashWrite};
-use crate::error::Result;
 use super::Command;
 
 const PB_STYLE: &'static str = "{prefix}: {elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})";
