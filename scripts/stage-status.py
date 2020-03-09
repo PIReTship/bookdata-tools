@@ -71,6 +71,15 @@ with db.connect() as dbc:
         for fn, fh in cur:
             print('SOURCE', fn, fh, file=sf)
 
+        cur.execute('''
+            SELECT st_ns, st_name, oid, kind
+            FROM stage_table_oids
+            WHERE stage_name = %s
+            ORDER BY st_ns, st_name
+        ''', [stage])
+        for ns, tbl, oid, kind in cur:
+            print(f'TABLE {ns}.{tbl} OID {oid} KIND {kind}', file=sf)
+
         if timestamps:
             print('FINISH', end, file=sf)
         if key:

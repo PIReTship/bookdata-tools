@@ -1,6 +1,7 @@
 --- #dep gr-books
 --- #dep gr-series
 --- #dep gr-index-books
+--- #table gr.book_series
 
 --- #step Extract book series IDs
 DROP TABLE IF EXISTS gr.series_ids CASCADE;

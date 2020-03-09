@@ -1,4 +1,3 @@
-mod error;
 mod cleaning;
 mod tsv;
 mod db;
@@ -7,10 +6,10 @@ mod tracking;
 mod logging;
 mod commands;
 
+use anyhow::{anyhow, Result};
 use log::*;
 use structopt::StructOpt;
 
-use error::{Result, err};
 use logging::LogOpts;
 use commands::*;
 
@@ -36,7 +35,7 @@ fn main() -> Result<()> {
   debug!("subcommand name {}", sc_name);
   for cmd in &cmds {
     if cmd.name() == sc_name {
-      cmd.run(sc_app.ok_or(err("no options"))?)?
+      cmd.run(sc_app.ok_or(anyhow!("no options"))?)?
     }
   }
   Ok(())

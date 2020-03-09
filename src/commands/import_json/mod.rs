@@ -14,11 +14,11 @@ use structopt::StructOpt;
 use flate2::bufread::MultiGzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
 use sha1::Sha1;
+use anyhow::{Result, anyhow};
 
 use crate::io::{HashRead, HashWrite};
 use crate::db::{DbOpts, CopyRequest};
 use crate::tracking::StageOpts;
-use crate::error::{Result, BDError, err};
 use super::Command;
 
 /// Data set definition type - anything implementing DataSetOps
@@ -26,12 +26,12 @@ type DataSet = Box<dyn ops::DataSetOps>;
 
 // Parse a data set definition from a string
 impl FromStr for DataSet {
-  type Err = BDError;
+  type Err = anyhow::Error;
   fn from_str(s: &str) -> Result<DataSet> {
     match s {
       "openlib" => Ok(Box::new(openlib::Ops {})),
       "goodreads" => Ok(Box::new(goodreads::Ops {})),
-      _ => Err(err(&format!("invalid string {}", s)))
+      _ => Err(anyhow!("invalid string {}", s))
     }
   }
 }

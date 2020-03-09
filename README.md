@@ -7,14 +7,14 @@ If you use these scripts in any published reseaerch, cite [our paper](https://md
 > Michael D. Ekstrand, Mucun Tian, Mohammed R. Imran Kazi, Hoda Mehrpouyan, and Daniel Kluver. 2018. Exploring Author Gender in Book Rating and Recommendation. In *Proceedings of the 12th ACM Conference on Recommender Systems* (RecSys '18). ACM, pp. 242–250. DOI:[10.1145/3240323.3240373](https://doi.org/10.1145/3240323.3240373). arXiv:[1808.07586v1](https://arxiv.org/abs/1808.07586v1) [cs.IR].
 
 **Note:** the limitations section of the paper contains important information about
-the limitations of the data these scripts compile.  **Do not use this data or tools
-without understanding those limitations**.  In particular, VIAF's gender information
-is incomplete and, in a number of cases, incorrect.
+the limitations of the data these scripts compile.  **Do not use the gender information
+in this data data or tools without understanding those limitations**.  In particular,
+VIAF's gender information is incomplete and, in a number of cases, incorrect.
 
 In addition, several of the data sets integrated by this project come from other sources
-with their own publications.  **If you use any of the rating data, cite the appropriate
-original source paper.**  For each data set below, we have provided a link to the page
-that describes the appropriate citation.
+with their own publications.  **If you use any of the rating or interaction data, cite the
+appropriate original source paper.**  For each data set below, we have provided a link to the
+page that describes the data and its appropriate citation.
 
 ## Requirements
 
@@ -39,18 +39,37 @@ The `environment.yml` file defines an Anaconda environment that contains all the
 
     conda create -f environment.yml
 
-All scripts read database connection info from the standard PostgreSQL client environment variables:
-
-- `PGDATABASE`
-- `PGHOST`
-- `PGUSER`
-- `PGPASSWORD`
-
-Alternatively, they will read from `DB_URL`.
-
 We use [Data Version Control](https://dvc.org) (`dvc`) to script the import and wire
 its various parts together.  A complete re-run, not including file download time, takes
 approximately **8 hours** on our hardware (24-core 2GHz Xeon, 128GiB RAM, spinning disks).
+
+## Configurating Database Access
+
+All scripts read database configuration from the `DB_URL` environment variable, or alternately
+a config file `db.cfg`.  This file should look like:
+
+```ini
+[DEFAULT]
+host = localhost
+database = bookdata
+```
+
+This file additionally supports branch-specfic configuration sections that will apply to work
+on different Git branches, e.g.:
+
+```ini
+[DEFAULT]
+host = localhost
+database = bookdata
+
+[master]
+database = bdorig
+```
+
+This setup will use `bookdata` for most branches, but will connect to `bdorig` when working
+from the `master` branch in the git repository.
+
+This file should **not** be committed to Git.  It is ignored in `.gitignore`.
 
 ## Initializing and Configuring the Database
 
@@ -72,9 +91,9 @@ This imports the following data sets:
 -   LoC MDSConnect Name Authorities from <https://www.loc.gov/cds/products/MDSConnect-name_authorities.html> (auto-downloaded).
 -   Virtual Internet Authority File - get the MARC 21 XML data file from <http://viaf.org/viaf/data/> (**not** auto-downloaded).
 -   OpenLibrary Dump - the editions, works, and authors dumps from <https://openlibrary.org/developers/dumps> (auto-downloaded).
--   Amazon Ratings - the 'ratings only' data for _Books_ from <http://jmcauley.ucsd.edu/data/amazon/> and save it in `data` (auto-downloaded).  **If you use this data, cite the paper.**
--   BookCrossing - the BX-Book-Ratings CSV file from <http://www2.informatik.uni-freiburg.de/~cziegler/BX/> (auto-downloaded). **If you use this data, cite the paper.**
--   GoodReads - the GoodReads books, works, authors, and *full interaction* files from <https://sites.google.com/eng.ucsd.edu/ucsdbookgraph/home> (**not** auto-downloaded).  **If you use this data, cite the paper.**
+-   Amazon Ratings - the 'ratings only' data for _Books_ from <http://jmcauley.ucsd.edu/data/amazon/> and save it in `data` (**not** auto-downloaded - save CSV file in `data`).  **If you use this data, cite the paper on that site.**
+-   BookCrossing - the BX-Book-Ratings CSV file from <http://www2.informatik.uni-freiburg.de/~cziegler/BX/> (auto-downloaded). **If you use this data, cite the paper on that site.**
+-   GoodReads - the GoodReads books, works, authors, and *full interaction* files from <https://sites.google.com/eng.ucsd.edu/ucsdbookgraph/home> (**not** auto-downloaded - save GZip'd JSON files in `data`).  **If you use this data, cite the paper on that site.**
 
 Several of these files can be auto-downloaded with the DVC scripts; others will need to be manually downloaded.
 
@@ -97,6 +116,36 @@ rather via `run.py`, which will make sure the environment is set up properly for
 
     python run.py sql-script [options] script.sql
 
+### SQL Scripts
+
+Our SQL scripts are run with a custom SQL script runner (the `sql-script` Python script), that breaks
+them into chunks, handles errors, and tracks dependencies and script status.  The script runner parses
+directives in SQL comments; for example:
+
+    --- #step ISBN ID storage
+    CREATE TABLE IF NOT EXISTS isbn_id (
+    isbn_id SERIAL PRIMARY KEY,
+    isbn VARCHAR NOT NULL UNIQUE
+    );
+
+is a step called "ISBN ID storage".  Each step is processed in a transaction that is committed at the
+end, so steps are atomic (unless marked with `#notx`).
+
+These are the directives for steps:
+
+- `#step LABEL` starts a new step with the label `LABEL`.  Additional directives before the first
+  SQL statement will apply to this step.
+- `#notx` means the step will run in autocommit mode.  This is needed for certain maintenance commands
+  that do not work within transactions.
+- `#allow CODE` allows the PostgreSQL error 'code', such as `invalid_table_definition`.  The script
+  will not fail if the step fails with this error.  Used for dealing with steps that do things like
+  create indexes, so if the index already exists it is fine to still run the script.
+
+In addition, the top of the file can have `#dep` directives, that indicate the dependencies of this
+script.  The only purpose of the `#dep` is to record dependencies in the database stage state
+table, so that modifications can propagate and be detected; dependencies still need to be recorded
+in `.dvc` files to run the import steps in the correct order.
+
 ### DVC Usage and Stage Files
 
 In order to allow DVC to be aware of current database state, we use a little bit of an unconventional
@@ -111,7 +160,7 @@ layout for many of our DVC scripts.  Many steps have two `.dvc` files with assoc
     that is registered as the output of `step.status.dvc`.  It contains a stable status dump from the
     database, to check whether `step` is actually in the database or has changed in a meaningful way.
 
-Steps that depend on `step` then depend on `step.status`, *not* `step.trasncript`.
+Steps that depend on `step` then depend on `step.status`, *not* `step.transcript`.
 
 The reason for this somewhat bizarre layoutis that if we just wrote the output files, and the database
 was reloaded or corrupted, the DVC status-checking logic would not be ableto keep track of it.  This

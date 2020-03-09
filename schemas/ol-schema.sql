@@ -1,4 +1,8 @@
 --- #dep common-schema
+--- #table ol.author
+--- #table ol.work
+--- #table ol.edition
+
 -- Initial table creation with no constraints or indexes
 CREATE SCHEMA IF NOT EXISTS ol;
 

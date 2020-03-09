@@ -1,4 +1,7 @@
 --- #dep loc-mds-books
+--- #table locmds.book_marc_cn
+--- #table locmds.book_record_info
+--- #table locmds.book
 --- #step Index MARC fields
 CREATE INDEX IF NOT EXISTS book_marc_field_rec_idx ON locmds.book_marc_field (rec_id);
 

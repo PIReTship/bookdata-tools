@@ -1,8 +1,8 @@
 use structopt::StructOpt;
 use uuid::Uuid;
+use anyhow::Result;
 
 use super::Command;
-use crate::error::Result;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name="make-uuid")]

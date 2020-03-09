@@ -67,5 +67,9 @@ else:
             # hash the source file
             key.update(h.encode('utf-8'))
         script.execute(dbc, transcript=txf)
+
         with dbc, dbc.cursor() as cur:
+            for ns, tbl in script.tables:
+                oid, kind = tracking.record_tbl(cur, stage, ns, tbl)
+                key.update(f'{ns}.{tbl}:{oid}:{kind}'.encode('utf-8'))
             tracking.end_stage(cur, stage, key=key.hexdigest())

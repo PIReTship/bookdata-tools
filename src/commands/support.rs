@@ -1,7 +1,7 @@
 use structopt::StructOpt;
 use structopt::clap::{App, ArgMatches};
 
-use crate::error::Result;
+use anyhow::Result;
 
 pub struct CmdEntry<'a> {
   app: App<'a,'a>,

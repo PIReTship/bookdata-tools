@@ -1,4 +1,6 @@
 --- #dep common-schema
+--- #table viaf.marc_field
+
 --- #step Create VIAF schema
 CREATE SCHEMA IF NOT EXISTS viaf;
 --- #step Delete old table

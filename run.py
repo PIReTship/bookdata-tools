@@ -15,6 +15,7 @@ src_dir = Path(__file__).parent
 sys.path.insert(0, src_dir)
 
 from bookdata import setup, bin_dir
+from bookdata.db import db_url
 setup()
 
 if sys.argv[1] == '--rust':
@@ -26,6 +27,9 @@ if sys.argv[1] == '--rust':
     sp.run(['cargo', 'build', '--release'], check=True)
     tool = bin_dir / 'bookdata'
     tool = os.fspath(tool)
+
+    if 'DB_URL' not in os.environ:
+        os.environ['DB_URL'] = db_url()
     _log.info('running tool %s', sys.argv[1:])
     sp.run([tool] + sys.argv[1:], check=True)
 else:
