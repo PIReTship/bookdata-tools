@@ -39,18 +39,37 @@ The `environment.yml` file defines an Anaconda environment that contains all the
 
     conda create -f environment.yml
 
-All scripts read database connection info from the standard PostgreSQL client environment variables:
-
-- `PGDATABASE`
-- `PGHOST`
-- `PGUSER`
-- `PGPASSWORD`
-
-Alternatively, they will read from `DB_URL`.
-
 We use [Data Version Control](https://dvc.org) (`dvc`) to script the import and wire
 its various parts together.  A complete re-run, not including file download time, takes
 approximately **8 hours** on our hardware (24-core 2GHz Xeon, 128GiB RAM, spinning disks).
+
+## Configurating Database Access
+
+All scripts read database configuration from the `DB_URL` environment variable, or alternately
+a config file `db.cfg`.  This file should look like:
+
+```ini
+[DEFAULT]
+host = localhost
+database = bookdata
+```
+
+This file additionally supports branch-specfic configuration sections that will apply to work
+on different Git branches, e.g.:
+
+```ini
+[DEFAULT]
+host = localhost
+database = bookdata
+
+[master]
+database = bdorig
+```
+
+This setup will use `bookdata` for most branches, but will connect to `bdorig` when working
+from the `master` branch in the git repository.
+
+This file should **not** be committed to Git.  It is ignored in `.gitignore`.
 
 ## Initializing and Configuring the Database
 

@@ -5,6 +5,7 @@ import time
 import logging
 import hashlib
 import threading
+from configparser import ConfigParser
 from pathlib import Path
 from contextlib import contextmanager
 from datetime import timedelta
@@ -18,6 +19,7 @@ from more_itertools import peekable
 import psycopg2, psycopg2.errorcodes
 from psycopg2 import sql
 import sqlparse
+import git
 
 _log = logging.getLogger(__name__)
 
@@ -31,11 +33,27 @@ def db_url():
     if 'DB_URL' in os.environ:
         return os.environ['DB_URL']
 
-    host = os.environ.get('PGHOST', 'localhost')
-    port = os.environ.get('PGPORT', None)
-    db = os.environ['PGDATABASE']
-    user = os.environ.get('PGUSER', None)
-    pw = os.environ.get('PGPASSWORD', None)
+    cfg = ConfigParser()
+    _log.debug('reading config from db.cfg')
+    cfg.read(['db.cfg'])
+    repo = git.Repo()
+    branch = repo.head.reference.name
+    _log.info('reading database config for branch %s', branch)
+
+    if branch in cfg:
+        section = cfg[branch]
+    else:
+        _log.warn('No configuration for branch %s, using default', branch)
+        section = cfg['DEFAULT']
+
+    host = section.get('host', 'localhost')
+    port = section.get('port', None)
+    db = section.get('database', None)
+    user = section.get('user', None)
+    pw = section.get('password', None)
+
+    if db is None:
+        _log.error('No database specified for branch %s', branch)
 
     url = 'postgresql://'
     if user:
