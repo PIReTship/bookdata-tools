@@ -22,10 +22,8 @@ timestamps = opts.get('--timestamps')
 
 stage = opts.get('STAGE')
 out = opts.get('-o', None)
-if out is None:
-    out = f'{stage}.status'
 
-if out == '-':
+if out is None or out == '-':
     sf = sys.stdout
 else:
     sf = open(out, 'w')
