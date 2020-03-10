@@ -11,6 +11,7 @@ use structopt::StructOpt;
 use zip::read::ZipArchive;
 use indicatif::{ProgressBar, ProgressStyle};
 use uuid::Uuid;
+use anyhow::{Result, anyhow};
 
 use ntriple::parser::quiet_line;
 use ntriple::{Subject, Predicate, Object};
@@ -18,7 +19,6 @@ use ntriple::{Subject, Predicate, Object};
 use crossbeam_channel::{Sender, Receiver, bounded};
 
 use crate::cleaning::{write_pgencoded};
-use crate::error::{Result, err};
 use crate::db;
 use crate::logging;
 use super::Command;
@@ -102,7 +102,7 @@ impl NodePlumber {
   }
 
   /// Run a single batch of inserts
-  fn run_batch(&mut self, db: &postgres::GenericConnection) -> Result<(u64, bool)> {
+  fn run_batch(&mut self, db: &dyn postgres::GenericConnection) -> Result<(u64, bool)> {
     let stmt = db.prepare_cached(&self.query)?;
     let mut n = 0;
     while n < NODE_BATCH_SIZE {
@@ -142,9 +142,9 @@ impl NodeSink {
   fn save(&self, id: &Uuid, iri: &str) -> Result<()> {
     match self.send.send(NodeMsg::SaveNode(*id, iri.to_string())) {
       Ok(_) => Ok(()),
-      Err(_) => Err(err("node channel disconnected"))
+      Err(_) => Err(anyhow!("node channel disconnected"))
+    }
   }
-}
 }
 
 impl Drop for NodeSink {
@@ -223,10 +223,10 @@ impl Command for ImportNtriples {
     let mut zf = ZipArchive::new(fs)?;
     if zf.len() > 1 {
       error!("{:?}: more than one member file", inf);
-      return Err(err("too many input files"))
+      return Err(anyhow!("too many input files"))
     } else if zf.len() == 0 {
       error!("{:?}: empty input archive", inf);
-      return Err(err("empty input archive"));
+      return Err(anyhow!("empty input archive"));
     }
     let member = zf.by_index(0)?;
     info!("processing member {:?} with {} bytes", member.name(), member.size());
