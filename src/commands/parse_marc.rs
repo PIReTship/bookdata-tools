@@ -13,8 +13,8 @@ use quick_xml::Reader;
 use quick_xml::events::Event;
 use flate2::bufread::MultiGzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
+use anyhow::{Result, anyhow};
 
-use crate::error::{Result, err};
 use crate::cleaning::write_pgencoded;
 use crate::tsv::split_first;
 use crate::tracking::StageOpts;
@@ -65,7 +65,7 @@ fn process_delim_file<R: BufRead, W: Write>(r: &mut R, w: &mut W, init: usize) -
   let mut rec_count = 0;
   for line in r.lines() {
     let lstr = line?;
-    let (_id, xml) = split_first(&lstr).ok_or(err("invalid line"))?;
+    let (_id, xml) = split_first(&lstr).ok_or(anyhow!("invalid line"))?;
     let mut parse = Reader::from_str(xml);
     let n = process_records(&mut parse, w, init + rec_count)?;
     // we should only have one record per file

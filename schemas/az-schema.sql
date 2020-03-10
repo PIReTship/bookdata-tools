@@ -1,4 +1,5 @@
 --- #dep common-schema
+--- #table az.raw_ratings
 CREATE SCHEMA IF NOT EXISTS az;
 
 DROP TABLE IF EXISTS az.raw_ratings CASCADE;

@@ -1,7 +1,7 @@
 use std::io::prelude::*;
+use anyhow::Result;
 
 use super::ops::{DataSetOps, process_raw};
-use crate::error::Result;
 
 /// GoodReads data set
 pub struct Ops {}

@@ -1,9 +1,8 @@
-use crate::error::{Result, err};
-
 use std::io::prelude::*;
 
 use log::*;
 
+use anyhow::{anyhow, Result};
 use os_pipe::{pipe, PipeWriter};
 use postgres::{Connection, TlsMode};
 use structopt::StructOpt;
@@ -24,7 +23,7 @@ impl ConnectInfo for Option<String> {
   fn db_url(&self) -> Result<String> {
     match self {
       Some(ref s) => Ok(s.clone()),
-      None => Err(err("no URL provided"))
+      None => Err(anyhow!("no URL provided"))
     }
   }
 }
@@ -220,7 +219,7 @@ impl CopyTarget {
         }
         Err(e) => {
           error!("{}: error: {:?}", self.name, e);
-          Err(err("worker thread failed"))
+          Err(anyhow!("worker thread failed"))
         }
       }
     } else {

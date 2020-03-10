@@ -1,5 +1,7 @@
 --- #dep bx-ratings
 --- #dep cluster
+--- #table bx.rating
+--- #table bx.add_action
 --- #step Index ratings
 CREATE INDEX IF NOT EXISTS bx_rating_user_idx ON bx.raw_ratings (user_id);
 CREATE INDEX IF NOT EXISTS bx_rating_isbn_idx ON bx.raw_ratings (isbn);

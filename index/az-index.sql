@@ -1,5 +1,7 @@
 --- #dep az-ratings
 --- #dep cluster
+--- #table az.user_ids
+--- #table az.rating
 --- #step Index ratings
 CREATE INDEX IF NOT EXISTS az_rating_user_idx ON az.raw_ratings (user_key);
 CREATE INDEX IF NOT EXISTS az_rating_asin_idx ON az.raw_ratings (asin);

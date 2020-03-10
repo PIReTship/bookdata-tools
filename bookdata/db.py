@@ -5,6 +5,7 @@ import time
 import logging
 import hashlib
 import threading
+from configparser import ConfigParser
 from pathlib import Path
 from contextlib import contextmanager
 from datetime import timedelta
@@ -18,6 +19,7 @@ from more_itertools import peekable
 import psycopg2, psycopg2.errorcodes
 from psycopg2 import sql
 import sqlparse
+import git
 
 _log = logging.getLogger(__name__)
 
@@ -31,11 +33,30 @@ def db_url():
     if 'DB_URL' in os.environ:
         return os.environ['DB_URL']
 
-    host = os.environ.get('PGHOST', 'localhost')
-    port = os.environ.get('PGPORT', None)
-    db = os.environ['PGDATABASE']
-    user = os.environ.get('PGUSER', None)
-    pw = os.environ.get('PGPASSWORD', None)
+    repo = git.Repo(search_parent_directories=True)
+
+    cfg = ConfigParser()
+    _log.debug('reading config from db.cfg')
+    cfg.read([repo.working_tree_dir + '/db.cfg'])
+
+    branch = repo.head.reference.name
+    _log.info('reading database config for branch %s', branch)
+
+    if branch in cfg:
+        section = cfg[branch]
+    else:
+        _log.warn('No configuration for branch %s, using default', branch)
+        section = cfg['DEFAULT']
+
+    host = section.get('host', 'localhost')
+    port = section.get('port', None)
+    db = section.get('database', None)
+    user = section.get('user', None)
+    pw = section.get('password', None)
+
+    if db is None:
+        _log.error('No database specified for branch %s', branch)
+        raise RuntimeError('no database specified')
 
     url = 'postgresql://'
     if user:
@@ -162,7 +183,7 @@ class SqlScript:
 
     def _parse(self, lines):
         self.chunks = []
-        self.deps = self._parse_script_header(lines)
+        self.deps, self.tables = self._parse_script_header(lines)
         next_chunk = self._parse_chunk(lines, len(self.chunks) + 1)
         while next_chunk is not None:
             if next_chunk:
@@ -172,6 +193,7 @@ class SqlScript:
     @classmethod
     def _parse_script_header(cls, lines):
         deps = []
+        tables = []
 
         line = lines.peek(None)
         while line is not None:
@@ -190,12 +212,20 @@ class SqlScript:
             if code == 'dep':
                 deps.append(args)
                 next(lines)  # eat line
+            elif code == 'table':
+                parts = args.split('.', 2)
+                if len(parts) > 1:
+                    ns, tbl = parts
+                    tables.append((ns, tbl))
+                else:
+                    tables.append(('public', args))
+                next(lines)  # eat line
             else:  # any other code, we're out of header
                 break
 
             line = lines.peek(None)
 
-        return deps
+        return deps, tables
 
     @classmethod
     def _parse_chunk(cls, lines: peekable, n: int):

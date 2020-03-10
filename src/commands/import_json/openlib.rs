@@ -1,9 +1,10 @@
 use std::io::prelude::*;
 
+use anyhow::{Result, anyhow};
+
 use super::ops::DataSetOps;
 use crate::tsv::split_first;
 use crate::cleaning::{write_pgencoded, clean_json};
-use crate::error::{Result, err};
 
 /// OpenLibrary data set
 pub struct Ops {}
@@ -24,7 +25,7 @@ impl DataSetOps for Ops {
 
   fn import(&self, src: &mut dyn BufRead, dst: &mut dyn Write) -> Result<usize> {
     let mut jsbuf = String::new();
-    let fail = || err("bad line");
+    let fail = || anyhow!("bad line"); // thunk to create an error message
     let mut n = 0;
     let mut dbox = Box::new(dst);   // allow dynamic write to be passed to normal methods
     for line in src.lines() {

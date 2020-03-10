@@ -1,7 +1,7 @@
 use std::io::prelude::*;
+use anyhow::Result;
 
 use crate::cleaning::{write_pgencoded, clean_json};
-use crate::error::Result;
 
 /// Trait defining target tables and parsing behavior for a data set
 pub trait DataSetOps {

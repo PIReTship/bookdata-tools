@@ -1,9 +1,8 @@
-use crate::error::{Result};
-
 use std::io;
 use std::path::{Path, PathBuf};
 use std::fs::OpenOptions;
 
+use anyhow::Result;
 use structopt::StructOpt;
 use postgres::Connection;
 

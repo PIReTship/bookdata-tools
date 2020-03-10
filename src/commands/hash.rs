@@ -8,8 +8,8 @@ use log::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use postgres::Connection;
 use sha1::Sha1;
+use anyhow::Result;
 
-use crate::error::Result;
 use super::Command;
 use crate::db;
 
