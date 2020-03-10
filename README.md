@@ -174,8 +174,7 @@ Each script that requires another stage to be run first depends on `pgstat://sta
 This wires together all of the dependencies, and uses the current state in the database instead of
 files that might become out-of-sync with the database to track import status.
 
-The stage name usually, but not always, matches the name of the `.dvc` file.  Some old stages do not,
-but please keep the names matching for all new stages going forwards.
+The stage name matches the name of the `.dvc` file.
 
 The reason for this somewhat bizarre layoutis that if we just wrote the output files, and the database
 was reloaded or corrupted, the DVC status-checking logic would not be ableto keep track of it.  This
