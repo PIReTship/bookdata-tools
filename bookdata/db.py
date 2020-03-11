@@ -45,7 +45,7 @@ def db_url():
     if branch in cfg:
         section = cfg[branch]
     else:
-        _log.warn('No configuration for branch %s, using default', branch)
+        _log.debug('No configuration for branch %s, using default', branch)
         section = cfg['DEFAULT']
 
     host = section.get('host', 'localhost')
