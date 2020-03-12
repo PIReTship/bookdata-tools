@@ -4,12 +4,18 @@ use log::*;
 
 use std::sync::atomic::{AtomicPtr, Ordering};
 use std::ptr;
+use std::marker::PhantomData;
 
 use anyhow::Result;
 
 static mut LOG_LEVEL: LevelFilter = LevelFilter::Info;
 static LOG_PB: AtomicPtr<ProgressBar> = AtomicPtr::new(ptr::null_mut());
 static LOGGER: LogEnv = LogEnv {};
+
+/// Progress bar logging context
+pub struct LogPBState<'a> {
+  phantom: PhantomData<&'a str>
+}
 
 struct LogEnv {}
 
@@ -80,13 +86,18 @@ impl LogOpts {
   }
 }
 
-pub fn set_progress(pb: &ProgressBar) {
+pub fn set_progress<'a>(pb: &'a ProgressBar) -> LogPBState<'a> {
   let pbb = Box::new(pb.clone());
   LOG_PB.store(Box::leak(pbb), Ordering::Relaxed);
+  LogPBState {
+    phantom: PhantomData
+  }
 }
 
-pub fn clear_progress() {
-  LOG_PB.store(ptr::null_mut(), Ordering::Relaxed);
+impl <'a> Drop for LogPBState<'a> {
+  fn drop(&mut self) {
+    LOG_PB.store(ptr::null_mut(), Ordering::Relaxed);
+  }
 }
 
 #[test]

@@ -12,6 +12,7 @@ use anyhow::Result;
 use crate::db::{DbOpts, CopyRequest};
 use crate::tracking::StageOpts;
 use crate::io::{HashRead, HashWrite};
+use crate::logging::set_progress;
 use super::Command;
 
 const PB_STYLE: &'static str = "{prefix}: {elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})";
@@ -48,6 +49,7 @@ fn cat_file<P: AsRef<Path>, W: Write>(inf: P, out: &mut W) -> Result<String> {
   let pb = ProgressBar::new(fs.metadata().unwrap().len());
   pb.set_style(ProgressStyle::default_bar().template(PB_STYLE));
   pb.set_prefix(&fstr);
+  let _pbs = set_progress(&pb);
   let mut hash = Sha1::new();
   let read = HashRead::create(fs, &mut hash);
   let mut pbr = pb.wrap_read(read);
