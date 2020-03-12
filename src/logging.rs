@@ -8,30 +8,27 @@ use std::marker::PhantomData;
 
 use anyhow::Result;
 
-static mut LOG_LEVEL: LevelFilter = LevelFilter::Info;
 static LOG_PB: AtomicPtr<ProgressBar> = AtomicPtr::new(ptr::null_mut());
-static LOGGER: LogEnv = LogEnv {};
 
 /// Progress bar logging context
 pub struct LogPBState<'a> {
   phantom: PhantomData<&'a str>
 }
 
-struct LogEnv {}
+struct LogEnv {
+  level: LevelFilter,
+  progress: &'static AtomicPtr<ProgressBar>
+}
 
 impl Log for LogEnv {
   fn enabled(&self, metadata: &Metadata) -> bool {
-    unsafe {
-      metadata.level() <= LOG_LEVEL
-    }
+    metadata.level() <= self.level
   }
 
   fn log(&self, record: &Record) {
-    let pass = unsafe {
-      record.level() <= LOG_LEVEL
-    };
+    let pass = record.level() <= self.level;
     if pass {
-      let pb_ptr = LOG_PB.load(Ordering::Relaxed);
+      let pb_ptr = self.progress.load(Ordering::Relaxed);
       if pb_ptr.is_null() {
         eprintln!("[{:>5}] {}", record.level(), record.args());
       } else {
@@ -70,18 +67,19 @@ pub struct LogOpts {
 impl LogOpts {
   /// Initialize logging
   pub fn init(&self) -> Result<()> {
-    unsafe {
-      if self.quiet {
-        LOG_LEVEL = LevelFilter::Off;
-      }
-      for _i in 0..self.verbose {
-        LOG_LEVEL = verbosify(LOG_LEVEL);
-      }
+    let mut level = LevelFilter::Info;
+    if self.quiet {
+      level = LevelFilter::Off;
     }
-    set_logger(&LOGGER)?;
-    unsafe {
-      set_max_level(LOG_LEVEL);
+    for _i in 0..self.verbose {
+      level = verbosify(level);
     }
+    let logger = LogEnv {
+      level: level,
+      progress: &LOG_PB
+    };
+    set_boxed_logger(Box::new(logger))?;
+    set_max_level(level);
     Ok(())
   }
 }
@@ -97,14 +95,5 @@ pub fn set_progress<'a>(pb: &'a ProgressBar) -> LogPBState<'a> {
 impl <'a> Drop for LogPBState<'a> {
   fn drop(&mut self) {
     LOG_PB.store(ptr::null_mut(), Ordering::Relaxed);
-  }
-}
-
-#[test]
-fn test_default_logenv() {
-  unsafe {
-    assert!(Level::Info <= LOG_LEVEL);
-    assert!(Level::Warn <= LOG_LEVEL);
-    assert!(Level::Debug > LOG_LEVEL);
   }
 }
