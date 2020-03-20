@@ -130,11 +130,16 @@ def end_stage(cur, stage, key=None):
 
 def stage_exists(stage):
     "Query whether we have data for a stage"
-    with db.connect() as dbc, dbc.cursor() as cur:
-        cur.execute('SELECT COUNT(*) FROM stage_status WHERE stage_name = %s', [stage])
-        count, = cur.fetchone()
-        _log.debug('have %d records for stage %s', count, stage)
-        return count
+    try:
+            
+        with db.connect() as dbc, dbc.cursor() as cur:
+            cur.execute('SELECT COUNT(*) FROM stage_status WHERE stage_name = %s', [stage])
+            count, = cur.fetchone()
+            _log.debug('have %d records for stage %s', count, stage)
+            return count
+    except:
+        return False
+
 
 
 def stage_status(stage, file=None, *, timestamps=False):
