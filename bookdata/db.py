@@ -18,6 +18,7 @@ import pandas as pd
 from more_itertools import peekable
 import psycopg2, psycopg2.errorcodes
 from psycopg2 import sql
+from psycopg2.pool import ThreadedConnectionPool
 import sqlparse
 import git
 
@@ -26,6 +27,7 @@ _log = logging.getLogger(__name__)
 # Meta-schema for storing stage and file status in the database
 _ms_path = Path(__file__).parent.parent / 'schemas' / 'meta-schema.sql'
 meta_schema = _ms_path.read_text()
+_pool = None
 
 
 def db_url():
@@ -74,12 +76,16 @@ def db_url():
 @contextmanager
 def connect():
     "Connect to a database. This context manager yields the connection, and closes it when exited."
-    _log.info('connecting to %s', db_url())
-    conn = psycopg2.connect(db_url())
+    global _pool
+    if _pool is None:
+        _log.info('connecting to %s', db_url())
+        _pool = ThreadedConnectionPool(1, 5, db_url())
+
+    conn = _pool.getconn()
     try:
         yield conn
     finally:
-        conn.close()
+        _pool.putconn(conn)
 
 
 def _tokens(s, start=-1, skip_ws=True, skip_cm=True):
