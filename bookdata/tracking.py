@@ -12,6 +12,12 @@ from . import db
 _log = logging.getLogger(__name__)
 
 
+def _init_db(dbc):
+    # initialize database, in case nothing has been run
+    with dbc, dbc.cursor() as cur:
+        cur.execute(db.meta_schema)
+
+
 def hash_and_record_file(cur, path, stage=None):
     """
     Compute the checksum of a file and record it in the database.
@@ -130,16 +136,12 @@ def end_stage(cur, stage, key=None):
 
 def stage_exists(stage):
     "Query whether we have data for a stage"
-    try:
-            
-        with db.connect() as dbc, dbc.cursor() as cur:
-            cur.execute('SELECT COUNT(*) FROM stage_status WHERE stage_name = %s', [stage])
-            count, = cur.fetchone()
-            _log.debug('have %d records for stage %s', count, stage)
-            return count
-    except:
-        return False
-
+    with db.connect() as dbc, dbc.cursor() as cur:
+        _init_db(dbc)
+        cur.execute('SELECT COUNT(*) FROM stage_status WHERE stage_name = %s', [stage])
+        count, = cur.fetchone()
+        _log.debug('have %d records for stage %s', count, stage)
+        return count
 
 
 def stage_status(stage, file=None, *, timestamps=False):
@@ -149,9 +151,7 @@ def stage_status(stage, file=None, *, timestamps=False):
         sf = file
 
     with db.connect() as dbc:
-        # initialize database, in case nothing has been run
-        with dbc, dbc.cursor() as cur:
-            cur.execute(db.meta_schema)
+        _init_db(dbc)
 
         # get the status
         with dbc, dbc.cursor() as cur:
