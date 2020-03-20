@@ -27,7 +27,7 @@ class PGRemote(RemoteBASE):
         super().__init__(*args, **kwargs)
 
     def get_file_checksum(self, path_info):
-        _log.debug('checksum from {}', path_info)
+        _log.debug('checksum from %s', path_info)
         status = tracking.stage_status(path_info.bucket)
         h = hashlib.md5()
         h.update(status.encode('utf-8'))
@@ -39,14 +39,14 @@ class PGRemote(RemoteBASE):
         raise NotImplementedError()
 
     def exists(self, path_info):
-        _log.debug('exists? {}', path_info)
+        _log.debug('exists? %s', path_info)
         return tracking.stage_exists(path_info.bucket)
 
     def remove(self, path_info):
-        _log.info('asked to remove {}, ignoring', path_info)
+        _log.info('asked to remove %s, ignoring', path_info)
 
     def _download(self, from_info, to_info, name, no_progress_bar):
-        _log.info('download requested for {}', from_info)
+        _log.info('download requested for %s', from_info)
         raise NotImplementedError()
 
 
