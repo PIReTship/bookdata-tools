@@ -1,4 +1,6 @@
 """
+Extract and pretty-print JSON data from the database.
+
 Usage:
     inspect-json.py --gr-work [ID...]
     inspect-json.py --gr-book [ID...]
