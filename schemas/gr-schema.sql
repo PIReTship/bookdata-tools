@@ -33,3 +33,7 @@ CREATE TABLE gr.raw_book_genres (
   gr_book_genres_rid SERIAL NOT NULL,
   gr_book_genres_data JSONB NOT NULL
 );
+CREATE TABLE gr.raw_reviews (
+  gr_reviews_rid SERIAL NOT NULL,
+  gr_reviews_data JSONB NOT NULL
+);
