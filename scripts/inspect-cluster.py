@@ -9,6 +9,8 @@ Usage:
 Options:
     -o FILE
         Write output to FILE
+    -f, --format FMT
+        Output in format FMT.
     CLUSTER
         The cluster number to inspect.
 """
@@ -16,11 +18,111 @@ Options:
 import sys
 import re
 import json
+from xml.etree import ElementTree as etree
+from textwrap import dedent as d
 from docopt import docopt
 
 import pandas as pd
 
 from bookdata import tracking, db, script_log
+
+
+class GMLWriter:
+    def __init__(self, out):
+        self.output = out
+        self._n_attrs = set(['id'])
+
+    def _p(self, code, *args):
+        print(code.format(*args), file=self.output)
+
+    def node_attr(self, name):
+        self._n_attrs.add(name)
+
+    def start(self):
+        self._p('graph [')
+        self._p('  directed 0')
+
+    def finish(self):
+        self._p(']')
+
+    def node(self, **attrs):
+        self._p('  node [')
+        for k, v in attrs.items():
+            if k not in self._n_attrs:
+                raise RuntimeError('unknown node attribute ' + k)
+            if k == 'label':
+                v = str(v)
+            if v is not None:
+                self._p('    {} {}', k, json.dumps(v))
+        self._p('  ]')
+
+    def edge(self, **attrs):
+        self._p('  edge [')
+        for k, v in attrs.items():
+            if v is not None:
+                self._p('    {} {}', k, json.dumps(v))
+        self._p('  ]')
+
+
+class GraphMLWriter:
+    _g_started = False
+
+    def __init__(self, out):
+        self.output = out
+        self.tb = etree.TreeBuilder()
+        self._ec = 0
+
+    def node_attr(self, name, type='string'):
+        self.tb.start('key', {
+            'id': name,
+            'for': 'node',
+            'attr.name': name,
+            'attr.type': type
+        })
+        self.tb.end('key')
+
+    def start(self):
+        self.tb.start('graphml', {
+            'xmlns': 'http://graphml.graphdrawing.org/xmlns',
+            '{http://www.w3.org/2001/XMLSchema-instance}schemaLocation': d('''
+                http://graphml.graphdrawing.org/xmlns
+                http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd
+            ''').strip(),
+        })
+
+    def finish(self):
+        self.tb.end('graph')
+        self.tb.end('graphml')
+        elt = self.tb.close()
+        tree = etree.ElementTree(elt)
+        tree.write(self.output, encoding='unicode')
+
+    def node(self, id, **attrs):
+        if not self._g_started:
+            self.tb.start('graph', {
+                'edgedefault': 'undirected'
+            })
+            self._g_started = True
+
+        self.tb.start('node', {
+            'id': id
+        })
+        for k, v in attrs.items():
+            if v is not None:
+                self.tb.start('data', {'key': k})
+                self.tb.data(str(v))
+                self.tb.end('data')
+        self.tb.end('node')
+
+    def edge(self, source, target):
+        self._ec += 1
+        eid = self._ec
+        self.tb.start('edge', {
+            'id': f'e{eid}',
+            'source': source,
+            'target': target
+        })
+        self.tb.end('edge')
 
 
 def stats(dbc, out, opts):
@@ -90,24 +192,17 @@ def graph(dbc, out, opts):
     cluster = opts['CLUSTER']
     _log.info('exporting graph for cluster %s', cluster)
 
-    def p(code, *args):
-        print(code.format(*args), file=out)
-
-    def node(**attrs):
-        p('  node [')
-        for k, v in attrs.items():
-            if k == 'label':
-                v = str(v)
-            if v is not None:
-                p('    {} {}', k, json.dumps(v))
-        p('  ]')
-
-    def edge(**attrs):
-        p('  edge [')
-        for k, v in attrs.items():
-            if v is not None:
-                p('    {} {}', k, json.dumps(v))
-        p('  ]')
+    format = opts.get('--format', 'gml')
+    if format == 'gml':
+        gw = GMLWriter(out)
+    elif format == 'graphml':
+        gw = GraphMLWriter(out)
+    else:
+        raise ValueError('invalid format ' + format)
+    gw.start()
+    gw.node_attr('label')
+    gw.node_attr('category')
+    gw.node_attr('title')
 
     with dbc.cursor() as cur:
         cur.execute('''
@@ -116,13 +211,11 @@ def graph(dbc, out, opts):
             FROM isbn_cluster JOIN isbn_id USING (isbn_id)
             WHERE cluster = %s
         ''', [cluster])
-        p('graph [')
-        p('  directed 0')
 
         _log.info('fetching ISBNs')
         cur.execute('SELECT * FROM gc_isbns')
         for iid, isbn in cur:
-            node(id=f'i{iid}', label=isbn, category='ISBN')
+            gw.node(id=f'i{iid}', label=isbn, category='ISBN')
 
         _log.info('fetching LOC records')
         cur.execute('''
@@ -132,7 +225,7 @@ def graph(dbc, out, opts):
             LEFT JOIN locmds.book_title USING (rec_id)
         ''')
         for rid, title in cur:
-            node(id=f'l{rid}', label=rid, category='LOC', title=title)
+            gw.node(id=f'l{rid}', label=rid, category='LOC', title=title)
 
         _log.info('fetching LOC ISBN links')
         cur.execute('''
@@ -141,7 +234,7 @@ def graph(dbc, out, opts):
             JOIN locmds.book_rec_isbn USING (isbn_id)
         ''')
         for iid, rid in cur:
-            edge(source=f'l{rid}', target=f'i{iid}')
+            gw.edge(source=f'l{rid}', target=f'i{iid}')
 
         _log.info('fetching OL editions')
         cur.execute('''
@@ -153,7 +246,7 @@ def graph(dbc, out, opts):
             JOIN ol.edition USING (edition_id)
         ''')
         for eid, ek, e_title in cur:
-            node(id=f'ole{eid}', label=ek, category='OLE', title=e_title)
+            gw.node(id=f'ole{eid}', label=ek, category='OLE', title=e_title)
 
         _log.info('fetching OL works')
         cur.execute('''
@@ -165,7 +258,7 @@ def graph(dbc, out, opts):
             JOIN ol.work USING (work_id)
         ''')
         for wid, wk, w_title in cur:
-            node(id=f'olw{wid}', label=wk, category='OLW', title=w_title)
+            gw.node(id=f'olw{wid}', label=wk, category='OLW', title=w_title)
 
         _log.info('fetching OL ISBN edges')
         cur.execute('''
@@ -174,7 +267,7 @@ def graph(dbc, out, opts):
             JOIN ol.isbn_link USING (isbn_id)
         ''')
         for iid, eid in cur:
-            edge(source=f'ole{eid}', target=f'i{iid}')
+            gw.edge(source=f'ole{eid}', target=f'i{iid}')
 
         _log.info('fetching OL edition/work edges')
         cur.execute('''
@@ -184,7 +277,7 @@ def graph(dbc, out, opts):
             WHERE work_id IS NOT NULL
         ''')
         for eid, wid in cur:
-            edge(source=f'ole{eid}', target=f'olw{wid}')
+            gw.edge(source=f'ole{eid}', target=f'olw{wid}')
 
         _log.info('fetching GR books')
         cur.execute('''
@@ -195,9 +288,9 @@ def graph(dbc, out, opts):
         bids = set()
         for iid, bid in cur:
             if bid not in bids:
-                node(id=f'grb{bid}', label=bid, category='GRB')
+                gw.node(id=f'grb{bid}', label=bid, category='GRB')
                 bids.add(bid)
-            edge(source=f'grb{bid}', target=f'i{iid}')
+            gw.edge(source=f'grb{bid}', target=f'i{iid}')
 
         _log.info('fetching GR works')
         cur.execute('''
@@ -209,7 +302,7 @@ def graph(dbc, out, opts):
             WHERE ids.gr_work_id IS NOT NULL
         ''')
         for wid, title in cur:
-            node(id=f'grw{wid}', label=wid, category='GRW', title=title)
+            gw.node(id=f'grw{wid}', label=wid, category='GRW', title=title)
 
         _log.info('fetching GR work/edition edges')
         cur.execute('''
@@ -220,9 +313,9 @@ def graph(dbc, out, opts):
             WHERE ids.gr_work_id IS NOT NULL
         ''')
         for wid, bid in cur:
-            edge(source=f'grw{wid}', target=f'grb{bid}')
+            gw.edge(source=f'grw{wid}', target=f'grb{bid}')
 
-    p(']')
+    gw.finish()
     _log.info('exported graph')
 
 
