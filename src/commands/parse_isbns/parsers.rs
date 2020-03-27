@@ -30,17 +30,17 @@ static PARSERS: &'static [(&'static str, fn(&Captures) -> Option<ISBN>)] = &[
   (concat!(/* lead */ r"^\s*(?:[a-z]\s+|\(\d+\)\s+|\*)?",
            /* isbn */ r"([0-9-]{8,}[Xx]?)",
            /* tag  */ r"(?:\s*\((.+?)\))?",
-           /* tail */ r"\s*[:.]?"),
+           /* tail */ r"\s*[;:/.]?"),
    parse_plain),
-   (concat!(/* lead */ r"^\s*(?:[a-z]\s+|\(\d+\)\s+|\*)?",
-            /* isbn */ r"([0-9]{1,5}(?:[a-zA-Z]+|[ +])[0-9-]{4,})",
-            /* tag  */ r"(?:\s*\((.+?)\))?",
-            /* tail */ r"\s*[:.]?"),
+  (concat!(/* lead */ r"^\s*(?:[a-z]\s+|\(\d+\)\s+|\*)?",
+           /* isbn */ r"([0-9]{1,5}(?:[a-zA-Z]+|[ +])[0-9-]{4,})",
+           /* tag  */ r"(?:\s*\((.+?)\))?",
+           /* tail */ r"\s*[;:/.]?"),
    parse_plain),
   (concat!(/* lead */ r"^[;.]?\s*ISBN\s+",
            /* isbn */ r"([0-9-]{8,}[Xx]?)",
            /* tag  */ r"(?:\s*\((.+?)\))?",
-           /* tail */ r"\s*[:.]?"),
+           /* tail */ r"\s*[;:/.]?"),
    parse_plain)
 ];
 

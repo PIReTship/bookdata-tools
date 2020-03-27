@@ -78,13 +78,14 @@ CREATE INDEX IF NOT EXISTS book_lccn_idx ON locmds.book (lccn);
 ANALYZE locmds.book;
 
 --- #step Index ISBNs
-CREATE OR REPLACE VIEW locmds.book_raw_isbn
+DROP MATERIALIZED VIEW IF EXISTS locmds.book_rec_isbn;
+DROP MATERIALIZED VIEW IF EXISTS locmds.book_extracted_isbn;
+DROP MATERIALIZED VIEW IF EXISTS locmds.book_raw_isbn;
+CREATE MATERIALIZED VIEW locmds.book_raw_isbn
 AS SELECT rec_id, contents AS isbn_text
    FROM locmds.book_marc_field
    WHERE tag = '020' AND sf_code = 'a';
 
-DROP MATERIALIZED VIEW IF EXISTS locmds.book_rec_isbn;
-DROP MATERIALIZED VIEW IF EXISTS locmds.book_extracted_isbn;
 CREATE MATERIALIZED VIEW locmds.book_extracted_isbn AS
   SELECT rec_id, regexp_replace(m[1], '[- ]', '', 'g') AS isbn, trim(m[2]) AS descr
   FROM locmds.book_raw_isbn,
