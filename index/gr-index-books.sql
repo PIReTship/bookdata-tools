@@ -1,10 +1,8 @@
 --- #dep gr-books
 --- #dep gr-works
 --- #dep gr-authors
---- #dep gr-book-genres
 --- #table gr.work_ids
 --- #table gr.book_ids
---- #table gr.book_genres
 --- #step Add book PK
 --- #allow invalid_table_definition
 ALTER TABLE gr.raw_book ADD CONSTRAINT gr_raw_book_pk PRIMARY KEY (gr_book_rid);
@@ -94,11 +92,3 @@ CREATE TABLE IF NOT EXISTS gr.book_genres
      WHERE gr_book_id = (gr_book_genres_data->>'book_id')::int;
 CREATE INDEX bg_book_rid ON gr.book_genres (gr_book_rid);
 CREATE INDEX bg_book_id ON gr.book_genres (gr_book_id);
-
---- #step Extract GoodReads book titles
-DROP MATERIALIZED VIEW IF EXISTS gr.work_titles;
-CREATE MATERIALIZED VIEW gr.work_titles
-AS SELECT gr_work_rid, (gr_work_data->>'work_id')::int AS gr_work_id,
-  NULLIF(gr_work_data->>'original_title', '') AS work_title
-FROM gr.raw_work;
-CREATE INDEX gr_work_title_work_idx ON gr.work_titles (gr_work_id);
