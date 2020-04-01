@@ -26,7 +26,7 @@ FROM gr.raw_work;
 CREATE INDEX gr_work_title_work_idx ON gr.work_titles (gr_work_id);
 ANALYZE gr.work_titles;
 
---- #step Extract GoodReads publication dates
+--- #step Extract GoodReads book publication dates
 DROP MATERIALIZED VIEW IF EXISTS gr.book_pub_date;
 CREATE MATERIALIZED VIEW gr.book_pub_date
 AS SELECT gr_book_rid, book_id AS gr_book_id,
@@ -42,3 +42,20 @@ AS SELECT gr_book_rid, book_id AS gr_book_id,
 CREATE UNIQUE INDEX gr_bpd_rec_idx ON gr.book_pub_date (gr_book_rid);
 CREATE UNIQUE INDEX gr_bpd_book_idx ON gr.book_pub_date (gr_book_id);
 ANALYZE gr.book_pub_date;
+
+--- #step Extract GoodReads work original publication dates
+DROP MATERIALIZED VIEW IF EXISTS gr.work_pub_date;
+CREATE MATERIALIZED VIEW gr.work_pub_date
+AS SELECT gr_work_rid, work_id AS gr_work_id,
+          NULLIF(original_publication_year, '')::INTEGER AS pub_year,
+          NULLIF(original_publication_month, '')::INTEGER AS pub_month,
+          NULLIF(original_publication_day, '')::INTEGER AS pub_day,
+          try_date(original_publication_year, original_publication_month, original_publication_day) AS pub_date
+   FROM gr.raw_work,
+        jsonb_to_record(gr_work_data) AS
+            x(work_id INTEGER, original_publication_year VARCHAR,
+              original_publication_month VARCHAR, original_publication_day VARCHAR)
+   WHERE NULLIF(original_publication_year, '') IS NOT NULL;
+CREATE UNIQUE INDEX gr_wpd_rec_idx ON gr.work_pub_date (gr_work_rid);
+CREATE UNIQUE INDEX gr_wpd_work_idx ON gr.work_pub_date (gr_work_id);
+ANALYZE gr.work_pub_date;
