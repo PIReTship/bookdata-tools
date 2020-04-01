@@ -16,6 +16,8 @@ Imported data lives under the `locmds` schema.
 1. TOC
 {:toc}
 
+![LOC data model](loc.svg)
+
 ## Import Steps
 
 The import is controlled by the following DVC steps:
