@@ -37,6 +37,7 @@ The import is controlled by the following DVC steps:
 :   Run `loc-mds-book-info.sql` to extract additional book data into tables.
 
 ## Raw Book Data
+{: #raw}
 
 The `locmds.book_marc_fields` table contains the raw data imported from the MARC files, as MARC fields.  The LOC book data follows the [MARC 21 Bibliographic Data format](https://www.loc.gov/marc/bibliographic/); the various tags, field codes, and indicators are defined there.  This table is not terribly useful on its own, but it is the source from which the other tables are derived.
 
