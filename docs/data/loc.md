@@ -20,6 +20,9 @@ Imported data lives under the `locmds` schema.
 
 ![LOC data model](loc.svg)
 
+- [SVG file](loc.svg)
+- [PlantUML source](loc.puml)
+
 ## Import Steps
 
 The import is controlled by the following DVC steps:

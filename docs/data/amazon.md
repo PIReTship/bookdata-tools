@@ -23,6 +23,9 @@ Imported data lives in the `az` schema.  The source files are not automatically 
 
 ![Amazon data model](az.svg)
 
+- [SVG file](az.svg)
+- [PlantUML source](az.puml)
+
 ## Import Steps
 
 The import is controlled by the following DVC steps:

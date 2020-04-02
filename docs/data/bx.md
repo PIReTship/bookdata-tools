@@ -24,6 +24,9 @@ the provided scripts and DVC stages.
 
 ![BookCrossing data model](bx.svg)
 
+- [SVG file](bx.svg)
+- [PlantUML source](bx.puml)
+
 ## Import Steps
 
 The import is controlled by the following DVC steps:
