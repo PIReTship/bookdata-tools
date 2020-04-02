@@ -1,6 +1,6 @@
 ---
 title: Source Data
-parent: Usage
+parent: Importing
 nav_order: 3
 ---
 

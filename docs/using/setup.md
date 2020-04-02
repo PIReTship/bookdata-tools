@@ -1,6 +1,6 @@
 ---
 title: Setup
-parent: Usage
+parent: Importing
 nav_order: 2
 ---
 
