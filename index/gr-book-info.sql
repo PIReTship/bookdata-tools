@@ -1,7 +1,7 @@
 --- #dep gr-books
 --- #dep gr-works
 --- #dep gr-index-books
---- #table gr.work_titles
+--- #table gr.work_title
 --- #table gr.book_pub_date
 
 --- #step Create useful GR functions
@@ -18,13 +18,13 @@ IMMUTABLE RETURNS NULL ON NULL INPUT PARALLEL UNSAFE
     $$;
 
 --- #step Extract GoodReads work titles
-DROP MATERIALIZED VIEW IF EXISTS gr.work_titles;
-CREATE MATERIALIZED VIEW gr.work_titles
+DROP MATERIALIZED VIEW IF EXISTS gr.work_title;
+CREATE MATERIALIZED VIEW gr.work_title
 AS SELECT gr_work_rid, (gr_work_data->>'work_id')::int AS gr_work_id,
   NULLIF(gr_work_data->>'original_title', '') AS work_title
 FROM gr.raw_work;
-CREATE INDEX gr_work_title_work_idx ON gr.work_titles (gr_work_id);
-ANALYZE gr.work_titles;
+CREATE INDEX gr_work_title_work_idx ON gr.work_title (gr_work_id);
+ANALYZE gr.work_title;
 
 --- #step Extract GoodReads book publication dates
 DROP MATERIALIZED VIEW IF EXISTS gr.book_pub_date;
