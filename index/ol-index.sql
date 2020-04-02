@@ -101,23 +101,6 @@ ALTER TABLE ol.edition_work ADD CONSTRAINT edition_work_ed_fk FOREIGN KEY (editi
 --- #allow duplicate_object
 ALTER TABLE ol.edition_work ADD CONSTRAINT edition_work_wk_fk FOREIGN KEY (work_id) REFERENCES ol.work;
 
---- #step Extract ISBNs and ASINs
-CREATE MATERIALIZED VIEW IF NOT EXISTS ol.edition_isbn10
-  AS SELECT edition_id, jsonb_array_elements_text(edition_data->'isbn_10') AS isbn
-     FROM ol.edition;
-CREATE MATERIALIZED VIEW IF NOT EXISTS ol.edition_isbn13
-  AS SELECT edition_id, jsonb_array_elements_text(edition_data->'isbn_13') AS isbn
-     FROM ol.edition;
-CREATE MATERIALIZED VIEW IF NOT EXISTS ol.edition_asin
-  AS SELECT edition_id, jsonb_array_elements_text(edition_data#>'{identifiers,amazon}') AS asin
-     FROM ol.edition;
-CREATE MATERIALIZED VIEW IF NOT EXISTS ol.edition_lccn
-  AS SELECT edition_id, jsonb_array_elements_text(edition_data->'lccn') AS lccn
-     FROM ol.edition;
-CREATE MATERIALIZED VIEW IF NOT EXISTS ol.edition_gr_bid
-  AS SELECT edition_id, jsonb_array_elements_text(edition_data#>'{identifiers,goodreads}') AS gr_book_rid
-     FROM ol.edition;
-
 --- #step Integrate ISBN/ASIN identifiers
 DROP TABLE IF EXISTS ol.edition_isbn CASCADE;
 CREATE TABLE ol.edition_isbn (
