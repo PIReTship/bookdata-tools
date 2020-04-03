@@ -23,7 +23,7 @@ if sys.argv[1] == '--rust':
     del sys.argv[1]
     # build the Rust tools
     # TODO support alternate working directories
-    _log.info('compiling Rust toolchain')
+    _log.info('compiling Rust tools')
     sp.run(['cargo', 'build', '--release'], check=True)
     tool = bin_dir / 'bookdata'
     tool = os.fspath(tool)

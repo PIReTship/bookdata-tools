@@ -5,6 +5,7 @@ pub use support::{CmdEntry, Command};
 pub mod import_json;
 pub mod make_uuid;
 pub mod parse_marc;
+pub mod parse_isbns;
 pub mod pcat;
 pub mod hash;
 pub mod info;
@@ -15,6 +16,7 @@ pub fn commands<'a>() -> Vec<CmdEntry<'a>> {
     make_uuid::MakeUuid::get_entry(),
     import_json::ImportJson::get_entry(),
     parse_marc::ParseMarc::get_entry(),
+    parse_isbns::ParseISBNs::get_entry(),
     hash::Hash::get_entry(),
     info::Info::get_entry()
   ]
