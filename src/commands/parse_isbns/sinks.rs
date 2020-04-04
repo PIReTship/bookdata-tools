@@ -21,8 +21,13 @@ pub struct FileWriter {
 
 impl WriteISBNs for FileWriter {
   fn write_isbn(&mut self, id: i64, isbn: &ISBN) -> Result<()> {
-    writeln!(self.write, "{}\t{}\t{}", id, isbn.text,
-             isbn.descriptor.as_ref().map(|s| s.as_str()).unwrap_or(""))?;
+    if isbn.tags.len() > 0 {
+      for tag in &isbn.tags {
+        writeln!(self.write, "{}\t{}\t{}", id, isbn.text, tag)?;
+      }
+    } else {
+      writeln!(self.write, "{}\t{}\t", id, isbn.text)?;
+    }
     Ok(())
   }
 }

@@ -13,14 +13,14 @@ use super::parsers::*;
 pub type IdPR = (i64, ParseResult);
 
 pub struct FileSource<B> {
-  parsers: IsbnParser,
+  parsers: ParserDefs,
   lines: Lines<B>
 }
 
 impl <B: BufRead> FileSource<B> {
   pub fn create(read: B) -> Result<FileSource<B>> {
     Ok(FileSource {
-      parsers: IsbnParser::compile()?,
+      parsers: ParserDefs::new(),
       lines: read.lines()
     })
   }
@@ -44,14 +44,14 @@ impl <B: BufRead> FallibleIterator for FileSource<B> {
 }
 
 pub struct DBSource<'t, 's> {
-  parsers: IsbnParser,
+  parsers: ParserDefs,
   rows: LazyRows<'t, 's>
 }
 
 impl <'t, 's> DBSource<'t, 's> {
   pub fn create(rows: LazyRows<'t, 's>) -> Result<DBSource<'t, 's>> {
     Ok(DBSource {
-      parsers: IsbnParser::compile()?,
+      parsers: ParserDefs::new(),
       rows: rows
     })
   }
