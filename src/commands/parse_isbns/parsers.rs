@@ -38,41 +38,40 @@ pub struct ParserDefs {
 impl ParserDefs {
   pub fn new() -> ParserDefs {
     fn cre(p: &str) -> Regex {
+      // we use unwrap instead of result since regex compile failure is a programming error
       Regex::new(p).unwrap()
     }
 
-    // we use unwrap instead of result since regex compile failure is a programming error
     ParserDefs {
-      lead: cre(r"^\s*(?:[a-z]\s+|\(\d+\)\s+|\*)?"),
-      isbn: cre(r"^([0-9-]{8,}[Xx]?|[0-9]{1,5}(?:[a-zA-Z]+|[ +])[0-9-]{4,})"),
-      tag: cre(r"^(?:\s*\((.+?)\))?"),
+      lead: cre(r"^[;.]?\s*(?:[a-z]\s+|\(\d+\)\s+|\*|ISBN\s+)?"),
+      isbn: cre(r"^([\p{Nonspacing Mark}0-9-]{8,}[Xx]?|[0-9]{1,5}(?:[a-zA-Z]+|[ +])[0-9-]{4,})"),
+      tag: cre(r"^\s*[(\[](.+?)[)\]]"),
       tail_skip: cre(r"^\s*[;:/.]?"),
 
-      clean: cre(r"[a-wyzA-WYZ -]"),
+      clean: cre(r"[\p{Nonspacing Mark}a-wyzA-WYZ -]"),
       unmatch_ignore: RegexSet::new(IGNORES).unwrap()
     }
   }
 
   /// Create a new parser to parse a string.
-  pub fn create_parser<'p>(&'p self, s: &str) -> IsbnParser<'p> {
+  pub fn create_parser<'p, 's>(&'p self, s: &'s str) -> IsbnParser<'p, 's> {
     IsbnParser {
       defs: self,
-      string: preclean(s),
+      string: s,
       position: 0
     }
   }
 
   /// Parse a string
   pub fn parse(&self, s: &str) -> ParseResult {
-    let parser = self.create_parser(s);
-    // FIXME implement this!
-    ParseResult::Ignored(s.to_owned())
+    let mut parser = self.create_parser(s);
+    parser.read_all()
   }
 }
 
-pub struct IsbnParser<'p> {
+pub struct IsbnParser<'p, 's> {
   defs: &'p ParserDefs,
-  string: String,
+  string: &'s str,
   position: usize
 }
 
@@ -86,9 +85,9 @@ fn preclean(s: &str) -> String {
   res
 }
 
-impl <'p> IsbnParser<'p> {
+impl <'p, 's> IsbnParser<'p, 's> {
   /// Get the remaining (unparsed) text from the parser
-  fn remaining<'s>(&'s self) -> &'s str {
+  fn remaining(&self) -> &'s str {
     &self.string[self.position..]
   }
 
@@ -110,11 +109,21 @@ impl <'p> IsbnParser<'p> {
   }
 
   /// See if a regex matches, and advance if it does.
-  fn read(&mut self, rex: &Regex) -> Option<Match> {
+  fn read(&mut self, rex: &Regex) -> Option<Match<'s>> {
     let slice = self.remaining();
     let res = rex.find(slice);
     if let Some(m) = res {
-      //self.advance(m.end());
+      self.advance(m.end());
+    }
+    res
+  }
+
+  /// Read with capture groups
+  fn read_cap(&mut self, rex: &Regex) -> Option<Captures<'s>> {
+    let slice = self.remaining();
+    let res = rex.captures(slice);
+    if let Some(ref m) = res {
+      self.advance(m.get(0).unwrap().end());
     }
     res
   }
@@ -132,43 +141,40 @@ impl <'p> IsbnParser<'p> {
   fn read_isbn(&mut self) -> Option<ISBN> {
     self.eat(&self.defs.lead);
     self.read(&self.defs.isbn).map(|m| ISBN {
-      text: m.as_str().to_owned(),
-      tags: Vec::new()
+      text: self.defs.clean.replace_all(m.as_str(), "").to_string(),
+      tags: self.read_tags()
     })
   }
 
-  // fn scan<'a>(&self, text: &'a str) -> Option<(ISBN, usize)> {
-  //   for (rex, func) in &self.parsers {
-  //     if let Some(cap) = rex.captures(text) {
-  //       if let Some(res) = func(&cap) {
-  //         let all = cap.get(0).unwrap();
-  //         return Some((res, all.end()))
-  //       }
-  //     }
-  //   }
-  //   return None
-  // }
+  /// Read tags (assuming an ISBN has just been read)
+  fn read_tags(&mut self) -> Vec<String> {
+    let mut tags = Vec::new();
+    while let Some(m) = self.read_cap(&self.defs.tag) {
+      let tag = m.get(1).unwrap().as_str();
+      tags.push(tag.to_owned());
+    }
+    tags
+  }
 
-  // pub fn parse<'a>(&self, text: &'a str) -> ParseResult {
-  //   let text = preclean(text);
-  //   let mut isbns = Vec::new();
-  //   let mut haystack = text.as_str();
-  //   while let Some((res, end)) = self.scan(haystack) {
-  //     isbns.push(res);
-  //     haystack = &haystack[end..];
-  //   }
+  /// Read all ISBNs
+  fn read_all(&mut self) -> ParseResult {
+    let mut isbns = Vec::new();
+    while let Some(res) = self.read_isbn() {
+      isbns.push(res);
+      // advance through our skip
+      self.eat(&self.defs.tail_skip);
+    }
 
-  //   if isbns.is_empty() {
-  //     for rex in &self.ignores {
-  //       if rex.is_match(&text) {
-  //         return ParseResult::Ignored(text.to_owned())
-  //       }
-  //     }
-  //     ParseResult::Unmatched(text.to_owned())
-  //   } else {
-  //     ParseResult::Valid(isbns, haystack.to_owned())
-  //   }
-  // }
+    if isbns.is_empty() {
+      if self.defs.unmatch_ignore.is_match(self.string) {
+        ParseResult::Ignored(self.string.to_owned())
+      } else {
+        ParseResult::Unmatched(self.string.to_owned())
+      }
+    } else {
+      ParseResult::Valid(isbns, self.remaining().to_owned())
+    }
+  }
 }
 
 #[test]
@@ -189,8 +195,8 @@ fn test_parser_initial() {
   let target = "jimbob";
   let parser = defs.create_parser(target);
   assert_eq!(parser.position, 0);
-  assert_eq!(parser.string.as_str(), target);
-  assert_eq!(parser.remaining(), "jimbob");
+  assert_eq!(parser.string, target);
+  assert_eq!(parser.remaining(), target);
 }
 
 #[test]
@@ -305,7 +311,9 @@ fn test_parse_isbn_trail() {
 
 #[test]
 fn test_scan_caron() {
+  // this string has a combining mark (caron, unicode 730) in it
   let src = "349̌224010X";
+  // we want a cleaned ISBN
   let isbn = "349224010X";
   let defs = ParserDefs::new();
   let mut parser = defs.create_parser(src);
@@ -410,6 +418,58 @@ fn test_parse_isbn_tag() {
   }
 }
 
+#[test]
+fn test_parse_isbn_square_tag() {
+  let src = "34922401038 [set]";
+  let isbn = "34922401038";
+  let tag = "set";
+  let defs = ParserDefs::new();
+
+  let mut parser = defs.create_parser(src);
+  let scan = parser.read_isbn();
+  assert!(scan.is_some());
+  let scan = scan.unwrap();
+  assert_eq!(scan.text, isbn);
+  assert_eq!(scan.tags, vec![tag]);
+  assert!(parser.is_empty());
+
+  let res = defs.parse(src);
+  match res {
+    ParseResult::Valid(isbns, trail) => {
+      assert_eq!(isbns.len(), 1);
+      assert_eq!(isbns[0].text, isbn);
+      assert_eq!(isbns[0].tags, vec![tag]);
+      assert_eq!(trail, "");
+    },
+    x => panic!("bad parse: {:?}", x)
+  }
+}
+
+#[test]
+fn test_parse_isbn_tags() {
+  let src = "34922401038 (pbk.) (set)";
+  let isbn = "34922401038";
+  let defs = ParserDefs::new();
+
+  let mut parser = defs.create_parser(src);
+  let scan = parser.read_isbn();
+  assert!(scan.is_some());
+  let scan = scan.unwrap();
+  assert_eq!(scan.text, isbn);
+  assert_eq!(scan.tags, vec!["pbk.", "set"]);
+  assert!(parser.is_empty());
+
+  let res = defs.parse(src);
+  match res {
+    ParseResult::Valid(isbns, trail) => {
+      assert_eq!(isbns.len(), 1);
+      assert_eq!(isbns[0].text, isbn);
+      assert_eq!(isbns[0].tags, vec!["pbk.", "set"]);
+      assert_eq!(trail, "");
+    },
+    x => panic!("bad parse: {:?}", x)
+  }
+}
 
 #[test]
 fn test_parse_isbn_leader() {

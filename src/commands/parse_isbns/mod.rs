@@ -103,6 +103,7 @@ impl ParseISBNs {
         },
         ParseResult::Unmatched(s) => {
           stats.unmatched += 1;
+          warn!("unmatched {}: {}", id, s);
           if self.print_unmatched {
             println!("unmatched {}: {}", id, s);
           }
