@@ -78,12 +78,17 @@ CREATE INDEX IF NOT EXISTS book_lccn_idx ON locmds.book (lccn);
 ANALYZE locmds.book;
 
 --- #step Index ISBNs
-CREATE MATERIALIZED VIEW IF NOT EXISTS locmds.book_extracted_isbn AS
-  SELECT rec_id, extract_isbn(contents) AS isbn
-  FROM locmds.book_marc_field
-  WHERE tag = '020' AND sf_code = 'a'
-  WITH NO DATA;
-REFRESH MATERIALIZED VIEW locmds.book_extracted_isbn;
+CREATE OR REPLACE VIEW locmds.book_raw_isbn
+AS SELECT rec_id, contents AS isbn_text
+   FROM locmds.book_marc_field
+   WHERE tag = '020' AND sf_code = 'a';
+
+DROP MATERIALIZED VIEW IF EXISTS locmds.book_rec_isbn;
+DROP MATERIALIZED VIEW IF EXISTS locmds.book_extracted_isbn;
+CREATE MATERIALIZED VIEW locmds.book_extracted_isbn AS
+  SELECT rec_id, regexp_replace(m[1], '[- ]', '', 'g') AS isbn, trim(m[2]) AS descr
+  FROM locmds.book_raw_isbn,
+    regexp_matches(trim(isbn_text), '(?:^|ISBN\s+)(?:[a-z]\s+|\(\d+\)\s+|\*)?([0-9 -]+[Xx]?)(?:\s*\((.+?)\))?', 'g') AS m;
 
 INSERT INTO isbn_id (isbn)
   WITH isbns AS (SELECT DISTINCT isbn FROM locmds.book_extracted_isbn WHERE isbn IS NOT NULL AND char_length(isbn) IN (10,13))
@@ -91,12 +96,10 @@ INSERT INTO isbn_id (isbn)
   WHERE isbn NOT IN (SELECT isbn FROM isbn_id);
 ANALYZE isbn_id;
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS locmds.book_rec_isbn
+CREATE MATERIALIZED VIEW locmds.book_rec_isbn
   AS SELECT rec_id, isbn_id
      FROM locmds.book JOIN locmds.book_extracted_isbn USING (rec_id) JOIN isbn_id USING (isbn)
-     WHERE isbn IS NOT NULl AND char_length(isbn) IN (10,13)
-  WITH NO DATA;
-REFRESH MATERIALIZED VIEW locmds.book_rec_isbn;
+     WHERE isbn IS NOT NULl AND char_length(isbn) IN (10,13);
 CREATE INDEX IF NOT EXISTS book_rec_isbn_rec_idx ON locmds.book_rec_isbn (rec_id);
 CREATE INDEX IF NOT EXISTS book_rec_isbn_isbn_idx ON locmds.book_rec_isbn (isbn_id);
 ANALYZE locmds.book_rec_isbn;
