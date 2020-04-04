@@ -30,6 +30,7 @@ pub struct ParserDefs {
   lead: Regex,
   isbn: Regex,
   tag: Regex,
+  tag_sep: Regex,
   tail_skip: Regex,
   clean: Regex,
   unmatch_ignore: RegexSet
@@ -46,6 +47,7 @@ impl ParserDefs {
       lead: cre(r"^[;.]?\s*(?:[a-z]\s+|\(\d+\)\s+|\*|ISBN\s+)?"),
       isbn: cre(r"^([\p{Nonspacing Mark}0-9-]{8,}[Xx]?|[0-9]{1,5}(?:[a-zA-Z]+|[ +])[0-9-]{4,})"),
       tag: cre(r"^\s*[(\[](.+?)[)\]]"),
+      tag_sep: cre(r"\s*:\s*"),
       tail_skip: cre(r"^\s*[;:/.]?"),
 
       clean: cre(r"[\p{Nonspacing Mark}a-wyzA-WYZ -]"),
@@ -151,7 +153,9 @@ impl <'p, 's> IsbnParser<'p, 's> {
     let mut tags = Vec::new();
     while let Some(m) = self.read_cap(&self.defs.tag) {
       let tag = m.get(1).unwrap().as_str();
-      tags.push(tag.to_owned());
+      for t in self.defs.tag_sep.split(tag) {
+        tags.push(t.to_owned());
+      }
     }
     tags
   }
@@ -444,6 +448,33 @@ fn test_parse_isbn_square_tag() {
     x => panic!("bad parse: {:?}", x)
   }
 }
+
+#[test]
+fn test_parse_isbn_multi_tag_sep() {
+  let src = "34922401038 (set : alk. paper)";
+  let isbn = "34922401038";
+  let defs = ParserDefs::new();
+
+  let mut parser = defs.create_parser(src);
+  let scan = parser.read_isbn();
+  assert!(scan.is_some());
+  let scan = scan.unwrap();
+  assert_eq!(scan.text, isbn);
+  assert_eq!(scan.tags, vec!["set", "alk. paper"]);
+  assert!(parser.is_empty());
+
+  let res = defs.parse(src);
+  match res {
+    ParseResult::Valid(isbns, trail) => {
+      assert_eq!(isbns.len(), 1);
+      assert_eq!(isbns[0].text, isbn);
+      assert_eq!(isbns[0].tags, vec!["set", "alk. paper"]);
+      assert_eq!(trail, "");
+    },
+    x => panic!("bad parse: {:?}", x)
+  }
+}
+
 
 #[test]
 fn test_parse_isbn_tags() {
