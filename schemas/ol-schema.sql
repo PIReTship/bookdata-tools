@@ -6,7 +6,7 @@
 -- Initial table creation with no constraints or indexes
 CREATE SCHEMA IF NOT EXISTS ol;
 
-DROP TABLE IF EXISTS ol.author;
+DROP TABLE IF EXISTS ol.author CASCADE;
 CREATE TABLE ol.author (
     author_id SERIAL NOT NULL,
     author_key VARCHAR(100) NOT NULL,

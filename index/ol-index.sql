@@ -17,89 +17,66 @@ CREATE INDEX IF NOT EXISTS  edition_key_idx ON ol.edition (edition_key);
 ALTER TABLE ol.edition ADD PRIMARY KEY (edition_id);
 
 --- #step Set up work-author join table
-CREATE TABLE IF NOT EXISTS ol.work_authors
+DROP MATERIALIZED VIEW IF EXISTS ol.work_authors CASCADE;
+CREATE MATERIALIZED VIEW ol.work_authors
 AS SELECT work_id, author_id
    FROM ol.author
      JOIN (SELECT work_id, jsonb_array_elements((work_data->'authors')) #>> '{author,key}' AS author_key FROM ol.work) w
      USING (author_key);
 
---- #step Index work-author join table
 CREATE INDEX work_author_wk_idx ON ol.work_authors (work_id);
 CREATE INDEX work_author_au_idx ON ol.work_authors (author_id);
---- #step Author work FK
---- #allow duplicate_object
-ALTER TABLE ol.work_authors ADD CONSTRAINT work_author_wk_fk FOREIGN KEY (work_id) REFERENCES ol.work;
---- #step Author-work author FK
---- #allow duplicate_object
-ALTER TABLE ol.work_authors ADD CONSTRAINT work_author_au_fk FOREIGN KEY (author_id) REFERENCES ol.author;
+ANALYZE ol.work_authors;
 
 --- #step Set up work first author table
-CREATE TABLE IF NOT EXISTS ol.work_first_author
+DROP MATERIALIZED VIEW IF EXISTS ol.work_first_author CASCADE;
+CREATE MATERIALIZED VIEW ol.work_first_author
 AS SELECT work_id, author_id
    FROM ol.author
      JOIN (SELECT work_id, work_data #>> '{authors,0,author,key}' AS author_key FROM ol.work) w
      USING (author_key);
 
---- #step Index work first author table
-CREATE INDEX IF NOT EXISTS work_first_author_wk_idx ON ol.work_first_author (work_id);
-CREATE INDEX IF NOT EXISTS work_first_author_au_idx ON ol.work_first_author (author_id);
---- #step First author work FK
---- #allow duplicate_object
-ALTER TABLE ol.work_first_author ADD CONSTRAINT work_first_author_wk_fk FOREIGN KEY (work_id) REFERENCES ol.work;
---- #step First author author FK
---- #allow duplicate_object
-ALTER TABLE ol.work_first_author ADD CONSTRAINT work_first_author_au_fk FOREIGN KEY (author_id) REFERENCES ol.author;
+CREATE INDEX work_first_author_wk_idx ON ol.work_first_author (work_id);
+CREATE INDEX work_first_author_au_idx ON ol.work_first_author (author_id);
+ANALYZE ol.work_first_author;
 
 --- #step Set up edition-author join table
-CREATE TABLE IF NOT EXISTS ol.edition_author
+DROP MATERIALIZED VIEW IF EXISTS ol.edition_author CASCADE;
+CREATE MATERIALIZED VIEW ol.edition_author
 AS SELECT edition_id, author_id
    FROM ol.author
      JOIN (SELECT edition_id, jsonb_array_elements((edition_data->'authors')) ->> 'key' AS author_key
            FROM ol.edition) e
      USING (author_key);
 
---- #step index edition-author join table
-CREATE INDEX IF NOT EXISTS edition_author_ed_idx ON ol.edition_author (edition_id);
-CREATE INDEX IF NOT EXISTS edition_author_au_idx ON ol.edition_author (author_id);
---- #allow duplicate_object
-ALTER TABLE ol.edition_author ADD CONSTRAINT edition_author_wk_fk FOREIGN KEY (edition_id) REFERENCES ol.edition;
---- #allow duplicate_object
-ALTER TABLE ol.edition_author ADD CONSTRAINT edition_author_au_fk FOREIGN KEY (author_id) REFERENCES ol.author;
+CREATE INDEX edition_author_ed_idx ON ol.edition_author (edition_id);
+CREATE INDEX edition_author_au_idx ON ol.edition_author (author_id);
+ANALYZE ol.edition_author;
 
 --- #step Create edition first-author table
-CREATE TABLE ol.edition_first_author
+DROP MATERIALIZED VIEW IF EXISTS ol.edition_first_author CASCADE;
+CREATE MATERIALIZED VIEW ol.edition_first_author
 AS SELECT edition_id, author_id
    FROM ol.author
      JOIN (SELECT edition_id, edition_data #>> '{authors,0,key}' AS author_key
            FROM ol.edition) e
      USING (author_key);
 
---- #step Index edition first-author table
-CREATE INDEX IF NOT EXISTS edition_first_author_ed_idx ON ol.edition_first_author (edition_id);
-CREATE INDEX IF NOT EXISTS edition_first_author_au_idx ON ol.edition_first_author (author_id);
---- #step Edition first author edition FK
---- #allow duplicate_object
-ALTER TABLE ol.edition_first_author ADD CONSTRAINT edition_first_author_wk_fk FOREIGN KEY (edition_id) REFERENCES ol.edition;
---- #step Edition first author author FK
---- #allow duplicate_object
-ALTER TABLE ol.edition_first_author ADD CONSTRAINT edition_first_author_au_fk FOREIGN KEY (author_id) REFERENCES ol.author;
+CREATE INDEX edition_first_author_ed_idx ON ol.edition_first_author (edition_id);
+CREATE INDEX edition_first_author_au_idx ON ol.edition_first_author (author_id);
+ANALYZE ol.edition_first_author;
 
 --- #step Set up edition-work join table
-CREATE TABLE IF NOT EXISTS ol.edition_work
+DROP MATERIALIZED VIEW IF EXISTS ol.edition_work CASCADE;
+CREATE MATERIALIZED VIEW ol.edition_work
 AS SELECT edition_id, work_id
    FROM ol.work
      JOIN (SELECT edition_id, jsonb_array_elements((edition_data->'works')) ->> 'key' AS work_key FROM ol.edition) w
      USING (work_key);
 
---- #step Index edition-work join table
-CREATE INDEX IF NOT EXISTS edition_work_ed_idx ON ol.edition_work (edition_id);
-CREATE INDEX IF NOT EXISTS edition_work_au_idx ON ol.edition_work (work_id);
---- #step Edition-work edition FK
---- #allow duplicate_object
-ALTER TABLE ol.edition_work ADD CONSTRAINT edition_work_ed_fk FOREIGN KEY (edition_id) REFERENCES ol.edition;
---- #step Edition-work work FK
---- #allow duplicate_object
-ALTER TABLE ol.edition_work ADD CONSTRAINT edition_work_wk_fk FOREIGN KEY (work_id) REFERENCES ol.work;
+CREATE INDEX edition_work_ed_idx ON ol.edition_work (edition_id);
+CREATE INDEX edition_work_au_idx ON ol.edition_work (work_id);
+ANALYZE ol.edition_work;
 
 --- #step Integrate ISBN/ASIN identifiers
 DROP TABLE IF EXISTS ol.edition_isbn CASCADE;
@@ -114,7 +91,7 @@ WITH
         FROM ol.edition)
 INSERT INTO ol.edition_isbn
   SELECT edition_id, isbn
-  FROM (SELECT edition_id, extract_isbn(isbn) AS isbn
+  FROM (SELECT edition_id, regexp_replace(upper(isbn), '[- ]', '') AS isbn
         FROM ol_edition_isbn10) isbns
   WHERE isbn IS NOT NULL AND char_length(isbn) IN (10,13);
 
@@ -124,7 +101,7 @@ WITH
         FROM ol.edition)
 INSERT INTO ol.edition_isbn
   SELECT edition_id, isbn
-  FROM (SELECT edition_id, extract_isbn(isbn) AS isbn
+  FROM (SELECT edition_id, regexp_replace(upper(isbn), '[- ]', '') AS isbn
         FROM ol_edition_isbn13) isbns
   WHERE isbn IS NOT NULL AND char_length(isbn) IN (10,13);
 
