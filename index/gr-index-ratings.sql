@@ -7,14 +7,6 @@
 --- #allow invalid_table_definition
 ALTER TABLE gr.raw_interaction ADD CONSTRAINT gr_raw_interaction_pk PRIMARY KEY (gr_interaction_rid);
 
---- #step Index book clusters
-CREATE MATERIALIZED VIEW IF NOT EXISTS gr.book_cluster
-  AS SELECT DISTINCT gr_book_id, cluster
-     FROM gr.book_isbn JOIN isbn_cluster USING (isbn_id);
-CREATE UNIQUE INDEX IF NOT EXISTS book_cluster_book_idx ON gr.book_cluster (gr_book_id);
-CREATE INDEX IF NOT EXISTS book_cluster_cluster_idx ON gr.book_cluster (cluster);
-ANALYZE gr.book_cluster;
-
 --- #step Extract user info
 CREATE TABLE IF NOT EXISTS gr.user_info (
   gr_user_rid SERIAL PRIMARY KEY,

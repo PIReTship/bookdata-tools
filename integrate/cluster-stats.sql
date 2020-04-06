@@ -9,8 +9,7 @@ CREATE MATERIALIZED VIEW gr.cluster_stats AS
 SELECT cluster,
     COUNT(DISTINCT gr_book_id) AS gr_books,
     COUNT(DISTINCT gr_work_id) AS gr_works
-FROM gr.book_isbn
-JOIN isbn_cluster USING (isbn_id)
+FROM gr.book_cluster
 JOIN gr.book_ids USING (gr_book_id)
 GROUP BY cluster;
 CREATE UNIQUE INDEX gr_cluster_stat_cluster_idx ON gr.cluster_stats (cluster);
