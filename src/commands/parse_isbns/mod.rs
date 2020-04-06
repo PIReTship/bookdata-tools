@@ -13,6 +13,7 @@ use fallible_iterator::FallibleIterator;
 
 use super::Command;
 use crate::db::DbOpts;
+use crate::tracking::StageOpts;
 
 mod parsers;
 mod sources;
@@ -29,8 +30,11 @@ pub struct ParseISBNs {
   #[structopt(flatten)]
   db: DbOpts,
 
+  #[structopt(flatten)]
+  stage: StageOpts,
+
   /// The table from which to parse ISBNs.
-  #[structopt(short="-s", long="src-table")]
+  #[structopt(long="src-table")]
   src_table: Option<String>,
 
   /// The file from which to parse ISBNs.
@@ -40,6 +44,10 @@ pub struct ParseISBNs {
   // The file to write the parsed ISBNs.
   #[structopt(short="-o", long="out-file")]
   out_file: Option<PathBuf>,
+
+  // The table to write the parsed ISBNs.
+  #[structopt(long="out-table")]
+  out_table: Option<String>,
 
   /// Print unmatched entries
   #[structopt(short="-U", long="print-unmatched")]
@@ -62,7 +70,8 @@ struct MatchStats {
   total: usize,
   valid: usize,
   ignored: usize,
-  unmatched: usize
+  unmatched: usize,
+  hash: Option<String>
 }
 
 impl Default for MatchStats {
@@ -71,7 +80,8 @@ impl Default for MatchStats {
       total: 0,
       valid: 0,
       ignored: 0,
-      unmatched: 0
+      unmatched: 0,
+      hash: None
     }
   }
 }
@@ -111,6 +121,10 @@ impl ParseISBNs {
       }
       stats.total += 1;
     }
+    let hash = w.finish()?;
+    if hash.len() > 0 {
+      stats.hash = Some(hash);
+    }
     Ok(stats)
   }
 
@@ -149,8 +163,15 @@ impl ParseISBNs {
 
 impl Command for ParseISBNs {
   fn exec(self) -> Result<()> {
-    let writer: Box<dyn WriteISBNs> = if let Some(ref path) = self.out_file {
+    let db = self.db.open()?;
+    let mut tx = self.stage.open_transcript()?;
+    let writer: Box<dyn WriteISBNs> = if let Some(ref tbl) = self.out_table {
+      info!("opening output table {}", tbl);
+      writeln!(tx, "DEST TABLE {}", tbl)?;
+      Box::new(DBWriter::new(&self.db, tbl)?)
+    } else if let Some(ref path) = self.out_file {
       info!("opening output file {:?}", path);
+      writeln!(tx, "DEST FILE {:?}", path)?;
       let out = OpenOptions::new().write(true).create(true).truncate(true).open(path)?;
       let buf = BufWriter::new(out);
       Box::new(FileWriter {
@@ -159,16 +180,26 @@ impl Command for ParseISBNs {
     } else {
       Box::new(NullWriter {})
     };
+    self.stage.begin_stage(&db)?;
     let stats = if let Some(ref tbl) = self.src_table {
-      let db = self.db.open()?;
+      writeln!(tx, "SOURCE TABLE {}", tbl)?;
       let n = self.scan_db(&db, tbl, writer)?;
       n
     } else if let Some(ref path) = self.src_file {
+      writeln!(tx, "SOURCE FILE {:?}", path)?;
       self.scan_file(&path, writer)?
     } else {
       error!("no source data specified");
       return Err(anyhow!("no source data"));
     };
+    writeln!(tx, "{} RECORDS", stats.total)?;
+    writeln!(tx, "{} IMPORTED", stats.valid)?;
+    writeln!(tx, "{} UNMATCHED", stats.unmatched)?;
+    writeln!(tx, "{} IGNORED", stats.ignored)?;
+    if let Some(ref h) = stats.hash {
+      writeln!(tx, "OUT HASH {}", h)?;
+    }
+    self.stage.end_stage(&db, &stats.hash)?;
     info!("processed {} ISBN records", stats.total);
     info!("matched {}, ignored {}, and {} were unmatched",
           stats.valid, stats.ignored, stats.unmatched);
