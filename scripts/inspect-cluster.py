@@ -177,7 +177,7 @@ def records(dbc, out, opts):
         JOIN isbn_id USING (isbn_id)
         JOIN isbn_cluster USING (isbn_id)
         JOIN gr.book_ids USING (gr_book_id)
-        LEFT JOIN gr.work_titles USING (gr_work_id)
+        LEFT JOIN gr.work_title USING (gr_work_id)
         WHERE cluster = {cluster}
     ''', dbc))
 
@@ -298,7 +298,7 @@ def graph(dbc, out, opts):
             FROM gc_isbns
             JOIN gr.book_isbn USING (isbn_id)
             JOIN gr.book_ids ids USING (gr_book_id)
-            LEFT JOIN gr.work_titles USING (gr_work_id)
+            LEFT JOIN gr.work_title USING (gr_work_id)
             WHERE ids.gr_work_id IS NOT NULL
         ''')
         for wid, title in cur:
