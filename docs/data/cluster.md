@@ -52,6 +52,17 @@ are based on the all-source book clusters.
 
 ## Known Problems
 
-Some book sets have ISBNs, which cause them link together books that should not be clustered.
-The Library of Congress identifies many of these ISBNs as set ISBNs, and we are examining the
-prospect of using this to exclude them from clustering.
+There are a few known problems with the ISBN clustering:
+
+- Publishers occasionally reuse ISBNs.  They aren't supposed to do this, but they do.  This results
+  in unrelated books having the same ISBN.  This will cause a problem for any ISBN-based linking
+  between books and ratings, not just the book clustering.  We don't yet have a good way to identify
+  these ISBNs.
+
+- Some book sets have ISBNs, which cause them link together books that should not be clustered.
+  The Library of Congress identifies many of these ISBNs as set ISBNs, and we are examining the
+  prospect of using this to exclude them from informing clustering decisions.
+
+If you only need e.g. the GoodReads data, we recommend that you *not* cluster it for the purpose of
+ratings, and only use clusters to link to out-of-GR book or author data.  We are open to adding
+additional tables that facilitate linking GoodReads works directly to other tables.
