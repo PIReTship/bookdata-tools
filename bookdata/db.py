@@ -29,48 +29,67 @@ _ms_path = Path(__file__).parent.parent / 'schemas' / 'meta-schema.sql'
 meta_schema = _ms_path.read_text()
 _pool = None
 
+# DB configuration info
+class DBConfig:
+    host: str
+    port: str
+    database: str
+    user: str
+    password: str
+
+    @classmethod
+    def load(cls):
+        repo = git.Repo(search_parent_directories=True)
+
+        cfg = ConfigParser()
+        _log.debug('reading config from db.cfg')
+        cfg.read([repo.working_tree_dir + '/db.cfg'])
+
+        branch = repo.head.reference.name
+        _log.info('reading database config for branch %s', branch)
+
+        if branch in cfg:
+            section = cfg[branch]
+        else:
+            _log.debug('No configuration for branch %s, using default', branch)
+            section = cfg['DEFAULT']
+
+        dbc = cls()
+        dbc.host = section.get('host', 'localhost')
+        dbc.port = section.get('port', None)
+        dbc.database = section.get('database', None)
+        dbc.user = section.get('user', None)
+        dbc.password = section.get('password', None)
+
+        if dbc.database is None:
+            _log.error('No database specified for branch %s', branch)
+            raise RuntimeError('no database specified')
+
+        return dbc
+
+    def url(self) -> str:
+        url = 'postgresql://'
+        if self.user:
+            url += self.user
+            if self.password:
+                url += ':' + self.password
+            url += '@'
+        url += self.host
+        if self.port:
+            url += ':' + self.port
+        url += '/' + self.database
+        return url
+
 
 def db_url():
     "Get the URL to connect to the database."
     if 'DB_URL' in os.environ:
+        _log.info('using env var DB_URL')
         return os.environ['DB_URL']
 
-    repo = git.Repo(search_parent_directories=True)
-
-    cfg = ConfigParser()
-    _log.debug('reading config from db.cfg')
-    cfg.read([repo.working_tree_dir + '/db.cfg'])
-
-    branch = repo.head.reference.name
-    _log.info('reading database config for branch %s', branch)
-
-    if branch in cfg:
-        section = cfg[branch]
-    else:
-        _log.debug('No configuration for branch %s, using default', branch)
-        section = cfg['DEFAULT']
-
-    host = section.get('host', 'localhost')
-    port = section.get('port', None)
-    db = section.get('database', None)
-    user = section.get('user', None)
-    pw = section.get('password', None)
-
-    if db is None:
-        _log.error('No database specified for branch %s', branch)
-        raise RuntimeError('no database specified')
-
-    url = 'postgresql://'
-    if user:
-        url += user
-        if pw:
-            url += ':' + pw
-        url += '@'
-    url += host
-    if port:
-        url += ':' + port
-    url += '/' + db
-    return url
+    config = DBConfig.load()
+    _log.info('using database %s', config.database)
+    return config.url()
 
 
 @contextmanager
