@@ -16,7 +16,7 @@ _log = script_log(__file__)
 def _print_env(src, attr, var):
     val = getattr(src, attr, None)
     if val is not None:
-        print(f"{var}='{val}'")
+        print(f"export {var}='{val}'")
 
 
 def db_config(opts):
