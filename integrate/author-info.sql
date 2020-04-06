@@ -24,27 +24,6 @@ CREATE AGGREGATE resolve_gender(gender VARCHAR) (
   INITCOND = 'unknown'
 );
 
---- #step Compute author genders for LOC clusters
-CREATE TABLE IF NOT EXISTS locmds.cluster_author_gender (
-  cluster INTEGER NOT NULL,
-  gender VARCHAR NOT NULL
-);
-TRUNCATE locmds.cluster_author_gender;
-INSERT INTO locmds.cluster_author_gender (cluster, gender)
-  SELECT cluster,
-    case when count(an.name) = 0 then 'no-loc-author'
-      when count(vn.rec_id) = 0 then 'no-viaf-author'
-      when count(vg.gender) = 0 then 'no-gender'
-      else resolve_gender(vg.gender)
-    end AS gender
-  FROM locmds.isbn_cluster
-    JOIN locmds.book_rec_isbn USING (isbn_id)
-    LEFT JOIN locmds.book_author_name an USING (rec_id)
-    LEFT JOIN viaf.author_name vn USING (name)
-    LEFT JOIN viaf.author_gender vg ON (vn.rec_id = vg.rec_id)
-  GROUP BY cluster;
-CREATE UNIQUE INDEX IF NOT EXISTS loc_cluster_author_gender_book_idx ON locmds.cluster_author_gender (cluster);
-
 --- #step Create MV of rated books
 CREATE MATERIALIZED VIEW IF NOT EXISTS rated_book AS
 SELECT DISTINCT cluster, isbn_id
