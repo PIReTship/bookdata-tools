@@ -19,6 +19,7 @@ from more_itertools import peekable
 import psycopg2, psycopg2.errorcodes
 from psycopg2 import sql
 from psycopg2.pool import ThreadedConnectionPool
+from sqlalchemy import create_engine
 import sqlparse
 import git
 
@@ -28,6 +29,7 @@ _log = logging.getLogger(__name__)
 _ms_path = Path(__file__).parent.parent / 'schemas' / 'meta-schema.sql'
 meta_schema = _ms_path.read_text()
 _pool = None
+_engine = None
 
 # DB configuration info
 class DBConfig:
@@ -105,6 +107,16 @@ def connect():
         yield conn
     finally:
         _pool.putconn(conn)
+
+
+def engine():
+    "Get an SQLAlchemy engine"
+    global _engine
+    if _engine is None:
+        _log.info('connecting to %s', db_url())
+        _engine = create_engine(db_url())
+
+    return _engine
 
 
 def _tokens(s, start=-1, skip_ws=True, skip_cm=True):

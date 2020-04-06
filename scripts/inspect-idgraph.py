@@ -2,9 +2,10 @@
 Inspect a book cluster.
 
 Usage:
-    inspect-cluster.py [options] --stats
-    inspect-cluster.py [options] --records CLUSTER
-    inspect-cluster.py [options] --graph CLUSTER
+    inspect-idgraph.py [options] --stats
+    inspect-idgraph.py [options] --records CLUSTER
+    inspect-idgraph.py [options] --graph CLUSTER
+    inspect-idgraph.py [options] --full-graph
 
 Options:
     -o FILE
@@ -25,6 +26,7 @@ from docopt import docopt
 import pandas as pd
 
 from bookdata import tracking, db, script_log
+from bookdata.graph import GraphLoader
 
 
 class GMLWriter:
@@ -204,87 +206,48 @@ def graph(dbc, out, opts):
     gw.node_attr('category')
     gw.node_attr('title')
 
+    gl = GraphLoader()
+
     with dbc.cursor() as cur:
-        cur.execute('''
-            CREATE TEMPORARY TABLE gc_isbns
-            AS SELECT isbn_id, isbn
-            FROM isbn_cluster JOIN isbn_id USING (isbn_id)
-            WHERE cluster = %s
-        ''', [cluster])
+        gl.set_cluster(cluster, dbc)
 
         _log.info('fetching ISBNs')
-        cur.execute('SELECT * FROM gc_isbns')
+        cur.execute(gl.q_isbns())
         for iid, isbn in cur:
             gw.node(id=f'i{iid}', label=isbn, category='ISBN')
 
         _log.info('fetching LOC records')
-        cur.execute('''
-            SELECT DISTINCT rec_id, title
-            FROM gc_isbns
-            JOIN locmds.book_rec_isbn USING (isbn_id)
-            LEFT JOIN locmds.book_title USING (rec_id)
-        ''')
+        cur.execute(gl.q_loc_nodes(True))
         for rid, title in cur:
             gw.node(id=f'l{rid}', label=rid, category='LOC', title=title)
 
         _log.info('fetching LOC ISBN links')
-        cur.execute('''
-            SELECT isbn_id, rec_id
-            FROM gc_isbns
-            JOIN locmds.book_rec_isbn USING (isbn_id)
-        ''')
+        cur.execute(gl.q_loc_edges())
         for iid, rid in cur:
             gw.edge(source=f'l{rid}', target=f'i{iid}')
 
         _log.info('fetching OL editions')
-        cur.execute('''
-            SELECT DISTINCT
-                edition_id, edition_key,
-                NULLIF(edition_data->>'title', '') AS title
-            FROM gc_isbns
-            JOIN ol.isbn_link USING (isbn_id)
-            JOIN ol.edition USING (edition_id)
-        ''')
+        cur.execute(gl.q_ol_edition_nodes(True))
         for eid, ek, e_title in cur:
             gw.node(id=f'ole{eid}', label=ek, category='OLE', title=e_title)
 
         _log.info('fetching OL works')
-        cur.execute('''
-            SELECT DISTINCT
-                work_id, work_key,
-                NULLIF(work_data->>'title', '') AS title
-            FROM gc_isbns
-            JOIN ol.isbn_link USING (isbn_id)
-            JOIN ol.work USING (work_id)
-        ''')
+        cur.execute(gl.q_ol_work_nodes(True))
         for wid, wk, w_title in cur:
             gw.node(id=f'olw{wid}', label=wk, category='OLW', title=w_title)
 
         _log.info('fetching OL ISBN edges')
-        cur.execute('''
-            SELECT DISTINCT isbn_id, edition_id
-            FROM gc_isbns
-            JOIN ol.isbn_link USING (isbn_id)
-        ''')
+        cur.execute(gl.q_ol_edition_edges())
         for iid, eid in cur:
             gw.edge(source=f'ole{eid}', target=f'i{iid}')
 
         _log.info('fetching OL edition/work edges')
-        cur.execute('''
-            SELECT DISTINCT edition_id, work_id
-            FROM gc_isbns
-            JOIN ol.isbn_link USING (isbn_id)
-            WHERE work_id IS NOT NULL
-        ''')
+        cur.execute(gl.q_ol_work_edges())
         for eid, wid in cur:
             gw.edge(source=f'ole{eid}', target=f'olw{wid}')
 
         _log.info('fetching GR books')
-        cur.execute('''
-            SELECT DISTINCT isbn_id, gr_book_id
-            FROM gc_isbns
-            JOIN gr.book_isbn USING (isbn_id)
-        ''')
+        cur.execute(gl.q_gr_book_edges())
         bids = set()
         for iid, bid in cur:
             if bid not in bids:
@@ -293,30 +256,28 @@ def graph(dbc, out, opts):
             gw.edge(source=f'grb{bid}', target=f'i{iid}')
 
         _log.info('fetching GR works')
-        cur.execute('''
-            SELECT DISTINCT gr_work_id, work_title
-            FROM gc_isbns
-            JOIN gr.book_isbn USING (isbn_id)
-            JOIN gr.book_ids ids USING (gr_book_id)
-            LEFT JOIN gr.work_title USING (gr_work_id)
-            WHERE ids.gr_work_id IS NOT NULL
-        ''')
+        cur.execute(gl.q_gr_work_nodes(True))
         for wid, title in cur:
             gw.node(id=f'grw{wid}', label=wid, category='GRW', title=title)
 
         _log.info('fetching GR work/edition edges')
-        cur.execute('''
-            SELECT DISTINCT gr_work_id, gr_book_id
-            FROM gc_isbns
-            JOIN gr.book_isbn USING (isbn_id)
-            JOIN gr.book_ids ids USING (gr_book_id)
-            WHERE ids.gr_work_id IS NOT NULL
-        ''')
-        for wid, bid in cur:
+        cur.execute(gl.q_gr_work_edges())
+        for bid, wid in cur:
             gw.edge(source=f'grw{wid}', target=f'grb{bid}')
 
     gw.finish()
     _log.info('exported graph')
+
+
+def full_graph(opts):
+    gl = GraphLoader()
+    with db.engine().connect() as cxn:
+        g = gl.load_minimal_graph(cxn)
+
+
+    ofn = opts['-o']
+    _log.info('saving graph to %s', ofn)
+    g.save(ofn)
 
 
 _log = script_log(__name__)
@@ -327,10 +288,13 @@ if opts['-o']:
 else:
     out = sys.stdout
 
-with db.connect() as dbc:
-    if opts['--stats']:
-        stats(dbc, out, opts)
-    elif opts['--records']:
-        records(dbc, out, opts)
-    elif opts['--graph']:
-        graph(dbc, out, opts)
+if opts['--full-graph']:
+    full_graph(opts)
+else:
+    with db.connect() as dbc:
+        if opts['--stats']:
+            stats(dbc, out, opts)
+        elif opts['--records']:
+            records(dbc, out, opts)
+        elif opts['--graph']:
+            graph(dbc, out, opts)
