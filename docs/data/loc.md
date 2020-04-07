@@ -33,6 +33,9 @@ The import is controlled by the following DVC steps:
 `import/loc-mds-books.dvc`
 :   Import raw MARC data from `data/loc-books/`.
 
+`import/loc-mds-extract-isbns.dvc`
+:   Parse ISBNs from LOC ISBN records.
+
 `index/loc-mds-index-books.dvc`
 :   Run `loc-mds-index-books.sql` to index the book data and extract tables.
 
