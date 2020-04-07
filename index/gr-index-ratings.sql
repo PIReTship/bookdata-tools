@@ -1,5 +1,6 @@
 --- #dep gr-interactions
 --- #dep cluster
+--- #dep gr-book-info
 --- #table gr.user_info
 --- #table gr.interaction
 --- #table gr.rating
