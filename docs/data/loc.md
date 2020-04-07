@@ -86,6 +86,12 @@ We then extract a number of tables and views from this MARC data.  These tables 
     record type ‘a’ or ‘t’ (language material), and is not also classified as a government
     record in MARC field 008.
 
+`book_extracted_isbn`
+:   Textual ISBNs as extracted from LOC records.  The actual ISBN strings (tag 020 subfield ‘a’) are
+    quite messy; the Rust program `parse-isbns` parses out ISBNs, along with additional tags or
+    descriptors, from the ISBN strings using a number of best-effort heuristics.  This table contains
+    the results of that process.
+
 `book_rec_isbn`
 :   Map book records to their ISBNs.
 
