@@ -24,22 +24,17 @@ anyone can reproduce from public data.  We call the resulting equivalence sets �
 
 ## Clustering Algorithm
 
-Our clustering algorithm begins by forming a bipartite graph of ISBNs and record identifiers.  We extract
+Our clustering algorithm begins by forming an undirected graph of record identifiers.  We extract
 records from the following:
 
-- Library of Congress book records
-- OpenLibrary editions. If the edition has an associated work, we use the work identifier instead of
-  the book identifier.
-- GoodReads books.  If the book has an associated work, we use the work identifier instead.
+- Library of Congress book records, with edges from records to ISBNs recorded for that record.
+- OpenLibrary editions, with edges from editions to ISBNs recorded for that edition.
+- OpenLibrary works, with edges from works to editions.
+- GoodReads books, with edges from books to ISBNs recorded for that book.
+- GoodReads works, with edges from works to books.
 
-We convert each record identifier to a [book code](ids.html#book-codes) to avoid confusion between
-different identifier types (and keep ID number reuse between data sets from colliding).
-
-There is an edge from an ISBN to a record if that record reports the ISBN as one of its identifiers.
-
-We then compute connected components on this graph, and treat each connected component as a single
-‘book’ (what we call a *book cluster*).  The cluster is identified by the smallest book code of any
-of the book records it comprises, but these cluster identifiers shouldn't be treated as meaningful.
+We then compute the connected components on this graph, and treat each connected component as a single
+‘book’ (what we call a *book cluster*).
 
 The idea is that if two ISBNs appear together on a book record, that is evidence they are for the
 same book; likewise, if two book records have the same ISBN, it is evidence they record the same book.
