@@ -15,6 +15,7 @@ class MinGraphBuilder:
     def __init__(self):
         self.graph = Graph(directed=False)
         self.codes = []
+        self.labels = []
         self.sources = []
 
     def add_nodes(self, df, ns):
@@ -26,6 +27,7 @@ class MinGraphBuilder:
         assert end - start == n
         nodes = pd.Series(np.arange(start, end, dtype='i4'), index=df['id'])
         self.codes.append(df['id'].values + ns.offset)
+        self.labels.append(df['id'].values)
         self.sources.append(np.full(n, ns.code, dtype='i2'))
         return nodes
 
@@ -41,6 +43,11 @@ class MinGraphBuilder:
         code_a = self.graph.new_vp('int64_t')
         code_a.a[:] = np.concatenate(self.codes)
         self.graph.vp['code'] = code_a
+
+        _log.info('setting label attributes')
+        label_a = self.graph.new_vp('int64_t')
+        label_a.a[:] = np.concatenate(self.labels)
+        self.graph.vp['label'] = label_a
 
         _log.info('setting source attributes')
         source_a = self.graph.new_vp('int16_t')
