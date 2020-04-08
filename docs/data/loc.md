@@ -33,6 +33,9 @@ The import is controlled by the following DVC steps:
 `import/loc-mds-books.dvc`
 :   Import raw MARC data from `data/loc-books/`.
 
+`import/loc-mds-extract-isbns.dvc`
+:   Parse ISBNs from LOC ISBN records.
+
 `index/loc-mds-index-books.dvc`
 :   Run `loc-mds-index-books.sql` to index the book data and extract tables.
 
@@ -85,6 +88,12 @@ We then extract a number of tables and views from this MARC data.  These tables 
     as opposed to other types of materials.  We consider a book to be anything that has MARC
     record type ‘a’ or ‘t’ (language material), and is not also classified as a government
     record in MARC field 008.
+
+`book_extracted_isbn`
+:   Textual ISBNs as extracted from LOC records.  The actual ISBN strings (tag 020 subfield ‘a’) are
+    quite messy; the Rust program `parse-isbns` parses out ISBNs, along with additional tags or
+    descriptors, from the ISBN strings using a number of best-effort heuristics.  This table contains
+    the results of that process.
 
 `book_rec_isbn`
 :   Map book records to their ISBNs.
