@@ -107,7 +107,7 @@ AS SELECT gr_reviews_rid, (gr_reviews_data->>'review_id')::varchar AS gr_review_
 	NULLIF(gr_reviews_data->>'n_votes', '') AS n_votes,
 	NULLIF(gr_reviews_data->>'read_at', '') AS read_at,
 	NULLIF(gr_reviews_data->>'rating', '') AS rating,
-	NULLIF(gr_reviews_data->>'review', '') AS review,
+	NULLIF(gr_reviews_data->>'review_text', '') AS review,
 	NULLIF(gr_reviews_data->>'started_at', '') AS started_at,
 	NULLIF(gr_reviews_data->>'user_id', '') AS user_id
 FROM gr.raw_reviews;
