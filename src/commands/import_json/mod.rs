@@ -1,6 +1,7 @@
 mod ops;
 mod openlib;
 mod goodreads;
+mod amazon;
 
 use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
@@ -31,6 +32,7 @@ impl FromStr for DataSet {
     match s {
       "openlib" => Ok(Box::new(openlib::Ops {})),
       "goodreads" => Ok(Box::new(goodreads::Ops {})),
+      "amazon" => Ok(Box::new(amazon::Ops {})),
       _ => Err(anyhow!("invalid string {}", s))
     }
   }
