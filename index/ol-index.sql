@@ -166,6 +166,17 @@ CREATE INDEX author_name_idx ON ol.author_name (author_id);
 CREATE INDEX author_name_name_idx ON ol.author_name (author_name);
 ANALYZE ol.author_name;
 
+--- #step Extract author identifiers
+DROP MATERIALIZED VIEW IF EXISTS ol.author_ids CASCADE;
+CREATE MATERIALIZED VIEW ol.author_ids
+AS SELECT author_id, author_key,
+  author_data#>>'{remote_ids,viaf}' AS viaf_id,
+  author_data#>>'{remote_ids,wikidata}' AS wikidata_key
+FROM ol.author;
+CREATE UNIQUE INDEX ol_aid_idx ON ol.author_ids (author_id);
+CREATE INDEX ol_aid_key_idx ON ol.author_ids (author_key);
+CREATE INDEX ol_aid_viaf_idx ON ol.author_ids (viaf_id);
+
 --- #step Catalog work subjects
 CREATE MATERIALIZED VIEW IF NOT EXISTS ol.work_subject
 AS SELECT work_id, jsonb_array_elements_text(work_data->'subjects') AS subject
