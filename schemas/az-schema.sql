@@ -1,7 +1,7 @@
 --- #dep common-schema
---- #table az.raw_rating
---- #table az.raw_review
---- #table az.raw_book
+--- #table az14.raw_rating
+--- #table az18.raw_review
+--- #table az18.raw_book
 CREATE SCHEMA IF NOT EXISTS az14;
 CREATE SCHEMA IF NOT EXISTS az18;
 
