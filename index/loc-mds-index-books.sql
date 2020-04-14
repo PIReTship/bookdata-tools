@@ -1,4 +1,5 @@
 --- #dep loc-mds-books
+--- #dep loc-mds-extract-isbns
 --- #table locmds.book_marc_cn
 --- #table locmds.book_record_info
 --- #table locmds.book
@@ -77,47 +78,19 @@ CREATE INDEX IF NOT EXISTS book_control_idx ON locmds.book (marc_cn);
 CREATE INDEX IF NOT EXISTS book_lccn_idx ON locmds.book (lccn);
 ANALYZE locmds.book;
 
---- #step Index ISBNs
-CREATE MATERIALIZED VIEW IF NOT EXISTS locmds.book_extracted_isbn AS
-  SELECT rec_id, extract_isbn(contents) AS isbn
-  FROM locmds.book_marc_field
-  WHERE tag = '020' AND sf_code = 'a'
-  WITH NO DATA;
-REFRESH MATERIALIZED VIEW locmds.book_extracted_isbn;
-
+--- #step Index and link ISBNs
 INSERT INTO isbn_id (isbn)
-  WITH isbns AS (SELECT DISTINCT isbn FROM locmds.book_extracted_isbn WHERE isbn IS NOT NULL AND char_length(isbn) IN (10,13))
+  WITH isbns AS (SELECT DISTINCT isbn
+                 FROM locmds.book_extracted_isbn
+                 WHERE isbn IS NOT NULL)
   SELECT isbn FROM isbns
   WHERE isbn NOT IN (SELECT isbn FROM isbn_id);
 ANALYZE isbn_id;
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS locmds.book_rec_isbn
-  AS SELECT rec_id, isbn_id
+CREATE MATERIALIZED VIEW locmds.book_rec_isbn
+  AS SELECT DISTINCT rec_id, isbn_id
      FROM locmds.book JOIN locmds.book_extracted_isbn USING (rec_id) JOIN isbn_id USING (isbn)
-     WHERE isbn IS NOT NULl AND char_length(isbn) IN (10,13)
-  WITH NO DATA;
-REFRESH MATERIALIZED VIEW locmds.book_rec_isbn;
+     WHERE isbn IS NOT NULl AND char_length(isbn) IN (10,13);
 CREATE INDEX IF NOT EXISTS book_rec_isbn_rec_idx ON locmds.book_rec_isbn (rec_id);
 CREATE INDEX IF NOT EXISTS book_rec_isbn_isbn_idx ON locmds.book_rec_isbn (isbn_id);
 ANALYZE locmds.book_rec_isbn;
-
---- #step Extract authors
-CREATE MATERIALIZED VIEW IF NOT EXISTS locmds.book_author_name
-  AS SELECT rec_id, regexp_replace(contents, '\W+$', '') AS name
-  FROM locmds.book_marc_field
-  WHERE tag = '100' AND sf_code = 'a'
-  WITH NO DATA;
-REFRESH MATERIALIZED VIEW locmds.book_author_name;
-CREATE INDEX IF NOT EXISTS book_author_name_rec_idx ON locmds.book_author_name (rec_id);
-CREATE INDEX IF NOT EXISTS book_author_name_name_idx ON locmds.book_author_name (name);
-ANALYZE locmds.book_author_name;
-
---= #step Extract publication years
-CREATE MATERIALIZED VIEW IF NOT EXISTS locmds.book_pub_year
-  AS SELECT rec_id, substring(contents from '(\d\d\d\d)') AS pub_year
-  FROM locmds.book_marc_field
-  WHERE tag = '260' AND sf_code = 'c' AND substring(contents from '(\d\d\d\d)') IS NOT NULL
-  WITH NO DATA;
-REFRESH MATERIALIZED VIEW locmds.book_pub_year;
-CREATE INDEX IF NOT EXISTS book_pub_year_rec_idx ON locmds.book_pub_year (rec_id);
-ANALYZE locmds.book_pub_year;

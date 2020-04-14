@@ -1,4 +1,5 @@
 --- #dep author-info
+--- #table integration_stats
 --- #step Set up statistics table
 DROP TABLE IF EXISTS integration_stats CASCADE;
 CREATE TABLE integration_stats (

@@ -15,6 +15,19 @@ CREATE TABLE locmds.book_marc_field (
   contents VARCHAR
 );
 
+DROP VIEW IF EXISTS locmds.book_raw_isbn CASCADE;
+CREATE VIEW locmds.book_raw_isbn
+AS SELECT rec_id, trim(contents) AS isbn_text
+   FROM locmds.book_marc_field
+   WHERE tag = '020' AND sf_code = 'a';
+
+DROP TABLE IF EXISTS locmds.book_extracted_isbn CASCADE;
+CREATE TABLE locmds.book_extracted_isbn (
+  rec_id INTEGER NOT NULL,
+  isbn VARCHAR NOT NULL,
+  isbn_tag VARCHAR
+);
+
 DROP TABLE IF EXISTS locmds.name_marc_field CASCADE;
 CREATE TABLE locmds.name_marc_field (
   rec_id INTEGER NOT NULL,

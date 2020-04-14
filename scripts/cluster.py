@@ -1,12 +1,10 @@
 """
 Usage:
-    cluster.py [-T FILE] [SCOPE]
+    cluster.py [-T FILE]
 
 Options:
     -T FILE
         Write transcript to FILE.
-    SCOPE
-        Cluster SCOPE.
 """
 import os
 import sys
@@ -22,77 +20,13 @@ from docopt import docopt
 import pandas as pd
 import numpy as np
 
+from graph_tool.all import label_components
+
 from bookdata import db, tracking, script_log
+from bookdata.graph import GraphLoader
+from bookdata.schema import *
 
 _log = script_log(__name__)
-
-
-class scope_loc_mds:
-    name = 'LOC-MDS'
-    schema = 'locmds'
-
-    node_query = dedent('''
-        SELECT isbn_id, MIN(bc_of_loc_rec(rec_id)) AS record
-        FROM locmds.book_rec_isbn GROUP BY isbn_id
-    ''')
-
-    edge_query = dedent('''
-        SELECT DISTINCT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
-        FROM locmds.book_rec_isbn l JOIN locmds.book_rec_isbn r ON (l.rec_id = r.rec_id)
-    ''')
-
-
-class scope_ol:
-    name = 'OpenLibrary'
-    schema = 'ol'
-
-    node_query = dedent('''
-        SELECT isbn_id, MIN(book_code) AS record
-        FROM ol.isbn_link GROUP BY isbn_id
-    ''')
-
-    edge_query = dedent('''
-        SELECT DISTINCT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
-        FROM ol.isbn_link l JOIN ol.isbn_link r ON (l.book_code = r.book_code)
-    ''')
-
-
-class scope_gr:
-    name = 'GoodReads'
-    schema = 'gr'
-
-    node_query = dedent('''
-        SELECT DISTINCT isbn_id, MIN(book_code) AS record
-        FROM gr.book_isbn GROUP BY isbn_id
-    ''')
-
-    edge_query = dedent('''
-        SELECT DISTINCT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
-        FROM gr.book_isbn l JOIN gr.book_isbn r ON (l.book_code = r.book_code)
-    ''')
-
-
-class scope_loc_id:
-    name = 'LOC'
-    schema = 'locid'
-
-    node_query = dedent('''
-        SELECT isbn_id, MIN(book_code) AS record
-        FROM locid.isbn_link GROUP BY isbn_id
-    ''')
-
-    edge_query = dedent('''
-        SELECT DISTINCT l.isbn_id AS left_isbn, r.isbn_id AS right_isbn
-        FROM locid.isbn_link l JOIN locid.isbn_link r ON (l.book_code = r.book_code)
-    ''')
-
-
-_all_scopes = ['ol', 'gr', 'loc-mds']
-
-
-def get_scope(name):
-    n = name.replace('-', '_')
-    return globals()[f'scope_{n}']
 
 
 def cluster_isbns(isbn_recs, edges):
@@ -146,22 +80,23 @@ def _make_clusters(clusters, ls, rs):
     return iters
 
 
-def _import_clusters(dbc, schema, frame):
+def _import_clusters(dbc, frame):
     with dbc.cursor() as cur:
-        schema_i = sql.Identifier(schema)
         _log.info('creating cluster table')
-        cur.execute(sql.SQL('DROP TABLE IF EXISTS {}.isbn_cluster CASCADE').format(schema_i))
+        cur.execute(sql.SQL('DROP TABLE IF EXISTS isbn_cluster CASCADE'))
         cur.execute(sql.SQL('''
-            CREATE TABLE {}.isbn_cluster (
+            CREATE TABLE isbn_cluster (
                 isbn_id INTEGER NOT NULL,
                 cluster INTEGER NOT NULL
             )
-        ''').format(schema_i))
-        _log.info('loading %d clusters into %s.isbn_cluster', len(frame), schema)
-        db.save_table(dbc, sql.SQL('{}.isbn_cluster').format(schema_i), frame)
-        cur.execute(sql.SQL('ALTER TABLE {}.isbn_cluster ADD PRIMARY KEY (isbn_id)').format(schema_i))
-        cur.execute(sql.SQL('CREATE INDEX isbn_cluster_idx ON {}.isbn_cluster (cluster)').format(schema_i))
-        cur.execute(sql.SQL('ANALYZE {}.isbn_cluster').format(schema_i))
+        '''))
+        _log.info('loading %d clusters into isbn_cluster', len(frame))
+
+    db.save_table(dbc, sql.SQL('isbn_cluster'), frame)
+    with dbc.cursor() as cur:
+        cur.execute(sql.SQL('ALTER TABLE isbn_cluster ADD PRIMARY KEY (isbn_id)'))
+        cur.execute(sql.SQL('CREATE INDEX isbn_cluster_idx ON isbn_cluster (cluster)'))
+        cur.execute(sql.SQL('ANALYZE isbn_cluster'))
 
 
 def _hash_frame(df):
@@ -171,56 +106,44 @@ def _hash_frame(df):
     return hash.hexdigest()
 
 
-def cluster(scope, txout):
+def cluster(txout):
     "Cluster ISBNs"
-    with db.connect() as dbc:
-        _log.info('preparing to cluster scope %s', scope)
-        if scope:
-            step = f'{scope}-cluster'
-            schema = get_scope(scope).schema
-            scopes = [scope]
-        else:
-            step = 'cluster'
-            schema = 'public'
-            scopes = _all_scopes
+    with db.connect() as dbc, dbc:
+        tracking.begin_stage(dbc, 'cluster')
 
-        with dbc:
-            tracking.begin_stage(dbc, step)
+        with db.engine().connect() as cxn:
+            _log.info('loading graph')
+            gl = GraphLoader()
+            g = gl.load_graph(cxn, False)
 
-            isbn_recs = []
-            isbn_edges = []
-            for scope in scopes:
-                sco = get_scope(scope)
-                _log.info('reading ISBNs for %s', scope)
-                irs = db.load_table(dbc, sco.node_query)
-                n_hash = _hash_frame(irs)
-                isbn_recs.append(irs)
-                print('READ NODES', scope, n_hash, file=txout)
+        print('NODES', g.num_vertices(), file=txout)
+        print('EDGES', g.num_edges(), file=txout)
 
-                _log.info('reading edges for %s', scope)
-                ies = db.load_table(dbc, sco.edge_query)
-                e_hash = _hash_frame(ies)
-                isbn_edges.append(ies)
-                print('READ EDGES', scope, e_hash, file=txout)
+        _log.info('finding connected components')
+        comps, hist = label_components(g)
+        _log.info('found %d components, largest has %s items', len(hist), np.max(hist))
+        print('COMPONENTS', len(hist), file=txout)
 
-            isbn_recs = pd.concat(isbn_recs, ignore_index=True)
-            isbn_edges = pd.concat(isbn_edges, ignore_index=True)
+        _log.info('saving cluster records to database')
+        is_isbn = g.vp.source.a == ns_isbn.code
+        clusters = pd.DataFrame({
+            'isbn_id': g.vp.label.a[is_isbn],
+            'cluster': comps.a[is_isbn]
+        })
+        _import_clusters(dbc, clusters)
 
-            _log.info('clustering %s ISBN records with %s edges',
-                      number(len(isbn_recs)), number(len(isbn_edges)))
-            loc_clusters = cluster_isbns(isbn_recs, isbn_edges)
-            _log.info('saving cluster records to database')
-            _import_clusters(dbc, schema, loc_clusters)
+        _log.info('saving ID graph')
+        g.vp['cluster'] = comps
+        g.save('data/id-graph.gt')
 
-            c_hash = _hash_frame(loc_clusters)
-            print('WRITE CLUSTERS', c_hash, file=txout)
+        c_hash = _hash_frame(clusters)
+        print('WRITE CLUSTERS', c_hash, file=txout)
 
-            tracking.end_stage(dbc, step, c_hash)
+        tracking.end_stage(dbc, 'cluster', c_hash)
 
 
 opts = docopt(__doc__)
 tx_fn = opts.get('-T', None)
-scope = opts.get('SCOPE', None)
 
 if tx_fn == '-' or not tx_fn:
     tx_out = sys.stdout
@@ -228,4 +151,4 @@ else:
     _log.info('writing transcript to %s', tx_fn)
     tx_out = open(tx_fn, 'w')
 
-cluster(scope, tx_out)
+cluster(tx_out)

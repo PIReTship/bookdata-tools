@@ -1,10 +1,8 @@
 --- #dep gr-books
 --- #dep gr-works
 --- #dep gr-authors
---- #dep gr-book-genres
 --- #table gr.work_ids
 --- #table gr.book_ids
---- #table gr.book_genres
 --- #step Add book PK
 --- #allow invalid_table_definition
 ALTER TABLE gr.raw_book ADD CONSTRAINT gr_raw_book_pk PRIMARY KEY (gr_book_rid);
