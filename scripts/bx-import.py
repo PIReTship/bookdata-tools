@@ -42,7 +42,7 @@ data = bytes(barr)
 rd = StringIO(data.decode('utf8'))
 
 with db.connect() as dbc:
-    print('IMPORT TO bx.raw_ratings', file=tx_file)
+    print('IMPORT TO bx.raw_rating', file=tx_file)
     print('READ', src_file, in_chk, file=tx_file)
     # we're going to hash the data we insert
     dh = hashlib.md5()
@@ -56,7 +56,7 @@ with db.connect() as dbc:
             uid = row['User-ID']
             isbn = row['ISBN']
             rating = row['Book-Rating']
-            cur.execute('INSERT INTO bx.raw_ratings (user_id, isbn, rating) VALUES (%s, %s, %s)',
+            cur.execute('INSERT INTO bx.raw_rating (user_id, isbn, rating) VALUES (%s, %s, %s)',
                         (uid, isbn, rating))
             dh.update(f'{uid}\t{isbn}\t{rating}\n'.encode('utf8'))
             n += 1
