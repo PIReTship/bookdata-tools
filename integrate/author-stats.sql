@@ -30,10 +30,17 @@ FROM bx.rating
 LEFT JOIN cluster_first_author_gender ON (book_id = cluster)
 GROUP BY COALESCE(gender, 'no-book');
 
---- #step Count Amazon integration statistics
+--- #step Count Amazon 14 integration statistics
 INSERT INTO integration_stats (dataset, gender, n_books, n_actions)
 SELECT 'AZ', COALESCE(gender, 'no-book'), COUNT(DISTINCT book_id), COUNT(book_id)
-FROM az.rating
+FROM az14.rating
+LEFT JOIN cluster_first_author_gender ON (book_id = cluster)
+GROUP BY COALESCE(gender, 'no-book');
+
+--- #step Count Amazon 18 integration statistics
+INSERT INTO integration_stats (dataset, gender, n_books, n_actions)
+SELECT 'AZ18', COALESCE(gender, 'no-book'), COUNT(DISTINCT book_id), COUNT(book_id)
+FROM az18.rating
 LEFT JOIN cluster_first_author_gender ON (book_id = cluster)
 GROUP BY COALESCE(gender, 'no-book');
 
