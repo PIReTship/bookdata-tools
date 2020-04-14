@@ -24,18 +24,6 @@ CREATE AGGREGATE resolve_gender(gender VARCHAR) (
   INITCOND = 'unknown'
 );
 
---- #step Create MV of rated books
-CREATE MATERIALIZED VIEW IF NOT EXISTS rated_book AS
-SELECT DISTINCT cluster, isbn_id
-  FROM (SELECT book_id AS cluster FROM bx.add_action
-        UNION DISTINCT
-        SELECT book_id AS cluster FROM az.rating) rated
-  LEFT JOIN isbn_cluster USING (cluster) WITH NO DATA;
-REFRESH MATERIALIZED VIEW rated_book;
-CREATE INDEX IF NOT EXISTS rated_book_cluster_idx ON rated_book (cluster);
-CREATE INDEX IF NOT EXISTS rated_book_isbn_idx ON rated_book (isbn_id);
-ANALYZE rated_book;
-
 --- #step Extract book first-author names from OL
 DROP MATERIALIZED VIEW IF EXISTS cluster_ol_first_author_name;
 CREATE MATERIALIZED VIEW cluster_ol_first_author_name AS
