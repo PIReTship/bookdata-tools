@@ -1,7 +1,7 @@
 --- #dep cluster
---- #dep loc-mds-cluster
 --- #dep viaf-index
---- #dep ol-index
+--- #dep ol-book-info
+--- #dep loc-mds-book-info
 
 --- Schema for consolidating and calibrating author gender info
 --- #step Create functions
@@ -76,4 +76,4 @@ ANALYZE cluster_first_author_gender;
 INSERT INTO stage_dep (stage_name, dep_name, dep_key)
 SELECT 'author-info', stage_name, stage_key
 FROM stage_status
-WHERE stage_name IN ('cluster', 'loc-mds-cluster');
+WHERE stage_name IN ('cluster');
