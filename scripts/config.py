@@ -31,7 +31,6 @@ def db_config(opts):
         _print_env(cfg, 'password', 'PGPASSWORD')
 
 
-if __name__ == '__main__':
-    opts = docopt(__doc__)
-    if opts['--database']:
-        db_config(opts)
+opts = docopt(__doc__)
+if opts['--database']:
+    db_config(opts)
