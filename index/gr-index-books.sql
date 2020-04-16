@@ -93,21 +93,3 @@ CREATE TABLE IF NOT EXISTS gr.book_genres
 CREATE INDEX bg_book_rid ON gr.book_genres (gr_book_rid);
 CREATE INDEX bg_book_id ON gr.book_genres (gr_book_id);
 
---- #step Index GoodReads book reviews
---- #allow duplicate_table
-DROP MATERIALIZED VIEW IF EXISTS gr.reviews;
-CREATE MATERIALIZED VIEW gr.reviews
-AS SELECT gr_reviews_rid, (gr_reviews_data->>'review_id')::varchar AS gr_review_id,
-	NULLIF(gr_reviews_data->>'book_id', '') AS book_id,
-        NULLIF(gr_reviews_data->>'date_added', '') AS date_added,
-	NULLIF(gr_reviews_data->>'date_updated', '') AS date_updated,
-	NULLIF(gr_reviews_data->>'n_comments', '') AS n_comments,
-	NULLIF(gr_reviews_data->>'n_votes', '') AS n_votes,
-	NULLIF(gr_reviews_data->>'read_at', '') AS read_at,
-	NULLIF(gr_reviews_data->>'rating', '') AS rating,
-	NULLIF(gr_reviews_data->>'review_text', '') AS review,
-	NULLIF(gr_reviews_data->>'started_at', '') AS started_at,
-	NULLIF(gr_reviews_data->>'user_id', '') AS user_id
-FROM gr.raw_reviews;
-CREATE INDEX gr_reviews_idx ON gr.reviews (gr_review_id);
-
