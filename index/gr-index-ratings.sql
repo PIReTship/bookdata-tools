@@ -92,4 +92,6 @@ AS SELECT gr_reviews_rid, (gr_reviews_data->>'review_id')::varchar AS gr_review_
 	NULLIF(gr_reviews_data->>'started_at', '') AS started_at,
 	NULLIF(gr_reviews_data->>'user_id', '') AS user_id
 FROM gr.raw_reviews;
-CREATE INDEX gr_reviews_idx ON gr.review (gr_review_id);
+CREATE INDEX gr_review_idx ON gr.review (gr_review_id);
+CREATE INDEX gr_review_book_idx ON gr.review (book_id);
+CREATE INDEX gr_review_user_idx ON gr.review (user_id);
