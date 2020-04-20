@@ -47,3 +47,18 @@ CREATE MATERIALIZED VIEW az18.rating
 CREATE INDEX az18_rating_user_idx ON az18.rating (user_id);
 CREATE INDEX az18_rating_asin_idx ON az18.rating (book_id);
 ANALYZE az18.rating;
+
+DROP MATERIALIZED VIEW IF EXISTS az18.book;
+CREATE MATERIALIZED VIEW az18.book
+AS SELECT book_id, (book_data->>'asin')::varchar AS asin,
+	NULLIF(book_data->>'rank', '') AS rank,
+        NULLIF(book_data->>'brand', '') AS brand,
+	NULLIF(book_data->>'price', '') AS price,
+	NULLIF(book_data->>'title', '') AS title,
+	NULLIF(book_data->>'also_buy', '') AS also_buy,
+	NULLIF(book_data->>'main_cat', '') AS main_cat,
+	NULLIF(book_data->>'also_view', '') AS also_view,
+	NULLIF(book_data->>'description', '') AS description
+FROM az18.raw_book;
+CREATE INDEX az18_book_idx ON az18.book (book_id);
+ANALYZE az18.book;
