@@ -1,12 +1,7 @@
-mod ops;
-mod openlib;
-mod goodreads;
-
 use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
-use std::fs::File;
+use std::fs::{File, read_to_string};
 use std::path::PathBuf;
-use std::str::FromStr;
 
 use log::*;
 
@@ -15,26 +10,15 @@ use flate2::bufread::MultiGzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
 use sha1::Sha1;
 use anyhow::{Result, anyhow};
+use serde::{Deserialize};
+use toml;
 
 use crate::io::{HashRead, HashWrite};
+use crate::cleaning::*;
+use crate::tsv::split_first;
 use crate::db::{DbOpts, CopyRequest};
 use crate::tracking::StageOpts;
 use super::Command;
-
-/// Data set definition type - anything implementing DataSetOps
-type DataSet = Box<dyn ops::DataSetOps>;
-
-// Parse a data set definition from a string
-impl FromStr for DataSet {
-  type Err = anyhow::Error;
-  fn from_str(s: &str) -> Result<DataSet> {
-    match s {
-      "openlib" => Ok(Box::new(openlib::Ops {})),
-      "goodreads" => Ok(Box::new(goodreads::Ops {})),
-      _ => Err(anyhow!("invalid string {}", s))
-    }
-  }
-}
 
 /// Process OpenLib data into format suitable for PostgreSQL import.
 #[derive(StructOpt)]
@@ -50,21 +34,97 @@ pub struct ImportJson {
   #[structopt(long="truncate")]
   truncate: bool,
 
-  /// Specify the type of dataset to work on
-  #[structopt()]
-  dataset: DataSet,
+  /// TOML spec file that describes the input
+  #[structopt(name="SPEC")]
+  spec: PathBuf,
 
-  /// Specify the table name into which to import
-  #[structopt(name = "TABLE")]
-  table: String,
   /// Input file
   #[structopt(name = "INPUT", parse(from_os_str))]
   infile: PathBuf
 }
 
+#[derive(Deserialize, Debug)]
+enum ColOp {
+  #[serde(rename="_")]
+  Skip,
+  #[serde(rename="str")]
+  String,
+  #[serde(rename="json")]
+  JSON
+}
+
+/// Import specification read from TOML
+#[derive(Deserialize, Debug)]
+struct ImportSpec {
+  schema: String,
+  table: String,
+  columns: Vec<String>,
+  #[serde(default)]
+  format: Vec<ColOp>
+}
+
+impl ImportSpec {
+  fn import<R: BufRead, W: Write>(&self, src: &mut R, dst: &mut W) -> Result<usize> {
+    if self.format.is_empty() {
+      self.import_raw(src, dst)
+    } else {
+      self.import_delim(src, dst)
+    }
+  }
+
+  fn import_raw<R: BufRead, W: Write>(&self, src: &mut R, dst: &mut W) -> Result<usize> {
+    let mut jsbuf = String::new();
+    let mut n = 0;
+    for line in src.lines() {
+      let json = line?;
+      clean_json(&json, &mut jsbuf);
+      write_pgencoded(dst, jsbuf.as_bytes())?;
+      dst.write_all(b"\n")?;
+      n += 1;
+    }
+
+    Ok(n)
+  }
+
+  fn import_delim<R: BufRead, W: Write>(&self, src: &mut R, dst: &mut W) -> Result<usize> {
+    let mut jsbuf = String::new();
+    let mut n = 0;
+    for line in src.lines() {
+      let mut line = line?;
+      for i in 0..self.format.len() {
+        let (fld, rest) = split_first(&line).ok_or_else(|| anyhow!("invalid line"))?;
+        match self.format[i] {
+          ColOp::Skip => (),
+          ColOp::String => {
+            if i > 0 {
+              dst.write_all(b"\t")?;
+            }
+            write_pgencoded(dst, fld.as_bytes())?;
+          },
+          ColOp::JSON => {
+            if i > 0 {
+              dst.write_all(b"\t")?;
+            }
+            clean_json(&fld, &mut jsbuf);
+            write_pgencoded(dst, jsbuf.as_bytes())?;
+          }
+        }
+        line = rest.to_string();
+      }
+      dst.write_all(b"\n")?;
+      n += 1;
+    }
+    Ok(n)
+  }
+}
+
 impl Command for ImportJson {
   fn exec(self) -> Result<()> {
-    let dbo = self.db.default_schema(self.dataset.schema());
+    info!("reading spec from {:?}", &self.spec);
+    let spec = read_to_string(&self.spec)?;
+    let spec: ImportSpec = toml::from_str(&spec)?;
+
+    let dbo = self.db.default_schema(&spec.schema);
 
     let dbc = dbo.open()?;
     self.stage.begin_stage(&dbc)?;
@@ -86,10 +146,9 @@ impl Command for ImportJson {
     let mut bfs = BufReader::new(gzf);
 
     // Set up the output stream, writing to the database
-    let req = CopyRequest::new(&dbo, &self.dataset.table_name(&self.table))?;
+    let req = CopyRequest::new(&dbo, &spec.table)?;
     let req = req.with_schema(dbo.schema());
-    let columns = self.dataset.columns(&self.table);
-    let cref: Vec<&str> = columns.iter().map(String::as_str).collect();
+    let cref: Vec<&str> = spec.columns.iter().map(String::as_str).collect();
     let req = req.with_columns(&cref);
     let req = req.truncate(self.truncate);
     let out = req.open()?;
@@ -98,7 +157,7 @@ impl Command for ImportJson {
     let mut buf_out = BufWriter::new(hout);
 
     // Actually run the import
-    let n = self.dataset.import(&mut bfs, &mut buf_out)?;
+    let n = spec.import(&mut bfs, &mut buf_out)?;
     buf_out.flush()?;
     drop(buf_out);
 
