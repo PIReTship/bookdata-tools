@@ -1,6 +1,8 @@
 use std::io;
 use sha1::Sha1;
 
+use log::*;
+
 /// Write wrapper that computes Sha1 checksums of the data written.
 pub struct HashWrite<'a, W: io::Write> {
   writer: W,
@@ -49,5 +51,39 @@ impl <'a, R: io::Read> io::Read for HashRead<'a, R> {
     let n = self.reader.read(buf)?;
     self.hash.update(&buf[0..n]);
     Ok(n)
+  }
+}
+
+pub struct DelimPrinter<'a> {
+  delim: &'a [u8],
+  end: &'a [u8],
+  first: bool
+}
+
+impl <'a> DelimPrinter<'a> {
+  pub fn new(delim: &'a str, end: &'a str) -> DelimPrinter<'a> {
+    DelimPrinter {
+      delim: delim.as_bytes(),
+      end: end.as_bytes(),
+      first: true
+    }
+  }
+
+  pub fn preface<W: io::Write>(&mut self, w: &mut W) -> io::Result<bool> {
+    if self.first {
+      self.first = true;
+      Ok(false)
+    } else {
+      debug!("writing preface");
+      w.write_all(self.delim)?;
+      Ok(true)
+    }
+  }
+
+  pub fn end<W: io::Write>(&mut self, w: &mut W) -> io::Result<()> {
+    debug!("writing end");
+    w.write_all(self.end)?;
+    self.first = true;
+    Ok(())
   }
 }

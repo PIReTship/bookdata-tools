@@ -13,11 +13,12 @@ use anyhow::{Result, anyhow};
 use serde::{Deserialize};
 use toml;
 
-use crate::io::{HashRead, HashWrite};
+use crate::io::{HashRead, HashWrite, DelimPrinter};
 use crate::cleaning::*;
 use crate::tsv::split_first;
 use crate::db::{DbOpts, CopyRequest};
 use crate::tracking::StageOpts;
+use crate::logging::set_progress;
 use super::Command;
 
 /// Process OpenLib data into format suitable for PostgreSQL import.
@@ -91,27 +92,26 @@ impl ImportSpec {
     let mut n = 0;
     for line in src.lines() {
       let mut line = line?;
+      let mut delim = DelimPrinter::new("\t", "\n");
       for i in 0..self.format.len() {
         let (fld, rest) = split_first(&line).ok_or_else(|| anyhow!("invalid line"))?;
         match self.format[i] {
           ColOp::Skip => (),
           ColOp::String => {
-            if i > 0 {
-              dst.write_all(b"\t")?;
-            }
+            debug!("writing string field {}", fld);
+            delim.preface(dst)?;
             write_pgencoded(dst, fld.as_bytes())?;
           },
           ColOp::JSON => {
-            if i > 0 {
-              dst.write_all(b"\t")?;
-            }
+            delim.preface(dst)?;
+            debug!("writing JSON field {}", fld);
             clean_json(&fld, &mut jsbuf);
             write_pgencoded(dst, jsbuf.as_bytes())?;
           }
         }
         line = rest.to_string();
       }
-      dst.write_all(b"\n")?;
+      delim.end(dst)?;
       n += 1;
     }
     Ok(n)
@@ -135,6 +135,7 @@ impl Command for ImportJson {
     let fs = File::open(infn)?;
     let pb = ProgressBar::new(fs.metadata()?.len());
     pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
+    let _pbl = set_progress(&pb);
 
     // We want to hash the file while we read it
     let mut in_hash = Sha1::new();
