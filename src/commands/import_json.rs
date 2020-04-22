@@ -9,13 +9,12 @@ use structopt::StructOpt;
 use flate2::bufread::MultiGzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
 use sha1::Sha1;
-use anyhow::{Result, anyhow};
+use anyhow::{Result};
 use serde::{Deserialize};
 use toml;
 
 use crate::io::{HashRead, HashWrite, DelimPrinter};
 use crate::cleaning::*;
-use crate::tsv::split_first;
 use crate::db::{DbOpts, CopyRequest};
 use crate::tracking::StageOpts;
 use crate::logging::set_progress;
@@ -91,29 +90,27 @@ impl ImportSpec {
     let mut jsbuf = String::new();
     let mut n = 0;
     for line in src.lines() {
-      let mut line = line?;
+      let line = line?;
       let mut delim = DelimPrinter::new("\t", "\n");
-      for i in 0..self.format.len() {
-        let (fld, rest) = split_first(&line).ok_or_else(|| anyhow!("invalid line"))?;
-        match self.format[i] {
+      let split = line.split("\t");
+      for (fld, fc) in split.zip(&self.format) {
+        match fc {
           ColOp::Skip => (),
           ColOp::String => {
-            debug!("writing string field {}", fld);
             delim.preface(dst)?;
             write_pgencoded(dst, fld.as_bytes())?;
           },
           ColOp::JSON => {
             delim.preface(dst)?;
-            debug!("writing JSON field {}", fld);
             clean_json(&fld, &mut jsbuf);
             write_pgencoded(dst, jsbuf.as_bytes())?;
           }
         }
-        line = rest.to_string();
       }
       delim.end(dst)?;
       n += 1;
     }
+    info!("processed {} lines", n);
     Ok(n)
   }
 }

@@ -71,17 +71,15 @@ impl <'a> DelimPrinter<'a> {
 
   pub fn preface<W: io::Write>(&mut self, w: &mut W) -> io::Result<bool> {
     if self.first {
-      self.first = true;
+      self.first = false;
       Ok(false)
     } else {
-      debug!("writing preface");
       w.write_all(self.delim)?;
       Ok(true)
     }
   }
 
   pub fn end<W: io::Write>(&mut self, w: &mut W) -> io::Result<()> {
-    debug!("writing end");
     w.write_all(self.end)?;
     self.first = true;
     Ok(())
