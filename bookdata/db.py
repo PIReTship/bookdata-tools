@@ -18,6 +18,8 @@ import pandas as pd
 from more_itertools import peekable
 import psycopg2, psycopg2.errorcodes
 from psycopg2 import sql
+from psycopg2.pool import ThreadedConnectionPool
+from sqlalchemy import create_engine
 import sqlparse
 import git
 
@@ -26,60 +28,95 @@ _log = logging.getLogger(__name__)
 # Meta-schema for storing stage and file status in the database
 _ms_path = Path(__file__).parent.parent / 'schemas' / 'meta-schema.sql'
 meta_schema = _ms_path.read_text()
+_pool = None
+_engine = None
+
+# DB configuration info
+class DBConfig:
+    host: str
+    port: str
+    database: str
+    user: str
+    password: str
+
+    @classmethod
+    def load(cls):
+        repo = git.Repo(search_parent_directories=True)
+
+        cfg = ConfigParser()
+        _log.debug('reading config from db.cfg')
+        cfg.read([repo.working_tree_dir + '/db.cfg'])
+
+        branch = repo.head.reference.name
+        _log.info('reading database config for branch %s', branch)
+
+        if branch in cfg:
+            section = cfg[branch]
+        else:
+            _log.debug('No configuration for branch %s, using default', branch)
+            section = cfg['DEFAULT']
+
+        dbc = cls()
+        dbc.host = section.get('host', 'localhost')
+        dbc.port = section.get('port', None)
+        dbc.database = section.get('database', None)
+        dbc.user = section.get('user', None)
+        dbc.password = section.get('password', None)
+
+        if dbc.database is None:
+            _log.error('No database specified for branch %s', branch)
+            raise RuntimeError('no database specified')
+
+        return dbc
+
+    def url(self) -> str:
+        url = 'postgresql://'
+        if self.user:
+            url += self.user
+            if self.password:
+                url += ':' + self.password
+            url += '@'
+        url += self.host
+        if self.port:
+            url += ':' + self.port
+        url += '/' + self.database
+        return url
 
 
 def db_url():
     "Get the URL to connect to the database."
     if 'DB_URL' in os.environ:
+        _log.info('using env var DB_URL')
         return os.environ['DB_URL']
 
-    repo = git.Repo(search_parent_directories=True)
-
-    cfg = ConfigParser()
-    _log.debug('reading config from db.cfg')
-    cfg.read([repo.working_tree_dir + '/db.cfg'])
-
-    branch = repo.head.reference.name
-    _log.info('reading database config for branch %s', branch)
-
-    if branch in cfg:
-        section = cfg[branch]
-    else:
-        _log.warn('No configuration for branch %s, using default', branch)
-        section = cfg['DEFAULT']
-
-    host = section.get('host', 'localhost')
-    port = section.get('port', None)
-    db = section.get('database', None)
-    user = section.get('user', None)
-    pw = section.get('password', None)
-
-    if db is None:
-        _log.error('No database specified for branch %s', branch)
-        raise RuntimeError('no database specified')
-
-    url = 'postgresql://'
-    if user:
-        url += user
-        if pw:
-            url += ':' + pw
-        url += '@'
-    url += host
-    if port:
-        url += ':' + port
-    url += '/' + db
-    return url
+    config = DBConfig.load()
+    _log.info('using database %s', config.database)
+    return config.url()
 
 
 @contextmanager
 def connect():
     "Connect to a database. This context manager yields the connection, and closes it when exited."
-    _log.info('connecting to %s', db_url())
-    conn = psycopg2.connect(db_url())
+    global _pool
+    if _pool is None:
+        _log.info('connecting to %s', db_url())
+        _pool = ThreadedConnectionPool(1, 5, db_url())
+
+    conn = _pool.getconn()
     try:
         yield conn
     finally:
-        conn.close()
+        _pool.putconn(conn)
+
+
+def engine():
+    "Get an SQLAlchemy engine"
+    global _engine
+    if _engine is None:
+        _log.info('connecting to %s', db_url())
+        _engine = create_engine(db_url())
+
+    return _engine
 
 
 def _tokens(s, start=-1, skip_ws=True, skip_cm=True):

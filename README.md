@@ -2,7 +2,7 @@ This repository contains the code to import and integrate the book and rating da
 It imports and integrates data from several sources in a single PostgreSQL database; import scripts
 are primarily in Python, with Rust code for high-throughput processing of raw data files.
 
-If you use these scripts in any published reseaerch, cite [our paper](https://md.ekstrandom.net/pubs/book-author-gender):
+If you use these scripts in any published research, cite [our paper](https://md.ekstrandom.net/pubs/book-author-gender):
 
 > Michael D. Ekstrand, Mucun Tian, Mohammed R. Imran Kazi, Hoda Mehrpouyan, and Daniel Kluver. 2018. Exploring Author Gender in Book Rating and Recommendation. In *Proceedings of the 12th ACM Conference on Recommender Systems* (RecSys '18). ACM, pp. 242–250. DOI:[10.1145/3240323.3240373](https://doi.org/10.1145/3240323.3240373). arXiv:[1808.07586v1](https://arxiv.org/abs/1808.07586v1) [cs.IR].
 

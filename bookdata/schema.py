@@ -2,8 +2,30 @@
 Data schema information for the book data tools.
 """
 
-"Bases for for numeric ID number spaces."
-numspaces = dict(work=100000000, edition=200000000, rec=300000000,
-                 gr_work=400000000, gr_book=500000000,
-                 loc_work=600000000, loc_instance=700000000,
-                 isbn=900000000)
+import pandas as pd
+
+class NS:
+    def __init__(self, name, num):
+        self.name = name
+        self.code = num
+        self.offset = num * 100000000
+
+ns_work = NS('OL-W', 1)
+ns_edition = NS('OL-E', 2)
+ns_loc_rec = NS('LOC', 3)
+ns_gr_work = NS('GR-W', 4)
+ns_gr_book = NS('GR-B', 5)
+ns_loc_work = NS('LOC-W', 6)
+ns_loc_instance = NS('LOC-I', 7)
+ns_isbn = NS('ISBN', 9)
+
+numspaces = [
+    ns_work, ns_edition,
+    ns_loc_rec,
+    ns_gr_work, ns_gr_book,
+    ns_loc_work, ns_loc_instance,
+    ns_isbn
+]
+
+src_labels = pd.Series(dict((_ns.name, _ns.code) for _ns in numspaces))
+src_label_rev = pd.Series(src_labels.index, index=src_labels.values)
