@@ -70,7 +70,7 @@ WHERE gr_asin IS NOT NULL AND gr_asin NOT IN (SELECT isbn FROM isbn_id);
 CREATE TABLE IF NOT EXISTS gr.book_isbn
   AS SELECT gr_book_id, isbn_id, COALESCE(bc_of_gr_work(gr_work_id), bc_of_gr_book(gr_book_id)) AS book_code
   FROM gr.book_ids, isbn_id
-  WHERE isbn = gr_isbn OR isbn = gr_isbn13;
+  WHERE isbn = gr_isbn OR isbn = gr_isbn13 or isbn = gr_asin;
 
 --- #step Index GoodReads ISBNs
 --- #allow duplicate_object
@@ -93,3 +93,6 @@ CREATE TABLE IF NOT EXISTS gr.book_genres
 CREATE INDEX bg_book_rid ON gr.book_genres (gr_book_rid);
 CREATE INDEX bg_book_id ON gr.book_genres (gr_book_id);
 
+CREATE TABLE IF NOT EXISTS gr.similar_book
+  AS SELECT gr_book_rid, (gr_book_data->>'book_id')::int AS gr_book_id, similar_books, isbn
+     FROM gr.raw_book;

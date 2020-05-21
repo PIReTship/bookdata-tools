@@ -68,3 +68,24 @@ AS SELECT gr_work_rid, work_id AS gr_work_id,
 CREATE UNIQUE INDEX gr_wpd_rec_idx ON gr.work_pub_date (gr_work_rid);
 CREATE UNIQUE INDEX gr_wpd_work_idx ON gr.work_pub_date (gr_work_id);
 ANALYZE gr.work_pub_date;
+
+DROP MATERIALIZED VIEW IF EXISTS gr.book_metadata;
+CREATE MATERIALIZED VIEW gr.book_metadata
+AS SELECT gr_book_rid, (gr_book_data->>'book_id')::int AS gr_book_id,
+  NULLIF(gr_book_data->>'description', '') AS description,
+  NULLIF(gr_book_data->>'publisher', '') AS publisher,
+  NULLIF(gr_book_data->>'format', '') AS format,
+  NULLIF(gr_book_data->>'work_id', '') AS gr_work_id,
+  NULLIF(gr_book_data->>'isbn', '') AS isbn,
+  NULLIF(gr_book_data->>'authors', '') AS author
+FROM gr.raw_book;
+CREATE INDEX gr_book_metadata_idx ON gr.book_metadata (gr_book_id);
+ANALYZE gr.book_metadata;
+
+DROP MATERIALIZED VIEW IF EXISTS gr.author;
+CREATE MATERIALIZED VIEW gr.author
+AS SELECT gr_author_rid, (gr_author_data->>'author_id')::int AS gr_author_id,
+  NULLIF(gr_author_data->>'name', '') AS author_name
+FROM gr.raw_author;
+CREATE INDEX gr_author_idx ON gr.author (gr_author_id);
+ANALYZE gr.author;

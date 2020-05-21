@@ -57,6 +57,7 @@ AS SELECT book_id, (book_data->>'asin')::varchar AS asin,
 	NULLIF(book_data->>'title', '') AS title,
 	NULLIF(book_data->>'also_buy', '') AS also_buy,
 	NULLIF(book_data->>'main_cat', '') AS main_cat,
+	NULLIF(book_data->>'category', '') AS genre,
 	NULLIF(book_data->>'also_view', '') AS also_view,
 	NULLIF(book_data->>'description', '') AS description
 FROM az18.raw_book;

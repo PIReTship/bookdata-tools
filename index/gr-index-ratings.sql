@@ -77,6 +77,10 @@ CREATE INDEX IF NOT EXISTS add_action_user_idx ON gr.add_action (user_id);
 CREATE INDEX IF NOT EXISTS add_action_item_idx ON gr.add_action (book_id);
 ANALYZE gr.add_action;
 
+CREATE TABLE IF NOT EXISTS gr.similar_book
+  AS SELECT gr_book_rid, (gr_book_data->>'book_id')::int AS gr_book_id, similar_books, isbn
+     FROM gr.raw_book;
+
 --- #step Index GoodReads book reviews
 DROP MATERIALIZED VIEW IF EXISTS gr.review;
 CREATE MATERIALIZED VIEW gr.review
