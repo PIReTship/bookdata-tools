@@ -72,6 +72,8 @@ a config file `db.cfg`.  This file should look like:
 [DEFAULT]
 host = localhost
 database = bookdata
+user = user
+password = password
 ```
 
 This file additionally supports branch-specfic configuration sections that will apply to work
