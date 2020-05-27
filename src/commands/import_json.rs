@@ -13,7 +13,7 @@ use anyhow::{Result};
 use serde::{Deserialize};
 use toml;
 
-use crate::io::{HashRead, HashWrite, DelimPrinter};
+use crate::io::{HashWrite, DelimPrinter};
 use crate::cleaning::*;
 use crate::db::{DbOpts, CopyRequest};
 use crate::tracking::StageOpts;
@@ -124,7 +124,7 @@ impl Command for ImportJson {
     let dbo = self.db.default_schema(&spec.schema);
 
     let dbc = dbo.open()?;
-    self.stage.begin_stage(&dbc)?;
+    let mut stage = self.stage.begin_stage(&dbc)?;
 
     // Set up the input file, tracking read progress
     let infn = &self.infile;
@@ -135,8 +135,8 @@ impl Command for ImportJson {
     let _pbl = set_progress(&pb);
 
     // We want to hash the file while we read it
-    let mut in_hash = Sha1::new();
-    let read = HashRead::create(fs, &mut in_hash);
+    let mut in_sf = stage.source_file(infn);
+    let read = in_sf.wrap_read(fs);
     // And wrap it in progress
     let pbr = pb.wrap_read(read);
     let pbr = BufReader::new(pbr);
@@ -160,17 +160,14 @@ impl Command for ImportJson {
     drop(buf_out);
 
     // Grab the hashes and save them to the transcript
-    let in_hash = in_hash.hexdigest();
+    let in_hash = in_sf.record()?;
     let out_hash = out_hash.hexdigest();
-    let mut t_out = self.stage.open_transcript()?;
     info!("loaded {} records with hash {}", n, out_hash);
-    writeln!(&mut t_out, "SOURCE {:?}", infn)?;
-    writeln!(&mut t_out, "SHASH {}", in_hash)?;
-    writeln!(&mut t_out, "HASH {}", out_hash)?;
+    writeln!(&mut stage, "READ {:?} {}", infn, in_hash)?;
+    writeln!(&mut stage, "HASH {}", out_hash)?;
 
     // All done! Record success and exit.
-    self.stage.record_file(&dbc, infn, &in_hash)?;
-    self.stage.end_stage(&dbc, &Some(out_hash))?;
+    stage.end(&Some(out_hash))?;
     Ok(())
   }
 }

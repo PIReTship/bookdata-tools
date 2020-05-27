@@ -18,7 +18,7 @@ use anyhow::{Result, anyhow};
 use crate::cleaning::write_pgencoded;
 use crate::tsv::split_first;
 use crate::tracking::StageOpts;
-use crate::io::{HashWrite, HashRead};
+use crate::io::{HashWrite};
 use crate::db::{DbOpts, CopyRequest};
 use crate::logging;
 use super::Command;
@@ -215,8 +215,7 @@ impl Command for ParseMarc {
     let out = HashWrite::create(out, &mut out_h);
     let mut out = BufWriter::new(out);
 
-    self.stage.begin_stage(&db)?;
-    let mut tx = self.stage.open_transcript()?;
+    let mut stage = self.stage.begin_stage(&db)?;
 
     let mut count = 0;
 
@@ -227,11 +226,11 @@ impl Command for ParseMarc {
       let pb = ProgressBar::new(fs.metadata()?.len());
       pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
       let _pbs = logging::set_progress(&pb);
-      let mut in_h = Sha1::new();
+      let mut in_sf = stage.source_file(inf);
       let pbr = pb.wrap_read(fs);
       let pbr = BufReader::new(pbr);
       let gzf = MultiGzDecoder::new(pbr);
-      let gzf = HashRead::create(gzf, &mut in_h);
+      let gzf = in_sf.wrap_read(gzf);
       let mut bfs = BufReader::new(gzf);
       let nrecs = if self.linemode {
         process_delim_file(&mut bfs, &mut out, count)
@@ -241,10 +240,9 @@ impl Command for ParseMarc {
       drop(bfs);
       match nrecs {
         Ok(n) => {
-          let in_h = in_h.hexdigest();
-          self.stage.record_file(&db, inf, &in_h)?;
           info!("processed {} records from {:?}", n, inf);
-          writeln!(&mut tx, "READ {:?} {} {}", inf, n, in_h)?;
+          let hash = in_sf.record()?;
+          writeln!(&mut stage, "READ {:?} {} {}", inf, n, hash)?;
           count += n;
         },
         Err(e) => {
@@ -256,8 +254,8 @@ impl Command for ParseMarc {
 
     drop(out);
     let out_h = out_h.hexdigest();
-    writeln!(&mut tx, "COPY {}", out_h)?;
-    self.stage.end_stage(&db, &Some(out_h))?;
+    writeln!(&mut stage, "COPY {}", out_h)?;
+    stage.end(&Some(out_h))?;
 
     Ok(())
   }

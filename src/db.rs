@@ -4,8 +4,9 @@ use log::*;
 
 use anyhow::{anyhow, Result};
 use os_pipe::{pipe, PipeWriter};
-use postgres::{Connection, TlsMode};
+use postgres::{TlsMode};
 use structopt::StructOpt;
+pub use postgres::Connection;
 
 use std::thread;
 
