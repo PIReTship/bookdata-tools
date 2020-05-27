@@ -1,3 +1,4 @@
+use std::io::prelude::*;
 use std::path::{Path,PathBuf};
 use std::fs::{File, OpenOptions};
 use std::io::{BufReader, BufWriter};
@@ -13,7 +14,7 @@ use fallible_iterator::FallibleIterator;
 
 use super::Command;
 use crate::db::DbOpts;
-use crate::tracking::StageOpts;
+use crate::tracking::{StageOpts};
 
 mod parsers;
 mod sources;
@@ -164,14 +165,14 @@ impl ParseISBNs {
 impl Command for ParseISBNs {
   fn exec(self) -> Result<()> {
     let db = self.db.open()?;
-    let mut tx = self.stage.open_transcript()?;
+    let mut stage = self.stage.begin_stage(&db)?;
     let writer: Box<dyn WriteISBNs> = if let Some(ref tbl) = self.out_table {
       info!("opening output table {}", tbl);
-      writeln!(tx, "DEST TABLE {}", tbl)?;
+      writeln!(stage, "DEST TABLE {}", tbl)?;
       Box::new(DBWriter::new(&self.db, tbl)?)
     } else if let Some(ref path) = self.out_file {
       info!("opening output file {:?}", path);
-      writeln!(tx, "DEST FILE {:?}", path)?;
+      writeln!(stage, "DEST FILE {:?}", path)?;
       let out = OpenOptions::new().write(true).create(true).truncate(true).open(path)?;
       let buf = BufWriter::new(out);
       Box::new(FileWriter {
@@ -180,26 +181,25 @@ impl Command for ParseISBNs {
     } else {
       Box::new(NullWriter {})
     };
-    self.stage.begin_stage(&db)?;
     let stats = if let Some(ref tbl) = self.src_table {
-      writeln!(tx, "SOURCE TABLE {}", tbl)?;
+      writeln!(stage, "SOURCE TABLE {}", tbl)?;
       let n = self.scan_db(&db, tbl, writer)?;
       n
     } else if let Some(ref path) = self.src_file {
-      writeln!(tx, "SOURCE FILE {:?}", path)?;
+      writeln!(stage, "SOURCE FILE {:?}", path)?;
       self.scan_file(&path, writer)?
     } else {
       error!("no source data specified");
       return Err(anyhow!("no source data"));
     };
-    writeln!(tx, "{} RECORDS", stats.total)?;
-    writeln!(tx, "{} IMPORTED", stats.valid)?;
-    writeln!(tx, "{} UNMATCHED", stats.unmatched)?;
-    writeln!(tx, "{} IGNORED", stats.ignored)?;
+    writeln!(stage, "{} RECORDS", stats.total)?;
+    writeln!(stage, "{} IMPORTED", stats.valid)?;
+    writeln!(stage, "{} UNMATCHED", stats.unmatched)?;
+    writeln!(stage, "{} IGNORED", stats.ignored)?;
     if let Some(ref h) = stats.hash {
-      writeln!(tx, "OUT HASH {}", h)?;
+      writeln!(stage, "OUT HASH {}", h)?;
     }
-    self.stage.end_stage(&db, &stats.hash)?;
+    stage.end(&stats.hash)?;
     info!("processed {} ISBN records", stats.total);
     info!("matched {}, ignored {}, and {} were unmatched",
           stats.valid, stats.ignored, stats.unmatched);
