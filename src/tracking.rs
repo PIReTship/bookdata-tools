@@ -130,7 +130,7 @@ impl <'o,'c> Stage<'o,'c> {
   /// Record a source file with its hash
   pub fn record_file<P: AsRef<Path>>(&self, path: P, hash: &str) -> Result<()> {
     let sf = self.source_file(path);
-    sf.record_hash(hash);
+    sf.record_hash(hash)?;
     Ok(())
   }
 
