@@ -7,16 +7,16 @@ import logging
 from urllib.parse import urlparse
 import hashlib
 
-from dvc.remote.base import RemoteBASE
-from dvc.output.base import OutputBase
-from dvc.dependency.base import DependencyBase
+from dvc.remote.base import BaseRemoteTree
+from dvc.output.base import BaseOutput
+from dvc.dependency.base import BaseDependency
 
 from . import tracking
 
 _log = logging.getLogger('dvc.bgpatch')
 
 
-class PGRemote(RemoteBASE):
+class PGRemoteTree(BaseRemoteTree):
     """
     PG status remote
     """
@@ -26,7 +26,7 @@ class PGRemote(RemoteBASE):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def get_file_checksum(self, path_info):
+    def get_file_hash(self, path_info):
         _log.debug('checksum from %s', path_info)
         status = tracking.stage_status(path_info.bucket)
         h = hashlib.md5()
@@ -50,20 +50,20 @@ class PGRemote(RemoteBASE):
         raise NotImplementedError()
 
 
-class PGOut(OutputBase):
-    REMOTE = PGRemote
+class PGOutput(BaseOutput):
+    TREE_CLS = PGRemoteTree
 
 
-class PGDep(DependencyBase, OutputBase):
-    REMOTE = PGRemote
+class PGDep(BaseDependency, PGOutput):
+    pass
 
 
 def patch():
     "Patch DVC to include our classes"
 
     import dvc.output, dvc.dependency, dvc.config
-    dvc.output.OUTS.append(PGOut)
-    dvc.output.OUTS_MAP['pgstat'] = PGOut
+    dvc.output.OUTS.append(PGOutput)
+    dvc.output.OUTS_MAP['pgstat'] = PGOutput
 
     dvc.dependency.DEPS.append(PGDep)
     dvc.dependency.DEP_MAP['pgstat'] = PGDep
