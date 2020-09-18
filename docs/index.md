@@ -27,6 +27,8 @@ with their own publications.  **If you use any of the rating or interaction data
 appropriate original source paper.**  For each data set below, we have provided a link to the
 page that describes the data and its appropriate citation.
 
+See the [Setup page](using/setup.md) to get started and for system requirements.
+
 ## License
 
 These tools are under the MIT license:

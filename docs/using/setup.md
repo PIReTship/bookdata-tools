@@ -12,6 +12,20 @@ These tools require PostgreSQL and an Anaconda installation.
 1. TOC
 {:toc}
 
+## System Requirements
+
+You will need:
+
+- A PostgreSQL server with at least 500GB of disk space available for the database and ample RAM.
+- An environment to save the raw files and run the import code.  This can be the same machine as the PostgreSQL server, but needs:
+  - Anaconda or Miniconda
+  - 100GB of disk space for input files
+  - A few GB of memory
+  - Linux or macOS (since graph-tool isn't built for Windows right now)
+
+The scripts don't have substantial memory requirements, but do need a good deal of disk space.
+The most memory-intensive operation is the connected components computation for book clustering.
+
 ## PostgreSQL Database
 
 The book data tools require PostgreSQL (at least version 10), with the following extensions installed:
