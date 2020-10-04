@@ -27,12 +27,19 @@ static IGNORES: &'static [&'static str] = &[
 
 /// Definitions for parsing ISBN strings.
 pub struct ParserDefs {
+  /// Matcher for text that may appear before an ISBN
   lead: Regex,
+  /// Matcher for a single ISBN
   isbn: Regex,
+  /// Matcher for a "tag" after an ISBN
   tag: Regex,
+  /// Matcher for separarators between multiple tags
   tag_sep: Regex,
+  /// Matcher for text to skip before possibly reading another ISBN
   tail_skip: Regex,
+  /// Matcher for characters to remove from a parsed ISBN
   clean: Regex,
+  /// Matcher for text that is known not to contain any parseable ISBNs
   unmatch_ignore: RegexSet
 }
 
