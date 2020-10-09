@@ -332,3 +332,11 @@ clusters).
 
 This allows us to connect ratings to metadata with maximal link coverage, by pulling in metadata
 across the whole book cluster.
+
+## Copyright and Acknowledgements
+
+Copyright &copy; 2020 Boise State University.  Distributed under the MIT License; see LICENSE.md.
+This material is based upon work supported by the National Science Foundation under
+Grant No. IIS 17-51278. Any opinions, findings, and conclusions or recommendations
+expressed in this material are those of the author(s) and do not necessarily reflect
+the views of the National Science Foundation.
