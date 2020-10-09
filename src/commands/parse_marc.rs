@@ -14,13 +14,13 @@ use quick_xml::events::Event;
 use flate2::bufread::MultiGzDecoder;
 use indicatif::{ProgressBar, ProgressStyle};
 use anyhow::{Result, anyhow};
+use happylog::set_progress;
 
 use crate::cleaning::write_pgencoded;
 use crate::tsv::split_first;
 use crate::tracking::StageOpts;
 use crate::io::{HashWrite};
 use crate::db::{DbOpts, CopyRequest};
-use crate::logging;
 use super::Command;
 
 /// Parse MARC files into records for a PostgreSQL table.
@@ -225,7 +225,7 @@ impl Command for ParseMarc {
       let fs = File::open(inf)?;
       let pb = ProgressBar::new(fs.metadata()?.len());
       pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
-      let _pbs = logging::set_progress(&pb);
+      let _pbs = set_progress(&pb);
       let mut in_sf = stage.source_file(inf);
       let pbr = pb.wrap_read(fs);
       let pbr = BufReader::new(pbr);

@@ -3,14 +3,13 @@ mod tsv;
 mod db;
 mod io;
 mod tracking;
-mod logging;
 mod commands;
 
 use anyhow::{anyhow, Result};
 use log::*;
 use structopt::StructOpt;
 
-use logging::LogOpts;
+use happylog::args::LogOpts;
 use commands::*;
 
 /// BookData import tools
