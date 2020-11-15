@@ -1,4 +1,3 @@
-use anyhow::Result;
 use regex::{Regex, RegexSet, Match, Captures};
 
 /// Single ISBN parsed from a string
@@ -84,6 +83,7 @@ pub struct IsbnParser<'p, 's> {
   position: usize
 }
 
+#[allow(unused)]
 fn preclean(s: &str) -> String {
   let mut res = String::with_capacity(s.len());
   for c in s.chars() {
