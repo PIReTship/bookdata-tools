@@ -66,7 +66,9 @@ ANALYZE gr.rating;
 --- #step Extract add actions
 CREATE MATERIALIZED VIEW IF NOT EXISTS gr.add_action
   AS SELECT gr_user_rid AS user_id, cluster AS book_id,
-            COUNT(rating) AS nactions,
+            MEDIAN(rating) AS med_rating,
+            (array_agg(rating ORDER BY date_updated DESC))[1] AS last_rating,
+            COUNT(date_updated) AS nactions,
             MIN(EXTRACT(EPOCH FROM date_updated)) AS first_time,
             MAX(EXTRACT(EPOCH FROM date_updated)) AS last_time
      FROM gr.interaction
