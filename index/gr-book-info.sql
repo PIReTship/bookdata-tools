@@ -38,6 +38,15 @@ FROM gr.raw_work;
 CREATE INDEX gr_work_title_work_idx ON gr.work_title (gr_work_id);
 ANALYZE gr.work_title;
 
+--- #step Extract GoodReads book titles
+DROP MATERIALIZED VIEW IF EXISTS gr.book_title;
+CREATE MATERIALIZED VIEW gr.book_title
+AS SELECT gr_book_rid, (gr_book_data->>'book_id')::int AS gr_book_id,
+  NULLIF(gr_book_data->>'title', '') AS book_title
+FROM gr.raw_book;
+CREATE INDEX gr_book_title_book_idx ON gr.book_title (gr_book_id);
+ANALYZE gr.book_title;
+
 --- #step Extract GoodReads book publication dates
 DROP MATERIALIZED VIEW IF EXISTS gr.book_pub_date;
 CREATE MATERIALIZED VIEW gr.book_pub_date
