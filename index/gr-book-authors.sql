@@ -12,6 +12,14 @@ FROM gr.raw_book, jsonb_to_record(gr_book_data->'authors'->0) AS
 CREATE INDEX IF NOT EXISTS gr_bfa_book_idx ON gr.book_first_author (gr_book_rid);
 CREATE INDEX IF NOT EXISTS gr_bfa_auth_idx ON gr.book_first_author (gr_author_id);
 
+--- #step Extract book authors
+CREATE MATERIALIZED VIEW IF NOT EXISTS gr.book_authors AS
+SELECT gr_book_rid, role AS author_role, author_id AS gr_author_id
+FROM gr.raw_book, jsonb_to_recordset(gr_book_data->'authors') AS
+    x(role VARCHAR, author_id INTEGER);
+CREATE INDEX IF NOT EXISTS gr_ba_book_idx ON gr.book_authors (gr_book_rid);
+CREATE INDEX IF NOT EXISTS gr_ba_auth_idx ON gr.book_authors (gr_author_id);
+
 --- #step Extract author IDs
 CREATE TABLE IF NOT EXISTS gr.author_ids
   AS SELECT gr_author_rid, (gr_author_data->>'author_id')::int AS gr_author_id
