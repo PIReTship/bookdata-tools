@@ -1,0 +1,82 @@
+# This file uses the two-stage status design, so new command stages
+# need to be accompanied by an entry in the status command
+stages:
+  init-status:
+    cmd: python ../run.py stage-status -o init.status init
+    always_changed: true
+    outs:
+    - init.status
+
+  common-schema:
+    cmd: python ../run.py sql-script common-schema.sql
+    deps:
+    - common-schema.sql
+    - init.status
+    outs:
+    - common-schema.transcript
+
+  az-schema:
+    cmd: python ../run.py sql-script az-schema.sql
+    deps:
+    - az-schema.sql
+    - common-schema.status
+    outs:
+    - az-schema.transcript
+
+  bx-schema:
+    cmd: python ../run.py sql-script bx-schema.sql
+    deps:
+    - bx-schema.sql
+    - common-schema.status
+    outs:
+    - bx-schema.transcript
+
+  gr-schema:
+    cmd: python ../run.py sql-script gr-schema.sql
+    deps:
+    - gr-schema.sql
+    - common-schema.status
+    outs:
+    - gr-schema.transcript
+
+  loc-mds-schema:
+    cmd: python ../run.py sql-script loc-mds-schema.sql
+    deps:
+    - loc-mds-schema.sql
+    - common-schema.status
+    outs:
+    - loc-mds-schema.transcript
+
+  ol-schema:
+    cmd: python ../run.py sql-script ol-schema.sql
+    deps:
+    - ol-schema.sql
+    - common-schema.status
+    outs:
+    - ol-schema.transcript
+
+  viaf-schema:
+    cmd: python ../run.py sql-script viaf-schema.sql
+    deps:
+    - viaf-schema.sql
+    - common-schema.status
+    outs:
+    - viaf-schema.transcript
+
+  status:
+    foreach:
+      - common-schema
+      - az-schema
+      - ol-schema
+      - bx-schema
+      - gr-schema
+      - loc-mds-schema
+      - ol-schema
+      - viaf-schema
+    do:
+      cmd: python ../run.py -o ${item}.status ${item}
+      always_changed: true
+      outs:
+      - ${item}.status
+      deps:
+      - ${item}.transcript
