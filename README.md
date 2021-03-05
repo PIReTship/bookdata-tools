@@ -146,33 +146,23 @@ script.  The only purpose of the `#dep` is to record dependencies in the databas
 table, so that modifications can propagate and be detected; dependencies still need to be recorded
 in `.dvc` files to run the import steps in the correct order.
 
-### DVC Usage and Stage Files
+### DVC Organization and Status Files
 
-Running the scripts here with raw `dvc` **does not work**.  You need to use the `dvc.sh` wrapper
-script, as in:
+Because our primary data storage is in a database, and DVC likes to track files, our design is a
+little unusual for a DVC project.  Each stage that produces output in the database (import, index,
+etc.) is implemented as two stages:
 
-    ./dvc.sh repro
+- A primary stage, that produces a `.transcript` file as output; it works just like any normal
+  DVC stage.
+- A status stage, that depends on the `.transcript` file and produces a `.status` file.  This stage
+  is marked as `always_run`, so it always re-runs even if the transcript is unchanged, so that it
+  can make sure the `.status` file contains the *current* state of the database.
 
-The wrapper script sets up DVC to recognize our special `pgstat://stage` URLs for tracking the
-status of database import stages in the live database.
-
-Import is structured as a concept of *stages* map almost 1:1 to our DVC step files.  They manage
-database-side tracking of data and status.
-
-Each import stage includes `pgstat://stage` as an *unached* output stage, as in:
-
-``` yaml
-outs:
-- path: pgstat://bx-import
-  cache: false
-```
-
-From the command line, uncached outptus are created by using `-O` instead of `-o`.
-
-Each script that requires another stage to be run first depends on `pgstat://stage` as a dependency.
-
+Stages that take database state as input depend on the corresponding `.status` file, *not* the
+`.transcript` file, so that their need to update is triggered based on the current database state.
 This wires together all of the dependencies, and uses the current state in the database instead of
 files that might become out-of-sync with the database to track import status.
+There are a couple of holes in this design, but it's the best we can do and it works.
 
 The stage name matches the name of the `.dvc` file.
 
