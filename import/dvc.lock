@@ -1,0 +1,329 @@
+schema: '2.0'
+stages:
+  az-ratings:
+    cmd: python run.py --rust pcat -t az.raw_ratings -s az-ratings -T import/az-ratings.transcript
+      -D az-schema -f CSV data/ratings_Books.csv
+    deps:
+    - path: data/ratings_Books.csv
+      md5: 77b4a5b887e14e16b13e7788bdf70156
+      size: 916259348
+    - path: schemas/az-schema.status
+      md5: 01a7ee13889d967ed8ac69bfdf592d80
+      size: 199
+    outs:
+    - path: import/az-ratings.transcript
+      md5: 4266a96f87e134dac6b60df0514a36d2
+  bx-ratings:
+    cmd: python run.py bx-import -T import/bx-ratings.transcript data/BX-Book-Ratings.csv
+    deps:
+    - path: data/BX-Book-Ratings.csv
+      md5: b34fe0534c9b846b8a45f316c60eb92b
+      size: 30682276
+    - path: schemas/bx-schema.status
+      md5: 48cd11df72cf2bb28d5a2ff58f02d972
+      size: 199
+    outs:
+    - path: import/bx-ratings.transcript
+      md5: 511096523052e1563c4bdcc66b6ed143
+  gr-authors:
+    cmd: python run.py --rust import-json -T import/gr-authors.transcript --stage
+      gr-authors -D gr-schema --truncate import/gr-authors.toml data/goodreads_book_authors.json.gz
+    deps:
+    - path: data/goodreads_book_authors.json.gz
+      md5: b193c3febd961fb69443b65ba05b83a7
+      size: 17877585
+    - path: import/gr-authors.toml
+      md5: 05080719337f65735dfeffacec9764c4
+      size: 64
+    - path: schemas/gr-schema.status
+      md5: bda41944c7f3ff2a207edb2c8a83c9fc
+      size: 404
+    outs:
+    - path: import/gr-authors.transcript
+      md5: 40acfcc81a4be3363d61febed1716f00
+  gr-book-genres:
+    cmd: python run.py --rust import-json -T import/gr-book-genres.transcript --stage
+      gr-book-genres -D gr-schema --truncate import/gr-book-genres.toml data/goodreads_book_genres_initial.json.gz
+    deps:
+    - path: data/goodreads_book_genres_initial.json.gz
+      md5: 99ee3d1cadd68818c3dd0ef0d2f10602
+      size: 24253992
+    - path: import/gr-book-genres.toml
+      md5: 5098a690f9f9e1320da3a12f0654192a
+      size: 74
+    - path: schemas/gr-schema.status
+      md5: bda41944c7f3ff2a207edb2c8a83c9fc
+      size: 404
+    outs:
+    - path: import/gr-book-genres.transcript
+      md5: 5cd443ca86c79bef13040a97aa135eb3
+  gr-books:
+    cmd: python run.py --rust import-json -T import/gr-books.transcript --stage gr-books
+      -D gr-schema --truncate import/gr-books.toml data/goodreads_books.json.gz
+    deps:
+    - path: data/goodreads_books.json.gz
+      md5: 01b40c70a00fb6aa321ee478f0fd0d6b
+      size: 2043729443
+    - path: import/gr-books.toml
+      md5: e30abcef8e2d1c32243dcae1a526dfcc
+      size: 60
+    - path: schemas/gr-schema.status
+      md5: bda41944c7f3ff2a207edb2c8a83c9fc
+      size: 404
+    outs:
+    - path: import/gr-books.transcript
+      md5: f493bf8e51b22ccdf258b07141c0a79d
+  gr-interactions:
+    cmd: python run.py --rust import-json -T import/gr-interactions.transcript --stage
+      gr-interactions -D gr-schema --truncate import/gr-interactions.toml data/goodreads_interactions.json.gz
+    deps:
+    - path: data/goodreads_interactions.json.gz
+      md5: f2d054a85f33d405a9bff6933005ba89
+      size: 9388113365
+    - path: import/gr-interactions.toml
+      md5: c6133a33f6dd80d2e378c0b976112802
+      size: 74
+    - path: schemas/gr-schema.status
+      md5: bda41944c7f3ff2a207edb2c8a83c9fc
+      size: 404
+    outs:
+    - path: import/gr-interactions.transcript
+      md5: 83ef4771b7c84a5730ba94fe8580a261
+  gr-works:
+    cmd: python run.py --rust import-json -T import/gr-works.transcript --stage gr-works
+      -D gr-schema --truncate import/gr-works.toml data/goodreads_book_works.json.gz
+    deps:
+    - path: data/goodreads_book_works.json.gz
+      md5: e80738a88d02d2b0081cd249d9b4f081
+      size: 81412944
+    - path: import/gr-works.toml
+      md5: 670f9192bd7f532e5787b829722ebe0a
+      size: 60
+    - path: schemas/gr-schema.status
+      md5: bda41944c7f3ff2a207edb2c8a83c9fc
+      size: 404
+    outs:
+    - path: import/gr-works.transcript
+      md5: 2ff4ab63f7c9043b7526f85f9bb36028
+  loc-mds-books:
+    cmd: python run.py --rust parse-marc --db-schema locmds -t book_marc_field --truncate
+      --stage loc-mds-books -D loc-mds-schema --transcript import/loc-mds-books.transcript
+      --src-dir data/loc-books --src-prefix BooksAll.2016
+    deps:
+    - path: data/loc-books
+      md5: 1b1e7ab1d98cc81e373dfc53345d4bb7.dir
+      size: 3129774145
+      nfiles: 43
+    - path: schemas/loc-mds-schema.status
+      md5: e63399b7692987ecd6b579066e5bd35e
+      size: 266
+    outs:
+    - path: import/loc-mds-books.transcript
+      md5: 19b0a011c9053361278a3d812518b229
+  loc-mds-names:
+    cmd: python run.py --rust parse-marc --db-schema locmds -t name_marc_field --truncate
+      --stage loc-mds-names -D loc-mds-schema --transcript import/loc-mds-names.transcript
+      --src-dir data/loc-names --src-prefix Names.2016
+    deps:
+    - path: data/loc-names
+      md5: fc488a8775561070cced774803fe0d72.dir
+      size: 1410755359
+      nfiles: 40
+    - path: schemas/loc-mds-schema.status
+      md5: e63399b7692987ecd6b579066e5bd35e
+      size: 266
+    outs:
+    - path: import/loc-mds-names.transcript
+      md5: 14ce7449e200f45a93058a6fdac918ec
+  ol-authors:
+    cmd: python run.py --rust import-json -T import/ol-authors.transcript --stage
+      ol-authors -D ol-schema --truncate import/ol-authors.toml data/ol_dump_authors.txt.gz
+    deps:
+    - path: data/ol_dump_authors.txt.gz
+      md5: 364e02a44e9e9a572e88692fc78fef27
+      size: 306408477
+    - path: import/ol-authors.toml
+      md5: d39f4bee21e807362a55474f7c6093d0
+      size: 111
+    - path: schemas/ol-schema.status
+      md5: ea3a792c4941083707b2835f737ada05
+      size: 265
+    outs:
+    - path: import/ol-authors.transcript
+      md5: 50e5bedc17cba4c5ceb8eef3d86fc307
+  ol-editions:
+    cmd: python run.py --rust import-json -T import/ol-editions.transcript --stage
+      ol-editions -D ol-schema --truncate import/ol-editions.toml data/ol_dump_editions.txt.gz
+    deps:
+    - path: data/ol_dump_editions.txt.gz
+      md5: e105295bf5f8025ecd7e43838ed0739c
+      size: 6081278291
+    - path: import/ol-editions.toml
+      md5: e528cfea761765865a7097be7abbc510
+      size: 114
+    - path: schemas/ol-schema.status
+      md5: ea3a792c4941083707b2835f737ada05
+      size: 265
+    outs:
+    - path: import/ol-editions.transcript
+      md5: c2c6951a052ebebe5f51ceb79f324162
+  ol-works:
+    cmd: python run.py --rust import-json -T import/ol-works.transcript --stage ol-works
+      -D ol-schema --truncate import/ol-works.toml data/ol_dump_works.txt.gz
+    deps:
+    - path: data/ol_dump_works.txt.gz
+      md5: 84e236955e5f683adde6a677d80475a0
+      size: 1666325144
+    - path: import/ol-works.toml
+      md5: 5ad04190c9392dd7cae3fdead9291f09
+      size: 105
+    - path: schemas/ol-schema.status
+      md5: ea3a792c4941083707b2835f737ada05
+      size: 265
+    outs:
+    - path: import/ol-works.transcript
+      md5: 6345885738815d2a51d331f7aba9e792
+  viaf:
+    cmd: python run.py --rust parse-marc --db-schema viaf -t marc_field --truncate
+      --stage viaf -D viaf-schema --transcript import/viaf.transcript --line-mode
+      data/viaf-clusters-marc21.xml.gz
+    deps:
+    - path: data/viaf-clusters-marc21.xml.gz
+      md5: 2f1af5262584d38f7331d333dec81cc3
+      size: 10662471024
+    - path: schemas/viaf-schema.status
+      md5: 4ee5de53afb5dfc1e1740a8667887cc0
+      size: 204
+    outs:
+    - path: import/viaf.transcript
+      md5: 326fe03b3007b0dbe02ff43c3da7e6cb
+  status@az-ratings:
+    cmd: python ../run.py stage-status -o az-ratings.status az-ratings
+    deps:
+    - path: az-ratings.transcript
+      md5: 4266a96f87e134dac6b60df0514a36d2
+      size: 94
+    outs:
+    - path: az-ratings.status
+      md5: 08a44188987803be46be4286a2e5a5f3
+      size: 180
+  status@loc-mds-books:
+    cmd: python ../run.py stage-status -o loc-mds-books.status loc-mds-books
+    deps:
+    - path: loc-mds-books.transcript
+      md5: 19b0a011c9053361278a3d812518b229
+      size: 4259
+    outs:
+    - path: loc-mds-books.status
+      md5: f6e0026b4d4fe4bac7056c7fe0491259
+      size: 4030
+  status@ol-authors:
+    cmd: python ../run.py stage-status -o ol-authors.status ol-authors
+    deps:
+    - path: ol-authors.transcript
+      md5: 50e5bedc17cba4c5ceb8eef3d86fc307
+      size: 130
+    outs:
+    - path: ol-authors.status
+      md5: 456954970c9a56193680bb9399ac9164
+      size: 185
+  status@gr-works:
+    cmd: python ../run.py stage-status -o gr-works.status gr-works
+    deps:
+    - path: gr-works.transcript
+      md5: 2ff4ab63f7c9043b7526f85f9bb36028
+      size: 136
+    outs:
+    - path: gr-works.status
+      md5: a223984989927e62d8aea9230810d6bb
+      size: 189
+  status@loc-mds-names:
+    cmd: python ../run.py stage-status -o loc-mds-names.status loc-mds-names
+    deps:
+    - path: loc-mds-names.transcript
+      md5: 14ce7449e200f45a93058a6fdac918ec
+      size: 3845
+    outs:
+    - path: loc-mds-names.status
+      md5: 5d6d486b5b3acde6b3a9ce64d0fe794b
+      size: 3637
+  status@ol-works:
+    cmd: python ../run.py stage-status -o ol-works.status ol-works
+    deps:
+    - path: ol-works.transcript
+      md5: 6345885738815d2a51d331f7aba9e792
+      size: 128
+    outs:
+    - path: ol-works.status
+      md5: c84b6ccf5f89e6d8faf00cc21b4d5566
+      size: 181
+  status@gr-books:
+    cmd: python ../run.py stage-status -o gr-books.status gr-books
+    deps:
+    - path: gr-books.transcript
+      md5: f493bf8e51b22ccdf258b07141c0a79d
+      size: 131
+    outs:
+    - path: gr-books.status
+      md5: a0dcde1044f2c61895def1a9523be067
+      size: 184
+  status@gr-interactions:
+    cmd: python ../run.py stage-status -o gr-interactions.status gr-interactions
+    deps:
+    - path: gr-interactions.transcript
+      md5: 83ef4771b7c84a5730ba94fe8580a261
+      size: 138
+    outs:
+    - path: gr-interactions.status
+      md5: acf7d8bdbf506c81f6c3ea4eded3d702
+      size: 198
+  status@gr-book-genres:
+    cmd: python ../run.py stage-status -o gr-book-genres.status gr-book-genres
+    deps:
+    - path: gr-book-genres.transcript
+      md5: 5cd443ca86c79bef13040a97aa135eb3
+      size: 145
+    outs:
+    - path: gr-book-genres.status
+      md5: 0c77c736582157805e8248a97b5f7037
+      size: 204
+  status@viaf:
+    cmd: python ../run.py stage-status -o viaf.status viaf
+    deps:
+    - path: viaf.transcript
+      md5: 326fe03b3007b0dbe02ff43c3da7e6cb
+      size: 136
+    outs:
+    - path: viaf.status
+      md5: 55fb31f4aaa86a2fd921c59c797c09a8
+      size: 186
+  status@bx-ratings:
+    cmd: python ../run.py stage-status -o bx-ratings.status bx-ratings
+    deps:
+    - path: bx-ratings.transcript
+      md5: 511096523052e1563c4bdcc66b6ed143
+      size: 146
+    outs:
+    - path: bx-ratings.status
+      md5: 9f1009bfdb68267b39ac94ff3d754756
+      size: 174
+  status@ol-editions:
+    cmd: python ../run.py stage-status -o ol-editions.status ol-editions
+    deps:
+    - path: ol-editions.transcript
+      md5: c2c6951a052ebebe5f51ceb79f324162
+      size: 131
+    outs:
+    - path: ol-editions.status
+      md5: 4c0b955dcf06c319b8dd9c1057c3c056
+      size: 187
+  status@gr-authors:
+    cmd: python ../run.py stage-status -o gr-authors.status gr-authors
+    deps:
+    - path: gr-authors.transcript
+      md5: 40acfcc81a4be3363d61febed1716f00
+      size: 138
+    outs:
+    - path: gr-authors.status
+      md5: b7701864036091016af9123c02b5d7ed
+      size: 193
