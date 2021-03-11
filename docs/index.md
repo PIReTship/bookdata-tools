@@ -40,7 +40,7 @@ using/index
 data/index
 implementation/index
 papers
-https://github.com/BoiseState/bookdata-tools
+GitHub repository <https://github.com/BoiseState/bookdata-tools>
 ```
 
 ## Video
