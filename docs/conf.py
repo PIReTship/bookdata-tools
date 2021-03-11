@@ -31,8 +31,8 @@ html_theme_options = {
 }
 html_baseurl = 'https://bookdata.piret.info'
 templates_path = ['_templates']
-html_extra_files = [
-    'CNAME'
+html_extra_path = [
+    '_extra'
 ]
 
 
