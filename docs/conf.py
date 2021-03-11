@@ -24,7 +24,6 @@ bibtex_bibfiles = [
 
 html_theme = 'furo'
 html_theme_options = {
-    'repository_url': 'https://github.com/BoiseState/bookdata-tools',
     'light_css_variables': {
         'font-stack': 'Lato, sans-serif',
         'font-stack--monospace': 'Source Code Pro, monospace'
@@ -32,6 +31,9 @@ html_theme_options = {
 }
 html_baseurl = 'https://bookdata.piret.info'
 templates_path = ['_templates']
+html_extra_files = [
+    'CNAME'
+]
 
 
 class ChronoSort(BaseSortingStyle):
