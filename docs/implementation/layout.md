@@ -5,7 +5,6 @@ nav_order: 2
 ---
 
 # Layout
-{: .no_toc}
 
 The import code consists of Python, Rust, and SQL code, wired together with DVC.
 

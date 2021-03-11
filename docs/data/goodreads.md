@@ -5,7 +5,6 @@ nav_order: 7
 ---
 
 # GoodReads (UCSD Book Graph)
-{: .no_toc}
 
 We import GoodReads data from the [UCSD Book Graph](https://sites.google.com/eng.ucsd.edu/ucsdbookgraph/home)
 for additional book and user interaction information.  The source files are not automatically downloaded; you
@@ -23,9 +22,6 @@ We do not yet support reviews.
 **If you use this data, cite the paper(s) documented on the data set web site.**
 
 Imported data lives in the `gr` schema.
-
-1. TOC
-{:toc}
 
 ## Data Model Diagram
 

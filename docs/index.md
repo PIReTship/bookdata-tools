@@ -33,6 +33,15 @@ page that describes the data and its appropriate citation.
 
 See the [Setup page](using/setup.md) to get started and for system requirements.
 
+```{toctree}
+:maxdepth: 1
+
+using/index
+data/index
+implementation/index
+papers
+```
+
 ## Video
 
 I recorded a video walking through the integration as an example for my [Data Science class](httsp://cs533.ekstrandom.net).

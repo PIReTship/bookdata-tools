@@ -5,12 +5,8 @@ nav_order: 2
 ---
 
 # Setting Up the Environment
-{: .no_toc}
 
 These tools require PostgreSQL and an Anaconda installation.
-
-1. TOC
-{:toc}
 
 ## System Requirements
 

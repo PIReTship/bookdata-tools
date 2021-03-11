@@ -5,7 +5,6 @@ nav_order: 5
 ---
 
 # BookCrossing
-{: .no_toc}
 
 The [BookCrossing data set](http://www2.informatik.uni-freiburg.de/~cziegler/BX/) consists of user-provided
 ratings — both implicit and explicit — of books.
@@ -16,9 +15,6 @@ ratings — both implicit and explicit — of books.
 
 Imported data lives in the `bx` schema.  The source data files are automatically downloaded and unpacked by
 the provided scripts and DVC stages.
-
-1. TOC
-{:toc}
 
 ## Data Model Diagram
 

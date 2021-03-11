@@ -5,7 +5,6 @@ nav_order: 3
 ---
 
 # OpenLibrary
-{: .no_toc}
 
 We also source book data from [OpenLibrary](https://openlibrary.org), as downloaded from
 their [developer dumps](https://openlibrary.org/developers/dumps).
@@ -14,9 +13,6 @@ The DVC control files automatically download the appropriate version.  The versi
 updated by modifying the `data/ol_dump_*.txt.gz.dvc` files.
 
 Imported data lives in the `ol` schema.
-
-1. TOC
-{:toc}
 
 ## Import Steps
 

@@ -5,12 +5,8 @@ nav_order: 1
 ---
 
 # Common Identifiers
-{: .no_toc}
 
 There are two key identifiers that are used across data sets.
-
-1. TOC
-{:toc}
 
 ## ISBNs
 

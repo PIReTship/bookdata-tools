@@ -1,11 +1,8 @@
 ---
 title: Status Tracking
-parent: Implementation
-nav_order: 1
 ---
 
 # Status Tracking
-{: .no_toc}
 
 The book tools are built around [Data Version Control](https://dvc.org), a tool for managing
 data processing pipelines.  We use the software in a somewhat unusal way due to our use of

@@ -5,7 +5,6 @@ has_children: true
 ---
 
 # Design and Implementation
-{: .no_toc}
 
 These data and integration tools are designed to support several goals:
 
@@ -15,8 +14,11 @@ These data and integration tools are designed to support several goals:
 - Support updates (e.g. new OpenLibrary dumps) by replacing the file and re-running
 - Efficient import and integration
 
-1. TOC
-{:toc}
+```{toctree}
+status
+layout
+dataset
+```
 
 ## Implementation Principles
 
@@ -27,11 +29,6 @@ These goals are realized through a few technology and design decisions:
 - Implement as much data integration as possible in declarative SQL.
 - Make SQL scripts re-runnable, so they will either refresh or delete and recreate their outputs. Deletes cascading to downstream steps are fine, because the stage runner will re-run those stages anyway.
 
-## Further Information
-
-- [Status Tracking](status.md)
-- [Repository Layout](layout.md)
-- [How to Add a Data Set](dataset.md)
 
 ## DVC Dependency Graph
 
