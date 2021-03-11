@@ -1,0 +1,476 @@
+{"0": {
+    "doc": "Amazon",
+    "title": "Amazon Ratings",
+    "content": "The Amazon reviews data set consists of user-provided reviews and ratings for a variety of products. Currently we import the ratings-only data from the Books segment of the 2014 data set. If you use this data, cite the paper(s) documented on the data set web site. Imported data lives in the az schema. The source files are not automatically downloaded. | Data Model Diagram | Import Steps | Raw Data | Extracted Rating Tables | . ",
+    "url": "/data/amazon.html#amazon-ratings",
+    "relUrl": "/data/amazon.html#amazon-ratings"
+  },"1": {
+    "doc": "Amazon",
+    "title": "Data Model Diagram",
+    "content": ". | SVG file | PlantUML source | . ",
+    "url": "/data/amazon.html#data-model-diagram",
+    "relUrl": "/data/amazon.html#data-model-diagram"
+  },"2": {
+    "doc": "Amazon",
+    "title": "Import Steps",
+    "content": "The import is controlled by the following DVC steps: . schemas/az-schema.dvc Run az-schema.sql to set up the base schema. import/az-ratings.dvc Import raw BookCrossing ratings from data/ratings_Books.csv. index/az-index.dvc Run az-index.sql to index the rating data and integrate with book data. ",
+    "url": "/data/amazon.html#import-steps",
+    "relUrl": "/data/amazon.html#import-steps"
+  },"3": {
+    "doc": "Amazon",
+    "title": "Raw Data",
+    "content": "The raw rating data, with invalid characters cleaned up, is in the az.raw_ratings table, with the following columns: . user_key The alphanumeric user identifier. asin The Amazon identification number for the product; for a book with an ISBN, this is the ISBN. rating The book rating. The ratings are on a 1-5 scale. rating_time The rating timestamp. ",
+    "url": "/data/amazon.html#raw-data",
+    "relUrl": "/data/amazon.html#raw-data"
+  },"4": {
+    "doc": "Amazon",
+    "title": "Extracted Rating Tables",
+    "content": "We extract the following tables for Amazon ratings: . user_ids Mapping from Amazon’s alphanumeric user identifiers to numeric user IDs. rating Rating values suitable for LensKit use, with numeric user and item identifiers. The ratings are pre-clustered, so the book IDs refer to book clusters and not individual ISBNs or editions. This table has the following columns: user_id The user ID. book_id The book code for this book; the cluster identifier if available, or the ISBN-based book code if this book is not in a cluster. rating The rating value; if the user has rated multiple books in a cluster, the median value is reported. nactions The number of book actions this user performed on this book. Equivalent to the number of books in the cluster that the user has rated. ",
+    "url": "/data/amazon.html#extracted-rating-tables",
+    "relUrl": "/data/amazon.html#extracted-rating-tables"
+  },"5": {
+    "doc": "Amazon",
+    "title": "Amazon",
+    "content": " ",
+    "url": "/data/amazon.html",
+    "relUrl": "/data/amazon.html"
+  },"6": {
+    "doc": "BookCrossing",
+    "title": "BookCrossing",
+    "content": "The BookCrossing data set consists of user-provided ratings — both implicit and explicit — of books. If you use this data, cite: . Cai-Nicolas Ziegler, Sean M. McNee, Joseph A. Konstan, and Georg Lausen. 2005. Improving Recommendation Lists Through Topic Diversification. Proceedings of the 14th International World Wide Web Conference (WWW ‘05), May 10-14, 2005, Chiba, Japan. Imported data lives in the bx schema. The source data files are automatically downloaded and unpacked by the provided scripts and DVC stages. | Data Model Diagram | Import Steps | Raw Data | Extracted Rating Tables | . ",
+    "url": "/data/bx.html",
+    "relUrl": "/data/bx.html"
+  },"7": {
+    "doc": "BookCrossing",
+    "title": "Data Model Diagram",
+    "content": ". | SVG file | PlantUML source | . ",
+    "url": "/data/bx.html#data-model-diagram",
+    "relUrl": "/data/bx.html#data-model-diagram"
+  },"8": {
+    "doc": "BookCrossing",
+    "title": "Import Steps",
+    "content": "The import is controlled by the following DVC steps: . data/BX.dvc Unpack the BookCrossing zip file. data/BX-CSV-Dump.zip.dvc Download the BookCrossing zip file.s schemas/bx-schema.dvc Run bx-schema.sql to set up the base schema. import/bx-ratings.dvc Import raw BookCrossing ratings from data/BX-Book-Ratings.csv. index/bx-index.dvc Run bx-index.sql to index the rating data and integrate with book data. ",
+    "url": "/data/bx.html#import-steps",
+    "relUrl": "/data/bx.html#import-steps"
+  },"9": {
+    "doc": "BookCrossing",
+    "title": "Raw Data",
+    "content": "The raw rating data, with invalid characters cleaned up, is in the bx.raw_ratings table, with the following columns: . user_id The user identifier (numeric). isbn The book ISBN (text). rating The book rating. The ratings are on a 1-10 scale, with 0 indicating an implicit-feedback record. ",
+    "url": "/data/bx.html#raw-data",
+    "relUrl": "/data/bx.html#raw-data"
+  },"10": {
+    "doc": "BookCrossing",
+    "title": "Extracted Rating Tables",
+    "content": "We extract the following tables for BookCrossing ratings: . rating The explicit ratings (rating &gt; 0) from the raw ratings table. add_action Records of users adding books, either by rating or through an implicit feedback action, without rating values. Both of these tables are pre-clustered, so the book IDs refer to book clusters and not individual ISBNs or editions. They have the following columns: . user_id The user ID. book_id The book code for this book; the cluster identifier if available, or the ISBN-based book code if this book is not in a cluster. rating The rating value; if the user has rated multiple books in a cluster, the median value is reported. This field is only on the rating table. nactions The number of book actions this user performed on this book. Equivalent to the number of books in the cluster that the user has added or rated. ",
+    "url": "/data/bx.html#extracted-rating-tables",
+    "relUrl": "/data/bx.html#extracted-rating-tables"
+  },"11": {
+    "doc": "Clusters",
+    "title": "Book Clusters",
+    "content": "For recommendation and analysis, we often want to look at works instead of individual books or editions of those books. The same material by the same author(s) may be reprinted in many different editions, with different ISBNs, and sometimes separate ratings from the same user. There are a variety of ways to deal with this. GoodReads and OpenLibrary both have the concept of a ‘work’ to group together related editions (the Library of Congress also has such a concept internally in its BIBFRAME schema, but that data is not currently available for integration). Other services, such as ThingISBN and OCLC’s xISBN both link together ISBNs: given a query ISBN, they will return a list of ISBNs believed to be for the same book. Using the book data sources here, we have implemented comparable functionality in a manner that anyone can reproduce from public data. We call the resulting equivalence sets ‘book clusters’. ",
+    "url": "/data/cluster.html#book-clusters",
+    "relUrl": "/data/cluster.html#book-clusters"
+  },"12": {
+    "doc": "Clusters",
+    "title": "Clustering Algorithm",
+    "content": "Our clustering algorithm begins by forming an undirected graph of record identifiers. We extract records from the following: . | Library of Congress book records, with edges from records to ISBNs recorded for that record. | OpenLibrary editions, with edges from editions to ISBNs recorded for that edition. | OpenLibrary works, with edges from works to editions. | GoodReads books, with edges from books to ISBNs recorded for that book. | GoodReads works, with edges from works to books. | . We then compute the connected components on this graph, and treat each connected component as a single ‘book’ (what we call a book cluster). The idea is that if two ISBNs appear together on a book record, that is evidence they are for the same book; likewise, if two book records have the same ISBN, it is evidence they record the same book. Pooling this evidence across all data sources maximizes the ability to detect book clusters. The isbn_cluster table maps each ISBN to its associated cluster. Individual data sources may also have an isbn_cluster table (e.g. gr.isbn_cluster); that is the result of clustering ISBNs using only the book records from that data source. However, all clustered results such as rating tables are based on the all-source book clusters. ",
+    "url": "/data/cluster.html#clustering-algorithm",
+    "relUrl": "/data/cluster.html#clustering-algorithm"
+  },"13": {
+    "doc": "Clusters",
+    "title": "Known Problems",
+    "content": "There are a few known problems with the ISBN clustering: . | Publishers occasionally reuse ISBNs. They aren’t supposed to do this, but they do. This results in unrelated books having the same ISBN. This will cause a problem for any ISBN-based linking between books and ratings, not just the book clustering. We don’t yet have a good way to identify these ISBNs. | Some book sets have ISBNs, which cause them link together books that should not be clustered. The Library of Congress identifies many of these ISBNs as set ISBNs, and we are examining the prospect of using this to exclude them from informing clustering decisions. | . If you only need e.g. the GoodReads data, we recommend that you not cluster it for the purpose of ratings, and only use clusters to link to out-of-GR book or author data. We are open to adding additional tables that facilitate linking GoodReads works directly to other tables. ",
+    "url": "/data/cluster.html#known-problems",
+    "relUrl": "/data/cluster.html#known-problems"
+  },"14": {
+    "doc": "Clusters",
+    "title": "Clusters",
+    "content": " ",
+    "url": "/data/cluster.html",
+    "relUrl": "/data/cluster.html"
+  },"15": {
+    "doc": "Dataset Design",
+    "title": "Design for Datasets",
+    "content": "The general import philosophy is that we import the data into a PostgreSQL table in a raw form, only doing those conversions necessary to be able to access it with PostgreSQL commands and functions. We then extract information from this raw form into other tables and materialized views to enable relational queries. Each data set’s import process follows the following steps: . | Initialize the database schema, with an SQL script under schemas/. | Import the raw data, controlled by DVC steps under import/. This may be multiple steps; for example, OpenLibrary has a separate import step for each file. Actual import is usually handled by Rust or Python code. | Index the data into relational views and tables. This is done by SQL scripts under index/. | . Data integration then happens after the data sets are indexed (mostly - a few indexing steps depend on the book clustering process). ",
+    "url": "/implementation/dataset.html#design-for-datasets",
+    "relUrl": "/implementation/dataset.html#design-for-datasets"
+  },"16": {
+    "doc": "Dataset Design",
+    "title": "Adding a New Dataset",
+    "content": "If you want to add a new data set, there are a few steps: . | Set up the initial raw database schema, with an SQL script and corresponding DVC file under schemas/. This should hold the data in a form that matches as closely as practical the raw form of the data, and should have minimal indexes and constraints. For a new schema ds-schema, you create two files: . | ds-schema.sql, containing the CREATE SCHEMA and CREATE TABLE statements. We use PostgreSQL schemas (namespaces) to separate the data from different sources to make the whole database more manageable. Look at existing schema definitions for examples. | ds-schema.dvc, the DVC file running ds-schema.sql. This should contain a few things: . # Run the schema file cmd: python ../run.py sql-script ds-schema.sql # Depend on the file and initial database setup deps: - path: ds-schema.sql - path: pgstat://common-schema outs: # a transcript of the script run - path: ds-schema.transcript # the status of importing this schema - path: pgstat://ds-schema cache: false . When you run ./dvc.sh repro schemas/ds-schema.dvc, it will run the schema script and fill in the other values (e.g. checksums) for the dependencies and outputs. | . | Download the raw data files into data and register them with DVC (dvc add data/file for the simplest case), and document in this file where to download them. For files that it is reasonable to auto-download, you can create a more sophisticated setup to download them, but this is often not necessary. | Identify, modify, and/or create the code needed to import the raw data files into the database. We have importers for several types of files already: . | If the data is in CSV or similar form, suitable for PostgreSQL’s COPY FROM command, the pcat import tool in the Rust tools can copy the file, decompressing if necessary, directly to the database table. | If the data is in JSON, we have importers for two forms of JSON in the import-json Rust tool, the source for which is in src/commands/import_json/. Right now it supports OpenLibrary and GoodReads JSON files; the first is a tab-separated file containing object metadata and the JSON object, and the second is a simple object-per-line format. The accompanying file (openlib.rs and goodreads.rs) define the data format and the destination tables. For many future JSON objects, goodreads.rs will be the appropriate template to start with, and add support for it to the appropriate places in mod.rs. | If the data is in MARC-XML, the Rust parse-marc command is your starting place. It can process both multiple-record formats (e.g. from VIAF) or single-document formats (from the Library of Congress), and can decompress while importing. | . If you need to write new import code, you may need to make sure it properly records stage dependencies and status. At a minimum, it should record each file imported and its checksum as a file for the stage, along with the stage begin/end timestamps. Look at the meta-schema.sql file for the specific tables. The tracking.py and tracking.rs support modules provide code for recording stage status in Python and Rust, respectively. | Set up the import process with an appropriate .dvc step in import/. This step should depend on the schema (pgstat://ds-schema), and have as one of its uncached outputs the import process status (pgstat://ds-import, if the file is named ds-import.dvc). Some importers require you to explicitly provide the stage name as a command-line argument. | Write SQL commands to transform and index the imported data in a script under index/. This script may do a number of things: . | Map data set book ISBNs or other identifiers to ISBN IDs. | Extract relational tables from structured data such as JSON (e.g. the book author lists extracted from OpenLibrary). | Create summary tables or materialized views. | . See the existing index logic in index/ for examples. | Create a .dvc stage to run your index script; this works like the one for the schema in (1), but is under index/ and depends on pgstat://ds-import (or whatever your import stage is named). | Create or update data integrations to make use of this data, as needed and appropriate. If the new data contains ISBN/ID links that you want to include in book clustering, add support to cluster.py and update the cluster.dvc file to also depend on your data set’s index stage (e.g. pgstat://ds-index). | If appropriate, add a dependency on the last stage of your processing to Dvcfile. | . All dependencies should be through the pgstat:// URLs, so that they are computed from current database status. ",
+    "url": "/implementation/dataset.html#adding-a-new-dataset",
+    "relUrl": "/implementation/dataset.html#adding-a-new-dataset"
+  },"17": {
+    "doc": "Dataset Design",
+    "title": "Dataset Design",
+    "content": " ",
+    "url": "/implementation/dataset.html",
+    "relUrl": "/implementation/dataset.html"
+  },"18": {
+    "doc": "Book Author Gender",
+    "title": "Book Author Gender",
+    "content": "We compute the author gender for book clusters using the integrated data set. See the paper for important limitations. | Import Steps | Gender Integration | Limitations | . ",
+    "url": "/data/gender.html",
+    "relUrl": "/data/gender.html"
+  },"19": {
+    "doc": "Book Author Gender",
+    "title": "Import Steps",
+    "content": "integrate/author-info.dvc Run integrate/author-info.sql to compute book cluster author gender. ",
+    "url": "/data/gender.html#import-steps",
+    "relUrl": "/data/gender.html#import-steps"
+  },"20": {
+    "doc": "Book Author Gender",
+    "title": "Gender Integration",
+    "content": "For each book cluster, the integration does the following: . | Accumulate all names for the first author from OpenLibrary | Accumulate all names for the first/primary author from the Library of Congress | Obtain gender identities from all VIAF records matching an author name in this pool | Consolidate gender into a cluster author gender identity | . The results of this are stored in cluster_first_author_gender, with the following fields: . cluster The cluster identifier gender The gender identity of the first author, as one of the following: no-loc-author The book had no author records. no-viaf-author The author records did not match any VIAF records. no-gender The VIAF records had no gender information. unknown No gender informaiton available (for other reasons) or explicitly labeled as unknown. male or female The VIAF record unambiguously identifies this book’s author as male or female. ambiguous The VIAF record(s) contained both male and female gender assertions. The import process also creates some other intermediate views. ",
+    "url": "/data/gender.html#gender-integration",
+    "relUrl": "/data/gender.html#gender-integration"
+  },"21": {
+    "doc": "Book Author Gender",
+    "title": "Limitations",
+    "content": "See the paper for a fuller discussion. Some known limitations include: . | VIAF does not record non-binary gender identities. | Recent versions of the OpenLibrary data contain VIAF identifiers for book authors, but we do not yet make use of this information. When available, they should improve the reliability of book-author linking. | GoodReads includes author names, but we do not yet use these for linking to gender records. | . ",
+    "url": "/data/gender.html#limitations",
+    "relUrl": "/data/gender.html#limitations"
+  },"22": {
+    "doc": "GoodReads",
+    "title": "GoodReads (UCSD Book Graph)",
+    "content": "We import GoodReads data from the UCSD Book Graph for additional book and user interaction information. The source files are not automatically downloaded; you will need the following: . | Books | Book works | Authors | Book genres | Book series | Full interaction data | . We do not yet support reviews. If you use this data, cite the paper(s) documented on the data set web site. Imported data lives in the gr schema. | Data Model Diagram | Import Steps | Raw Data | Extracted Book Tables | Extracted Interaction Tables | . ",
+    "url": "/data/goodreads.html#goodreads-ucsd-book-graph",
+    "relUrl": "/data/goodreads.html#goodreads-ucsd-book-graph"
+  },"23": {
+    "doc": "GoodReads",
+    "title": "Data Model Diagram",
+    "content": ". | SVG file | PlantUML source | . ",
+    "url": "/data/goodreads.html#data-model-diagram",
+    "relUrl": "/data/goodreads.html#data-model-diagram"
+  },"24": {
+    "doc": "GoodReads",
+    "title": "Import Steps",
+    "content": "The import is controlled by the following DVC steps: . schemas/gr-schema.dvc Run gr-schema.sql to set up the base schema. import/gr-*.dvc Import raw GoodReads data from files under data/ index/gr-index-books.dvc Run gr-index-books.sql to index the book data and extract identifiers. index/gr-book-info.dvc Run gr-book-info.sql to extract additional book and work metadata. index/gr-index-ratings.dvc Run gr-index-ratings.sql to index the rating and interaction data. ",
+    "url": "/data/goodreads.html#import-steps",
+    "relUrl": "/data/goodreads.html#import-steps"
+  },"25": {
+    "doc": "GoodReads",
+    "title": "Raw Data",
+    "content": "The raw rating data, with invalid characters cleaned up, is in the various gr.raw_* tables: . | raw_book | raw_work | raw_author | raw_series | raw_book_genres | raw_interaction | . Each table has the following columns: . gr_type_rid Numeric record identifier generated at import time. Throughout this page, we will refer to these as record identifiers; they are distinct from the identifiers GoodReads uses for books and works, as those are not known until the JSON is unpacked. gr_type_data JSONB column containing imported data. ",
+    "url": "/data/goodreads.html#raw-data",
+    "relUrl": "/data/goodreads.html#raw-data"
+  },"26": {
+    "doc": "GoodReads",
+    "title": "Extracted Book Tables",
+    "content": "We extract the following tables for book and work data: . work_ids GoodReads work identifiers. book_ids GoodReads book identifiers. This maps each GoodReads book record identifier to the following identifiers: . | book ID | work ID | ASIN | ISBN 10 (gr_isbn) | ISBN 13 (gr_isbn13) | . This table extracts the textual versions of ISBNs and ASINs directly from the raw_book table. It does not resolve them to ISBN IDs. book_isbn Map GoodReads books to ISBN IDs and book codes. This does not use ASINs, just ISBN-10 and ISBN-13s. book_genres Genre membership (and scores) for each book. This is a direct extract of the book genres file from UCSD. work_title The title of each work. book_pub_date The publication date of each book. It extracts the year, month, and day; if all three are present, then pub_date contains the date as an SQL date. These are the publication_* fields in the book JSON data. work_pub_date The original publication date of each work. Extracted like book_pub_date, but from a work’s original_publication_* fields. book_cluster The book cluster each book is a member of. ",
+    "url": "/data/goodreads.html#extracted-book-tables",
+    "relUrl": "/data/goodreads.html#extracted-book-tables"
+  },"27": {
+    "doc": "GoodReads",
+    "title": "Extracted Interaction Tables",
+    "content": "We extract the following tables for book ratings and interactions (add-to-shelf actions): . user_info Mapping between user record IDs and GoodReads user IDs. interaction Extract of basic information about each entry in the Interactions file. These interactions represent an add-to-shelf action, optionally with a rating. We extract the following: gr_interaction_rid The interaction record identifier (PK) gr_book_id GoodReads book ID gr_user_rid User record identifier (we use record IDs instead of user IDs to keep them numeric) rating The 5-star rating value (if provided) is_read isRead flag from original JSON data. date_added The date the book was added to the shelf. date_updated The update date for this interaction. rating Rating table suitable for use in LensKit. This is aggregated by book cluster, and contains both the median rating and the last rating, along with the median update date as the timestamp. add_action Add-action table suitable for use in LensKit. Also aggregated by book cluster, with the first and last (update) date as the timestamps, and number of interactions with this book. ",
+    "url": "/data/goodreads.html#extracted-interaction-tables",
+    "relUrl": "/data/goodreads.html#extracted-interaction-tables"
+  },"28": {
+    "doc": "GoodReads",
+    "title": "GoodReads",
+    "content": " ",
+    "url": "/data/goodreads.html",
+    "relUrl": "/data/goodreads.html"
+  },"29": {
+    "doc": "Common Identifiers",
+    "title": "Common Identifiers",
+    "content": "There are two key identifiers that are used across data sets. | ISBNs | Book Codes | . ",
+    "url": "/data/ids.html",
+    "relUrl": "/data/ids.html"
+  },"30": {
+    "doc": "Common Identifiers",
+    "title": "ISBNs",
+    "content": "We use ISBNs for a lot of data linking. In order to speed up ISBN-based operations, we map textual ISBNs to numeric ‘ISBN IDs`. The isbn_id table manages ISBN IDs and their mappings: . | Column | Purpose | . | isbn_id | ISBN identifier | . | isbn | Textual ISBNs | . Each type of ISBN (ISBN-10, ISBN-13) is considered a distinct ISBN. We also consider other ISBN-like things, particularly ASINs, to be ISBNs. Most derived tables that work with ISBNs use isbn_ids. ",
+    "url": "/data/ids.html#isbns",
+    "relUrl": "/data/ids.html#isbns"
+  },"31": {
+    "doc": "Common Identifiers",
+    "title": "Book Codes",
+    "content": "We also use book codes, common identifiers for integrated ‘books’ across data sets. These are derived from identifiers in the various data sets, with bc_of_* functions. Each book code source is assigned to a different 10M number band so we can, if needed, derive the source from a book code. | Source | Function | Numspace | . | OL Work | bc_of_work | 10M | . | OL Edition | bc_of_edition | 20M | . | LOC Record | bc_of_loc_rec | 30M | . | GR Work | bc_of_gr_work | 40M | . | GR Book | bc_of_gr_book | 50M | . | LOC Work | bc_of_loc_work | 60M | . | LOC Instance | bc_of_loc_instance | 70M | . | ISBN | bc_of_isbn | 90M | . The LOC Work and Instance sources are not currently used; they are intended for future use when we are able to import BIBFRAME data from the Library of Congress. ",
+    "url": "/data/ids.html#book-codes",
+    "relUrl": "/data/ids.html#book-codes"
+  },"32": {
+    "doc": "Data Model",
+    "title": "Data Model",
+    "content": "This section describes the layout of the imported data, and the logic behind its integration. It doesn’t describe every intermediate detail or table. The data is organized into PostgreSQL schemas to make it easier to navigate; one effect of this is that if you just look at the default public schema, you will see very few of the tables. Further, some tables are materialized views, so they may not show up in the table list. The \\dm command in psql shows materialized views. ",
+    "url": "/data/",
+    "relUrl": "/data/"
+  },"33": {
+    "doc": "Importing",
+    "title": "Using the Tools",
+    "content": "This section of the documentation describes how to set up and use the book data integration tools. ",
+    "url": "/using/#using-the-tools",
+    "relUrl": "/using/#using-the-tools"
+  },"34": {
+    "doc": "Importing",
+    "title": "Importing",
+    "content": " ",
+    "url": "/using/",
+    "relUrl": "/using/"
+  },"35": {
+    "doc": "Implementation",
+    "title": "Design and Implementation",
+    "content": "These data and integration tools are designed to support several goals: . | Complete end-to-end reproducibility with a single command (dvc repro) | Self-documenting import stage dependencies | Automatically re-run downstream steps when a data file or integration logic changes | Support updates (e.g. new OpenLibrary dumps) by replacing the file and re-running | Efficient import and integration | . | Implementation Principles | Further Information | DVC Dependency Graph | . ",
+    "url": "/implementation/#design-and-implementation",
+    "relUrl": "/implementation/#design-and-implementation"
+  },"36": {
+    "doc": "Implementation",
+    "title": "Implementation Principles",
+    "content": "These goals are realized through a few technology and design decisions: . | Script all import steps with a tool that can track stage dependencies and check whether a stage is up-to-date (DVC). | Stage each data source with a schema file, a raw import, and subsequent SQL files that reformat and extract data into more usable format. | Implement as much data integration as possible in declarative SQL. | Make SQL scripts re-runnable, so they will either refresh or delete and recreate their outputs. Deletes cascading to downstream steps are fine, because the stage runner will re-run those stages anyway. | . ",
+    "url": "/implementation/#implementation-principles",
+    "relUrl": "/implementation/#implementation-principles"
+  },"37": {
+    "doc": "Implementation",
+    "title": "Further Information",
+    "content": ". | Status Tracking | Repository Layout | How to Add a Data Set | . ",
+    "url": "/implementation/#further-information",
+    "relUrl": "/implementation/#further-information"
+  },"38": {
+    "doc": "Implementation",
+    "title": "DVC Dependency Graph",
+    "content": ". | SVG file | GraphViz source | . ",
+    "url": "/implementation/#dvc-dependency-graph",
+    "relUrl": "/implementation/#dvc-dependency-graph"
+  },"39": {
+    "doc": "Implementation",
+    "title": "Implementation",
+    "content": " ",
+    "url": "/implementation/",
+    "relUrl": "/implementation/"
+  },"40": {
+    "doc": "Overview",
+    "title": "Book Data Tools",
+    "content": "The PIReT Book Data Tools are a set of tools for ingesting, integrating, and indexing a variety of sources of book data, created by the People and Information Research Team at Boise State University. The result of running these tools is a PostgreSQL database with the raw data, various useful extracted features, and integrated identifiers across the various data sources for cross-linking. If you use these scripts in any published research, cite our paper (PDF): . Michael D. Ekstrand and Daniel Kluver. 2021. Exploring Author Gender in Book Rating and Recommendation. User Modeling and User-Adapted Interaction (February 2021) DOI:10.1007/s11257-020-09284-2. We also ask that you contact Michael Ekstrand to let us know about your use of the data, so we can include your paper in our list of relying publications. Note: the limitations section of the paper contains important information about the limitations of the data these scripts compile. Do not use the gender information in this data data or tools without understanding those limitations. In particular, VIAF’s gender information is incomplete and, in a number of cases, incorrect. In addition, several of the data sets integrated by this project come from other sources with their own publications. If you use any of the rating or interaction data, cite the appropriate original source paper. For each data set below, we have provided a link to the page that describes the data and its appropriate citation. See the Setup page to get started and for system requirements. ",
+    "url": "/#book-data-tools",
+    "relUrl": "/#book-data-tools"
+  },"41": {
+    "doc": "Overview",
+    "title": "Video",
+    "content": "I recorded a video walking through the integration as an example for my Data Science class. ",
+    "url": "/#video",
+    "relUrl": "/#video"
+  },"42": {
+    "doc": "Overview",
+    "title": "License",
+    "content": "These tools are under the MIT license: . Copyright 2019-2020 Boise State University . Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: . The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. ",
+    "url": "/#license",
+    "relUrl": "/#license"
+  },"43": {
+    "doc": "Overview",
+    "title": "Overview",
+    "content": " ",
+    "url": "/",
+    "relUrl": "/"
+  },"44": {
+    "doc": "Layout",
+    "title": "Layout",
+    "content": "The import code consists of Python, Rust, and SQL code, wired together with DVC. ",
+    "url": "/implementation/layout.html",
+    "relUrl": "/implementation/layout.html"
+  },"45": {
+    "doc": "Layout",
+    "title": "Python Scripts",
+    "content": "Python scripts live under scripts, as a Python package. They should not be launched directly, but rather via run.py, which will make sure the environment is set up properly for them: . python run.py sql-script [options] script.sql . ",
+    "url": "/implementation/layout.html#python-scripts",
+    "relUrl": "/implementation/layout.html#python-scripts"
+  },"46": {
+    "doc": "Layout",
+    "title": "SQL Scripts",
+    "content": "Our SQL scripts are run with a custom SQL script runner (the sql-script Python script), that breaks them into chunks, handles errors, and tracks dependencies and script status. The script runner parses directives in SQL comments; for example: . --- #step ISBN ID storage CREATE TABLE IF NOT EXISTS isbn_id ( isbn_id SERIAL PRIMARY KEY, isbn VARCHAR NOT NULL UNIQUE ); . is a step called “ISBN ID storage”. Each step is processed in a transaction that is committed at the end, so steps are atomic (unless marked with #notx). These are the directives for steps: . | #step LABEL starts a new step with the label LABEL. Additional directives before the first SQL statement will apply to this step. | #notx means the step will run in autocommit mode. This is needed for certain maintenance commands that do not work within transactions. | #allow CODE allows the PostgreSQL error ‘code’, such as invalid_table_definition. The script will not fail if the step fails with this error. Used for dealing with steps that do things like create indexes, so if the index already exists it is fine to still run the script. | . In addition, the top of the file can have #dep directives, that indicate the dependencies of this script. The only purpose of the #dep is to record dependencies in the database stage state table, so that modifications can propagate and be detected; dependencies still need to be recorded in .dvc files to run the import steps in the correct order. ",
+    "url": "/implementation/layout.html#sql-scripts",
+    "relUrl": "/implementation/layout.html#sql-scripts"
+  },"47": {
+    "doc": "Layout",
+    "title": "Utility Code",
+    "content": "The bookdata package contains Python utility code, and the src directory contains a number of utility modules for use in the Rust code. To the extent reasonable, we have tried to mirror design patterns and function names. ",
+    "url": "/implementation/layout.html#utility-code",
+    "relUrl": "/implementation/layout.html#utility-code"
+  },"48": {
+    "doc": "Library of Congress",
+    "title": "Library of Congress",
+    "content": "One of our sources of book data is the Library of Congress MDSConnect Books bibliography records. We download and import the XML versions of these files. Imported data lives under the locmds schema. | Data Model Diagram | Import Steps | Raw Book Data | Extracted Book Tables | . ",
+    "url": "/data/loc.html",
+    "relUrl": "/data/loc.html"
+  },"49": {
+    "doc": "Library of Congress",
+    "title": "Data Model Diagram",
+    "content": ". | SVG file | PlantUML source | . ",
+    "url": "/data/loc.html#data-model-diagram",
+    "relUrl": "/data/loc.html#data-model-diagram"
+  },"50": {
+    "doc": "Library of Congress",
+    "title": "Import Steps",
+    "content": "The import is controlled by the following DVC steps: . schemas/loc-mds-schema.dvc Run loc-mds-schema.sql to set up the base schema. import/loc-mds-books.dvc Import raw MARC data from data/loc-books/. import/loc-mds-extract-isbns.dvc Parse ISBNs from LOC ISBN records. index/loc-mds-index-books.dvc Run loc-mds-index-books.sql to index the book data and extract tables. index/loc-mds-book-info.dvc Run loc-mds-book-info.sql to extract additional book data into tables. ",
+    "url": "/data/loc.html#import-steps",
+    "relUrl": "/data/loc.html#import-steps"
+  },"51": {
+    "doc": "Library of Congress",
+    "title": "Raw Book Data",
+    "content": "The locmds.book_marc_fields table contains the raw data imported from the MARC files, as MARC fields. The LOC book data follows the MARC 21 Bibliographic Data format; the various tags, field codes, and indicators are defined there. This table is not terribly useful on its own, but it is the source from which the other tables are derived. It has the following columns: . rec_id The record identifier (generated at import) fld_no The field number. This corresponds to a single MARC field entry; rows in this table containing data from MARC subfields will share a fld_no with their containing field. tag The MARC tag; either a three-digit number, or LDR for the MARC leader. ind1, ind2 MARC indicators. Their meanings are defined in the MARC specification. sf_code MARC subfield code. contents The raw textual content of the MARC field or subfield. ",
+    "url": "/data/loc.html#raw",
+    "relUrl": "/data/loc.html#raw"
+  },"52": {
+    "doc": "Library of Congress",
+    "title": "Extracted Book Tables",
+    "content": "We then extract a number of tables and views from this MARC data. These tables include: . book_record_info Code information for each book record. | MARC Control Number | Library of Congress Control Number (LCCN) | Record status | Record type | Bibliographic level | . More information about the last three is in the leader specification. book A subset of book_record_info intended to capture the actual books in the collection, as opposed to other types of materials. We consider a book to be anything that has MARC record type ‘a’ or ‘t’ (language material), and is not also classified as a government record in MARC field 008. book_extracted_isbn Textual ISBNs as extracted from LOC records. The actual ISBN strings (tag 020 subfield ‘a’) are quite messy; the Rust program parse-isbns parses out ISBNs, along with additional tags or descriptors, from the ISBN strings using a number of best-effort heuristics. This table contains the results of that process. book_rec_isbn Map book records to their ISBNs. book_author_name Author names for book records. This only extracts the primary author name (MARC field 100 subfield ‘a’). book_pub_year Book publication year (MARC field 260 subfield ‘c’). book_title Book title (MARC field 245 subfield ‘a’). ",
+    "url": "/data/loc.html#extracted-book-tables",
+    "relUrl": "/data/loc.html#extracted-book-tables"
+  },"53": {
+    "doc": "OpenLibrary",
+    "title": "OpenLibrary",
+    "content": "We also source book data from OpenLibrary, as downloaded from their developer dumps. The DVC control files automatically download the appropriate version. The version can be updated by modifying the data/ol_dump_*.txt.gz.dvc files. Imported data lives in the ol schema. | Import Steps | Raw Data | Extracted Edition Tables | Extracted Work Tables | Extracted Author Tables | . ",
+    "url": "/data/openlib.html",
+    "relUrl": "/data/openlib.html"
+  },"54": {
+    "doc": "OpenLibrary",
+    "title": "Import Steps",
+    "content": "The import is controlled by the following DVC steps: . schemas/ol-schema.dvc Run ol-schema.sql to set up the base schema. import/ol-works.dvc Import raw OpenLibrary works from data/ol_dump_works.txt.gz. import/ol-editions.dvc Import raw OpenLibrary editions from data/ol_dump_editions.txt.gz. import/ol-authors.dvc Import raw OpenLibrary authors from data/ol_dump_authors.txt.gz. index/ol-index.dvc Run ol-index.sql to index the book data and extract tables. index/ol-book-info.dvc Run ol-book-info.sql to extract additional book data into tables. ",
+    "url": "/data/openlib.html#import-steps",
+    "relUrl": "/data/openlib.html#import-steps"
+  },"55": {
+    "doc": "OpenLibrary",
+    "title": "Raw Data",
+    "content": "OpenLibrary provides its data as JSON. It is imported as-is into a JSONB column in three tables: . | ol.author | ol.work | ol.edition | . Each of these has the following columns: . type_id A numeric record identifier generated at import. type_key The OpenLibrary identifier key (e.g. /books/3180A3). type_data The raw JSON data containing the record. We use PostgreSQL’s JSON operators and functions to extract the data from these tables for the rest of the OpenLibrary data model. ",
+    "url": "/data/openlib.html#raw-data",
+    "relUrl": "/data/openlib.html#raw-data"
+  },"56": {
+    "doc": "OpenLibrary",
+    "title": "Extracted Edition Tables",
+    "content": "We extract the following tables from OpenLibrary editions: . edition_author Links edition and author to record an edition’s authors. edition_first_author Links edition and author to record an edition’s first author. edition_work Links each edition to its work(s) edition_isbn The raw ISBNs for each edition (not ISBN IDs) isbn_link Link ISBNs, editions, and works, along with the book code derived from an edition’s work and edition IDs. If an edition belongs to multiple works, it will appear multiple times here. This table violates 4NF. ",
+    "url": "/data/openlib.html#extracted-edition-tables",
+    "relUrl": "/data/openlib.html#extracted-edition-tables"
+  },"57": {
+    "doc": "OpenLibrary",
+    "title": "Extracted Work Tables",
+    "content": "We extract the following tables from OpenLibrary works: . work_author Links work and author to record an work’s authors. work_first_author Links work and author to record an work’s first author. work_subject The subjects entries for each work. ",
+    "url": "/data/openlib.html#extracted-work-tables",
+    "relUrl": "/data/openlib.html#extracted-work-tables"
+  },"58": {
+    "doc": "OpenLibrary",
+    "title": "Extracted Author Tables",
+    "content": "author_name The names for each author. An author may have more than one listed name; this extracts all of them. ",
+    "url": "/data/openlib.html#extracted-author-tables",
+    "relUrl": "/data/openlib.html#extracted-author-tables"
+  },"59": {
+    "doc": "Running",
+    "title": "Running the Tools",
+    "content": "The data import and integration process is scripted by DVC. The top-level Dvcfile depends on all required steps, so to import the data, just run: ./dvc.sh repro . The import process will take approximately 8 hours. ",
+    "url": "/using/running.html#running-the-tools",
+    "relUrl": "/using/running.html#running-the-tools"
+  },"60": {
+    "doc": "Running",
+    "title": "Custom DVC",
+    "content": "Note that the command above uses ./dvc.sh instead of calling the dvc executable directly. The book data tools customize DVC to support checking the status of database import operations, and the ./dvc.sh script runs DVC with the customizations installed. If you run dvc, it will be unable to resolve the pgstat:// URLs and will fail with an error to that effect (the precise error may vary from version to version)./dvc.sh is just a wrapper and therefore takes all commands and options applicable to dvc. ",
+    "url": "/using/running.html#custom-dvc",
+    "relUrl": "/using/running.html#custom-dvc"
+  },"61": {
+    "doc": "Running",
+    "title": "Running",
+    "content": " ",
+    "url": "/using/running.html",
+    "relUrl": "/using/running.html"
+  },"62": {
+    "doc": "Setup",
+    "title": "Setting Up the Environment",
+    "content": "These tools require PostgreSQL and an Anaconda installation. | System Requirements | PostgreSQL Database | Import Tool Dependencies . | Python | Rust | . | Database Configuration | . ",
+    "url": "/using/setup.html#setting-up-the-environment",
+    "relUrl": "/using/setup.html#setting-up-the-environment"
+  },"63": {
+    "doc": "Setup",
+    "title": "System Requirements",
+    "content": "You will need: . | A PostgreSQL server with at least 500GB of disk space available for the database and ample RAM. | An environment to save the raw files and run the import code. This can be the same machine as the PostgreSQL server, but needs: . | Anaconda or Miniconda | 100GB of disk space for input files | A few GB of memory | Linux or macOS (since graph-tool isn’t built for Windows right now) | . | . The scripts don’t have substantial memory requirements, but do need a good deal of disk space. The most memory-intensive operation is the connected components computation for book clustering. ",
+    "url": "/using/setup.html#system-requirements",
+    "relUrl": "/using/setup.html#system-requirements"
+  },"64": {
+    "doc": "Setup",
+    "title": "PostgreSQL Database",
+    "content": "The book data tools require PostgreSQL (at least version 10), with the following extensions installed: . | orafce | PostgreSQL Contrib (specifically pg_prewarm and uuid-ossp) | . The database will take approximately 500GB. Create a database for the book data, e.g. bookdata, owned by the database user you will be using to run the data integration tools. The tools will create various tables and schemas. Once you have created the database, run the following as the database superuser to enable the PostgreSQL extensions: . CREATE EXTENSION pg_prewarm; CREATE EXTENSION orafce; CREATE EXTENSION \"uuid-ossp\"; . ",
+    "url": "/using/setup.html#postgresql-database",
+    "relUrl": "/using/setup.html#postgresql-database"
+  },"65": {
+    "doc": "Setup",
+    "title": "Import Tool Dependencies",
+    "content": "The import tools are written in Python and Rust. The provided environment.yml file defines an Anaconda environment (named bookdata by default) that contains all required runtimes and libraries: . conda env create -f environment.yml conda activate bookdata . If you don’t want to use Anaconda, see the following for more details on dependencies. Python . This needs the following Python dependencies: . | Python 3.6 or later | psycopg2 | numpy | tqdm | pandas | colorama | chromalog | natural | dvc (0.90 or later) | sqlparse | sqlalchemy | . Rust . The Rust tools need Rust version 1.40 or later. The easiest way to install this — besides Anaconda — is with rustup. The cargo build tool will automatically download all Rust libraries required. The Rust code does not depend on any specific system libraries. ",
+    "url": "/using/setup.html#import-tool-dependencies",
+    "relUrl": "/using/setup.html#import-tool-dependencies"
+  },"66": {
+    "doc": "Setup",
+    "title": "Database Configuration",
+    "content": "All scripts read database configuration from the DB_URL environment variable, or alternately a config file db.cfg. This file should look like: . [DEFAULT] host = localhost database = bookdata user = user password = password . This file additionally supports branch-specfic configuration sections that will apply to work on different Git branches, e.g.: . [DEFAULT] host = localhost database = bookdata [master] database = bdorig . This setup will use bookdata for most branches, but will connect to bdorig when working from the master branch in the git repository. This file should not be committed to Git. It is ignored in .gitignore. ",
+    "url": "/using/setup.html#database-configuration",
+    "relUrl": "/using/setup.html#database-configuration"
+  },"67": {
+    "doc": "Setup",
+    "title": "Setup",
+    "content": " ",
+    "url": "/using/setup.html",
+    "relUrl": "/using/setup.html"
+  },"68": {
+    "doc": "Source Data",
+    "title": "Downloading Source Data",
+    "content": "These import tools will integrate several data sets. Some of them are auto-downloaded, but others you will need to download yourself and save in the data directory. The data sources are: . | Library of Congress MDSConnect Open MARC Records (auto-downloaded). | LoC MDSConnect Name Authorities (auto-downloaded). | Virtual Internet Authority File MARC 21 XML data (not auto-downloaded). | OpenLibrary Dump (auto-downloaded). | Amazon Ratings ‘ratings only’ data for Books (not auto-downloaded — save CSV file in data). If you use this data, cite the paper on that site. | BookCrossing (auto-downloaded). If you use this data, cite the paper on that site. | GoodReads data from UCSD Book Graph — the GoodReads books, works, authors, and full interaction files (not auto-downloaded - save GZip’d JSON files in data). If you use this data, cite the paper on that site. | . If all files are properly downloaded, ./dvc.sh status data/*.dvc will show that all files are up to date, except for loc-listings.dvc which is ‘always changed’ (it may also display warnings about locked files). $ ./dvc.sh status data/*.dvc data/loc-listings.dvc: always changed $ . See Data Model for details on how each data source appears in the final data. ",
+    "url": "/using/sources.html#downloading-source-data",
+    "relUrl": "/using/sources.html#downloading-source-data"
+  },"69": {
+    "doc": "Source Data",
+    "title": "Source Data",
+    "content": " ",
+    "url": "/using/sources.html",
+    "relUrl": "/using/sources.html"
+  },"70": {
+    "doc": "Status Tracking",
+    "title": "Status Tracking",
+    "content": "The book tools are built around Data Version Control, a tool for managing data processing pipelines. We use the software in a somewhat unusal way due to our use of PostgreSQL as our primary storage. Import is organized into stages that are also tracked in the PostgreSQL database, so that we can get current status information from the DB about the data that has been loaded into it. ",
+    "url": "/implementation/status.html",
+    "relUrl": "/implementation/status.html"
+  },"71": {
+    "doc": "Status Tracking",
+    "title": "Stages and Status",
+    "content": "Because our primary data storage is in a database, and DVC likes to track files, our design is a little unusual for a DVC project. Each stage that produces output in the database (import, index, etc.) is implemented as two stages: . | A primary stage, that produces a .transcript file as output; it works just like any normal DVC stage. | A status stage, that depends on the .transcript file and produces a .status file. This stage is marked as always_run, so it always re-runs even if the transcript is unchanged, so that it can make sure the .status file contains the current state of the database. | . Stages that take database state as input depend on the corresponding .status file, not the .transcript file, so that their need to update is triggered based on the current database state. This wires together all of the dependencies, and uses the current state in the database instead of files that might become out-of-sync with the database to track import status. There are a couple of holes in this design, but it’s the best we can do and it works. The stage name matches the name of the .dvc file. The reason for this somewhat bizarre layoutis that if we just wrote the output files, and the database was reloaded or corrupted, the DVC status-checking logic would not be ableto keep track of it. This double-file design allows us to make subsequent steps depend on the actual results of the import, not our memory of the import in the Git repository. ",
+    "url": "/implementation/status.html#stages-and-status",
+    "relUrl": "/implementation/status.html#stages-and-status"
+  },"72": {
+    "doc": "Status Tracking",
+    "title": "In-Database Status Tracking",
+    "content": "Import steps are tracked in the stage_status table in the database. For completed stages, this can include a key (checksum, UUID, or other identifier) to identify a ‘version’ of the stage. Stages can also have dependencies, which are solely used for computing the status of a stage (all actual dependency relationships are handled by DVC): . | stage_deps tracks stage-to-stage dependencies, to say that one stage used another as input. | stage_file tracks stage-to-file dependencies, to say that a stage used a file as input. | . The source_file table tracks input file checksums. Projects using the book database can also use stage_status to obtain data version information, to see if they are up-to-date. ",
+    "url": "/implementation/status.html#in-database-status-tracking",
+    "relUrl": "/implementation/status.html#in-database-status-tracking"
+  },"73": {
+    "doc": "VIAF",
+    "title": "Virtual Internet Authority File",
+    "content": "We source author data from the Virtual Internet Authority File, as downloaded from their data dumps. This file is slow and error-prone to download, and is not* auto-downloaded. Imported data lives in the viaf schema. | Import Steps | Raw Data | Extracted Author Tables | VIAF Gender Vocabulary | . ",
+    "url": "/data/viaf.html#virtual-internet-authority-file",
+    "relUrl": "/data/viaf.html#virtual-internet-authority-file"
+  },"74": {
+    "doc": "VIAF",
+    "title": "Import Steps",
+    "content": "The import is controlled by the following DVC steps: . schemas/viaf-schema.dvc Run viaf-schema.sql to set up the base schema. import/viaf.dvc Import raw VIAF MARC data from data/viaf-clusters-marc21.xml.gz. index/viaf-index.dvc Run viaf-index.sql to index the MARC data and extract tables. ",
+    "url": "/data/viaf.html#import-steps",
+    "relUrl": "/data/viaf.html#import-steps"
+  },"75": {
+    "doc": "VIAF",
+    "title": "Raw Data",
+    "content": "VIAF data is in MARC 21 Authority Record format. The raw MARC data is imported into the marc_field table with the same format as LOC. ",
+    "url": "/data/viaf.html#raw-data",
+    "relUrl": "/data/viaf.html#raw-data"
+  },"76": {
+    "doc": "VIAF",
+    "title": "Extracted Author Tables",
+    "content": "We extract the following tables for VIAF authors: . author_name The author’s name(s). We insert an author name for each field with tag 700 and subfield code ‘a’. For all author names of the form ‘Family, Given’, we insert an additional record with the form ‘Given Family’ and indicator ‘S’. This helps maximize links. author_gender The author’s gender, from field 375 subfield ‘a’. This is a raw extract of all gender identity assertions in the record; we resolve multiple assertions later in the data integration process. ",
+    "url": "/data/viaf.html#extracted-author-tables",
+    "relUrl": "/data/viaf.html#extracted-author-tables"
+  },"77": {
+    "doc": "VIAF",
+    "title": "VIAF Gender Vocabulary",
+    "content": "The MARC gender field is defined as the author’s gender identity. It allows identities from an open vocabulary, along with start and end dates for the validity of each identity. The Program for Cooperative Cataloging Task Group on Gender in Name Authority Records produced a report with recommendations for how to record this field. Many libraries contributing to the Library of Congress file, from which many VIAF records are sourced, follow these recommendations, but it is not safe to assume they are universally followed by all VIAF contributors. Further, as near as we can tell, the VIAF removes all non-binary gender identities or converts them to ‘unknown’. This data should only be used with great care. We discuss these limitations in the extended preprint. ",
+    "url": "/data/viaf.html#viaf-gender-vocabulary",
+    "relUrl": "/data/viaf.html#viaf-gender-vocabulary"
+  },"78": {
+    "doc": "VIAF",
+    "title": "VIAF",
+    "content": " ",
+    "url": "/data/viaf.html",
+    "relUrl": "/data/viaf.html"
+  }
+}
