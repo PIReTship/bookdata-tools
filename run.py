@@ -21,6 +21,11 @@ from bookdata.db import db_url
 def run_rust():
     # this is a rust command
     del sys.argv[1]
+    # we need to fix up Rust environment
+    sysroot = os.environ.get('CONDA_BUILD_SYSROOT', None)
+    if sysroot:
+        _log.info('setting Rust flags from sysroot')
+        os.environ['RUSTFLAGS'] = f'-L native={sysroot}/usr/lib64 -L native={sysroot}/lib64'
     # build the Rust tools
     # TODO support alternate working directories
     _log.info('compiling Rust tools')
