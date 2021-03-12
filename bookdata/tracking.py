@@ -2,6 +2,7 @@
 Code for supporting import data tracking and relationships.
 """
 
+import sys
 import hashlib
 import logging
 from io import StringIO
