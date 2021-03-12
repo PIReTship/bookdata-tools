@@ -23,7 +23,7 @@ def run_rust():
     del sys.argv[1]
     # we need to fix up Rust environment
     sysroot = os.environ.get('CONDA_BUILD_SYSROOT', None)
-    if sysroot:
+    if sysroot and 'RUSTFLAGS' not in os.environ:
         _log.info('setting Rust flags from sysroot')
         os.environ['RUSTFLAGS'] = f'-L native={sysroot}/usr/lib64 -L native={sysroot}/lib64'
     # build the Rust tools
