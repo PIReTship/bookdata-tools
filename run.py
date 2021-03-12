@@ -16,9 +16,9 @@ sys.path.insert(0, src_dir)
 
 from bookdata import setup, bin_dir
 from bookdata.db import db_url
-setup()
 
-if sys.argv[1] == '--rust':
+
+def run_rust():
     # this is a rust command
     del sys.argv[1]
     # build the Rust tools
@@ -32,8 +32,18 @@ if sys.argv[1] == '--rust':
         os.environ['DB_URL'] = db_url()
     _log.info('running tool %s', sys.argv[1:])
     sp.run([tool] + sys.argv[1:], check=True)
-else:
+
+
+def run_script():
     script = sys.argv[1]
     _log.info('preparing to run scripts.%s', script)
     del sys.argv[1]
     runpy.run_module(f'scripts.{script}', alter_sys=True)
+
+
+if __name__ == '__main__':
+    setup()
+    if sys.argv[1] == '--rust':
+        run_rust()
+    else:
+        run_script()
