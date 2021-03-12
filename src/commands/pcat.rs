@@ -8,11 +8,11 @@ use log::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use sha1::Sha1;
 use anyhow::Result;
+use happylog::set_progress;
 
 use crate::db::{DbOpts, CopyRequest};
 use crate::tracking::{Stage, StageOpts};
 use crate::io::{HashWrite};
-use crate::logging::set_progress;
 use super::Command;
 
 const PB_STYLE: &'static str = "{prefix}: {elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})";

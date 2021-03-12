@@ -13,6 +13,7 @@ use zip::read::{ZipArchive, ZipFile};
 use indicatif::{ProgressBar, ProgressStyle};
 use anyhow::{Result, anyhow};
 use sha1::Sha1;
+use happylog::set_progress;
 
 use ntriple::parser::quiet_line;
 use ntriple::Triple;
@@ -20,7 +21,6 @@ use ntriple::Triple;
 use crate::cleaning::{write_pgencoded};
 use crate::db;
 use crate::tracking::StageOpts;
-use crate::logging;
 use super::Command;
 
 use sink::NodeSink;
@@ -156,7 +156,7 @@ impl Command for ImportNtriples {
     let pbr = pb.wrap_read(member);
     let pbr = in_sf.wrap_read(pbr);
     let pbr = BufReader::new(pbr);
-    let _pbs = logging::set_progress(&pb);
+    let _pbs = set_progress(&pb);
 
     // and let's start reading this stuff!
     let mut lno = 0;

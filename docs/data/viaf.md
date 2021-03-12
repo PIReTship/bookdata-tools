@@ -5,16 +5,12 @@ nav_order: 4
 ---
 
 # Virtual Internet Authority File
-{: .no_toc}
 
 We source author data from the [Virtual Internet Authority File](http://viaf.org), as downloaded from
 their [data dumps](http://viaf.org/viaf/data).  This file is slow and error-prone to download, and is
 not* auto-downloaded.
 
 Imported data lives in the `viaf` schema.
-
-1. TOC
-{:toc}
 
 ## Import Steps
 

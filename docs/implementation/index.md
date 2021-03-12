@@ -1,10 +1,10 @@
 ---
 title: Implementation
 nav_order: 4
+has_children: true
 ---
 
 # Design and Implementation
-{: .no_toc}
 
 These data and integration tools are designed to support several goals:
 
@@ -14,8 +14,11 @@ These data and integration tools are designed to support several goals:
 - Support updates (e.g. new OpenLibrary dumps) by replacing the file and re-running
 - Efficient import and integration
 
-1. TOC
-{:toc}
+```{toctree}
+status
+layout
+dataset
+```
 
 ## Implementation Principles
 
@@ -25,6 +28,7 @@ These goals are realized through a few technology and design decisions:
 - Stage each data source with a schema file, a raw import, and subsequent SQL files that reformat and extract data into more usable format.
 - Implement as much data integration as possible in declarative SQL.
 - Make SQL scripts re-runnable, so they will either refresh or delete and recreate their outputs. Deletes cascading to downstream steps are fine, because the stage runner will re-run those stages anyway.
+
 
 ## DVC Dependency Graph
 

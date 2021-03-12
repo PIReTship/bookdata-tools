@@ -1,0 +1,168 @@
+stages:
+  az-index:
+    cmd: python ../run.py sql-script az-index.sql
+    deps:
+    - az-index.sql
+    - ../import/az-ratings.status
+    - ../integrate/cluster.status
+    outs:
+    - az-index.transcript
+
+  bx-index:
+    cmd: python ../run.py sql-script bx-index.sql
+    deps:
+    - bx-index.sql
+    - ../import/bx-ratings.status
+    - ../integrate/cluster.status
+    outs:
+    - bx-index.transcript
+
+  gr-book-authors:
+    cmd: python ../run.py sql-script gr-book-authors.sql
+    deps:
+    - gr-book-authors.sql
+    - ../integrate/cluster.status
+    - ../import/gr-authors.status
+    - ../import/gr-books.status
+    - gr-index-books.status
+    - ../import/gr-works.status
+    outs:
+    - gr-book-authors.transcript
+
+  gr-book-info:
+    cmd: python ../run.py sql-script gr-book-info.sql
+    deps:
+    - gr-book-info.sql
+    - ../integrate/cluster.status
+    - gr-book-authors.status
+    - ../import/gr-books.status
+    - gr-index-books.status
+    - ../import/gr-works.status
+    outs:
+    - gr-book-info.transcript
+
+  gr-index-books:
+    cmd: python ../run.py sql-script gr-index-books.sql
+    deps:
+    - gr-index-books.sql
+    - ../import/gr-authors.status
+    - ../import/gr-book-genres.status
+    - ../import/gr-books.status
+    - ../import/gr-works.status
+    outs:
+    - gr-index-books.transcript
+
+  gr-index-series:
+    cmd: python ../run.py sql-script gr-index-series.sql
+    deps:
+    - gr-index-series.sql
+    - gr-index-books.status
+    - ../import/gr-book-series.status
+    outs:
+    - gr-index-series.transcript
+
+  gr-index-ratings:
+    cmd: python ../run.py sql-script gr-index-ratings.sql
+    deps:
+    - gr-index-ratings.sql
+    - ../integrate/cluster.status
+    - gr-book-info.status
+    - ../import/gr-interactions.status
+    outs:
+    - gr-index-ratings.transcript
+
+  isbn-norm:
+    cmd: python ../run.py sql-script isbn-norm.sql
+    deps:
+    - isbn-norm.sql
+    - gr-index-books.status
+    - loc-mds-index-books.status
+    - ol-index.status
+    outs:
+    - isbn-norm.transcript
+
+  loc-mds-book-info:
+    cmd: python ../run.py sql-script loc-mds-book-info.sql
+    deps:
+    - loc-mds-book-info.sql
+    - loc-mds-index-books.status
+    outs:
+    - loc-mds-book-info.transcript
+
+  loc-mds-extract-isbns:
+    cmd: python run.py --rust parse-isbns --src-table locmds.book_raw_isbn --out-table
+      locmds.book_extracted_isbn --stage loc-mds-extract-isbns -D loc-mds-books -T
+      loc-mds-extract-isbns.transcript
+    wdir: ..
+    deps:
+    - import/loc-mds-books.status
+    outs:
+    - loc-mds-extract-isbns.transcript
+
+  loc-mds-index-books:
+    cmd: python ../run.py sql-script loc-mds-index-books.sql
+    deps:
+    - loc-mds-index-books.sql
+    - ../import/loc-mds-books.status
+    - loc-mds-extract-isbns.status
+    outs:
+    - loc-mds-index-books.transcript
+
+  loc-mds-index-names:
+    cmd: python ../run.py sql-script loc-mds-index-names.sql
+    deps:
+    - loc-mds-index-names.sql
+    - ../import/loc-mds-names.status
+    outs:
+    - loc-mds-index-names.transcript
+
+  ol-book-info:
+    cmd: python ../run.py sql-script ol-book-info.sql
+    deps:
+    - ol-book-info.sql
+    - ol-index.status
+    outs:
+    - ol-book-info.transcript
+
+  ol-index:
+    cmd: python ../run.py sql-script ol-index.sql
+    deps:
+    - ol-index.sql
+    - ../import/ol-authors.status
+    - ../import/ol-editions.status
+    - ../import/ol-works.status
+    outs:
+    - ol-index.transcript
+
+  viaf-index:
+    cmd: python ../run.py sql-script viaf-index.sql
+    deps:
+    - ../import/viaf.status
+    - viaf-index.sql
+    outs:
+    - viaf-index.transcript
+
+  status:
+    foreach:
+      - az-index
+      - bx-index
+      - gr-book-authors
+      - gr-book-info
+      - gr-index-books
+      - gr-index-series
+      - gr-index-ratings
+      - isbn-norm
+      - loc-mds-book-info
+      - loc-mds-extract-isbns
+      - loc-mds-index-books
+      - loc-mds-index-names
+      - ol-book-info
+      - ol-index
+      - viaf-index
+    do:
+      cmd: python ../run.py stage-status -o ${item}.status ${item}
+      always_changed: true
+      outs:
+      - ${item}.status
+      deps:
+      - ${item}.transcript

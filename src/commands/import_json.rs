@@ -12,12 +12,12 @@ use sha1::Sha1;
 use anyhow::{Result};
 use serde::{Deserialize};
 use toml;
+use happylog::set_progress;
 
 use crate::io::{HashWrite, DelimPrinter};
 use crate::cleaning::*;
 use crate::db::{DbOpts, CopyRequest};
 use crate::tracking::StageOpts;
-use crate::logging::set_progress;
 use super::Command;
 
 /// Process OpenLib data into format suitable for PostgreSQL import.

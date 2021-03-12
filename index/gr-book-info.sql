@@ -1,9 +1,12 @@
 --- #dep gr-books
 --- #dep gr-works
+--- #dep gr-book-authors
 --- #dep gr-index-books
+--- #dep gr-index-ratings
 --- #dep cluster
 --- #table gr.work_title
 --- #table gr.book_pub_date
+--- #table gr.book_interstats
 
 --- #step Create useful GR functions
 CREATE OR REPLACE FUNCTION try_date(year VARCHAR, month VARCHAR, day VARCHAR) RETURNS DATE
@@ -34,6 +37,15 @@ AS SELECT gr_work_rid, (gr_work_data->>'work_id')::int AS gr_work_id,
 FROM gr.raw_work;
 CREATE INDEX gr_work_title_work_idx ON gr.work_title (gr_work_id);
 ANALYZE gr.work_title;
+
+--- #step Extract GoodReads book titles
+DROP MATERIALIZED VIEW IF EXISTS gr.book_title;
+CREATE MATERIALIZED VIEW gr.book_title
+AS SELECT gr_book_rid, (gr_book_data->>'book_id')::int AS gr_book_id,
+  NULLIF(gr_book_data->>'title', '') AS book_title
+FROM gr.raw_book;
+CREATE INDEX gr_book_title_book_idx ON gr.book_title (gr_book_id);
+ANALYZE gr.book_title;
 
 --- #step Extract GoodReads book publication dates
 DROP MATERIALIZED VIEW IF EXISTS gr.book_pub_date;
@@ -68,3 +80,17 @@ AS SELECT gr_work_rid, work_id AS gr_work_id,
 CREATE UNIQUE INDEX gr_wpd_rec_idx ON gr.work_pub_date (gr_work_rid);
 CREATE UNIQUE INDEX gr_wpd_work_idx ON gr.work_pub_date (gr_work_id);
 ANALYZE gr.work_pub_date;
+
+--- #step Create book statistics table
+CREATE MATERIALIZED VIEW IF NOT EXISTS gr.book_interstats AS
+    SELECT gr_book_id,
+        COUNT(gr_interaction_rid) as n_shelves,
+        COUNT(DISTINCT gr_user_rid) as n_users,
+        COUNT(NULLIF(rating, 0)) as n_rates,
+        AVG(NULLIF(rating, 0)) as mean_rate,
+        SUM(CASE WHEN rating > 2 THEN 1 ELSE 0 END) as n_pos_rates
+FROM gr.interaction
+GROUP BY gr_book_id;
+
+CREATE INDEX IF NOT EXISTS gr_bis_book_idx ON gr.book_interstats (gr_book_id);
+ANALYZE gr.book_interstats;

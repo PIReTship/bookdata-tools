@@ -1,4 +1,3 @@
-use anyhow::Result;
 use regex::{Regex, RegexSet, Match, Captures};
 
 /// Single ISBN parsed from a string
@@ -27,12 +26,19 @@ static IGNORES: &'static [&'static str] = &[
 
 /// Definitions for parsing ISBN strings.
 pub struct ParserDefs {
+  /// Matcher for text that may appear before an ISBN
   lead: Regex,
+  /// Matcher for a single ISBN
   isbn: Regex,
+  /// Matcher for a "tag" after an ISBN
   tag: Regex,
+  /// Matcher for separarators between multiple tags
   tag_sep: Regex,
+  /// Matcher for text to skip before possibly reading another ISBN
   tail_skip: Regex,
+  /// Matcher for characters to remove from a parsed ISBN
   clean: Regex,
+  /// Matcher for text that is known not to contain any parseable ISBNs
   unmatch_ignore: RegexSet
 }
 
@@ -77,6 +83,7 @@ pub struct IsbnParser<'p, 's> {
   position: usize
 }
 
+#[allow(unused)]
 fn preclean(s: &str) -> String {
   let mut res = String::with_capacity(s.len());
   for c in s.chars() {

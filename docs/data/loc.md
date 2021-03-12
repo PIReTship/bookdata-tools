@@ -1,20 +1,14 @@
 ---
 title: Library of Congress
-parent: Data Model
-nav_order: 2
 ---
 
 # Library of Congress
-{: .no_toc}
 
 One of our sources of book data is the Library of Congress [MDSConnect Books](https://www.loc.gov/cds/products/MDSConnect-books_all.html) bibliography records.
 
 We download and import the XML versions of these files.
 
 Imported data lives under the `locmds` schema.
-
-1. TOC
-{:toc}
 
 ## Data Model Diagram
 
@@ -43,7 +37,6 @@ The import is controlled by the following DVC steps:
 :   Run `loc-mds-book-info.sql` to extract additional book data into tables.
 
 ## Raw Book Data
-{: #raw}
 
 The `locmds.book_marc_fields` table contains the raw data imported from the MARC files, as MARC fields.  The LOC book data follows the [MARC 21 Bibliographic Data format](https://www.loc.gov/marc/bibliographic/); the various tags, field codes, and indicators are defined there.  This table is not terribly useful on its own, but it is the source from which the other tables are derived.
 

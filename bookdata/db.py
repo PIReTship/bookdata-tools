@@ -435,7 +435,7 @@ class _LoadThread(threading.Thread):
             cur.copy_expert(self.query, self.chan)
 
 
-def load_table(dbc, query):
+def load_table(dbc, query, **kwargs):
     """
     Load a query into a Pandas data frame.
 
@@ -446,7 +446,7 @@ def load_table(dbc, query):
     q = sql.SQL(query)
     thread = _LoadThread(dbc, cq.format(q))
     thread.start()
-    data = pd.read_csv(thread.reader)
+    data = pd.read_csv(thread.reader, **kwargs)
     thread.join()
     return data
 

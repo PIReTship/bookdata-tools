@@ -5,7 +5,6 @@ nav_order: 6
 ---
 
 # Amazon Ratings
-{: .no_toc}
 
 The [Amazon reviews data set](http://jmcauley.ucsd.edu/data/amazon/) consists of user-provided
 reviews and ratings for a variety of products.
@@ -15,9 +14,6 @@ Currently we import the ratings-only data from the Books segment of the 2014 dat
 **If you use this data, cite the paper(s) documented on the data set web site.**
 
 Imported data lives in the `az` schema.  The source files are not automatically downloaded.
-
-1. TOC
-{:toc}
 
 ## Data Model Diagram
 
