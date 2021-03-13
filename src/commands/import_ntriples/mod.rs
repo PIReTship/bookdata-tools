@@ -5,6 +5,7 @@ use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
 use std::fs::File;
 use std::path::PathBuf;
+use std::mem::drop;
 
 use log::*;
 
@@ -177,6 +178,8 @@ impl Command for ImportNtriples {
       };
     }
     pb.finish();
+    drop(_pbs);
+    drop(pb);
 
     // Record stage data and finish up
     let hash = in_sf.record()?;
