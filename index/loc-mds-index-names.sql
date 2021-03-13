@@ -5,7 +5,7 @@ CREATE INDEX IF NOT EXISTS name_marc_field_rec_idx ON locmds.name_marc_field (re
 --- #step Index LOC author genders
 DROP MATERIALIZED VIEW IF EXISTS locmds.author_gender;
 CREATE MATERIALIZED VIEW locmds.author_gender
-AS SELECT rec_id, contents AS gender
+AS SELECT rec_id, LOWER(TRIM(contents)) AS gender
 FROM locmds.name_marc_field
 WHERE tag = '375' AND sf_code = 'a';
 CREATE INDEX author_gender_rec_idx ON locmds.author_gender (rec_id);
