@@ -87,11 +87,11 @@ CREATE MATERIALIZED VIEW locid.skos_gender AS
 SELECT nt.object_uuid AS node_id, l.label
 FROM
   -- author triple
-  locid.auth_triple nt
+  locid.auth_triples nt
   -- author object to exclude
   LEFT JOIN locid.nodes ton ON (nt.object_uuid = ton.node_id)
   --- node type triples
-  JOIN locid.auth_triple tt ON (nt.object_uuid = tt.subject_uuid)
+  JOIN locid.auth_triples tt ON (nt.object_uuid = tt.subject_uuid)
   --- node labels
   JOIN locid.auth_node_label l ON (l.subject_uuid = nt.object_uuid)
 WHERE
