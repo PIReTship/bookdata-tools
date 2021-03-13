@@ -181,7 +181,9 @@ impl Command for ImportNtriples {
     // Record stage data and finish up
     let hash = in_sf.record()?;
     writeln!(stage, "READ {:?} {} {}", self.infile, nrecs, hash)?;
-    stage.end(&None)?;
+    let out_hash = import.hash.hexdigest();
+    writeln!(stage, "WRITE {}", hash)?;
+    stage.end(&Some(out_hash))?;
 
     Ok(())
   }
