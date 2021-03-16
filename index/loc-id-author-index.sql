@@ -1,4 +1,7 @@
 --- #dep loc-id-triple-names
+--- #dep loc-id-genders
+--- #table locid.auth_name_rwo
+--- #table locid.auth_entity
 
 --- #step Index authority / RWO links
 DROP MATERIALIZED VIEW IF EXISTS locid.auth_name_rwo CASCADE;
