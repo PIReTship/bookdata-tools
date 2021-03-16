@@ -10,6 +10,7 @@ pub mod parse_isbns;
 pub mod pcat;
 pub mod hash;
 pub mod info;
+pub mod cluster_graph;
 
 pub fn commands<'a>() -> Vec<CmdEntry<'a>> {
   vec![
@@ -20,6 +21,7 @@ pub fn commands<'a>() -> Vec<CmdEntry<'a>> {
     parse_marc::ParseMarc::get_entry(),
     parse_isbns::ParseISBNs::get_entry(),
     hash::Hash::get_entry(),
-    info::Info::get_entry()
+    info::Info::get_entry(),
+    cluster_graph::ClusterGraph::get_entry()
   ]
 }

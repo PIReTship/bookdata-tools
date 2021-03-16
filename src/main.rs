@@ -2,6 +2,8 @@ mod cleaning;
 mod tsv;
 mod db;
 mod io;
+mod codes;
+mod graph;
 mod tracking;
 mod commands;
 

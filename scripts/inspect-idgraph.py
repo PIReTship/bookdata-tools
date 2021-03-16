@@ -109,7 +109,7 @@ def graph(opts):
 def full_graph(opts):
     gl = GraphLoader()
     with db.engine().connect() as cxn:
-        g = gl.load_minimal_graph(cxn)
+        g = gl.load_graph(cxn, False)
 
 
     ofn = opts['-o']
