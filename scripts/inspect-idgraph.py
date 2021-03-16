@@ -4,8 +4,6 @@ Inspect a book cluster.
 Usage:
     inspect-idgraph.py [options] --stats
     inspect-idgraph.py [options] --records CLUSTER
-    inspect-idgraph.py [options] --graph CLUSTER
-    inspect-idgraph.py [options] --full-graph
 
 Options:
     -o FILE
@@ -25,8 +23,7 @@ from docopt import docopt
 
 import pandas as pd
 
-from bookdata import tracking, db, script_log
-from bookdata.graph import GraphLoader
+from bookdata import db, script_log
 
 
 def stats(dbc, out, opts):
@@ -92,45 +89,15 @@ def records(dbc, out, opts):
     bc_recs.to_csv(out, index=False)
 
 
-def graph(opts):
-    cluster = opts['CLUSTER']
-    _log.info('exporting graph for cluster %s', cluster)
-
-    gl = GraphLoader()
-    with db.engine().connect() as cxn:
-        gl.set_cluster(cluster, cxn)
-        g = gl.load_graph(cxn, True)
-
-    ofn = opts['-o']
-    _log.info('saving graph to %s', ofn)
-    g.save(ofn)
-
-
-def full_graph(opts):
-    gl = GraphLoader()
-    with db.engine().connect() as cxn:
-        g = gl.load_graph(cxn, False)
-
-
-    ofn = opts['-o']
-    _log.info('saving graph to %s', ofn)
-    g.save(ofn)
-
-
 _log = script_log(__name__)
 opts = docopt(__doc__)
 
-if opts['--full-graph']:
-    full_graph(opts)
-elif opts['--graph']:
-    graph(opts)
+if opts['-o']:
+    out = open(opts['-o'], 'w', encoding='utf8')
 else:
-    if opts['-o']:
-        out = open(opts['-o'], 'w', encoding='utf8')
-    else:
-        out = sys.stdout
-    with db.connect() as dbc:
-        if opts['--stats']:
-            stats(dbc, out, opts)
-        elif opts['--records']:
-            records(dbc, out, opts)
+    out = sys.stdout
+with db.connect() as dbc:
+    if opts['--stats']:
+        stats(dbc, out, opts)
+    elif opts['--records']:
+        records(dbc, out, opts)
