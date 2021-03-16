@@ -1,5 +1,15 @@
 --- #dep loc-id-triple-names
 
+--- #step Index authority / RWO links
+DROP MATERIALIZED VIEW IF EXISTS locid.auth_name_rwo CASCADE;
+CREATE MATERIALIZED VIEW locid.auth_name_rwo AS
+SELECT subject_uuid AS auth_uuid, object_uuid AS rwo_uuid
+FROM locid.auth_triples
+WHERE pred_uuid = node_uuid('http://www.loc.gov/mads/rdf/v1#identifiesRWO');
+CREATE INDEX auth_rwo_auth_idx ON locid.auth_name_rwo (auth_uuid);
+CREATE INDEX auth_rwo_rwo_idx ON locid.auth_name_rwo (rwo_uuid);
+ANALYZE locid.auth_name_rwo;
+
 --- #step Index authority entities
 DROP MATERIALIZED VIEW IF EXISTS locid.auth_entity CASCADE;
 CREATE MATERIALIZED VIEW locid.auth_entity AS
@@ -7,7 +17,6 @@ SELECT ant.subject_id AS auth_id, sn.node_uuid AS auth_uuid, sn.node_iri AS auth
 FROM locid.auth_node_triples ant
 JOIN locid.nodes sn ON (ant.subject_id = sn.node_id)
 JOIN locid.nodes pn ON (ant.pred_id = pn.node_id)
-LEFT OUTER JOIN locid.nodes obn ON (ant.object_uuid = obn.node_uuid)
 WHERE pn.node_iri = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
   AND ant.object_uuid = node_uuid('http://www.loc.gov/mads/rdf/v1#Authority');
 CREATE INDEX auth_entity_idx ON locid.auth_entity (auth_id);
@@ -43,8 +52,8 @@ CREATE TABLE IF NOT EXISTS locid.auth_node_label (
 INSERT INTO locid.auth_node_label
 SELECT DISTINCT subject_uuid, lit_value
 FROM locid.auth_literals
-JOIN locid.node_aliases pa ON (pred_uuid = pa.node_uuid)
-WHERE node_alias IN ('label', 'auth-label');
+WHERE pred_uuid = node_uuid('http://www.w3.org/2000/01/rdf-schema#label')
+   OR pred_uuid = node_uuid('http://www.loc.gov/mads/rdf/v1#authoritativeLabel');
 
 CREATE INDEX IF NOT EXISTS auth_node_label_subj_idx
 ON locid.auth_node_label (subject_uuid);
@@ -75,29 +84,12 @@ CREATE INDEX auth_node_count_object_node_idx ON locid.auth_node_count_object (no
 CREATE INDEX auth_node_count_object_node_uuidx ON locid.auth_node_count_object (node_uuid);
 ANALYZE locid.auth_node_count_object;
 
---- #step Summarize gender data
-CREATE MATERIALIZED VIEW locid.mads_gender_summary AS
-SELECT COUNT(t.subject_uuid) AS n_subjects, o.node_id, o.node_uuid, o.node_iri, l.label
-FROM locid.auth_triples t
-JOIN locid.node_aliases pa ON (pred_uuid = pa.node_uuid)
-JOIN locid.nodes o ON (object_uuid = o.node_uuid)
-LEFT JOIN locid.auth_node_label l ON (object_uuid = l.subject_uuid)
-WHERE pa.node_alias = 'gender'
-GROUP BY o.node_id, o.node_iri, l.label;
-
-CREATE MATERIALIZED VIEW locid.skos_gender AS
-SELECT nt.object_uuid AS node_id, l.label
-FROM
-  -- author triple
-  locid.auth_triples nt
-  -- author object to exclude
-  LEFT JOIN locid.nodes ton ON (nt.object_uuid = ton.node_id)
-  --- node type triples
-  JOIN locid.auth_triples tt ON (nt.object_uuid = tt.subject_uuid)
-  --- node labels
-  JOIN locid.auth_node_label l ON (l.subject_uuid = nt.object_uuid)
-WHERE
-  nt.pred_uuid = locid.common_node('gender')
-  AND ton.node_id IS NULL
-  AND tt.pred_uuid = locid.common_node('type')
-  AND tt.object_uuid = locid.common_node('concept');
+--- #step Get entity genders
+DROP MATERIALIZED VIEW IF EXISTS locid.auth_gender;
+CREATE MATERIALIZED VIEW locid.auth_gender
+AS SELECT auth_id, auth_uuid, rwo_uuid, gn.node_uuid AS gender_uuid
+FROM locid.auth_entity
+JOIN locid.auth_name_rwo USING (auth_uuid)
+JOIN locid.auth_triples ON (rwo_uuid = subject_uuid)
+JOIN locid.gender_nodes gn ON (object_uuid = gn.node_uuid)
+WHERE pred_uuid = node_uuid('http://www.loc.gov/mads/rdf/v1#gender');
