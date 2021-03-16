@@ -2,7 +2,7 @@
 --- #dep gr-works
 --- #dep gr-book-authors
 --- #dep gr-index-books
---- #dep gr-index-ratings
+--- #dep gr-index-ratings`
 --- #dep cluster
 --- #table gr.work_title
 --- #table gr.book_pub_date
