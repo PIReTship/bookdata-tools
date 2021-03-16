@@ -2,7 +2,7 @@
 --- #table locid.genders
 
 --- #step Create gender table
-DROP MATERIALIZED VIEW IF EXISTS locid.gender_nodes;
+DROP MATERIALIZED VIEW IF EXISTS locid.gender_nodes CASCADE;
 CREATE MATERIALIZED VIEW locid.gender_nodes
 AS SELECT DISTINCT subject_uuid AS node_uuid, su.node_iri, label
     FROM locid.auth_triples
