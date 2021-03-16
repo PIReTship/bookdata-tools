@@ -112,6 +112,7 @@ impl <'p, 's> IsbnParser<'p, 's> {
   }
 
   /// See if a regex matches.
+  #[allow(dead_code)]
   fn peek(&self, rex: &Regex) -> Option<Match> {
     let slice = self.remaining();
     rex.find(slice)
@@ -142,6 +143,7 @@ impl <'p, 's> IsbnParser<'p, 's> {
     self.position += n;
   }
 
+  #[cfg(test)]
   fn is_empty(&self) -> bool {
     self.position == self.string.len()
   }

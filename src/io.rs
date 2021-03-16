@@ -1,8 +1,6 @@
 use std::io;
 use sha1::Sha1;
 
-use log::*;
-
 /// Write wrapper that computes Sha1 checksums of the data written.
 pub struct HashWrite<'a, W: io::Write> {
   writer: W,

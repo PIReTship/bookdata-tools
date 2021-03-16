@@ -2,16 +2,25 @@ pub struct NS<'a>(&'a str, i32);
 
 const NS_MULT_BASE: i32 = 100000000;
 
+#[allow(dead_code)]
 pub const NS_WORK: NS<'static> = NS("OL-W", 1);
+#[allow(dead_code)]
 pub const NS_EDITION: NS<'static> = NS("OL-E", 2);
+#[allow(dead_code)]
 pub const NS_LOC_REC: NS<'static> = NS("LOC", 3);
+#[allow(dead_code)]
 pub const NS_GR_WORK: NS<'static> = NS("GR-W", 4);
+#[allow(dead_code)]
 pub const NS_GR_BOOK: NS<'static> = NS("GR-B", 5);
+#[allow(dead_code)]
 pub const NS_LOC_WORK: NS<'static> = NS("LOC-W", 6);
+#[allow(dead_code)]
 pub const NS_LOC_INSTANCE: NS<'static> = NS("LOC-I", 7);
+#[allow(dead_code)]
 pub const NS_ISBN: NS<'static> = NS("ISBN", 9);
 
 impl <'a> NS<'a> {
+  #[allow(dead_code)]
   pub fn name(&'a self) -> &'a str {
     self.0
   }
@@ -24,6 +33,7 @@ impl <'a> NS<'a> {
     self.code() * NS_MULT_BASE
   }
 
+  #[allow(dead_code)]
   pub fn to_code(&'a self, n: i32) -> i32 {
     n + self.base()
   }
