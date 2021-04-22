@@ -3,6 +3,7 @@
 --- #dep gr-index-ratings
 --- #dep cluster
 --- #dep loc-mds-cluster
+--- #dep loc-id-author-index
 --- #dep viaf-index
 
 --- Schema for consolidating and calibrating author gender info
@@ -52,13 +53,13 @@ CREATE INDEX IF NOT EXISTS cluster_first_author_name_cluster_idx ON cluster_firs
 CREATE INDEX IF NOT EXISTS cluster_first_author_name_idx ON cluster_first_author_name (author_name);
 ANALYZE cluster_first_author_name;
 
---- #step Compute genders of first authors form all available data
-CREATE TABLE IF NOT EXISTS cluster_first_author_gender (
+--- #step Compute genders of first authors form all available VIAF data
+CREATE TABLE IF NOT EXISTS viaf.cluster_first_author_gender (
   cluster INTEGER NOT NULL,
   gender VARCHAR NOT NULL
 );
-TRUNCATE cluster_first_author_gender;
-INSERT INTO cluster_first_author_gender
+TRUNCATE viaf.cluster_first_author_gender;
+INSERT INTO viaf.cluster_first_author_gender
   SELECT cluster,
     case
     when count(an.author_name) = 0 then 'no-loc-author'
@@ -71,8 +72,8 @@ INSERT INTO cluster_first_author_gender
     LEFT JOIN viaf.author_name vn ON (name = author_name)
     LEFT JOIN viaf.author_gender vg ON (vn.rec_id = vg.rec_id)
   GROUP BY cluster;
-CREATE UNIQUE INDEX IF NOT EXISTS cluster_first_author_gender_book_idx ON cluster_first_author_gender (cluster);
-ANALYZE cluster_first_author_gender;
+CREATE UNIQUE INDEX IF NOT EXISTS cluster_first_author_gender_book_idx ON viaf.cluster_first_author_gender (cluster);
+ANALYZE viaf.cluster_first_author_gender;
 
 --- #step Save stage deps
 INSERT INTO stage_dep (stage_name, dep_name, dep_key)
