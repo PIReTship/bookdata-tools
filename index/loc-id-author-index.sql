@@ -49,20 +49,37 @@ ANALYZE locid.auth_entity;
 --- #step Create auth labels
 CREATE TABLE IF NOT EXISTS locid.auth_node_label (
   subject_uuid UUID NOT NULL,
+  pred_uuid UUID,
   label VARCHAR NOT NULL
 );
 
 INSERT INTO locid.auth_node_label
-SELECT DISTINCT subject_uuid, lit_value
+SELECT DISTINCT subject_uuid, pred_uuid, lit_value
 FROM locid.auth_literals
 WHERE pred_uuid = node_uuid('http://www.w3.org/2000/01/rdf-schema#label')
    OR pred_uuid = node_uuid('http://www.loc.gov/mads/rdf/v1#authoritativeLabel');
+
 
 CREATE INDEX IF NOT EXISTS auth_node_label_subj_idx
 ON locid.auth_node_label (subject_uuid);
 CREATE INDEX IF NOT EXISTS auth_node_label_lbl_idx
 ON locid.auth_node_label (label);
 ANALYZE locid.auth_node_label;
+
+--- #step Index author names
+DROP MATERIALIZED VIEW IF EXISTS locid.auth_name CASCADE;
+CREATE MATERIALIZED VIEW locid.auth_name (auth_uuid, source, name) AS
+SELECT auth_uuid, 0, label AS name
+FROM locid.auth_entity
+JOIN locid.auth_node_label ON (auth_uuid = subject_uuid)
+UNION DISTINCT
+SELECT auth_uuid, 1, regexp_replace(label, '^(.*), (.*)', '\2 \1') AS name
+FROM locid.auth_entity
+JOIN locid.auth_node_label ON (auth_uuid = subject_uuid);
+
+CREATE INDEX auth_name_auth_idx ON locid.auth_name (auth_uuid);
+CREATE INDEX auth_name_idx ON locid.auth_name (name);
+ANALYZE locid.auth_name;
 
 --- #step Count node occurrences in subject & object positions
 DROP MATERIALIZED VIEW IF EXISTS locid.auth_node_count_subject CASCADE;
@@ -96,3 +113,12 @@ JOIN locid.auth_name_rwo USING (auth_uuid)
 JOIN locid.auth_triples ON (rwo_uuid = subject_uuid)
 JOIN locid.gender_nodes gn ON (object_uuid = gn.node_uuid)
 WHERE pred_uuid = node_uuid('http://www.loc.gov/mads/rdf/v1#gender');
+
+--- #step Count entities by gender
+CREATE TABLE locid.gender_stats AS
+SELECT gender_uuid, node_iri, label, COUNT(DISTINCT auth_uuid) AS entity_count
+FROM locid.auth_gender
+JOIN locid.nodes ON (gender_uuid = node_uuid)
+LEFT JOIN locid.auth_node_label ON (gender_uuid = subject_uuid)
+GROUP BY gender_uuid, node_iri, label
+ORDER BY entity_count DESC;
