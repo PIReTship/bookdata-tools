@@ -102,7 +102,7 @@ def record_file(cur, file, hash, stage=None):
     if hasattr(cur, 'cursor'):
         # this is a connection
         with cur, cur.cursor() as c:
-            return record_file(c, stage)
+            return record_file(c, file, hash, stage)
     _log.info('recording checksum %s for file %s', hash, file)
     cur.execute("""
         INSERT INTO source_file (filename, checksum)

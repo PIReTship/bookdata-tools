@@ -75,6 +75,28 @@ INSERT INTO viaf.cluster_first_author_gender
 CREATE UNIQUE INDEX IF NOT EXISTS cluster_first_author_gender_book_idx ON viaf.cluster_first_author_gender (cluster);
 ANALYZE viaf.cluster_first_author_gender;
 
+--- #step Compute genders of first authors form all available LOCID data
+CREATE TABLE IF NOT EXISTS locid.cluster_first_author_gender (
+  cluster INTEGER NOT NULL,
+  gender VARCHAR NOT NULL
+);
+TRUNCATE locid.cluster_first_author_gender;
+INSERT INTO locid.cluster_first_author_gender
+  SELECT cluster,
+    case
+    when count(an.author_name) = 0 then 'no-loc-author'
+    when count(vn.rec_id) = 0 then 'no-viaf-author'
+    when count(vg.gender) = 0 then 'no-gender'
+    else resolve_gender(vg.gender)
+    end AS gender
+  FROM (SELECT DISTINCT cluster FROM isbn_cluster WHERE cluster < bc_of_isbn(0)) cl -- ISBN-only recs aren't useful
+    LEFT JOIN cluster_first_author_name an USING (cluster)
+    LEFT JOIN locid.auth_name an ON (name = author_name)
+    LEFT JOIN locid.auth_gender ag ON (an.auth_uuid = ag.auth_uuid)
+  GROUP BY cluster;
+CREATE UNIQUE INDEX IF NOT EXISTS cluster_first_author_gender_book_idx ON viaf.cluster_first_author_gender (cluster);
+ANALYZE viaf.cluster_first_author_gender;
+
 --- #step Save stage deps
 INSERT INTO stage_dep (stage_name, dep_name, dep_key)
 SELECT 'author-info', stage_name, stage_key

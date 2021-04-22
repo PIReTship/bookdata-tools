@@ -113,12 +113,16 @@ JOIN locid.auth_name_rwo USING (auth_uuid)
 JOIN locid.auth_triples ON (rwo_uuid = subject_uuid)
 JOIN locid.gender_nodes gn ON (object_uuid = gn.node_uuid)
 WHERE pred_uuid = node_uuid('http://www.loc.gov/mads/rdf/v1#gender');
+CREATE INDEX auth_gender_auth_idx ON locid.auth_gender (auth_id);
+CREATE INDEX auth_gender_auth_uuidx ON locid.auth_gender (auth_uuid);
+ANALYZE locid.auth_gender;
 
 --- #step Count entities by gender
-CREATE TABLE locid.gender_stats AS
+DROP MATERIALIZED VIEW IF EXISTS locid.gender_stats;
+CREATE MATERIALIZED VIEW locid.gender_stats AS
 SELECT gender_uuid, node_iri, label, COUNT(DISTINCT auth_uuid) AS entity_count
 FROM locid.auth_gender
-JOIN locid.nodes ON (gender_uuid = node_uuid)
 LEFT JOIN locid.auth_node_label ON (gender_uuid = subject_uuid)
+JOIN locid.nodes ON (gender_uuid = node_uuid)
 GROUP BY gender_uuid, node_iri, label
 ORDER BY entity_count DESC;
