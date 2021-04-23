@@ -1,6 +1,7 @@
 use std::io::prelude::*;
 use std::io::{BufReader};
 use std::fs::{File};
+use std::str::FromStr;
 use std::sync::Arc;
 use std::path::PathBuf;
 use std::mem::drop;
@@ -43,6 +44,14 @@ struct RawInteraction {
   is_read: bool,
   rating: i32,
   // date_added: String
+}
+
+impl FromStr for RawInteraction {
+  type Err = serde_json::Error;
+
+  fn from_str(s: &str) -> serde_json::Result<RawInteraction> {
+    return from_str(s)
+  }
 }
 
 struct IntRecord {
