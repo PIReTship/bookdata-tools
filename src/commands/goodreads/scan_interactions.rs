@@ -96,7 +96,7 @@ impl TableWrite for GRIWrite {
       Field::new("rec_id", DataType::UInt64, false),
       Field::new("user_id", DataType::UInt64, false),
       Field::new("book_id", DataType::UInt64, false),
-      Field::new("is_read", DataType::Boolean, false),
+      Field::new("is_read", DataType::UInt8, false),
       Field::new("rating", DataType::Int8, true),
     ])
   }
