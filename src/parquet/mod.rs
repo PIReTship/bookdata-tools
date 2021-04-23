@@ -1,3 +1,3 @@
 pub mod writer;
 
-pub use writer::{TableWrite, TableWriter};
+pub use writer::{TableRow, TableWriter};

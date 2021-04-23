@@ -38,11 +38,19 @@ pub struct ScanInteractions {
 struct RawInteraction {
   user_id: String,
   book_id: String,
-  review_id: String,
+  // review_id: String,
   #[serde(rename="isRead")]
   is_read: bool,
   rating: i32,
-  date_added: String
+  // date_added: String
+}
+
+struct IntRecord {
+  rec_id: u64,
+  user_id: u64,
+  book_id: u64,
+  is_read: bool,
+  rating: Option<i8>,
 }
 
 struct GRIBatch {
@@ -53,43 +61,8 @@ struct GRIBatch {
   rating: Int8Builder,
 }
 
-struct GRIWrite {
-  n_recs: u64,
-  user_ids: IdIndex<Vec<u8>>,
-}
-
-impl GRIWrite {
-  fn new() -> GRIWrite {
-    GRIWrite {
-      n_recs: 0,
-      user_ids: IdIndex::new()
-    }
-  }
-}
-
-impl TableWrite for GRIWrite {
+impl TableRow for IntRecord {
   type Batch = GRIBatch;
-  type Record = RawInteraction;
-
-  fn new_builder(cap: usize) -> GRIBatch {
-    GRIBatch {
-      rec_id: UInt64Builder::new(cap),
-      user_id: UInt64Builder::new(cap),
-      book_id: UInt64Builder::new(cap),
-      is_read: UInt8Builder::new(cap),
-      rating: Int8Builder::new(cap),
-    }
-  }
-
-  fn finish(&self, batch: &mut GRIBatch) -> Vec<ArrayRef> {
-    vec![
-      Arc::new(batch.rec_id.finish()),
-      Arc::new(batch.user_id.finish()),
-      Arc::new(batch.book_id.finish()),
-      Arc::new(batch.is_read.finish()),
-      Arc::new(batch.rating.finish()),
-    ]
-  }
 
   fn schema() -> Schema {
     Schema::new(vec![
@@ -101,21 +74,32 @@ impl TableWrite for GRIWrite {
     ])
   }
 
-  fn write(&mut self, row: &RawInteraction, batch: &mut GRIBatch) -> Result<()> {
-    let rid = self.n_recs + 1;
-    self.n_recs += 1;
-    let key = hex::decode(row.user_id.as_bytes())?;
-    let uid = self.user_ids.intern(key);
-    let bid: u64 = row.book_id.parse()?;
-    batch.rec_id.append_value(rid)?;
-    batch.user_id.append_value(uid)?;
-    batch.book_id.append_value(bid)?;
-    batch.is_read.append_value(row.is_read as u8)?;
-    if row.rating > 0 {
-      batch.rating.append_value(row.rating as i8)?;
-    } else {
-      batch.rating.append_null()?;
+  fn new_batch(cap: usize) -> GRIBatch {
+    GRIBatch {
+      rec_id: UInt64Builder::new(cap),
+      user_id: UInt64Builder::new(cap),
+      book_id: UInt64Builder::new(cap),
+      is_read: UInt8Builder::new(cap),
+      rating: Int8Builder::new(cap),
     }
+  }
+
+  fn finish_batch(batch: &mut GRIBatch) -> Vec<ArrayRef> {
+    vec![
+      Arc::new(batch.rec_id.finish()),
+      Arc::new(batch.user_id.finish()),
+      Arc::new(batch.book_id.finish()),
+      Arc::new(batch.is_read.finish()),
+      Arc::new(batch.rating.finish()),
+    ]
+  }
+
+  fn write_to_batch(&self, batch: &mut GRIBatch) -> Result<()> {
+    batch.rec_id.append_value(self.rec_id)?;
+    batch.user_id.append_value(self.user_id)?;
+    batch.book_id.append_value(self.book_id)?;
+    batch.is_read.append_value(self.is_read as u8)?;
+    batch.rating.append_option(self.rating)?;
     Ok(())
   }
 }
@@ -136,13 +120,28 @@ impl Command for ScanInteractions {
     let bfs = BufReader::new(gzf);
 
     info!("writing interactions to {:?}", outfn);
-    let mut tw = GRIWrite::new();
-    let mut writer = TableWriter::open(outfn, &mut tw)?;
+    let mut users = IdIndex::new();
+    let mut writer = TableWriter::open(outfn)?;
+    let mut n_recs = 0;
 
     for line in bfs.lines() {
       let line = line?;
-      let raw: RawInteraction = from_str(&line)?;
-      writer.write(&raw)?;
+      let row: RawInteraction = from_str(&line)?;
+      let rec_id = n_recs + 1;
+      n_recs += 1;
+      let key = hex::decode(row.user_id.as_bytes())?;
+      let user_id = users.intern(key);
+      let book_id: u64 = row.book_id.parse()?;
+      let record = IntRecord {
+        rec_id, user_id, book_id,
+        is_read: row.is_read,
+        rating: if row.rating > 0 {
+          Some(row.rating as i8)
+        } else {
+          None
+        }
+      };
+      writer.write(&record)?;
     }
     pb.finish_and_clear();
     drop(_pbl);

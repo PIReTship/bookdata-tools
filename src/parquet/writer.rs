@@ -13,37 +13,35 @@ use anyhow::Result;
 
 const BATCH_SIZE: usize = 1000000;
 
-/// Trait for serializing records into batches
-pub trait TableWrite {
+/// Trait for serializing records into Parquet tables
+pub trait TableRow {
   type Batch;
-  type Record;
-
-  /// Create a new Batch Builder
-  fn new_builder(cap: usize) -> Self::Batch;
-
-  /// Get a batch's arrays and reset the builder.
-  fn finish(&self, batch: &mut Self::Batch) -> Vec<ArrayRef>;
 
   /// Get the schema
   fn schema() -> Schema;
 
+  /// Create a new Batch Builder
+  fn new_batch(cap: usize) -> Self::Batch;
+
+  /// Get a batch's arrays and reset the builder.
+  fn finish_batch(batch: &mut Self::Batch) -> Vec<ArrayRef>;
+
   /// Add a record to a batch builder
-  fn write(&mut self, row: &Self::Record, batch: &mut Self::Batch) -> Result<()>;
+  fn write_to_batch(&self, batch: &mut Self::Batch) -> Result<()>;
 }
 
 /// Parquet table writer
-pub struct TableWriter<'a, W: TableWrite> {
-  tablew: &'a mut W,
+pub struct TableWriter<R: TableRow> {
   schema: SchemaRef,
   writer: ArrowWriter<File>,
-  batch: W::Batch,
+  batch: R::Batch,
   batch_count: usize,
   row_count: usize
 }
 
-impl <'a, W> TableWriter<'a, W> where W: TableWrite {
-  pub fn open<P: AsRef<Path>>(path: P, tw: &'a mut W) -> Result<Self> {
-    let schema = W::schema();
+impl <R> TableWriter<R> where R: TableRow {
+  pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
+    let schema = R::schema();
     let schema = Arc::new(schema);
     let file = OpenOptions::new().create(true).truncate(true).write(true).open(path)?;
     let props = WriterProperties::builder();
@@ -51,15 +49,15 @@ impl <'a, W> TableWriter<'a, W> where W: TableWrite {
     let props = props.build();
     let writer = ArrowWriter::try_new(file, schema.clone(), Some(props))?;
     Ok(TableWriter {
-      tablew: tw, schema, writer,
-      batch: W::new_builder(BATCH_SIZE),
+      schema, writer,
+      batch: R::new_batch(BATCH_SIZE),
       batch_count: 0,
       row_count: 0,
     })
   }
 
-  pub fn write(&mut self, row: &W::Record) -> Result<()> {
-    self.tablew.write(row, &mut self.batch)?;
+  pub fn write(&mut self, row: &R) -> Result<()> {
+    row.write_to_batch(&mut self.batch)?;
     self.batch_count += 1;
     self.row_count += 1;
     if self.batch_count >= BATCH_SIZE {
@@ -70,7 +68,7 @@ impl <'a, W> TableWriter<'a, W> where W: TableWrite {
 
   fn write_batch(&mut self) -> Result<()> {
     debug!("writing batch");
-    let cols = self.tablew.finish(&mut self.batch);
+    let cols = R::finish_batch(&mut self.batch);
     let batch = RecordBatch::try_new(self.schema.clone(), cols)?;
     self.writer.write(&batch)?;
     self.batch_count = 0;
