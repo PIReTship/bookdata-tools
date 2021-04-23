@@ -49,7 +49,7 @@ struct GRIBatch {
   rec_id: UInt64Builder,
   user_id: UInt64Builder,
   book_id: UInt64Builder,
-  is_read: BooleanBuilder,
+  is_read: UInt8Builder,
   rating: Int8Builder,
 }
 
@@ -76,7 +76,7 @@ impl TableWrite for GRIWrite {
       rec_id: UInt64Builder::new(cap),
       user_id: UInt64Builder::new(cap),
       book_id: UInt64Builder::new(cap),
-      is_read: BooleanBuilder::new(cap),
+      is_read: UInt8Builder::new(cap),
       rating: Int8Builder::new(cap),
     }
   }
@@ -110,7 +110,7 @@ impl TableWrite for GRIWrite {
     batch.rec_id.append_value(rid)?;
     batch.user_id.append_value(uid)?;
     batch.book_id.append_value(bid)?;
-    batch.is_read.append_value(row.is_read)?;
+    batch.is_read.append_value(row.is_read as u8)?;
     if row.rating > 0 {
       batch.rating.append_value(row.rating as i8)?;
     } else {
