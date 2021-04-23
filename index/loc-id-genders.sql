@@ -1,5 +1,5 @@
 --- #dep loc-id-triple-names
---- #table locid.genders
+--- #table locid.gender_nodes
 
 --- #step Create gender table
 DROP MATERIALIZED VIEW IF EXISTS locid.gender_nodes CASCADE;
