@@ -3,9 +3,11 @@ Output gender statistics.
 
 Usage:
     gender-tool.py --stats (--mds|--lcnaf) [-o FILE]
-    gender-tool.py --import-codes [-T transcript] FILE
+    gender-tool.py --import-codes [-T TFILE] FILE
 
 Options:
+    -T TFILE
+        Write transcript to TFILE
     -o FILE
         Write gender stats to FILE
 """

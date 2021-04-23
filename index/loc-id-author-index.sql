@@ -47,7 +47,8 @@ ANALYZE locid.auth_entity;
 -- ANALYZE locid.work_triples;
 
 --- #step Create auth labels
-CREATE TABLE IF NOT EXISTS locid.auth_node_label (
+DROP TABLE IF EXISTS locid.auth_node_label CASCADE;
+CREATE TABLE locid.auth_node_label (
   subject_uuid UUID NOT NULL,
   pred_uuid UUID,
   label VARCHAR NOT NULL
@@ -65,6 +66,20 @@ ON locid.auth_node_label (subject_uuid);
 CREATE INDEX IF NOT EXISTS auth_node_label_lbl_idx
 ON locid.auth_node_label (label);
 ANALYZE locid.auth_node_label;
+
+--- #step Create gender table
+DROP MATERIALIZED VIEW IF EXISTS locid.gender_nodes CASCADE;
+CREATE MATERIALIZED VIEW locid.gender_nodes
+AS SELECT DISTINCT subject_uuid AS node_uuid, su.node_iri, label
+    FROM locid.auth_triples
+    JOIN locid.nodes su ON (subject_uuid = su.node_uuid)
+    JOIN locid.nodes pr ON (pred_uuid = pr.node_uuid)
+    JOIN locid.nodes ob ON (object_uuid = ob.node_uuid)
+    LEFT JOIN locid.auth_node_label USING (subject_uuid)
+    WHERE (pr.node_iri = 'http://www.loc.gov/mads/rdf/v1#isMemberOfMADSCollection'
+           AND ob.node_iri = 'http://id.loc.gov/authorities/demographicTerms/collection_LCDGT_Gender')
+       OR (pr.node_iri = 'http://www.w3.org/2004/02/skos/core#inScheme'
+           AND ob.node_iri = 'http://id.loc.gov/authorities/demographicTerms/gdr');
 
 --- #step Index author names
 DROP MATERIALIZED VIEW IF EXISTS locid.auth_name CASCADE;
