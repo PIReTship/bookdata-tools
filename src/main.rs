@@ -5,6 +5,8 @@ mod io;
 mod codes;
 mod graph;
 mod tracking;
+mod index;
+mod parquet;
 mod commands;
 
 use anyhow::{anyhow, Result};

@@ -11,6 +11,7 @@ pub mod pcat;
 pub mod hash;
 pub mod info;
 pub mod cluster_graph;
+pub mod goodreads;
 
 pub fn commands<'a>() -> Vec<CmdEntry<'a>> {
   vec![
@@ -22,6 +23,7 @@ pub fn commands<'a>() -> Vec<CmdEntry<'a>> {
     parse_isbns::ParseISBNs::get_entry(),
     hash::Hash::get_entry(),
     info::Info::get_entry(),
-    cluster_graph::ClusterGraph::get_entry()
+    cluster_graph::ClusterGraph::get_entry(),
+    goodreads::ScanInteractions::get_entry(),
   ]
 }
