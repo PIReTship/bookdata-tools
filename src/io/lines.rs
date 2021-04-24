@@ -32,7 +32,7 @@ impl LineProcessor {
   }
 
   /// Register progress bar with logger
-  fn wire_logger<'a>(&'a self) -> LogPBState<'a> {
+  fn wire_logger(&self) -> LogPBState {
     set_progress(&self.progress)
   }
 }
