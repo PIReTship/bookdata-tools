@@ -8,3 +8,4 @@ pub mod tracking;
 pub mod index;
 pub mod parquet;
 pub mod commands;
+pub mod prelude;
