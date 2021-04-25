@@ -7,7 +7,6 @@ use serde_json::from_str;
 use arrow::datatypes::*;
 use arrow::array::*;
 
-use happylog::args::LogOpts;
 use bookdata::prelude::*;
 use bookdata::io::LineProcessor;
 use bookdata::parquet::*;
@@ -18,7 +17,7 @@ use bookdata::index::IdIndex;
 #[structopt(name="scan-interactions")]
 pub struct ScanInteractions {
   #[structopt(flatten)]
-  logging: LogOpts,
+  common: CommonOpts,
 
   /// Input file
   #[structopt(name = "INPUT", parse(from_os_str))]
@@ -109,7 +108,7 @@ impl TableRow for IntRecord {
 
 fn main() -> Result<()> {
   let options = ScanInteractions::from_args();
-  options.logging.init()?;
+  options.common.init()?;
 
   let infn = &options.infile;
   let outfn = &options.outfile;
