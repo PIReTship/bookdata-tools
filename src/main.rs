@@ -1,20 +1,9 @@
-mod cleaning;
-mod tsv;
-mod db;
-mod io;
-mod codes;
-mod graph;
-mod tracking;
-mod index;
-mod parquet;
-mod commands;
-
 use anyhow::{anyhow, Result};
 use log::*;
 use structopt::StructOpt;
 
 use happylog::args::LogOpts;
-use commands::*;
+use bookdata::commands::*;
 
 /// BookData import tools
 #[derive(StructOpt, Debug)]
