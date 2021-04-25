@@ -6,6 +6,7 @@ use serde::{Deserialize};
 use serde_json::from_str;
 use arrow::datatypes::*;
 use arrow::array::*;
+use paste::paste;
 
 use bookdata::prelude::*;
 use bookdata::io::LineProcessor;
@@ -47,64 +48,58 @@ impl FromStr for RawInteraction {
   }
 }
 
-struct IntRecord {
+macro_rules! table_record {
+  ($rn:ident { $($fn:ident : $ft:ty),* }) => {
+    struct $rn {
+      $($fn: $ft),*
+    }
+
+    paste! {
+      struct [<$rn Batch>] {
+        $($fn: <$ft as ArrowTypeInfo>::PQArrayBuilder),*
+      }
+    }
+
+    impl TableRow for $rn {
+      paste! {
+        type Batch = [<$rn Batch>];
+      }
+
+      fn schema() -> Schema {
+        Schema::new(vec![
+          $(<$ft as ArrowTypeInfo>::field(stringify!($fn))),*
+        ])
+      }
+
+      fn new_batch(cap: usize) -> Self::Batch {
+        Self::Batch {
+          $($fn: <$ft as ArrowTypeInfo>::PQArrayBuilder::new(cap)),*
+        }
+      }
+
+      fn finish_batch(batch: &mut Self::Batch) -> Vec<ArrayRef> {
+        vec![
+          $(Arc::new(batch.$fn.finish())),*
+        ]
+      }
+
+      fn write_to_batch(&self, batch: &mut Self::Batch) -> Result<()> {
+        $(
+          self.$fn.append_to_builder(&mut batch.$fn)?;
+        )*
+        Ok(())
+      }
+    }
+  };
+}
+
+table_record!{IntRecord {
   rec_id: u64,
   user_id: u64,
   book_id: u64,
-  is_read: bool,
-  rating: Option<i8>,
-}
-
-struct GRIBatch {
-  rec_id: UInt64Builder,
-  user_id: UInt64Builder,
-  book_id: UInt64Builder,
-  is_read: UInt8Builder,
-  rating: Int8Builder,
-}
-
-impl TableRow for IntRecord {
-  type Batch = GRIBatch;
-
-  fn schema() -> Schema {
-    Schema::new(vec![
-      Field::new("rec_id", DataType::UInt64, false),
-      Field::new("user_id", DataType::UInt64, false),
-      Field::new("book_id", DataType::UInt64, false),
-      Field::new("is_read", DataType::UInt8, false),
-      Field::new("rating", DataType::Int8, true),
-    ])
-  }
-
-  fn new_batch(cap: usize) -> GRIBatch {
-    GRIBatch {
-      rec_id: UInt64Builder::new(cap),
-      user_id: UInt64Builder::new(cap),
-      book_id: UInt64Builder::new(cap),
-      is_read: UInt8Builder::new(cap),
-      rating: Int8Builder::new(cap),
-    }
-  }
-
-  fn finish_batch(batch: &mut GRIBatch) -> Vec<ArrayRef> {
-    vec![
-      Arc::new(batch.rec_id.finish()),
-      Arc::new(batch.user_id.finish()),
-      Arc::new(batch.book_id.finish()),
-      Arc::new(batch.is_read.finish()),
-      Arc::new(batch.rating.finish()),
-    ]
-  }
-
-  fn write_to_batch(&self, batch: &mut GRIBatch) -> Result<()> {
-    batch.rec_id.append_value(self.rec_id)?;
-    batch.user_id.append_value(self.user_id)?;
-    batch.book_id.append_value(self.book_id)?;
-    batch.is_read.append_value(self.is_read as u8)?;
-    batch.rating.append_option(self.rating)?;
-    Ok(())
-  }
-}
+  is_read: u8,
+  rating: Option<i8>
+}}
 
 fn main() -> Result<()> {
   let options = ScanInteractions::from_args();
@@ -129,7 +124,7 @@ fn main() -> Result<()> {
     let book_id: u64 = row.book_id.parse()?;
     let record = IntRecord {
       rec_id, user_id, book_id,
-      is_read: row.is_read,
+      is_read: row.is_read as u8,
       rating: if row.rating > 0 {
         Some(row.rating as i8)
       } else {
