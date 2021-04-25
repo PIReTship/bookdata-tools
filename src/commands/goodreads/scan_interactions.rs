@@ -1,23 +1,17 @@
-use std::io::prelude::*;
-use std::io::{BufReader};
-use std::fs::{File};
 use std::str::FromStr;
 use std::sync::Arc;
 use std::path::PathBuf;
-use std::mem::drop;
 
 use log::*;
 
 use structopt::StructOpt;
-use flate2::bufread::MultiGzDecoder;
-use indicatif::{ProgressBar, ProgressStyle};
 use anyhow::{Result};
 use serde::{Deserialize};
 use serde_json::from_str;
-use happylog::set_progress;
 use arrow::datatypes::*;
 use arrow::array::*;
 
+use crate::io::LineProcessor;
 use crate::parquet::*;
 use crate::index::IdIndex;
 use crate::commands::Command;
@@ -118,24 +112,15 @@ impl Command for ScanInteractions {
     let infn = &self.infile;
     let outfn = &self.outfile;
     info!("reading interactions from {:?}", infn);
-    let fs = File::open(infn)?;
-    let pb = ProgressBar::new(fs.metadata()?.len());
-    pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
-    let _pbl = set_progress(&pb);
-    // And wrap it in progress and decompression
-    let pbr = pb.wrap_read(fs);
-    let pbr = BufReader::new(pbr);
-    let gzf = MultiGzDecoder::new(pbr);
-    let bfs = BufReader::new(gzf);
+    let proc = LineProcessor::open_gzip(infn)?;
+    let mut users = IdIndex::new();
 
     info!("writing interactions to {:?}", outfn);
-    let mut users = IdIndex::new();
     let mut writer = TableWriter::open(outfn)?;
     let mut n_recs = 0;
 
-    for line in bfs.lines() {
-      let line = line?;
-      let row: RawInteraction = from_str(&line)?;
+    for rec in proc.records() {
+      let row: RawInteraction = rec?;
       let rec_id = n_recs + 1;
       n_recs += 1;
       let key = hex::decode(row.user_id.as_bytes())?;
@@ -152,12 +137,10 @@ impl Command for ScanInteractions {
       };
       writer.write(&record)?;
     }
-    pb.finish_and_clear();
-    drop(_pbl);
 
     let nlines = writer.finish()?;
 
-    info!("wrote {} records", nlines);
+    info!("wrote {} records for {} users", nlines, users.len());
 
     Ok(())
   }
