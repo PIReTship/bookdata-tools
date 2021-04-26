@@ -29,6 +29,7 @@ pub struct ScanInteractions {
   outfile: PathBuf
 }
 
+// the records we read from JSON
 #[derive(Deserialize)]
 struct RawInteraction {
   user_id: String,
@@ -93,6 +94,7 @@ macro_rules! table_record {
   };
 }
 
+// the records we're actually going to write to the table
 table_record!{
   struct IntRecord {
     rec_id: u64,
