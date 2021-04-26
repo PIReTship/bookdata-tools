@@ -49,7 +49,7 @@ impl FromStr for RawInteraction {
 }
 
 macro_rules! table_record {
-  ($rn:ident { $($fn:ident : $ft:ty),* }) => {
+  (struct $rn:ident { $($fn:ident : $ft:ty),* }) => {
     struct $rn {
       $($fn: $ft),*
     }
@@ -93,13 +93,15 @@ macro_rules! table_record {
   };
 }
 
-table_record!{IntRecord {
-  rec_id: u64,
-  user_id: u64,
-  book_id: u64,
-  is_read: u8,
-  rating: Option<i8>
-}}
+table_record!{
+  struct IntRecord {
+    rec_id: u64,
+    user_id: u64,
+    book_id: u64,
+    is_read: u8,
+    rating: Option<i8>
+  }
+}
 
 fn main() -> Result<()> {
   let options = ScanInteractions::from_args();
