@@ -26,7 +26,7 @@ CREATE AGGREGATE resolve_gender(gender VARCHAR) (
 );
 
 --- #step Extract book first-author names from OL
-DROP MATERIALIZED VIEW IF EXISTS cluster_ol_first_author_name;
+DROP MATERIALIZED VIEW IF EXISTS cluster_ol_first_author_name CASCADE;
 CREATE MATERIALIZED VIEW cluster_ol_first_author_name AS
   SELECT DISTINCT cluster, author_name
   FROM isbn_cluster
@@ -36,7 +36,7 @@ CREATE MATERIALIZED VIEW cluster_ol_first_author_name AS
     JOIN ol.author_name USING (author_id);
 
 --- #step Extract book first-author names from LOC MDS
-DROP MATERIALIZED VIEW IF EXISTS cluster_loc_first_author_name;
+DROP MATERIALIZED VIEW IF EXISTS cluster_loc_first_author_name CASCADE;
 CREATE MATERIALIZED VIEW cluster_loc_first_author_name AS
   SELECT DISTINCT cluster, name AS author_name
   FROM isbn_cluster
@@ -44,7 +44,7 @@ CREATE MATERIALIZED VIEW cluster_loc_first_author_name AS
     JOIN locmds.book_author_name USING (rec_id);
 
 --- #step Extract book first-author names from all available book-author data
-DROP MATERIALIZED VIEW IF EXISTS cluster_first_author_name;
+DROP MATERIALIZED VIEW IF EXISTS cluster_first_author_name CASCADE;
 CREATE MATERIALIZED VIEW cluster_first_author_name AS
   SELECT cluster, author_name FROM cluster_loc_first_author_name
   UNION DISTINCT
@@ -84,18 +84,19 @@ TRUNCATE locid.cluster_first_author_gender;
 INSERT INTO locid.cluster_first_author_gender
   SELECT cluster,
     case
-    when count(an.author_name) = 0 then 'no-loc-author'
-    when count(vn.rec_id) = 0 then 'no-viaf-author'
-    when count(vg.gender) = 0 then 'no-gender'
-    else resolve_gender(vg.gender)
+    when count(an.author_name) = 0 then 'no-book-author'
+    when count(lan.auth_uuid) = 0 then 'no-author-rec'
+    when count(ag.gender_uuid) = 0 then 'no-gender'
+    else resolve_gender(gc.code)
     end AS gender
   FROM (SELECT DISTINCT cluster FROM isbn_cluster WHERE cluster < bc_of_isbn(0)) cl -- ISBN-only recs aren't useful
     LEFT JOIN cluster_first_author_name an USING (cluster)
-    LEFT JOIN locid.auth_name an ON (name = author_name)
-    LEFT JOIN locid.auth_gender ag ON (an.auth_uuid = ag.auth_uuid)
+    LEFT JOIN locid.auth_name lan ON (name = author_name)
+    LEFT JOIN locid.auth_gender ag ON (lan.auth_uuid = ag.auth_uuid)
+    LEFT JOIN locid.gender_codes gc USING (gender_uuid)
   GROUP BY cluster;
-CREATE UNIQUE INDEX IF NOT EXISTS cluster_first_author_gender_book_idx ON viaf.cluster_first_author_gender (cluster);
-ANALYZE viaf.cluster_first_author_gender;
+CREATE UNIQUE INDEX IF NOT EXISTS cluster_first_author_gender_book_idx ON locid.cluster_first_author_gender (cluster);
+ANALYZE locid.cluster_first_author_gender;
 
 --- #step Save stage deps
 INSERT INTO stage_dep (stage_name, dep_name, dep_key)
