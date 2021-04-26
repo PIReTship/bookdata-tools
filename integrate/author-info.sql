@@ -62,8 +62,8 @@ TRUNCATE viaf.cluster_first_author_gender;
 INSERT INTO viaf.cluster_first_author_gender
   SELECT cluster,
     case
-    when count(an.author_name) = 0 then 'no-loc-author'
-    when count(vn.rec_id) = 0 then 'no-viaf-author'
+    when count(an.author_name) = 0 then 'no-book-author'
+    when count(vn.rec_id) = 0 then 'no-author-rec'
     when count(vg.gender) = 0 then 'no-gender'
     else resolve_gender(vg.gender)
     end AS gender
