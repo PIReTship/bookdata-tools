@@ -13,6 +13,7 @@ use flate2::bufread::MultiGzDecoder;
 
 use super::progress::default_progress_style;
 
+/// Read lines from a file with buffering, decompression, and parsing.
 pub struct LineProcessor {
   #[allow(dead_code)]
   progress: ProgressBar,
