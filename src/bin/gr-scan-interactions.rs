@@ -1,15 +1,10 @@
 use std::str::FromStr;
-use std::sync::Arc;
 use std::path::PathBuf;
 
 use serde::{Deserialize};
 use serde_json::from_str;
-use arrow::datatypes::*;
-use arrow::array::*;
-use paste::paste;
 
 use bookdata::prelude::*;
-use bookdata::io::LineProcessor;
 use bookdata::parquet::*;
 use bookdata::index::IdIndex;
 
@@ -49,51 +44,6 @@ impl FromStr for RawInteraction {
   }
 }
 
-macro_rules! table_record {
-  (struct $rn:ident { $($fn:ident : $ft:ty),* }) => {
-    struct $rn {
-      $($fn: $ft),*
-    }
-
-    paste! {
-      struct [<$rn Batch>] {
-        $($fn: <$ft as ArrowTypeInfo>::PQArrayBuilder),*
-      }
-    }
-
-    impl TableRow for $rn {
-      paste! {
-        type Batch = [<$rn Batch>];
-      }
-
-      fn schema() -> Schema {
-        Schema::new(vec![
-          $(<$ft as ArrowTypeInfo>::field(stringify!($fn))),*
-        ])
-      }
-
-      fn new_batch(cap: usize) -> Self::Batch {
-        Self::Batch {
-          $($fn: <$ft as ArrowTypeInfo>::PQArrayBuilder::new(cap)),*
-        }
-      }
-
-      fn finish_batch(batch: &mut Self::Batch) -> Vec<ArrayRef> {
-        vec![
-          $(Arc::new(batch.$fn.finish())),*
-        ]
-      }
-
-      fn write_to_batch(&self, batch: &mut Self::Batch) -> Result<()> {
-        $(
-          self.$fn.append_to_builder(&mut batch.$fn)?;
-        )*
-        Ok(())
-      }
-    }
-  };
-}
-
 // the records we're actually going to write to the table
 table_record!{
   struct IntRecord {
@@ -109,14 +59,12 @@ fn main() -> Result<()> {
   let options = ScanInteractions::from_args();
   options.common.init()?;
 
-  let infn = &options.infile;
-  let outfn = &options.outfile;
-  info!("reading interactions from {:?}", infn);
-  let proc = LineProcessor::open_gzip(infn)?;
+  info!("reading interactions from {:?}", &options.infile);
+  let proc = LineProcessor::open_gzip(&options.infile)?;
   let mut users = IdIndex::new();
 
-  info!("writing interactions to {:?}", outfn);
-  let mut writer = TableWriter::open(outfn)?;
+  info!("writing interactions to {:?}", &options.outfile);
+  let mut writer = TableWriter::open(&options.outfile)?;
   let mut n_recs = 0;
 
   for rec in proc.records() {
@@ -139,7 +87,6 @@ fn main() -> Result<()> {
   }
 
   let nlines = writer.finish()?;
-
   info!("wrote {} records for {} users", nlines, users.len());
 
   Ok(())
