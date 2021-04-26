@@ -29,7 +29,7 @@ impl ConnectInfo for Option<String> {
   }
 }
 
-/// Database options
+// Database options
 #[derive(StructOpt, Debug, Clone)]
 pub struct DbOpts {
   /// Database URL to connect to

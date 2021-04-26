@@ -2,7 +2,7 @@ use structopt::StructOpt;
 use happylog::args::LogOpts;
 use anyhow::Result;
 
-#[derive(StructOpt)]
+#[derive(StructOpt, Debug)]
 pub struct CommonOpts {
   #[structopt(flatten)]
   logging: LogOpts

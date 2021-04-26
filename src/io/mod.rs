@@ -1,6 +1,6 @@
-mod progress;
-mod hash;
-mod delim;
+pub mod progress;
+pub mod hash;
+pub mod delim;
 pub mod lines;
 
 pub use hash::{HashRead, HashWrite};

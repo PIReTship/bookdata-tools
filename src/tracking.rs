@@ -12,7 +12,7 @@ use log::*;
 
 use crate::io::HashRead;
 
-/// Options controlling the import stage
+// Options controlling the import stage
 #[derive(StructOpt, Debug, Clone)]
 pub struct StageOpts {
   /// Stage name
