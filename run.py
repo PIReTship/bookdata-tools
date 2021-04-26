@@ -30,13 +30,24 @@ def run_rust():
     # TODO support alternate working directories
     _log.info('compiling Rust tools')
     sp.run(['cargo', 'build', '--release'], check=True)
-    tool = bin_dir / 'bookdata'
+
+    tool_name = sys.argv[1]
+    tool = bin_dir / tool_name
+    if sys.platform == 'win32':
+        tool = tool.with_suffix('.exe')
+        args = sys.argv[2:]
+    if tool.exists():
+        _log.info('running program %s', tool_name)
+    else:
+        tool = bin_dir / 'bookdata'
+        args = sys.argv[1:]
+        _log.info('running tool %s', tool_name)
+
     tool = os.fspath(tool)
 
     if 'DB_URL' not in os.environ:
         os.environ['DB_URL'] = db_url()
-    _log.info('running tool %s', sys.argv[1:])
-    sp.run([tool] + sys.argv[1:], check=True)
+    sp.run([tool] + args, check=True)
 
 
 def run_script():
