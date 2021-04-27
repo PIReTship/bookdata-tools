@@ -15,11 +15,7 @@ pub struct ScanInteractions {
 
   /// Input file
   #[structopt(name = "INPUT", parse(from_os_str))]
-  infile: PathBuf,
-
-  /// Ouptut file
-  #[structopt(name = "OUTPUT", parse(from_os_str))]
-  outfile: PathBuf
+  infile: PathBuf
 }
 
 // the records we read from JSON
@@ -52,8 +48,7 @@ fn main() -> Result<()> {
   let proc = LineProcessor::open_gzip(&options.infile)?;
   let mut users = IdIndex::new();
 
-  info!("writing interactions to {:?}", &options.outfile);
-  let mut writer = TableWriter::open(&options.outfile)?;
+  let mut writer = TableWriter::open("gr-interactions.parquet")?;
   let mut n_recs = 0;
 
   for rec in proc.json_records() {
