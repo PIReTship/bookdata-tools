@@ -45,14 +45,13 @@ impl FromStr for RawInteraction {
 }
 
 // the records we're actually going to write to the table
-table_record!{
-  struct IntRecord {
-    rec_id: u64,
-    user_id: u64,
-    book_id: u64,
-    is_read: u8,
-    rating: Option<i8>
-  }
+#[derive(TableRow)]
+struct IntRecord {
+  rec_id: u32,
+  user_id: u32,
+  book_id: u64,
+  is_read: u8,
+  rating: Option<i8>
 }
 
 fn main() -> Result<()> {

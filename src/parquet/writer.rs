@@ -11,9 +11,22 @@ use parquet::file::properties::WriterProperties;
 use parquet::arrow::ArrowWriter;
 use anyhow::Result;
 
+pub use bd_macros::TableRow;
+
 const BATCH_SIZE: usize = 1000000;
 
-/// Trait for serializing records into Parquet tables
+/// Trait for serializing records into Parquet tables.
+///
+/// This trait can be derived:
+///
+/// ```
+/// #[derive(TableRow)]
+/// struct Record {
+///     user_id: u32,
+///     book_id: u64,
+///     rating: f32
+/// }
+/// ```
 pub trait TableRow {
   type Batch;
 

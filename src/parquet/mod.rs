@@ -43,6 +43,18 @@ impl ArrowTypeInfo for u64 {
   }
 }
 
+impl ArrowTypeInfo for u32 {
+  type PQArray = UInt32Array;
+  type PQArrayBuilder = UInt32Builder;
+
+  fn pq_type() -> DataType {
+    DataType::UInt32
+  }
+  fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
+    ab.append_value(*self)
+  }
+}
+
 impl ArrowTypeInfo for u8 {
   type PQArray = UInt8Array;
   type PQArrayBuilder = UInt8Builder;
@@ -80,51 +92,4 @@ impl <T> ArrowTypeInfo for Option<T> where T: ArrowTypeInfo + Copy, T::PQArrayBu
   fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
     ab.pq_append_option(*self)
   }
-}
-
-/// Define a record for writing to a Parquet table.
-#[macro_export]
-macro_rules! table_record {
-  (struct $rn:ident { $($fn:ident : $ft:ty),* }) => {
-    struct $rn {
-      $($fn: $ft),*
-    }
-
-    paste::paste! {
-      struct [<$rn Batch>] {
-        $($fn: <$ft as bookdata::parquet::ArrowTypeInfo>::PQArrayBuilder),*
-      }
-    }
-
-    impl bookdata::parquet::TableRow for $rn {
-      paste::paste! {
-        type Batch = [<$rn Batch>];
-      }
-
-      fn schema() -> arrow::datatypes::Schema {
-        arrow::datatypes::Schema::new(vec![
-          $(<$ft as bookdata::parquet::ArrowTypeInfo>::field(stringify!($fn))),*
-        ])
-      }
-
-      fn new_batch(cap: usize) -> Self::Batch {
-        Self::Batch {
-          $($fn: <$ft as bookdata::parquet::ArrowTypeInfo>::PQArrayBuilder::new(cap)),*
-        }
-      }
-
-      fn finish_batch(batch: &mut Self::Batch) -> Vec<arrow::array::ArrayRef> {
-        vec![
-          $(std::sync::Arc::new(batch.$fn.finish())),*
-        ]
-      }
-
-      fn write_to_batch(&self, batch: &mut Self::Batch) -> anyhow::Result<()> {
-        $(
-          self.$fn.append_to_builder(&mut batch.$fn)?;
-        )*
-        Ok(())
-      }
-    }
-  };
 }
