@@ -1,8 +1,6 @@
-use std::str::FromStr;
 use std::path::PathBuf;
 
-use serde::{Deserialize};
-use serde_json::from_str;
+use serde::Deserialize;
 
 use bookdata::prelude::*;
 use bookdata::parquet::*;
@@ -36,14 +34,6 @@ struct RawInteraction {
   // date_added: String
 }
 
-impl FromStr for RawInteraction {
-  type Err = serde_json::Error;
-
-  fn from_str(s: &str) -> serde_json::Result<RawInteraction> {
-    return from_str(s)
-  }
-}
-
 // the records we're actually going to write to the table
 #[derive(TableRow)]
 struct IntRecord {
@@ -66,7 +56,7 @@ fn main() -> Result<()> {
   let mut writer = TableWriter::open(&options.outfile)?;
   let mut n_recs = 0;
 
-  for rec in proc.records() {
+  for rec in proc.json_records() {
     let row: RawInteraction = rec?;
     let rec_id = n_recs + 1;
     n_recs += 1;

@@ -10,6 +10,7 @@ use anyhow::Result;
 use indicatif::ProgressBar;
 use happylog::{LogPBState, set_progress};
 use flate2::bufread::MultiGzDecoder;
+use serde::de::DeserializeOwned;
 
 use super::progress::default_progress_style;
 
@@ -35,6 +36,25 @@ impl <R: FromStr> Iterator for Records<R> where R::Err : 'static + Error + Send 
     self.lines.next().map(|l| {
       let line = l?;
       let rec = line.parse()?;
+      Ok(rec)
+    })
+  }
+}
+
+pub struct JSONRecords<R> {
+  lines: Lines<Box<dyn BufRead>>,
+  #[allow(dead_code)]
+  log_state: Option<LogPBState>,
+  phantom: PhantomData<R>
+}
+
+impl <R: DeserializeOwned> Iterator for JSONRecords<R> {
+  type Item = Result<R>;
+
+  fn next(&mut self) -> Option<Self::Item> {
+    self.lines.next().map(|l| {
+      let line = l?;
+      let rec = serde_json::from_str(&line)?;
       Ok(rec)
     })
   }
@@ -67,6 +87,15 @@ impl LineProcessor {
   /// Get the lines as records.
   pub fn records<R: FromStr>(self) -> Records<R> {
     Records {
+      lines: self.reader.lines(),
+      phantom: PhantomData,
+      log_state: self.log_state
+    }
+  }
+
+  /// Get the lines as JSON records.
+  pub fn json_records<R: DeserializeOwned>(self) -> JSONRecords<R> {
+    JSONRecords {
       lines: self.reader.lines(),
       phantom: PhantomData,
       log_state: self.log_state

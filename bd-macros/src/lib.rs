@@ -21,6 +21,9 @@ pub fn table_row_macro_derive(input: TokenStream) -> TokenStream {
 /// Macro to derive the TableRow trait for a row
 fn derive_table_row(ast: &syn::DeriveInput) -> TokenStream {
   let name = &ast.ident;
+  if !ast.generics.params.is_empty() {
+    panic!("generic structs not supported");
+  }
   let batch = format_ident!("{}Batch", name);
   let fields = match &ast.data {
     Data::Struct(ds) => match &ds.fields {

@@ -20,6 +20,18 @@ impl <A: ArrowPrimitiveType> PQAppend<A::Native> for PrimitiveBuilder<A> {
   }
 }
 
+impl <S: AsRef<str>, O: StringOffsetSizeTrait> PQAppend<S> for GenericStringBuilder<O> {
+  fn pq_append_value(&mut self, v: S) -> ArrowResult<()> {
+    self.append_value(v)
+  }
+  fn pq_append_option(&mut self, v: Option<S>) -> ArrowResult<()> {
+    match v {
+      Some(s) => self.append_value(s),
+      None => self.append_null()
+    }
+  }
+}
+
 pub trait ArrowTypeInfo where Self: Sized {
   type PQArray;
   type PQArrayBuilder;
@@ -79,7 +91,31 @@ impl ArrowTypeInfo for i8 {
   }
 }
 
-impl <T> ArrowTypeInfo for Option<T> where T: ArrowTypeInfo + Copy, T::PQArrayBuilder : PQAppend<T> {
+impl ArrowTypeInfo for String {
+  type PQArray = StringArray;
+  type PQArrayBuilder = StringBuilder;
+
+  fn pq_type() -> DataType {
+    DataType::Int8
+  }
+  fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
+    ab.append_value(&self)
+  }
+}
+
+impl <'a> ArrowTypeInfo for &'a str {
+  type PQArray = StringArray;
+  type PQArrayBuilder = StringBuilder;
+
+  fn pq_type() -> DataType {
+    DataType::Int8
+  }
+  fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
+    ab.append_value(self)
+  }
+}
+
+impl <T> ArrowTypeInfo for Option<T> where T: ArrowTypeInfo + Clone, T::PQArrayBuilder : PQAppend<T> {
   type PQArray = T::PQArray;
   type PQArrayBuilder = T::PQArrayBuilder;
 
@@ -90,6 +126,6 @@ impl <T> ArrowTypeInfo for Option<T> where T: ArrowTypeInfo + Copy, T::PQArrayBu
     Field::new(name, Self::pq_type(), true)
   }
   fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
-    ab.pq_append_option(*self)
+    ab.pq_append_option(self.clone())
   }
 }
