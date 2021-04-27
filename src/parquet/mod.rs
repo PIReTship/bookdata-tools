@@ -11,6 +11,15 @@ pub trait PQAppend<T> {
   fn pq_append_option(&mut self, v: Option<T>) -> ArrowResult<()>;
 }
 
+impl PQAppend<bool> for BooleanBuilder {
+  fn pq_append_value(&mut self, v: bool) -> ArrowResult<()> {
+    self.append_value(v)
+  }
+  fn pq_append_option(&mut self, v: Option<bool>) -> ArrowResult<()> {
+    self.append_option(v)
+  }
+}
+
 impl <A: ArrowPrimitiveType> PQAppend<A::Native> for PrimitiveBuilder<A> {
   fn pq_append_value(&mut self, v: A::Native) -> ArrowResult<()> {
     self.append_value(v)
@@ -41,6 +50,18 @@ pub trait ArrowTypeInfo where Self: Sized {
     Field::new(name, Self::pq_type(), false)
   }
   fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()>;
+}
+
+impl ArrowTypeInfo for bool {
+  type PQArray = BooleanArray;
+  type PQArrayBuilder = BooleanBuilder;
+
+  fn pq_type() -> DataType {
+    DataType::Boolean
+  }
+  fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
+    ab.append_value(*self)
+  }
 }
 
 impl ArrowTypeInfo for u64 {
@@ -96,7 +117,7 @@ impl ArrowTypeInfo for String {
   type PQArrayBuilder = StringBuilder;
 
   fn pq_type() -> DataType {
-    DataType::Int8
+    DataType::Utf8
   }
   fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
     ab.append_value(&self)
@@ -108,7 +129,7 @@ impl <'a> ArrowTypeInfo for &'a str {
   type PQArrayBuilder = StringBuilder;
 
   fn pq_type() -> DataType {
-    DataType::Int8
+    DataType::Utf8
   }
   fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
     ab.append_value(self)

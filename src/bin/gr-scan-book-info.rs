@@ -26,6 +26,7 @@ struct RawBook {
   isbn: String,
   isbn13: String,
   asin: String,
+  #[serde(default)]
   title: String
 }
 
