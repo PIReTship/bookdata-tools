@@ -92,7 +92,7 @@ fn process_marc_file<R: BufRead, W: Write>(r: &mut R, w: &mut W, init: usize) ->
   Ok(count)
 }
 
-fn process_records<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, start: u32) -> Result<usize> {
+fn process_records<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, start: u32) -> Result<u32> {
   let mut buf = Vec::new();
   let mut output = false;
   let mut tag = Vec::with_capacity(5);
@@ -101,7 +101,6 @@ fn process_records<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, start
   let mut content = Vec::with_capacity(100);
   let mut record = Record::default();
   record.rec_id = start;
-  record.fno = 0;
   loop {
     match rdr.read_event(&mut buf)? {
       Event::Start(ref e) => {
@@ -109,6 +108,7 @@ fn process_records<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, start
         match name {
           "record" => {
             record.rec_id += 1;
+            record.fld_no = 0;
           },
           "leader" => {
             record.tag = "LDR".to_owned();
@@ -121,22 +121,23 @@ fn process_records<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, start
               let a = ar?;
               if a.key == b"tag" {
                 let tag = a.unescaped_value()?;
-                record.tag = String::from(&tag);
+                record.tag = str::from_utf8(&tag)?.to_owned();
                 ntags += 1;
               }
             }
             assert!(ntags == 1, "no tag found for control field");
-            output = true;
+            content.clear();
           },
           "datafield" => {
             record.fld_no += 1;
             for ar in e.attributes() {
               let a = ar?;
               let v = a.unescaped_value()?;
+              let v = str::from_utf8(&v)?;
               match a.key {
-                b"tag" => tag.extend_from_slice(&*v),
-                b"ind1" => ind1.extend_from_slice(&*v),
-                b"ind2" => ind2.extend_from_slice(&*v),
+                b"tag" => record.tag = v.to_owned(),
+                b"ind1" => record.ind1 = Some(v.to_owned()),
+                b"ind2" => record.ind2 = Some(v.to_owned()),
                 _ => ()
               }
             }
@@ -145,18 +146,18 @@ fn process_records<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, start
             assert!(ind2.len() > 0, "no ind2 found for data field");
           },
           "subfield" => {
-            let mut done = false;
+            let mut natts = 0;
             for ar in e.attributes() {
               let a = ar?;
               if a.key == b"code" {
                 let code = a.unescaped_value()?;
-                let field = Field { ind1: &ind1, ind2: &ind2, code: &code };
-                write_codes(out, recid, fno, &tag, Some(&field))?;
-                done = true;
+                record.sf_code = Some(str::from_utf8(&code)?.to_owned());
+                natts += 1;
               }
             }
-            assert!(done, "no code found for subfield");
-            output = true;
+            assert!(natts >= 1, "no code found for subfield");
+            assert!(natts <= 1, "too many codes found for subfield");
+            content.clear();
           }
           _ => ()
         }
@@ -165,28 +166,28 @@ fn process_records<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, start
         let name = str::from_utf8(e.local_name())?;
         match name {
           "leader" | "controlfield" | "subfield" => {
-            write_nl(out)?;
-            output =  false;
+            record.contents = String::from_utf8(content)?;
+            writer.write(&record);
           },
           "datafield" => {
-            tag.clear();
-            ind1.clear();
-            ind2.clear();
+            record.tag.clear();
+            record.ind1 = None;
+            record.ind2 = None;
+            record.sf_code = None;
+            record.contents.clear();
           },
           _ => ()
         }
       },
       Event::Text(e) => {
-        if output {
-          let t = e.unescaped()?;
-          write_pgencoded(out, &t)?
-        }
+        let t = e.unescaped()?;
+        content.extend_from_slice(&t);
       },
       Event::Eof => break,
       _ => ()
     }
   }
-  Ok(recid - start)
+  Ok(record.rec_id - start)
 }
 
 fn main() -> Result<()> {
