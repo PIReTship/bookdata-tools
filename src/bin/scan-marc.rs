@@ -48,9 +48,9 @@ struct Record {
   rec_id: u32,
   fld_no: u32,
   tag: i16,
-  ind1: Option<u8>,
-  ind2: Option<u8>,
-  sf_code: Option<u8>,
+  ind1: u8,
+  ind2: u8,
+  sf_code: u8,
   contents: String
 }
 
@@ -117,8 +117,8 @@ fn process_records<B: BufRead>(rdr: &mut Reader<B>, writer: &mut TableWriter<Rec
               let v = a.unescaped_value()?;
               match a.key {
                 b"tag" => record.tag = str::from_utf8(&v)?.parse()?,
-                b"ind1" => record.ind1 = Some(v[0]),
-                b"ind2" => record.ind2 = Some(v[0]),
+                b"ind1" => record.ind1 = v[0],
+                b"ind2" => record.ind2 = v[0],
                 _ => ()
               }
             }
@@ -129,7 +129,7 @@ fn process_records<B: BufRead>(rdr: &mut Reader<B>, writer: &mut TableWriter<Rec
               let a = ar?;
               if a.key == b"code" {
                 let code = a.unescaped_value()?;
-                record.sf_code = Some(code[0]);
+                record.sf_code = code[0];
                 natts += 1;
               }
             }
@@ -148,9 +148,9 @@ fn process_records<B: BufRead>(rdr: &mut Reader<B>, writer: &mut TableWriter<Rec
             writer.write(&record)?;
           },
           "datafield" => {
-            record.ind1 = None;
-            record.ind2 = None;
-            record.sf_code = None;
+            record.ind1 = 0;
+            record.ind2 = 0;
+            record.sf_code = 0;
             record.contents = String::new();
           },
           _ => ()
