@@ -33,9 +33,9 @@ def run_rust():
 
     tool_name = sys.argv[1]
     tool = bin_dir / tool_name
+    args = sys.argv[2:]
     if sys.platform == 'win32':
         tool = tool.with_suffix('.exe')
-        args = sys.argv[2:]
     if tool.exists():
         _log.info('running program %s', tool_name)
     else:
