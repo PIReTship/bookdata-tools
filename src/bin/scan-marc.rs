@@ -1,6 +1,7 @@
 use std::io::prelude::*;
 use std::path::PathBuf;
 use std::str;
+use std::time::Instant;
 
 use log::*;
 
@@ -10,6 +11,7 @@ use quick_xml::Reader;
 use quick_xml::events::Event;
 use anyhow::{Result, anyhow};
 use happylog::set_progress;
+use humantime::format_duration;
 
 use bookdata::prelude::*;
 use bookdata::io::open_gzin_progress;
@@ -175,9 +177,13 @@ fn main() -> Result<()> {
   info!("preparing to write {:?}", &opts.output);
   let mut writer = TableWriter::open(&opts.output)?;
   let mut count = 0;
+  let mut nfiles = 0;
+  let all_start = Instant::now();
 
   for inf in opts.find_files()? {
+    nfiles += 1;
     let inf = inf.as_path();
+    let file_start = Instant::now();
     info!("reading from compressed file {:?}", inf);
     let (read, pb) = open_gzin_progress(inf)?;
     let _pbl = set_progress(&pb);
@@ -194,7 +200,8 @@ fn main() -> Result<()> {
     pb.finish_and_clear();
     match nrecs {
       Ok(n) => {
-        info!("processed {} records from {:?}", n, inf);
+        info!("processed {} records from {:?} in {}",
+              n, inf, format_duration(file_start.elapsed()));
         count += n;
       },
       Err(e) => {
@@ -205,6 +212,9 @@ fn main() -> Result<()> {
   }
 
   writer.finish()?;
+
+  info!("imported {} records from {} files in {}",
+        count, nfiles, format_duration(all_start.elapsed()));
 
   Ok(())
 }
