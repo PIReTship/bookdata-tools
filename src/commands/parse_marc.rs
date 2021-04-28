@@ -69,7 +69,7 @@ fn process_delim_file<R: BufRead, W: Write>(r: &mut R, w: &mut W, init: usize) -
     let (_id, xml) = split_first(&lstr).ok_or(anyhow!("invalid line"))?;
     let mut parse = Reader::from_str(xml);
     let n = process_records(&mut parse, w, init + rec_count)?;
-    // we should only have one record per file
+    // we should only have one record per line
     assert_eq!(n, 1);
     rec_count += n;
   }
