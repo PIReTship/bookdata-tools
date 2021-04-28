@@ -11,7 +11,6 @@ use quick_xml::Reader;
 use quick_xml::events::Event;
 use anyhow::{Result, anyhow};
 use happylog::set_progress;
-use humantime::format_duration;
 
 use bookdata::prelude::*;
 use bookdata::io::open_gzin_progress;
@@ -48,10 +47,10 @@ pub struct ParseMarc {
 struct Record {
   rec_id: u32,
   fld_no: u32,
-  tag: String,
-  ind1: Option<String>,
-  ind2: Option<String>,
-  sf_code: Option<String>,
+  tag: i16,
+  ind1: Option<u8>,
+  ind2: Option<u8>,
+  sf_code: Option<u8>,
   contents: String
 }
 
@@ -94,7 +93,7 @@ fn process_records<B: BufRead>(rdr: &mut Reader<B>, writer: &mut TableWriter<Rec
             record.fld_no = 0;
           },
           "leader" => {
-            record.tag = "LDR".to_owned();
+            record.tag = -1;
             content.clear();
           },
           "controlfield" => {
@@ -104,7 +103,7 @@ fn process_records<B: BufRead>(rdr: &mut Reader<B>, writer: &mut TableWriter<Rec
               let a = ar?;
               if a.key == b"tag" {
                 let tag = a.unescaped_value()?;
-                record.tag = str::from_utf8(&tag)?.to_owned();
+                record.tag = str::from_utf8(&tag)?.parse()?;
                 ntags += 1;
               }
             }
@@ -116,11 +115,10 @@ fn process_records<B: BufRead>(rdr: &mut Reader<B>, writer: &mut TableWriter<Rec
             for ar in e.attributes() {
               let a = ar?;
               let v = a.unescaped_value()?;
-              let v = str::from_utf8(&v)?;
               match a.key {
-                b"tag" => record.tag = v.to_owned(),
-                b"ind1" => record.ind1 = Some(v.to_owned()),
-                b"ind2" => record.ind2 = Some(v.to_owned()),
+                b"tag" => record.tag = str::from_utf8(&v)?.parse()?,
+                b"ind1" => record.ind1 = Some(v[0]),
+                b"ind2" => record.ind2 = Some(v[0]),
                 _ => ()
               }
             }
@@ -131,7 +129,7 @@ fn process_records<B: BufRead>(rdr: &mut Reader<B>, writer: &mut TableWriter<Rec
               let a = ar?;
               if a.key == b"code" {
                 let code = a.unescaped_value()?;
-                record.sf_code = Some(str::from_utf8(&code)?.to_owned());
+                record.sf_code = Some(code[0]);
                 natts += 1;
               }
             }
@@ -150,11 +148,10 @@ fn process_records<B: BufRead>(rdr: &mut Reader<B>, writer: &mut TableWriter<Rec
             writer.write(&record)?;
           },
           "datafield" => {
-            record.tag.clear();
             record.ind1 = None;
             record.ind2 = None;
             record.sf_code = None;
-            record.contents.clear();
+            record.contents = String::new();
           },
           _ => ()
         }
@@ -200,8 +197,8 @@ fn main() -> Result<()> {
     pb.finish_and_clear();
     match nrecs {
       Ok(n) => {
-        info!("processed {} records from {:?} in {}",
-              n, inf, format_duration(file_start.elapsed()));
+        info!("processed {} records from {:?} in {:.2}s",
+              n, inf, file_start.elapsed().as_secs_f32());
         count += n;
       },
       Err(e) => {
@@ -213,8 +210,8 @@ fn main() -> Result<()> {
 
   writer.finish()?;
 
-  info!("imported {} records from {} files in {}",
-        count, nfiles, format_duration(all_start.elapsed()));
+  info!("imported {} records from {} files in {:.2}s",
+        count, nfiles, all_start.elapsed().as_secs_f32());
 
   Ok(())
 }
