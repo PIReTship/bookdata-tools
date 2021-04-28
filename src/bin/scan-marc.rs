@@ -188,6 +188,10 @@ fn main() -> Result<()> {
       process_marc_file(&mut read, &mut writer, count)
     };
     drop(read);
+    if pb.position() != pb.length() {
+      warn!("advanced {}, expected {}", pb.position(), pb.length());
+    }
+    pb.finish_and_clear();
     match nrecs {
       Ok(n) => {
         info!("processed {} records from {:?}", n, inf);

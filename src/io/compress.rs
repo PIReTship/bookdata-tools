@@ -22,10 +22,11 @@ impl Read for ThreadRead {
     let size = self.read.read(buf)?;
     if size == 0 {
       // eof - make sure thread completed successfully
-      let h = self.handle.take().unwrap();
-      let res = h.join().expect("thread error");
-      let sz = res?;
-      debug!("thread copied {} bytes", sz);
+      if let Some(h) = self.handle.take() {
+        let res = h.join().expect("thread error");
+        let sz = res?;
+        debug!("thread copied {} bytes", sz);
+      }
     }
     Ok(size)
   }
