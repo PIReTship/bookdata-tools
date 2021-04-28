@@ -3,6 +3,7 @@ pub use log::*;
 pub use structopt::StructOpt;
 pub use crate::cli::CommonOpts;
 pub use crate::io::LineProcessor;
+pub use crate::io::progress::default_progress;
 pub use crate::json_from_str;
 
 /// Macro to implement FromStr using JSON.

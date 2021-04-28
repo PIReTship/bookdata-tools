@@ -1,29 +1,20 @@
 use std::io::prelude::*;
-use std::io::{self, BufReader, BufWriter};
-use std::fs::File;
 use std::path::PathBuf;
 use std::str;
 
 use log::*;
 
-use sha1::Sha1;
 use glob::glob;
 use structopt::StructOpt;
 use quick_xml::Reader;
 use quick_xml::events::Event;
-use flate2::bufread::MultiGzDecoder;
-use indicatif::{ProgressBar, ProgressStyle};
 use anyhow::{Result, anyhow};
 use happylog::set_progress;
 
 use bookdata::prelude::*;
+use bookdata::io::open_gzin_progress;
 use bookdata::parquet::*;
-use crate::cleaning::write_pgencoded;
-use crate::tsv::split_first;
-use crate::tracking::StageOpts;
-use crate::io::{HashWrite};
-use crate::db::{DbOpts, CopyRequest};
-use super::Command;
+use bookdata::tsv::split_first;
 
 /// Parse MARC files Parquet tables.
 #[derive(StructOpt, Debug)]
@@ -31,6 +22,10 @@ use super::Command;
 pub struct ParseMarc {
   #[structopt(flatten)]
   common: CommonOpts,
+
+  /// Output file
+  #[structopt(short="o", long="output")]
+  output: PathBuf,
 
   /// Activate line mode, e.g. for VIAF
   #[structopt(short="L", long="line-mode")]
@@ -58,19 +53,9 @@ struct Record {
   contents: String
 }
 
-impl Record {
-  fn new<S: AsRef<str>>(rec_id: u32, fld_no: u32, tag: S) -> Record {
-    Record {
-      rec_id, fld_no,
-      tag: tag.as_ref().to_owned(),
-      ind1: None, ind2: None, sf_code: None, contents: String::new()
-    }
-  }
-}
-
 /// Process a tab-delimited line file.  VIAF provides their files in this format;
 /// each line is a tab-separated pair of the VIAF ID and a single `record` instance.
-fn process_delim_file<R: BufRead, W: Write>(r: &mut R, w: &mut W, init: usize) -> Result<usize> {
+fn process_delim_file<R: BufRead>(r: &mut R, w: &mut TableWriter<Record>, init: u32) -> Result<u32> {
   let mut rec_count = 0;
   for line in r.lines() {
     let lstr = line?;
@@ -86,18 +71,14 @@ fn process_delim_file<R: BufRead, W: Write>(r: &mut R, w: &mut W, init: usize) -
 }
 
 /// Process a file containing a MARC collection.
-fn process_marc_file<R: BufRead, W: Write>(r: &mut R, w: &mut W, init: usize) -> Result<usize> {
+fn process_marc_file<R: BufRead>(r: &mut R, w: &mut TableWriter<Record>, init: u32) -> Result<u32> {
   let mut parse = Reader::from_reader(r);
   let count = process_records(&mut parse, w, init)?;
   Ok(count)
 }
 
-fn process_records<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, start: u32) -> Result<u32> {
+fn process_records<B: BufRead>(rdr: &mut Reader<B>, writer: &mut TableWriter<Record>, start: u32) -> Result<u32> {
   let mut buf = Vec::new();
-  let mut output = false;
-  let mut tag = Vec::with_capacity(5);
-  let mut ind1 = Vec::with_capacity(10);
-  let mut ind2 = Vec::with_capacity(10);
   let mut content = Vec::with_capacity(100);
   let mut record = Record::default();
   record.rec_id = start;
@@ -141,9 +122,6 @@ fn process_records<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, start
                 _ => ()
               }
             }
-            assert!(tag.len() > 0, "no tag found for data field");
-            assert!(ind1.len() > 0, "no ind1 found for data field");
-            assert!(ind2.len() > 0, "no ind2 found for data field");
           },
           "subfield" => {
             let mut natts = 0;
@@ -166,8 +144,8 @@ fn process_records<B: BufRead, W: Write>(rdr: &mut Reader<B>, out: &mut W, start
         let name = str::from_utf8(e.local_name())?;
         match name {
           "leader" | "controlfield" | "subfield" => {
-            record.contents = String::from_utf8(content)?;
-            writer.write(&record);
+            record.contents = String::from_utf8(content.clone())?;
+            writer.write(&record)?;
           },
           "datafield" => {
             record.tag.clear();
@@ -194,43 +172,25 @@ fn main() -> Result<()> {
   let opts = ParseMarc::from_args();
   opts.common.init()?;
 
-  let db = self.db.open()?;
-  let req = CopyRequest::new(&self.db, &self.table)?;
-  let req = req.with_schema(self.db.schema());
-  let req = req.truncate(self.truncate);
-  let out = req.open()?;
-  let mut out_h = Sha1::new();
-  let out = HashWrite::create(out, &mut out_h);
-  let mut out = BufWriter::new(out);
-
-  let mut stage = self.stage.begin_stage(&db)?;
-
+  info!("preparing to write {:?}", &opts.output);
+  let mut writer = TableWriter::open(&opts.output)?;
   let mut count = 0;
 
   for inf in opts.find_files()? {
     let inf = inf.as_path();
     info!("reading from compressed file {:?}", inf);
-    let fs = File::open(inf)?;
-    let pb = ProgressBar::new(fs.metadata()?.len());
-    pb.set_style(ProgressStyle::default_bar().template("{elapsed_precise} {bar} {percent}% {bytes}/{total_bytes} (eta: {eta})"));
-    let _pbs = set_progress(&pb);
-    let mut in_sf = stage.source_file(inf);
-    let pbr = pb.wrap_read(fs);
-    let pbr = BufReader::new(pbr);
-    let gzf = MultiGzDecoder::new(pbr);
-    let gzf = in_sf.wrap_read(gzf);
-    let mut bfs = BufReader::new(gzf);
-    let nrecs = if self.linemode {
-      process_delim_file(&mut bfs, &mut out, count)
+    let (read, pb) = open_gzin_progress(inf)?;
+    let _pbl = set_progress(&pb);
+    let mut read = read;
+    let nrecs = if opts.linemode {
+      process_delim_file(&mut read, &mut writer, count)
     } else {
-      process_marc_file(&mut bfs, &mut out, count)
+      process_marc_file(&mut read, &mut writer, count)
     };
-    drop(bfs);
+    drop(read);
     match nrecs {
       Ok(n) => {
         info!("processed {} records from {:?}", n, inf);
-        let hash = in_sf.record()?;
-        writeln!(&mut stage, "READ {:?} {} {}", inf, n, hash)?;
         count += n;
       },
       Err(e) => {
@@ -240,10 +200,7 @@ fn main() -> Result<()> {
     }
   }
 
-  drop(out);
-  let out_h = out_h.hexdigest();
-  writeln!(&mut stage, "COPY {}", out_h)?;
-  stage.end(&Some(out_h))?;
+  writer.finish()?;
 
   Ok(())
 }
