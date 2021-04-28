@@ -88,11 +88,11 @@ SELECT auth_uuid, 0, label AS name
 FROM locid.auth_entity
 JOIN locid.auth_node_label ON (auth_uuid = subject_uuid)
 UNION DISTINCT
-SELECT auth_uuid, 1, regexp_replace(label, '^(.*), (.*?)(?:,\s*\d+-.*)?', '\1, \2') AS name
+SELECT auth_uuid, 1, regexp_replace(label, '^(.*?),\s*(.*?)(,\s*(\d+-\d*|\d*-\d+).*)?$', '\1, \2') AS name
 FROM locid.auth_entity
 JOIN locid.auth_node_label ON (auth_uuid = subject_uuid)
 UNION DISTINCT
-SELECT auth_uuid, 2, regexp_replace(label, '^(.*), (.*?)(?:,\s*\d+-.*)?', '\2 \1') AS name
+SELECT auth_uuid, 2, regexp_replace(label, '^(.*?),\s*(.*?)(,\s*(\d+-\d*|\d*-\d+).*)?$', '\2 \1') AS name
 FROM locid.auth_entity
 JOIN locid.auth_node_label ON (auth_uuid = subject_uuid);
 
