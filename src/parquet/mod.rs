@@ -52,17 +52,17 @@ pub trait ArrowTypeInfo where Self: Sized {
   fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()>;
 }
 
-impl ArrowTypeInfo for bool {
-  type PQArray = BooleanArray;
-  type PQArrayBuilder = BooleanBuilder;
+// impl ArrowTypeInfo for bool {
+//   type PQArray = BooleanArray;
+//   type PQArrayBuilder = BooleanBuilder;
 
-  fn pq_type() -> DataType {
-    DataType::Boolean
-  }
-  fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
-    ab.append_value(*self)
-  }
-}
+//   fn pq_type() -> DataType {
+//     DataType::Boolean
+//   }
+//   fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
+//     ab.append_value(*self)
+//   }
+// }
 
 impl ArrowTypeInfo for u64 {
   type PQArray = UInt64Array;

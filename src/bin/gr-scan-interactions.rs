@@ -36,7 +36,7 @@ struct IntRecord {
   rec_id: u32,
   user_id: u32,
   book_id: u64,
-  is_read: bool,
+  is_read: u8,
   rating: Option<i8>
 }
 
@@ -60,7 +60,7 @@ fn main() -> Result<()> {
     let book_id: u64 = row.book_id.parse()?;
     let record = IntRecord {
       rec_id, user_id, book_id,
-      is_read: row.is_read,
+      is_read: row.is_read as u8,
       rating: if row.rating > 0 {
         Some(row.rating as i8)
       } else {
