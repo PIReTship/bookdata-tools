@@ -1,3 +1,5 @@
+use std::string::FromUtf8Error;
+
 /// Activatable data acumulator.
 pub struct DataAccumulator<T> {
   acc: Option<Vec<T>>
@@ -30,6 +32,13 @@ impl <T: Clone> DataAccumulator<T> {
     if let Some(vec) = self.acc.as_mut() {
       vec.extend_from_slice(other);
     }
+  }
+}
+
+impl DataAccumulator<u8> {
+  pub fn finish_string(&mut self) -> Result<String, FromUtf8Error> {
+    let vec = self.finish();
+    String::from_utf8(vec)
   }
 }
 

@@ -1,6 +1,5 @@
 use std::io::prelude::*;
 use std::path::PathBuf;
-use std::str;
 use std::time::Instant;
 
 use log::*;
@@ -8,13 +7,14 @@ use log::*;
 use glob::glob;
 use structopt::StructOpt;
 use quick_xml::Reader;
-use quick_xml::events::Event;
 use anyhow::{Result, anyhow};
+use fallible_iterator::FallibleIterator;
 use happylog::set_progress;
 
 use bookdata::prelude::*;
 use bookdata::io::open_gzin_progress;
 use bookdata::parquet::*;
+use bookdata::marc::MARCRecord;
 use bookdata::tsv::split_first;
 
 /// Parse MARC files Parquet tables.
@@ -44,7 +44,7 @@ pub struct ParseMarc {
 }
 
 #[derive(TableRow, Debug, Default)]
-struct Record {
+struct FieldRecord {
   rec_id: u32,
   fld_no: u32,
   tag: i16,
@@ -54,117 +54,83 @@ struct Record {
   contents: String
 }
 
-/// Process a tab-delimited line file.  VIAF provides their files in this format;
-/// each line is a tab-separated pair of the VIAF ID and a single `record` instance.
-fn process_delim_file<R: BufRead>(r: &mut R, w: &mut TableWriter<Record>, init: u32) -> Result<u32> {
-  let mut rec_count = 0;
-  for line in r.lines() {
-    let lstr = line?;
-    let (_id, xml) = split_first(&lstr).ok_or(anyhow!("invalid line"))?;
-    let mut parse = Reader::from_str(xml);
-    let n = process_records(&mut parse, w, init + rec_count)?;
-    // we should only have one record per line
-    assert_eq!(n, 1);
-    rec_count += n;
+struct Output {
+  rec_count: u32,
+  writer: TableWriter<FieldRecord>
+}
+
+impl Output {
+  fn new(writer: TableWriter<FieldRecord>) -> Output {
+    Output {
+      rec_count: 0,
+      writer
+    }
   }
 
-  Ok(rec_count)
+  fn write_marc_record(&mut self, rec: MARCRecord) -> Result<()> {
+    self.rec_count += 1;
+    let rec_id = self.rec_count;
+    let mut fld_no = 0;
+
+    // write the leader
+    self.writer.write(&FieldRecord {
+      rec_id, fld_no,
+      tag: -1,
+      ind1: 0, ind2: 0, sf_code: 0,
+      contents: rec.leader
+    })?;
+
+    // write the control fields
+    for cf in rec.control {
+      fld_no += 1;
+      self.writer.write(&FieldRecord {
+        rec_id, fld_no, tag: cf.tag.into(),
+        ind1: 0, ind2: 0, sf_code: 0,
+        contents: cf.content
+      })?;
+    }
+
+    // write the data fields
+    for df in rec.fields {
+      for sf in df.subfields {
+        fld_no += 1;
+        self.writer.write(&FieldRecord {
+          rec_id, fld_no,
+          tag: df.tag, ind1: df.ind1, ind2: df.ind2,
+          sf_code: sf.code,
+          contents: sf.content
+        })?;
+      }
+    }
+
+    Ok(())
+  }
+}
+
+/// Process a tab-delimited line file.  VIAF provides their files in this format;
+/// each line is a tab-separated pair of the VIAF ID and a single `record` instance.
+fn process_delim_file<R: BufRead>(r: &mut R, w: &mut Output) -> Result<usize> {
+  let mut n = 0;
+  for line in r.lines() {
+    n += 1;
+    let lstr = line?;
+    let (_id, xml) = split_first(&lstr).ok_or(anyhow!("invalid line"))?;
+    let rec = MARCRecord::parse_record(&xml)?;
+    w.write_marc_record(rec)?;
+  }
+  Ok(n)
 }
 
 /// Process a file containing a MARC collection.
-fn process_marc_file<R: BufRead>(r: &mut R, w: &mut TableWriter<Record>, init: u32) -> Result<u32> {
+fn process_marc_file<R: BufRead>(r: &mut R, w: &mut Output) -> Result<usize> {
+  let mut n = 0;
   let mut parse = Reader::from_reader(r);
-  let count = process_records(&mut parse, w, init)?;
-  Ok(count)
-}
-
-fn process_records<B: BufRead>(rdr: &mut Reader<B>, writer: &mut TableWriter<Record>, start: u32) -> Result<u32> {
-  let mut buf = Vec::new();
-  let mut content = Vec::with_capacity(100);
-  let mut record = Record::default();
-  record.rec_id = start;
-  loop {
-    match rdr.read_event(&mut buf)? {
-      Event::Start(ref e) => {
-        let name = str::from_utf8(e.local_name())?;
-        match name {
-          "record" => {
-            record.rec_id += 1;
-            record.fld_no = 0;
-          },
-          "leader" => {
-            record.tag = -1;
-            content.clear();
-          },
-          "controlfield" => {
-            record.fld_no += 1;
-            let mut ntags = 0;
-            for ar in e.attributes() {
-              let a = ar?;
-              if a.key == b"tag" {
-                let tag = a.unescaped_value()?;
-                record.tag = str::from_utf8(&tag)?.parse()?;
-                ntags += 1;
-              }
-            }
-            assert!(ntags == 1, "no tag found for control field");
-            content.clear();
-          },
-          "datafield" => {
-            record.fld_no += 1;
-            for ar in e.attributes() {
-              let a = ar?;
-              let v = a.unescaped_value()?;
-              match a.key {
-                b"tag" => record.tag = str::from_utf8(&v)?.parse()?,
-                b"ind1" => record.ind1 = v[0],
-                b"ind2" => record.ind2 = v[0],
-                _ => ()
-              }
-            }
-          },
-          "subfield" => {
-            let mut natts = 0;
-            for ar in e.attributes() {
-              let a = ar?;
-              if a.key == b"code" {
-                let code = a.unescaped_value()?;
-                record.sf_code = code[0];
-                natts += 1;
-              }
-            }
-            assert!(natts >= 1, "no code found for subfield");
-            assert!(natts <= 1, "too many codes found for subfield");
-            content.clear();
-          }
-          _ => ()
-        }
-      },
-      Event::End(ref e) => {
-        let name = str::from_utf8(e.local_name())?;
-        match name {
-          "leader" | "controlfield" | "subfield" => {
-            record.contents = String::from_utf8(content.clone())?;
-            writer.write(&record)?;
-          },
-          "datafield" => {
-            record.ind1 = 0;
-            record.ind2 = 0;
-            record.sf_code = 0;
-            record.contents = String::new();
-          },
-          _ => ()
-        }
-      },
-      Event::Text(e) => {
-        let t = e.unescaped()?;
-        content.extend_from_slice(&t);
-      },
-      Event::Eof => break,
-      _ => ()
-    }
+  let mut records = MARCRecord::read_records(&mut parse);
+  while let Some(rec) = records.next()? {
+    n += 1;
+    w.write_marc_record(rec)?
   }
-  Ok(record.rec_id - start)
+  Ok(n)
 }
 
 fn main() -> Result<()> {
@@ -172,8 +138,8 @@ fn main() -> Result<()> {
   opts.common.init()?;
 
   info!("preparing to write {:?}", &opts.output);
-  let mut writer = TableWriter::open(&opts.output)?;
-  let mut count = 0;
+  let writer = TableWriter::open(&opts.output)?;
+  let mut writer = Output::new(writer);
   let mut nfiles = 0;
   let all_start = Instant::now();
 
@@ -186,9 +152,9 @@ fn main() -> Result<()> {
     let _pbl = set_progress(&pb);
     let mut read = read;
     let nrecs = if opts.linemode {
-      process_delim_file(&mut read, &mut writer, count)
+      process_delim_file(&mut read, &mut writer)
     } else {
-      process_marc_file(&mut read, &mut writer, count)
+      process_marc_file(&mut read, &mut writer)
     };
     drop(read);
     if pb.position() != pb.length() {
@@ -199,7 +165,6 @@ fn main() -> Result<()> {
       Ok(n) => {
         info!("processed {} records from {:?} in {:.2}s",
               n, inf, file_start.elapsed().as_secs_f32());
-        count += n;
       },
       Err(e) => {
         error!("error in {:?}: {}", inf, e);
@@ -208,10 +173,10 @@ fn main() -> Result<()> {
     }
   }
 
-  writer.finish()?;
+  let nrecs = writer.writer.finish()?;
 
   info!("imported {} records from {} files in {:.2}s",
-        count, nfiles, all_start.elapsed().as_secs_f32());
+        nrecs, nfiles, all_start.elapsed().as_secs_f32());
 
   Ok(())
 }
