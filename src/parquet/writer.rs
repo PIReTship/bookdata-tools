@@ -82,7 +82,7 @@ impl <R> TableWriter<R> where R: TableRow {
 }
 
 impl <R> ObjectWriter<R> for TableWriter<R> where R: TableRow {
-  fn write_object(&mut self, row: &R) -> Result<()> {
+  fn write_object(&mut self, row: R) -> Result<()> {
     row.write_to_batch(&mut self.batch)?;
     self.batch_count += 1;
     self.row_count += 1;

@@ -1,5 +1,5 @@
 /// A MARC record.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MARCRecord {
   pub leader: String,
   pub control: Vec<ControlField>,
@@ -7,14 +7,14 @@ pub struct MARCRecord {
 }
 
 /// A control field (00X) in a MARC record.
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct ControlField {
   pub tag: i8,
   pub content: String
 }
 
 /// A field in a MARC record.
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Field {
   pub tag: i16,
   pub ind1: u8,
@@ -23,7 +23,7 @@ pub struct Field {
 }
 
 /// A subfield in a MARC record.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Subfield {
   pub code: u8,
   pub content: String

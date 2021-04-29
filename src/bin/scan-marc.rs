@@ -11,6 +11,7 @@ use happylog::set_progress;
 
 use bookdata::prelude::*;
 use bookdata::io::open_gzin_progress;
+use bookdata::io::object::ThreadWriter;
 use bookdata::parquet::*;
 use bookdata::marc::parse::{read_records, read_records_delim};
 use bookdata::marc::flat_fields::FieldOutput;
@@ -47,7 +48,8 @@ fn main() -> Result<()> {
 
   info!("preparing to write {:?}", &opts.output);
   let writer = TableWriter::open(&opts.output)?;
-  let mut writer = FieldOutput::new(writer);
+  let writer = FieldOutput::new(writer);
+  let mut writer = ThreadWriter::new(writer);
   let mut nfiles = 0;
   let all_start = Instant::now();
 
@@ -66,7 +68,7 @@ fn main() -> Result<()> {
 
     let mut nrecs = 0;
     while let Some(rec) = records.next()? {
-      writer.write_object(&rec)?;
+      writer.write_object(rec)?;
       nrecs += 1;
     }
 

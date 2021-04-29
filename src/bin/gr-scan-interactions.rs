@@ -67,7 +67,7 @@ fn main() -> Result<()> {
         None
       }
     };
-    writer.write_object(&record)?;
+    writer.write_object(record)?;
   }
 
   let nlines = writer.finish()?;
