@@ -109,7 +109,8 @@ pub fn main() -> Result<()> {
     error!("error running script: {:?}", e);
     Err(anyhow!("TCL error {}: {}", e.error_code().as_str(), e.error_info().as_str()))
   } else {
-    info!("script completed successfully in {:.2}s", start.elapsed().as_secs_f32());
+    info!("script completed successfully in {}",
+          human_time(start.elapsed()));
     Ok(())
   }
 }
