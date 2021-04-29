@@ -1,4 +1,4 @@
-use std::io::BufRead;
+use std::io::{BufRead, Lines};
 use std::str;
 use std::convert::TryInto;
 
@@ -9,37 +9,9 @@ use fallible_iterator::FallibleIterator;
 use anyhow::{Result, anyhow};
 
 use crate::util::DataAccumulator;
+use crate::tsv::split_first;
 
-/// A MARC record.
-#[derive(Debug)]
-pub struct MARCRecord {
-  pub leader: String,
-  pub control: Vec<ControlField>,
-  pub fields: Vec<Field>
-}
-
-/// A control field (00X) in a MARC record.
-#[derive(Debug, Default)]
-pub struct ControlField {
-  pub tag: i8,
-  pub content: String
-}
-
-/// A field in a MARC record.
-#[derive(Debug, Default)]
-pub struct Field {
-  pub tag: i16,
-  pub ind1: u8,
-  pub ind2: u8,
-  pub subfields: Vec<Subfield>
-}
-
-/// A subfield in a MARC record.
-#[derive(Debug)]
-pub struct Subfield {
-  pub code: u8,
-  pub content: String
-}
+use super::record::*;
 
 #[derive(Debug, Default)]
 struct Codes {
@@ -59,56 +31,91 @@ impl From<Codes> for Field {
   }
 }
 
-/// Iterator of MARC records.
-pub struct Records<'a, B: BufRead> {
-  buffer: Vec<u8>,
-  reader: &'a mut Reader<B>
+/// Sources of MARC data.
+enum Src<B: BufRead> {
+  /// QuickXML Reader
+  QXR(Reader<B>),
+  /// Delimited lines
+  DL(Lines<B>)
 }
 
-impl <'a, B: BufRead> FallibleIterator for Records<'a, B> {
+/// Iterator of MARC records.
+pub struct Records<B: BufRead> {
+  buffer: Vec<u8>,
+  source: Src<B>
+}
+
+impl <B: BufRead> FallibleIterator for Records<B> {
   type Error = anyhow::Error;
   type Item = MARCRecord;
 
   fn next(&mut self) -> Result<Option<MARCRecord>> {
-    loop {
-      match self.reader.read_event(&mut self.buffer)? {
-        Event::Start(ref e) => {
-          let name = str::from_utf8(e.local_name())?;
-          match name {
-            "record" => {
-              return Ok(Some(read_record(&mut self.reader)?))
-            },
-            _ => ()
-          }
-        },
-        Event::Eof => return Ok(None),
-        _ => ()
-      }
+    match &mut self.source {
+      Src::QXR(reader) => next_qxr(reader, &mut self.buffer),
+      Src::DL(lines) => next_line(lines)
     }
   }
 }
 
-impl MARCRecord {
-  /// Read MARC records from XML.
-  pub fn read_records<'a, B: BufRead>(reader: &'a mut Reader<B>) -> Records<'a, B> {
-    Records {
-      buffer: Vec::with_capacity(1024),
-      reader
+fn next_qxr<B: BufRead>(reader: &mut Reader<B>, buf: &mut Vec<u8>) -> Result<Option<MARCRecord>> {
+  loop {
+    match reader.read_event(buf)? {
+      Event::Start(ref e) => {
+        let name = str::from_utf8(e.local_name())?;
+        match name {
+          "record" => {
+            return Ok(Some(read_record(reader)?))
+          },
+          _ => ()
+        }
+      },
+      Event::Eof => return Ok(None),
+      _ => ()
     }
-  }
-
-  /// Read a single MARC record from XML
-  pub fn read_single_record<B: BufRead>(reader: &mut Reader<B>) -> Result<MARCRecord> {
-    read_record(reader)
-  }
-
-  /// Parse a single MARC record from an XML string
-  pub fn parse_record<S: AsRef<str>>(xml: S) -> Result<MARCRecord> {
-    let mut parse = Reader::from_str(xml.as_ref());
-    read_record(&mut parse)
   }
 }
 
+fn next_line<B: BufRead>(lines: &mut Lines<B>) -> Result<Option<MARCRecord>> {
+  match lines.next() {
+    None => Ok(None),
+    Some(line) => {
+      let lstr = line?;
+      let (_id, xml) = split_first(&lstr).ok_or(anyhow!("invalid line"))?;
+      let rec = parse_record(&xml)?;
+      Ok(Some(rec))
+    }
+  }
+}
+
+/// Read MARC records from XML.
+pub fn read_records<B: BufRead>(reader: B) -> Records<B> {
+  let reader = Reader::from_reader(reader);
+  Records {
+    buffer: Vec::with_capacity(1024),
+    source: Src::QXR(reader)
+  }
+}
+
+/// Read MARC records from delimited XML.
+pub fn read_records_delim<B: BufRead>(reader: B) -> Records<B> {
+  Records {
+    buffer: Vec::with_capacity(1024),
+    source: Src::DL(reader.lines())
+  }
+}
+
+/// Read a single MARC record from XML.
+pub fn read_single_record<B: BufRead>(reader: &mut Reader<B>) -> Result<MARCRecord> {
+  read_record(reader)
+}
+
+/// Parse a single MARC record from an XML string.
+pub fn parse_record<S: AsRef<str>>(xml: S) -> Result<MARCRecord> {
+  let mut parse = Reader::from_str(xml.as_ref());
+  read_record(&mut parse)
+}
+
+/// Read a single MARC record from an XML reader.
 fn read_record<B: BufRead>(rdr: &mut Reader<B>) -> Result<MARCRecord> {
   let mut buf = Vec::new();
   let mut content = DataAccumulator::new();

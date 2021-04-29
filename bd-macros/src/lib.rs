@@ -58,7 +58,7 @@ fn derive_table_row(ast: &syn::DeriveInput) -> TokenStream {
   }).collect();
 
   let gen = quote! {
-    struct #batch {
+    pub struct #batch {
       #(#f_names: #f_btypes),*
     }
 
