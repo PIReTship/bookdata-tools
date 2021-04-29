@@ -66,7 +66,7 @@ fn main() -> Result<()> {
 
     let mut nrecs = 0;
     while let Some(rec) = records.next()? {
-      writer.write_marc_record(rec)?;
+      writer.write_object(&rec)?;
       nrecs += 1;
     }
 

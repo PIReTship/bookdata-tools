@@ -11,6 +11,8 @@ use parquet::file::properties::WriterProperties;
 use parquet::arrow::ArrowWriter;
 use anyhow::Result;
 
+use crate::io::object::ObjectWriter;
+
 pub use bd_macros::TableRow;
 
 const BATCH_SIZE: usize = 1000000;
@@ -69,7 +71,18 @@ impl <R> TableWriter<R> where R: TableRow {
     })
   }
 
-  pub fn write(&mut self, row: &R) -> Result<()> {
+  fn write_batch(&mut self) -> Result<()> {
+    debug!("writing batch");
+    let cols = R::finish_batch(&mut self.batch);
+    let batch = RecordBatch::try_new(self.schema.clone(), cols)?;
+    self.writer.write(&batch)?;
+    self.batch_count = 0;
+    Ok(())
+  }
+}
+
+impl <R> ObjectWriter<R> for TableWriter<R> where R: TableRow {
+  fn write_object(&mut self, row: &R) -> Result<()> {
     row.write_to_batch(&mut self.batch)?;
     self.batch_count += 1;
     self.row_count += 1;
@@ -79,16 +92,7 @@ impl <R> TableWriter<R> where R: TableRow {
     Ok(())
   }
 
-  fn write_batch(&mut self) -> Result<()> {
-    debug!("writing batch");
-    let cols = R::finish_batch(&mut self.batch);
-    let batch = RecordBatch::try_new(self.schema.clone(), cols)?;
-    self.writer.write(&batch)?;
-    self.batch_count = 0;
-    Ok(())
-  }
-
-  pub fn finish(mut self) -> Result<usize> {
+  fn finish(mut self) -> Result<usize> {
     if self.batch_count > 0 {
       self.write_batch()?;
     }

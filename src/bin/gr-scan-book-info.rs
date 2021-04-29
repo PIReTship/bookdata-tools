@@ -92,13 +92,13 @@ fn main() -> Result<()> {
       isbn13: trim_owned(&row.isbn13),
       asin: trim_owned(&row.asin)
     };
-    id_out.write(&ids)?;
+    id_out.write_object(&ids)?;
 
     let info = InfoRecord {
       book_id,
       title: trim_owned(&row.title)
     };
-    info_out.write(&info)?;
+    info_out.write_object(&info)?;
   }
 
   let nlines = id_out.finish()?;
