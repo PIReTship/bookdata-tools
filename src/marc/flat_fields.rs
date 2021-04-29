@@ -17,15 +17,15 @@ pub struct FieldRecord {
 }
 
 /// Output for writing flat MARC fields to Parquet.
-pub struct Output {
+pub struct FieldOutput {
   rec_count: u32,
   writer: TableWriter<FieldRecord>
 }
 
-impl Output {
+impl FieldOutput {
   /// Create a new output.
-  pub fn new(writer: TableWriter<FieldRecord>) -> Output {
-    Output {
+  pub fn new(writer: TableWriter<FieldRecord>) -> FieldOutput {
+    FieldOutput {
       rec_count: 0,
       writer
     }

@@ -13,7 +13,7 @@ use bookdata::prelude::*;
 use bookdata::io::open_gzin_progress;
 use bookdata::parquet::*;
 use bookdata::marc::parse::{read_records, read_records_delim};
-use bookdata::marc::flat_fields::Output;
+use bookdata::marc::flat_fields::FieldOutput;
 
 /// Parse MARC files into Parquet tables.
 #[derive(StructOpt, Debug)]
@@ -47,7 +47,7 @@ fn main() -> Result<()> {
 
   info!("preparing to write {:?}", &opts.output);
   let writer = TableWriter::open(&opts.output)?;
-  let mut writer = Output::new(writer);
+  let mut writer = FieldOutput::new(writer);
   let mut nfiles = 0;
   let all_start = Instant::now();
 
