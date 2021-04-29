@@ -19,7 +19,7 @@ const BATCH_SIZE: usize = 1000000;
 ///
 /// This trait can be derived:
 ///
-/// ```
+/// ```ignore
 /// #[derive(TableRow)]
 /// struct Record {
 ///     user_id: u32,
