@@ -1,4 +1,4 @@
-pub use anyhow::{Result, Error};
+pub use anyhow::{Result, Error, anyhow};
 pub use log::*;
 pub use structopt::StructOpt;
 pub use crate::cli::CommonOpts;

@@ -1,6 +1,9 @@
+use std::io::prelude::*;
 use std::thread::{spawn, JoinHandle};
 use std::mem::drop;
 
+use serde::Serialize;
+use csv;
 use crossbeam_channel::{bounded, Sender};
 use anyhow::{anyhow, Result};
 
@@ -52,5 +55,19 @@ impl <T: Send + Sync + 'static> ObjectWriter<T> for ThreadWriter<T> {
     res.unwrap_or_else(|e| {
       Err(anyhow!("background thread panicked: {:?}", e))
     })
+  }
+}
+
+
+impl <T: Serialize, W: Write> ObjectWriter<T> for csv::Writer<W> {
+  fn write_object(&mut self, object: T) -> Result<()> {
+    self.serialize(object)?;
+    Ok(())
+  }
+
+  fn finish(mut self) -> Result<usize> {
+    self.flush()?;
+    drop(self);
+    Ok(0)
   }
 }
