@@ -16,11 +16,10 @@ use super::Command;
 use crate::db::DbOpts;
 use crate::tracking::{StageOpts};
 
-mod parsers;
 mod sources;
 mod sinks;
 
-use parsers::*;
+use crate::ids::isbn::*;
 use sources::*;
 use sinks::*;
 

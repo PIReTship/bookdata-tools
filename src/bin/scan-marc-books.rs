@@ -1,4 +1,3 @@
-use std::fs::OpenOptions;
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -8,13 +7,12 @@ use glob::glob;
 use serde::Serialize;
 use structopt::StructOpt;
 use fallible_iterator::FallibleIterator;
-use flate2::Compression;
 use happylog::set_progress;
 
 use bookdata::prelude::*;
 use bookdata::io::open_gzin_progress;
-use bookdata::io::object::ThreadWriter;
 use bookdata::parquet::*;
+use bookdata::ids::isbn::{ParserDefs, ParseResult};
 use bookdata::marc::MARCRecord;
 use bookdata::marc::parse::{read_records};
 use bookdata::marc::flat_fields::FieldOutput;
@@ -49,17 +47,19 @@ struct BookIds {
   bib_level: u8
 }
 
-#[derive(Serialize, Debug)]
-struct RawISBN {
+#[derive(Serialize, TableRow, Debug)]
+struct ISBNrec {
   rec_id: u32,
-  isbn: String
+  isbn: String,
+  tag: Option<String>
 }
 
 struct BookOutput {
   n_books: u32,
+  parser: ParserDefs,
   fields: FieldOutput,
   ids: TableWriter<BookIds>,
-  isbns: ThreadWriter<RawISBN>
+  isbns: TableWriter<ISBNrec>
 }
 
 impl BookOutput {
@@ -73,15 +73,13 @@ impl BookOutput {
     info!("writing book IDs to {}", idfn);
     let ids = TableWriter::open(idfn)?;
 
-    let isbnfn = format!("{}-isbns.csv.gz", prefix);
+    let isbnfn = format!("{}-isbns.parquet", prefix);
     info!("writing book IDs to {}", isbnfn);
-    let isbns = OpenOptions::new().create(true).truncate(true).write(true).open(isbnfn)?;
-    let isbns = flate2::write::GzEncoder::new(isbns, Compression::best());
-    let isbns = csv::Writer::from_writer(isbns);
-    let isbns = ThreadWriter::new(isbns);
+    let isbns = TableWriter::open(isbnfn)?;
 
     Ok(BookOutput {
       n_books: 0,
+      parser: ParserDefs::new(),
       fields, ids, isbns
     })
   }
@@ -97,10 +95,27 @@ impl ObjectWriter<MARCRecord> for BookOutput {
       if df.tag == 20 {
         for sf in &df.subfields {
           if sf.code == b'a' {
-            let isbn = RawISBN {
-              rec_id, isbn: sf.content.clone()
-            };
-            self.isbns.write_object(isbn)?;
+            match self.parser.parse(&sf.content) {
+              ParseResult::Valid(isbns, _) => {
+                for isbn in isbns {
+                  if isbn.tags.len() > 0 {
+                    for tag in isbn.tags {
+                      self.isbns.write_object(ISBNrec {
+                        rec_id, isbn: isbn.text.clone(), tag: Some(tag)
+                      })?;
+                    }
+                  } else {
+                    self.isbns.write_object(ISBNrec {
+                      rec_id, isbn: isbn.text, tag: None
+                    })?;
+                  }
+                }
+              },
+              ParseResult::Ignored(_) => (),
+              ParseResult::Unmatched(s) => {
+                warn!("unmatched ISBN text {}", s)
+              }
+            }
           }
         }
       }

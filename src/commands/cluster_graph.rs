@@ -12,7 +12,7 @@ use crate::db::{DbOpts, CopyRequest};
 use crate::tracking::StageOpts;
 use crate::graph::{load_graph, IdGraph, IdNode};
 use crate::io::HashWrite;
-use crate::codes::NS_ISBN;
+use crate::ids::codes::NS_ISBN;
 use super::Command;
 
 /// Cluster graph nodes for ISBN clusters
