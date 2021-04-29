@@ -1,5 +1,5 @@
 use std::path::Path;
-use std::fs::{File, OpenOptions};
+use std::fs::OpenOptions;
 use std::sync::Arc;
 
 use log::*;
@@ -8,10 +8,11 @@ use arrow::datatypes::{Schema, SchemaRef};
 use arrow::record_batch::RecordBatch;
 use parquet::basic::Compression;
 use parquet::file::properties::WriterProperties;
+use parquet::file::writer::ParquetWriter;
 use parquet::arrow::ArrowWriter;
 use anyhow::Result;
 
-use crate::io::object::ObjectWriter;
+use crate::io::object::{ObjectWriter, ThreadWriter};
 
 pub use bd_macros::TableRow;
 
@@ -48,10 +49,22 @@ pub trait TableRow {
 /// Parquet table writer
 pub struct TableWriter<R: TableRow> {
   schema: SchemaRef,
-  writer: ArrowWriter<File>,
+  writer: ThreadWriter<RecordBatch>,
   batch: R::Batch,
   batch_count: usize,
   row_count: usize
+}
+
+impl <W> ObjectWriter<RecordBatch> for ArrowWriter<W> where W: ParquetWriter + 'static {
+  fn write_object(&mut self, batch: RecordBatch) -> Result<()> {
+    self.write(&batch)?;
+    Ok(())
+  }
+
+  fn finish(mut self) -> Result<usize> {
+    self.close()?;
+    Ok(0)
+  }
 }
 
 impl <R> TableWriter<R> where R: TableRow {
@@ -63,6 +76,7 @@ impl <R> TableWriter<R> where R: TableRow {
     let props = props.set_compression(Compression::ZSTD);
     let props = props.build();
     let writer = ArrowWriter::try_new(file, schema.clone(), Some(props))?;
+    let writer = ThreadWriter::new(writer);
     Ok(TableWriter {
       schema, writer,
       batch: R::new_batch(BATCH_SIZE),
@@ -75,7 +89,7 @@ impl <R> TableWriter<R> where R: TableRow {
     debug!("writing batch");
     let cols = R::finish_batch(&mut self.batch);
     let batch = RecordBatch::try_new(self.schema.clone(), cols)?;
-    self.writer.write(&batch)?;
+    self.writer.write_object(batch)?;
     self.batch_count = 0;
     Ok(())
   }
@@ -97,7 +111,7 @@ impl <R> ObjectWriter<R> for TableWriter<R> where R: TableRow {
       self.write_batch()?;
     }
     info!("closing Parquet writer");
-    self.writer.close()?;
+    self.writer.finish()?;
     Ok(self.row_count)
   }
 }
