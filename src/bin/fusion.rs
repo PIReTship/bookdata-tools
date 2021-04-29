@@ -36,6 +36,8 @@ pub struct Fusion {
 #[derive(Deserialize)]
 struct JobSpec {
   script: String,
+  #[serde(default)]
+  output: Option<String>,
   tables: HashMap<String,String>
 }
 
@@ -58,7 +60,9 @@ pub async fn main() -> Result<()> {
     ctx.register_parquet(&name, &path)?;
   }
 
-  if let Some(out_fn) = &opts.output {
+  let out = opts.output.or(spec.output);
+
+  if let Some(out_fn) = out {
     info!("planning script");
     let lplan = ctx.create_logical_plan(&script)?;
     let plan = ctx.create_physical_plan(&lplan)?;

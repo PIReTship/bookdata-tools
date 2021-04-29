@@ -141,6 +141,7 @@ fn main() -> Result<()> {
   };
   let mut output = BookOutput::open(&pfx)?;
   let mut nfiles = 0;
+  let mut all_recs = 0;
   let all_start = Instant::now();
 
   for inf in opts.find_files()? {
@@ -154,19 +155,22 @@ fn main() -> Result<()> {
 
     let mut nrecs = 0;
     while let Some(rec) = records.next()? {
-      output.write_object(rec)?;
+      if rec.is_book() {
+        output.write_object(rec)?;
+      }
       nrecs += 1;
     }
 
     pb.finish_and_clear();
     info!("processed {} records from {:?} in {:.2}s",
           nrecs, inf, file_start.elapsed().as_secs_f32());
+    all_recs += nrecs;
   }
 
-  let nrecs = output.finish()?;
+  let written = output.finish()?;
 
-  info!("imported {} records from {} files in {:.2}s",
-        nrecs, nfiles, all_start.elapsed().as_secs_f32());
+  info!("imported {}/{} records from {} files in {:.2}s",
+        written, all_recs, nfiles, all_start.elapsed().as_secs_f32());
 
   Ok(())
 }
