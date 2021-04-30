@@ -1,16 +1,20 @@
 use std::path::{PathBuf};
 use std::time::Instant;
-use std::fs::{read_to_string};
+use std::fs::{File, read_to_string};
+use std::future::Future;
+use std::sync::Arc;
 
 use tokio;
 use tokio::runtime::Runtime;
 
 use bookdata::prelude::*;
 
+use flate2::write::GzEncoder;
 use molt::*;
 use parquet::basic::Compression;
 use parquet::file::properties::WriterProperties;
 use datafusion::execution::context::ExecutionContext;
+use datafusion::physical_plan::{ExecutionPlan, collect};
 
 /// Run a DataFusion script and save its results.
 ///
@@ -33,6 +37,7 @@ struct ScriptContext {
 }
 
 impl ScriptContext {
+  /// Initialize a new script context.
   fn create() -> Result<ScriptContext> {
     let runtime = Runtime::new()?;
     let df_context = ExecutionContext::new();
@@ -40,8 +45,38 @@ impl ScriptContext {
       runtime, df_context
     })
   }
+
+  /// Run an asynchronous task.
+  fn run<F: Future>(&self, task: F) -> <F as Future>::Output {
+    self.runtime.block_on(task)
+  }
 }
 
+/// Save an execution plan results to a Parquet directory.
+fn save_parquet(ctx: &ScriptContext, plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
+  let props = WriterProperties::builder();
+  let props = props.set_compression(Compression::ZSTD);
+  let props = props.build();
+  ctx.run(ctx.df_context.write_parquet(plan, file.to_owned(), Some(props)))?;
+  Ok(())
+}
+
+/// Save an execution plan results to a CSV file.
+fn save_csv(ctx: &ScriptContext, plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
+  info!("running execution plan");
+  let results = ctx.run(collect(plan))?;
+
+  info!("saving to CSV file");
+  let out = File::create(file)?;
+  let out = GzEncoder::new(out, flate2::Compression::best());
+  let mut csvw = arrow::csv::WriterBuilder::new().has_headers(true).build(out);
+  for batch in results {
+    csvw.write(&batch)?;
+  }
+  Ok(())
+}
+
+/// Helper function to wrap Rust errors in Molt
 fn wrap_errs<P, T>(proc: P) -> MoltResult where P: FnOnce() -> Result<T> {
   let res = proc();
   if let Err(e) = res {
@@ -81,11 +116,14 @@ fn cmd_save_results(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> Molt
     let plan = ctx.df_context.create_physical_plan(&lplan)?;
 
     info!("executing script to file {}", file);
-    let props = WriterProperties::builder();
-    let props = props.set_compression(Compression::ZSTD);
-    let props = props.build();
-    let task = ctx.df_context.write_parquet(plan, file.to_owned(), Some(props));
-    ctx.runtime.block_on(task)?;
+
+    if file.ends_with(".parquet") {
+      save_parquet(ctx, plan, file)?;
+    } else if file.ends_with(".csv.gz") {
+      save_csv(ctx, plan, file)?;
+    } else {
+      return Err(anyhow!("unknown suffix in file {}", file));
+    }
     Ok(())
   })
 }
