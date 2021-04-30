@@ -127,6 +127,7 @@ fn cmd_save_results(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> Molt
     debug!("query text: {}", query);
     let lplan = ctx.df_context.create_logical_plan(&query)?;
     let plan = ctx.df_context.create_physical_plan(&lplan)?;
+    debug!("query plan: {:?}", plan);
 
     info!("executing script to file {}", file);
 
