@@ -17,16 +17,24 @@ use bookdata::marc::parse::{read_records, read_records_delim};
 mod generic;
 mod book;
 
-/// Scan MARC book records and extract basic information.
+/// Scan MARC records and extract basic information.
+///
+/// This program scans MARC-XML records, in either raw or delimited-line format,
+/// and writes the fields to a Parquet file of flat field records.  It has two
+/// modes: normal, which simply writes MARC fields to the Parquet file, and
+/// 'book mode', which only saves books and produces additional output files
+/// summarizing book record information and book ISBNs.
 #[derive(StructOpt, Debug)]
 #[structopt(name="scan-marc")]
 struct ParseMarcBooks {
   #[structopt(flatten)]
   common: CommonOpts,
 
+  /// Output files for normal mode.
   #[structopt(short="o", long="output", parse(from_os_str))]
   output: Option<PathBuf>,
 
+  /// Prefix for output files in book mode.
   #[structopt(short="op", long="output-prefix")]
   prefix: Option<String>,
 
