@@ -1,3 +1,4 @@
+use std::io::prelude::*;
 use std::path::{PathBuf};
 use std::time::Instant;
 use std::fs::{File, read_to_string};
@@ -11,10 +12,12 @@ use bookdata::prelude::*;
 
 use flate2::write::GzEncoder;
 use molt::*;
+use futures::stream::StreamExt;
 use parquet::basic::Compression;
 use parquet::file::properties::WriterProperties;
 use datafusion::execution::context::ExecutionContext;
-use datafusion::physical_plan::{ExecutionPlan, collect};
+use datafusion::physical_plan::{ExecutionPlan};
+use datafusion::physical_plan::merge::MergeExec;
 
 /// Run a DataFusion script and save its results.
 ///
@@ -61,18 +64,28 @@ fn save_parquet(ctx: &ScriptContext, plan: Arc<dyn ExecutionPlan>, file: &str) -
   Ok(())
 }
 
+async fn eval_to_csv<W: Write>(out: &mut arrow::csv::Writer<W>, plan: Arc<dyn ExecutionPlan>) -> Result<()> {
+  let plan = if plan.output_partitioning().partition_count() > 1 {
+    Arc::new(MergeExec::new(plan.clone()))
+  } else {
+    plan
+  };
+  let mut batches = plan.execute(0).await?;
+  while let Some(batch) = batches.next().await {
+    let batch = batch?;
+    out.write(&batch)?;
+  }
+  Ok(())
+}
+
 /// Save an execution plan results to a CSV file.
 fn save_csv(ctx: &ScriptContext, plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
-  info!("running execution plan");
-  let results = ctx.run(collect(plan))?;
-
   info!("saving to CSV file");
   let out = File::create(file)?;
   let out = GzEncoder::new(out, flate2::Compression::best());
   let mut csvw = arrow::csv::WriterBuilder::new().has_headers(true).build(out);
-  for batch in results {
-    csvw.write(&batch)?;
-  }
+
+  ctx.run(eval_to_csv(&mut csvw, plan))?;
   Ok(())
 }
 
