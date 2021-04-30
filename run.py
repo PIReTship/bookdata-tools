@@ -42,11 +42,10 @@ def run_rust():
         tool = bin_dir / 'bookdata'
         args = sys.argv[1:]
         _log.info('running tool %s', tool_name)
+        if 'DB_URL' not in os.environ:
+            os.environ['DB_URL'] = db_url()
 
     tool = os.fspath(tool)
-
-    if 'DB_URL' not in os.environ:
-        os.environ['DB_URL'] = db_url()
     sp.run([tool] + args, check=True)
 
 
