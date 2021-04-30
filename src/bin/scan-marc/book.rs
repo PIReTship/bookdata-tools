@@ -1,41 +1,10 @@
-use std::path::PathBuf;
-use std::time::Instant;
-
-use log::*;
-
-use glob::glob;
 use serde::Serialize;
-use structopt::StructOpt;
-use fallible_iterator::FallibleIterator;
-use happylog::set_progress;
 
 use bookdata::prelude::*;
-use bookdata::io::open_gzin_progress;
 use bookdata::parquet::*;
 use bookdata::ids::isbn::{ParserDefs, ParseResult};
 use bookdata::marc::MARCRecord;
-use bookdata::marc::parse::{read_records};
 use bookdata::marc::flat_fields::FieldOutput;
-
-/// Scan MARC book records and extract basic information.
-#[derive(StructOpt, Debug)]
-#[structopt(name="scan-marc")]
-pub struct ParseMarcBooks {
-  #[structopt(flatten)]
-  common: CommonOpts,
-
-  /// Prefix for output files
-  #[structopt(short="p", long="output-prefix")]
-  prefix: Option<String>,
-
-  /// Glob for files to parse.
-  #[structopt(short="G", long="glob")]
-  glob: Option<String>,
-
-  /// Input files to parse (GZ-compressed)
-  #[structopt(name = "FILE", parse(from_os_str))]
-  files: Vec<PathBuf>
-}
 
 #[derive(TableRow, Debug)]
 struct BookIds {
@@ -54,7 +23,7 @@ struct ISBNrec {
   tag: Option<String>
 }
 
-struct BookOutput {
+pub struct BookOutput {
   n_books: u32,
   parser: ParserDefs,
   fields: FieldOutput,
@@ -63,7 +32,7 @@ struct BookOutput {
 }
 
 impl BookOutput {
-  fn open(prefix: &str) -> Result<BookOutput> {
+  pub fn open(prefix: &str) -> Result<BookOutput> {
     let ffn = format!("{}-fields.parquet", prefix);
     info!("writing book fields to {}", ffn);
     let fields = TableWriter::open(ffn)?;
@@ -87,6 +56,9 @@ impl BookOutput {
 
 impl ObjectWriter<MARCRecord> for BookOutput {
   fn write_object(&mut self, record: MARCRecord) -> Result<()> {
+    if !record.is_book() {
+      return Ok(())
+    }
     self.n_books += 1;
     let rec_id = self.n_books;
 
@@ -143,65 +115,5 @@ impl ObjectWriter<MARCRecord> for BookOutput {
     self.ids.finish()?;
     self.isbns.finish()?;
     Ok(self.n_books as usize)
-  }
-}
-
-fn main() -> Result<()> {
-  let opts = ParseMarcBooks::from_args();
-  opts.common.init()?;
-
-  let pfx = match &opts.prefix {
-    Some(p) => p,
-    None => "book"
-  };
-  let mut output = BookOutput::open(&pfx)?;
-  let mut nfiles = 0;
-  let mut all_recs = 0;
-  let all_start = Instant::now();
-
-  for inf in opts.find_files()? {
-    nfiles += 1;
-    let inf = inf.as_path();
-    let file_start = Instant::now();
-    info!("reading from compressed file {:?}", inf);
-    let (read, pb) = open_gzin_progress(inf)?;
-    let _pbl = set_progress(&pb);
-    let mut records = read_records(read);
-
-    let mut nrecs = 0;
-    while let Some(rec) = records.next()? {
-      if rec.is_book() {
-        output.write_object(rec)?;
-      }
-      nrecs += 1;
-    }
-
-    pb.finish_and_clear();
-    info!("processed {} records from {:?} in {:.2}s",
-          nrecs, inf, file_start.elapsed().as_secs_f32());
-    all_recs += nrecs;
-  }
-
-  let written = output.finish()?;
-
-  info!("imported {}/{} records from {} files in {:.2}s",
-        written, all_recs, nfiles, all_start.elapsed().as_secs_f32());
-
-  Ok(())
-}
-
-impl ParseMarcBooks {
-  fn find_files(&self) -> Result<Vec<PathBuf>> {
-    if let Some(ref gs) = self.glob {
-      info!("scanning for files {}", gs);
-      let mut v = Vec::new();
-      for entry in glob(gs)? {
-        let entry = entry?;
-        v.push(entry);
-      }
-      Ok(v)
-    } else {
-      Ok(self.files.clone())
-    }
   }
 }
