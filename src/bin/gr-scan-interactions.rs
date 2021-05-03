@@ -58,7 +58,8 @@ fn main() -> Result<()> {
     let key = hex::decode(row.user_id.as_bytes())?;
     let user_id = users.intern(key);
     let book_id: u64 = row.book_id.parse()?;
-    let record = IntRecord {
+
+    writer.write_object(IntRecord {
       rec_id, user_id, book_id,
       is_read: row.is_read as u8,
       rating: if row.rating > 0 {
@@ -66,8 +67,7 @@ fn main() -> Result<()> {
       } else {
         None
       }
-    };
-    writer.write_object(record)?;
+    })?;
   }
 
   let nlines = writer.finish()?;

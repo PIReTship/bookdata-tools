@@ -85,20 +85,19 @@ fn main() -> Result<()> {
   for rec in proc.json_records() {
     let row: RawBook = rec?;
     let book_id: u32 = row.book_id.parse()?;
-    let ids = IdRecord {
+
+    id_out.write_object(IdRecord {
       book_id,
       work_id: parse_opt(&row.work_id)?,
       isbn: trim_owned(&row.isbn),
       isbn13: trim_owned(&row.isbn13),
       asin: trim_owned(&row.asin)
-    };
-    id_out.write_object(ids)?;
+    })?;
 
-    let info = InfoRecord {
+    info_out.write_object(InfoRecord {
       book_id,
       title: trim_owned(&row.title)
-    };
-    info_out.write_object(info)?;
+    })?;
   }
 
   let nlines = id_out.finish()?;
