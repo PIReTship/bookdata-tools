@@ -1,3 +1,11 @@
+//! MARC record representation.
+//!
+//! The code in this module supports records in the MARC format. It can be
+//! used for processing both [bibliographic][] and [name authority][] records.
+//!
+//! [bibliographic]: https://www.loc.gov/marc/bibliographic/
+//! [name authority]: https://www.loc.gov/marc/authority/
+
 /// A MARC record.
 #[derive(Debug, Clone)]
 pub struct MARCRecord {
