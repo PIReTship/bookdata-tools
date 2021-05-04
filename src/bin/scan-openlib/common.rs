@@ -60,11 +60,15 @@ pub trait OLProcessor<T> where Self: Sized {
 
 /// Struct representing an author link in OL.
 #[derive(Deserialize, Debug)]
+#[serde(untagged)]
 pub enum Author {
-  Key(String),
   Object {
+    key: String,
+  },
+  Nested {
     author: Keyed
   },
+  Key(String),
   Empty
 }
 
@@ -76,56 +80,11 @@ pub struct Keyed {
 
 impl Author {
   pub fn key<'a>(&'a self) -> Option<&'a str> {
-    match self.author {
-      Some(ref au) => Some(au.key.as_ref()),
-      None => None
+    match self {
+      Author::Object { key } => Some(key.as_ref()),
+      Author::Nested { author } => Some(author.key.as_ref()),
+      Author::Key(ref ks) => Some(ks.as_ref()),
+      Author::Empty => None
     }
-  }
-}
-
-
-// we have to manually implement Deserialize to handle truncated authors
-struct AuthorVisitor;
-
-impl <'de> Deserialize<'de> for Author {
-  fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-    deserializer.deserialize_map(AuthorVisitor)
-  }
-}
-
-impl <'de> de::Visitor<'de> for AuthorVisitor {
-  type Value = Author;
-
-  fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-    formatter.write_str("a string or object")
-  }
-
-  fn visit_str<E>(self, s: &str) -> Result<Self::Value, E> {
-    let key = match &s[0..3] {
-      "/a/" => "/author/".to_owned() + &s[3..],
-      _ => s.to_owned()
-    };
-    Ok({Author {
-      author: Some(Keyed {
-        key
-      })
-    }})
-  }
-
-  fn visit_map<A: de::MapAccess<'de>>(self, map: A) -> Result<Self::Value, A::Error> {
-    let mut map = map;
-    while let Some(e) = map.next_entry()? {
-      let (k, v): (&str, Keyed) = e;
-      if k == "author" {
-        return Ok(Author {
-          author: Some(v)
-        })
-      }
-    }
-
-    // no author found
-    Ok(Author {
-      author: None
-    })
   }
 }

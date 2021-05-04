@@ -109,7 +109,7 @@ impl OLProcessor<OLEditionRecord> for Processor {
             edition: id, pos, author: aid
           })?;
         } else {
-          warn!("unknown author {} on edition {}", akey, row.key);
+          debug!("unknown author {} on edition {}", akey, row.key);
         }
       }
     }
