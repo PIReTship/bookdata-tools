@@ -9,6 +9,7 @@ use bookdata::io::LineProcessor;
 mod common;
 mod author;
 mod work;
+mod edition;
 
 use common::*;
 
@@ -80,8 +81,10 @@ fn main() -> Result<()> {
     },
     DataType::Work => {
       scan_openlib(options.infile, work::Processor::new()?)?;
+    },
+    DataType::Edition => {
+      scan_openlib(options.infile, edition::Processor::new()?)?;
     }
-    _ => return Err(anyhow!("mode not implemented"))
   };
 
   Ok(())

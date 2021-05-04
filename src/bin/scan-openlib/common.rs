@@ -59,12 +59,12 @@ pub trait OLProcessor<T> where Self: Sized {
 /// Struct representing an author link in OL.
 #[derive(Deserialize, Debug)]
 pub struct Author {
-  pub author: Option<AuLink>
+  pub author: Option<Keyed>
 }
 
-/// Actual author link
+/// Keyed object reference
 #[derive(Deserialize, Debug)]
-pub struct AuLink {
+pub struct Keyed {
   pub key: String
 }
 
