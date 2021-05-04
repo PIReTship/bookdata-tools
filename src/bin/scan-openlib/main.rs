@@ -78,6 +78,9 @@ fn main() -> Result<()> {
     DataType::Author => {
       scan_openlib(options.infile, author::Processor::new()?)?;
     },
+    DataType::Work => {
+      scan_openlib(options.infile, work::Processor::new()?)?;
+    }
     _ => return Err(anyhow!("mode not implemented"))
   };
 

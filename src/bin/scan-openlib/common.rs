@@ -30,9 +30,16 @@ impl <T: DeserializeOwned> FromStr for Row<T> {
     let (key, rest) = split_first(rest).ok_or(RowError::FieldError(2))?;
     let (_, rest) = split_first(rest).ok_or(RowError::FieldError(3))?;
     let (_, data) = split_first(rest).ok_or(RowError::FieldError(4))?;
+    let record = serde_json::from_str(data).map_err(|e| {
+      error!("invalid JSON in record {}: {:?}", key, e);
+      let jsv: serde_json::Value = serde_json::from_str(data).expect("invalid JSON");
+      let jsp = serde_json::to_string_pretty(&jsv).expect("uhh");
+      info!("offending JSON: {}", jsp);
+      e
+    })?;
     Ok(Row {
       key: key.to_owned(),
-      record: serde_json::from_str(data)?
+      record
     })
   }
 }
@@ -50,7 +57,23 @@ pub trait OLProcessor<T> where Self: Sized {
 }
 
 /// Struct representing an author link in OL.
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Author {
+  pub author: Option<AuLink>
+}
+
+/// Actual author link
+#[derive(Deserialize, Debug)]
+pub struct AuLink {
   pub key: String
+}
+
+
+impl Author {
+  pub fn key<'a>(&'a self) -> Option<&'a str> {
+    match self.author {
+      Some(ref au) => Some(au.key.as_ref()),
+      None => None
+    }
+  }
 }
