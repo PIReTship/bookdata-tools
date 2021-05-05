@@ -1,10 +1,11 @@
 use std::path::Path;
 use std::fs::OpenOptions;
 use std::sync::Arc;
+use std::marker::PhantomData;
 
 use log::*;
 use arrow::array::ArrayRef;
-use arrow::datatypes::{Schema, SchemaRef};
+use arrow::datatypes::{Schema, SchemaRef, Field};
 use arrow::record_batch::RecordBatch;
 use parquet::basic::Compression;
 use parquet::file::properties::WriterProperties;
@@ -55,6 +56,14 @@ pub struct TableWriter<R: TableRow> {
   row_count: usize
 }
 
+/// Builder for Parquet table writers.
+#[derive(Clone)]
+pub struct TableWriterBuilder<R: TableRow> {
+  phantom: PhantomData<R>,
+  schema: SchemaRef,
+  bsize: usize
+}
+
 impl <W> ObjectWriter<RecordBatch> for ArrowWriter<W> where W: ParquetWriter + 'static {
   fn write_object(&mut self, batch: RecordBatch) -> Result<()> {
     self.write(&batch)?;
@@ -67,22 +76,54 @@ impl <W> ObjectWriter<RecordBatch> for ArrowWriter<W> where W: ParquetWriter + '
   }
 }
 
-impl <R> TableWriter<R> where R: TableRow {
-  pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
-    let schema = R::schema();
-    let schema = Arc::new(schema);
+impl <R> TableWriterBuilder<R> where R: TableRow {
+  pub fn new() -> TableWriterBuilder<R> {
+    TableWriterBuilder {
+      phantom: PhantomData,
+      schema: Arc::new(R::schema()),
+      bsize: BATCH_SIZE
+    }
+  }
+
+  pub fn rename<'a>(&'a mut self, orig: &str, tgt: &str) -> &'a mut TableWriterBuilder<R> {
+    let fields = self.schema.fields();
+    let mut f2 = Vec::with_capacity(fields.len());
+    for f in fields {
+      if f.name() == orig {
+        f2.push(Field::new(tgt, f.data_type().clone(), f.is_nullable()))
+      } else {
+        f2.push(f.clone())
+      }
+    }
+    self.schema = Arc::new(Schema::new(f2));
+    self
+  }
+
+  pub fn batch_size<'a>(&'a mut self, size: usize) -> &'a mut TableWriterBuilder<R> {
+    self.bsize = size;
+    self
+  }
+
+  pub fn open<P: AsRef<Path>>(&self, path: P) -> Result<TableWriter<R>> {
     let file = OpenOptions::new().create(true).truncate(true).write(true).open(path)?;
     let props = WriterProperties::builder();
     let props = props.set_compression(Compression::ZSTD);
     let props = props.build();
-    let writer = ArrowWriter::try_new(file, schema.clone(), Some(props))?;
+    let writer = ArrowWriter::try_new(file, self.schema.clone(), Some(props))?;
     let writer = ThreadWriter::new(writer);
     Ok(TableWriter {
-      schema, writer,
-      batch: R::new_batch(BATCH_SIZE),
+      schema: self.schema.clone(), writer,
+      batch: R::new_batch(self.bsize),
       batch_count: 0,
       row_count: 0,
     })
+  }
+}
+
+impl <R> TableWriter<R> where R: TableRow {
+  pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
+    let bld = TableWriterBuilder::new();
+    bld.open(path)
   }
 
   fn write_batch(&mut self) -> Result<()> {

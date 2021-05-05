@@ -21,6 +21,7 @@ pub struct IdIndex<K> {
   map: HashMap<K,u32>
 }
 
+/// Internal struct for ID records.
 #[derive(TableRow)]
 struct IdRec {
   id: u32,
@@ -61,9 +62,18 @@ impl IdIndex<String> {
   /// - `key`, of type `String`, storing the keys
   /// - `id`, of type `u32`, storing the IDs
   pub fn load_standard<P: AsRef<Path>>(path: P) -> Result<IdIndex<String>> {
+    IdIndex::load(path, "id", "key")
+  }
+
+  /// Load from a Parquet file.
+  ///
+  /// This loads two columns from a Parquet file.  The ID column is expected to
+  /// have type `UInt32` (or a type projectable to it), and the key column should
+  /// be `Utf8`.
+  pub fn load<P: AsRef<Path>>(path: P, id_col: &str, key_col: &str) -> Result<IdIndex<String>> {
     let schema = Schema::new(vec![
-      Field::new("id", DataType::UInt32, false),
-      Field::new("key", DataType::Utf8, false),
+      Field::new(id_col, DataType::UInt32, false),
+      Field::new(key_col, DataType::Utf8, false),
     ]);
     let pqs = arrow_to_parquet_schema(&schema)?;
     let proj = pqs.root_schema();
@@ -90,7 +100,16 @@ impl IdIndex<String> {
 
   /// Save to a Parquet file with the standard configuration.
   pub fn save_standard<P: AsRef<Path>>(self, path: P) -> Result<()> {
-    let mut writer = TableWriter::open(path)?;
+    self.save(path, "id", "key")
+  }
+
+  /// Save to a Parquet file with the standard configuration.
+  pub fn save<P: AsRef<Path>>(self, path: P, id_col: &str, key_col: &str) -> Result<()> {
+    let mut wb = TableWriterBuilder::new();
+    wb.rename("id", id_col);
+    wb.rename("key", key_col);
+    let mut writer = wb.open(path)?;
+
     for (k, v) in self.map {
       writer.write_object(IdRec {
         id: v,
