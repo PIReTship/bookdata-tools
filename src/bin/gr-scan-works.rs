@@ -20,39 +20,25 @@ pub struct ScanInteractions {
 
 // the records we read from JSON
 #[derive(Deserialize)]
-struct RawBook {
-  book_id: String,
+struct RawWork {
   work_id: String,
-  isbn: String,
-  isbn13: String,
-  asin: String,
   #[serde(default)]
-  title: String,
+  original_title: String,
   #[serde(default)]
-  publication_year: String,
+  original_publication_year: String,
   #[serde(default)]
-  publication_month: String,
+  original_publication_month: String,
   #[serde(default)]
-  publication_day: String,
+  original_publication_day: String,
 }
 
-// the book ID records to write to Parquet.
-#[derive(TableRow)]
-struct IdRecord {
-  book_id: u32,
-  work_id: Option<u32>,
-  isbn: Option<String>,
-  isbn13: Option<String>,
-  asin: Option<String>,
-}
-
-// book info records to actually write
+// work info records to actually write
 #[derive(TableRow)]
 struct InfoRecord {
-  book_id: u32,
+  work_id: u32,
   title: Option<String>,
   pub_year: Option<u16>,
-  pub_month: Option<u8>,
+  pub_month: Option<u8>
 }
 
 /// Trim a string, and convert to None if it is empty.
@@ -87,32 +73,22 @@ fn main() -> Result<()> {
   info!("reading books from {:?}", &options.infile);
   let proc = LineProcessor::open_gzip(&options.infile)?;
 
-  let mut id_out = TableWriter::open("gr-book-ids.parquet")?;
-  let mut info_out = TableWriter::open("gr-book-info.parquet")?;
+  let mut info_out = TableWriter::open("gr-work-info.parquet")?;
 
   for rec in proc.json_records() {
-    let row: RawBook = rec?;
-    let book_id: u32 = row.book_id.parse()?;
-
-    id_out.write_object(IdRecord {
-      book_id,
-      work_id: parse_opt(&row.work_id)?,
-      isbn: trim_owned(&row.isbn),
-      isbn13: trim_owned(&row.isbn13),
-      asin: trim_owned(&row.asin)
-    })?;
+    let row: RawWork = rec?;
+    let work_id: u32 = row.work_id.parse()?;
 
     info_out.write_object(InfoRecord {
-      book_id,
-      title: trim_owned(&row.title),
-      pub_year: parse_opt(&row.publication_year)?,
-      pub_month: parse_opt(&row.publication_year)?,
+      work_id,
+      title: trim_owned(&row.original_title),
+      pub_year: parse_opt(&row.original_publication_year)?,
+      pub_month: parse_opt(&row.original_publication_month)?,
     })?;
   }
 
-  let nlines = id_out.finish()?;
-  let nl2 = info_out.finish()?;
-  info!("wrote {} ID records and {} info records", nlines, nl2);
+  let nlines = info_out.finish()?;
+  info!("wrote {} work info records", nlines);
 
   Ok(())
 }
