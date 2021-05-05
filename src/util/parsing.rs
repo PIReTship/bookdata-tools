@@ -1,5 +1,7 @@
 use std::str::FromStr;
-use anyhow::Result;
+
+use anyhow::{Result, anyhow};
+
 use chrono::NaiveDate;
 
 /// Trim a string, and convert to None if it is empty.
@@ -23,7 +25,10 @@ pub fn parse_opt<T: FromStr>(s: &str) -> Result<Option<T>> where T::Err: std::er
   // we can't just use map because we need to propagate errors
   Ok(match so {
     None => None,
-    Some(s) => Some(s.parse()?)
+    Some(s) => Some(match s.parse() {
+      Ok(v) => v,
+      Err(e) => return Err(anyhow!("error parsing ‘{}’: {}", s, e)
+    })
   })
 }
 
