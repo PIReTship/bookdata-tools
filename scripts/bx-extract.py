@@ -46,7 +46,7 @@ df = df.rename(columns={
     'ISBN': 'isbn',
     'Book-Rating': 'rating'
 })
-df['isbn'] = df['isbn'].str.strip().str.upper()
+df['isbn'] = df['isbn'].str.replace(r'[^0-9Xx]', '', regex=True).str.upper()
 
 _log.info('writing output file')
 df.to_csv(opts['<output>'], index=False)
