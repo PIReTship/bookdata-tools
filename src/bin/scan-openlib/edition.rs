@@ -122,7 +122,8 @@ impl Processor {
     for isbn in isbns {
       let isbn = self.clean_re.replace_all(&isbn, "");
       let isbn = isbn.to_uppercase();
-      if !isbn.is_empty() {
+      // filter but with a reasonable threshold of error
+      if isbn.len() >= 8 {
         self.isbn_writer.write_object(ISBNrec {
           edition, isbn
         })?;
