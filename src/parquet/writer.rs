@@ -11,7 +11,7 @@ use parquet::basic::Compression;
 use parquet::file::properties::WriterProperties;
 use parquet::file::writer::ParquetWriter;
 use parquet::arrow::ArrowWriter;
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 
 use crate::io::object::{ObjectWriter, ThreadWriter};
 
@@ -50,8 +50,9 @@ pub trait TableRow {
 /// Parquet table writer
 pub struct TableWriter<R: TableRow> {
   schema: SchemaRef,
-  writer: ThreadWriter<RecordBatch>,
+  writer: Option<ThreadWriter<RecordBatch>>,
   batch: R::Batch,
+  batch_size: usize,
   batch_count: usize,
   row_count: usize
 }
@@ -112,8 +113,10 @@ impl <R> TableWriterBuilder<R> where R: TableRow {
     let writer = ArrowWriter::try_new(file, self.schema.clone(), Some(props))?;
     let writer = ThreadWriter::new(writer);
     Ok(TableWriter {
-      schema: self.schema.clone(), writer,
+      schema: self.schema.clone(),
+      writer: Some(writer),
       batch: R::new_batch(self.bsize),
+      batch_size: self.bsize,
       batch_count: 0,
       row_count: 0,
     })
@@ -130,7 +133,8 @@ impl <R> TableWriter<R> where R: TableRow {
     debug!("writing batch");
     let cols = R::finish_batch(&mut self.batch);
     let batch = RecordBatch::try_new(self.schema.clone(), cols)?;
-    self.writer.write_object(batch)?;
+    let writer = self.writer.as_mut().ok_or(anyhow!("writer has been closed"))?;
+    writer.write_object(batch)?;
     self.batch_count = 0;
     Ok(())
   }
@@ -141,7 +145,7 @@ impl <R> ObjectWriter<R> for TableWriter<R> where R: TableRow {
     row.write_to_batch(&mut self.batch)?;
     self.batch_count += 1;
     self.row_count += 1;
-    if self.batch_count >= BATCH_SIZE {
+    if self.batch_count >= self.batch_size {
       self.write_batch()?;
     }
     Ok(())
@@ -151,8 +155,18 @@ impl <R> ObjectWriter<R> for TableWriter<R> where R: TableRow {
     if self.batch_count > 0 {
       self.write_batch()?;
     }
-    info!("closing Parquet writer");
-    self.writer.finish()?;
+    if let Some(writer) = self.writer.take() {
+      info!("closing Parquet writer");
+      writer.finish()?;
+    } else {
+      warn!("writer already closed");
+    }
     Ok(self.row_count)
+  }
+}
+
+impl <R> Drop for TableWriter<R> where R: TableRow {
+  fn drop(&mut self) {
+    error!("Parquet table writer not closed");
   }
 }
