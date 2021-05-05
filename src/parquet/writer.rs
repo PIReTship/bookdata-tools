@@ -167,6 +167,8 @@ impl <R> ObjectWriter<R> for TableWriter<R> where R: TableRow {
 
 impl <R> Drop for TableWriter<R> where R: TableRow {
   fn drop(&mut self) {
-    error!("Parquet table writer not closed");
+    if self.writer.is_some() {
+      error!("Parquet table writer not closed");
+    }
   }
 }
