@@ -38,7 +38,7 @@ struct RawWork {
 struct InfoRecord {
   work_id: u32,
   title: Option<String>,
-  pub_year: Option<u16>,
+  pub_year: Option<i16>,
   pub_month: Option<u8>,
   pub_date: Option<NaiveDate>
 }
