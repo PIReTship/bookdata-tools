@@ -1,10 +1,10 @@
-use std::str::FromStr;
 use std::path::PathBuf;
 
 use serde::Deserialize;
 
 use bookdata::prelude::*;
 use bookdata::parquet::*;
+use bookdata::cleaning::*;
 
 /// Scan GoodReads book info into Parquet
 #[derive(StructOpt)]
@@ -55,31 +55,6 @@ struct InfoRecord {
   pub_month: Option<u8>,
 }
 
-/// Trim a string, and convert to None if it is empty.
-fn trim_opt<'a>(s: &'a str) -> Option<&'a str> {
-  let s2 = s.trim();
-  if s2.is_empty() {
-    None
-  } else {
-    Some(s2)
-  }
-}
-
-/// Trim a string, and convert to None if it is empty.
-fn trim_owned(s: &str) -> Option<String> {
-  return trim_opt(s).map(|s| s.to_owned())
-}
-
-/// Parse a possibly-empty string into an option.
-fn parse_opt<T: FromStr>(s: &str) -> Result<Option<T>> where T::Err: std::error::Error + Sync + Send + 'static {
-  let so = trim_opt(s);
-  // we can't just use map because we need to propagate errors
-  Ok(match so {
-    None => None,
-    Some(s) => Some(s.parse()?)
-  })
-}
-
 fn main() -> Result<()> {
   let options = ScanInteractions::from_args();
   options.common.init()?;
@@ -106,7 +81,7 @@ fn main() -> Result<()> {
       book_id,
       title: trim_owned(&row.title),
       pub_year: parse_opt(&row.publication_year)?,
-      pub_month: parse_opt(&row.publication_year)?,
+      pub_month: parse_opt(&row.publication_month)?,
     })?;
   }
 
