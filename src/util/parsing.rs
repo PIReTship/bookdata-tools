@@ -27,7 +27,7 @@ pub fn parse_opt<T: FromStr>(s: &str) -> Result<Option<T>> where T::Err: std::er
     None => None,
     Some(s) => Some(match s.parse() {
       Ok(v) => v,
-      Err(e) => return Err(anyhow!("error parsing ‘{}’: {}", s, e)
+      Err(e) => return Err(anyhow!("error parsing ‘{}’: {}", s, e))
     })
   })
 }
