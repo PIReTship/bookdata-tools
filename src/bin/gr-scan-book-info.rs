@@ -30,7 +30,7 @@ struct RawBook {
   title: String
 }
 
-// the records we're actually going to write to the table
+// the book ID records to write to Parquet.
 #[derive(TableRow)]
 struct IdRecord {
   book_id: u32,
