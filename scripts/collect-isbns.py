@@ -28,7 +28,7 @@ def read_goodreads(file):
     i13 = books['isbn13'].dropna().value_counts()
     asin = books['asin'].dropna().value_counts()
     all = pd.concat([i10, i13, asin])
-    if not all.index.is_unique():
+    if not all.index.is_unique:
         _log.warn('duplicate GR ISBNs')
         all = all.groupby(all.index).sum()
     return all
