@@ -65,7 +65,7 @@ impl OLProcessor<OLEditionRecord> for Processor {
       last_id: 0,
       author_ids: IdIndex::load_standard("author-ids-after-works.parquet")?,
       work_ids: IdIndex::load_standard("works.parquet")?,
-      clean_re: Regex::new(r"[- ]")?,
+      clean_re: Regex::new(r"[^0-9Xx]")?,
       rec_writer: TableWriter::open("editions.parquet")?,
       link_writer: TableWriter::open("edition-works.parquet")?,
       isbn_writer: TableWriter::open("edition-isbns.parquet")?,
@@ -121,10 +121,12 @@ impl Processor {
   fn save_isbns(&mut self, edition: u32, isbns: Vec<String>) -> Result<()> {
     for isbn in isbns {
       let isbn = self.clean_re.replace_all(&isbn, "");
-      let isbn = isbn.trim().to_uppercase();
-      self.isbn_writer.write_object(ISBNrec {
-        edition, isbn
-      })?;
+      let isbn = isbn.to_uppercase();
+      if !isbn.is_empty() {
+        self.isbn_writer.write_object(ISBNrec {
+          edition, isbn
+        })?;
+      }
     }
 
     Ok(())

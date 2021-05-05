@@ -48,8 +48,10 @@ isbns = loc_isbns.join(ol_isbns, how='outer')
 isbns = isbns.join(gr_isbns, how='outer')
 isbns = isbns.join(bx_isbns, how='outer')
 isbns.sort_index(inplace=True)
+isbns = isbns.fillna(0).astype('i32')
 _log.info('found %d unique ISBNs', len(isbns))
 isbns['isbn_id'] = np.arange(len(isbns), dtype=np.int32) + 1
+isbns.index.name = 'isbn'
 isbns = isbns.reset_index()
 
 _log.info('writing output file')
