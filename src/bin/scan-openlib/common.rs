@@ -1,8 +1,6 @@
 use std::str::FromStr;
-use std::fmt;
 
 use serde::Deserialize;
-use serde::Deserializer;
 use serde::de;
 use thiserror::Error;
 
@@ -69,7 +67,7 @@ pub enum Author {
     author: Keyed
   },
   Key(String),
-  Empty
+  Empty {}
 }
 
 /// Keyed object reference
@@ -84,7 +82,7 @@ impl Author {
       Author::Object { key } => Some(key.as_ref()),
       Author::Nested { author } => Some(author.key.as_ref()),
       Author::Key(ref ks) => Some(ks.as_ref()),
-      Author::Empty => None
+      Author::Empty {} => None
     }
   }
 }
