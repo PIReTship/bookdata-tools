@@ -109,6 +109,8 @@ impl OLProcessor<OLEditionRecord> for Processor {
   fn finish(self) -> Result<()> {
     self.rec_writer.finish()?;
     self.author_writer.finish()?;
+    self.link_writer.finish()?;
+    self.isbn_writer.finish()?;
     self.author_ids.save_standard("all-authors.parquet")?;
     self.work_ids.save_standard("all-works.parquet")?;
     Ok(())
