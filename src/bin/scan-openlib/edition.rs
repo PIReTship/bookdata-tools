@@ -52,7 +52,8 @@ pub struct Processor {
   last_id: u32,
   author_ids: IdIndex<String>,
   work_ids: IdIndex<String>,
-  clean_re: Regex,
+  isbn_clean_re: Regex,
+  asin_clean_re: Regex,
   rec_writer: TableWriter<EditionRec>,
   link_writer: TableWriter<LinkRec>,
   isbn_writer: TableWriter<ISBNrec>,
@@ -65,7 +66,8 @@ impl OLProcessor<OLEditionRecord> for Processor {
       last_id: 0,
       author_ids: IdIndex::load_standard("author-ids-after-works.parquet")?,
       work_ids: IdIndex::load_standard("works.parquet")?,
-      clean_re: Regex::new(r"[^0-9Xx]")?,
+      isbn_clean_re: Regex::new(r"[^0-9Xx]")?,
+      asin_clean_re: Regex::new(r"[^0-9A-Za-z]")?,
       rec_writer: TableWriter::open("editions.parquet")?,
       link_writer: TableWriter::open("edition-works.parquet")?,
       isbn_writer: TableWriter::open("edition-isbns.parquet")?,
@@ -81,9 +83,9 @@ impl OLProcessor<OLEditionRecord> for Processor {
       id, key: row.key.clone()
     })?;
 
-    self.save_isbns(id, row.record.isbn_10)?;
-    self.save_isbns(id, row.record.isbn_13)?;
-    self.save_isbns(id, row.record.asin)?;
+    self.save_isbns(id, row.record.isbn_10, false)?;
+    self.save_isbns(id, row.record.isbn_13, false)?;
+    self.save_isbns(id, row.record.asin, true)?;
 
     for work in row.record.works {
       let work = self.work_ids.intern(work.key);
@@ -118,9 +120,14 @@ impl OLProcessor<OLEditionRecord> for Processor {
 }
 
 impl Processor {
-  fn save_isbns(&mut self, edition: u32, isbns: Vec<String>) -> Result<()> {
+  fn save_isbns(&mut self, edition: u32, isbns: Vec<String>, asin: bool) -> Result<()> {
+    let clean = if asin {
+      &self.asin_clean_re
+    } else {
+      &self.isbn_clean_re
+    };
     for isbn in isbns {
-      let isbn = self.clean_re.replace_all(&isbn, "");
+      let isbn = clean.replace_all(&isbn, "");
       let isbn = isbn.to_uppercase();
       // filter but with a reasonable threshold of error
       if isbn.len() >= 8 {
