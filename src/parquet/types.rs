@@ -1,41 +1,10 @@
-use arrow::datatypes::{DataType, Field, ArrowPrimitiveType};
+use arrow::datatypes::{DataType, Field};
 use arrow::array::*;
 use arrow::error::{Result as ArrowResult};
+use chrono::{NaiveDate, Datelike};
 
-pub trait PQAppend<T> {
-  fn pq_append_value(&mut self, v: T) -> ArrowResult<()>;
-  fn pq_append_option(&mut self, v: Option<T>) -> ArrowResult<()>;
-}
-
-impl PQAppend<bool> for BooleanBuilder {
-  fn pq_append_value(&mut self, v: bool) -> ArrowResult<()> {
-    self.append_value(v)
-  }
-  fn pq_append_option(&mut self, v: Option<bool>) -> ArrowResult<()> {
-    self.append_option(v)
-  }
-}
-
-impl <A: ArrowPrimitiveType> PQAppend<A::Native> for PrimitiveBuilder<A> {
-  fn pq_append_value(&mut self, v: A::Native) -> ArrowResult<()> {
-    self.append_value(v)
-  }
-  fn pq_append_option(&mut self, v: Option<A::Native>) -> ArrowResult<()> {
-    self.append_option(v)
-  }
-}
-
-impl <S: AsRef<str>, O: StringOffsetSizeTrait> PQAppend<S> for GenericStringBuilder<O> {
-  fn pq_append_value(&mut self, v: S) -> ArrowResult<()> {
-    self.append_value(v)
-  }
-  fn pq_append_option(&mut self, v: Option<S>) -> ArrowResult<()> {
-    match v {
-      Some(s) => self.append_value(s),
-      None => self.append_null()
-    }
-  }
-}
+// The number of days from 0001-01-01 to 1977-01-01
+const EPOCH_DAYS_CE: i32 = 719_163;
 
 pub trait ArrowTypeInfo where Self: Sized {
   type PQArray;
@@ -46,6 +15,7 @@ pub trait ArrowTypeInfo where Self: Sized {
     Field::new(name, Self::pq_type(), false)
   }
   fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()>;
+  fn append_opt_to_builder(opt: Option<Self>, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()>;
 }
 
 // define primitive types
@@ -60,6 +30,9 @@ macro_rules! primitive_arrow_type {
       }
       fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
         ab.append_value(*self)
+      }
+      fn append_opt_to_builder(opt: Option<Self>, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
+        ab.append_option(opt)
       }
     }
   };
@@ -81,8 +54,15 @@ impl ArrowTypeInfo for String {
   fn pq_type() -> DataType {
     DataType::Utf8
   }
-  fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
+  fn append_to_builder(&self, ab: &mut StringBuilder) -> ArrowResult<()> {
     ab.append_value(&self)
+  }
+  fn append_opt_to_builder(opt: Option<Self>, ab: &mut StringBuilder) -> ArrowResult<()> {
+    if let Some(ref s) = opt {
+      ab.append_value(s)
+    } else {
+      ab.append_null()
+    }
   }
 }
 
@@ -93,12 +73,37 @@ impl <'a> ArrowTypeInfo for &'a str {
   fn pq_type() -> DataType {
     DataType::Utf8
   }
-  fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
+  fn append_to_builder(&self, ab: &mut StringBuilder) -> ArrowResult<()> {
     ab.append_value(self)
+  }
+  fn append_opt_to_builder(opt: Option<Self>, ab: &mut StringBuilder) -> ArrowResult<()> {
+    if let Some(ref s) = opt {
+      ab.append_value(s)
+    } else {
+      ab.append_null()
+    }
   }
 }
 
-impl <T> ArrowTypeInfo for Option<T> where T: ArrowTypeInfo + Clone, T::PQArrayBuilder : PQAppend<T> {
+impl ArrowTypeInfo for NaiveDate {
+  type PQArray = Date32Array;
+  type PQArrayBuilder = Date32Builder;
+
+  fn pq_type() -> DataType {
+    DataType::Date32
+  }
+  fn append_to_builder(&self, ab: &mut Date32Builder) -> ArrowResult<()> {
+    let days = self.num_days_from_ce() - EPOCH_DAYS_CE;
+    ab.append_value(days)
+  }
+  fn append_opt_to_builder(opt: Option<Self>, ab: &mut Date32Builder) -> ArrowResult<()> {
+    ab.append_option(opt.map(|d| {
+      d.num_days_from_ce() - EPOCH_DAYS_CE
+    }))
+  }
+}
+
+impl <T> ArrowTypeInfo for Option<T> where T: ArrowTypeInfo + Clone {
   type PQArray = T::PQArray;
   type PQArrayBuilder = T::PQArrayBuilder;
 
@@ -109,6 +114,9 @@ impl <T> ArrowTypeInfo for Option<T> where T: ArrowTypeInfo + Clone, T::PQArrayB
     Field::new(name, Self::pq_type(), true)
   }
   fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
-    ab.pq_append_option(self.clone())
+    T::append_opt_to_builder(self.clone(), ab)
+  }
+  fn append_opt_to_builder(opt: Option<Self>, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
+    opt.flatten().append_to_builder(ab)
   }
 }

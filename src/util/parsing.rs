@@ -1,0 +1,38 @@
+use std::str::FromStr;
+use anyhow::Result;
+use chrono::NaiveDate;
+
+/// Trim a string, and convert to None if it is empty.
+pub fn trim_opt<'a>(s: &'a str) -> Option<&'a str> {
+  let s2 = s.trim();
+  if s2.is_empty() {
+    None
+  } else {
+    Some(s2)
+  }
+}
+
+/// Trim a string, and convert to None if it is empty.
+pub fn trim_owned(s: &str) -> Option<String> {
+  return trim_opt(s).map(|s| s.to_owned())
+}
+
+/// Parse a possibly-empty string into an option.
+pub fn parse_opt<T: FromStr>(s: &str) -> Result<Option<T>> where T::Err: std::error::Error + Sync + Send + 'static {
+  let so = trim_opt(s);
+  // we can't just use map because we need to propagate errors
+  Ok(match so {
+    None => None,
+    Some(s) => Some(s.parse()?)
+  })
+}
+
+/// Construct a date if all components are defined and specify a valid day
+pub fn maybe_date<Y: Into<i32>, M: Into<u32>, D: Into<u32>>(year: Option<Y>, month: Option<M>, day: Option<D>) -> Option<NaiveDate> {
+  match (year, month, day) {
+    (Some(y), Some(m), Some(d)) => {
+      NaiveDate::from_ymd_opt(y.into(), m.into(), d.into())
+    },
+    _ => None
+  }
+}

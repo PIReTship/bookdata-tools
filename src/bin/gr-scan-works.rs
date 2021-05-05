@@ -1,10 +1,11 @@
 use std::path::PathBuf;
 
 use serde::Deserialize;
+use chrono::NaiveDate;
 
 use bookdata::prelude::*;
 use bookdata::parquet::*;
-use bookdata::cleaning::*;
+use bookdata::util::parsing::*;
 
 /// Scan GoodReads book info into Parquet
 #[derive(StructOpt)]
@@ -38,7 +39,8 @@ struct InfoRecord {
   work_id: u32,
   title: Option<String>,
   pub_year: Option<u16>,
-  pub_month: Option<u8>
+  pub_month: Option<u8>,
+  pub_date: Option<NaiveDate>
 }
 
 fn main() -> Result<()> {
@@ -54,11 +56,15 @@ fn main() -> Result<()> {
     let row: RawWork = rec?;
     let work_id: u32 = row.work_id.parse()?;
 
+    let pub_year = parse_opt(&row.original_publication_year)?;
+    let pub_month = parse_opt(&row.original_publication_month)?;
+    let pub_day: Option<u32> = parse_opt(&row.original_publication_day)?;
+    let pub_date = maybe_date(pub_year, pub_month, pub_day);
+
     info_out.write_object(InfoRecord {
       work_id,
       title: trim_owned(&row.original_title),
-      pub_year: parse_opt(&row.original_publication_year)?,
-      pub_month: parse_opt(&row.original_publication_month)?,
+      pub_year, pub_month, pub_date
     })?;
   }
 
