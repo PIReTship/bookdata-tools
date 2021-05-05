@@ -63,7 +63,7 @@ impl OLProcessor<OLEditionRecord> for Processor {
   fn new() -> Result<Processor> {
     Ok(Processor {
       last_id: 0,
-      author_ids: IdIndex::load_standard("authors.parquet")?,
+      author_ids: IdIndex::load_standard("author-ids-after-works.parquet")?,
       work_ids: IdIndex::load_standard("works.parquet")?,
       clean_re: Regex::new(r"[- ]")?,
       rec_writer: TableWriter::open("editions.parquet")?,
@@ -86,31 +86,20 @@ impl OLProcessor<OLEditionRecord> for Processor {
     self.save_isbns(id, row.record.asin)?;
 
     for work in row.record.works {
-      let wid = self.work_ids.lookup(&work.key);
-      match wid {
-        Some(work) => {
-          self.link_writer.write_object(LinkRec {
-            edition: id, work
-          })?;
-        },
-        None => {
-          warn!("unknown work {} for edition {}", work.key, row.key);
-        }
-      }
+      let work = self.work_ids.intern(work.key);
+      self.link_writer.write_object(LinkRec {
+        edition: id, work
+      })?;
     }
 
     for pos in 0..row.record.authors.len() {
       let akey = row.record.authors[pos].key();
       if let Some(akey) = akey {
-        let aid = self.author_ids.lookup(akey);
-        if let Some(aid) = aid {
-          let pos = pos as u16;
-          self.author_writer.write_object(EditionAuthorRec {
-            edition: id, pos, author: aid
-          })?;
-        } else {
-          debug!("unknown author {} on edition {}", akey, row.key);
-        }
+        let aid = self.author_ids.intern(akey.to_owned());
+        let pos = pos as u16;
+        self.author_writer.write_object(EditionAuthorRec {
+          edition: id, pos, author: aid
+        })?;
       }
     }
 
@@ -120,6 +109,8 @@ impl OLProcessor<OLEditionRecord> for Processor {
   fn finish(self) -> Result<()> {
     self.rec_writer.finish()?;
     self.author_writer.finish()?;
+    self.author_ids.save_standard("all-authors.parquet")?;
+    self.work_ids.save_standard("all-works.parquet")?;
     Ok(())
   }
 }

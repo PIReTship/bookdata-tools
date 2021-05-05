@@ -53,15 +53,11 @@ impl OLProcessor<OLWorkRecord> for Processor {
     for pos in 0..row.record.authors.len() {
       let akey = row.record.authors[pos].key();
       if let Some(akey) = akey {
-        let aid = self.author_ids.lookup(akey);
-        if let Some(aid) = aid {
-          let pos = pos as u16;
-          self.author_writer.write_object(WorkAuthorRec {
-            id, pos, author: aid
-          })?;
-        } else {
-          warn!("unknown author {} on work {}", akey, row.key);
-        }
+        let aid = self.author_ids.intern(akey.to_owned());
+        let pos = pos as u16;
+        self.author_writer.write_object(WorkAuthorRec {
+          id, pos, author: aid
+        })?;
       }
     }
 
@@ -71,6 +67,7 @@ impl OLProcessor<OLWorkRecord> for Processor {
   fn finish(self) -> Result<()> {
     self.rec_writer.finish()?;
     self.author_writer.finish()?;
+    self.author_ids.save_standard("author-ids-after-works.parquet")?;
     Ok(())
   }
 }

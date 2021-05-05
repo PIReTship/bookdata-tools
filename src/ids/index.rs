@@ -11,11 +11,22 @@ use parquet::arrow::arrow_to_parquet_schema;
 use parquet::file::reader::SerializedFileReader;
 use parquet::record::reader::RowIter;
 use parquet::record::RowAccessor;
+use crate::io::ObjectWriter;
+use crate::parquet::*;
+
+use crate as bookdata;
 
 /// Index identifiers from a data type
 pub struct IdIndex<K> {
   map: HashMap<K,u32>
 }
+
+#[derive(TableRow)]
+struct IdRec {
+  id: u32,
+  key: String
+}
+
 
 impl <K> IdIndex<K> where K: Eq + Hash {
   /// Create a new index.
@@ -75,5 +86,20 @@ impl IdIndex<String> {
     Ok(IdIndex {
       map
     })
+  }
+
+  /// Save to a Parquet file with the standard configuration.
+  pub fn save_standard<P: AsRef<Path>>(self, path: P) -> Result<()> {
+    let mut writer = TableWriter::open(path)?;
+    for (k, v) in self.map {
+      writer.write_object(IdRec {
+        id: v,
+        key: k
+      })?;
+    }
+
+    writer.finish()?;
+
+    Ok(())
   }
 }
