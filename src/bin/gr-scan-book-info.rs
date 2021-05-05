@@ -74,9 +74,9 @@ fn main() -> Result<()> {
     id_out.write_object(IdRecord {
       book_id,
       work_id: parse_opt(&row.work_id)?,
-      isbn: trim_owned(&row.isbn),
-      isbn13: trim_owned(&row.isbn13),
-      asin: trim_owned(&row.asin)
+      isbn: trim_owned(&row.isbn).map(|s| s.to_uppercase()),
+      isbn13: trim_owned(&row.isbn13).map(|s| s.to_uppercase()),
+      asin: trim_owned(&row.asin).map(|s| s.to_uppercase())
     })?;
 
     let pub_year = parse_opt(&row.publication_year)?;
