@@ -2,15 +2,18 @@ use std::collections::{HashMap, HashSet};
 
 use log::*;
 use anyhow::Result;
+use futures::stream::StreamExt;
 
 use datafusion::prelude::*;
 use arrow::array::*;
 
+use crate::arrow::fusion::*;
 use super::sources::*;
 use super::{IdGraph,IdNode};
 
 type NodeMap = HashMap<i32, IdNode>;
 
+#[allow(dead_code)]
 async fn add_vertices(g: &mut IdGraph, ctx: &mut ExecutionContext, src: &dyn NodeRead) -> Result<()> {
   info!("scanning vertices from {:?}", src);
   let node_df = src.read_node_ids(ctx)?;
@@ -37,53 +40,43 @@ async fn add_vertices(g: &mut IdGraph, ctx: &mut ExecutionContext, src: &dyn Nod
   Ok(())
 }
 
-async fn add_edges(g: &mut IdGraph, nodes: &NodeMap, ctx: &mut ExecutionContext, src: &dyn EdgeRead) -> Result<()> {
+async fn add_edges(g: &mut IdGraph, nodes: &mut NodeMap, ctx: &mut ExecutionContext, src: &dyn EdgeRead) -> Result<()> {
   info!("scanning edges from {:?}", src);
+  let init_n = nodes.len();
   let edge_df = src.read_edges(ctx)?;
-  let batches = edge_df.collect().await?;
+  let plan = plan_df(ctx, edge_df)?;
+  let mut batches = run_plan(&plan).await?;
 
-  for batch in batches {
-    let src = batch.column(0);
-    let src = src.as_any().downcast_ref::<Int32Array>().expect("invalid column type");
-    let dst = batch.column(1);
-    let dst = dst.as_any().downcast_ref::<Int32Array>().expect("invalid column type");
-    for (sn, dn) in src.iter().zip(dst.iter()) {
-      match sn.zip(dn) {
-        Some((sn, dn)) => {
-          let sn = nodes.get(&sn).unwrap();
-          let dn = nodes.get(&dn).unwrap();
-          g.add_edge(*sn, *dn, ());
-        },
-        _ => ()
-      }
+  while let Some(batch) = batches.next().await {
+    let batch = batch?;
+    let src = batch.column(0).as_any().downcast_ref::<Int32Array>().unwrap();
+    let dst = batch.column(1).as_any().downcast_ref::<Int32Array>().unwrap();
+    let iter = src.iter().zip(dst.iter());
+    let iter = iter.map(|po| po.0.zip(po.1));
+    for (sn, dn) in iter.flatten() {
+      let sid = nodes.entry(sn).or_insert_with_key(|n| g.add_node(*n)).to_owned();
+      let did = nodes.entry(dn).or_insert_with_key(|n| g.add_node(*n)).to_owned();
+      g.add_edge(sid, did, ());
     }
   }
 
-  Ok(())
-}
+  info!("discovered {} new nodes from {:?}", nodes.len() - init_n, src);
 
-fn vert_map(g: &IdGraph) -> NodeMap {
-  let mut map = NodeMap::with_capacity(g.node_count());
-  for ni in g.node_indices() {
-    let vref = g.node_weight(ni).unwrap();
-    map.insert(*vref, ni);
-  }
-  info!("indexed {} nodes", map.len());
-  map
+  Ok(())
 }
 
 pub async fn load_graph() -> Result<IdGraph> {
   let mut graph = IdGraph::new_undirected();
   let mut ctx = ExecutionContext::new();
-  info!("loading nodes");
-  for src in node_sources() {
-    add_vertices(&mut graph, &mut ctx, src.as_ref()).await?;
-  }
-  info!("indexing nodes");
-  let nodes = vert_map(&graph);
+  // info!("loading nodes");
+  // for src in node_sources() {
+  //   add_vertices(&mut graph, &mut ctx, src.as_ref()).await?;
+  // }
+  // info!("indexing nodes");
+  let mut nodes = NodeMap::new();
   for src in edge_sources() {
-    add_edges(&mut graph, &nodes, &mut ctx, src.as_ref()).await?;
+    add_edges(&mut graph, &mut nodes, &mut ctx, src.as_ref()).await?;
   }
-  info!("graph has {} edges", graph.edge_count());
+  info!("graph has {} nodes, {} edges", graph.node_count(), graph.edge_count());
   Ok(graph)
 }

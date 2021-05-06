@@ -39,6 +39,7 @@ pub fn edge_sources() -> Vec<Box<dyn EdgeRead>> {
   ]
 }
 
+#[allow(dead_code)]
 pub fn node_sources() -> Vec<Box<dyn NodeRead>> {
   vec![
     Box::new(ISBN),
