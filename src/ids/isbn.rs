@@ -23,12 +23,12 @@ lazy_static! {
 
 /// Crude ISBN cleanup.
 pub fn clean_isbn_chars(isbn: &str) -> String {
-  return ISBN_CLEAN_RE.replace(isbn, "").to_uppercase();
+  return ISBN_CLEAN_RE.replace_all(isbn, "").to_uppercase();
 }
 
 /// Crude ISBN cleanup.
 pub fn clean_asin_chars(isbn: &str) -> String {
-  return ASIN_CLEAN_RE.replace(isbn, "").to_uppercase();
+  return ASIN_CLEAN_RE.replace_all(isbn, "").to_uppercase();
 }
 
 /// Regular expressions for unparsable ISBN strings to ignore.
