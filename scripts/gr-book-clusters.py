@@ -34,10 +34,11 @@ ids = merged[['book_id', 'work_id', 'cluster']].drop_duplicates()
 ids.info()
 
 _log.info('saving book ID files')
+tbl = pa.Table.from_pandas(ids, preserve_index=False)
 schema = pa.schema([
     pa.field('book_id', pa.uint32(), False),
     pa.field('work_id', pa.uint32(), True),
     pa.field('cluster', pa.int32(), True)
 ])
-tbl = pa.Table.from_pandas(ids, schema, preserve_index=False)
+tbl = tbl.cast(schema)
 pq.write_table(tbl, 'gr-book-link.parquet', compression='zstd')
