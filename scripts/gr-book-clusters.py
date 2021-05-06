@@ -41,4 +41,5 @@ schema = pa.schema([
     pa.field('cluster', pa.int32(), True)
 ])
 tbl = tbl.cast(schema)
+_log.info('table schema:\n%s', tbl)
 pq.write_table(tbl, 'gr-book-link.parquet', compression='zstd')
