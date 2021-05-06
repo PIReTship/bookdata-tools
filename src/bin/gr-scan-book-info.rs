@@ -6,6 +6,7 @@ use chrono::NaiveDate;
 use bookdata::prelude::*;
 use bookdata::parquet::*;
 use bookdata::util::parsing::*;
+use bookdata::ids::isbn::*;
 
 /// Scan GoodReads book info into Parquet
 #[derive(StructOpt)]
@@ -74,9 +75,9 @@ fn main() -> Result<()> {
     id_out.write_object(IdRecord {
       book_id,
       work_id: parse_opt(&row.work_id)?,
-      isbn: trim_owned(&row.isbn).map(|s| s.to_uppercase()),
-      isbn13: trim_owned(&row.isbn13).map(|s| s.to_uppercase()),
-      asin: trim_owned(&row.asin).map(|s| s.to_uppercase())
+      isbn: trim_opt(&row.isbn).map(|s| clean_isbn_chars(s)),
+      isbn13: trim_opt(&row.isbn13).map(|s| clean_isbn_chars(s)),
+      asin: trim_opt(&row.asin).map(|s| clean_asin_chars(s))
     })?;
 
     let pub_year = parse_opt(&row.publication_year)?;

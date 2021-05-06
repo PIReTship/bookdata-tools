@@ -1,4 +1,5 @@
 use regex::{Regex, RegexSet, Match, Captures};
+use lazy_static::lazy_static;
 
 /// Single ISBN parsed from a string
 #[derive(Debug, PartialEq)]
@@ -13,6 +14,21 @@ pub enum ParseResult {
   Valid(Vec<ISBN>, String),
   Ignored(String),
   Unmatched(String)
+}
+
+lazy_static! {
+  static ref ISBN_CLEAN_RE: Regex = Regex::new(r"[^0-9Xx]").expect("invalid regex");
+  static ref ASIN_CLEAN_RE: Regex = Regex::new(r"[^0-9A-Za-z]").expect("invalid regex");
+}
+
+/// Crude ISBN cleanup.
+pub fn clean_isbn_chars(isbn: &str) -> String {
+  return ISBN_CLEAN_RE.replace(isbn, "").to_uppercase();
+}
+
+/// Crude ISBN cleanup.
+pub fn clean_asin_chars(isbn: &str) -> String {
+  return ASIN_CLEAN_RE.replace(isbn, "").to_uppercase();
 }
 
 /// Regular expressions for unparsable ISBN strings to ignore.
