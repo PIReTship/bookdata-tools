@@ -55,7 +55,7 @@ pub fn edge_sources<Q: QueryContext>() -> Vec<Box<dyn EdgeQuery<Q>>> {
   ]
 }
 
-pub fn node_sources<Q: QueryContext>() -> Vec<Box<dyn NodeQuery<Q>>> {
+pub fn node_sources() -> Vec<Box<dyn NodeRead>> {
   vec![
     Box::new(ISBN),
     Box::new(LOC),

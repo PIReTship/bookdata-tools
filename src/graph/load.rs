@@ -1,25 +1,41 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use log::*;
 use anyhow::Result;
 use fallible_iterator::FallibleIterator;
 use postgres::Connection;
 
+use datafusion::prelude::*;
+use arrow::datatypes::*;
+use arrow::array::*;
+
 use super::sources::*;
 use super::{IdGraph,IdNode};
+use crate::arrow::fusion::*;
 
 type NodeMap = HashMap<i32, IdNode>;
 
-fn add_vertices<Q: QueryContext>(g: &mut IdGraph, db: &Connection, src: &dyn NodeQuery<Q>, ctx: &Q) -> Result<()> {
+async fn add_vertices(g: &mut IdGraph, ctx: &mut ExecutionContext, src: &dyn NodeRead) -> Result<()> {
   info!("scanning vertices from {:?}", src);
-  let query = src.q_node_ids(ctx);
-  let txn = db.transaction()?;
-  let stmt = txn.prepare(&query)?;
-  let mut rows = stmt.lazy_query(&txn, &[], 1000)?;
-  while let Some(row) = rows.next()? {
-    let id: i32 = row.get(0);
+  let node_df = src.read_node_ids(ctx)?;
+  let batches = node_df.collect().await?;
+
+  let mut node_ids = HashSet::new();
+
+  for batch in batches {
+    let col = batch.column(0);
+    let col = col.as_any().downcast_ref::<Int32Array>().expect("invalid column type");
+    for id in col.iter() {
+      if let Some(id) = id {
+        node_ids.insert(id);
+      }
+    }
+  }
+
+  for id in node_ids {
     g.add_node(id);
   }
+
   Ok(())
 }
 
@@ -49,15 +65,17 @@ fn vert_map(g: &IdGraph) -> NodeMap {
   map
 }
 
-pub fn load_graph(db: &Connection) -> Result<IdGraph> {
+pub async fn load_graph() -> Result<IdGraph> {
   let mut graph = IdGraph::new_undirected();
-  let ctx = FullTable;
+  let mut ctx = ExecutionContext::new();
+  info!("loading nodes");
   for src in node_sources() {
-    add_vertices(&mut graph, db, src.as_ref(), &ctx)?;
+    add_vertices(&mut graph, &mut ctx, src.as_ref()).await?;
   }
+  info!("indexing nodes");
   let nodes = vert_map(&graph);
-  for src in edge_sources() {
-    add_edges(&mut graph, &nodes, &db, src.as_ref(), &ctx)?;
-  }
+  // for src in edge_sources() {
+  //   add_edges(&mut graph, &nodes, &db, src.as_ref(), &ctx)?;
+  // }
   Ok(graph)
 }
