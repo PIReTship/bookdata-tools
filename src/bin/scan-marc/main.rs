@@ -35,7 +35,7 @@ struct ParseMarcBooks {
   output: Option<PathBuf>,
 
   /// Prefix for output files in book mode.
-  #[structopt(short="op", long="output-prefix")]
+  #[structopt(short="p", long="output-prefix")]
   prefix: Option<String>,
 
   /// Turn on book mode.
