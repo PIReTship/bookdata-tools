@@ -4,9 +4,9 @@ use std::sync::Arc;
 use log::*;
 use anyhow::Result;
 
-use arrow::array::Int32Array;
-use datafusion::dataframe::DataFrame;
-use datafusion::execution::context::ExecutionContext;
+use datafusion::prelude::*;
+
+use crate::ids::codes::*;
 
 pub trait QueryContext {
   fn isbn_table(&self) -> String;
@@ -79,7 +79,9 @@ impl QueryContext for FullTable {
 impl NodeRead for ISBN {
   fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     let df = ctx.read_parquet("book-links/all-isbns.parquet")?;
-    let df = df.select_columns(&["isbn_id"])?;
+    let df = df.select(vec![
+      col("isbn_id") + lit(NS_ISBN.base())
+    ])?;
     Ok(df)
   }
 }
@@ -91,6 +93,16 @@ impl <Q: QueryContext> NodeQuery<Q> for ISBN {
 
   fn q_node_full(&self, qc: &Q) -> String {
     format!("SELECT bc_of_isbn(isbn_id) AS id, isbn AS label FROM {}", qc.isbn_table())
+  }
+}
+
+impl NodeRead for LOC {
+  fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+    let df = ctx.read_parquet("loc-mds/book-ids.parquet")?;
+    let df = df.select(vec![
+      col("rec_id") + lit(NS_LOC_REC.base())
+    ])?;
+    Ok(df)
   }
 }
 
@@ -120,6 +132,16 @@ impl <Q: QueryContext> EdgeQuery<Q> for LOC {
   }
 }
 
+impl NodeRead for OLEditions {
+  fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+    let df = ctx.read_parquet("openlibrary/editions.parquet")?;
+    let df = df.select(vec![
+      col("id") + lit(NS_EDITION.base())
+    ])?;
+    Ok(df)
+  }
+}
+
 impl <Q: QueryContext> NodeQuery<Q> for OLEditions {
   fn q_node_ids(&self, qc: &Q) -> String {
     format!("
@@ -145,6 +167,16 @@ impl <Q: QueryContext> EdgeQuery<Q> for OLEditions {
       SELECT DISTINCT bc_of_isbn(isbn_id) AS src, bc_of_edition(edition_id) AS dst
       FROM ol.isbn_link {}
     ", qc.node_limit())
+  }
+}
+
+impl NodeRead for OLWorks {
+  fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+    let df = ctx.read_parquet("openlibrary/works.parquet")?;
+    let df = df.select(vec![
+      col("id") + lit(NS_WORK.base())
+    ])?;
+    Ok(df)
   }
 }
 
@@ -178,6 +210,15 @@ impl <Q: QueryContext> EdgeQuery<Q> for OLWorks {
   }
 }
 
+impl NodeRead for GRBooks {
+  fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+    let df = ctx.read_parquet("goodreads/gr-book-ids.parquet")?;
+    let df = df.select(vec![
+      col("book_id") + lit(NS_GR_BOOK.base())
+    ])?;
+    Ok(df)
+  }
+}
 
 impl <Q: QueryContext> NodeQuery<Q> for GRBooks {
   fn q_node_ids(&self, qc: &Q) -> String {
@@ -201,6 +242,19 @@ impl <Q: QueryContext> EdgeQuery<Q> for GRBooks {
       SELECT DISTINCT bc_of_isbn(isbn_id) AS src, bc_of_gr_book(gr_book_id) AS dst
       FROM gr.book_isbn {}
     ", qc.node_limit())
+  }
+}
+
+impl NodeRead for GRWorks {
+  fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+    let df = ctx.read_parquet("goodreads/gr-work-ids.parquet")?;
+    let df = df.filter(vec![
+      col("work_id").is_not_null()
+    ])?;
+    let df = df.select(vec![
+      col("work_id") + lit(NS_GR_WORK.base())
+    ])?;
+    Ok(df)
   }
 }
 
