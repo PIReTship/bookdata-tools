@@ -28,6 +28,8 @@ async fn add_vertices(g: &mut IdGraph, ctx: &mut ExecutionContext, src: &dyn Nod
     }
   }
 
+  info!("loaded {} vertices from {:?}", node_ids.len(), src);
+
   for id in node_ids {
     g.add_node(id);
   }
