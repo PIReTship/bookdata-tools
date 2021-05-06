@@ -82,7 +82,6 @@ impl NodeRead for ISBN {
     let df = df.select(vec![
       (col("isbn_id") + lit(NS_ISBN.base())).alias("id")
     ])?;
-    info!("ISBN schema: {:?}", df.schema());
     Ok(df)
   }
 }
@@ -103,7 +102,6 @@ impl NodeRead for LOC {
     let df = df.select(vec![
       (col("rec_id") + lit(NS_LOC_REC.base())).alias("id")
     ])?;
-    info!("LOC book schema: {:?}", df.schema());
     Ok(df)
   }
 }
@@ -140,7 +138,6 @@ impl NodeRead for OLEditions {
     let df = df.select(vec![
       (col("id") + lit(NS_EDITION.base())).alias("id")
     ])?;
-    info!("OL edition schema: {:?}", df.schema());
     Ok(df)
   }
 }
@@ -179,7 +176,6 @@ impl NodeRead for OLWorks {
     let df = df.select(vec![
       (col("id") + lit(NS_WORK.base())).alias("id")
     ])?;
-    info!("OL work schema: {:?}", df.schema());
     Ok(df)
   }
 }
@@ -220,7 +216,6 @@ impl NodeRead for GRBooks {
     let df = df.select(vec![
       (col("book_id") + lit(NS_GR_BOOK.base())).alias("id")
     ])?;
-    info!("GR book schema: {:?}", df.schema());
     Ok(df)
   }
 }
@@ -257,7 +252,6 @@ impl NodeRead for GRWorks {
     let df = df.select(vec![
       (col("work_id") + lit(NS_GR_WORK.base())).alias("id")
     ])?;
-    info!("GR work schema: {:?}", df.schema());
     Ok(df)
   }
 }
