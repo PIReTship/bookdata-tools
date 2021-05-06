@@ -80,7 +80,7 @@ impl NodeRead for ISBN {
   fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     let df = ctx.read_parquet("book-links/all-isbns.parquet")?;
     let df = df.select(vec![
-      (col("isbn_id") + lit(NS_ISBN.base())).alias("id")
+      col("isbn_id") + lit(NS_ISBN.base())
     ])?;
     Ok(df)
   }
@@ -100,7 +100,7 @@ impl NodeRead for LOC {
   fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     let df = ctx.read_parquet("loc-mds/book-ids.parquet")?;
     let df = df.select(vec![
-      (col("rec_id") + lit(NS_LOC_REC.base())).alias("id")
+      col("rec_id") + lit(NS_LOC_REC.base())
     ])?;
     Ok(df)
   }
@@ -136,7 +136,7 @@ impl NodeRead for OLEditions {
   fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     let df = ctx.read_parquet("openlibrary/editions.parquet")?;
     let df = df.select(vec![
-      (col("id") + lit(NS_EDITION.base())).alias("id")
+      col("id") + lit(NS_EDITION.base())
     ])?;
     Ok(df)
   }
@@ -174,7 +174,7 @@ impl NodeRead for OLWorks {
   fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     let df = ctx.read_parquet("openlibrary/all-works.parquet")?;
     let df = df.select(vec![
-      (col("id") + lit(NS_WORK.base())).alias("id")
+      col("id") + lit(NS_WORK.base())
     ])?;
     Ok(df)
   }
@@ -214,7 +214,7 @@ impl NodeRead for GRBooks {
   fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     let df = ctx.read_parquet("goodreads/gr-book-ids.parquet")?;
     let df = df.select(vec![
-      (col("book_id") + lit(NS_GR_BOOK.base())).alias("id")
+      col("book_id") + lit(NS_GR_BOOK.base())
     ])?;
     Ok(df)
   }
@@ -250,7 +250,7 @@ impl NodeRead for GRWorks {
     let df = ctx.read_parquet("goodreads/gr-book-ids.parquet")?;
     let df = df.filter(col("work_id").is_not_null())?;
     let df = df.select(vec![
-      (col("work_id") + lit(NS_GR_WORK.base())).alias("id")
+      col("work_id") + lit(NS_GR_WORK.base())
     ])?;
     Ok(df)
   }
