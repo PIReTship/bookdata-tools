@@ -23,8 +23,8 @@ def read_column(file, column='isbn', format='parquet'):
 
 
 def read_goodreads(file):
-    books = pd.read_parquet(file, columns=['isbn', 'isbn13', 'asin'])
-    i10 = books['isbn'].dropna().value_counts()
+    books = pd.read_parquet(file, columns=['isbn10', 'isbn13', 'asin'])
+    i10 = books['isbn10'].dropna().value_counts()
     i13 = books['isbn13'].dropna().value_counts()
     asin = books['asin'].dropna().value_counts()
     all = pd.concat([i10, i13, asin])
