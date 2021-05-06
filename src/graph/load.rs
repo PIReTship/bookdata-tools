@@ -2,16 +2,12 @@ use std::collections::{HashMap, HashSet};
 
 use log::*;
 use anyhow::Result;
-use fallible_iterator::FallibleIterator;
-use postgres::Connection;
 
 use datafusion::prelude::*;
-use arrow::datatypes::*;
 use arrow::array::*;
 
 use super::sources::*;
 use super::{IdGraph,IdNode};
-use crate::arrow::fusion::*;
 
 type NodeMap = HashMap<i32, IdNode>;
 
@@ -39,19 +35,28 @@ async fn add_vertices(g: &mut IdGraph, ctx: &mut ExecutionContext, src: &dyn Nod
   Ok(())
 }
 
-fn add_edges<Q: QueryContext>(g: &mut IdGraph, nodes: &NodeMap, db: &Connection, src: &dyn EdgeQuery<Q>, ctx: &Q) -> Result<()> {
+async fn add_edges(g: &mut IdGraph, nodes: &NodeMap, ctx: &mut ExecutionContext, src: &dyn EdgeRead) -> Result<()> {
   info!("scanning edges from {:?}", src);
-  let query = src.q_edges(ctx);
-  let txn = db.transaction()?;
-  let stmt = txn.prepare(&query)?;
-  let mut rows = stmt.lazy_query(&txn, &[], 1000)?;
-  while let Some(row) = rows.next()? {
-    let src: i32 = row.get(0);
-    let dst: i32 = row.get(1);
-    let sn = nodes.get(&src).unwrap();
-    let dn = nodes.get(&dst).unwrap();
-    g.add_edge(*sn, *dn, ());
+  let edge_df = src.read_edges(ctx)?;
+  let batches = edge_df.collect().await?;
+
+  for batch in batches {
+    let src = batch.column(0);
+    let src = src.as_any().downcast_ref::<Int32Array>().expect("invalid column type");
+    let dst = batch.column(1);
+    let dst = dst.as_any().downcast_ref::<Int32Array>().expect("invalid column type");
+    for (sn, dn) in src.iter().zip(dst.iter()) {
+      match sn.zip(dn) {
+        Some((sn, dn)) => {
+          let sn = nodes.get(&sn).unwrap();
+          let dn = nodes.get(&dn).unwrap();
+          g.add_edge(*sn, *dn, ());
+        },
+        _ => ()
+      }
+    }
   }
+
   Ok(())
 }
 
@@ -74,8 +79,8 @@ pub async fn load_graph() -> Result<IdGraph> {
   }
   info!("indexing nodes");
   let nodes = vert_map(&graph);
-  // for src in edge_sources() {
-  //   add_edges(&mut graph, &nodes, &db, src.as_ref(), &ctx)?;
-  // }
+  for src in edge_sources() {
+    add_edges(&mut graph, &nodes, &mut ctx, src.as_ref()).await?;
+  }
   Ok(graph)
 }
