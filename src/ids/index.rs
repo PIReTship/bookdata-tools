@@ -12,7 +12,7 @@ use parquet::file::reader::SerializedFileReader;
 use parquet::record::reader::RowIter;
 use parquet::record::RowAccessor;
 use crate::io::ObjectWriter;
-use crate::parquet::*;
+use crate::arrow::*;
 
 use crate as bookdata;
 

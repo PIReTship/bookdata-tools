@@ -4,7 +4,7 @@ use serde::Deserialize;
 use chrono::NaiveDate;
 
 use bookdata::prelude::*;
-use bookdata::parquet::*;
+use bookdata::arrow::*;
 use bookdata::util::parsing::*;
 use bookdata::ids::isbn::*;
 

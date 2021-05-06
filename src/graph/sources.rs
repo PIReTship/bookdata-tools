@@ -172,7 +172,7 @@ impl <Q: QueryContext> EdgeQuery<Q> for OLEditions {
 
 impl NodeRead for OLWorks {
   fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-    let df = ctx.read_parquet("openlibrary/works.parquet")?;
+    let df = ctx.read_parquet("openlibrary/all-works.parquet")?;
     let df = df.select(vec![
       col("id") + lit(NS_WORK.base())
     ])?;
@@ -248,9 +248,7 @@ impl <Q: QueryContext> EdgeQuery<Q> for GRBooks {
 impl NodeRead for GRWorks {
   fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     let df = ctx.read_parquet("goodreads/gr-work-ids.parquet")?;
-    let df = df.filter(vec![
-      col("work_id").is_not_null()
-    ])?;
+    let df = df.filter(col("work_id").is_not_null())?;
     let df = df.select(vec![
       col("work_id") + lit(NS_GR_WORK.base())
     ])?;

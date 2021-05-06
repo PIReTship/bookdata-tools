@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
 use bookdata::prelude::*;
-use bookdata::parquet::*;
+use bookdata::arrow::*;
 use bookdata::ids::index::IdIndex;
 
 use crate::common::*;

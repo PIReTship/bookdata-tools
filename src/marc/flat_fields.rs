@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::parquet::*;
+use crate::arrow::*;
 use super::record::*;
 use crate::io::ObjectWriter;
 use crate as bookdata;  // hack to make derive macro work

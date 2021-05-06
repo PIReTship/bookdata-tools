@@ -34,7 +34,7 @@ pub fn derive_table_row(ast: &syn::DeriveInput) -> TokenStream {
 
   // field ArrowTypeInfo
   let f_ainfo: Vec<_> = f_types.iter().map(|t| {
-    quote!(#t as bookdata::parquet::ArrowTypeInfo)
+    quote!(#t as bookdata::arrow::ArrowTypeInfo)
   }).collect();
   // field array builer types
   let f_btypes: Vec<_> = f_ainfo.iter().map(|ai| {
@@ -46,7 +46,7 @@ pub fn derive_table_row(ast: &syn::DeriveInput) -> TokenStream {
       #(#f_names: #f_btypes),*
     }
 
-    impl bookdata::parquet::TableRow for #name {
+    impl bookdata::arrow::TableRow for #name {
       type Batch = #batch;
 
       fn schema() -> arrow::datatypes::Schema {

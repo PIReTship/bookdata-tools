@@ -4,7 +4,7 @@ use serde::Deserialize;
 use chrono::NaiveDate;
 
 use bookdata::prelude::*;
-use bookdata::parquet::*;
+use bookdata::arrow::*;
 use bookdata::util::parsing::*;
 
 /// Scan GoodReads book info into Parquet

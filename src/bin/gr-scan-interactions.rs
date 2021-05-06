@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use serde::Deserialize;
 
 use bookdata::prelude::*;
-use bookdata::parquet::*;
+use bookdata::arrow::*;
 use bookdata::index::IdIndex;
 
 /// Scan GoodReads interaction file into Parquet
