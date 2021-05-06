@@ -72,7 +72,7 @@ impl ParserDefs {
       tag_sep: cre(r"\s*:\s*"),
       tail_skip: cre(r"^\s*[;:/.]?"),
 
-      clean: cre(r"[\p{Nonspacing Mark}a-wyzA-WYZ -+]"),
+      clean: cre(r"[\p{Nonspacing Mark}a-wyzA-WYZ +-]"),
       unmatch_ignore: RegexSet::new(IGNORES).unwrap()
     }
   }
