@@ -41,7 +41,7 @@ ol_isbns = read_column('openlibrary/edition-isbns.parquet').to_frame('OL')
 _log.info('reading GR ISBNs')
 gr_isbns = read_goodreads('goodreads/gr-book-ids.parquet').to_frame('GR')
 _log.info('reading BX ISBNs')
-bx_isbns = read_column('data/bx-ratings.csv', format='csv').to_frame('BX')
+bx_isbns = read_column('bx/cleaned-ratings.csv', format='csv').to_frame('BX')
 
 _log.info('combining ISBN lists')
 isbns = loc_isbns.join(ol_isbns, how='outer')
