@@ -1,4 +1,12 @@
 use std::fmt::Debug;
+use std::sync::Arc;
+
+use log::*;
+use anyhow::Result;
+
+use arrow::array::Int32Array;
+use datafusion::dataframe::DataFrame;
+use datafusion::execution::context::ExecutionContext;
 
 pub trait QueryContext {
   fn isbn_table(&self) -> String;
@@ -7,8 +15,16 @@ pub trait QueryContext {
 
 pub struct FullTable;
 
+pub trait EdgeRead: Debug {
+  fn read_edges(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>>;
+}
+
 pub trait EdgeQuery<Q: QueryContext>: Debug {
   fn q_edges(&self, qc: &Q) -> String;
+}
+
+pub trait NodeRead: Debug {
+  fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>>;
 }
 
 pub trait NodeQuery<Q: QueryContext>: Debug {
@@ -57,6 +73,14 @@ impl QueryContext for FullTable {
 
   fn node_limit(&self) -> String {
     "".to_owned()
+  }
+}
+
+impl NodeRead for ISBN {
+  fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+    let df = ctx.read_parquet("book-links/all-isbns.parquet")?;
+    let df = df.select_columns(&["isbn_id"])?;
+    Ok(df)
   }
 }
 
