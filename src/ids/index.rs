@@ -174,7 +174,7 @@ fn test_index_intern_twice() {
 fn test_index_save() -> Result<()> {
   let mut index: IdIndex<String> = IdIndex::new();
   let mut gen = Gen::new(100);
-  for i in 0..10000 {
+  for _i in 0..10000 {
     let key = String::arbitrary(&mut gen);
     let prev = index.lookup(&key);
     let id = index.intern(key);
