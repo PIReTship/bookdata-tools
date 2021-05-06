@@ -1,5 +1,4 @@
 use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
 
 use log::*;
 use anyhow::Result;
@@ -16,9 +15,10 @@ use crate::arrow::fusion::*;
 
 type NodeMap = HashMap<i32, IdNode>;
 
-async fn init_graph(ctx: &mut ExecutionContext, nodes: Arc<dyn DataFrame>) -> Result<IdGraph> {
-  let batches = nodes.collect().await?;
-  let mut g = IdGraph::new_undirected();
+async fn add_vertices(g: &mut IdGraph, ctx: &mut ExecutionContext, src: &dyn NodeRead) -> Result<()> {
+  info!("scanning vertices from {:?}", src);
+  let node_df = src.read_node_ids(ctx)?;
+  let batches = node_df.collect().await?;
 
   let mut node_ids = HashSet::new();
 
@@ -36,7 +36,7 @@ async fn init_graph(ctx: &mut ExecutionContext, nodes: Arc<dyn DataFrame>) -> Re
     g.add_node(id);
   }
 
-  Ok(g)
+  Ok(())
 }
 
 fn add_edges<Q: QueryContext>(g: &mut IdGraph, nodes: &NodeMap, db: &Connection, src: &dyn EdgeQuery<Q>, ctx: &Q) -> Result<()> {
@@ -66,15 +66,12 @@ fn vert_map(g: &IdGraph) -> NodeMap {
 }
 
 pub async fn load_graph() -> Result<IdGraph> {
+  let mut graph = IdGraph::new_undirected();
   let mut ctx = ExecutionContext::new();
   info!("loading nodes");
-  let nodes = node_sources().iter().map(|s| s.read_node_ids(&mut ctx)).reduce(|d1, d2| {
-    let d1 = d1?;
-    let d2 = d2?;
-    let du = d1.union(d2)?;
-    Ok(du)
-  }).unwrap()?;
-  let mut graph = init_graph(&mut ctx, nodes).await?;
+  for src in node_sources() {
+    add_vertices(&mut graph, &mut ctx, src.as_ref()).await?;
+  }
   info!("indexing nodes");
   let nodes = vert_map(&graph);
   // for src in edge_sources() {
