@@ -14,7 +14,7 @@ use flate2::write::GzEncoder;
 use molt::*;
 use parquet::basic::Compression;
 use parquet::file::properties::WriterProperties;
-use datafusion::execution::context::ExecutionContext;
+use datafusion::prelude::*;
 use datafusion::physical_plan::{ExecutionPlan};
 
 /// Run a DataFusion script and save its results.
@@ -41,7 +41,8 @@ impl ScriptContext {
   /// Initialize a new script context.
   fn create() -> Result<ScriptContext> {
     let runtime = Runtime::new()?;
-    let df_context = ExecutionContext::new();
+    let mut df_context = ExecutionContext::new();
+    df_context.register_udaf(Median::udaf());
     Ok(ScriptContext {
       runtime, df_context
     })
@@ -65,6 +66,15 @@ fn save_parquet(ctx: &ScriptContext, plan: Arc<dyn ExecutionPlan>, file: &str) -
 /// Save an execution plan results to a CSV file.
 fn save_csv(ctx: &ScriptContext, plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
   info!("saving to CSV file");
+  let out = File::create(file)?;
+  let mut csvw = arrow::csv::WriterBuilder::new().has_headers(true).build(out);
+
+  ctx.run(eval_to_csv(&mut csvw, plan))?;
+  Ok(())
+}
+
+fn save_csvgz(ctx: &ScriptContext, plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
+  info!("saving to compressed CSV file");
   let out = File::create(file)?;
   let out = GzEncoder::new(out, flate2::Compression::best());
   let mut csvw = arrow::csv::WriterBuilder::new().has_headers(true).build(out);
@@ -93,7 +103,11 @@ fn cmd_table(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> MoltResult 
   let file = argv[2].as_str();
   wrap_errs(|| {
     info!("mounting table {} from {}", table, file);
-    ctx.df_context.register_parquet(table, file)?;
+    if file.ends_with(".parquet") {
+      ctx.df_context.register_parquet(table, file)?;
+    } else if file.ends_with(".csv") {
+      ctx.df_context.register_csv(table, file, CsvReadOptions::new().has_header(true))?;
+    }
     Ok(())
   })
 }
@@ -117,8 +131,10 @@ fn cmd_save_results(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> Molt
 
     if file.ends_with(".parquet") {
       save_parquet(ctx, plan, file)?;
-    } else if file.ends_with(".csv.gz") {
+    } else if file.ends_with(".csv") {
       save_csv(ctx, plan, file)?;
+    } else if file.ends_with(".csv.gz") {
+      save_csvgz(ctx, plan, file)?;
     } else {
       return Err(anyhow!("unknown suffix in file {}", file));
     }
