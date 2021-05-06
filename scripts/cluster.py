@@ -1,10 +1,12 @@
 """
 Usage:
-    cluster.py [-T FILE]
+    cluster.py [options]
 
 Options:
     -T FILE
         Write transcript to FILE.
+    --dry-run
+        Compute clusters but don't save them.
 """
 import os
 import sys
@@ -106,7 +108,7 @@ def _hash_frame(df):
     return hash.hexdigest()
 
 
-def cluster(txout):
+def cluster(txout, dry=False):
     "Cluster ISBNs"
     with db.connect() as dbc, dbc:
         tracking.begin_stage(dbc, 'cluster')
@@ -124,17 +126,19 @@ def cluster(txout):
         _log.info('found %d components, largest has %s items', len(hist), np.max(hist))
         print('COMPONENTS', len(hist), file=txout)
 
-        _log.info('saving cluster records to database')
         is_isbn = g.vp.source.a == ns_isbn.code
         clusters = pd.DataFrame({
             'isbn_id': g.vp.label.a[is_isbn],
             'cluster': comps.a[is_isbn]
         })
-        _import_clusters(dbc, clusters)
 
-        _log.info('saving ID graph')
-        g.vp['cluster'] = comps
-        g.save('data/id-graph.gt')
+        if not dry:
+            _log.info('saving cluster records to database')
+            _import_clusters(dbc, clusters)
+
+            _log.info('saving ID graph')
+            g.vp['cluster'] = comps
+            g.save('data/id-graph.gt')
 
         c_hash = _hash_frame(clusters)
         print('WRITE CLUSTERS', c_hash, file=txout)
@@ -151,4 +155,4 @@ else:
     _log.info('writing transcript to %s', tx_fn)
     tx_out = open(tx_fn, 'w')
 
-cluster(tx_out)
+cluster(tx_out, opts['--dry-run'])
