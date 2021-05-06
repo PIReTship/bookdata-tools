@@ -19,7 +19,7 @@ def read_column(file, column='isbn', format='parquet'):
         isbns = pd.read_csv(file)
     else:
         raise ValueError('invalid Parquet file')
-    return isbns[column].dropna().value_counts()
+    return isbns[column].dropna().value_counts().sort_index()
 
 
 def read_goodreads(file):
@@ -31,7 +31,7 @@ def read_goodreads(file):
     if not all.index.is_unique:
         _log.warn('duplicate GR ISBNs')
         all = all.groupby(all.index).sum()
-    return all
+    return all.sort_index()
 
 
 _log.info('reading LOC ISBNs')
