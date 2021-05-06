@@ -35,7 +35,7 @@ struct RawInteraction {
 struct IntRecord {
   rec_id: u32,
   user_id: u32,
-  book_id: u64,
+  book_id: u32,
   is_read: u8,
   rating: Option<i8>
 }
@@ -57,7 +57,7 @@ fn main() -> Result<()> {
     n_recs += 1;
     let key = hex::decode(row.user_id.as_bytes())?;
     let user_id = users.intern(key);
-    let book_id: u64 = row.book_id.parse()?;
+    let book_id: u32 = row.book_id.parse()?;
 
     writer.write_object(IntRecord {
       rec_id, user_id, book_id,
