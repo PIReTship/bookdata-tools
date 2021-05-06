@@ -40,18 +40,19 @@ _log.info('reading OL ISBNs')
 ol_isbns = read_column('openlibrary/edition-isbns.parquet').to_frame('OL')
 _log.info('reading GR ISBNs')
 gr_isbns = read_goodreads('goodreads/gr-book-ids.parquet').to_frame('GR')
-_log.info('reading BX ISBNs')
-bx_isbns = read_column('bx/cleaned-ratings.csv', format='csv').to_frame('BX')
+# _log.info('reading BX ISBNs')
+# bx_isbns = read_column('bx/cleaned-ratings.csv', format='csv').to_frame('BX')
 
 _log.info('combining ISBN lists')
 isbns = loc_isbns.join(ol_isbns, how='outer')
 isbns = isbns.join(gr_isbns, how='outer')
-isbns = isbns.join(bx_isbns, how='outer')
+# isbns = isbns.join(bx_isbns, how='outer')
 isbns.sort_index(inplace=True)
 isbns = isbns.fillna(0).astype('i4')
 _log.info('found %d unique ISBNs', len(isbns))
 isbns['isbn_id'] = np.arange(len(isbns), dtype=np.int32) + 1
 isbns.index.name = 'isbn'
+assert isbns.index.is_unique
 isbns = isbns.reset_index()
 
 _log.info('writing output file')
