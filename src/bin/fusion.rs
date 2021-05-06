@@ -1,4 +1,3 @@
-use std::io::prelude::*;
 use std::path::{PathBuf};
 use std::time::Instant;
 use std::fs::{File, read_to_string};
@@ -9,15 +8,14 @@ use tokio;
 use tokio::runtime::Runtime;
 
 use bookdata::prelude::*;
+use bookdata::arrow::fusion::*;
 
 use flate2::write::GzEncoder;
 use molt::*;
-use futures::stream::StreamExt;
 use parquet::basic::Compression;
 use parquet::file::properties::WriterProperties;
 use datafusion::execution::context::ExecutionContext;
 use datafusion::physical_plan::{ExecutionPlan};
-use datafusion::physical_plan::merge::MergeExec;
 
 /// Run a DataFusion script and save its results.
 ///
@@ -61,20 +59,6 @@ fn save_parquet(ctx: &ScriptContext, plan: Arc<dyn ExecutionPlan>, file: &str) -
   let props = props.set_compression(Compression::ZSTD);
   let props = props.build();
   ctx.run(ctx.df_context.write_parquet(plan, file.to_owned(), Some(props)))?;
-  Ok(())
-}
-
-async fn eval_to_csv<W: Write>(out: &mut arrow::csv::Writer<W>, plan: Arc<dyn ExecutionPlan>) -> Result<()> {
-  let plan = if plan.output_partitioning().partition_count() > 1 {
-    Arc::new(MergeExec::new(plan.clone()))
-  } else {
-    plan
-  };
-  let mut batches = plan.execute(0).await?;
-  while let Some(batch) = batches.next().await {
-    let batch = batch?;
-    out.write(&batch)?;
-  }
   Ok(())
 }
 
