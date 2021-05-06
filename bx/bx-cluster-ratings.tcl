@@ -2,7 +2,7 @@ table ratings "cleaned-ratings.csv"
 table isbns "../book-links/all-isbns.parquet"
 table clusters "../book-links/isbn-clusters.parquet"
 
-save-results "bx-cluster-ratings.csv.gz" {
+save-results "bx-cluster-ratings.parquet" {
     SELECT user, cluster AS item, MEDIAN(rating), COUNT(rating) AS nratings
     FROM ratings
     JOIN isbns USING (isbn)

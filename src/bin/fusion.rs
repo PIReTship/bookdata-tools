@@ -14,6 +14,7 @@ use flate2::write::GzEncoder;
 use molt::*;
 use parquet::basic::Compression;
 use parquet::file::properties::WriterProperties;
+use parquet::arrow::ArrowWriter;
 use datafusion::prelude::*;
 use datafusion::physical_plan::{ExecutionPlan};
 
@@ -55,11 +56,20 @@ impl ScriptContext {
 }
 
 /// Save an execution plan results to a Parquet directory.
-fn save_parquet(ctx: &ScriptContext, plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
+fn save_parquet(ctx: &ScriptContext, plan: Arc<dyn ExecutionPlan>, file: &str, partitioned: bool) -> Result<()> {
   let props = WriterProperties::builder();
   let props = props.set_compression(Compression::ZSTD);
   let props = props.build();
-  ctx.run(ctx.df_context.write_parquet(plan, file.to_owned(), Some(props)))?;
+
+  if partitioned {
+    ctx.run(ctx.df_context.write_parquet(plan, file.to_owned(), Some(props)))?;
+  } else {
+    let file = File::create(file)?;
+    let mut write = ArrowWriter::try_new(file, plan.schema(), Some(props))?;
+    ctx.run(eval_to_parquet(&mut write, plan))?;
+    write.close()?;
+  }
+
   Ok(())
 }
 
@@ -114,11 +124,17 @@ fn cmd_table(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> MoltResult 
 
 /// Save results from a query.
 fn cmd_save_results(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> MoltResult {
-  check_args(1, argv, 3, 3, "file query")?;
+  check_args(1, argv, 3, 4, "?-partitioned? file query")?;
   let ctx: &mut ScriptContext = interp.context(ctx);
 
-  let file = argv[1].as_str();
-  let query = argv[2].as_str();
+  let mut partitioned = false;
+  let mut file = argv[1].as_str();
+  let mut query = argv[2].as_str();
+  if file == "-partitioned" {
+    partitioned = true;
+    file = query;
+    query = argv[3].as_str();
+  }
 
   wrap_errs(|| {
     info!("planning query");
@@ -130,7 +146,7 @@ fn cmd_save_results(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> Molt
     info!("executing script to file {}", file);
 
     if file.ends_with(".parquet") {
-      save_parquet(ctx, plan, file)?;
+      save_parquet(ctx, plan, file, partitioned)?;
     } else if file.ends_with(".csv") {
       save_csv(ctx, plan, file)?;
     } else if file.ends_with(".csv.gz") {
