@@ -18,7 +18,7 @@ _log.info('finding ISBN matches')
 # use a generous definition
 is_isbn = isbns.str.match(r'^\d{7,15}[Xx]?$')
 _log.info('finding ASIN matches')
-is_asin = isbns.str.match(r'^A[A-Za-z0-9]+$')
+is_asin = isbns.str.match(r'^B[A-Za-z0-9]+$')
 
 valid = is_isbn | is_asin
 
