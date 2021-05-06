@@ -82,5 +82,6 @@ pub async fn load_graph() -> Result<IdGraph> {
   for src in edge_sources() {
     add_edges(&mut graph, &nodes, &mut ctx, src.as_ref()).await?;
   }
+  info!("graph has {} edges", graph.edge_count());
   Ok(graph)
 }
