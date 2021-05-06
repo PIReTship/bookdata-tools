@@ -31,7 +31,7 @@ pub async fn main() -> Result<()> {
   info!("computing connected components");
   let clusters = tarjan_scc(&graph);
 
-  info!("writing clusters");
+  info!("writing {} clusters", clusters.len());
   let mut writer = TableWriter::open("book-links/isbn-clusters.parquet")?;
 
   for ci in 0..clusters.len() {
