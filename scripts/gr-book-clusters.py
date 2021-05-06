@@ -12,8 +12,8 @@ from bookdata import script_log
 _log = script_log('gr-book-clusters')
 
 _log.info('reading book IDs')
-books = pd.read_parquet('gr-book-ids.parquet', columns=['book_id', 'work_id'])
-books['work_id'] = books['work_id'].astype('UInt32')
+books = pd.read_parquet('gr-book-ids.parquet', columns=['book_id', 'work_id'], use_nullable_dtypes=True)
+# books['work_id'] = books['work_id'].astype('UInt32')
 books.info()
 books = books.set_index('book_id')
 _log.info('reading ISBN IDs')
@@ -32,4 +32,4 @@ _log.info('deduplicating clusters')
 ids = merged[['book_id', 'work_id', 'cluster']].drop_duplicates()
 
 _log.info('saving book ID files')
-ids.to_parquet('gr-book-link.parquet', index=False)
+ids.to_parquet('gr-book-link.parquet', index=False, compression='zstd')
