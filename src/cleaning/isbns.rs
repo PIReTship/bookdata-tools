@@ -1,3 +1,14 @@
+//! Code for cleaning up ISBNs.
+//!
+//! This module contains two families of functions:
+//!
+//! - The simple character-cleaning functions [clean_isbn_chars] and [clean_asin_chars].
+//! - The full multi-ISBN parser [ParserDefs].
+//!
+//! When a string is a relatively well-formed ISBN (or ASIN), the character-cleaning functions
+//! are fine.  Some sources, however (such as the Library of Congress) have messy ISBNs that
+//! may have multiple ISBNs in one string, descriptive tags, and all manner of other messes.
+//! The multi-ISBN parser exposed through [ParserDefs] supports cleaning these ISBN strings.
 use regex::{Regex, RegexSet, Match, Captures};
 use lazy_static::lazy_static;
 
@@ -63,6 +74,7 @@ pub struct ParserDefs {
 }
 
 impl ParserDefs {
+  /// Create a new set of parser definitions.
   pub fn new() -> ParserDefs {
     fn cre(p: &str) -> Regex {
       // we use unwrap instead of result since regex compile failure is a programming error
@@ -81,7 +93,7 @@ impl ParserDefs {
     }
   }
 
-  /// Create a new parser to parse a string.
+  /// Create a new parser to incrementally parse a string.
   pub fn create_parser<'p, 's>(&'p self, s: &'s str) -> IsbnParser<'p, 's> {
     IsbnParser {
       defs: self,

@@ -3,6 +3,10 @@ use std::str;
 use std::io::{self, Write};
 
 /// Write text with PostgreSQL text format encoding.
+///
+/// This writes text to a writer using PostgreSQL's escapes for encoding invalid
+/// characters, as defined by the text-based COPY protocol (tab-separated values,
+/// with encoding specifications that remove the need for quotations).
 pub fn write_pgencoded<W: Write>(w: &mut W, buf: &[u8]) -> io::Result<()> {
   let mut start = 0;
   for i in 0..buf.len() {

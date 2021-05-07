@@ -1,3 +1,4 @@
+//! Utilities for cleaning data.
 mod pg;
 mod json;
 pub mod isbns;

@@ -1,7 +1,8 @@
 /// Some of our JSON objects have \u0000, which PostgreSQL doesn't like.
 /// Clean those out while we import.
-/// This uses a reusable buffer to reduce allocations.
-/// 
+/// This uses a reusable buffer to reduce allocations.  The contents of
+/// `buf` are erased, and at exit contain the cleaned JSON.
+///
 /// ```
 /// use bookdata::cleaning::clean_json;
 /// let mut buf = String::new();
