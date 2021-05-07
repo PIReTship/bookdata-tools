@@ -8,6 +8,9 @@ use bookdata::arrow::*;
 use bookdata::parsing::*;
 use bookdata::cleaning::isbns::*;
 
+const ID_FILE: &'static str = "gr-book-ids.parquet";
+const INFO_FILE: &'static str = "gr-book-info.parquet";
+
 /// Scan GoodReads book info into Parquet
 #[derive(StructOpt)]
 #[structopt(name="scan-book-info")]
@@ -58,21 +61,26 @@ struct InfoRecord {
   pub_date: Option<NaiveDate>,
 }
 
-fn main() -> Result<()> {
-  let options = ScanInteractions::from_args();
-  options.common.init()?;
+struct BookWriter {
+  id_out: TableWriter<IdRecord>,
+  info_out: TableWriter<InfoRecord>
+}
 
-  info!("reading books from {:?}", &options.infile);
-  let proc = LineProcessor::open_gzip(&options.infile)?;
+impl BookWriter {
+  fn open() -> Result<BookWriter> {
+    let id_out = TableWriter::open(ID_FILE)?;
+    let info_out = TableWriter::open(INFO_FILE)?;
+    Ok(BookWriter {
+      id_out, info_out
+    })
+  }
+}
 
-  let mut id_out = TableWriter::open("gr-book-ids.parquet")?;
-  let mut info_out = TableWriter::open("gr-book-info.parquet")?;
-
-  for rec in proc.json_records() {
-    let row: RawBook = rec?;
+impl ObjectWriter<RawBook> for BookWriter {
+  fn write_object(&mut self, row: RawBook) -> Result<()> {
     let book_id: u32 = row.book_id.parse()?;
 
-    id_out.write_object(IdRecord {
+    self.id_out.write_object(IdRecord {
       book_id,
       work_id: parse_opt(&row.work_id)?,
       isbn10: trim_opt(&row.isbn).map(|s| clean_isbn_chars(s)),
@@ -85,16 +93,35 @@ fn main() -> Result<()> {
     let pub_day: Option<u32> = parse_opt(&row.publication_day)?;
     let pub_date = maybe_date(pub_year, pub_month, pub_day);
 
-    info_out.write_object(InfoRecord {
+    self.info_out.write_object(InfoRecord {
       book_id,
       title: trim_owned(&row.title),
       pub_year, pub_month, pub_date
     })?;
+
+    Ok(())
   }
 
-  let nlines = id_out.finish()?;
-  let nl2 = info_out.finish()?;
-  info!("wrote {} ID records and {} info records", nlines, nl2);
+  fn finish(self) -> Result<usize> {
+    self.id_out.finish()?;
+    self.info_out.finish()?;
+    Ok(0)
+  }
+}
+
+fn main() -> Result<()> {
+  let options = ScanInteractions::from_args();
+  options.common.init()?;
+
+  info!("reading books from {:?}", &options.infile);
+  let proc = LineProcessor::open_gzip(&options.infile)?;
+
+  let mut writer = BookWriter::open()?;
+  proc.process_json(&mut writer)?;
+  writer.finish()?;
+
+  info!("output {} is {}", ID_FILE, file_human_size(ID_FILE)?);
+  info!("output {} is {}", INFO_FILE, file_human_size(INFO_FILE)?);
 
   Ok(())
 }

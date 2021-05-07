@@ -6,7 +6,7 @@ pub use crate::io::LineProcessor;
 pub use crate::io::progress::default_progress;
 pub use crate::io::ObjectWriter;
 pub use crate::json_from_str;
-pub use crate::util::human_time;
+pub use crate::util::{human_time, human_size, file_human_size};
 
 /// Macro to implement FromStr using JSON.
 #[macro_export]
