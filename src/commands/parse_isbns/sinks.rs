@@ -2,7 +2,7 @@ use std::io::prelude::*;
 use anyhow::Result;
 use sha1::Sha1;
 
-use crate::ids::isbn::ISBN;
+use crate::cleaning::isbns::ISBN;
 use crate::db::{ConnectInfo, CopyRequest, CopyTarget};
 use crate::cleaning::write_pgencoded;
 

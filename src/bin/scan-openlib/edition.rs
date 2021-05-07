@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 use bookdata::prelude::*;
 use bookdata::arrow::*;
-use bookdata::ids::isbn::*;
+use bookdata::cleaning::isbns::*;
 use bookdata::ids::index::IdIndex;
 
 use crate::common::*;

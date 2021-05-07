@@ -11,8 +11,11 @@ pub struct ISBN {
 /// Result of parsing an ISBN string
 #[derive(Debug, PartialEq)]
 pub enum ParseResult {
+  /// Vaid ISBNs, possibly with additional trailing text
   Valid(Vec<ISBN>, String),
+  /// An ignored string
   Ignored(String),
+  /// An unparsable string
   Unmatched(String)
 }
 
@@ -21,12 +24,13 @@ lazy_static! {
   static ref ASIN_CLEAN_RE: Regex = Regex::new(r"[^0-9A-Za-z]").expect("invalid regex");
 }
 
-/// Crude ISBN cleanup.
+/// Crude ISBN cleanup.  To be used with ISBN strings that are relatively
+/// well-formed, but may have invalid characters.
 pub fn clean_isbn_chars(isbn: &str) -> String {
   return ISBN_CLEAN_RE.replace_all(isbn, "").to_uppercase();
 }
 
-/// Crude ISBN cleanup.
+/// Crude ASIN cleanup.
 pub fn clean_asin_chars(isbn: &str) -> String {
   return ASIN_CLEAN_RE.replace_all(isbn, "").to_uppercase();
 }

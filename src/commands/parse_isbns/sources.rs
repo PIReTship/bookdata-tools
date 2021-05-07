@@ -8,7 +8,7 @@ use fallible_iterator::FallibleIterator;
 use log::*;
 
 use crate::tsv::split_first;
-use crate::ids::isbn::*;
+use crate::cleaning::isbns::*;
 
 pub type IdPR = (i64, ParseResult);
 

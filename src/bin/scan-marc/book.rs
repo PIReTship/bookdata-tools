@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use bookdata::prelude::*;
 use bookdata::arrow::*;
-use bookdata::ids::isbn::{ParserDefs, ParseResult};
+use bookdata::cleaning::isbns::{ParserDefs, ParseResult};
 use bookdata::marc::MARCRecord;
 use bookdata::marc::flat_fields::FieldOutput;
 
