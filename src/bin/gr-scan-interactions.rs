@@ -1,9 +1,10 @@
 use std::path::{Path, PathBuf};
 use std::fs;
+use std::collections::HashMap;
 
 use serde::Deserialize;
 use chrono::prelude::*;
-use humansize::*;
+use polars::prelude::*;
 
 use bookdata::prelude::*;
 use bookdata::arrow::*;
@@ -11,9 +12,10 @@ use bookdata::index::IdIndex;
 use bookdata::io::object::ThreadWriter;
 use bookdata::parsing::*;
 use bookdata::parsing::dates::*;
+use anyhow::Result;
 
-const SIZE_TYPE: file_size_opts::FileSizeOpts = file_size_opts::BINARY;
 const OUT_FILE: &'static str = "gr-interactions.parquet";
+const LINK_FILE: &'static str = "gr-book-link.parquet";
 
 /// Scan GoodReads interaction file into Parquet
 #[derive(StructOpt)]
@@ -48,6 +50,7 @@ struct IntRecord {
   rec_id: u32,
   user_id: u32,
   book_id: u32,
+  cluster: Option<i32>,
   is_read: u8,
   rating: Option<f32>,
   added: DateTime<FixedOffset>,
@@ -59,6 +62,7 @@ struct IntRecord {
 // Object writer to transform and write GoodReads interactions
 struct IntWriter {
   writer: TableWriter<IntRecord>,
+  clusters: HashMap<u32,i32>,
   users: IdIndex<Vec<u8>>,
   n_recs: u32,
 }
@@ -66,9 +70,10 @@ struct IntWriter {
 impl IntWriter {
   // Open a new output
   pub fn open<P: AsRef<Path>>(path: P) -> Result<IntWriter> {
+    let clusters = load_cluster_map()?;
     let writer = TableWriter::open(path)?;
     Ok(IntWriter {
-      writer,
+      writer, clusters,
       users: IdIndex::new(),
       n_recs: 0
     })
@@ -83,9 +88,10 @@ impl ObjectWriter<RawInteraction> for IntWriter {
     let user_key = hex::decode(row.user_id.as_bytes())?;
     let user_id = self.users.intern(user_key);
     let book_id: u32 = row.book_id.parse()?;
+    let cluster = self.clusters.get(&book_id).map(|c| *c);
 
     self.writer.write_object(IntRecord {
-      rec_id, user_id, book_id,
+      rec_id, user_id, book_id, cluster,
       is_read: row.is_read as u8,
       rating: if row.rating > 0.0 {
         Some(row.rating)
@@ -108,20 +114,37 @@ impl ObjectWriter<RawInteraction> for IntWriter {
   }
 }
 
+/// Load mapping from book IDs to clusters.
+fn load_cluster_map() -> Result<HashMap<u32, i32>> {
+  info!("loading book cluster map");
+  let read = fs::File::open(LINK_FILE)?;
+  let read = ParquetReader::new(read);
+  let id_df = read.finish()?;
+  let id_col = id_df.column("book_id")?.u32()?;
+  let c_col = id_df.column("cluster")?.i32()?;
+  let mut map = HashMap::new();
+  for (id, c) in id_col.into_no_null_iter().zip(c_col.into_iter()) {
+    if let Some(c) = c {
+      map.insert(id, c);
+    }
+  }
+  Ok(map)
+}
+
 fn main() -> Result<()> {
   let options = ScanInteractions::from_args();
   options.common.init()?;
 
+  let writer = IntWriter::open(OUT_FILE)?;
+
   info!("reading interactions from {:?}", &options.infile);
   let proc = LineProcessor::open_gzip(&options.infile)?;
 
-  let writer = IntWriter::open(OUT_FILE)?;
   let mut writer = ThreadWriter::new(writer);
   proc.process_json(&mut writer)?;
   writer.finish()?;
 
-  let stat = fs::metadata(OUT_FILE)?;
-  info!("output {} is {}", OUT_FILE, stat.len().file_size(SIZE_TYPE).unwrap());
+  info!("output {} is {}", OUT_FILE, file_human_size(OUT_FILE)?);
 
   Ok(())
 }
