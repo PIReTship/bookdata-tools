@@ -37,6 +37,7 @@ crates = crates.rename(columns={
     'item': 'u4',
     'rating': 'f4'
 })
+crates.info()
 _log.info('writing %d ratings', len(crates))
 crates.to_parquet('gr-cluster-ratings.parquet', index=False, compression='zstd')
 _log.info('finished ratings')
