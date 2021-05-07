@@ -1,3 +1,6 @@
+//! Macros for book data tools.
+//!
+//! This package implements various procedural macros we use in the book data code.
 use proc_macro::{self, TokenStream};
 use syn::*;
 mod table_row;
