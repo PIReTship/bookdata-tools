@@ -104,7 +104,7 @@ impl ParserDefs {
     }
   }
 
-  /// Parse a string
+  /// Parse an ISBN string.
   pub fn parse(&self, s: &str) -> ParseResult {
     let mut parser = self.create_parser(s);
     parser.read_all()
