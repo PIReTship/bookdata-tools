@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-pub mod parsing;
 mod accum;
 
 pub use accum::DataAccumulator;

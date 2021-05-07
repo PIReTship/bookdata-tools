@@ -5,7 +5,7 @@ use chrono::NaiveDate;
 
 use bookdata::prelude::*;
 use bookdata::arrow::*;
-use bookdata::util::parsing::*;
+use bookdata::parsing::*;
 
 /// Scan GoodReads book info into Parquet
 #[derive(StructOpt)]

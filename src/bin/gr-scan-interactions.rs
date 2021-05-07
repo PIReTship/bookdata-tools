@@ -6,8 +6,7 @@ use chrono::DateTime;
 use bookdata::prelude::*;
 use bookdata::arrow::*;
 use bookdata::index::IdIndex;
-
-const DATE_FMT: &'static str = "%B %d %H:%M:%S %z %Y";
+use bookdata::parsing::dates::*;
 
 /// Scan GoodReads interaction file into Parquet
 #[derive(StructOpt)]

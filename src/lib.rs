@@ -5,6 +5,7 @@
 //! are writing additional integrations or analyses, you may find the
 //! modules and functions in here useful.
 pub mod cleaning;
+pub mod parsing;
 pub mod tsv;
 pub mod util;
 pub mod db;
