@@ -29,6 +29,14 @@ _log.info('computing median ratings')
 crates = cract[cract.rating.notnull()]
 crates = crates.groupby(['user_id', 'cluster'])['rating'].median()
 crates = crates.to_frame().reset_index()
+crates = crates.rename(columns={
+    'user_id': 'user',
+    'cluster': 'item'
+}).astype({
+    'user': 'u4',
+    'item': 'u4',
+    'rating': 'f4'
+})
 _log.info('writing %d ratings', len(crates))
 crates.to_parquet('gr-cluster-ratings.parquet', index=False, compression='zstd')
 _log.info('finished ratings')
