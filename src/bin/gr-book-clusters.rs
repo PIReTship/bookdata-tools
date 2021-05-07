@@ -43,7 +43,7 @@ fn main() -> Result<()> {
 
   info!("writing results");
   let w = File::create("gr-book-link.parquet")?;
-  let mut w = ParquetWriter::new(w);
+  let w = ParquetWriter::new(w);
   w.finish(&mut subset)?;
 
   Ok(())
