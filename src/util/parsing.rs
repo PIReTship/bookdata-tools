@@ -36,7 +36,12 @@ pub fn parse_opt<T: FromStr>(s: &str) -> Result<Option<T>> where T::Err: std::er
 pub fn maybe_date<Y: Into<i32>, M: Into<u32>, D: Into<u32>>(year: Option<Y>, month: Option<M>, day: Option<D>) -> Option<NaiveDate> {
   match (year, month, day) {
     (Some(y), Some(m), Some(d)) => {
-      NaiveDate::from_ymd_opt(y.into(), m.into(), d.into())
+      let year: i32 = y.into();
+      if year.abs() < 10000 {  // pandas doesn't like some years
+        NaiveDate::from_ymd_opt(year, m.into(), d.into())
+      } else {
+        None
+      }
     },
     _ => None
   }
