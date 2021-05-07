@@ -1,13 +1,19 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::fs;
 
 use serde::Deserialize;
 use chrono::prelude::*;
+use humansize::*;
 
 use bookdata::prelude::*;
 use bookdata::arrow::*;
 use bookdata::index::IdIndex;
+use bookdata::io::object::ThreadWriter;
 use bookdata::parsing::*;
 use bookdata::parsing::dates::*;
+
+const SIZE_TYPE: file_size_opts::FileSizeOpts = file_size_opts::BINARY;
+const OUT_FILE: &'static str = "gr-interactions.parquet";
 
 /// Scan GoodReads interaction file into Parquet
 #[derive(StructOpt)]
@@ -50,26 +56,35 @@ struct IntRecord {
   read_finished: Option<DateTime<FixedOffset>>,
 }
 
-fn main() -> Result<()> {
-  let options = ScanInteractions::from_args();
-  options.common.init()?;
+// Object writer to transform and write GoodReads interactions
+struct IntWriter {
+  writer: TableWriter<IntRecord>,
+  users: IdIndex<Vec<u8>>,
+  n_recs: u32,
+}
 
-  info!("reading interactions from {:?}", &options.infile);
-  let proc = LineProcessor::open_gzip(&options.infile)?;
-  let mut users = IdIndex::new();
+impl IntWriter {
+  // Open a new output
+  pub fn open<P: AsRef<Path>>(path: P) -> Result<IntWriter> {
+    let writer = TableWriter::open(path)?;
+    Ok(IntWriter {
+      writer,
+      users: IdIndex::new(),
+      n_recs: 0
+    })
+  }
+}
 
-  let mut writer = TableWriter::open("gr-interactions.parquet")?;
-  let mut n_recs = 0;
-
-  for rec in proc.json_records() {
-    let row: RawInteraction = rec?;
-    let rec_id = n_recs + 1;
-    n_recs += 1;
-    let key = hex::decode(row.user_id.as_bytes())?;
-    let user_id = users.intern(key);
+impl ObjectWriter<RawInteraction> for IntWriter {
+  // Write a single interaction to the output
+  fn write_object(&mut self, row: RawInteraction) -> Result<()> {
+    self.n_recs += 1;
+    let rec_id = self.n_recs;
+    let user_key = hex::decode(row.user_id.as_bytes())?;
+    let user_id = self.users.intern(user_key);
     let book_id: u32 = row.book_id.parse()?;
 
-    writer.write_object(IntRecord {
+    self.writer.write_object(IntRecord {
       rec_id, user_id, book_id,
       is_read: row.is_read as u8,
       rating: if row.rating > 0.0 {
@@ -82,10 +97,31 @@ fn main() -> Result<()> {
       read_started: trim_opt(&row.started_at).map(parse_gr_date).transpose()?,
       read_finished: trim_opt(&row.read_at).map(parse_gr_date).transpose()?,
     })?;
+
+    Ok(())
   }
 
-  let nlines = writer.finish()?;
-  info!("wrote {} records for {} users", nlines, users.len());
+  // Clean up and finalize output
+  fn finish(self) -> Result<usize> {
+    info!("wrote {} records for {} users, closing output", self.n_recs, self.users.len());
+    self.writer.finish()
+  }
+}
+
+fn main() -> Result<()> {
+  let options = ScanInteractions::from_args();
+  options.common.init()?;
+
+  info!("reading interactions from {:?}", &options.infile);
+  let proc = LineProcessor::open_gzip(&options.infile)?;
+
+  let writer = IntWriter::open(OUT_FILE)?;
+  let mut writer = ThreadWriter::new(writer);
+  proc.process_json(&mut writer)?;
+  writer.finish()?;
+
+  let stat = fs::metadata(OUT_FILE)?;
+  info!("output {} is {}", OUT_FILE, stat.len().file_size(SIZE_TYPE).unwrap());
 
   Ok(())
 }

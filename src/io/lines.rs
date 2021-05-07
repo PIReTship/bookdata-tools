@@ -5,12 +5,14 @@ use std::str::FromStr;
 use std::path::Path;
 use std::marker::PhantomData;
 
+use log::*;
 use anyhow::Result;
 use indicatif::ProgressBar;
 use happylog::{LogPBState, set_progress};
 use serde::de::DeserializeOwned;
 
 use super::compress::open_gzin_progress;
+use super::ObjectWriter;
 
 /// Read lines from a file with buffering, decompression, and parsing.
 pub struct LineProcessor {
@@ -92,5 +94,35 @@ impl LineProcessor {
       phantom: PhantomData,
       log_state: self.log_state
     }
+  }
+
+  /// Process JSON rows into an object writer.
+  ///
+  /// This parses each line of the data set, deserializes it with JSON, and passes the resulting object
+  /// to the specified [ObjectWriter].  It produces useful error messages with line numbers when there
+  /// is a failure. It does **not** call [ObjectWriter::finish] when it is done - the caller needs to do that.
+  pub fn process_json<W, R>(self, writer: &mut W) -> Result<usize> where R: DeserializeOwned, W: ObjectWriter<R> {
+    let mut line_no = 0;
+    let pb = self.progress.clone();
+    for line in self.json_records() {
+      line_no += 1;
+      let obj: R = line.map_err(|e| {
+        error!("error parsing line {}: {:?}", line_no, e);
+        e
+      })?;
+      writer.write_object(obj).map_err(|e| {
+        error!("error writing line {}: {:?}", line_no, e);
+        e
+      })?;
+    }
+
+    if pb.length() != pb.position() {
+      warn!("reading file did not consume all input");
+    }
+
+    debug!("read {} lines in {} bytes", line_no, pb.position());
+    pb.finish_and_clear();
+
+    Ok(line_no)
   }
 }
