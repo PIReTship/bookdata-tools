@@ -1,7 +1,7 @@
-use arrow::datatypes::{DataType, Field};
+use arrow::datatypes::{DataType, TimeUnit, Field};
 use arrow::array::*;
 use arrow::error::{Result as ArrowResult};
-use chrono::{NaiveDate, Datelike};
+use chrono::prelude::*;
 
 // The number of days from 0001-01-01 to 1977-01-01
 const EPOCH_DAYS_CE: i32 = 719_163;
@@ -46,6 +46,8 @@ primitive_arrow_type!(i8, DataType::Int8, Int8Array, Int8Builder);
 primitive_arrow_type!(i16, DataType::Int16, Int16Array, Int16Builder);
 primitive_arrow_type!(i32, DataType::Int32, Int32Array, Int32Builder);
 primitive_arrow_type!(i64, DataType::Int64, Int64Array, Int64Builder);
+primitive_arrow_type!(f32, DataType::Float32, Float32Array, Float32Builder);
+primitive_arrow_type!(f64, DataType::Float64, Float64Array, Float64Builder);
 
 impl ArrowTypeInfo for String {
   type PQArray = StringArray;
@@ -99,6 +101,23 @@ impl ArrowTypeInfo for NaiveDate {
   fn append_opt_to_builder(opt: Option<Self>, ab: &mut Date32Builder) -> ArrowResult<()> {
     ab.append_option(opt.map(|d| {
       d.num_days_from_ce() - EPOCH_DAYS_CE
+    }))
+  }
+}
+
+impl ArrowTypeInfo for DateTime<FixedOffset> {
+  type PQArray = TimestampSecondArray;
+  type PQArrayBuilder = TimestampSecondBuilder;
+
+  fn pq_type() -> DataType {
+    DataType::Timestamp(TimeUnit::Second, None)
+  }
+  fn append_to_builder(&self, ab: &mut TimestampSecondBuilder) -> ArrowResult<()> {
+    ab.append_value(self.timestamp())
+  }
+  fn append_opt_to_builder(opt: Option<Self>, ab: &mut TimestampSecondBuilder) -> ArrowResult<()> {
+    ab.append_option(opt.map(|d| {
+      d.timestamp()
     }))
   }
 }

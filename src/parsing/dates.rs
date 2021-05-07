@@ -1,4 +1,11 @@
 use chrono::prelude::*;
+use chrono::ParseResult;
+
+/// The date format used in the GoodReads data.
+///
+/// This almost RFC2822, but hte year is in the wrong place.
+const GR_DATE_FMT: &'static str = "%A %B %d %H:%M:%S %z %Y";
+
 /// Construct a date if all components are defined and specify a valid day.
 pub fn maybe_date<Y: Into<i32>, M: Into<u32>, D: Into<u32>>(year: Option<Y>, month: Option<M>, day: Option<D>) -> Option<NaiveDate> {
   match (year, month, day) {
@@ -12,4 +19,10 @@ pub fn maybe_date<Y: Into<i32>, M: Into<u32>, D: Into<u32>>(year: Option<Y>, mon
     },
     _ => None
   }
+}
+
+
+/// Parse a GoodReads date.
+pub fn parse_gr_date(s: &str) -> ParseResult<DateTime<FixedOffset>> {
+  DateTime::parse_from_str(s, GR_DATE_FMT)
 }

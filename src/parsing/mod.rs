@@ -5,6 +5,8 @@ use std::error::{Error as StdError};
 use anyhow::{Result, anyhow};
 
 pub mod dates;
+#[cfg(test)]
+mod test_dates;
 
 /// Trim a string, and convert to None if it is empty.
 pub fn trim_opt<'a>(s: &'a str) -> Option<&'a str> {

@@ -1,11 +1,12 @@
 use std::path::PathBuf;
 
 use serde::Deserialize;
-use chrono::DateTime;
+use chrono::prelude::*;
 
 use bookdata::prelude::*;
 use bookdata::arrow::*;
 use bookdata::index::IdIndex;
+use bookdata::parsing::*;
 use bookdata::parsing::dates::*;
 
 /// Scan GoodReads interaction file into Parquet
@@ -28,8 +29,11 @@ struct RawInteraction {
   // review_id: String,
   #[serde(rename="isRead")]
   is_read: bool,
-  rating: i32,
-  // date_added: String
+  rating: f32,
+  date_added: String,
+  date_updated: String,
+  read_at: String,
+  started_at: String,
 }
 
 // the records we're actually going to write to the table
@@ -39,7 +43,11 @@ struct IntRecord {
   user_id: u32,
   book_id: u32,
   is_read: u8,
-  rating: Option<i8>
+  rating: Option<f32>,
+  added: DateTime<FixedOffset>,
+  updated: DateTime<FixedOffset>,
+  read_started: Option<DateTime<FixedOffset>>,
+  read_finished: Option<DateTime<FixedOffset>>,
 }
 
 fn main() -> Result<()> {
@@ -64,11 +72,15 @@ fn main() -> Result<()> {
     writer.write_object(IntRecord {
       rec_id, user_id, book_id,
       is_read: row.is_read as u8,
-      rating: if row.rating > 0 {
-        Some(row.rating as i8)
+      rating: if row.rating > 0.0 {
+        Some(row.rating)
       } else {
         None
-      }
+      },
+      added: parse_gr_date(&row.date_added)?,
+      updated: parse_gr_date(&row.date_updated)?,
+      read_started: trim_opt(&row.started_at).map(parse_gr_date).transpose()?,
+      read_finished: trim_opt(&row.read_at).map(parse_gr_date).transpose()?,
     })?;
   }
 
