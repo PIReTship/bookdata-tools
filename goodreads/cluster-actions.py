@@ -30,7 +30,7 @@ last_act = last_act.rename(columns={
     'min': 'first_time',
     'count': 'nactions'
 }).astype({
-    'user': 'u4',
+    'user': 'i4',
     'item': 'i4',
     'nactions': 'i4'
 })
