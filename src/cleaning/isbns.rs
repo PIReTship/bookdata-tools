@@ -12,14 +12,14 @@
 use regex::{Regex, RegexSet, Match, Captures};
 use lazy_static::lazy_static;
 
-/// Single ISBN parsed from a string
+/// Single ISBN parsed from a string.
 #[derive(Debug, PartialEq)]
 pub struct ISBN {
   pub text: String,
   pub tags: Vec<String>
 }
 
-/// Result of parsing an ISBN string
+/// Result of parsing an ISBN string.
 #[derive(Debug, PartialEq)]
 pub enum ParseResult {
   /// Vaid ISBNs, possibly with additional trailing text
@@ -35,8 +35,10 @@ lazy_static! {
   static ref ASIN_CLEAN_RE: Regex = Regex::new(r"[^0-9A-Za-z]").expect("invalid regex");
 }
 
-/// Crude ISBN cleanup.  To be used with ISBN strings that are relatively
-/// well-formed, but may have invalid characters.
+/// Crude ISBN cleanup.
+///
+/// To be used with ISBN strings that are relatively well-formed, but may have invalid
+/// characters.
 pub fn clean_isbn_chars(isbn: &str) -> String {
   return ISBN_CLEAN_RE.replace_all(isbn, "").to_uppercase();
 }
@@ -94,7 +96,7 @@ impl ParserDefs {
   }
 
   /// Create a new parser to incrementally parse a string.
-  pub fn create_parser<'p, 's>(&'p self, s: &'s str) -> IsbnParser<'p, 's> {
+  fn create_parser<'p, 's>(&'p self, s: &'s str) -> IsbnParser<'p, 's> {
     IsbnParser {
       defs: self,
       string: s,
@@ -109,7 +111,10 @@ impl ParserDefs {
   }
 }
 
-pub struct IsbnParser<'p, 's> {
+/// State for parsing a single ISBN string.
+///
+/// This struct does not publicly expose any data or operations.
+struct IsbnParser<'p, 's> {
   defs: &'p ParserDefs,
   string: &'s str,
   position: usize
