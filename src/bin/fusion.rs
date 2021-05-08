@@ -42,8 +42,7 @@ impl ScriptContext {
   /// Initialize a new script context.
   fn create() -> Result<ScriptContext> {
     let runtime = Runtime::new()?;
-    let mut df_context = ExecutionContext::new();
-    df_context.register_udaf(Median::udaf());
+    let df_context = ExecutionContext::new();
     Ok(ScriptContext {
       runtime, df_context
     })
