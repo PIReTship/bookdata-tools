@@ -1,10 +1,8 @@
 use std::path::{Path, PathBuf};
-use std::fs;
 use std::collections::HashMap;
 
 use serde::Deserialize;
 use chrono::prelude::*;
-use polars::prelude::*;
 
 use bookdata::prelude::*;
 use bookdata::arrow::*;
@@ -114,18 +112,21 @@ impl ObjectWriter<RawInteraction> for IntWriter {
   }
 }
 
+#[derive(TableRow)]
+struct IdCluster {
+  book_id: u32,
+  cluster: Option<i32>
+}
+
 /// Load mapping from book IDs to clusters.
 fn load_cluster_map() -> Result<HashMap<u32, i32>> {
   info!("loading book cluster map");
-  let read = fs::File::open(LINK_FILE)?;
-  let read = ParquetReader::new(read);
-  let id_df = read.finish()?;
-  let id_col = id_df.column("book_id")?.u32()?;
-  let c_col = id_df.column("cluster")?.i32()?;
   let mut map = HashMap::new();
-  for (id, c) in id_col.into_no_null_iter().zip(c_col.into_iter()) {
-    if let Some(c) = c {
-      map.insert(id, c);
+  let read = IdCluster::scan_parquet(LINK_FILE)?;
+  for rec in read {
+    let rec = rec?;
+    if let Some(c) = rec.cluster {
+      map.insert(rec.book_id, c);
     }
   }
   Ok(map)

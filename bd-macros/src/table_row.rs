@@ -73,6 +73,17 @@ pub fn derive_table_row(ast: &syn::DeriveInput) -> TokenStream {
         )*
         Ok(())
       }
+
+      fn from_pq_row<R: parquet::record::RowAccessor>(row: &R) -> Result<Self> {
+        let mut i = 0;
+        #(
+          let #f_names = <#f_ainfo>::read_from_pq_row(row, i)?;
+          i += 1;
+        )*
+        Ok(#name {
+          #(#f_names),*
+        })
+      }
     }
   };
   gen.into()

@@ -4,7 +4,6 @@ use std::sync::Arc;
 use std::marker::PhantomData;
 
 use log::*;
-use arrow::array::ArrayRef;
 use arrow::datatypes::{Schema, SchemaRef, Field};
 use arrow::record_batch::RecordBatch;
 use parquet::basic::Compression;
@@ -14,38 +13,9 @@ use parquet::arrow::ArrowWriter;
 use anyhow::{Result, anyhow};
 
 use crate::io::object::{ObjectWriter, ThreadWriter};
-
-pub use bd_macros::TableRow;
+use super::table::TableRow;
 
 const BATCH_SIZE: usize = 1000000;
-
-/// Trait for serializing records into Parquet tables.
-///
-/// This trait can be derived:
-///
-/// ```ignore
-/// #[derive(TableRow)]
-/// struct Record {
-///     user_id: u32,
-///     book_id: u64,
-///     rating: f32
-/// }
-/// ```
-pub trait TableRow {
-  type Batch;
-
-  /// Get the schema
-  fn schema() -> Schema;
-
-  /// Create a new Batch Builder
-  fn new_batch(cap: usize) -> Self::Batch;
-
-  /// Get a batch's arrays and reset the builder.
-  fn finish_batch(batch: &mut Self::Batch) -> Vec<ArrayRef>;
-
-  /// Add a record to a batch builder
-  fn write_to_batch(&self, batch: &mut Self::Batch) -> Result<()>;
-}
 
 /// Parquet table writer
 pub struct TableWriter<R: TableRow> {
