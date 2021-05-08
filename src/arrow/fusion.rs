@@ -9,18 +9,11 @@ use futures::stream::StreamExt;
 
 use anyhow::Result;
 
-use serde::{Serialize, Deserialize};
-
 use datafusion::prelude::*;
 use datafusion::physical_plan::merge::MergeExec;
 use datafusion::physical_plan::ExecutionPlan;
 use datafusion::physical_plan::SendableRecordBatchStream;
-use datafusion::physical_plan::Accumulator;
-use datafusion::physical_plan::udaf::AggregateUDF;
-use datafusion::logical_plan::{create_udaf};
-use datafusion::scalar::ScalarValue;
 use datafusion::error::{Result as FusionResult, DataFusionError};
-use arrow::datatypes::*;
 use parquet::arrow::ArrowWriter;
 use parquet::file::writer::ParquetWriter;
 
