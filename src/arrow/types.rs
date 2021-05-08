@@ -7,31 +7,31 @@ use chrono::prelude::*;
 const EPOCH_DAYS_CE: i32 = 719_163;
 
 pub trait ArrowTypeInfo where Self: Sized {
-  type PQArray;
-  type PQArrayBuilder;
+  type Array;
+  type ArrayBuilder;
 
   fn pq_type() -> DataType;
   fn field(name: &str) -> Field {
     Field::new(name, Self::pq_type(), false)
   }
-  fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()>;
-  fn append_opt_to_builder(opt: Option<Self>, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()>;
+  fn append_to_builder(&self, ab: &mut Self::ArrayBuilder) -> ArrowResult<()>;
+  fn append_opt_to_builder(opt: Option<Self>, ab: &mut Self::ArrayBuilder) -> ArrowResult<()>;
 }
 
 // define primitive types
 macro_rules! primitive_arrow_type {
   ($rt:ty, $dt:expr, $array:ty, $builder:ty) => {
     impl ArrowTypeInfo for $rt {
-      type PQArray = $array;
-      type PQArrayBuilder = $builder;
+      type Array = $array;
+      type ArrayBuilder = $builder;
 
       fn pq_type() -> DataType {
         $dt
       }
-      fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
+      fn append_to_builder(&self, ab: &mut Self::ArrayBuilder) -> ArrowResult<()> {
         ab.append_value(*self)
       }
-      fn append_opt_to_builder(opt: Option<Self>, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
+      fn append_opt_to_builder(opt: Option<Self>, ab: &mut Self::ArrayBuilder) -> ArrowResult<()> {
         ab.append_option(opt)
       }
     }
@@ -50,8 +50,8 @@ primitive_arrow_type!(f32, DataType::Float32, Float32Array, Float32Builder);
 primitive_arrow_type!(f64, DataType::Float64, Float64Array, Float64Builder);
 
 impl ArrowTypeInfo for String {
-  type PQArray = StringArray;
-  type PQArrayBuilder = StringBuilder;
+  type Array = StringArray;
+  type ArrayBuilder = StringBuilder;
 
   fn pq_type() -> DataType {
     DataType::Utf8
@@ -69,8 +69,8 @@ impl ArrowTypeInfo for String {
 }
 
 impl <'a> ArrowTypeInfo for &'a str {
-  type PQArray = StringArray;
-  type PQArrayBuilder = StringBuilder;
+  type Array = StringArray;
+  type ArrayBuilder = StringBuilder;
 
   fn pq_type() -> DataType {
     DataType::Utf8
@@ -88,8 +88,8 @@ impl <'a> ArrowTypeInfo for &'a str {
 }
 
 impl ArrowTypeInfo for NaiveDate {
-  type PQArray = Date32Array;
-  type PQArrayBuilder = Date32Builder;
+  type Array = Date32Array;
+  type ArrayBuilder = Date32Builder;
 
   fn pq_type() -> DataType {
     DataType::Date32
@@ -106,8 +106,8 @@ impl ArrowTypeInfo for NaiveDate {
 }
 
 impl ArrowTypeInfo for DateTime<FixedOffset> {
-  type PQArray = TimestampSecondArray;
-  type PQArrayBuilder = TimestampSecondBuilder;
+  type Array = TimestampSecondArray;
+  type ArrayBuilder = TimestampSecondBuilder;
 
   fn pq_type() -> DataType {
     DataType::Timestamp(TimeUnit::Second, None)
@@ -123,8 +123,8 @@ impl ArrowTypeInfo for DateTime<FixedOffset> {
 }
 
 impl <T> ArrowTypeInfo for Option<T> where T: ArrowTypeInfo + Clone {
-  type PQArray = T::PQArray;
-  type PQArrayBuilder = T::PQArrayBuilder;
+  type Array = T::Array;
+  type ArrayBuilder = T::ArrayBuilder;
 
   fn pq_type() -> DataType {
     T::pq_type()
@@ -132,10 +132,10 @@ impl <T> ArrowTypeInfo for Option<T> where T: ArrowTypeInfo + Clone {
   fn field(name: &str) -> Field {
     Field::new(name, Self::pq_type(), true)
   }
-  fn append_to_builder(&self, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
+  fn append_to_builder(&self, ab: &mut Self::ArrayBuilder) -> ArrowResult<()> {
     T::append_opt_to_builder(self.clone(), ab)
   }
-  fn append_opt_to_builder(opt: Option<Self>, ab: &mut Self::PQArrayBuilder) -> ArrowResult<()> {
+  fn append_opt_to_builder(opt: Option<Self>, ab: &mut Self::ArrayBuilder) -> ArrowResult<()> {
     opt.flatten().append_to_builder(ab)
   }
 }

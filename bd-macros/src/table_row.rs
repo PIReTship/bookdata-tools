@@ -38,7 +38,7 @@ pub fn derive_table_row(ast: &syn::DeriveInput) -> TokenStream {
   }).collect();
   // field array builer types
   let f_btypes: Vec<_> = f_ainfo.iter().map(|ai| {
-    quote!(<#ai>::PQArrayBuilder)
+    quote!(<#ai>::ArrayBuilder)
   }).collect();
 
   let gen = quote! {
