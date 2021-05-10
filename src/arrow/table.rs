@@ -11,7 +11,7 @@ use parquet::file::serialized_reader::SerializedFileReader;
 use parquet::record::RowAccessor;
 use parquet::record::reader::RowIter;
 
-use anyhow::Result;
+use anyhow::{Result};
 
 pub use bd_macros::TableRow;
 

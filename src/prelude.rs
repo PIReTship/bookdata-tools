@@ -1,6 +1,7 @@
 pub use anyhow::{Result, Error, anyhow};
 pub use log::*;
 pub use structopt::StructOpt;
+pub use fallible_iterator::FallibleIterator;
 pub use crate::cli::CommonOpts;
 pub use crate::io::LineProcessor;
 pub use crate::io::progress::default_progress;

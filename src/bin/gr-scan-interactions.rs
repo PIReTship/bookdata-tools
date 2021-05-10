@@ -112,7 +112,7 @@ impl ObjectWriter<RawInteraction> for IntWriter {
   }
 }
 
-#[derive(TableRow)]
+#[derive(Deserialize)]
 struct IdCluster {
   book_id: u32,
   cluster: Option<i32>
@@ -122,9 +122,8 @@ struct IdCluster {
 fn load_cluster_map() -> Result<HashMap<u32, i32>> {
   info!("loading book cluster map");
   let mut map = HashMap::new();
-  let read = IdCluster::scan_parquet(LINK_FILE)?;
-  for rec in read {
-    let rec = rec?;
+  let mut read = scan_parquet_file::<IdCluster, _>(LINK_FILE)?;
+  while let Some(rec) = read.next()? {
     if let Some(c) = rec.cluster {
       map.insert(rec.book_id, c);
     }
