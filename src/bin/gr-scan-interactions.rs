@@ -128,6 +128,7 @@ fn load_cluster_map() -> Result<HashMap<u32, i32>> {
       map.insert(rec.book_id, c);
     }
   }
+  info!("loaded clusters for {} book IDs", map.len());
   Ok(map)
 }
 
