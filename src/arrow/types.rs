@@ -1,8 +1,6 @@
 use arrow::datatypes::{DataType, TimeUnit, Field};
 use arrow::array::*;
 use arrow::error::{Result as ArrowResult};
-use parquet::record::RowAccessor;
-use parquet::errors::{ParquetError, Result as PQResult};
 use chrono::prelude::*;
 use paste::paste;
 
@@ -19,10 +17,6 @@ pub trait ArrowTypeInfo where Self: Sized {
   }
   fn append_to_builder(&self, ab: &mut Self::ArrayBuilder) -> ArrowResult<()>;
   fn append_opt_to_builder(opt: Option<Self>, ab: &mut Self::ArrayBuilder) -> ArrowResult<()>;
-
-  fn read_from_pq_row<R: RowAccessor>(row: &R, _i: usize) -> PQResult<Self> {
-    Err(ParquetError::General("read_from_pq_row not implemented for this type".to_owned()))
-  }
 }
 
 // define type info for a primitive type
@@ -41,10 +35,6 @@ macro_rules! primitive_arrow_type {
         }
         fn append_opt_to_builder(opt: Option<Self>, ab: &mut Self::ArrayBuilder) -> ArrowResult<()> {
           ab.append_option(opt)
-        }
-
-        fn read_from_pq_row<R: RowAccessor>(row: &R, i: usize) -> PQResult<Self> {
-          row.[<get_ $pqa>](i)
         }
       }
     }
@@ -79,10 +69,6 @@ impl ArrowTypeInfo for String {
       ab.append_null()
     }
   }
-
-  fn read_from_pq_row<R: RowAccessor>(row: &R, i: usize) -> PQResult<Self> {
-    row.get_string(i).map(|s| s.to_owned())
-  }
 }
 
 impl ArrowTypeInfo for NaiveDate {
@@ -101,17 +87,6 @@ impl ArrowTypeInfo for NaiveDate {
       d.num_days_from_ce() - EPOCH_DAYS_CE
     }))
   }
-
-  fn read_from_pq_row<R: RowAccessor>(row: &R, i: usize) -> PQResult<Self> {
-    let dt = row.get_timestamp_millis(i).map(|ts| {
-      NaiveDateTime::from_timestamp((ts / 1000) as i64, (ts % 1000) as u32)
-    }).or_else(|_e| {
-      row.get_timestamp_micros(i).map(|ts| {
-        NaiveDateTime::from_timestamp((ts / 1_000_000) as i64, (ts % 1_000_000) as u32)
-      })
-    })?;
-    Ok(dt.date())
-  }
 }
 
 impl ArrowTypeInfo for NaiveDateTime {
@@ -128,16 +103,6 @@ impl ArrowTypeInfo for NaiveDateTime {
     ab.append_option(opt.map(|d| {
       d.timestamp_millis()
     }))
-  }
-
-  fn read_from_pq_row<R: RowAccessor>(row: &R, i: usize) -> PQResult<Self> {
-    row.get_timestamp_millis(i).map(|ts| {
-      NaiveDateTime::from_timestamp(ts as i64, 0)
-    }).or_else(|_e| {
-      row.get_timestamp_micros(i).map(|ts| {
-        NaiveDateTime::from_timestamp((ts / 1000) as i64, (ts % 1000) as u32)
-      })
-    })
   }
 }
 
