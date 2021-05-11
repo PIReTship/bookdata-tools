@@ -21,7 +21,9 @@ pub mod prelude;
 
 pub use ids::index;
 
+#[cfg(not(target_env="msvc"))]
 use jemallocator::Jemalloc;
 
+#[cfg(not(target_env="msvc"))]
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
