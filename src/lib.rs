@@ -20,3 +20,8 @@ pub mod cli;
 pub mod prelude;
 
 pub use ids::index;
+
+use jemallocator::Jemalloc;
+
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
