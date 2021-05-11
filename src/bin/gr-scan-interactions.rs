@@ -47,7 +47,7 @@ struct RawInteraction {
 struct IntRecord {
   rec_id: u32,
   user_id: u32,
-  book_id: u32,
+  book_id: i32,
   cluster: Option<i32>,
   is_read: u8,
   rating: Option<f32>,
@@ -60,7 +60,7 @@ struct IntRecord {
 // Object writer to transform and write GoodReads interactions
 struct IntWriter {
   writer: TableWriter<IntRecord>,
-  clusters: HashMap<u32,i32>,
+  clusters: HashMap<i32,i32>,
   users: IdIndex<Vec<u8>>,
   n_recs: u32,
 }
@@ -85,7 +85,7 @@ impl ObjectWriter<RawInteraction> for IntWriter {
     let rec_id = self.n_recs;
     let user_key = hex::decode(row.user_id.as_bytes())?;
     let user_id = self.users.intern(user_key);
-    let book_id: u32 = row.book_id.parse()?;
+    let book_id: i32 = row.book_id.parse()?;
     let cluster = self.clusters.get(&book_id).map(|c| *c);
 
     self.writer.write_object(IntRecord {
@@ -114,12 +114,12 @@ impl ObjectWriter<RawInteraction> for IntWriter {
 
 #[derive(Deserialize)]
 struct IdCluster {
-  book_id: u32,
+  book_id: i32,
   cluster: Option<i32>
 }
 
 /// Load mapping from book IDs to clusters.
-fn load_cluster_map() -> Result<HashMap<u32, i32>> {
+fn load_cluster_map() -> Result<HashMap<i32, i32>> {
   info!("loading book cluster map");
   let mut map = HashMap::new();
   let mut read = scan_parquet_file::<IdCluster, _>(LINK_FILE)?;

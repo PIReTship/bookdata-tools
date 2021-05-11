@@ -2,7 +2,7 @@
 Run a Python script.  The script name should come from a script name in 'scripts'.
 """
 
-import os
+import os, os.path
 import sys
 import runpy
 from pathlib import Path
@@ -51,9 +51,13 @@ def run_rust():
 
 def run_script():
     script = sys.argv[1]
-    _log.info('preparing to run scripts.%s', script)
     del sys.argv[1]
-    runpy.run_module(f'scripts.{script}', alter_sys=True)
+    if os.path.exists(script):
+        _log.info('running %s', script)
+        runpy.run_path(script)
+    else:
+        _log.info('preparing to run scripts.%s', script)
+        runpy.run_module(f'scripts.{script}', alter_sys=True)
 
 
 if __name__ == '__main__':

@@ -36,7 +36,7 @@ struct RawWork {
 // work info records to actually write
 #[derive(TableRow)]
 struct InfoRecord {
-  work_id: u32,
+  work_id: i32,
   title: Option<String>,
   pub_year: Option<i16>,
   pub_month: Option<u8>,
@@ -54,7 +54,7 @@ fn main() -> Result<()> {
 
   for rec in proc.json_records() {
     let row: RawWork = rec?;
-    let work_id: u32 = row.work_id.parse()?;
+    let work_id: i32 = row.work_id.parse()?;
 
     let pub_year = parse_opt(&row.original_publication_year)?;
     let pub_month = parse_opt(&row.original_publication_month)?;

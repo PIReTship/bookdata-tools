@@ -44,8 +44,8 @@ struct RawBook {
 // the book ID records to write to Parquet.
 #[derive(TableRow)]
 struct IdRecord {
-  book_id: u32,
-  work_id: Option<u32>,
+  book_id: i32,
+  work_id: Option<i32>,
   isbn10: Option<String>,
   isbn13: Option<String>,
   asin: Option<String>,
@@ -54,7 +54,7 @@ struct IdRecord {
 // book info records to actually write
 #[derive(TableRow)]
 struct InfoRecord {
-  book_id: u32,
+  book_id: i32,
   title: Option<String>,
   pub_year: Option<u16>,
   pub_month: Option<u8>,
@@ -78,7 +78,7 @@ impl BookWriter {
 
 impl ObjectWriter<RawBook> for BookWriter {
   fn write_object(&mut self, row: RawBook) -> Result<()> {
-    let book_id: u32 = row.book_id.parse()?;
+    let book_id: i32 = row.book_id.parse()?;
 
     self.id_out.write_object(IdRecord {
       book_id,
