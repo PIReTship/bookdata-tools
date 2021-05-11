@@ -60,12 +60,16 @@ fn scan_names<P: AsRef<Path>>(path: P) -> Result<NameIndex> {
 }
 
 fn write_index<P: AsRef<Path>>(index: NameIndex, path: P) -> Result<()> {
+  let mut names: Vec<&str> = index.keys().map(|s| s.as_str()).collect();
+  info!("sorting {} names", names.len());
+  names.sort();
   info!("writing deduplicated names to {}", path.as_ref().to_string_lossy());
   let mut writer = TableWriter::open(path)?;
-  for (name, recs) in index {
-    for rec_id in recs {
+  for name in names {
+    for rec_id in index.get(name).unwrap() {
       writer.write_object(IndexEntry {
-        rec_id, name: name.clone()
+        rec_id: *rec_id,
+        name: name.to_string()
       })?;
     }
   }
