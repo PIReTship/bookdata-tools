@@ -21,9 +21,19 @@ pub mod prelude;
 
 pub use ids::index;
 
+
+// jemalloc makes this code fast
 #[cfg(target_env="gnu")]
 use jemallocator::Jemalloc;
 
 #[cfg(target_env="gnu")]
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
+
+// but jemalloc doesn't work on msvc, so use mimalloc
+#[cfg(target_env="msvc")]
+use mimalloc::MiMalloc;
+
+#[cfg(target_env="msvc")]
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
