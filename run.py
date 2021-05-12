@@ -28,22 +28,17 @@ def run_rust():
         os.environ['RUSTFLAGS'] = f'-L native={sysroot}/usr/lib64 -L native={sysroot}/lib64'
     # build the Rust tools
     # TODO support alternate working directories
-    _log.info('compiling Rust tools')
-    sp.run(['cargo', 'build', '--release'], check=True)
-
     tool_name = sys.argv[1]
+
+    _log.info('compiling Rust tool %s', tool_name)
+    sp.run(['cargo', 'build', '--release', '--bin', tool_name], check=True)
+
     tool = bin_dir / tool_name
     args = sys.argv[2:]
     if sys.platform == 'win32':
         tool = tool.with_suffix('.exe')
-    if tool.exists():
-        _log.info('running program %s', tool_name)
-    else:
-        tool = bin_dir / 'bookdata'
-        args = sys.argv[1:]
-        _log.info('running tool %s', tool_name)
-        if 'DB_URL' not in os.environ:
-            os.environ['DB_URL'] = db_url()
+
+    _log.info('running program %s', tool)
 
     tool = os.fspath(tool)
     sp.run([tool] + args, check=True)

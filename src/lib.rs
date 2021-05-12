@@ -15,7 +15,6 @@ pub mod graph;
 pub mod marc;
 pub mod tracking;
 pub mod arrow;
-pub mod commands;
 pub mod cli;
 pub mod prelude;
 
