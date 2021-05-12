@@ -106,9 +106,7 @@ async fn scan_openlib(ctx: &mut ExecutionContext, first_only: bool) -> Result<Ar
   let linked = linked.join(auth, JoinType::Inner, &["author"], &["id"])?;
   let authors = linked.select(vec![
     col("cluster"),
-    // silly hack to make author names nullable and support union
-    // nullif(&[col("name"), lit("")]).alias("author_name")
-    col("name").alias("author_name")
+    trim(col("name")).alias("author_name")
   ])?;
   Ok(authors)
 }
