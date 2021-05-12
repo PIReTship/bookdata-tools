@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use structopt::StructOpt;
 use parse_display::{Display, FromStr};
-use futures::StreamExt;
+use futures::{StreamExt};
 use indicatif::ProgressBar;
 
 use serde::{Serialize, Deserialize};
@@ -44,7 +44,7 @@ struct ClusterAuthors {
 
   /// Specify the source
   #[structopt(short="s", long="source")]
-  source: Source
+  sources: Vec<Source>
 }
 
 #[derive(Serialize, Deserialize, Hash, PartialEq, Eq, Clone, TableRow)]
@@ -106,6 +106,8 @@ async fn scan_openlib(ctx: &mut ExecutionContext, first_only: bool) -> Result<Ar
   let linked = linked.join(auth, JoinType::Inner, &["author"], &["id"])?;
   let authors = linked.select(vec![
     col("cluster"),
+    // silly hack to make author names nullable and support union
+    // nullif(&[col("name"), lit("")]).alias("author_name")
     col("name").alias("author_name")
   ])?;
   Ok(authors)
@@ -126,13 +128,15 @@ async fn scan_loc(ctx: &mut ExecutionContext, first_only: bool) -> Result<Arc<dy
 
   info!("reading book authors");
   let authors = ctx.read_parquet("loc-mds/book-authors.parquet")?;
+  let authors = authors.filter(col("author_name").is_not_null())?;
 
   let linked = icl.join(books, JoinType::Inner, &["isbn_id"], &["isbn_id"])?;
   let linked = linked.join(authors, JoinType::Inner, &["rec_id"], &["rec_id"])?;
-  let authors = linked.select(vec![
-    col("cluster"),
-    col("author_name")
-  ])?;
+  let authors = linked.select_columns(&["cluster", "author_name"])?;
+  // we shouldn't have null author names, but the data thinks we do. fix.
+
+  let authors = authors.filter(col("author_name").is_not_null())?;
+
 
   Ok(authors)
 }
@@ -144,10 +148,20 @@ async fn main() -> Result<()> {
 
   let mut ctx = ExecutionContext::new();
 
-  let authors = match &opts.source {
-    Source::OpenLib => scan_openlib(&mut ctx, opts.first_author).await?,
-    Source::LOC => scan_loc(&mut ctx, opts.first_author).await?,
-  };
+  let mut authors: Option<Arc<dyn DataFrame>> = None;
+  for source in &opts.sources {
+    let astr = match source {
+      Source::OpenLib => scan_openlib(&mut ctx, opts.first_author).await?,
+      Source::LOC => scan_loc(&mut ctx, opts.first_author).await?,
+    };
+    debug!("author source {} has schema {:?}", source, astr.schema());
+    if let Some(adf) = authors {
+      authors = Some(adf.union(astr)?);
+    } else {
+      authors = Some(astr);
+    }
+  }
+  let authors = authors.ok_or(anyhow!("no sources specified"))?;
 
   let plan = plan_df(&mut ctx, authors)?;
   write_authors_dedup(plan, opts.output).await?;
