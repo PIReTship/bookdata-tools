@@ -255,6 +255,7 @@ impl <'a, 'de> Deserializer<'de> for ColValue<'a> {
       DataType::UInt64 => self.visit_u64(visitor),
       DataType::Float32 => self.visit_f32(visitor),
       DataType::Float64 => self.visit_f64(visitor),
+      DataType::Utf8 => self.visit_utf8(visitor),
       t => Err(RowError::UnsupportedType(t.clone()))
     }
   }
@@ -312,4 +313,13 @@ impl <'a, 'de> ColValue<'a> {
   primitive_visitor!(visit_u64, UInt64Array);
   primitive_visitor!(visit_f32, Float32Array);
   primitive_visitor!(visit_f64, Float64Array);
+
+  fn visit_utf8<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, RowError> {
+    let arr = self.array.as_any().downcast_ref::<StringArray>().ok_or(RowError::BadArrayCast)?;
+    if arr.is_valid(self.row) {
+      visitor.visit_str(arr.value(self.row))
+    } else {
+      visitor.visit_none()
+    }
+  }
 }
