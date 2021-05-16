@@ -1,6 +1,6 @@
 use std::path::{Path};
 use std::fs::File;
-use std::collections::HashMap;
+use std::collections::hash_map::{HashMap, Keys};
 use std::hash::Hash;
 use std::borrow::Borrow;
 
@@ -21,15 +21,18 @@ use tempfile::tempdir;
 
 use crate as bookdata;
 
+/// The type of index identifiers.
+pub type Id = u32;
+
 /// Index identifiers from a data type
 pub struct IdIndex<K> {
-  map: HashMap<K,u32>
+  map: HashMap<K,Id>
 }
 
 /// Internal struct for ID records.
 #[derive(TableRow)]
 struct IdRec {
-  id: u32,
+  id: Id,
   key: String
 }
 
@@ -48,14 +51,19 @@ impl <K> IdIndex<K> where K: Eq + Hash {
   }
 
   /// Get the ID for a key, adding it to the index if needed.
-  pub fn intern(&mut self, key: K) -> u32 {
-    let n = self.map.len() as u32;
+  pub fn intern(&mut self, key: K) -> Id {
+    let n = self.map.len() as Id;
     *self.map.entry(key).or_insert(n + 1)
   }
 
   /// Look up the ID for a key if it is present.
-  pub fn lookup<Q>(&self, key: &Q) -> Option<u32> where K: Borrow<Q>, Q: Hash + Eq + ?Sized {
+  pub fn lookup<Q>(&self, key: &Q) -> Option<Id> where K: Borrow<Q>, Q: Hash + Eq + ?Sized {
     self.map.get(key).map(|i| *i)
+  }
+
+  /// Iterate over keys (see [std::collection::HashMap::keys]).
+  pub fn keys(&self) -> Keys<'_, K, Id> {
+    self.map.keys()
   }
 }
 
