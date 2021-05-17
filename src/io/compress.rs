@@ -89,10 +89,11 @@ pub fn open_solo_zip<P: AsRef<Path>>(path: P) -> Result<(Box<dyn BufRead>, Progr
 
     // open and read the member
     debug!("opening member from file");
-    let mut member = zf.by_index(0)?;
+    let member = zf.by_index(0)?;
     info!("processing member {:?} with {} bytes", member.name(), member.size());
     pb.set_length(member.size());
-    copy(&mut member, &mut dst)
+    let mut read = pb.wrap_read(member);
+    copy(&mut read, &mut dst)
   });
 
   let thr = ThreadRead {
