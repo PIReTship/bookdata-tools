@@ -34,7 +34,7 @@ fn cat_file<'o, 'c, P: AsRef<Path>, W: Write>(inf: P, out: &mut W) -> Result<()>
   let fs = File::open(inf)?;
   let pb = ProgressBar::new(fs.metadata().unwrap().len());
   pb.set_style(default_progress_style());
-  pb.set_prefix(&fstr);
+  pb.set_prefix(fstr.to_string());
   let _pbs = set_progress(&pb);
   let mut pbr = pb.wrap_read(fs);
   io::copy(&mut pbr, out)?;
