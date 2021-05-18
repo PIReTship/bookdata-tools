@@ -1,12 +1,11 @@
 //! Scan the nodes in an RDF ntriples file.
-use std::io::prelude::*;
-
 use bookdata::prelude::*;
 use bookdata::io::compress::open_solo_zip;
 use bookdata::ids::index::IdIndex;
 
-use ntriple::parser::quiet_line;
-use ntriple::{Triple, Subject, Predicate, Object};
+use oxigraph::model::*;
+use oxigraph::io::GraphFormat;
+use oxigraph::io::read::GraphParser;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name="rdf-scan-nodes")]
@@ -33,72 +32,58 @@ impl ScanContext {
     }
   }
 
-  fn scan_file(&mut self, path: &Path) -> Result<usize> {
+  fn scan_file(&mut self, path: &Path) -> Result<()> {
     let (read, pb) = open_solo_zip(path)?;
     let _pbl = set_progress(&pb);
-    let mut lno = 0;
-    let mut nrecs = 0;
-    for line in read.lines() {
-      let line = line?;
-      lno += 1;
-      match quiet_line(&line) {
-        Ok(Some(tr)) => {
-          nrecs += 1;
-          self.scan_triple(tr)?;
-        },
-        Ok(None) => (),
-        Err(ref e) => {
-          error!("error on line {}: {:?}", lno, e);
-          error!("invalid line contained: {}", line);
-        }
-      };
+    let parser = GraphParser::from_format(GraphFormat::NTriples);
+    for triple in parser.read_triples(read)? {
+      let triple = triple?;
+      self.scan_triple(triple)?;
     }
 
-    Ok(nrecs)
-  }
-
-  fn scan_triple(&mut self, triple: Triple) -> Result<()> {
-    self.subj_id(&triple.subject)?;
-    self.pred_id(&triple.predicate)?;
-    self.obj_id(&triple.object)?;
     Ok(())
   }
 
-  fn node_id(&mut self, iri: &str) -> Result<i32> {
-    // let uuid = Uuid::new_v5(&uuid::NAMESPACE_URL, iri);
-    // self.node_sink.save(&uuid, iri)?;
-    let id = self.iri_index.intern(iri.to_string());
+  fn scan_triple(&mut self, triple: Triple) -> Result<()> {
+    self.subj_id(triple.subject)?;
+    self.pred_id(triple.predicate)?;
+    self.obj_id(triple.object)?;
+    Ok(())
+  }
+
+  fn node_id(&mut self, node: NamedNode) -> Result<i32> {
+    // let uuid = Uuid::new_v5(&uuid::NAMESPACE_URL, node);
+    // self.node_sink.save(&uuid, node)?;
+    let id = self.iri_index.intern(node.into_string());
     Ok(id.try_into()?)
   }
 
-  fn blank_id(&mut self, key: &str) -> Result<i32> {
+  fn blank_id(&mut self, node: BlankNode) -> Result<i32> {
     // let uuid = Uuid::new_v5(&self.blank_ns, key);
-    let id = self.blank_index.intern(key.to_string()) as i64;
+    let id = self.blank_index.intern(node.into_string()) as i64;
     let id = -id;
     Ok(id.try_into()?)
   }
 
   /// Generate an ID for an RDF subject.
-  pub fn subj_id(&mut self, sub: &Subject) -> Result<i32> {
+  pub fn subj_id(&mut self, sub: NamedOrBlankNode) -> Result<i32> {
     match sub {
-      Subject::IriRef(iri) => self.node_id(iri),
-      Subject::BNode(key) => self.blank_id(key)
+      NamedOrBlankNode::NamedNode(node) => self.node_id(node),
+      NamedOrBlankNode::BlankNode(node) => self.blank_id(node)
     }
   }
 
   /// Generate an ID for an RDF predicate.
-  pub fn pred_id(&mut self, pred: &Predicate) -> Result<i32> {
-    match pred {
-      Predicate::IriRef(iri) => self.node_id(iri)
-    }
+  pub fn pred_id(&mut self, pred: NamedNode) -> Result<i32> {
+    self.node_id(pred)
   }
 
   /// Generate an ID for an RDF object.
-  pub fn obj_id(&mut self, obj: &Object) -> Result<Option<i32>> {
+  pub fn obj_id(&mut self, obj: Term) -> Result<Option<i32>> {
     match obj {
-      Object::IriRef(iri) => self.node_id(iri).map(Some),
-      Object::BNode(key) => self.blank_id(key).map(Some),
-      Object::Lit(_) => Ok(None)
+      Term::NamedNode(node) => self.node_id(node).map(Some),
+      Term::BlankNode(node) => self.blank_id(node).map(Some),
+      Term::Literal(_) => Ok(None)
     }
   }
 }
