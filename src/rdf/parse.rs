@@ -13,37 +13,36 @@ use regex::{Regex, Captures};
 use lazy_static::lazy_static;
 use thiserror::Error;
 
+use nom::{
+  Parser, IResult, Finish,
+  error::ErrorKind,
+  bytes::complete::{take, take_while1, tag, escaped_transform},
+  character::complete::{one_of, space0, space1, alpha1, alphanumeric1},
+  multi::many0,
+  branch::alt,
+  sequence::*,
+  combinator::*,
+  regexp::str::re_find
+};
+
 use super::model::*;
 
 #[derive(Error, Debug)]
 pub enum ParseError {
   #[error("Invalid IRI reference: {0}")]
   BadIRI(String),
+  #[error("Error parsing line")]
+  ParseError(ErrorKind),
   #[error("Line is malformed: {0}")]
   MalformedLine(String),
   #[error("Trailing garbage after valid tuple: {0}")]
   TrailingGarbage(String),
 }
 
-lazy_static! {
-  // Whitespace RE
-  static ref WS_RE: Regex = Regex::new(r"\s+").expect("invalid regex");
-  // Unicode escape RE
-  static ref UESC_RE: Regex = Regex::new(
-    r"\\u(?P<x4>[[:xdigit:]]{4})|\\U(?P<x8>[[:xdigit:]]{8})"
-  ).expect("invalid regex");
-  // General escape RE
-  static ref ESC_RE: Regex = Regex::new(
-    r#"\\(?P<c>[tbnrf"'\\])|\\u(?P<x4>[[:xdigit:]]{4})|\\U(?P<x8>[[:xdigit:]]{8})"#
-  ).expect("invalid regex");
-
-  // Comments and whitespace RE
-  static ref EMPTY_RE: Regex = Regex::new(
-    r#"^\s*(#.*)?$"#
-  ).expect("invalid regex");
-
-  // Triple parsing RE
-  static ref TRIPLE_RE: Regex = re_triple();
+impl From<nom::error::Error<&str>> for ParseError {
+  fn from(ek: nom::error::Error<&str>) -> ParseError {
+    ParseError::ParseError(ek.code)
+  }
 }
 
 const UCHAR: &'static str = r"\\u[[:xdigit:]]{4}|\\U[[:xdigit:]]{8}";
@@ -81,6 +80,210 @@ fn re_blank() -> String {
   )
 }
 
+fn re_blank_key() -> String {
+  let pncu_parts = [
+    r"A-Z",
+    r"a-z",
+    r"\u00C0-\u00D6",
+    r"\u00D8-\u00F6",
+    r"\u00F8-\u02FF",
+    r"\u0370-\u037D",
+    r"\u037F-\u1FFF",
+    r"\u200C-\u200D",
+    r"\u2070-\u218F",
+    r"\u2C00-\u2FEF",
+    r"\u3001-\uD7FF",
+    r"\uF900-\uFDCF",
+    r"\uFDF0-\uFFFD",
+    r"\u{10000}-\u{EFFFF}",
+    r"_:",
+    r"0-9",
+  ];
+  let pnc_parts = [
+    r"\u0300-\u036F",
+    r"\u203F-\u2040",
+    r"\u00B7",
+  ];
+  format!(
+    r"^[{pncu}](?:[{pncu}{pnc}.-]*[{pncu}{pnc}-])?",
+    pncu=pncu_parts.join(""),
+    pnc=pnc_parts.join(""),
+  )
+}
+
+fn is_irichar(c: char) -> bool {
+  match c {
+    c if (c as u32) < 20 => false,
+    '<' => false,
+    '>' => false,
+    '"' => false,
+    '{' => false,
+    '}' => false,
+    '|' => false,
+    '^' => false,
+    '`' => false,
+    '\\' => false,
+    _ => true
+  }
+}
+
+fn is_strchr(c: char) -> bool {
+  match c as u32 {
+    0x22 => false,
+    0x5c => false,
+    0x0a => false,
+    0x0d => false,
+    _ => true
+  }
+}
+
+fn decode_uchars(chars: &str) -> char {
+  let cp: u32 = u32::from_str_radix(chars, 16).expect("invalid uchars");
+  char::from_u32(cp).unwrap()  // better error handling for escapes
+}
+
+fn decode_esc(c: char) -> char {
+  match c {
+    't' => '\t',
+    'b' => '\x07',
+    'n' => '\n',
+    'r' => '\r',
+    'f' => '\x12',
+    '\'' => '\'',
+    '"' => '"',
+    '\\' => '\\',
+    _ => unreachable!("invalid escape character")
+  }
+}
+
+fn uescape(input: &str) -> IResult<&str, char> {
+  let u4 = preceded(tag("u"), take(4usize).map(decode_uchars));
+  let u8 = preceded(tag("U"), take(8usize).map(decode_uchars));
+  alt((u4, u8))(input)
+}
+
+fn escape(input: &str) -> IResult<&str, char> {
+  let u4 = preceded(tag("u"), take(4usize).map(decode_uchars));
+  let u8 = preceded(tag("U"), take(8usize).map(decode_uchars));
+  let cs = one_of(r#"tbnrf"'\"#).map(decode_esc);
+  alt((cs, u4, u8))(input)
+}
+
+fn iri_lit(input: &str) -> IResult<&str, String> {
+  escaped_transform(
+    take_while1(is_irichar),
+    '\\',
+    uescape
+  )(input)
+}
+
+fn iri_ref(input: &str) -> IResult<&str, String> {
+  map(
+    delimited(tag("<"), opt(iri_lit), tag(">")),
+    |o| o.unwrap_or_default()
+  )(input)
+}
+
+fn lang_tag(input: &str) -> IResult<&str, String> {
+  let lt1 = alpha1;
+  let ltres = many0(
+    preceded(tag("-"), alphanumeric1)
+  );
+  map(preceded(tag("@"), tuple((lt1, ltres))), |args| {
+    let (tag, mut v) = args;
+    v.insert(0, tag);
+    v.join("-")
+  })(input)
+}
+
+fn string_lit(input: &str) -> IResult<&str, String> {
+  map(
+    delimited(
+      tag("\""),
+      opt(escaped_transform(
+        take_while1(is_strchr),
+        '\\',
+        escape
+      )),
+      tag("\"")
+    ),
+    |o| o.unwrap_or_default()
+  )(input)
+}
+
+fn literal(input: &str) -> IResult<&str, Literal> {
+  let schema = preceded(tag("^^"), iri_ref);
+  map(
+    tuple((string_lit, opt(lang_tag), opt(schema))),
+    |(l, t, s)| Literal {
+      value: l,
+      lang: t,
+      schema: s
+    }
+  )(input)
+}
+
+fn blank_ref(input: &str) -> IResult<&str, String> {
+  let regex = Regex::new(&re_blank_key()).unwrap();
+  map(
+    preceded(tag("_:"), re_find(regex)),
+    |s| s.to_owned()
+  )(input)
+}
+
+fn subject(input: &str) -> IResult<&str, Node> {
+  let named = map(iri_ref, Node::named);
+  let blank = map(blank_ref, Node::blank);
+  alt((named, blank))(input)
+}
+
+fn object(input: &str) -> IResult<&str, Term> {
+  let named = map(iri_ref, Term::named);
+  let blank = map(blank_ref, Term::blank);
+  let lit = map(literal, Term::Literal);
+  alt((named, blank, lit))(input)
+}
+
+fn triple(input: &str) -> IResult<&str, Triple> {
+  let seq = tuple((
+    subject,
+    space1,
+    iri_ref,
+    space1,
+    object,
+    space0,
+    tag(".")
+  ));
+  let mut res = map(seq, |(s,_,p,_,o,_,_)| {
+    Triple {
+      subject: s,
+      predicate: p,
+      object: o
+    }
+  });
+  res(input)
+}
+
+fn nt_line(input: &str) -> IResult<&str, Option<Triple>> {
+  let parse = tuple((
+    // whitespace is fine
+    space0,
+    // we might not even have a triple
+    opt(triple),
+    // more space is fine
+    space0,
+    // and a comment
+    opt(preceded(tag("#"), rest)),
+    eof
+  ));
+  map(parse, |t| t.1)(input)
+}
+
+/// Regex component for an IRI
+fn re_iri() -> String {
+  format!(r#"^(?:[^\x00-\x20<>"{{}}|^`\\]|{uchar})*"#, uchar=UCHAR)
+}
+
 /// Regex component for an IRI reference.
 fn re_iriref() -> String {
   format!(r#"<(?:[^\x00-\x20<>"{{}}|^`\\]|{uchar})*>"#, uchar=UCHAR)
@@ -104,6 +307,29 @@ fn re_literal() -> String {
     iri=re_iriref(),
     lang=re_langtag(),
   )
+}
+
+lazy_static! {
+  // Whitespace RE
+  static ref WS_RE: Regex = Regex::new(r"\s+").expect("invalid regex");
+  // Unicode escape RE
+  static ref UESC_RE: Regex = Regex::new(
+    r"\\u(?P<x4>[[:xdigit:]]{4})|\\U(?P<x8>[[:xdigit:]]{8})"
+  ).expect("invalid regex");
+  // General escape RE
+  static ref ESC_RE: Regex = Regex::new(
+    r#"\\(?P<c>[tbnrf"'\\])|\\u(?P<x4>[[:xdigit:]]{4})|\\U(?P<x8>[[:xdigit:]]{8})"#
+  ).expect("invalid regex");
+
+  // Comments and whitespace RE
+  static ref EMPTY_RE: Regex = Regex::new(
+    r#"^\s*(#.*)?$"#
+  ).expect("invalid regex");
+
+  static ref BLANK_KEY_RE: Regex = Regex::new(&re_blank_key()).expect("invalid regex");
+
+  // Triple parsing RE
+  static ref TRIPLE_RE: Regex = re_triple();
 }
 
 /// Compile a regex for a triple.
@@ -161,14 +387,16 @@ fn decode_escape(caps: &Captures<'_>) -> Cow<'static, str> {
 
 /// Decode an IRI and replace escape characters.
 fn decode_iri<'a>(iri: &'a str) -> Cow<'a, str> {
-  // if this happens, we passed something not recognized as an IRI
-  let iri_bs = iri.as_bytes();
-  assert_eq!(iri_bs[0], b'<');
-  assert_eq!(iri_bs[iri_bs.len() - 1], b'>');
-  // trim off the delimiters
-  let iri = &iri[1..(iri.len() - 1)];
-  // and let's replace!
-  UESC_RE.replace_all(iri, decode_uescape)
+  let (_, res) = iri_ref(iri).finish().expect("parse error");
+  res.into()
+  // // if this happens, we passed something not recognized as an IRI
+  // let iri_bs = iri.as_bytes();
+  // assert_eq!(iri_bs[0], b'<');
+  // assert_eq!(iri_bs[iri_bs.len() - 1], b'>');
+  // // trim off the delimiters
+  // let iri = &iri[1..(iri.len() - 1)];
+  // // and let's replace!
+  // UESC_RE.replace_all(iri, decode_uescape)
 }
 
 /// Decode a blank node - this just returns the key
@@ -179,70 +407,76 @@ fn decode_blank<'a>(blank: &'a str) -> Cow<'a, str> {
 
 /// Decode a string literal and replace escape characters
 fn decode_lit<'a>(lit: &'a str) -> Cow<'a, str> {
-  // if this happens, we passed something not recognized as an IRI
-  let lit_bs = lit.as_bytes();
-  assert_eq!(lit_bs[0], b'"');
-  assert_eq!(lit_bs[lit_bs.len() - 1], b'"');
-  // trim off the delimiters
-  let lit = &lit[1..(lit.len() - 1)];
-  // and let's replace!
-  ESC_RE.replace_all(lit, decode_escape)
+  let (_, res) = string_lit(lit).finish().expect("parse error");
+  res.into()
+  // // if this happens, we passed something not recognized as an IRI
+  // let lit_bs = lit.as_bytes();
+  // assert_eq!(lit_bs[0], b'"');
+  // assert_eq!(lit_bs[lit_bs.len() - 1], b'"');
+  // // trim off the delimiters
+  // let lit = &lit[1..(lit.len() - 1)];
+  // // and let's replace!
+  // ESC_RE.replace_all(lit, decode_escape)
 }
 
 /// Decode a node
 fn decode_node<'a>(subj: &'a str) -> Node {
-  let first = subj.as_bytes()[0];
-  match first {
-    b'<' => Node::named(decode_iri(subj)),
-    b'_' => Node::blank(decode_blank(subj)),
-    _ => unreachable!("bad subject")
-  }
+  let (_, node) = subject(subj).finish().expect("parse error");
+  node
+  // let first = subj.as_bytes()[0];
+  // match first {
+  //   b'<' => Node::named(decode_iri(subj)),
+  //   b'_' => Node::blank(decode_blank(subj)),
+  //   _ => unreachable!("bad subject")
+  // }
 }
 
 /// Parse a triple
 pub fn parse_triple(line: &str) -> Result<Option<Triple>, ParseError> {
   // try to parse a triple
-  let (trip, rest) = if let Some(caps) = TRIPLE_RE.captures(line) {
-    let subj = caps.name("subj").unwrap();
-    let subj = decode_node(subj.as_str());
+  let (_, trip) = nt_line(line).finish()?;
+  Ok(trip)
+  // let (trip, rest) = if let Some(caps) = TRIPLE_RE.captures(line) {
+  //   let subj = caps.name("subj").unwrap();
+  //   let subj = decode_node(subj.as_str());
 
-    let pred = caps.name("pred").unwrap();
-    let pred = decode_iri(pred.as_str()).into_owned();
+  //   let pred = caps.name("pred").unwrap();
+  //   let pred = decode_iri(pred.as_str()).into_owned();
 
-    let obj = if let Some(lv) = caps.name("lit_val") {
-      // object is a literal value
-      let value = decode_lit(lv.as_str()).into_owned();
+  //   let obj = if let Some(lv) = caps.name("lit_val") {
+  //     // object is a literal value
+  //     let value = decode_lit(lv.as_str()).into_owned();
 
-      let lang = caps.name("lang");
-      let lang = lang.map(|s| s.as_str().to_string());
+  //     let lang = caps.name("lang");
+  //     let lang = lang.map(|s| s.as_str().to_string());
 
-      let schema = caps.name("schema");
-      let schema = schema.map(|s| decode_iri(s.as_str()).into_owned());
+  //     let schema = caps.name("schema");
+  //     let schema = schema.map(|s| decode_iri(s.as_str()).into_owned());
 
-      Term::Literal(Literal {
-        value, lang, schema
-      })
-    } else {
-      // it's a node - grab obj (always exists) and decode
-      Term::Node(decode_node(caps.name("obj").unwrap().as_str()))
-    };
-    (Some(Triple {
-      subject: subj,
-      predicate: pred,
-      object: obj
-    }), &line[caps.get(0).unwrap().end()..])
-  } else {
-    (None, line)
-  };
+  //     Term::Literal(Literal {
+  //       value, lang, schema
+  //     })
+  //   } else {
+  //     // it's a node - grab obj (always exists) and decode
+  //     Term::Node(decode_node(caps.name("obj").unwrap().as_str()))
+  //   };
+  //   (Some(Triple {
+  //     subject: subj,
+  //     predicate: pred,
+  //     object: obj
+  //   }), &line[caps.get(0).unwrap().end()..])
+  // } else {
+  //   (None, line)
+  // };
 
-  if EMPTY_RE.is_match(rest) {
-    // everything is fine, all that's left is whitespace and maybe a comment
-    Ok(trip)
-  } else if trip.is_none() {
-    Err(ParseError::MalformedLine(line.to_owned()))
-  } else {
-    Err(ParseError::TrailingGarbage(rest.to_owned()))
-  }
+  // if EMPTY_RE.is_match(rest) {
+  //   // everything is fine, all that's left is whitespace and maybe a comment
+  //   Ok(trip)
+  // } else if trip.is_none() {
+  //   Err(ParseError::MalformedLine(line.to_owned()))
+  // } else {
+  //   Err(ParseError::TrailingGarbage(rest.to_owned()))
+  // }
 }
 
 impl FromStr for Triple {

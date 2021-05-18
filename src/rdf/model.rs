@@ -42,13 +42,11 @@ pub enum Term {
 
 impl Term {
   #[inline]
-  #[cfg(test)]
   pub fn named<S: Into<String>>(s: S) -> Term {
     Term::Node(Node::named(s))
   }
 
   #[inline]
-  #[cfg(test)]
   pub fn blank<S: Into<String>>(s: S) -> Term {
     Term::Node(Node::blank(s))
   }
@@ -61,7 +59,6 @@ impl Term {
     })
   }
 
-  #[cfg(test)]
   pub fn literal_lang<V: Into<String>, L: Into<String>>(s: V, lang: L) -> Term {
     Term::Literal(Literal {
       value: s.into(),
@@ -70,7 +67,6 @@ impl Term {
     })
   }
 
-  #[cfg(test)]
   pub fn literal_schema<V: Into<String>, S: Into<String>>(s: V, schema: S) -> Term {
     Term::Literal(Literal {
       value: s.into(),
