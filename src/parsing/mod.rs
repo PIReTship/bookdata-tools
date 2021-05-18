@@ -4,7 +4,6 @@ use std::error::{Error as StdError};
 
 use anyhow::{Result, anyhow};
 
-pub mod ntriple;
 pub mod dates;
 #[cfg(test)]
 mod test_dates;

@@ -12,6 +12,7 @@ pub mod io;
 pub mod ids;
 pub mod graph;
 pub mod marc;
+pub mod rdf;
 pub mod arrow;
 pub mod cli;
 pub mod prelude;
