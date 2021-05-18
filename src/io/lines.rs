@@ -11,7 +11,7 @@ use indicatif::ProgressBar;
 use happylog::{LogPBState, set_progress};
 use serde::de::DeserializeOwned;
 
-use super::compress::open_gzin_progress;
+use super::compress::{open_gzin_progress, open_solo_zip};
 use super::ObjectWriter;
 
 /// Read lines from a file with buffering, decompression, and parsing.
@@ -64,6 +64,17 @@ impl LineProcessor {
   /// Open a line processor from a gzipped source.
   pub fn open_gzip<P: AsRef<Path>>(path: P) -> Result<LineProcessor> {
     let (read, progress) = open_gzin_progress(path)?;
+    let state = set_progress(&progress);
+    Ok(LineProcessor {
+      progress,
+      reader: Box::new(read),
+      log_state: Some(state)
+    })
+  }
+
+  /// Open a line processor from a zipped source.
+  pub fn open_solo_zip<P: AsRef<Path>>(path: P) -> Result<LineProcessor> {
+    let (read, progress) = open_solo_zip(path)?;
     let state = set_progress(&progress);
     Ok(LineProcessor {
       progress,
