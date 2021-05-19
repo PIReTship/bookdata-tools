@@ -5,18 +5,12 @@
 //! improve parsing performnce.  Why do we need PEG to parse n-triples?
 //!
 //! [nt]: https://www.w3.org/TR/n-triples/
-use std::convert::Into;
 use std::str::FromStr;
-use std::borrow::Cow;
 
-use regex::{Regex, Captures};
-use lazy_static::lazy_static;
 use thiserror::Error;
 
 use nom::{
   Parser, IResult, Finish,
-  // Err as NErr,
-  error::{ErrorKind},
   bytes::complete::{take, take_while, take_while1, tag, escaped_transform},
   character::complete::{satisfy, one_of, space0, space1, alpha1, alphanumeric1},
   multi::many0,
@@ -29,51 +23,17 @@ use super::model::*;
 
 #[derive(Error, Debug)]
 pub enum ParseError {
-  #[error("Invalid IRI reference: {0}")]
-  BadIRI(String),
-  #[error("Error parsing line")]
-  ParseError(ErrorKind),
-  #[error("Line is malformed: {0}")]
-  MalformedLine(String),
-  #[error("Trailing garbage after valid tuple: {0}")]
-  TrailingGarbage(String),
+  #[error("Error parsing line: {0}")]
+  ParseError(nom::error::Error<String>),
 }
 
 impl From<nom::error::Error<&str>> for ParseError {
   fn from(ek: nom::error::Error<&str>) -> ParseError {
-    ParseError::ParseError(ek.code)
+    ParseError::ParseError(nom::error::Error::new(
+      ek.input.to_owned(),
+      ek.code)
+    )
   }
-}
-
-fn re_blank_key() -> String {
-  let pncu_parts = [
-    r"A-Z",
-    r"a-z",
-    r"\u00C0-\u00D6",
-    r"\u00D8-\u00F6",
-    r"\u00F8-\u02FF",
-    r"\u0370-\u037D",
-    r"\u037F-\u1FFF",
-    r"\u200C-\u200D",
-    r"\u2070-\u218F",
-    r"\u2C00-\u2FEF",
-    r"\u3001-\uD7FF",
-    r"\uF900-\uFDCF",
-    r"\uFDF0-\uFFFD",
-    r"\u{10000}-\u{EFFFF}",
-    r"_:",
-    r"0-9",
-  ];
-  let pnc_parts = [
-    r"\u0300-\u036F",
-    r"\u203F-\u2040",
-    r"\u00B7",
-  ];
-  format!(
-    r"^[{pncu}](?:[{pncu}{pnc}.-]*[{pncu}{pnc}-])?",
-    pncu=pncu_parts.join(""),
-    pnc=pnc_parts.join(""),
-  )
 }
 
 fn is_blank_lead(c: char) -> bool {
@@ -314,26 +274,6 @@ fn nt_line(input: &str) -> IResult<&str, Option<Triple>> {
   map(parse, |t| t.1)(input)
 }
 
-lazy_static! {
-  // Whitespace RE
-  static ref WS_RE: Regex = Regex::new(r"\s+").expect("invalid regex");
-  // Unicode escape RE
-  static ref UESC_RE: Regex = Regex::new(
-    r"\\u(?P<x4>[[:xdigit:]]{4})|\\U(?P<x8>[[:xdigit:]]{8})"
-  ).expect("invalid regex");
-  // General escape RE
-  static ref ESC_RE: Regex = Regex::new(
-    r#"\\(?P<c>[tbnrf"'\\])|\\u(?P<x4>[[:xdigit:]]{4})|\\U(?P<x8>[[:xdigit:]]{8})"#
-  ).expect("invalid regex");
-
-  // Comments and whitespace RE
-  static ref EMPTY_RE: Regex = Regex::new(
-    r#"^\s*(#.*)?$"#
-  ).expect("invalid regex");
-
-  static ref BLANK_KEY_RE: Regex = Regex::new(&re_blank_key()).expect("invalid regex");
-}
-
 /// Parse a triple
 pub fn parse_triple(line: &str) -> Result<Option<Triple>, ParseError> {
   // try to parse a triple
@@ -355,21 +295,21 @@ impl FromStr for Triple {
 
 /// Decode an IRI and replace escape characters.
 #[cfg(test)]
-fn decode_iri<'a>(iri: &'a str) -> Cow<'a, str> {
+fn decode_iri(iri: &str) -> String {
   let (_, res) = iri_ref(iri).finish().expect("parse error");
   res.into()
 }
 
 /// Decode a string literal and replace escape characters
 #[cfg(test)]
-fn decode_lit<'a>(lit: &'a str) -> Cow<'a, str> {
+fn decode_lit(lit: &str) -> String {
   let (_, res) = string_lit(lit).finish().expect("parse error");
   res.into()
 }
 
 /// Decode a node
 #[cfg(test)]
-fn decode_node<'a>(subj: &'a str) -> Node {
+fn decode_node(subj: &str) -> Node {
   let (_, node) = subject(subj).finish().expect("parse error");
   node
 }
@@ -377,55 +317,55 @@ fn decode_node<'a>(subj: &'a str) -> Node {
 #[test]
 fn test_iri_decode_empty() {
   let res = decode_iri("<>");
-  assert_eq!(res.as_ref(), "");
+  assert_eq!(res.as_str(), "");
 }
 
 #[test]
 fn test_iri_decode_url() {
   let res = decode_iri("<https://example.com>");
-  assert_eq!(res.as_ref(), "https://example.com");
+  assert_eq!(res.as_str(), "https://example.com");
 }
 
 #[test]
 fn test_iri_decode_escape() {
   let res = decode_iri("<https://example.com/\\u2665>");
-  assert_eq!(res.as_ref(), "https://example.com/♥");
+  assert_eq!(res.as_str(), "https://example.com/♥");
 }
 
 #[test]
 fn test_iri_decode_escapes() {
   let res = decode_iri("<https://example.com/\\u2665/\\U0001F49E>");
-  assert_eq!(res.as_ref(), "https://example.com/♥/💞");
+  assert_eq!(res.as_str(), "https://example.com/♥/💞");
 }
 
 #[test]
 fn test_lit_decode_empty() {
   let res = decode_lit("\"\"");
-  assert_eq!(res.as_ref(), "");
+  assert_eq!(res.as_str(), "");
 }
 
 #[test]
 fn test_lit_decode_url() {
   let res = decode_lit("\"hello\"");
-  assert_eq!(res.as_ref(), "hello");
+  assert_eq!(res.as_str(), "hello");
 }
 
 #[test]
 fn test_lit_decode_escape() {
   let res = decode_lit("\"HACKEM \\u2665 MUCHE\"");
-  assert_eq!(res.as_ref(), "HACKEM ♥ MUCHE");
+  assert_eq!(res.as_str(), "HACKEM ♥ MUCHE");
 }
 
 #[test]
 fn test_lit_decode_escapes() {
   let res = decode_lit("\"FOOBIE \\u2665 BLETCH \\U0001F49E\"");
-  assert_eq!(res.as_ref(), "FOOBIE ♥ BLETCH 💞");
+  assert_eq!(res.as_str(), "FOOBIE ♥ BLETCH 💞");
 }
 
 #[test]
 fn test_lit_decode_cescape() {
   let res = decode_lit("\"FOOBIE \\r BLETCH\"");
-  assert_eq!(res.as_ref(), "FOOBIE \r BLETCH");
+  assert_eq!(res.as_str(), "FOOBIE \r BLETCH");
 }
 
 
