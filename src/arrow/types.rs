@@ -7,6 +7,7 @@ use paste::paste;
 // The number of days from 0001-01-01 to 1977-01-01
 const EPOCH_DAYS_CE: i32 = 719_163;
 
+/// Trait defining how to store a type in Arrow.
 pub trait ArrowTypeInfo where Self: Sized {
   type Array;
   type ArrayBuilder;
@@ -17,6 +18,28 @@ pub trait ArrowTypeInfo where Self: Sized {
   }
   fn append_to_builder(&self, ab: &mut Self::ArrayBuilder) -> ArrowResult<()>;
   fn append_opt_to_builder(opt: Option<Self>, ab: &mut Self::ArrayBuilder) -> ArrowResult<()>;
+}
+
+/// Trait to declare that a type should be serialized as a different Arrow type.
+pub trait ArrowTypeWrapper where Self: Sized + Clone {
+  type Wrapped: Sized + From<Self> + ArrowTypeInfo;
+}
+
+impl <T: ArrowTypeWrapper + Sized> ArrowTypeInfo for T {
+  type Array = <T::Wrapped as ArrowTypeInfo>::Array;
+  type ArrayBuilder = <T::Wrapped as ArrowTypeInfo>::ArrayBuilder;
+
+  fn pq_type() -> DataType {
+    <T::Wrapped as ArrowTypeInfo>::pq_type()
+  }
+  fn append_to_builder(&self, ab: &mut Self::ArrayBuilder) -> ArrowResult<()> {
+    let clone = self.clone();
+    let w: T::Wrapped = clone.into();
+    w.append_to_builder(ab)
+  }
+  fn append_opt_to_builder(opt: Option<Self>, ab: &mut Self::ArrayBuilder) -> ArrowResult<()> {
+    <T::Wrapped as ArrowTypeInfo>::append_opt_to_builder(opt.map(|v| v.into()), ab)
+  }
 }
 
 // define type info for a primitive type

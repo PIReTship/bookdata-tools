@@ -11,9 +11,9 @@ pub struct FieldRecord {
   rec_id: u32,
   fld_no: u32,
   tag: i16,
-  ind1: u8,
-  ind2: u8,
-  sf_code: u8,
+  ind1: Code,
+  ind2: Code,
+  sf_code: Code,
   contents: String,
 }
 
@@ -43,7 +43,7 @@ impl ObjectWriter<MARCRecord> for FieldOutput {
     self.writer.write_object(FieldRecord {
       rec_id, fld_no,
       tag: -1,
-      ind1: 0, ind2: 0, sf_code: 0,
+      ind1: 0.into(), ind2: 0.into(), sf_code: 0.into(),
       contents: rec.leader
     })?;
 
@@ -52,7 +52,7 @@ impl ObjectWriter<MARCRecord> for FieldOutput {
       fld_no += 1;
       self.writer.write_object(FieldRecord {
         rec_id, fld_no, tag: cf.tag.into(),
-        ind1: 0, ind2: 0, sf_code: 0,
+        ind1: 0.into(), ind2: 0.into(), sf_code: 0.into(),
         contents: cf.content
       })?;
     }

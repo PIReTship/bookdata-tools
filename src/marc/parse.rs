@@ -16,8 +16,8 @@ use super::record::*;
 #[derive(Debug, Default)]
 struct Codes {
   tag: i16,
-  ind1: u8,
-  ind2: u8
+  ind1: Code,
+  ind2: Code
 }
 
 impl From<Codes> for Field {
@@ -126,7 +126,7 @@ fn read_record<B: BufRead>(rdr: &mut Reader<B>) -> Result<MARCRecord> {
   };
   let mut field = Field::default();
   let mut tag = 0;
-  let mut sf_code = 0;
+  let mut sf_code = Code::default();
   loop {
     match rdr.read_event(&mut buf)? {
       Event::Start(ref e) => {
@@ -206,16 +206,16 @@ fn read_tag_attr(attrs: Attributes<'_>) -> Result<i16> {
 /// Read code attributes from a tag.
 fn read_code_attrs(attrs: Attributes<'_>) -> Result<Codes> {
   let mut tag = 0;
-  let mut ind1 = 0;
-  let mut ind2 = 0;
+  let mut ind1 = Code::default();
+  let mut ind2 = Code::default();
 
   for ar in attrs {
     let a = ar?;
     let v = a.unescaped_value()?;
     match a.key {
       b"tag" => tag = str::from_utf8(&v)?.parse()?,
-      b"ind1" => ind1 = v[0],
-      b"ind2" => ind2 = v[0],
+      b"ind1" => ind1 = v[0].into(),
+      b"ind2" => ind2 = v[0].into(),
       _ => ()
     }
   }
@@ -230,12 +230,12 @@ fn read_code_attrs(attrs: Attributes<'_>) -> Result<Codes> {
 }
 
 /// Read the subfield code attriute from a tag
-fn read_sf_code_attr(attrs: Attributes<'_>) -> Result<u8> {
+fn read_sf_code_attr(attrs: Attributes<'_>) -> Result<Code> {
   for ar in attrs {
     let a = ar?;
     if a.key == b"code" {
       let code = a.unescaped_value()?;
-      return Ok(code[0])
+      return Ok(code[0].into())
     }
   }
 

@@ -5,6 +5,23 @@
 //!
 //! [bibliographic]: https://www.loc.gov/marc/bibliographic/
 //! [name authority]: https://www.loc.gov/marc/authority/
+use std::convert::{TryFrom, TryInto};
+use std::fmt;
+use serde::{Deserialize, Serialize};
+
+use arrow::error::{Result as ArrowResult};
+use arrow::datatypes::DataType;
+use arrow::array::{UInt8Array, UInt8Builder};
+
+use crate::arrow::types::ArrowTypeWrapper;
+
+/// An indicator or subfield code.
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+#[serde(transparent)]
+pub struct Code {
+  value: u8
+}
 
 /// A MARC record.
 #[derive(Debug, Clone)]
@@ -25,15 +42,15 @@ pub struct ControlField {
 #[derive(Debug, Clone, Default)]
 pub struct Field {
   pub tag: i16,
-  pub ind1: u8,
-  pub ind2: u8,
+  pub ind1: Code,
+  pub ind2: Code,
   pub subfields: Vec<Subfield>
 }
 
 /// A subfield in a MARC record.
 #[derive(Debug, Clone)]
 pub struct Subfield {
-  pub code: u8,
+  pub code: Code,
   pub content: String
 }
 
@@ -54,7 +71,7 @@ impl MARCRecord {
     for df in &self.fields {
       if df.tag == 10 {
         for sf in &df.subfields {
-          if sf.code == b'a' {
+          if sf.code == 'a' {
             return Some(sf.content.trim())
           }
         }
@@ -123,3 +140,88 @@ impl MARCRecord {
     }
   }
 }
+
+impl From<u8> for Code {
+  #[inline]
+  fn from(value: u8) -> Code {
+    Code { value }
+  }
+}
+
+impl From<char> for Code {
+  #[inline]
+  fn from(mut value: char) -> Code {
+    assert!(value.is_ascii(), "value must be ASCII");
+    // unify blanks
+    if value == '|' {
+      value = ' ';
+    }
+    Code { value: value as u8 }
+  }
+}
+
+impl From<&Code> for char {
+  #[inline]
+  fn from(c: &Code) -> char {
+    c.value as char
+  }
+}
+
+impl From<Code> for char {
+  #[inline]
+  fn from(c: Code) -> char {
+    c.value as char
+  }
+}
+
+impl From<&Code> for u8 {
+  #[inline]
+  fn from(c: &Code) -> u8 {
+    c.value
+  }
+}
+
+impl From<Code> for u8 {
+  #[inline]
+  fn from(c: Code) -> u8 {
+    c.value
+  }
+}
+
+impl PartialEq<char> for Code {
+  #[inline]
+  fn eq(&self, other: &char) -> bool {
+    let c: char = self.into();
+    c == *other
+  }
+}
+
+impl fmt::Display for Code {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    if self.value == 0 {
+      f.write_str("∅")
+    } else {
+      (self.value as char).fmt(f)
+    }
+  }
+}
+
+impl ArrowTypeWrapper for Code {
+  type Wrapped = u8;
+}
+
+// impl ArrowTypeInfo for Code {
+//   type Array = UInt8Array;
+//   type ArrayBuilder = UInt8Builder;
+
+//   fn pq_type() -> DataType {
+//     DataType::UInt8
+//   }
+
+//   fn append_to_builder(&self, ab: &mut Self::ArrayBuilder) -> ArrowResult<()> {
+//     ab.append_value(self.value)
+//   }
+//   fn append_opt_to_builder(opt: Option<Self>, ab: &mut Self::ArrayBuilder) -> ArrowResult<()> {
+//     ab.append_option(opt.map(|c| c.value))
+//   }
+// }

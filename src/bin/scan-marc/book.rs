@@ -66,7 +66,7 @@ impl ObjectWriter<MARCRecord> for BookOutput {
     for df in &record.fields {
       if df.tag == 20 {
         for sf in &df.subfields {
-          if sf.code == b'a' {
+          if sf.code == 'a' {
             match self.parser.parse(&sf.content) {
               ParseResult::Valid(isbns, _) => {
                 for isbn in isbns {

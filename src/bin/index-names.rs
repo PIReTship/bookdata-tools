@@ -34,7 +34,7 @@ type NameIndex = HashMap<String,HashSet<u32>>;
 struct RecAuthor {
   rec_id: u32,
   #[allow(dead_code)]
-  ind: Option<u8>,
+  ind: Option<char>,
   name: String,
 }
 
