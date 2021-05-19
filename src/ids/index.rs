@@ -1,6 +1,6 @@
 use std::path::{Path};
 use std::fs::File;
-use std::collections::hash_map::{HashMap, Keys};
+use hashbrown::hash_map::{HashMap, Keys};
 use std::hash::Hash;
 use std::borrow::Borrow;
 
@@ -51,9 +51,22 @@ impl <K> IdIndex<K> where K: Eq + Hash {
   }
 
   /// Get the ID for a key, adding it to the index if needed.
-  pub fn intern(&mut self, key: K) -> Id {
+  pub fn intern<Q>(&mut self, key: &Q) -> Id where K: Borrow<Q>, Q: Hash + Eq + ToOwned<Owned=K> + ?Sized {
     let n = self.map.len() as Id;
-    *self.map.entry(key).or_insert(n + 1)
+    // use Hashbrown's raw-entry API to minimize cloning
+    let eb = self.map.raw_entry_mut();
+    let e = eb.from_key(key);
+    let (_, v) = e.or_insert_with(|| {
+      (key.to_owned(), n+1)
+    });
+    *v
+  }
+
+  /// Get the ID for a key, adding it to the index if needed and transferring ownership.
+  pub fn intern_owned(&mut self, key: K) -> Id {
+    let n = self.map.len() as Id;
+    // use Hashbrown's raw-entry API to minimize cloning
+    *self.map.entry(key).or_insert(n+1)
   }
 
   /// Look up the ID for a key if it is present.
@@ -149,7 +162,7 @@ fn test_index_empty() {
 fn test_index_intern_one() {
   let mut index: IdIndex<String> = IdIndex::new();
   assert!(index.lookup("hackem muche").is_none());
-  let id = index.intern("hackem muche".to_string());
+  let id = index.intern("hackem muche");
   assert_eq!(id, 1);
   assert_eq!(index.lookup("hackem muche").unwrap(), 1);
 }
@@ -159,9 +172,9 @@ fn test_index_intern_one() {
 fn test_index_intern_two() {
   let mut index: IdIndex<String> = IdIndex::new();
   assert!(index.lookup("hackem muche").is_none());
-  let id = index.intern("hackem muche".to_string());
+  let id = index.intern("hackem muche");
   assert_eq!(id, 1);
-  let id2 = index.intern("readme".to_string());
+  let id2 = index.intern("readme");
   assert_eq!(id2, 2);
   assert_eq!(index.lookup("hackem muche").unwrap(), 1);
 }
@@ -171,12 +184,24 @@ fn test_index_intern_two() {
 fn test_index_intern_twice() {
   let mut index: IdIndex<String> = IdIndex::new();
   assert!(index.lookup("hackem muche").is_none());
-  let id = index.intern("hackem muche".to_string());
+  let id = index.intern("hackem muche");
   assert_eq!(id, 1);
-  let id2 = index.intern("hackem muche".to_string());
+  let id2 = index.intern("hackem muche");
   assert_eq!(id2, 1);
   assert_eq!(index.len(), 1);
 }
+
+#[test]
+fn test_index_intern_twice_owned() {
+  let mut index: IdIndex<String> = IdIndex::new();
+  assert!(index.lookup("hackem muche").is_none());
+  let id = index.intern_owned("hackem muche".to_owned());
+  assert_eq!(id, 1);
+  let id2 = index.intern_owned("hackem muche".to_owned());
+  assert_eq!(id2, 1);
+  assert_eq!(index.len(), 1);
+}
+
 
 #[test]
 fn test_index_save() -> Result<()> {
@@ -185,7 +210,7 @@ fn test_index_save() -> Result<()> {
   for _i in 0..10000 {
     let key = String::arbitrary(&mut gen);
     let prev = index.lookup(&key);
-    let id = index.intern(key);
+    let id = index.intern(&key);
     match prev {
       Some(i) => assert_eq!(id, i),
       None => assert_eq!(id as usize, index.len())

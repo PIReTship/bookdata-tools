@@ -84,7 +84,7 @@ impl ObjectWriter<RawInteraction> for IntWriter {
     self.n_recs += 1;
     let rec_id = self.n_recs;
     let user_key = hex::decode(row.user_id.as_bytes())?;
-    let user_id = self.users.intern(user_key);
+    let user_id = self.users.intern_owned(user_key);
     let book_id: i32 = row.book_id.parse()?;
     let cluster = self.clusters.get(&book_id).map(|c| *c);
 

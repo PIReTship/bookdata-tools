@@ -84,7 +84,7 @@ impl OLProcessor<OLEditionRecord> for Processor {
     self.save_isbns(id, row.record.asin, clean_asin_chars)?;
 
     for work in row.record.works {
-      let work = self.work_ids.intern(work.key);
+      let work = self.work_ids.intern_owned(work.key);
       self.link_writer.write_object(LinkRec {
         edition: id, work
       })?;
@@ -93,7 +93,7 @@ impl OLProcessor<OLEditionRecord> for Processor {
     for pos in 0..row.record.authors.len() {
       let akey = row.record.authors[pos].key();
       if let Some(akey) = akey {
-        let aid = self.author_ids.intern(akey.to_owned());
+        let aid = self.author_ids.intern(akey);
         let pos = pos as u16;
         self.author_writer.write_object(EditionAuthorRec {
           edition: id, pos, author: aid

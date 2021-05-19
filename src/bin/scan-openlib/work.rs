@@ -53,7 +53,7 @@ impl OLProcessor<OLWorkRecord> for Processor {
     for pos in 0..row.record.authors.len() {
       let akey = row.record.authors[pos].key();
       if let Some(akey) = akey {
-        let aid = self.author_ids.intern(akey.to_owned());
+        let aid = self.author_ids.intern(akey);
         let pos = pos as u16;
         self.author_writer.write_object(WorkAuthorRec {
           id, pos, author: aid

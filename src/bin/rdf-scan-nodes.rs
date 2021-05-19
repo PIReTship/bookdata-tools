@@ -51,13 +51,13 @@ impl ScanContext {
   fn iri_id(&mut self, node: String) -> Result<i32> {
     // let uuid = Uuid::new_v5(&uuid::NAMESPACE_URL, node);
     // self.node_sink.save(&uuid, node)?;
-    let id = self.iri_index.intern(node);
+    let id = self.iri_index.intern_owned(node);
     Ok(id.try_into()?)
   }
 
   fn blank_id(&mut self, node: String) -> Result<i32> {
     // let uuid = Uuid::new_v5(&self.blank_ns, key);
-    let id = self.blank_index.intern(node) as i64;
+    let id = self.blank_index.intern_owned(node) as i64;
     let id = -id;
     Ok(id.try_into()?)
   }
