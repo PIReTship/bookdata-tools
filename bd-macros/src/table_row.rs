@@ -57,7 +57,7 @@ pub fn derive_table_row(ast: &syn::DeriveInput) -> TokenStream {
 
       fn new_batch(cap: usize) -> Self::Batch {
         Self::Batch {
-          #(#f_names: #f_btypes::new(cap)),*
+          #(#f_names: <#f_ainfo>::new_builder(cap)),*
         }
       }
 
