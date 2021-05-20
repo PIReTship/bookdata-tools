@@ -49,7 +49,7 @@ impl <'de, T: FromStr> de::Visitor<'de> for FromStrVisitor<T> {
   }
 
   fn visit_str<E: de::Error>(self, s: &str) -> Result<Self::Value, E> {
-    s.parse().map_err(|e| {
+    s.parse().map_err(|_e| {
       de::Error::invalid_value(de::Unexpected::Str(s), &self)
     })
   }
