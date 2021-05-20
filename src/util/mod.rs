@@ -5,6 +5,7 @@ use std::time::Duration;
 use humansize::{FileSize, file_size_opts as fso};
 
 mod accum;
+pub mod serde_string;
 
 pub use accum::DataAccumulator;
 

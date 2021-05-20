@@ -5,13 +5,12 @@
 //!
 //! [bibliographic]: https://www.loc.gov/marc/bibliographic/
 //! [name authority]: https://www.loc.gov/marc/authority/
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
+use std::str::{FromStr};
 use std::fmt;
 use serde::{Deserialize, Serialize};
 
-use arrow::error::{Result as ArrowResult};
-use arrow::datatypes::DataType;
-use arrow::array::{UInt8Array, UInt8Builder};
+use thiserror::Error;
 
 use crate::arrow::types::ArrowTypeWrapper;
 
@@ -21,6 +20,17 @@ use crate::arrow::types::ArrowTypeWrapper;
 #[serde(transparent)]
 pub struct Code {
   value: u8
+}
+
+/// Error parsing a code
+#[derive(Error, Debug)]
+pub enum ParseCodeError {
+  /// Error parsing a character
+  #[error("failed to parse character: {0}")]
+  CharError(#[from] std::char::ParseCharError),
+  /// Error converting to valid bounds
+  #[error("character not an ASCII character: {0}")]
+  IntError(#[from] std::num::TryFromIntError),
 }
 
 /// A MARC record.
@@ -193,6 +203,16 @@ impl PartialEq<char> for Code {
   fn eq(&self, other: &char) -> bool {
     let c: char = self.into();
     c == *other
+  }
+}
+
+impl FromStr for Code {
+  type Err = ParseCodeError;
+
+  fn from_str(s: &str) -> Result<Code, Self::Err> {
+    let c = char::from_str(s)?;
+    let v: u8 = u8::try_from(c as u32)?;
+    Ok(Code { value: v })
   }
 }
 
