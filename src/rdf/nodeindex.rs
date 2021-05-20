@@ -7,6 +7,7 @@ use anyhow::Result;
 use lazy_static::lazy_static;
 
 use hashbrown::HashMap;
+use lru::LruCache;
 use uuid::Uuid;
 
 use crate as bookdata;
@@ -36,6 +37,17 @@ struct IndexRow {
   iri: String
 }
 
+/// Make a UUID, with an LRU cache to save time on UUID hashing.
+fn make_uuid(cache: &mut LruCache<String,Uuid>, ns: &Uuid, value: &str) -> Uuid {
+  if let Some(uuid) = cache.get(&value.to_owned()) {
+    uuid.clone()
+  } else {
+    let uuid = Uuid::new_v5(ns, value.as_bytes());
+    cache.put(value.to_owned(), uuid.clone());
+    uuid
+  }
+}
+
 /// Index for looking up node IDs from IRIs or blank labels.
 ///
 /// An index can have a *backing file*, in which case it will write named
@@ -49,7 +61,9 @@ struct IndexRow {
 /// blank and named node identifiers. 0 is never returned.
 pub struct NodeIndex {
   named: HashMap<Uuid,Id>,
+  name_cache: LruCache<String,Uuid>,
   blank: HashMap<Uuid,Id>,
+  blank_cache: LruCache<String,Uuid>,
   readonly: bool,
   writer: Option<TableWriter<IndexRow>>
 }
@@ -59,7 +73,9 @@ impl NodeIndex {
   pub fn new_in_memory() -> NodeIndex {
     NodeIndex {
       named: HashMap::new(),
+      name_cache: LruCache::new(10000),
       blank: HashMap::new(),
+      blank_cache: LruCache::new(1000),  // blank nodes are more ephemeral
       readonly: false,
       writer: None
     }
@@ -67,18 +83,17 @@ impl NodeIndex {
 
   /// Create an empty index with a backing file.
   pub fn new_with_file<P: AsRef<Path>>(path: P) -> Result<NodeIndex> {
+    let idx = NodeIndex::new_in_memory();
     let writer = TableWriter::open(path)?;
     Ok(NodeIndex {
-      named: HashMap::new(),
-      blank: HashMap::new(),
-      readonly: false,
-      writer: Some(writer)
+      writer: Some(writer),
+      ..idx
     })
   }
 
   /// Get an ID for a named node.
   pub fn iri_id(&mut self, iri: &str) -> Result<Id> {
-    let uuid = Uuid::new_v5(&Uuid::NAMESPACE_URL, iri.as_bytes());
+    let uuid = make_uuid(&mut self.name_cache, &Uuid::NAMESPACE_URL, iri);
     if let Some(id) = self.named.get(&uuid) {
       Ok(*id as Id)
     } else if self.readonly {
@@ -97,7 +112,7 @@ impl NodeIndex {
 
   /// Get an ID for a blank node.
   pub fn blank_id(&mut self, label: &str) -> Result<Id> {
-    let uuid = Uuid::new_v5(&NAMESPACE_BLANK, label.as_bytes());
+    let uuid = make_uuid(&mut self.blank_cache, &NAMESPACE_BLANK, label);
     let next_id = -((self.blank.len() + 1) as Id);
     Ok(*self.blank.entry(uuid).or_insert(next_id))
   }
