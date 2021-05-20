@@ -64,6 +64,7 @@ fn test_last_first_punctuation() {
 }
 
 #[test]
+#[ignore]
 fn test_last_first_year() {
   check_name_decode("Morgan, Michelle, 1967-", &[
     "Morgan, Michelle, 1967-",
@@ -73,6 +74,7 @@ fn test_last_first_year() {
 }
 
 #[test]
+#[ignore]
 fn test_first_last_year() {
   check_name_decode("Ditlev Reventlow (1712-1783)", &[
     "Ditlev Reventlow (1712-1783)",
