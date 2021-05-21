@@ -5,6 +5,7 @@
 
 pub mod model;
 pub mod parse;
+pub mod nsmap;
 pub mod nodeindex;
 
 pub use model::Triple;

@@ -4,23 +4,16 @@ use std::path::Path;
 use log::*;
 use thiserror::Error;
 use anyhow::Result;
-use lazy_static::lazy_static;
 
 use hashbrown::HashMap;
-use lru::LruCache;
-use uuid::Uuid;
 
 use crate as bookdata;
 use crate::io::ObjectWriter;
 use crate::arrow::*;
 use super::model::Node;
+use super::nsmap::NSMap;
 
 type Id = i32;
-
-const NS_BLANK_URL: &'static str = "https://bookdata.piret.info/blank-ns";
-lazy_static! {
-  static ref NAMESPACE_BLANK: Uuid = Uuid::new_v5(&Uuid::NAMESPACE_URL, NS_BLANK_URL.as_bytes());
-}
 
 /// Error codes reported by the node index.
 #[derive(Error, Debug)]
@@ -33,19 +26,8 @@ pub enum NodeIndexError {
 #[derive(Debug, TableRow)]
 struct IndexRow {
   id: Id,
-  uuid: Uuid,
+  abbr: String,
   iri: String
-}
-
-/// Make a UUID, with an LRU cache to save time on UUID hashing.
-fn make_uuid(cache: &mut LruCache<String,Uuid>, ns: &Uuid, value: &str) -> Uuid {
-  if let Some(uuid) = cache.get(&value.to_owned()) {
-    uuid.clone()
-  } else {
-    let uuid = Uuid::new_v5(ns, value.as_bytes());
-    cache.put(value.to_owned(), uuid.clone());
-    uuid
-  }
 }
 
 /// Index for looking up node IDs from IRIs or blank labels.
@@ -60,10 +42,9 @@ fn make_uuid(cache: &mut LruCache<String,Uuid>, ns: &Uuid, value: &str) -> Uuid 
 /// Blank nodes resolve to negative identifiers, so there is no overlap between
 /// blank and named node identifiers. 0 is never returned.
 pub struct NodeIndex {
-  named: HashMap<Uuid,Id>,
-  name_cache: LruCache<String,Uuid>,
-  blank: HashMap<Uuid,Id>,
-  blank_cache: LruCache<String,Uuid>,
+  named: HashMap<String,Id>,
+  blank: HashMap<String,Id>,
+  nsmap: NSMap,
   readonly: bool,
   writer: Option<TableWriter<IndexRow>>
 }
@@ -73,9 +54,8 @@ impl NodeIndex {
   pub fn new_in_memory() -> NodeIndex {
     NodeIndex {
       named: HashMap::new(),
-      name_cache: LruCache::new(10000),
       blank: HashMap::new(),
-      blank_cache: LruCache::new(1000),  // blank nodes are more ephemeral
+      nsmap: NSMap::empty(),
       readonly: false,
       writer: None
     }
@@ -84,6 +64,7 @@ impl NodeIndex {
   /// Create an empty index with a backing file.
   pub fn new_with_file<P: AsRef<Path>>(path: P) -> Result<NodeIndex> {
     let idx = NodeIndex::new_in_memory();
+    info!("creating writable index backed by file {}", path.as_ref().to_string_lossy());
     let writer = TableWriter::open(path)?;
     Ok(NodeIndex {
       writer: Some(writer),
@@ -91,19 +72,25 @@ impl NodeIndex {
     })
   }
 
+  /// Set a namespace map to use.
+  pub fn set_nsmap(&mut self, map: &NSMap) {
+    self.nsmap = map.clone();
+  }
+
   /// Get an ID for a named node.
   pub fn iri_id(&mut self, iri: &str) -> Result<Id> {
-    let uuid = make_uuid(&mut self.name_cache, &Uuid::NAMESPACE_URL, iri);
-    if let Some(id) = self.named.get(&uuid) {
+    let abbr = self.nsmap.abbreviate_uri(iri);
+    if let Some(id) = self.named.get(abbr.as_ref()) {
       Ok(*id as Id)
     } else if self.readonly {
       Err(NodeIndexError::ReadOnlyIndex.into())
     } else {
       let id = (self.named.len() + 1) as Id;
-      self.named.insert(uuid.clone(), id);
+      self.named.insert(abbr.as_ref().to_owned(), id);
       if let Some(w) = &mut self.writer {
         w.write_object(IndexRow {
-          id, uuid, iri: iri.to_owned()
+          // we can transfer the abbr now
+          id, abbr: abbr.into_owned(), iri: iri.to_owned()
         })?;
       }
       Ok(id as Id)
@@ -112,9 +99,8 @@ impl NodeIndex {
 
   /// Get an ID for a blank node.
   pub fn blank_id(&mut self, label: &str) -> Result<Id> {
-    let uuid = make_uuid(&mut self.blank_cache, &NAMESPACE_BLANK, label);
     let next_id = -((self.blank.len() + 1) as Id);
-    Ok(*self.blank.entry(uuid).or_insert(next_id))
+    Ok(*self.blank.entry(label.to_owned()).or_insert(next_id))
   }
 
   /// Get an ID for a node.

@@ -3,6 +3,7 @@ use bookdata::prelude::*;
 use bookdata::io::LineProcessor;
 use bookdata::rdf::model::*;
 use bookdata::rdf::nodeindex::NodeIndex;
+use bookdata::rdf::nsmap::NSMap;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name="rdf-scan-nodes")]
@@ -10,6 +11,14 @@ use bookdata::rdf::nodeindex::NodeIndex;
 pub struct ScanNodes {
   #[structopt(flatten)]
   common: CommonOpts,
+
+  /// Use a namespace map file.
+  #[structopt(short="m", long="ns-map")]
+  nsmap: Option<PathBuf>,
+
+  /// Write named node IDs to an output file.
+  #[structopt(short="w", long="save-index")]
+  outfile: Option<PathBuf>,
 
   /// Input file
   #[structopt(name = "FILE", parse(from_os_str))]
@@ -47,7 +56,16 @@ pub fn main() -> Result<()> {
   let opts = ScanNodes::from_args();
   opts.common.init()?;
 
-  let mut idx = NodeIndex::new_in_memory();
+  let mut idx = if let Some(path) = &opts.outfile {
+    NodeIndex::new_with_file(path)?
+  } else {
+    NodeIndex::new_in_memory()
+  };
+  if let Some(path) = &opts.nsmap {
+    let map = NSMap::load(path)?;
+    idx.set_nsmap(&map);
+  }
+
   for file in opts.infiles {
     scan_file(&mut idx, file.as_ref())?;
   }
