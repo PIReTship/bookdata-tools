@@ -2,7 +2,7 @@ use arrow::datatypes::{DataType, TimeUnit, Field};
 use arrow::array::*;
 use arrow::error::{Result as ArrowResult};
 use chrono::prelude::*;
-use uuid::Uuid;
+// use uuid::Uuid;
 use paste::paste;
 
 // The number of days from 0001-01-01 to 1977-01-01
@@ -173,29 +173,29 @@ impl ArrowTypeInfo for DateTime<FixedOffset> {
   }
 }
 
-impl ArrowTypeInfo for Uuid {
-  type Array = FixedSizeBinaryArray;
-  type ArrayBuilder = FixedSizeBinaryBuilder;
+// impl ArrowTypeInfo for Uuid {
+//   type Array = FixedSizeBinaryArray;
+//   type ArrayBuilder = FixedSizeBinaryBuilder;
 
-  fn new_builder(cap: usize) -> Self::ArrayBuilder {
-    FixedSizeBinaryBuilder::new(cap * 8, 8)
-  }
+//   fn new_builder(cap: usize) -> Self::ArrayBuilder {
+//     FixedSizeBinaryBuilder::new(cap * 8, 8)
+//   }
 
-  fn pq_type() -> DataType {
-    DataType::FixedSizeBinary(8)
-  }
-  fn append_to_builder(&self, ab: &mut Self::ArrayBuilder) -> ArrowResult<()> {
-    let bytes = self.as_bytes();
-    ab.append_value(bytes)
-  }
-  fn append_opt_to_builder(opt: Option<Self>, ab: &mut Self::ArrayBuilder) -> ArrowResult<()> {
-    if let Some(id) = opt {
-      id.append_to_builder(ab)
-    } else {
-      ab.append_null()
-    }
-  }
-}
+//   fn pq_type() -> DataType {
+//     DataType::FixedSizeBinary(8)
+//   }
+//   fn append_to_builder(&self, ab: &mut Self::ArrayBuilder) -> ArrowResult<()> {
+//     let bytes = self.as_bytes();
+//     ab.append_value(bytes)
+//   }
+//   fn append_opt_to_builder(opt: Option<Self>, ab: &mut Self::ArrayBuilder) -> ArrowResult<()> {
+//     if let Some(id) = opt {
+//       id.append_to_builder(ab)
+//     } else {
+//       ab.append_null()
+//     }
+//   }
+// }
 
 impl <T> ArrowTypeInfo for Option<T> where T: ArrowTypeInfo + Clone {
   type Array = T::Array;
