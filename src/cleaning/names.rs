@@ -4,14 +4,11 @@ use nom::{
   character::complete::*,
   branch::*,
   combinator::*,
-  multi::*,
   sequence::*,
 };
 
-use regex::Regex;
-use lazy_static::lazy_static;
 use thiserror::Error;
-use anyhow::{Result, anyhow};
+use anyhow::{Result};
 
 use crate::parsing::combinators::*;
 
@@ -55,23 +52,6 @@ impl From<NameFmt> for NameEntry {
       name, year: None
     }
   }
-}
-
-lazy_static! {
-  static ref NAME_LF_RE: Regex = Regex::new(r"(?x)
-    ^
-    # the surname
-    ([^,]+)
-    # comma separator
-    ,\s*
-    # the given name
-    (.*?)
-    # junk like a year
-    (?:\s*[,.]?\s+\(?\d+\s*-.*)?
-    $
-  ").expect("bad RE");
-  static ref TRIM_RE: Regex = Regex::new(r"^\W*(.*?)\W*$").expect("bad RE");
-  static ref WS_RE: Regex = Regex::new(r"\s+").expect("bad RE");
 }
 
 /// Parse away trailing stuff
