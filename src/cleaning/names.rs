@@ -74,6 +74,11 @@ lazy_static! {
   static ref WS_RE: Regex = Regex::new(r"\s+").expect("bad RE");
 }
 
+/// Parse away trailing stuff
+fn trailing_junk(input: &str) -> IResult<&str, ()> {
+  map(tuple((one_of(",."), space0, eof)), |_| ())(input)
+}
+
 /// Parse a year range with optional trailer
 fn year_range(input: &str) -> IResult<&str, String> {
   map(
@@ -107,10 +112,17 @@ fn single_name(name: &str) -> IResult<&str, NameFmt> {
 /// Parse a full name entry
 fn name_entry(entry: &str) -> IResult<&str, NameEntry> {
   alt((
+    // year tag
     into(pair_nongreedy(
       alt((cs_name, single_name)),
       year_tag
     )),
+    // trailing junk
+    map(pair_nongreedy(
+      alt((cs_name, single_name)),
+      trailing_junk
+    ), |(n, _)| n.into()),
+    // no junk
     into(alt((cs_name, single_name)))
   ))(entry)
 }
