@@ -77,22 +77,17 @@ lazy_static! {
 /// Parse a year range with optional trailer
 fn year_range(input: &str) -> IResult<&str, String> {
   map(
-    delimited(tag("("), tuple((digit1, tag("-"), digit0)), tag(")")),
+    tuple((digit1, tag("-"), digit0)),
     |(y1, _s, y2)| {
       format!("{}-{}", y1, y2)
     }
   )(input)
 }
 
-/// Parse years with optional parentheses
-fn years(input: &str) -> IResult<&str, String> {
-  delimited(opt(tag("(")), year_range, opt(tag(")")))(input)
-}
-
 /// Parse a year tag that may appear in a name, perhaps with a string
 fn year_tag(input: &str) -> IResult<&str, String> {
   preceded(
-    opt(tuple((space0, tag(","), space0))),
+    pair(opt(tuple((space0, tag(",")))), space0),
     delimited(opt(tag("(")), year_range, opt(tag(")")))
   )(input)
 }
@@ -134,16 +129,48 @@ pub fn name_variants(name: &str) -> Result<Vec<String>, NameError> {
   // create a version with the year
   if let Some(y) = parse.year {
     for i in 0..variants.len() {
-      variants.push(format!("{} {}", variants[i], y));
+      variants.push(format!("{}, {}", variants[i], y));
     }
   }
 
   Ok(variants)
 }
 
+#[test]
+fn test_year_range() {
+  let text = "1712-1783";
+  let (_t, res) = year_range(text).expect("parse error");
+  assert_eq!(res, text);
+}
+
+#[test]
+fn test_year_half_range() {
+  let text = "1998-";
+  let (_t, res) = year_range(text).expect("parse error");
+  assert_eq!(res, text);
+}
+
+#[test]
+fn test_year_tag_parens() {
+  let text = "(3882-)";
+  let (_t, res) = year_tag(text).expect("parse error");
+  assert_eq!(res, "3882-");
+}
+
+#[test]
+fn test_year_tag_no_parens() {
+  let text = "3882-";
+  let (_t, res) = year_tag(text).expect("parse error");
+  assert_eq!(res, "3882-");
+}
+
 #[cfg(test)]
 fn check_name_decode(name: &str, exp_variants: &[&str]) {
   let dec_variants = name_variants(name).expect("parse error");
+  println!("scanned name {}:", name);
+  for v in &dec_variants {
+    println!("- {}", v);
+  }
   assert_eq!(dec_variants.len(), exp_variants.len());
   for n in exp_variants {
     assert!(dec_variants.contains(&(*n).to_owned()), "expected variant {} not found", n);
@@ -181,14 +208,15 @@ fn test_last_first_year() {
   check_name_decode("Morgan, Michelle, 1967-", &[
     "Morgan, Michelle, 1967-",
     "Morgan, Michelle",
-    "Michelle Morgan"
+    "Michelle Morgan",
+    "Michelle Morgan, 1967-"
   ]);
 }
 
 #[test]
 fn test_first_last_year() {
   check_name_decode("Ditlev Reventlow (1712-1783)", &[
-    "Ditlev Reventlow (1712-1783)",
+    "Ditlev Reventlow, 1712-1783",
     "Ditlev Reventlow",
   ]);
 }
