@@ -3,7 +3,6 @@ use nom::{
   IResult, InputTake, InputLength, Parser,
   Err,
   error::ParseError,
-  combinator::map_parser
 };
 
 #[cfg(test)]
