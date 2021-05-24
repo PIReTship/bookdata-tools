@@ -52,7 +52,7 @@ fn scan_names<P: AsRef<Path>>(path: P) -> Result<NameIndex> {
   let mut reader = csv::Reader::from_reader(reader);
   for line in reader.deserialize() {
     let record: RecAuthor = line?;
-    for name in name_variants(&record.name) {
+    for name in name_variants(&record.name)? {
       index.entry(name).or_default().insert(record.rec_id);
     }
   }
