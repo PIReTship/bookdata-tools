@@ -1,3 +1,4 @@
+//! Extract author information for book clusters.
 use std::path::{Path, PathBuf};
 use std::collections::HashSet;
 use std::sync::Arc;
