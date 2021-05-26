@@ -10,6 +10,7 @@ pub mod tsv;
 pub mod util;
 pub mod io;
 pub mod ids;
+pub mod gender;
 pub mod graph;
 pub mod marc;
 pub mod rdf;
