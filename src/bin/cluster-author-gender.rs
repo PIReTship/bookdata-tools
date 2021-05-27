@@ -92,12 +92,7 @@ fn viaf_author_gender_records(ctx: &mut ExecutionContext) -> Result<Arc<dyn Data
   info!("loading VIAF author names");
   let names = ctx.read_parquet("viaf/author-name-index.parquet")?;
   info!("loading VIAF author genders");
-  let schema = Schema::new(vec![
-    Field::new("rec_id", DataType::UInt32, false),
-    Field::new("gender", DataType::Utf8, false),
-  ]);
-  let opts = CsvReadOptions::new().schema(&schema).has_header(true);
-  let genders = ctx.read_csv("viaf/author-genders.csv.gz", opts)?;
+  let genders = ctx.read_parquet("viaf/author-genders.parquet")?;
   let linked = names.join(genders, JoinType::Left, &["rec_id"], &["rec_id"])?;
   Ok(linked)
 }
