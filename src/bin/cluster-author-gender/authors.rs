@@ -40,14 +40,14 @@ struct GenderRow {
 }
 
 /// Load VIAF author names.
-fn viaf_load_names() -> Result<HashMap<u32, HashSet<String>>> {
-  let mut map: HashMap<u32, HashSet<String>> = HashMap::new();
+fn viaf_load_names() -> Result<HashMap<u32, Vec<String>>> {
+  let mut map: HashMap<u32, Vec<String>> = HashMap::new();
 
   info!("loading VIAF author names");
   let mut iter = scan_parquet_file("viaf/author-name-index.parquet")?;
   while let Some(row) = iter.next()? {
     let row: NameRow = row;
-    map.entry(row.rec_id).or_default().insert(row.name);
+    map.entry(row.rec_id).or_default().push(row.name);
   }
 
   Ok(map)
