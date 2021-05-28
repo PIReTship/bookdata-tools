@@ -1,10 +1,17 @@
 //! Code to deserialize from Arrow with serde.
+//!
+//! This supports deserializing from record batches, or from vectors or
+//! streams of record batches, into a row type that implements
+//! [serde::Deserialize].
 use std::path::Path;
 use std::fs::File;
 use std::fmt::Display;
 use std::sync::Arc;
+use std::pin::Pin;
 use std::marker::PhantomData;
 
+use futures::task::{Context,Poll};
+use futures::{Stream, TryStream, TryStreamExt};
 use fallible_iterator::FallibleIterator;
 use thiserror::Error;
 use anyhow::Result;
@@ -98,13 +105,25 @@ pub fn scan_parquet_file<'de, R: Deserialize<'de>, P: AsRef<Path>>(path: P) -> R
 }
 
 impl <'a> RecordBatchDeserializer {
-  pub fn new(batch: RecordBatch) -> Result<RecordBatchDeserializer, RowError> {
+  /// Deserialize rows from a stream of record batches.
+  pub fn for_stream<'de, R, E, S>(stream: S) -> impl Stream<Item=Result<R>>
+  where R: Deserialize<'de>,
+        E: std::error::Error + Send + Sync + 'static,
+        S: TryStream<Ok=RecordBatch, Error=E>
+  {
+    stream.map_ok(|batch| {
+      RecordBatchDeserializer::new(batch).iter().err_into()
+      // <BatchRecordIter<R> as TryStreamExt>::map_err(batch, anyhow::Error::from)
+    }).try_flatten()
+  }
+
+  pub fn new(batch: RecordBatch) -> RecordBatchDeserializer {
     let schema = batch.schema();
     let ncols = batch.columns().len();
     let nrows = batch.num_rows();
-    Ok(RecordBatchDeserializer {
+    RecordBatchDeserializer {
       schema, batch, ncols, nrows,
-    })
+    }
   }
 
   pub fn iter<'de, R: Deserialize<'de>>(self) -> BatchRecordIter<R> {
@@ -136,7 +155,7 @@ impl <'de, R: Deserialize<'de>, B: RecordBatchReader> FallibleIterator for Recor
         None => Ok(None),  // we are done
         Some(Ok(batch)) => {
           // we have a new iterator
-          let rbd = RecordBatchDeserializer::new(batch)?;
+          let rbd = RecordBatchDeserializer::new(batch);
           self.cur_batch = Some(rbd.iter());
           self.next()
         },
@@ -146,6 +165,14 @@ impl <'de, R: Deserialize<'de>, B: RecordBatchReader> FallibleIterator for Recor
         }
       }
     }
+  }
+}
+
+impl <'de, R: Deserialize<'de>> Unpin for BatchRecordIter<R> {}
+
+impl <'de, R: Deserialize<'de>> BatchRecordIter<R> {
+  fn advance(self: Pin<&mut Self>) {
+    self.get_mut().row += 1;
   }
 }
 
@@ -166,6 +193,24 @@ impl <'de, R: Deserialize<'de>> FallibleIterator for BatchRecordIter<R> {
   }
 }
 
+impl <'de, R: Deserialize<'de>> Stream for BatchRecordIter<R> {
+  type Item = Result<R, RowError>;
+
+  fn poll_next(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+    let row = self.row;
+    if row >= self.rbd.nrows {
+      Poll::Ready(None)
+    } else {
+      // annoying indirection to deal with pinning
+      self.as_mut().advance();
+      let rs = RowState {
+        rbd: &self.rbd, row: row, col: 0
+      };
+      Poll::Ready(Some(R::deserialize(rs).map_err(|e| e.into())))
+    }
+  }
+}
+
 impl <'a, 'de> Deserializer<'de> for RowState<'a> {
   type Error = RowError;
 
@@ -173,7 +218,7 @@ impl <'a, 'de> Deserializer<'de> for RowState<'a> {
     visitor.visit_map(self)
   }
 
-  fn deserialize_struct<V: Visitor<'de>>(self, _name: &'static str, fields: &'static [&'static str], visitor: V) -> Result<V::Value, Self::Error> {
+  fn deserialize_struct<V: Visitor<'de>>(self, _name: &'static str, _fields: &'static [&'static str], visitor: V) -> Result<V::Value, Self::Error> {
     // TODO leverage the expected field names for projection
     visitor.visit_map(self)
   }

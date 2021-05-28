@@ -15,7 +15,7 @@ use datafusion::physical_plan::ExecutionPlan;
 use bookdata::prelude::*;
 use bookdata::arrow::*;
 use bookdata::arrow::fusion::*;
-use bookdata::arrow::row_de::{RecordBatchDeserializer, BatchRecordIter};
+use bookdata::arrow::row_de::RecordBatchDeserializer;
 
 #[derive(Display, FromStr, Debug)]
 #[display(style="lowercase")]
@@ -55,18 +55,15 @@ async fn write_authors_dedup<P: AsRef<Path>>(plan: Arc<dyn ExecutionPlan>, path:
   let mut writer = TableWriter::open(path)?;
 
   info!("scanning author batches");
-  let mut stream = plan.execute(0).await?;
+  let stream = plan.execute(0).await?;
   let mut last = ClusterAuthor::default();
-  while let Some(batch) = stream.next().await {
-    let batch = batch?;
+  let mut rec_stream = RecordBatchDeserializer::for_stream(stream);
+  while let Some(row) = rec_stream.next().await {
+    let row: ClusterAuthor = row?;
     debug!("received batch");
-    let rbd = RecordBatchDeserializer::new(batch)?;
-    let mut rows: BatchRecordIter<ClusterAuthor> = rbd.iter();
-    while let Some(row) = rows.next()? {
-      if row != last {
-        writer.write_object(row.clone())?;
-        last = row;
-      }
+    if row != last {
+      writer.write_object(row.clone())?;
+      last = row;
     }
   }
 
