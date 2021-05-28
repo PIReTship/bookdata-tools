@@ -1,6 +1,7 @@
 //! Utilities for cleaning strings.
-use std::borrow::Cow;
 use std::iter::FromIterator;
+
+use std::borrow::Cow;
 use unicode_normalization::*;
 
 /// Normalize Unicode character representations in a string.

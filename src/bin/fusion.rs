@@ -42,7 +42,8 @@ impl ScriptContext {
   /// Initialize a new script context.
   fn create() -> Result<ScriptContext> {
     let runtime = Runtime::new()?;
-    let df_context = ExecutionContext::new();
+    let mut df_context = ExecutionContext::new();
+    add_udfs(&mut df_context);
     Ok(ScriptContext {
       runtime, df_context
     })

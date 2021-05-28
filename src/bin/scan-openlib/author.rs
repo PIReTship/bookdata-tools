@@ -3,6 +3,7 @@ use serde::Deserialize;
 
 use bookdata::prelude::*;
 use bookdata::arrow::*;
+use bookdata::cleaning::strings::norm_unicode;
 
 use super::common::*;
 
@@ -50,24 +51,24 @@ impl OLProcessor<OLAuthor> for Processor {
     let id = self.last_id;
 
     self.rec_writer.write_object(AuthorRec {
-      id, key: row.key, name: row.record.name.clone()
+      id, key: row.key, name: row.record.name.as_ref().map(|s| norm_unicode(s).into_owned())
     })?;
 
     if let Some(n) = row.record.name {
       self.name_writer.write_object(NameRec {
-        id, source: b'n', name: n
+        id, source: b'n', name: norm_unicode(&n).into_owned()
       })?;
     }
 
     if let Some(n) = row.record.personal_name {
       self.name_writer.write_object(NameRec {
-        id, source: b'p', name: n
+        id, source: b'p', name: norm_unicode(&n).into_owned()
       })?;
     }
 
     for n in row.record.alternate_names {
       self.name_writer.write_object(NameRec {
-        id, source: b'a', name: n
+        id, source: b'a', name: norm_unicode(&n).into_owned()
       })?;
     }
 

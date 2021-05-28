@@ -9,13 +9,18 @@ use futures::stream::StreamExt;
 
 use anyhow::Result;
 
+use arrow::datatypes::DataType;
+use arrow::array::*;
 use datafusion::prelude::*;
 use datafusion::physical_plan::merge::MergeExec;
+use datafusion::physical_plan::functions::make_scalar_function;
 use datafusion::physical_plan::ExecutionPlan;
 use datafusion::physical_plan::SendableRecordBatchStream;
 use datafusion::error::{Result as FusionResult, DataFusionError};
 use parquet::arrow::ArrowWriter;
 use parquet::file::writer::ParquetWriter;
+
+use crate::cleaning::strings::norm_unicode;
 
 /// Evaluate a DataFusion plan to a CSV file.
 pub async fn eval_to_csv<W: Write>(out: &mut arrow::csv::Writer<W>, plan: Arc<dyn ExecutionPlan>) -> Result<()> {
@@ -67,4 +72,20 @@ pub fn run_plan<'a, 'async_trait>(plan: &'a Arc<dyn ExecutionPlan>) -> Pin<Box<d
   } else {
     plan.execute(0)
   }
+}
+
+/// UDF to normalize strings' Unicode representations.
+fn udf_norm_unicode(args: &[ArrayRef]) -> datafusion::error::Result<ArrayRef> {
+  let strs = &args[0].as_any().downcast_ref::<StringArray>().expect("invalid array cast");
+  let res = strs.iter().map(|s| s.map(norm_unicode)).collect::<StringArray>();
+  Ok(Arc::new(res) as ArrayRef)
+}
+
+/// Add our UDFs.
+pub fn add_udfs(ctx: &mut ExecutionContext) {
+  let norm = create_udf(
+    "norm_unicode",
+    vec![DataType::Utf8], Arc::new(DataType::Utf8),
+    make_scalar_function(udf_norm_unicode));
+  ctx.register_udf(norm);
 }
