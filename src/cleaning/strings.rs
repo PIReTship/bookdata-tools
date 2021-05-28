@@ -12,3 +12,26 @@ pub fn norm_unicode<'a>(s: &'a str) -> Cow<'a, str> {
     String::from_iter(s.nfd()).into()
   }
 }
+
+
+#[test]
+fn test_nu_empty() {
+  let text = "";
+  let res = norm_unicode(&text);
+  assert_eq!(res.as_ref(), "");
+}
+
+#[test]
+fn test_nu_basic() {
+  let text = "foo";
+  let res = norm_unicode(&text);
+  assert_eq!(res.as_ref(), "foo");
+}
+
+
+#[test]
+fn test_nu_metal() {
+   let text = "metäl";
+  let res = norm_unicode(&text);
+  assert_eq!(res.as_ref(), "meta\u{0308}l");
+}

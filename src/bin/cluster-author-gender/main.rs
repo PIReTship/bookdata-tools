@@ -29,6 +29,8 @@ use bookdata::arrow::*;
 use bookdata::arrow::fusion::*;
 use bookdata::arrow::row_de::{RecordBatchDeserializer, BatchRecordIter};
 
+mod authors;
+
 // #[derive(Display, FromStr, Debug)]
 // #[display(style="lowercase")]
 // enum GenderSource {
@@ -87,55 +89,6 @@ fn cluster_author_records(ctx: &mut ExecutionContext, caf: &str) -> Result<Arc<d
   Ok(clust_auth)
 }
 
-/// Load the VIAF author gender records.
-fn viaf_author_gender_records(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-  info!("loading VIAF author names");
-  let names = ctx.read_parquet("viaf/author-name-index.parquet")?;
-  info!("loading VIAF author genders");
-  let genders = ctx.read_parquet("viaf/author-genders.parquet")?;
-  let linked = names.join(genders, JoinType::Left, &["rec_id"], &["rec_id"])?;
-  Ok(linked)
-}
-
-/// Load the cluster author gender records
-fn cluster_gender_records(ctx: &mut ExecutionContext, caf: &str) -> Result<Arc<dyn DataFrame>> {
-  let car = cluster_author_records(ctx, caf)?;
-  let agr = viaf_author_gender_records(ctx)?;
-  let linked = car.join(agr, JoinType::Left, &["author_name"], &["name"])?;
-  Ok(linked)
-}
-
-/// Load gender information.
-async fn scan_cluster_genders(ctx: &mut ExecutionContext, plan: Arc<dyn ExecutionPlan>) -> Result<HashMap<i32,ClusterStats>> {
-  let mut map = HashMap::new();
-
-  info!("scanning record batches");
-  let mut stream = plan.execute(0).await?;
-  while let Some(batch) = stream.next().await {
-    let batch = batch?;
-    debug!("received batch");
-    let rbd = RecordBatchDeserializer::new(batch)?;
-    let mut rows: BatchRecordIter<ClusterLinkRecord> = rbd.iter();
-    while let Some(row) = rows.next()? {
-      let rec: &mut ClusterStats = map.entry(row.cluster).or_default();
-      if row.author_name.is_some() {
-        rec.n_book_authors += 1;
-      }
-      if row.rec_id.is_some() {
-        rec.n_author_recs += 1;
-      }
-      if let Some(g) = row.gender {
-        let g: Gender = g.into();
-        *rec.genders.entry(g).or_default() += 1;
-      }
-    }
-  }
-
-  info!("scanned {} clusters", map.len());
-
-  Ok(map)
-}
-
 fn save_genders(clusters: HashMap<i32,ClusterStats>, outf: &Path) -> Result<()> {
   info!("writing cluster genders to {}", outf.to_string_lossy());
   let mut out = TableWriter::open(outf)?;
@@ -165,11 +118,13 @@ async fn main() -> Result<()> {
 
   let mut ctx = ExecutionContext::new();
 
-  let gdf = cluster_gender_records(&mut ctx, opts.author_file.as_str())?;
-  let plan = plan_df(&mut ctx, gdf)?;
-  let clusters = scan_cluster_genders(&mut ctx, plan).await?;
+  let authors = authors::viaf_author_table(&mut ctx).await?;
 
-  save_genders(clusters, opts.output.as_ref())?;
+  // let gdf = cluster_gender_records(&mut ctx, opts.author_file.as_str())?;
+  // let plan = plan_df(&mut ctx, gdf)?;
+  // let clusters = scan_cluster_genders(&mut ctx, plan).await?;
+
+  // save_genders(clusters, opts.output.as_ref())?;
 
   Ok(())
 }
