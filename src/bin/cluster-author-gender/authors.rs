@@ -47,7 +47,7 @@ fn viaf_load_names() -> Result<HashMap<u32, Vec<String>>> {
   let mut iter = scan_parquet_file("viaf/author-name-index.parquet")?;
   while let Some(row) = iter.next()? {
     let row: NameRow = row;
-    map.entry(row.rec_id).or_default().push(row.name);
+    // map.entry(row.rec_id).or_default().push(row.name);
   }
 
   Ok(map)
