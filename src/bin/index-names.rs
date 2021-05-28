@@ -1,9 +1,11 @@
 use std::collections::{HashSet, HashMap};
 use std::path::{PathBuf, Path};
+use std::fs::File;
 
 use structopt::StructOpt;
 use csv;
-use serde::{Deserialize};
+use serde::{Deserialize, Serialize};
+use flate2::write::GzEncoder;
 
 use happylog::set_progress;
 
@@ -38,7 +40,7 @@ struct RecAuthor {
   name: String,
 }
 
-#[derive(TableRow)]
+#[derive(TableRow, Serialize, Clone)]
 struct IndexEntry {
   rec_id: u32,
   name: String,
@@ -64,13 +66,20 @@ fn write_index<P: AsRef<Path>>(index: NameIndex, path: P) -> Result<()> {
   info!("sorting {} names", names.len());
   names.sort();
   info!("writing deduplicated names to {}", path.as_ref().to_string_lossy());
-  let mut writer = TableWriter::open(path)?;
+  let mut writer = TableWriter::open(&path)?;
+  let mut csv_fn = PathBuf::from(path.as_ref());
+  csv_fn.set_extension("csv.gz");
+  let out = File::create(&csv_fn)?;
+  let out = GzEncoder::new(out, flate2::Compression::best());
+  let mut csvw = csv::Writer::from_writer(out);
   for name in names {
     for rec_id in index.get(name).unwrap() {
-      writer.write_object(IndexEntry {
+      let e = IndexEntry {
         rec_id: *rec_id,
         name: name.to_string()
-      })?;
+      };
+      csvw.serialize(&e)?;
+      writer.write_object(e)?;
     }
   }
 
