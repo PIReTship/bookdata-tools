@@ -1,18 +1,14 @@
 //! Extract author information for book clusters.
 use std::path::{Path, PathBuf};
-use std::collections::HashSet;
 use std::sync::Arc;
 
 use structopt::StructOpt;
 use parse_display::{Display, FromStr};
 use futures::{StreamExt};
-use indicatif::ProgressBar;
 
 use serde::{Serialize, Deserialize};
 
 use tokio;
-
-use happylog::set_progress;
 
 use datafusion::prelude::*;
 use datafusion::physical_plan::ExecutionPlan;
@@ -48,7 +44,7 @@ struct ClusterAuthors {
   sources: Vec<Source>
 }
 
-#[derive(Serialize, Deserialize, Hash, PartialEq, Eq, Clone, TableRow)]
+#[derive(Serialize, Deserialize, Hash, PartialEq, Eq, Clone, TableRow, Default)]
 struct ClusterAuthor {
   cluster: i32,
   author_name: String
@@ -58,28 +54,21 @@ struct ClusterAuthor {
 async fn write_authors_dedup<P: AsRef<Path>>(plan: Arc<dyn ExecutionPlan>, path: P) -> Result<()> {
   let mut writer = TableWriter::open(path)?;
 
-  let spin = ProgressBar::new_spinner();
-  let _pbl = set_progress(&spin);
-  spin.set_message("author batches");
-
   info!("scanning author batches");
   let mut stream = plan.execute(0).await?;
-  let mut seen = HashSet::new();
+  let mut last = ClusterAuthor::default();
   while let Some(batch) = stream.next().await {
     let batch = batch?;
-    spin.tick();
     debug!("received batch");
     let rbd = RecordBatchDeserializer::new(batch)?;
     let mut rows: BatchRecordIter<ClusterAuthor> = rbd.iter();
     while let Some(row) = rows.next()? {
-      if seen.insert(row.clone()) {
-        // first time we saw it
-        writer.write_object(row)?;
+      if row != last {
+        writer.write_object(row.clone())?;
+        last = row;
       }
     }
   }
-
-  spin.finish_and_clear();
 
   let n = writer.finish()?;
   info!("wrote {} cluster-author links", n);
@@ -161,6 +150,10 @@ async fn main() -> Result<()> {
     }
   }
   let authors = authors.ok_or(anyhow!("no sources specified"))?;
+  let authors = authors.sort(vec![
+    col("cluster").sort(true, true),
+    col("author_name").sort(true, true)
+    ])?;
 
   let plan = plan_df(&mut ctx, authors)?;
   write_authors_dedup(plan, opts.output).await?;
