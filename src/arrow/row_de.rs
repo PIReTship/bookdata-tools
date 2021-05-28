@@ -15,8 +15,6 @@ use futures::{Stream, TryStream, TryStreamExt};
 use fallible_iterator::FallibleIterator;
 use thiserror::Error;
 use anyhow::Result;
-use indicatif::ProgressBar;
-use happylog::set_progress;
 
 use arrow::error::ArrowError;
 use arrow::datatypes::*;
@@ -37,8 +35,6 @@ use serde::de::{
   MapAccess,
   DeserializeSeed,
 };
-
-use crate::io::progress::default_progress;
 
 /// Error raised by row deserialization
 #[derive(Error, Debug)]
@@ -80,8 +76,6 @@ pub struct BatchRecordIter<R> {
 pub struct RecordIter<R, B: RecordBatchReader> {
   rb_iter: B,
   cur_batch: Option<BatchRecordIter<R>>,
-  progress: ProgressBar,
-  pbl: happylog::LogPBState
 }
 
 /// Deserialization state for one row
@@ -101,19 +95,12 @@ struct ColValue<'a> {
 }
 
 pub fn scan_parquet_file<'de, R: Deserialize<'de>, P: AsRef<Path>>(path: P) -> Result<RecordIter<R, ParquetRecordBatchReader>> {
-  let file = File::open(&path)?;
+  let file = File::open(path)?;
   let read = Arc::new(SerializedFileReader::new(file)?);
   let mut read = ParquetFileArrowReader::new(read);
-  let meta = read.get_metadata();
-  let mut nrows = 0;
-  for i in 0..meta.num_row_groups() {
-    nrows += meta.row_group(i).num_rows();
-  }
   let rb_iter = read.get_record_reader(1_000_000)?;
-  let progress = default_progress(nrows as u64);
-  let pbl = set_progress(&progress);
   Ok(RecordIter {
-    rb_iter, cur_batch: None, progress, pbl
+    rb_iter, cur_batch: None
   })
 }
 
@@ -156,7 +143,6 @@ impl <'de, R: Deserialize<'de>, B: RecordBatchReader> FallibleIterator for Recor
     if let Some(ref mut bi) = self.cur_batch {
       let n = bi.next()?;
       if n.is_some() {
-        self.progress.inc(1);
         Ok(n)
       } else {
         // this iterator is exhausted, reset and try again
