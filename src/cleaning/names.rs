@@ -11,6 +11,7 @@ use thiserror::Error;
 use anyhow::{Result};
 
 use crate::parsing::combinators::*;
+use super::strings::norm_unicode;
 
 #[derive(Error, Debug)]
 pub enum NameError {
@@ -124,6 +125,9 @@ pub fn name_variants(name: &str) -> Result<Vec<String>, NameError> {
       variants.push(format!("{}, {}", variants[i], y));
     }
   }
+
+
+  let variants = variants.iter().map(|s| norm_unicode(s.as_str()).into_owned()).collect();
 
   Ok(variants)
 }
