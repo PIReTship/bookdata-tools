@@ -17,7 +17,7 @@ use bookdata::prelude::*;
 use bookdata::gender::*;
 use bookdata::arrow::*;
 use bookdata::arrow::fusion::*;
-use bookdata::arrow::row_de::RecordBatchDeserializer;
+use bookdata::arrow::row_de::{scan_parquet_file, RecordBatchDeserializer};
 
 #[derive(Debug, Default)]
 pub struct AuthorInfo {
@@ -28,10 +28,44 @@ pub struct AuthorInfo {
 pub type AuthorTable = HashMap<String,AuthorInfo>;
 
 #[derive(Deserialize, Debug)]
-struct AuthorRow {
+struct NameRow {
+  rec_id: u32,
   name: String,
-  rec_id: Option<u64>,
-  gender: Option<String>
+}
+
+#[derive(Deserialize, Debug)]
+struct GenderRow {
+  rec_id: u32,
+  gender: String
+}
+
+/// Load VIAF author names.
+fn viaf_load_names() -> Result<HashMap<u32, HashSet<String>>> {
+  let mut map: HashMap<u32, HashSet<String>> = HashMap::new();
+
+  info!("loading VIAF author names");
+  let mut iter = scan_parquet_file("viaf/author-name-index.parquet")?;
+  while let Some(row) = iter.next()? {
+    let row: NameRow = row;
+    map.entry(row.rec_id).or_default().insert(row.name);
+  }
+
+  Ok(map)
+}
+
+/// Load VIAF author genders
+fn viaf_load_genders() -> Result<HashMap<u32, HashSet<Gender>>> {
+  let mut map: HashMap<u32, HashSet<Gender>> = HashMap::new();
+
+  info!("loading VIAF author genders");
+  let mut iter = scan_parquet_file("viaf/author-genders.parquet")?;
+  while let Some(row) = iter.next()? {
+    let row: GenderRow = row;
+    let gender: Gender = row.gender.into();
+    map.entry(row.rec_id).or_default().insert(gender);
+  }
+
+  Ok(map)
 }
 
 /// Load the VIAF author gender records.
@@ -46,25 +80,11 @@ fn viaf_author_gender_records_df(ctx: &mut ExecutionContext) -> Result<Arc<dyn D
 }
 
 /// Load the VIAF author gender records.
-pub async fn viaf_author_table(ctx: &mut ExecutionContext) -> Result<AuthorTable> {
-  let df = viaf_author_gender_records_df(ctx)?;
-  let plan = plan_df(ctx, df)?;
-
+pub fn viaf_author_table() -> Result<AuthorTable> {
   let mut table = AuthorTable::new();
 
-  info!("scanning author table");
-  let stream = plan.execute(0).await?;
-  let mut rec_stream = RecordBatchDeserializer::for_stream(stream);
-  while let Some(row) = rec_stream.next().await {
-    let row: AuthorRow = row?;
-    let mut e = table.entry(row.name).or_default();
-    if let Some(_) = row.rec_id {
-      e.n_author_recs += 1;
-    }
-    if let Some(g) = row.gender {
-      e.genders.insert(g.into());
-    }
-  }
+  let names = viaf_load_names()?;
+  let genders = viaf_load_genders()?;
 
   info!("read {} gender records", table.len());
 

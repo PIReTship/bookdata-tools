@@ -118,7 +118,7 @@ async fn main() -> Result<()> {
 
   let mut ctx = ExecutionContext::new();
 
-  let authors = authors::viaf_author_table(&mut ctx).await?;
+  let authors = authors::viaf_author_table()?;
 
   // let gdf = cluster_gender_records(&mut ctx, opts.author_file.as_str())?;
   // let plan = plan_df(&mut ctx, gdf)?;
