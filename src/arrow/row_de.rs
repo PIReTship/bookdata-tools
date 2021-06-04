@@ -86,6 +86,7 @@ struct RowState<'a> {
 }
 
 /// A column name for deserialization
+#[repr(transparent)]
 struct ColName<'a>(&'a str);
 
 /// A column value for deserialization

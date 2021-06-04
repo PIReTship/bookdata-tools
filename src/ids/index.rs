@@ -1,5 +1,4 @@
 use std::path::{Path};
-use std::fs::File;
 use hashbrown::hash_map::{HashMap, Keys};
 use std::hash::Hash;
 use std::borrow::Borrow;
@@ -8,7 +7,6 @@ use log::*;
 use anyhow::Result;
 use arrow::datatypes::*;
 use parquet::arrow::arrow_to_parquet_schema;
-use parquet::file::reader::SerializedFileReader;
 use parquet::record::reader::RowIter;
 use parquet::record::RowAccessor;
 use crate::io::ObjectWriter;
@@ -106,8 +104,7 @@ impl IdIndex<String> {
 
     let path_str = path.as_ref().to_string_lossy();
     info!("reading index from file {}", path_str);
-    let file = File::open(path.as_ref())?;
-    let read = SerializedFileReader::new(file)?;
+    let read = open_parquet_file(path.as_ref())?;
     let read = RowIter::from_file(Some(proj.clone()), &read)?;
     let mut map = HashMap::new();
 

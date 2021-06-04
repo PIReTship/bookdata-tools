@@ -1,10 +1,13 @@
 //! Support for loading author info.
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 use std::collections::{HashMap,HashSet};
 use std::sync::Arc;
 
 use structopt::StructOpt;
 use futures::{StreamExt};
+
+use happylog::set_progress;
 
 use serde::{Serialize, Deserialize};
 
@@ -13,7 +16,10 @@ use tokio;
 use arrow::datatypes::*;
 use datafusion::prelude::*;
 use datafusion::physical_plan::ExecutionPlan;
+use parquet::record::reader::RowIter;
+use parquet::record::RowAccessor;
 use bookdata::prelude::*;
+use bookdata::io::progress::*;
 use bookdata::gender::*;
 use bookdata::arrow::*;
 use bookdata::arrow::fusion::*;
@@ -42,13 +48,26 @@ struct GenderRow {
 /// Load VIAF author names.
 fn viaf_load_names() -> Result<HashMap<u32, Vec<String>>> {
   let mut map: HashMap<u32, Vec<String>> = HashMap::new();
+  let start = Instant::now();
 
   info!("loading VIAF author names");
-  let mut iter = scan_parquet_file("viaf/author-name-index.parquet")?;
-  while let Some(row) = iter.next()? {
-    let row: NameRow = row;
-    // map.entry(row.rec_id).or_default().push(row.name);
+  let file = open_parquet_file("viaf/author-name-index.parquet")?;
+
+  // verify the file schema
+  let meta = file.metadata().file_metadata();
+  let schema = meta.schema_descr();
+  assert_eq!(schema.num_columns(), 2);
+  assert_eq!(schema.column(0).name(), "rec_id");
+  assert_eq!(schema.column(1).name(), "name");
+
+  let iter = RowIter::from_file(None, &file)?;
+  for row in iter {
+    let rec_id = row.get_uint(0)?;
+    let name = row.get_string(1)?;
+    map.entry(rec_id).or_default().push(name.clone());
   }
+
+  info!("loaded authors for {} records in {}", map.len(), human_time(start.elapsed()));
 
   Ok(map)
 }
@@ -56,6 +75,7 @@ fn viaf_load_names() -> Result<HashMap<u32, Vec<String>>> {
 /// Load VIAF author genders
 fn viaf_load_genders() -> Result<HashMap<u32, HashSet<Gender>>> {
   let mut map: HashMap<u32, HashSet<Gender>> = HashMap::new();
+  let start = Instant::now();
 
   info!("loading VIAF author genders");
   let mut iter = scan_parquet_file("viaf/author-genders.parquet")?;
@@ -64,6 +84,8 @@ fn viaf_load_genders() -> Result<HashMap<u32, HashSet<Gender>>> {
     let gender: Gender = row.gender.into();
     map.entry(row.rec_id).or_default().insert(gender);
   }
+
+  info!("loaded genders for {} records in {}", map.len(), human_time(start.elapsed()));
 
   Ok(map)
 }
