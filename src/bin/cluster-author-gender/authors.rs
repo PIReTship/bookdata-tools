@@ -8,6 +8,7 @@ use structopt::StructOpt;
 use futures::{StreamExt};
 
 use happylog::set_progress;
+use indicatif::ProgressBar;
 
 use serde::{Serialize, Deserialize};
 
@@ -48,7 +49,6 @@ struct GenderRow {
 /// Load VIAF author names.
 fn viaf_load_names() -> Result<HashMap<u32, Vec<String>>> {
   let mut map: HashMap<u32, Vec<String>> = HashMap::new();
-  let start = Instant::now();
 
   info!("loading VIAF author names");
   let file = open_parquet_file("viaf/author-name-index.parquet")?;
@@ -60,14 +60,18 @@ fn viaf_load_names() -> Result<HashMap<u32, Vec<String>>> {
   assert_eq!(schema.column(0).name(), "rec_id");
   assert_eq!(schema.column(1).name(), "name");
 
+  let mut timer = Timer::new_with_count(meta.num_rows() as usize);
+
   let iter = RowIter::from_file(None, &file)?;
   for row in iter {
     let rec_id = row.get_uint(0)?;
     let name = row.get_string(1)?;
     map.entry(rec_id).or_default().push(name.clone());
+    timer.complete(1);
+    timer.log_status("reading author names", 5.0);
   }
 
-  info!("loaded authors for {} records in {}", map.len(), human_time(start.elapsed()));
+  info!("loaded authors for {} records in {}", map.len(), timer.human_elapsed());
 
   Ok(map)
 }
@@ -75,7 +79,7 @@ fn viaf_load_names() -> Result<HashMap<u32, Vec<String>>> {
 /// Load VIAF author genders
 fn viaf_load_genders() -> Result<HashMap<u32, HashSet<Gender>>> {
   let mut map: HashMap<u32, HashSet<Gender>> = HashMap::new();
-  let start = Instant::now();
+  let mut timer = Timer::new();
 
   info!("loading VIAF author genders");
   let mut iter = scan_parquet_file("viaf/author-genders.parquet")?;
@@ -83,9 +87,11 @@ fn viaf_load_genders() -> Result<HashMap<u32, HashSet<Gender>>> {
     let row: GenderRow = row;
     let gender: Gender = row.gender.into();
     map.entry(row.rec_id).or_default().insert(gender);
+    timer.complete(1);
+    timer.log_status("reading author genders", 5.0);
   }
 
-  info!("loaded genders for {} records in {}", map.len(), human_time(start.elapsed()));
+  info!("loaded genders for {} records in {}", map.len(), timer.human_elapsed());
 
   Ok(map)
 }
