@@ -1,30 +1,11 @@
 //! Support for loading author info.
-use std::path::{Path, PathBuf};
-use std::time::Instant;
-use std::collections::{HashMap,HashSet};
-use std::sync::Arc;
+use std::collections::{HashMap, HashSet};
 
-use structopt::StructOpt;
-use futures::{StreamExt};
+use serde::{Deserialize};
 
-use happylog::set_progress;
-use indicatif::ProgressBar;
-
-use serde::{Serialize, Deserialize};
-
-use tokio;
-
-use arrow::datatypes::*;
-use datafusion::prelude::*;
-use datafusion::physical_plan::ExecutionPlan;
-use parquet::record::reader::RowIter;
-use parquet::record::RowAccessor;
 use bookdata::prelude::*;
-use bookdata::io::progress::*;
 use bookdata::gender::*;
-use bookdata::arrow::*;
-use bookdata::arrow::fusion::*;
-use bookdata::arrow::row_de::{scan_parquet_file, RecordBatchDeserializer};
+use bookdata::arrow::row_de::scan_parquet_file;
 
 #[derive(Debug, Default)]
 pub struct AuthorInfo {
@@ -94,6 +75,7 @@ pub fn viaf_author_table() -> Result<AuthorTable> {
   let empty = HashSet::new();
 
   info!("merging gender records");
+  let timer = Timer::new();
   for (rec_id, names) in rec_names {
     let genders = rec_genders.get(&rec_id).unwrap_or(&empty);
     for name in names {
@@ -105,7 +87,7 @@ pub fn viaf_author_table() -> Result<AuthorTable> {
     }
   }
 
-  info!("read {} gender records", table.len());
+  info!("read {} gender records in {}", table.len(), timer);
 
   Ok(table)
 }
