@@ -111,8 +111,21 @@ fn viaf_author_gender_records_df(ctx: &mut ExecutionContext) -> Result<Arc<dyn D
 pub fn viaf_author_table() -> Result<AuthorTable> {
   let mut table = AuthorTable::new();
 
-  let names = viaf_load_names()?;
-  let genders = viaf_load_genders()?;
+  let rec_names = viaf_load_names()?;
+  let rec_genders = viaf_load_genders()?;
+  let empty = HashSet::new();
+
+  info!("merging gender records");
+  for (rec_id, names) in rec_names {
+    let genders = rec_genders.get(&rec_id).unwrap_or(&empty);
+    for name in names {
+      let mut rec = table.entry(name).or_default();
+      rec.n_author_recs += 1;
+      for g in genders {
+        rec.genders.insert(g.clone());
+      }
+    }
+  }
 
   info!("read {} gender records", table.len());
 

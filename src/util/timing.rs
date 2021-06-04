@@ -147,18 +147,15 @@ impl Timer {
 
 impl fmt::Display for Timer {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    if let Some(n) = self.task_count {
-      let (el, eta) = self.timings();
-      let per = (self.completed as f64) / el.as_secs_f64();
-      let ps: Signifix = per.try_into().map_err(|_| fmt::Error)?;
-      if let Some(eta) = eta {
-        write!(f, "{} / {} in {} ({}/s, ETA {})", self.completed, n,
-               HumanDuration::from(el), ps, HumanDuration::from(eta))
-      } else {
-        write!(f, "{} / {} in {} ({}/s)", self.completed, n, HumanDuration::from(el), ps)
-      }
+    let (el, eta) = self.timings();
+    let per = (self.completed as f64) / el.as_secs_f64();
+    let ps: Signifix = per.try_into().map_err(|_| fmt::Error)?;
+    if let Some(eta) = eta {
+      write!(f, "{} / {} in {} ({}/s, ETA {})",
+             self.completed, self.task_count.unwrap_or_default(),
+             HumanDuration::from(el), ps, HumanDuration::from(eta))
     } else if self.completed > 0 {
-      write!(f, "{} in {}", self.completed, self.human_elapsed())
+      write!(f, "{} in {} ({}/s)", self.completed, HumanDuration::from(el), ps)
     } else {
       write!(f, "{}", self.human_elapsed())
     }
