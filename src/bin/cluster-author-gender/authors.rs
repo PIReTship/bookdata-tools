@@ -51,22 +51,13 @@ fn viaf_load_names() -> Result<HashMap<u32, Vec<String>>> {
   let mut map: HashMap<u32, Vec<String>> = HashMap::new();
 
   info!("loading VIAF author names");
-  let file = open_parquet_file("viaf/author-name-index.parquet")?;
+  let mut iter = scan_parquet_file("viaf/author-name-index.parquet")?;
 
-  // verify the file schema
-  let meta = file.metadata().file_metadata();
-  let schema = meta.schema_descr();
-  assert_eq!(schema.num_columns(), 2);
-  assert_eq!(schema.column(0).name(), "rec_id");
-  assert_eq!(schema.column(1).name(), "name");
+  let mut timer = Timer::new();
 
-  let mut timer = Timer::new_with_count(meta.num_rows() as usize);
-
-  let iter = RowIter::from_file(None, &file)?;
-  for row in iter {
-    let rec_id = row.get_uint(0)?;
-    let name = row.get_string(1)?;
-    map.entry(rec_id).or_default().push(name.clone());
+  while let Some(row) = iter.next()? {
+    let row: NameRow = row;
+    map.entry(row.rec_id).or_default().push(row.name);
     timer.complete(1);
     timer.log_status("reading author names", 5.0);
   }
@@ -94,17 +85,6 @@ fn viaf_load_genders() -> Result<HashMap<u32, HashSet<Gender>>> {
   info!("loaded genders for {} records in {}", map.len(), timer.human_elapsed());
 
   Ok(map)
-}
-
-/// Load the VIAF author gender records.
-fn viaf_author_gender_records_df(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-  info!("loading VIAF author names");
-  let names = ctx.read_parquet("viaf/author-name-index.parquet")?;
-  info!("loading VIAF author genders");
-  let genders = ctx.read_parquet("viaf/author-genders.parquet")?;
-  let linked = names.join(genders, JoinType::Left, &["rec_id"], &["rec_id"])?;
-  // let sorted = linked.sort(vec![col("name").sort(true, true)])?;
-  Ok(linked)
 }
 
 /// Load the VIAF author gender records.
