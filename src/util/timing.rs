@@ -176,7 +176,7 @@ impl fmt::Display for Timer {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let (el, eta) = self.timings();
     let per = (self.completed as f64) / el.as_secs_f64();
-    let ps: Signifix = per.try_into().map_err(|_| fmt::Error)?;
+    let ps: Signifix = per.try_into().expect("significance error");
     if let Some(eta) = eta {
       write!(f, "{} / {} in {} ({}/s, ETA {})",
              self.completed, self.task_count.unwrap_or_default(),
