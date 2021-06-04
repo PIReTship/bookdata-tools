@@ -9,8 +9,8 @@ use bookdata::arrow::row_de::scan_parquet_file;
 
 #[derive(Debug, Default)]
 pub struct AuthorInfo {
-  n_author_recs: u32,
-  genders: HashSet<Gender>
+  pub n_author_recs: u32,
+  pub genders: HashSet<Gender>
 }
 
 pub type AuthorTable = HashMap<String,AuthorInfo>;
