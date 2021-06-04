@@ -1,10 +1,7 @@
 use std::fmt;
 use std::time::{Instant, Duration};
-use std::convert::TryInto;
 
 use fallible_iterator::FallibleIterator;
-
-use signifix::metric::Signifix;
 
 use log::*;
 
@@ -176,13 +173,12 @@ impl fmt::Display for Timer {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let (el, eta) = self.timings();
     let per = (self.completed as f64) / el.as_secs_f64();
-    let ps: Signifix = per.try_into().expect("significance error");
     if let Some(eta) = eta {
-      write!(f, "{} / {} in {} ({}/s, ETA {})",
+      write!(f, "{} / {} in {} ({:.0}/s, ETA {})",
              self.completed, self.task_count.unwrap_or_default(),
-             HumanDuration::from(el), ps, HumanDuration::from(eta))
+             HumanDuration::from(el), per, HumanDuration::from(eta))
     } else if self.completed > 0 {
-      write!(f, "{} in {} ({}/s)", self.completed, HumanDuration::from(el), ps)
+      write!(f, "{} in {} ({:.0}/s)", self.completed, HumanDuration::from(el), per)
     } else {
       write!(f, "{}", self.human_elapsed())
     }
