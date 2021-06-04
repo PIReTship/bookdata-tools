@@ -73,6 +73,8 @@ fn save_genders(clusters: Vec<i32>, genders: clusters::ClusterTable, outf: &Path
     })?;
   }
 
+  out.finish()?;
+
   Ok(())
 }
 
