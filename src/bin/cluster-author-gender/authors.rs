@@ -51,15 +51,14 @@ fn viaf_load_names() -> Result<HashMap<u32, Vec<String>>> {
   let mut map: HashMap<u32, Vec<String>> = HashMap::new();
 
   info!("loading VIAF author names");
-  let mut iter = scan_parquet_file("viaf/author-name-index.parquet")?;
+  let iter = scan_parquet_file("viaf/author-name-index.parquet")?;
 
   let mut timer = Timer::new();
+  let mut iter = timer.fallible_iter_progress("reading author names", 5.0, iter);
 
   while let Some(row) = iter.next()? {
     let row: NameRow = row;
     map.entry(row.rec_id).or_default().push(row.name);
-    timer.complete(1);
-    timer.log_status("reading author names", 5.0);
   }
 
   info!("loaded authors for {} records in {}", map.len(), timer.human_elapsed());
@@ -73,13 +72,12 @@ fn viaf_load_genders() -> Result<HashMap<u32, HashSet<Gender>>> {
   let mut timer = Timer::new();
 
   info!("loading VIAF author genders");
-  let mut iter = scan_parquet_file("viaf/author-genders.parquet")?;
+  let iter = scan_parquet_file("viaf/author-genders.parquet")?;
+  let mut iter = timer.fallible_iter_progress("reading author genders", 5.0, iter);
   while let Some(row) = iter.next()? {
     let row: GenderRow = row;
     let gender: Gender = row.gender.into();
     map.entry(row.rec_id).or_default().insert(gender);
-    timer.complete(1);
-    timer.log_status("reading author genders", 5.0);
   }
 
   info!("loaded genders for {} records in {}", map.len(), timer.human_elapsed());

@@ -2,6 +2,8 @@ use std::fmt;
 use std::time::{Instant, Duration};
 use std::convert::TryInto;
 
+use fallible_iterator::FallibleIterator;
+
 use signifix::metric::Signifix;
 
 use log::*;
@@ -53,6 +55,13 @@ enum LastWrite {
     time: Instant,
     count: usize,
   }
+}
+
+pub struct ProgressFailIter<'a, I> where I: FallibleIterator {
+  timer: &'a mut Timer,
+  prefix: &'a str,
+  interval_secs: f32,
+  iter: I
 }
 
 impl Timer {
@@ -143,6 +152,24 @@ impl Timer {
       _ => (elapsed, None)
     }
   }
+
+  /// Emit progress from a fallible iterator
+  pub fn fallible_iter_progress<'a, I: FallibleIterator>(&'a mut self, prefix: &'a str, interval_secs: f32, iter: I) -> ProgressFailIter<'a, I> {
+    // try for size
+    let (lb, ub) = iter.size_hint();
+    if let Some(n) = ub {
+      self.task_count = Some(n);
+    } else if lb > 0 {
+      self.task_count = Some(lb);
+    } else {
+      self.task_count = None;
+    }
+    ProgressFailIter {
+      timer: self,
+      prefix, interval_secs,
+      iter
+    }
+  }
 }
 
 impl fmt::Display for Timer {
@@ -159,6 +186,24 @@ impl fmt::Display for Timer {
     } else {
       write!(f, "{}", self.human_elapsed())
     }
+  }
+}
+
+impl <'a, I> FallibleIterator for ProgressFailIter<'a, I> where I: FallibleIterator {
+  type Item = I::Item;
+  type Error = I::Error;
+
+  fn next(&mut self) -> Result<Option<I::Item>, I::Error> {
+    let res = self.iter.next();
+    if let Ok(Some(_)) = res {
+      self.timer.complete(1);
+      self.timer.log_status(self.prefix, self.interval_secs);
+    }
+    res
+  }
+
+  fn size_hint(&self) -> (usize, Option<usize>) {
+    self.iter.size_hint()
   }
 }
 

@@ -74,6 +74,7 @@ pub struct BatchRecordIter<R> {
 
 /// Iterator over deserialized records from an iterator of records.
 pub struct RecordIter<R, B: RecordBatchReader> {
+  remaining: i64,
   rb_iter: B,
   cur_batch: Option<BatchRecordIter<R>>,
 }
@@ -99,8 +100,11 @@ pub fn scan_parquet_file<'de, R: Deserialize<'de>, P: AsRef<Path>>(path: P) -> R
   let file = File::open(path)?;
   let read = Arc::new(SerializedFileReader::new(file)?);
   let mut read = ParquetFileArrowReader::new(read);
+  let meta = read.get_metadata();
+  let num_rows = meta.file_metadata().num_rows();
   let rb_iter = read.get_record_reader(1_000_000)?;
   Ok(RecordIter {
+    remaining: num_rows,
     rb_iter, cur_batch: None
   })
 }
@@ -144,6 +148,9 @@ impl <'de, R: Deserialize<'de>, B: RecordBatchReader> FallibleIterator for Recor
     if let Some(ref mut bi) = self.cur_batch {
       let n = bi.next()?;
       if n.is_some() {
+        if self.remaining > 0 {
+          self.remaining -= 1;
+        }
         Ok(n)
       } else {
         // this iterator is exhausted, reset and try again
@@ -165,6 +172,15 @@ impl <'de, R: Deserialize<'de>, B: RecordBatchReader> FallibleIterator for Recor
           Err(e.into())
         }
       }
+    }
+  }
+
+  fn size_hint(&self) -> (usize, Option<usize>) {
+    if self.remaining > 0 {
+      let urem = self.remaining as usize;
+      (urem, Some(urem))
+    } else {
+      (0, None)
     }
   }
 }
