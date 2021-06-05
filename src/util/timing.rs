@@ -61,6 +61,13 @@ pub struct ProgressFailIter<'a, I> where I: FallibleIterator {
   iter: I
 }
 
+pub struct ProgressIter<'a, I> where I: Iterator {
+  timer: &'a mut Timer,
+  prefix: &'a str,
+  interval_secs: f32,
+  iter: I
+}
+
 impl Timer {
   /// Create a new timer.
   pub fn new() -> Timer {
@@ -150,6 +157,24 @@ impl Timer {
     }
   }
 
+  /// Emit progress from an iterator
+  pub fn iter_progress<'a, I: Iterator>(&'a mut self, prefix: &'a str, interval_secs: f32, iter: I) -> ProgressIter<'a, I> {
+    // try for size
+    let (lb, ub) = iter.size_hint();
+    if let Some(n) = ub {
+      self.task_count = Some(n);
+    } else if lb > 0 {
+      self.task_count = Some(lb);
+    } else {
+      self.task_count = None;
+    }
+    ProgressIter {
+      timer: self,
+      prefix, interval_secs,
+      iter
+    }
+  }
+
   /// Emit progress from a fallible iterator
   pub fn fallible_iter_progress<'a, I: FallibleIterator>(&'a mut self, prefix: &'a str, interval_secs: f32, iter: I) -> ProgressFailIter<'a, I> {
     // try for size
@@ -182,6 +207,23 @@ impl fmt::Display for Timer {
     } else {
       write!(f, "{}", self.human_elapsed())
     }
+  }
+}
+
+impl <'a, I> Iterator for ProgressIter<'a, I> where I: Iterator {
+  type Item = I::Item;
+
+  fn next(&mut self) -> Option<I::Item> {
+    let res = self.iter.next();
+    if let Some(_) = res {
+      self.timer.complete(1);
+      self.timer.log_status(self.prefix, self.interval_secs);
+    }
+    res
+  }
+
+  fn size_hint(&self) -> (usize, Option<usize>) {
+    self.iter.size_hint()
   }
 }
 

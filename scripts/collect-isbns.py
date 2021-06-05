@@ -34,7 +34,7 @@ def read_goodreads(file):
     return all.sort_index()
 
 def read_amazon(file):
-    asins = pd.read_csv(file, names=['user', 'asin', 'rating', 'timestamp'], usecols=['asin'])
+    asins = pd.read_parquet(file, columns=['asin'])
     return asins['asin'].value_counts().sort_index()
 
 _log.info('reading LOC ISBNs')
@@ -46,7 +46,7 @@ gr_isbns = read_goodreads('goodreads/gr-book-ids.parquet').to_frame('GR')
 _log.info('reading BX ISBNs')
 bx_isbns = read_column('bx/cleaned-ratings.csv', format='csv').to_frame('BX')
 _log.info('reading Amazon ASINs')
-az_asins = read_amazon('data/ratings_Books.csv').to_frame('AZ')
+az_asins = read_amazon('az2014/ratings.parquet').to_frame('AZ')
 
 _log.info('combining ISBN lists')
 isbns = loc_isbns.join(ol_isbns, how='outer')

@@ -14,6 +14,7 @@ use arrow::array::*;
 use datafusion::prelude::*;
 use datafusion::physical_plan::merge::MergeExec;
 use datafusion::physical_plan::functions::make_scalar_function;
+use datafusion::physical_plan::ColumnarValue;
 use datafusion::physical_plan::ExecutionPlan;
 use datafusion::physical_plan::SendableRecordBatchStream;
 use datafusion::error::{Result as FusionResult, DataFusionError};
@@ -81,6 +82,50 @@ fn udf_norm_unicode(args: &[ArrayRef]) -> datafusion::error::Result<ArrayRef> {
   Ok(Arc::new(res) as ArrayRef)
 }
 
+/// UDF to implement fillna (a limited version of COALESCE)
+fn udf_fillna(args: &[ColumnarValue]) -> datafusion::error::Result<ColumnarValue> {
+  assert_eq!(args.len(), 2);
+  let nargs = args.len();
+  let mut arrays = Vec::with_capacity(nargs);
+  let mut n = 0;
+  for i in 0..nargs {
+    let a = match &args[i] {
+      ColumnarValue::Array(arr) => arr.clone(),
+      ColumnarValue::Scalar(s) => s.to_array()
+    };
+    if a.len() > n {
+      n = a.len();
+    }
+    arrays.push(a);
+  }
+  let arefs: Vec<&StringArray> = arrays.iter().map(|a| {
+    a.as_any().downcast_ref::<StringArray>().expect("invalid array cast")
+  }).collect();
+
+  let mut res = StringBuilder::new(arefs[0].get_array_memory_size());
+
+  for i in 0..n {
+    let mut added = false;
+    for a in &arefs {
+      let ai = if a.len() > 1 {
+        i
+      } else {
+        1
+      };
+      if a.is_valid(ai) {
+        res.append_value(a.value(ai))?;
+        added = true;
+      }
+    }
+
+    if !added {
+      res.append_null()?;
+    }
+  }
+
+  Ok(ColumnarValue::Array(Arc::new(res.finish()) as ArrayRef))
+}
+
 /// Add our UDFs.
 pub fn add_udfs(ctx: &mut ExecutionContext) {
   let norm = create_udf(
@@ -88,4 +133,11 @@ pub fn add_udfs(ctx: &mut ExecutionContext) {
     vec![DataType::Utf8], Arc::new(DataType::Utf8),
     make_scalar_function(udf_norm_unicode));
   ctx.register_udf(norm);
+
+  let fillna = create_udf(
+    "fillna",
+    vec![DataType::Utf8, DataType::Utf8],
+    Arc::new(DataType::Utf8),
+    Arc::new(udf_fillna));
+  ctx.register_udf(fillna);
 }
