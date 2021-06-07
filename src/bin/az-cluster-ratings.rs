@@ -1,7 +1,7 @@
 //! Scan Amazon ratings or reviews.
 use std::sync::Arc;
 
-use futures::stream::{Stream, StreamExt};
+use futures::stream::{StreamExt};
 
 use serde::{Deserialize};
 
@@ -10,7 +10,6 @@ use tokio;
 use arrow::record_batch::RecordBatch;
 use arrow::util::pretty::print_batches;
 use datafusion::prelude::*;
-use datafusion::datasource::memory::MemTable;
 use bookdata::prelude::*;
 use bookdata::arrow::fusion::*;
 use bookdata::ratings::RatingDedup;
