@@ -15,7 +15,7 @@ _log = script_log("book-clusters")
 _log.info('reading input tables')
 books = pd.read_parquet("gr-book-ids.parquet", columns=["book_id", "work_id"])
 book_isbns = pd.read_parquet("book-isbn-ids.parquet")
-clusters = pd.read_parquet("../book-links/isbn-clusters.parquet")
+clusters = pd.read_parquet("../book-links/isbn-clusters.parquet", columns=["isbn_id", "cluster"])
 
 _log.info('merging tables')
 merged = books.join(book_isbns.set_index("book_id"), on="book_id", how="left")

@@ -78,6 +78,7 @@ async fn scan_openlib(ctx: &mut ExecutionContext, first_only: bool) -> Result<Ar
   info!("scanning OpenLibrary author data");
   info!("reading ISBN clusters");
   let icl = ctx.read_parquet("book-links/isbn-clusters.parquet")?;
+  let icl = icl.select_columns(&["isbn_id", "cluster"])?;
   info!("reading edition IDs");
   let edl = ctx.read_parquet("openlibrary/edition-isbn-ids.parquet")?;
   let edl = edl.filter(col("isbn_id").is_not_null())?;
@@ -107,6 +108,7 @@ async fn scan_loc(ctx: &mut ExecutionContext, first_only: bool) -> Result<Arc<dy
 
   info!("reading ISBN clusters");
   let icl = ctx.read_parquet("book-links/isbn-clusters.parquet")?;
+  let icl = icl.select_columns(&["isbn_id", "cluster"])?;
 
   info!("reading book records");
   let books = ctx.read_parquet("loc-mds/book-isbn-ids.parquet")?;
