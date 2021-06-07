@@ -1,4 +1,9 @@
 //! Manage and deduplicate ratings and interactions.
+//!
+//! This code consolidates rating de-duplication into a single place, so we can use the same
+//! logic across data sets.  We always store timestamps, dropping them at output time, because
+//! the largest data sets have timestamps.  Saving space for the smallest data set doesn't
+//! seem worthwhile.
 use std::path::Path;
 use hashbrown::HashMap;
 
@@ -69,9 +74,13 @@ impl RatingDedup {
   }
 
   /// Save the rating table disk.
-  pub fn write_ratings<P: AsRef<Path>>(self, path: P) -> Result<usize> {
+  pub fn write_ratings<P: AsRef<Path>>(self, path: P, times: bool) -> Result<usize> {
     info!("writing {} deduplicated ratings to {}", self.table.len(), path.as_ref().display());
-    let mut writer = TableWriter::open(path)?;
+    let mut twb = TableWriterBuilder::new();
+    if !times {
+      twb.project(&["user", "item", "rating", "nratings"]);
+    }
+    let mut writer = twb.open(path)?;
 
     // we're going to consume the hashtable.
     for (k, vec) in self.table {
@@ -147,9 +156,13 @@ impl ActionDedup {
   }
 
   /// Save the rating table disk.
-  pub fn write_actions<P: AsRef<Path>>(self, path: P) -> Result<usize> {
+  pub fn write_actions<P: AsRef<Path>>(self, path: P, times: bool) -> Result<usize> {
     info!("writing {} deduplicated actions to {}", self.table.len(), path.as_ref().display());
-    let mut writer = TableWriter::open(path)?;
+    let mut twb = TableWriterBuilder::new();
+    if !times {
+      twb.project(&["user", "item", "nactions"]);
+    }
+    let mut writer = twb.open(path)?;
 
     // we're going to consume the hashtable.
     for (k, vec) in self.table {

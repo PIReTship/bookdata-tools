@@ -98,7 +98,7 @@ async fn main() -> Result<()> {
   // this is because of two deficiencies in DataFusion:
   // - no median function
   // - inefficient high-cardinality group-by (they're working on this)
-  let n = dedup.write_ratings(opts.outfile)?;
+  let n = dedup.write_ratings(opts.outfile, true)?;
   info!("wrote {} de-duplicated ratings", n);
 
   Ok(())

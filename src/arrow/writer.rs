@@ -5,6 +5,7 @@ use std::marker::PhantomData;
 
 use log::*;
 use arrow::datatypes::{Schema, SchemaRef, Field};
+use arrow::array::*;
 use arrow::record_batch::RecordBatch;
 use parquet::basic::Compression;
 use parquet::file::properties::WriterProperties;
@@ -20,6 +21,7 @@ const BATCH_SIZE: usize = 1000000;
 /// Parquet table writer
 pub struct TableWriter<R: TableRow> {
   schema: SchemaRef,
+  select: Vec<usize>,
   writer: Option<ThreadWriter<RecordBatch>>,
   batch: R::Batch,
   batch_size: usize,
@@ -32,6 +34,7 @@ pub struct TableWriter<R: TableRow> {
 pub struct TableWriterBuilder<R: TableRow> {
   phantom: PhantomData<R>,
   schema: SchemaRef,
+  select: Vec<usize>,
   bsize: usize
 }
 
@@ -49,9 +52,11 @@ impl <W> ObjectWriter<RecordBatch> for ArrowWriter<W> where W: ParquetWriter + '
 
 impl <R> TableWriterBuilder<R> where R: TableRow {
   pub fn new() -> TableWriterBuilder<R> {
+    let schema = Arc::new(R::schema());
+    let select = (0..schema.fields().len()).collect::<Vec<usize>>();
     TableWriterBuilder {
       phantom: PhantomData,
-      schema: Arc::new(R::schema()),
+      schema, select,
       bsize: BATCH_SIZE
     }
   }
@@ -75,6 +80,23 @@ impl <R> TableWriterBuilder<R> where R: TableRow {
     self
   }
 
+  /// Write a subset of the columns.
+  ///
+  /// This filters the resulting writer. The columns are still assembled in memory (for
+  /// implementation convenience), but will not be written the output file.
+  pub fn project<'a>(&'a mut self, cols: &[&str]) -> &'a mut TableWriterBuilder<R> {
+    let mut f2 = Vec::with_capacity(cols.len());
+    let mut s2 = Vec::with_capacity(cols.len());
+    for c in cols {
+      let idx = self.schema.index_of(c).expect("cannot project to unknown field");
+      s2.push(self.select[idx]);
+      f2.push(self.schema.field(idx).clone());
+    }
+    self.schema = Arc::new(Schema::new(f2));
+    self.select = s2;
+    self
+  }
+
   pub fn open<P: AsRef<Path>>(&self, path: P) -> Result<TableWriter<R>> {
     let file = OpenOptions::new().create(true).truncate(true).write(true).open(path)?;
     let props = WriterProperties::builder();
@@ -84,6 +106,7 @@ impl <R> TableWriterBuilder<R> where R: TableRow {
     let writer = ThreadWriter::new(writer);
     Ok(TableWriter {
       schema: self.schema.clone(),
+      select: self.select.clone(),
       writer: Some(writer),
       batch: R::new_batch(self.bsize),
       batch_size: self.bsize,
@@ -102,7 +125,8 @@ impl <R> TableWriter<R> where R: TableRow {
   fn write_batch(&mut self) -> Result<()> {
     debug!("writing batch");
     let cols = R::finish_batch(&mut self.batch);
-    let batch = RecordBatch::try_new(self.schema.clone(), cols)?;
+    let proj_cols: Vec<ArrayRef> = self.select.iter().map(|i| cols[*i].clone()).collect();
+    let batch = RecordBatch::try_new(self.schema.clone(), proj_cols)?;
     let writer = self.writer.as_mut().ok_or(anyhow!("writer has been closed"))?;
     writer.write_object(batch)?;
     self.batch_count = 0;
