@@ -245,11 +245,11 @@ impl <'a, 'de> Deserializer<'de> for RowState<'a> {
     visitor.visit_seq(self)
   }
 
-  fn deserialize_tuple<V: Visitor<'de>>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error> {
+  fn deserialize_tuple<V: Visitor<'de>>(self, _len: usize, visitor: V) -> Result<V::Value, Self::Error> {
     visitor.visit_seq(self)
   }
 
-  fn deserialize_tuple_struct<V: Visitor<'de>>(self, name: &'static str, len: usize, visitor: V) -> Result<V::Value, Self::Error> {
+  fn deserialize_tuple_struct<V: Visitor<'de>>(self, _name: &'static str, _len: usize, visitor: V) -> Result<V::Value, Self::Error> {
     visitor.visit_seq(self)
   }
 

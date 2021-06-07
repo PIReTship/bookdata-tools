@@ -12,22 +12,14 @@ from bookdata import script_log
 _log = script_log("cluster-ratings")
 
 _log.info('reading ISBNs')
-isbns = pd.read_parquet("../book-links/all-isbns.parquet", columns=["isbn", "isbn_id"])
-isbns = isbns.set_index('isbn')['isbn_id'].sort_index()
-
-_log.info('reading clusters')
-clusters = pd.read_parquet('../book-links/isbn-clusters.parquet')
-clusters = clusters.set_index('isbn_id')['cluster'].sort_index()
+clusters = pd.read_parquet("../book-links/isbn-clusters.parquet", columns=["isbn", "cluster"])
+clusters = clusters.set_index('isbn')['cluster'].sort_index()
 
 _log.info('reading ratings')
 ratings = pd.read_parquet('ratings.parquet')
 
 _log.info('merging ISBNs')
-joined = ratings.join(isbns, on='asin')
-assert len(joined) == len(ratings)
-
-_log.info('merging clusters')
-joined = joined.join(clusters, on='isbn_id')
+joined = ratings.join(clusters, on='asin')
 assert len(joined) == len(ratings)
 
 _log.info('aggregating by cluster')

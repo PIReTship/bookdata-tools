@@ -3,7 +3,6 @@ use std::fs::File;
 use csv;
 
 use serde::{Serialize, Deserialize};
-use chrono::NaiveDateTime;
 
 use bookdata::prelude::*;
 use bookdata::arrow::*;
@@ -40,7 +39,7 @@ struct RatingRow {
   user: u32,
   asin: String,
   rating: f32,
-  timestamp: NaiveDateTime,
+  timestamp: i64,
 }
 
 fn scan_az_ratings(src: &Path, out: &Path) -> Result<()>
@@ -62,7 +61,7 @@ fn scan_az_ratings(src: &Path, out: &Path) -> Result<()>
       user,
       asin: row.asin,
       rating: row.rating,
-      timestamp: NaiveDateTime::from_timestamp(row.timestamp, 0),
+      timestamp: row.timestamp,
     })?;
   }
 

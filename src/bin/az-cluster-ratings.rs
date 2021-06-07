@@ -54,8 +54,7 @@ async fn scan_dedup(ctx: &mut ExecutionContext, source: Arc<dyn DataFrame>) -> R
 
   let mut timer = Timer::new();
   let mut rows = df_rows(ctx, source).await?;
-  let hint = rows.size_hint();
-  info!("scanning approximately {:?} ratings", hint);
+  info!("scanning ratings for deduplication");
   while let Some(row) = rows.next().await {
     let row: ScanRow = row?;
     dedup.record(row.user, row.cluster, row.rating, row.timestamp);
@@ -74,21 +73,12 @@ async fn main() -> Result<()> {
   let mut ctx = ExecutionContext::new();
 
   // load linking info
-  let isbns = ctx.read_parquet("book-links/all-isbns.parquet")?;
-  let clusters = ctx.read_parquet("book-links/isbn-clusters.parquet")?;
-  let ic_link = isbns.join(clusters, JoinType::Inner, &["isbn_id"], &["isbn_id"])?;
+  let ic_link = ctx.read_parquet("book-links/isbn-clusters.parquet")?;
   let ic_link = ic_link.select_columns(&["isbn", "cluster"])?;
-
-  // force a scan of linking info
-  info!("scanning ISBN/cluster links");
-  let icbatch: Vec<Vec<RecordBatch>> = ic_link.collect_partitioned().await?;
-  let icprov = MemTable::try_new(ic_link.schema().clone().into(), icbatch)?;
-  let icprov = Arc::new(icprov);
-  let ic_link = ctx.read_table(icprov)?;
 
   // load ratings
   let ratings = ctx.read_parquet(opts.infile.as_str())?;
-  let rlink = ratings.join(ic_link, JoinType::Left, &["asin"], &["isbn"])?;
+  let rlink = ratings.join(ic_link, JoinType::Inner, &["asin"], &["isbn"])?;
   let rlink = rlink.select_columns(&["user", "cluster", "rating", "timestamp"])?;
 
   if opts.logical_plan {
