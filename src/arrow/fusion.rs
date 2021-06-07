@@ -5,7 +5,8 @@ use std::pin::Pin;
 use std::future::Future;
 
 use futures::future;
-use futures::stream::StreamExt;
+use futures::stream::{Stream, StreamExt};
+use serde::de::DeserializeOwned;
 
 use anyhow::Result;
 
@@ -22,6 +23,7 @@ use parquet::arrow::ArrowWriter;
 use parquet::file::writer::ParquetWriter;
 
 use crate::cleaning::strings::norm_unicode;
+use super::row_de::RecordBatchDeserializer;
 
 /// Evaluate a DataFusion plan to a CSV file.
 pub async fn eval_to_csv<W: Write>(out: &mut arrow::csv::Writer<W>, plan: Arc<dyn ExecutionPlan>) -> Result<()> {
@@ -73,6 +75,15 @@ pub fn run_plan<'a, 'async_trait>(plan: &'a Arc<dyn ExecutionPlan>) -> Pin<Box<d
   } else {
     plan.execute(0)
   }
+}
+
+/// Deserialize rows of a data frame as a stream.
+pub async fn df_rows<R>(ctx: &mut ExecutionContext, df: Arc<dyn DataFrame>) -> Result<impl Stream<Item=Result<R>>>
+where R: DeserializeOwned
+{
+  let plan = plan_df(ctx, df)?;
+  let stream = run_plan(&plan).await?;
+  Ok(RecordBatchDeserializer::for_stream(stream))
 }
 
 /// UDF to normalize strings' Unicode representations.
