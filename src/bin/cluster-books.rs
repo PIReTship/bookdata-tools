@@ -17,6 +17,7 @@ pub struct ClusterBooks {
 
 #[derive(TableRow, Debug)]
 struct ClusterRec {
+  isbn: Option<String>,
   isbn_id: i32,
   cluster: i32
 }
@@ -46,17 +47,16 @@ pub async fn main() -> Result<()> {
   for ci in 0..clusters.len() {
     let verts = &clusters[ci];
     let vids: Vec<_> = verts.iter().map(|v| {
-      *(graph.node_weight(*v).unwrap())
+      graph.node_weight(*v).unwrap()
     }).collect();
-    let code = vids.iter().min().unwrap();
-    let cluster = *code;
+    let cluster = vids.iter().map(|b| b.code).min().unwrap();
     cs_w.write_object(ClusterStat {
       cluster, n_isbns: vids.len() as u32
     })?;
     for v in &vids {
-      if let Some(id) = NS_ISBN.from_code(*v) {
+      if let Some(id) = NS_ISBN.from_code(v.code) {
         ic_w.write_object(ClusterRec {
-          cluster, isbn_id: id,
+          cluster, isbn_id: id, isbn: v.label.clone()
         })?;
       }
     }

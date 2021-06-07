@@ -33,6 +33,7 @@ use serde::de::{
   Deserializer,
   Visitor,
   MapAccess,
+  SeqAccess,
   DeserializeSeed,
 };
 
@@ -240,10 +241,22 @@ impl <'a, 'de> Deserializer<'de> for RowState<'a> {
     visitor.visit_map(self)
   }
 
+  fn deserialize_seq<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+    visitor.visit_seq(self)
+  }
+
+  fn deserialize_tuple<V: Visitor<'de>>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error> {
+    visitor.visit_seq(self)
+  }
+
+  fn deserialize_tuple_struct<V: Visitor<'de>>(self, name: &'static str, len: usize, visitor: V) -> Result<V::Value, Self::Error> {
+    visitor.visit_seq(self)
+  }
+
   forward_to_deserialize_any! {
     bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
-    bytes byte_buf option unit unit_struct newtype_struct seq tuple
-    tuple_struct map enum identifier ignored_any
+    bytes byte_buf option unit unit_struct newtype_struct
+    map enum identifier ignored_any
   }
 }
 
@@ -270,6 +283,25 @@ impl <'a, 'de> MapAccess<'de> for RowState<'a> {
       array: columns[i].as_ref(),
       row: self.row
     })
+  }
+}
+
+impl <'a, 'de> SeqAccess<'de> for RowState<'a> {
+  type Error = RowError;
+
+  fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error>
+  where T: DeserializeSeed<'de> {
+    if self.col >= self.rbd.ncols {
+      Ok(None)
+    } else {
+      let i = self.col;
+      self.col += 1;
+      let columns = self.rbd.batch.columns();
+      seed.deserialize(ColValue {
+        array: columns[i].as_ref(),
+        row: self.row
+      }).map(Some)
+    }
   }
 }
 

@@ -60,7 +60,8 @@ impl NodeRead for ISBN {
   fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     let df = ctx.read_parquet("book-links/all-isbns.parquet")?;
     let df = df.select(vec![
-      id_col("isbn_id", NS_ISBN)
+      id_col("isbn_id", NS_ISBN).alias("code"),
+      col("isbn").alias("label")
     ])?;
     Ok(df)
   }
@@ -70,7 +71,7 @@ impl NodeRead for LOC {
   fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     let df = ctx.read_parquet("loc-mds/book-ids.parquet")?;
     let df = df.select(vec![
-      id_col("rec_id", NS_LOC_REC)
+      id_col("rec_id", NS_LOC_REC).alias("code")
     ])?;
     Ok(df)
   }
@@ -91,7 +92,7 @@ impl NodeRead for OLEditions {
   fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     let df = ctx.read_parquet("openlibrary/editions.parquet")?;
     let df = df.select(vec![
-      id_col("id", NS_EDITION)
+      id_col("id", NS_EDITION).alias("code")
     ])?;
     Ok(df)
   }
@@ -112,7 +113,7 @@ impl NodeRead for OLWorks {
   fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     let df = ctx.read_parquet("openlibrary/all-works.parquet")?;
     let df = df.select(vec![
-      id_col("id", NS_WORK)
+      id_col("id", NS_WORK).alias("code")
     ])?;
     Ok(df)
   }
@@ -133,7 +134,7 @@ impl NodeRead for GRBooks {
   fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     let df = ctx.read_parquet("goodreads/gr-book-ids.parquet")?;
     let df = df.select(vec![
-      id_col("book_id", NS_GR_BOOK)
+      id_col("book_id", NS_GR_BOOK).alias("code")
     ])?;
     Ok(df)
   }
@@ -155,7 +156,7 @@ impl NodeRead for GRWorks {
     let df = ctx.read_parquet("goodreads/gr-book-ids.parquet")?;
     let df = df.filter(col("work_id").is_not_null())?;
     let df = df.select(vec![
-      id_col("work_id", NS_GR_WORK)
+      id_col("work_id", NS_GR_WORK).alias("code")
     ])?;
     Ok(df)
   }
