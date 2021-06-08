@@ -88,6 +88,9 @@ impl ObjectWriter<RawInteraction> for IntWriter {
     let user_id = self.users.intern_owned(user_key);
     let book_id: i32 = row.book_id.parse()?;
     let cluster = self.clusters.get(&book_id).map(|c| *c);
+    if !cluster.is_some() {
+      warn!("book {} has no cluster", book_id);
+    }
 
     self.writer.write_object(IntRecord {
       rec_id, user_id, book_id, cluster,
