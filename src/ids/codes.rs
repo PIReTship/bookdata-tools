@@ -1,23 +1,37 @@
-pub struct NS<'a>(&'a str, i32);
+use std::sync::Arc;
+use arrow::datatypes::*;
+use arrow::array::*;
+use datafusion::prelude::create_udf;
+use datafusion::physical_plan::functions::make_scalar_function;
+use datafusion::physical_plan::udf::ScalarUDF;
+use datafusion::execution::context::ExecutionContext;
+
+use log::*;
+
+pub struct NS<'a> {
+  name: &'a str,
+  fn_name: &'a str,
+  code: i32
+}
 
 const NS_MULT_BASE: i32 = 100_000_000;
 
 #[allow(dead_code)]
-pub const NS_WORK: NS<'static> = NS("OL-W", 1);
+pub const NS_WORK: NS<'static> = NS::new("OL-W", "ol_work", 1);
 #[allow(dead_code)]
-pub const NS_EDITION: NS<'static> = NS("OL-E", 2);
+pub const NS_EDITION: NS<'static> = NS::new("OL-E", "ol_edition", 2);
 #[allow(dead_code)]
-pub const NS_LOC_REC: NS<'static> = NS("LOC", 3);
+pub const NS_LOC_REC: NS<'static> = NS::new("LOC", "loc_rec", 3);
 #[allow(dead_code)]
-pub const NS_GR_WORK: NS<'static> = NS("GR-W", 4);
+pub const NS_GR_WORK: NS<'static> = NS::new("GR-W", "gr_work", 4);
 #[allow(dead_code)]
-pub const NS_GR_BOOK: NS<'static> = NS("GR-B", 5);
+pub const NS_GR_BOOK: NS<'static> = NS::new("GR-B", "gr_book", 5);
 #[allow(dead_code)]
-pub const NS_LOC_WORK: NS<'static> = NS("LOC-W", 6);
+pub const NS_LOC_WORK: NS<'static> = NS::new("LOC-W", "loc_work", 6);
 #[allow(dead_code)]
-pub const NS_LOC_INSTANCE: NS<'static> = NS("LOC-I", 7);
+pub const NS_LOC_INSTANCE: NS<'static> = NS::new("LOC-I", "loc_instance", 7);
 #[allow(dead_code)]
-pub const NS_ISBN: NS<'static> = NS("ISBN", 9);
+pub const NS_ISBN: NS<'static> = NS::new("ISBN", "isbn", 9);
 
 const NAMESPACES: &'static [&'static NS<'static>] = &[
   &NS_WORK,
@@ -34,13 +48,19 @@ const NAMESPACES: &'static [&'static NS<'static>] = &[
 use quickcheck::quickcheck;
 
 impl <'a> NS<'a> {
+  const fn new(name: &'a str, fn_name: &'a str, code: i32) -> NS<'a> {
+    NS {
+      name, fn_name, code
+    }
+  }
+
   #[allow(dead_code)]
   pub fn name(&'a self) -> &'a str {
-    self.0
+    self.name
   }
 
   pub fn code(&'a self) -> i32 {
-    self.1
+    self.code
   }
 
   pub fn base(&'a self) -> i32 {
@@ -60,6 +80,54 @@ impl <'a> NS<'a> {
     } else {
       None
     }
+  }
+}
+
+impl NS<'static> {
+  /// DataFusion UDF to convert from codes.
+  pub fn from_code_udf(&'static self) -> ScalarUDF {
+    let name = format!("{}_from_code", self.fn_name);
+    let func = move |cols: &[ArrayRef]| {
+      let arr = cols[0].as_any().downcast_ref::<Int32Array>().unwrap();
+      let res: Int32Array = arr.iter().map(|co| match co {
+        Some(c) => self.from_code(c),
+        None => None
+      }).collect();
+      Ok(Arc::new(res) as ArrayRef)
+    };
+    debug!("registering function {}", name);
+    create_udf(
+      name.as_str(),
+      vec![DataType::Int32],
+      Arc::new(DataType::Int32),
+      make_scalar_function(func))
+  }
+
+  /// DataFusion UDF to check codes.
+  pub fn code_is_udf(&'static self) -> ScalarUDF {
+    let name = format!("code_is_{}", self.fn_name);
+    let func = move |cols: &[ArrayRef]| {
+      let arr = cols[0].as_any().downcast_ref::<Int32Array>().unwrap();
+      let res: BooleanArray = arr.iter().map(|co| match co {
+        Some(c) => Some(c / NS_MULT_BASE == self.code()),
+        None => None
+      }).collect();
+      Ok(Arc::new(res) as ArrayRef)
+    };
+    debug!("registering function {}", name);
+    create_udf(
+      name.as_str(),
+      vec![DataType::Int32],
+      Arc::new(DataType::Boolean),
+      make_scalar_function(func))
+  }
+}
+
+/// Add book code UDFs to an execution context.
+pub fn add_udfs(ctx: &mut ExecutionContext) {
+  for ns in NAMESPACES {
+    ctx.register_udf(ns.from_code_udf());
+    ctx.register_udf(ns.code_is_udf());
   }
 }
 

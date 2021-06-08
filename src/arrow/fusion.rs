@@ -22,6 +22,7 @@ use datafusion::error::{Result as FusionResult, DataFusionError};
 use parquet::arrow::ArrowWriter;
 use parquet::file::writer::ParquetWriter;
 
+use crate::ids::codes;
 use crate::cleaning::strings::norm_unicode;
 use super::row_de::RecordBatchDeserializer;
 
@@ -151,4 +152,6 @@ pub fn add_udfs(ctx: &mut ExecutionContext) {
     Arc::new(DataType::Utf8),
     Arc::new(udf_fillna));
   ctx.register_udf(fillna);
+
+  codes::add_udfs(ctx);
 }
