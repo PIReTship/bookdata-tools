@@ -13,6 +13,7 @@ use anyhow::Result;
 mod data;
 mod amazon;
 mod bx;
+mod goodreads;
 
 use data::Source;
 
@@ -62,6 +63,8 @@ async fn main() -> Result<()> {
     "az-ratings" => scan_and_save(amazon::Ratings, &mut ctx, dst).await?,
     "bx-ratings" => scan_and_save(bx::Ratings, &mut ctx, dst).await?,
     "bx-actions" => scan_and_save(bx::Actions, &mut ctx, dst).await?,
+    "gr-ratings" => scan_and_save(goodreads::Ratings, &mut ctx, dst).await?,
+    "gr-actions" => scan_and_save(goodreads::Actions, &mut ctx, dst).await?,
     s => return Err(anyhow!("invalid data source {}", s))
   };
 
