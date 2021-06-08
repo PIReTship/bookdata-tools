@@ -72,7 +72,6 @@ impl Source for Actions {
 
     // load ratings
     let ratings = ctx.read_csv("bx/cleaned-ratings.csv", CsvReadOptions::new().has_header(true))?;
-    let ratings = ratings.filter(col("rating").gt(lit(0)))?;
     let rlink = ratings.join(ic_link, JoinType::Inner, &["isbn"], &["isbn"])?;
     let rlink = rlink.select_columns(&["user", "cluster", "rating"])?;
 
