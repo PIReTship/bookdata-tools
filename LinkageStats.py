@@ -1,78 +1,78 @@
----
-jupyter:
-  jupytext:
-    formats: ipynb,md
-    text_representation:
-      extension: .md
-      format_name: markdown
-      format_version: '1.3'
-      jupytext_version: 1.11.2
-  kernelspec:
-    display_name: Python 3
-    language: python
-    name: python3
----
+# ---
+# jupyter:
+#   jupytext:
+#     formats: ipynb,py:percent
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.11.2
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
 
-# Book Data Linkage Statistics
+# %% [markdown]
+# # Book Data Linkage Statistics
+#
+# This notebook presents statistics of the book data integration.
 
-This notebook presents statistics of the book data integration.
+# %% [markdown]
+# ## Setup
 
-
-## Setup
-
-```python
+# %%
 import pandas as pd
 import seaborn as sns
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-```
 
-## Load Link Stats
+# %% [markdown]
+# ## Load Link Stats
+#
+# We compute dataset linking statitsics as `gender-stats.csv.gz` using DataFusion.  Let's load those:
 
-We compute dataset linking statitsics as `gender-stats.csv.gz` using DataFusion.  Let's load those:
-
-```python
+# %%
 link_stats = pd.read_csv('book-links/gender-stats.csv.gz')
 link_stats.head()
-```
 
-Now let's define variables for our variou codes. We are first going to define our gender codes.  We'll start with the resolved codes:
+# %% [markdown]
+# Now let's define variables for our variou codes. We are first going to define our gender codes.  We'll start with the resolved codes:
 
-```python
+# %%
 link_codes = ['female', 'male', 'ambiguous', 'unknown']
-```
 
-We want the unlink codes in order, so the last is the first link failure:
+# %% [markdown]
+# We want the unlink codes in order, so the last is the first link failure:
 
-```python
+# %%
 unlink_codes = ['no-author-rec', 'no-book-author', 'no-book']
-```
 
-```python
+# %%
 all_codes = link_codes + unlink_codes
-```
 
-## Processing Statistics
+# %% [markdown]
+# ## Processing Statistics
+#
+# Now we'll pivot each of our count columns into a table for easier reference.
 
-Now we'll pivot each of our count columns into a table for easier reference.
-
-```python
+# %%
 book_counts = link_stats.pivot('dataset', 'gender', 'n_books')
 book_counts = book_counts.reindex(columns=all_codes)
 book_counts
-```
 
-```python
+# %%
 act_counts = link_stats.pivot('dataset', 'gender', 'n_actions')
 act_counts = act_counts.reindex(columns=all_codes)
 act_counts.drop(index='LOC-MDS', inplace=True)
 act_counts
-```
 
-We're going to want to compute versions of this table as fractions, e.g. the fraction of books that are written by women.  We will use the following helper function:
 
-```python
+# %% [markdown]
+# We're going to want to compute versions of this table as fractions, e.g. the fraction of books that are written by women.  We will use the following helper function:
+
+# %%
 def fractionalize(data, columns, unlinked=None):
     fracs = data[columns]
     fracs.columns = fracs.columns.astype('str')
@@ -80,11 +80,12 @@ def fractionalize(data, columns, unlinked=None):
         fracs = fracs.assign(unlinked=data[unlinked].sum(axis=1))
     totals = fracs.sum(axis=1)
     return fracs.divide(totals, axis=0)
-```
 
-And a helper function for plotting bar charts:
 
-```python
+# %% [markdown]
+# And a helper function for plotting bar charts:
+
+# %%
 def plot_bars(fracs, ax=None, cmap=mpl.cm.Dark2):
     if ax is None:
         ax = plt.gca()
@@ -107,52 +108,44 @@ def plot_bars(fracs, ax=None, cmap=mpl.cm.Dark2):
     ax.set_yticks(ind)
     ax.set_yticklabels(fracs.index)
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-```
 
-## Resolution of Books
 
-What fraction of *unique books* are resolved from each source?
+# %% [markdown]
+# ## Resolution of Books
+#
+# What fraction of *unique books* are resolved from each source?
 
-```python
+# %%
 fractionalize(book_counts, link_codes + unlink_codes)
-```
 
-```python
+# %%
 plot_bars(fractionalize(book_counts, link_codes + unlink_codes))
-```
 
-```python
+# %%
 fractionalize(book_counts, link_codes, unlink_codes)
-```
 
-```python
+# %%
 plot_bars(fractionalize(book_counts, link_codes, unlink_codes))
-```
 
-```python
+# %%
 plot_bars(fractionalize(book_counts, ['female', 'male']))
-```
 
-## Resolution of Ratings
+# %% [markdown]
+# ## Resolution of Ratings
+#
+# What fraction of *rating actions* have each resolution result?
 
-What fraction of *rating actions* have each resolution result?
-
-```python
+# %%
 fractionalize(act_counts, link_codes + unlink_codes)
-```
 
-```python
+# %%
 plot_bars(fractionalize(act_counts, link_codes + unlink_codes))
-```
 
-```python
+# %%
 fractionalize(act_counts, link_codes, unlink_codes)
-```
 
-```python
+# %%
 plot_bars(fractionalize(act_counts, link_codes, unlink_codes))
-```
 
-```python
+# %%
 plot_bars(fractionalize(act_counts, ['female', 'male']))
-```
