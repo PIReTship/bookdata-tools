@@ -113,7 +113,7 @@ fn main() -> Result<()> {
   let options = ScanInteractions::from_args();
   options.common.init()?;
 
-  info!("reading books from {:?}", &options.infile);
+  info!("reading books from {}", &options.infile.display());
   let proc = LineProcessor::open_gzip(&options.infile)?;
 
   let mut writer = BookWriter::open()?;
