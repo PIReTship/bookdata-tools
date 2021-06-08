@@ -104,7 +104,7 @@ impl RatingDedup {
     info!("writing {} deduplicated ratings to {}", self.table.len(), path.as_ref().display());
     let mut twb = TableWriterBuilder::new();
     if !times {
-      twb.project(&["user", "item", "rating", "nratings"]);
+      twb = twb.project(&["user", "item", "rating", "nratings"]);
     }
     let mut writer = twb.open(path)?;
 
@@ -191,7 +191,7 @@ impl ActionDedup {
     info!("writing {} deduplicated actions to {}", self.table.len(), path.as_ref().display());
     let mut twb = TableWriterBuilder::new();
     if !times {
-      twb.project(&["user", "item", "nactions"]);
+      twb = twb.project(&["user", "item", "nactions"]);
     }
     let mut writer = twb.open(path)?;
 

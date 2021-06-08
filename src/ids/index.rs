@@ -129,8 +129,8 @@ impl IdIndex<String> {
   /// Save to a Parquet file with the standard configuration.
   pub fn save<P: AsRef<Path>>(&self, path: P, id_col: &str, key_col: &str) -> Result<()> {
     let mut wb = TableWriterBuilder::new();
-    wb.rename("id", id_col);
-    wb.rename("key", key_col);
+    wb = wb.rename("id", id_col);
+    wb = wb.rename("key", key_col);
     let mut writer = wb.open(path)?;
 
     for (k, v) in &self.map {

@@ -57,7 +57,7 @@ async fn add_edges(g: &mut IdGraph, nodes: &NodeMap, ctx: &mut ExecutionContext,
   Ok(())
 }
 
-pub async fn load_graph() -> Result<IdGraph> {
+pub async fn construct_graph() -> Result<IdGraph> {
   let mut graph = IdGraph::new_undirected();
   let mut nodes = NodeMap::new();
   let mut ctx = ExecutionContext::new();

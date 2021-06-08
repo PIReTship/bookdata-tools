@@ -7,8 +7,9 @@ use log::*;
 use arrow::datatypes::{Schema, SchemaRef, Field};
 use arrow::array::*;
 use arrow::record_batch::RecordBatch;
-use parquet::basic::Compression;
-use parquet::file::properties::WriterProperties;
+use parquet::schema::types::ColumnPath;
+use parquet::basic::{Compression, Encoding};
+use parquet::file::properties::{WriterProperties, WriterPropertiesBuilder};
 use parquet::file::writer::ParquetWriter;
 use parquet::arrow::ArrowWriter;
 use anyhow::{Result, anyhow};
@@ -30,12 +31,12 @@ pub struct TableWriter<R: TableRow> {
 }
 
 /// Builder for Parquet table writers.
-#[derive(Clone)]
 pub struct TableWriterBuilder<R: TableRow> {
   phantom: PhantomData<R>,
   schema: SchemaRef,
   select: Vec<usize>,
-  bsize: usize
+  props: WriterPropertiesBuilder,
+  bsize: usize,
 }
 
 impl <W> ObjectWriter<RecordBatch> for ArrowWriter<W> where W: ParquetWriter + 'static {
@@ -54,14 +55,16 @@ impl <R> TableWriterBuilder<R> where R: TableRow {
   pub fn new() -> TableWriterBuilder<R> {
     let schema = Arc::new(R::schema());
     let select = (0..schema.fields().len()).collect::<Vec<usize>>();
+    let props = WriterProperties::builder();
+    let props = props.set_compression(Compression::ZSTD);
     TableWriterBuilder {
       phantom: PhantomData,
-      schema, select,
-      bsize: BATCH_SIZE
+      schema, select, props,
+      bsize: BATCH_SIZE,
     }
   }
 
-  pub fn rename<'a>(&'a mut self, orig: &str, tgt: &str) -> &'a mut TableWriterBuilder<R> {
+  pub fn rename(mut self, orig: &str, tgt: &str) -> TableWriterBuilder<R> {
     let fields = self.schema.fields();
     let mut f2 = Vec::with_capacity(fields.len());
     for f in fields {
@@ -75,7 +78,7 @@ impl <R> TableWriterBuilder<R> where R: TableRow {
     self
   }
 
-  pub fn batch_size<'a>(&'a mut self, size: usize) -> &'a mut TableWriterBuilder<R> {
+  pub fn batch_size(mut self, size: usize) -> TableWriterBuilder<R> {
     self.bsize = size;
     self
   }
@@ -84,7 +87,7 @@ impl <R> TableWriterBuilder<R> where R: TableRow {
   ///
   /// This filters the resulting writer. The columns are still assembled in memory (for
   /// implementation convenience), but will not be written the output file.
-  pub fn project<'a>(&'a mut self, cols: &[&str]) -> &'a mut TableWriterBuilder<R> {
+  pub fn project(mut self, cols: &[&str]) -> TableWriterBuilder<R> {
     let mut f2 = Vec::with_capacity(cols.len());
     let mut s2 = Vec::with_capacity(cols.len());
     for c in cols {
@@ -97,16 +100,19 @@ impl <R> TableWriterBuilder<R> where R: TableRow {
     self
   }
 
-  pub fn open<P: AsRef<Path>>(&self, path: P) -> Result<TableWriter<R>> {
+  pub fn column_encoding<C: Into<ColumnPath>>(mut self, col: C, enc: Encoding) -> TableWriterBuilder<R> {
+    self.props = self.props.set_column_encoding(col.into(), enc);
+    self
+  }
+
+  pub fn open<P: AsRef<Path>>(self, path: P) -> Result<TableWriter<R>> {
     let file = OpenOptions::new().create(true).truncate(true).write(true).open(path)?;
-    let props = WriterProperties::builder();
-    let props = props.set_compression(Compression::ZSTD);
-    let props = props.build();
+    let props = self.props.build();
     let writer = ArrowWriter::try_new(file, self.schema.clone(), Some(props))?;
     let writer = ThreadWriter::new(writer);
     Ok(TableWriter {
-      schema: self.schema.clone(),
-      select: self.select.clone(),
+      schema: self.schema,
+      select: self.select,
       writer: Some(writer),
       batch: R::new_batch(self.bsize),
       batch_size: self.bsize,

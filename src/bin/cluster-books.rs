@@ -2,7 +2,7 @@ use tokio;
 
 use bookdata::prelude::*;
 use bookdata::arrow::*;
-use bookdata::graph::load_graph;
+use bookdata::graph::{construct_graph, save_graph};
 use bookdata::ids::codes::NS_ISBN;
 
 use petgraph::algo::tarjan_scc;
@@ -39,7 +39,10 @@ pub async fn main() -> Result<()> {
   let opts = ClusterBooks::from_args();
   opts.common.init()?;
 
-  let graph = load_graph().await?;
+  let graph = construct_graph().await?;
+
+  info!("saving graph");
+  save_graph(&graph, "book-links/book-graph.mp.zst")?;
 
   info!("computing connected components");
   let clusters = tarjan_scc(&graph);
@@ -48,7 +51,10 @@ pub async fn main() -> Result<()> {
   info!("computed {} clusters, largest has {} nodes", clusters.len(), msize);
 
   let mut ic_w = TableWriter::open("book-links/isbn-clusters.parquet")?;
-  let mut cc_w = TableWriter::open("book-links/cluster-codes.parquet")?;
+
+  let cc_wb = TableWriterBuilder::new();
+  let mut cc_w = cc_wb.open("book-links/cluster-codes.parquet")?;
+
   let mut cs_w = TableWriter::open("book-links/cluster-stats.parquet")?;
 
   for ci in 0..clusters.len() {

@@ -6,7 +6,8 @@ use chrono::prelude::*;
 
 use bookdata::prelude::*;
 use bookdata::arrow::*;
-use bookdata::index::IdIndex;
+use bookdata::ids::codes::*;
+use bookdata::ids::index::IdIndex;
 use bookdata::io::object::ThreadWriter;
 use bookdata::parsing::*;
 use bookdata::parsing::dates::*;
