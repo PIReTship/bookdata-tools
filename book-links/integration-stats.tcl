@@ -19,7 +19,7 @@ proc add-query {query} {
 }
 
 add-query {
-    SELECT 'LOC-MDS' as dataset, gender, COUNT(DISTINCT cluster) AS n_books
+    SELECT 'LOC-MDS' as dataset, gender, COUNT(DISTINCT cluster) AS n_books, COUNT(NULL) AS n_actions
     FROM loc
     JOIN isbn_cluster USING (isbn_id)
     JOIN gender USING (cluster)
@@ -27,35 +27,35 @@ add-query {
 }
 
 add-query {
-    SELECT 'BX-I' as dataset, gender, COUNT(DISTINCT item) AS n_books
+    SELECT 'BX-I' as dataset, gender, COUNT(DISTINCT item) AS n_books, COUNT(item) AS n_actions
     FROM bx_action
     JOIN gender ON (item = cluster)
     GROUP BY gender
 }
 
 add-query {
-    SELECT 'BX-E' as dataset, gender, COUNT(DISTINCT item) AS n_books
+    SELECT 'BX-E' as dataset, gender, COUNT(DISTINCT item) AS n_books, COUNT(item) AS n_actions
     FROM bx_rating
     JOIN gender ON (item = cluster)
     GROUP BY gender
 }
 
 add-query {
-    SELECT 'AZ' as dataset, gender, COUNT(DISTINCT item) AS n_books
+    SELECT 'AZ' as dataset, gender, COUNT(DISTINCT item) AS n_books, COUNT(item) AS n_actions
     FROM az_rating
     JOIN gender ON (item = cluster)
     GROUP BY gender
 }
 
 add-query {
-    SELECT 'GR-I' as dataset, gender, COUNT(DISTINCT item) AS n_books
+    SELECT 'GR-I' as dataset, gender, COUNT(DISTINCT item) AS n_books, COUNT(item) AS n_actions
     FROM gr_action
     JOIN gender ON (item = cluster)
     GROUP BY gender
 }
 
 add-query {
-    SELECT 'GR-E' as dataset, gender, COUNT(DISTINCT item) AS n_books
+    SELECT 'GR-E' as dataset, gender, COUNT(DISTINCT item) AS n_books, COUNT(item) AS n_actions
     FROM gr_rating
     JOIN gender ON (item = cluster)
     GROUP BY gender

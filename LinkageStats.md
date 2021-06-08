@@ -28,11 +28,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 ```
 
-## Compute Link Stats
+## Load Link Stats
 
-Let's compute linkage statistics from our data!
+We compute dataset linking statitsics as `gender-stats.csv.gz` using DataFusion.  Let's load those:
 
-We are first going to define our gender codes.  We'll start with the resolved codes:
+```python
+link_stats = pd.read_csv('book-links/gender-stats.csv.gz')
+link_stats.head()
+```
+
+Now let's define variables for our variou codes. We are first going to define our gender codes.  We'll start with the resolved codes:
 
 ```python
 link_codes = ['female', 'male', 'ambiguous', 'unknown']
@@ -44,173 +49,24 @@ We want the unlink codes in order, so the last is the first link failure:
 unlink_codes = ['no-author-rec', 'no-book-author', 'no-book']
 ```
 
-Now we can load gender data:
-
 ```python
-viaf_genders = pd.read_parquet('book-links/cluster-genders.parquet')
-viaf_genders = viaf_genders.set_index('cluster')['gender']
-viaf_genders = viaf_genders.astype('category')
-viaf_genders.cat.add_categories('no-book', inplace=True)
-viaf_genders.cat.reorder_categories(link_codes + unlink_codes, inplace=True)
-viaf_genders.describe()
+all_codes = link_codes + unlink_codes
 ```
 
-```python
-isbn_clusters = pd.read_parquet('book-links/isbn-clusters.parquet', columns=['isbn_id', 'cluster'])
-isbn_clusters = isbn_clusters.set_index('isbn_id')['cluster']
-isbn_clusters
-```
-
-Define a variable to store all of these:
-
-```python
-source_stats = {}
-```
-
-### LOC book corpus
-
-```python
-loc_isbns = pd.read_parquet('loc-mds/book-isbn-ids.parquet')
-loc_clusters = loc_isbns.join(isbn_clusters, on='isbn_id')
-loc_clusters
-```
-
-```python
-loc_genders = loc_clusters.join(viaf_genders, on='cluster', how='left')
-loc_genders
-```
-
-```python
-loc_stats = loc_genders.groupby('gender')['rec_id'].count()
-loc_stats = loc_stats.to_frame('n_books')
-loc_stats
-```
-
-```python
-source_stats['LOC-MDS'] = loc_stats
-```
-
-### BookCrossing
-
-We want to process action genders.  Each action frame will have an 'item' column that we use - let's define a helper function:
-
-```python
-def action_stats(df):
-    joined = df.join(viaf_genders, on='item', how='left')
-    joined['gender'].fillna('no-book', inplace=True)
-    return joined.groupby('gender')['item'].agg(['nunique', 'count']).rename(columns={
-        'nunique': 'n_books',
-        'count': 'n_actions'
-    })
-```
-
-Do the implicit actions:
-
-```python
-bx_actions = pd.read_parquet('bx/bx-cluster-actions.parquet')
-bx_actions.info()
-```
-
-```python
-bx_act_stats = action_stats(bx_actions)
-bx_act_stats
-```
-
-```python
-source_stats['BX-I'] = bx_act_stats
-```
-
-And now we do ratings:
-
-```python
-bx_ratings = pd.read_parquet('bx/bx-cluster-ratings.parquet')
-bx_ratings.info()
-```
-
-```python
-bx_rate_stats = action_stats(bx_ratings)
-bx_rate_stats
-```
-
-```python
-source_stats['BX-E'] = bx_rate_stats
-```
-
-### Amazon data
-
-Let's process the Amazon data:
-
-```python
-az_ratings = pd.read_parquet('az2014/az-cluster-ratings.parquet', columns=['user', 'item'])
-az_ratings.info()
-```
-
-```python
-az_stats = action_stats(az_ratings)
-az_stats
-```
-
-```python
-source_stats['AZ'] = az_stats
-```
-
-### GoodReads
-
-Finally, we will load the GoodReads data.  First the ratings:
-
-```python
-gr_ratings = pd.read_parquet('goodreads/gr-cluster-ratings.parquet', columns=['user', 'item'])
-gr_ratings.info()
-```
-
-```python
-gr_rate_stats = action_stats(gr_ratings)
-gr_rate_stats
-```
-
-```python
-source_stats['GR-E'] = gr_rate_stats
-del gr_ratings
-```
-
-And now the actions:
-
-```python
-gr_actions = pd.read_parquet('goodreads/gr-cluster-actions.parquet', columns=['user', 'item'])
-gr_actions.info()
-```
-
-```python
-gr_act_stats = action_stats(gr_actions)
-gr_act_stats
-```
-
-```python
-source_stats['GR-I'] = gr_act_stats
-del gr_actions
-```
-
-### Integrating Statistics
-
-Time to integrate all of these:
-
-```python
-link_stats = pd.concat(source_stats, names=['dataset'])
-link_stats
-```
+## Processing Statistics
 
 Now we'll pivot each of our count columns into a table for easier reference.
 
 ```python
-book_counts = link_stats['n_books'].unstack()
-book_counts.sort_index(inplace=True)
+book_counts = link_stats.pivot('dataset', 'gender', 'n_books')
+book_counts = book_counts.reindex(columns=all_codes)
 book_counts
 ```
 
 ```python
-act_counts = link_stats['n_actions'].unstack()
+act_counts = link_stats.pivot('dataset', 'gender', 'n_actions')
+act_counts = act_counts.reindex(columns=all_codes)
 act_counts.drop(index='LOC-MDS', inplace=True)
-act_counts.sort_index(inplace=True)
 act_counts
 ```
 
@@ -299,8 +155,4 @@ plot_bars(fractionalize(act_counts, link_codes, unlink_codes))
 
 ```python
 plot_bars(fractionalize(act_counts, ['female', 'male']))
-```
-
-```python
-
 ```
