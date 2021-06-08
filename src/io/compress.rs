@@ -71,10 +71,10 @@ pub fn open_solo_zip<P: AsRef<Path>>(path: P) -> Result<(Box<dyn BufRead>, Progr
   let file = BufReader::new(file);
   let zf = ZipArchive::new(file)?;
   if zf.len() > 1 {
-    error!("{:?}: more than one member file", pstr);
+    error!("{}: more than one member file", pstr);
     return Err(anyhow!("too many input files"))
   } else if zf.len() == 0 {
-    error!("{:?}: empty input archive", pstr);
+    error!("{}: empty input archive", pstr);
     return Err(anyhow!("empty input archive"));
   }
   let pb = default_progress(1024);

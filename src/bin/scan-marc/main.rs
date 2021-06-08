@@ -104,7 +104,7 @@ impl ParseMarcBooks {
       nfiles += 1;
       let inf = inf.as_path();
       let file_start = Instant::now();
-      info!("reading from compressed file {:?}", inf);
+      info!("reading from compressed file {}", inf.display());
       let (read, pb) = open_gzin_progress(inf)?;
       let _pbl = set_progress(&pb);
       let mut records = if self.line_mode {
@@ -120,8 +120,8 @@ impl ParseMarcBooks {
       }
 
       pb.finish_and_clear();
-      info!("processed {} records from {:?} in {:.2}s",
-            nrecs, inf, file_start.elapsed().as_secs_f32());
+      info!("processed {} records from {} in {:.2}s",
+            nrecs, inf.display(), file_start.elapsed().as_secs_f32());
       all_recs += nrecs;
     }
 
