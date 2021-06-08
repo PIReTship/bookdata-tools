@@ -6,13 +6,31 @@
 //! seem worthwhile.
 use std::path::Path;
 use hashbrown::HashMap;
+use std::mem::take;
 
 use log::*;
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 
 use bookdata::io::ObjectWriter;
 use bookdata::arrow::*;
 use crate as bookdata;
+
+/// Trait for an interaction.
+pub trait Interaction {
+  fn get_user(&self) -> u32;
+  fn get_item(&self) -> i32;
+  fn get_rating(&self) -> Option<f32>;
+  fn get_timestamp(&self) -> i64;
+}
+
+/// Interface for de-duplicating interactions.
+pub trait Dedup<I: Interaction> {
+  /// Save an item in the deduplciator.
+  fn add_interaction(&mut self, act: I) -> Result<()>;
+
+  /// Write the de-duplicated reuslts to a file.
+  fn save(&mut self, path: &Path, times: bool) -> Result<usize>;
+}
 
 /// Record for a single output rating.
 #[derive(TableRow, Debug)]
@@ -52,18 +70,26 @@ impl Key {
 }
 
 /// Rating deduplicator.
+#[derive(Default)]
 pub struct RatingDedup {
   table: HashMap<Key, Vec<(f32, i64)>>
 }
 
-impl RatingDedup {
-  /// Create a new deduplicator.
-  pub fn new() -> RatingDedup {
-    RatingDedup {
-      table: HashMap::new()
-    }
+impl <I: Interaction> Dedup<I> for RatingDedup {
+  fn add_interaction(&mut self, act: I) -> Result<()> {
+    let rating = act.get_rating().ok_or_else(|| {
+      anyhow!("rating deduplicator requires ratings")
+    })?;
+    self.record(act.get_user(), act.get_item(), rating, act.get_timestamp());
+    Ok(())
   }
 
+  fn save(&mut self, path: &Path, times: bool) -> Result<usize> {
+    self.write_ratings(path, times)
+  }
+}
+
+impl RatingDedup {
   /// Add a rating to the deduplicator.
   pub fn record(&mut self, user: u32, item: i32, rating: f32, timestamp: i64) {
     let k = Key::new(user, item);
@@ -74,7 +100,7 @@ impl RatingDedup {
   }
 
   /// Save the rating table disk.
-  pub fn write_ratings<P: AsRef<Path>>(self, path: P, times: bool) -> Result<usize> {
+  pub fn write_ratings<P: AsRef<Path>>(&mut self, path: P, times: bool) -> Result<usize> {
     info!("writing {} deduplicated ratings to {}", self.table.len(), path.as_ref().display());
     let mut twb = TableWriterBuilder::new();
     if !times {
@@ -83,7 +109,7 @@ impl RatingDedup {
     let mut writer = twb.open(path)?;
 
     // we're going to consume the hashtable.
-    for (k, vec) in self.table {
+    for (k, vec) in take(&mut self.table) {
       let mut vec = vec;
       if vec.len() == 1 {
         // fast path
@@ -126,37 +152,42 @@ impl RatingDedup {
 
 
 #[derive(PartialEq, Clone, Debug)]
-struct Action {
+struct ActionInstance {
   timestamp: i64,
   rating: Option<f32>,
 }
 
 /// Action deduplicator.
+#[derive(Default)]
 pub struct ActionDedup {
-  table: HashMap<Key, Vec<Action>>
+  table: HashMap<Key, Vec<ActionInstance>>
+}
+
+impl <I: Interaction> Dedup<I> for ActionDedup {
+  fn add_interaction(&mut self, act: I) -> Result<()> {
+    self.record(act.get_user(), act.get_item(), act.get_timestamp(), act.get_rating());
+    Ok(())
+  }
+
+  fn save(&mut self, path: &Path, times: bool) -> Result<usize> {
+    self.write_actions(path, times)
+  }
 }
 
 impl ActionDedup {
-  /// Create a new deduplicator.
-  pub fn new() -> ActionDedup {
-    ActionDedup {
-      table: HashMap::new()
-    }
-  }
-
   /// Add an action to the deduplicator.
   pub fn record(&mut self, user: u32, item: i32, timestamp: i64, rating: Option<f32>) {
     let k = Key::new(user, item);
     // get the vector for this user/item pair
     let vec = self.table.entry(k).or_insert_with(|| Vec::with_capacity(1));
     // and insert our records!
-    vec.push(Action {
+    vec.push(ActionInstance {
       timestamp, rating
     });
   }
 
   /// Save the rating table disk.
-  pub fn write_actions<P: AsRef<Path>>(self, path: P, times: bool) -> Result<usize> {
+  pub fn write_actions<P: AsRef<Path>>(&mut self, path: P, times: bool) -> Result<usize> {
     info!("writing {} deduplicated actions to {}", self.table.len(), path.as_ref().display());
     let mut twb = TableWriterBuilder::new();
     if !times {
@@ -165,7 +196,7 @@ impl ActionDedup {
     let mut writer = twb.open(path)?;
 
     // we're going to consume the hashtable.
-    for (k, vec) in self.table {
+    for (k, vec) in take(&mut self.table) {
       let mut vec = vec;
       if vec.len() == 1 {
         // fast path

@@ -1,12 +1,16 @@
 use std::sync::Arc;
 use datafusion::prelude::*;
 use bookdata::prelude::*;
+use bookdata::ratings::RatingDedup;
 
-use super::Source;
+use super::data::*;
 
 pub struct Ratings;
 
 impl Source for Ratings {
+  type Act = RatingRow;
+  type DD = RatingDedup;
+
   fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     info!("setting up to scan Amazon ratings");
     // load linking info
@@ -22,10 +26,6 @@ impl Source for Ratings {
   }
 
   fn has_timestamps(&self) -> bool {
-    true
-  }
-
-  fn is_ratings(&self) -> bool {
     true
   }
 }
