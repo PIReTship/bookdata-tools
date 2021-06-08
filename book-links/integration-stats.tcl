@@ -3,6 +3,9 @@ table isbn_cluster "isbn-clusters.parquet"
 table loc "../loc-mds/book-isbn-ids.parquet"
 table bx_action "../bx/bx-cluster-actions.parquet"
 table bx_rating "../bx/bx-cluster-ratings.parquet"
+table az_rating "../az2014/az-cluster-ratings.parquet"
+table gr_rating "../goodreads/gr-cluster-ratings.parquet"
+table gr_action "../goodreads/gr-cluster-actions.parquet"
 
 set full_query ""
 
@@ -16,7 +19,7 @@ proc add-query {query} {
 }
 
 add-query {
-    SELECT 'LOC-MDS' as dataset, FILLNA(gender, 'no-book') AS gender, 'VIAF' AS source, COUNT(DISTINCT cluster) AS n_books
+    SELECT 'LOC-MDS' as dataset, gender, COUNT(DISTINCT cluster) AS n_books
     FROM loc
     JOIN isbn_cluster USING (isbn_id)
     JOIN gender USING (cluster)
@@ -24,10 +27,38 @@ add-query {
 }
 
 add-query {
-    SELECT 'BX-I' as dataset, FILLNA(gender, 'no-book') AS gender, 'VIAF' AS source, COUNT(DISTINCT item) AS n_books
+    SELECT 'BX-I' as dataset, gender, COUNT(DISTINCT item) AS n_books
     FROM bx_action
-    LEFT JOIN gender ON (item = cluster)
-    GROUP BY FILLNA(gender, 'no-book')
+    JOIN gender ON (item = cluster)
+    GROUP BY gender
+}
+
+add-query {
+    SELECT 'BX-E' as dataset, gender, COUNT(DISTINCT item) AS n_books
+    FROM bx_rating
+    JOIN gender ON (item = cluster)
+    GROUP BY gender
+}
+
+add-query {
+    SELECT 'AZ' as dataset, gender, COUNT(DISTINCT item) AS n_books
+    FROM az_rating
+    JOIN gender ON (item = cluster)
+    GROUP BY gender
+}
+
+add-query {
+    SELECT 'GR-I' as dataset, gender, COUNT(DISTINCT item) AS n_books
+    FROM gr_action
+    JOIN gender ON (item = cluster)
+    GROUP BY gender
+}
+
+add-query {
+    SELECT 'GR-E' as dataset, gender, COUNT(DISTINCT item) AS n_books
+    FROM gr_rating
+    JOIN gender ON (item = cluster)
+    GROUP BY gender
 }
 
 save-results "gender-stats.csv.gz" $full_query
