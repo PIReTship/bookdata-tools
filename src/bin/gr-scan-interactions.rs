@@ -138,7 +138,7 @@ fn main() -> Result<()> {
 
   let writer = IntWriter::open(OUT_FILE)?;
 
-  info!("reading interactions from {:?}", &options.infile);
+  info!("reading interactions from {}", &options.infile.display());
   let proc = LineProcessor::open_gzip(&options.infile)?;
 
   let mut writer = ThreadWriter::new(writer);
