@@ -8,6 +8,8 @@ use bookdata::ratings::*;
 
 use super::data::*;
 
+static GR_INPUT_FILE: &'static str = "goodreads/gr-interactions.parquet";
+
 pub struct Ratings;
 
 impl Source for Ratings {
@@ -15,16 +17,16 @@ impl Source for Ratings {
   type DD = RatingDedup;
 
   fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-    info!("setting up to scan GoodReads ratings");
+    info!("setting up to scan GoodReads ratings from {}", GR_INPUT_FILE);
 
-    let ratings = ctx.read_parquet("goodreads/gr-interactions.parquet")?;
+    let ratings = ctx.read_parquet(GR_INPUT_FILE)?;
     let ratings = ratings.filter(col("rating").is_not_null())?;
     let schema = ratings.schema();
     let num = DataType::Int64;
     let ratings = ratings.select(vec![
       col("user_id").alias("user"),
       col("cluster"),
-      (col("updated").cast_to(&num, schema)? / lit(1000.0)).alias("timestamp"),
+      (col("updated").cast_to(&num, schema)? / lit(1000)).alias("timestamp"),
       col("rating"),
     ])?;
 
@@ -43,15 +45,15 @@ impl Source for Actions {
   type DD = ActionDedup;
 
   fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-    info!("setting up to scan GoodReads actions");
+    info!("setting up to scan GoodReads actions from {}", GR_INPUT_FILE);
 
-    let ratings = ctx.read_parquet("goodreads/gr-interactions.parquet")?;
+    let ratings = ctx.read_parquet(GR_INPUT_FILE)?;
     let schema = ratings.schema();
     let num = DataType::Int64;
     let ratings = ratings.select(vec![
       col("user_id").alias("user"),
       col("cluster"),
-      (col("updated").cast_to(&num, schema)? / lit(1000.0)).alias("timestamp"),
+      (col("updated").cast_to(&num, schema)? / lit(1000)).alias("timestamp"),
       col("rating"),
     ])?;
 

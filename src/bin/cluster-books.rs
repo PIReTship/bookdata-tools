@@ -16,10 +16,16 @@ pub struct ClusterBooks {
 }
 
 #[derive(TableRow, Debug)]
-struct ClusterRec {
+struct ISBNClusterRec {
   isbn: Option<String>,
   isbn_id: i32,
   cluster: i32
+}
+
+#[derive(TableRow, Debug)]
+struct ClusterCode {
+  cluster: i32,
+  book_code: i32,
 }
 
 #[derive(TableRow, Debug)]
@@ -42,6 +48,7 @@ pub async fn main() -> Result<()> {
   info!("computed {} clusters, largest has {} nodes", clusters.len(), msize);
 
   let mut ic_w = TableWriter::open("book-links/isbn-clusters.parquet")?;
+  let mut cc_w = TableWriter::open("book-links/cluster-codes.parquet")?;
   let mut cs_w = TableWriter::open("book-links/cluster-stats.parquet")?;
 
   for ci in 0..clusters.len() {
@@ -54,8 +61,11 @@ pub async fn main() -> Result<()> {
       cluster, n_isbns: vids.len() as u32
     })?;
     for v in &vids {
+      cc_w.write_object(ClusterCode {
+        cluster, book_code: v.code
+      })?;
       if let Some(id) = NS_ISBN.from_code(v.code) {
-        ic_w.write_object(ClusterRec {
+        ic_w.write_object(ISBNClusterRec {
           cluster, isbn_id: id, isbn: v.label.clone()
         })?;
       }
@@ -63,6 +73,7 @@ pub async fn main() -> Result<()> {
   }
 
   ic_w.finish()?;
+  cc_w.finish()?;
   cs_w.finish()?;
 
   Ok(())
