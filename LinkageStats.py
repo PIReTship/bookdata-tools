@@ -21,7 +21,7 @@
 # %% [markdown]
 # ## Setup
 
-# %%
+# %% tags=[]
 import pandas as pd
 import seaborn as sns
 import matplotlib as mpl
@@ -33,23 +33,23 @@ import numpy as np
 #
 # We compute dataset linking statitsics as `gender-stats.csv` using DataFusion.  Let's load those:
 
-# %%
+# %% tags=[]
 link_stats = pd.read_csv('book-links/gender-stats.csv')
 link_stats.head()
 
 # %% [markdown]
 # Now let's define variables for our variou codes. We are first going to define our gender codes.  We'll start with the resolved codes:
 
-# %%
+# %% tags=[]
 link_codes = ['female', 'male', 'ambiguous', 'unknown']
 
 # %% [markdown]
 # We want the unlink codes in order, so the last is the first link failure:
 
-# %%
+# %% tags=[]
 unlink_codes = ['no-author-rec', 'no-book-author', 'no-book']
 
-# %%
+# %% tags=[]
 all_codes = link_codes + unlink_codes
 
 # %% [markdown]
@@ -57,12 +57,12 @@ all_codes = link_codes + unlink_codes
 #
 # Now we'll pivot each of our count columns into a table for easier reference.
 
-# %%
+# %% tags=[]
 book_counts = link_stats.pivot('dataset', 'gender', 'n_books')
 book_counts = book_counts.reindex(columns=all_codes)
-book_counts
+book_counts.assign(total=book_counts.sum(axis=1))
 
-# %%
+# %% tags=[]
 act_counts = link_stats.pivot('dataset', 'gender', 'n_actions')
 act_counts = act_counts.reindex(columns=all_codes)
 act_counts.drop(index='LOC-MDS', inplace=True)
