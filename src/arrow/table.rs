@@ -3,6 +3,7 @@ use arrow::array::*;
 use arrow::datatypes::*;
 use parquet::arrow::schema::arrow_to_parquet_schema;
 use parquet::schema::types::{Type};
+use parquet::file::properties::WriterPropertiesBuilder;
 
 use anyhow::{Result};
 
@@ -31,6 +32,11 @@ pub trait TableRow where Self: Sized {
     let schema = Self::schema();
     let schema = arrow_to_parquet_schema(&schema).expect("cannot make parquet schema");
     schema.root_schema().clone()
+  }
+
+  /// Apply writer properties based on attributes.
+  fn adjust_writer_props(props: WriterPropertiesBuilder) -> WriterPropertiesBuilder {
+    props
   }
 
   /// Create a new Batch Builder

@@ -41,6 +41,35 @@ pub fn derive_table_row(ast: &syn::DeriveInput) -> TokenStream {
     quote!(<#ai>::ArrayBuilder)
   }).collect();
 
+  // extract field attributes
+  let f_props: Vec<_> = fields.named.iter().flat_map(|f| {
+    let name = format!("{}", f.ident.as_ref().unwrap());
+    let attr = f.attrs.iter().find(|a| {
+      a.path.is_ident("parquet")
+    });
+    if let Some(attr) = attr {
+      let meta = attr.parse_meta().expect("valid meta-attribute");
+      if let Meta::List(ml) = meta {
+        let mut props = Vec::new();
+        for kid in ml.nested {
+          match kid {
+            NestedMeta::Meta(Meta::Path(p)) if p.is_ident("statistics") => {
+              props.push(quote! {
+                let props = props.set_column_statistics_enabled(#name.into(), true);
+              });
+            },
+            bad => panic!("invalid attribute: {:?}", bad)
+          }
+        }
+        return props
+      } else {
+        panic!("invalid meta-attribute syntax")
+      }
+    } else {
+      Vec::new()
+    }
+  }).collect();
+
   let gen = quote! {
     pub struct #batch {
       #(#f_names: #f_btypes),*
@@ -59,6 +88,11 @@ pub fn derive_table_row(ast: &syn::DeriveInput) -> TokenStream {
         Self::Batch {
           #(#f_names: <#f_ainfo>::new_builder(cap)),*
         }
+      }
+
+      fn adjust_writer_props(props: parquet::file::properties::WriterPropertiesBuilder) -> parquet::file::properties::WriterPropertiesBuilder {
+        #(#f_props)*
+        props
       }
 
       fn finish_batch(batch: &mut Self::Batch) -> Vec<arrow::array::ArrayRef> {

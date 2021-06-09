@@ -44,7 +44,9 @@ struct RawBook {
 // the book ID records to write to Parquet.
 #[derive(TableRow)]
 struct IdRecord {
+  #[parquet(statistics)]
   book_id: i32,
+  #[parquet(statistics)]
   work_id: Option<i32>,
   isbn10: Option<String>,
   isbn13: Option<String>,
@@ -54,6 +56,7 @@ struct IdRecord {
 // book info records to actually write
 #[derive(TableRow)]
 struct InfoRecord {
+  #[parquet(statistics)]
   book_id: i32,
   title: Option<String>,
   pub_year: Option<u16>,

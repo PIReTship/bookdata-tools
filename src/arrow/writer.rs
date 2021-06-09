@@ -57,6 +57,7 @@ impl <R> TableWriterBuilder<R> where R: TableRow {
     let select = (0..schema.fields().len()).collect::<Vec<usize>>();
     let props = WriterProperties::builder();
     let props = props.set_compression(Compression::ZSTD);
+    let props = R::adjust_writer_props(props);
     TableWriterBuilder {
       phantom: PhantomData,
       schema, select, props,
