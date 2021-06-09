@@ -35,7 +35,6 @@ async fn add_vertices(g: &mut IdGraph, nodes: &mut NodeMap, ctx: &mut ExecutionC
 
 async fn add_edges(g: &mut IdGraph, nodes: &NodeMap, ctx: &mut ExecutionContext, src: &dyn EdgeRead) -> Result<()> {
   info!("scanning edges from {:?}", src);
-  let init_n = nodes.len();
   let edge_df = src.read_edges(ctx)?;
   let plan = plan_df(ctx, edge_df)?;
   let batches = run_plan(&plan).await?;
