@@ -58,7 +58,7 @@ fn save_genders(clusters: Vec<i32>, genders: clusters::ClusterTable, outf: &Path
 
   for cluster in clusters {
     let mut gender = "no-book-author".to_owned();
-    if NS_ISBN.from_code(cluster).is_none() {
+    if NS_ISBN.from_code(cluster).is_some() {
       gender = "no-book".to_owned();
     }
     if let Some(stats) = genders.get(&cluster) {
