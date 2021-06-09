@@ -18,6 +18,7 @@ use serde::{Serialize, Deserialize};
 use bookdata::prelude::*;
 use bookdata::gender::*;
 use bookdata::arrow::*;
+use bookdata::ids::codes::*;
 
 mod authors;
 mod clusters;
@@ -57,10 +58,15 @@ fn save_genders(clusters: Vec<i32>, genders: clusters::ClusterTable, outf: &Path
 
   for cluster in clusters {
     let mut gender = "no-book-author".to_owned();
+    if NS_ISBN.from_code(cluster).is_none() {
+      gender = "no-book".to_owned();
+    }
     if let Some(stats) = genders.get(&cluster) {
       if stats.n_book_authors == 0 {
+        assert!(stats.genders.is_empty());
         gender = "no-book-author".to_owned() // shouldn't happen but 🤷‍♀️
       } else if stats.n_author_recs == 0 {
+        assert!(stats.genders.is_empty());
         gender = "no-author-rec".to_owned()
       } else if stats.genders.is_empty() {
         gender = "no-gender".to_owned()
