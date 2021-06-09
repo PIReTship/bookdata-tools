@@ -31,10 +31,10 @@ import numpy as np
 # %% [markdown]
 # ## Load Link Stats
 #
-# We compute dataset linking statitsics as `gender-stats.csv.gz` using DataFusion.  Let's load those:
+# We compute dataset linking statitsics as `gender-stats.csv` using DataFusion.  Let's load those:
 
 # %%
-link_stats = pd.read_csv('book-links/gender-stats.csv.gz')
+link_stats = pd.read_csv('book-links/gender-stats.csv')
 link_stats.head()
 
 # %% [markdown]

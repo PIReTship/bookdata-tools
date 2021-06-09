@@ -61,4 +61,4 @@ add-query {
     GROUP BY gender
 }
 
-save-results "gender-stats.csv.gz" $full_query
+save-results "gender-stats.csv" $full_query
