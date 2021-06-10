@@ -1,6 +1,7 @@
 use std::fmt;
 use std::time::{Instant, Duration};
 use friendly::temporal::HumanDuration;
+use friendly::{scalar, duration};
 
 use fallible_iterator::FallibleIterator;
 
@@ -169,11 +170,14 @@ impl fmt::Display for Timer {
     let (el, eta) = self.timings();
     let per = (self.completed as f64) / el.as_secs_f64();
     if let Some(eta) = eta {
-      write!(f, "{} / {} in {} ({:.0}/s, ETA {})",
-             self.completed, self.task_count.unwrap_or_default(),
-             HumanDuration::from(el), per, HumanDuration::from(eta))
+      write!(f, "{} / {} in {} ({}/s, ETA {})",
+             scalar(self.completed),
+             scalar(self.task_count.unwrap_or_default()),
+             duration(el),
+             scalar(per),
+             duration(eta))
     } else if self.completed > 0 {
-      write!(f, "{} in {} ({:.0}/s)", self.completed, HumanDuration::from(el), per)
+      write!(f, "{} in {} ({:.0}/s)", scalar(self.completed), duration(el), scalar(per))
     } else {
       write!(f, "{}", self.human_elapsed())
     }
