@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 use serde::Deserialize;
 use chrono::prelude::*;
+use friendly;
 
 use bookdata::prelude::*;
 use bookdata::arrow::*;
@@ -149,7 +150,7 @@ fn main() -> Result<()> {
   proc.process_json(&mut writer)?;
   writer.finish()?;
 
-  info!("output {} is {}", OUT_FILE, file_human_size(OUT_FILE)?);
+  info!("output {} is {}", OUT_FILE, friendly::bytes(file_size(OUT_FILE)?));
 
   Ok(())
 }

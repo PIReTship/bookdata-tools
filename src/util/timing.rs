@@ -1,40 +1,10 @@
 use std::fmt;
 use std::time::{Instant, Duration};
+use friendly::temporal::HumanDuration;
 
 use fallible_iterator::FallibleIterator;
 
 use log::*;
-
-/// A human-readable duration.
-#[repr(transparent)]
-#[derive(Debug)]
-pub struct HumanDuration {
-  dur: Duration
-}
-
-impl From<Duration> for HumanDuration {
-  fn from(dur: Duration) -> HumanDuration {
-    HumanDuration { dur }
-  }
-}
-
-impl fmt::Display for HumanDuration {
-  fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-    let secs = self.dur.as_secs_f32();
-    if secs > 3600.0 {
-      let hrs = secs / 3600.0;
-      let mins = (secs % 3600.0) / 60.0;
-      let secs = secs % 60.0;
-      write!(fmt, "{}h{}m{:.2}s", hrs.floor(), mins.floor(), secs)
-    } else if secs > 60.0 {
-      let mins = secs / 60.0;
-      let secs = secs % 60.0;
-      write!(fmt, "{}m{:.2}s", mins.floor(), secs)
-    } else {
-      write!(fmt, "{:.2}s", secs)
-    }
-  }
-}
 
 /// A timer for monitoring task completion.
 #[derive(Debug)]

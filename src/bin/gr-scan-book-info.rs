@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use serde::Deserialize;
 use chrono::NaiveDate;
+use friendly;
 
 use bookdata::prelude::*;
 use bookdata::arrow::*;
@@ -123,8 +124,8 @@ fn main() -> Result<()> {
   proc.process_json(&mut writer)?;
   writer.finish()?;
 
-  info!("output {} is {}", ID_FILE, file_human_size(ID_FILE)?);
-  info!("output {} is {}", INFO_FILE, file_human_size(INFO_FILE)?);
+  info!("output {} is {}", ID_FILE, friendly::bytes(file_size(ID_FILE)?));
+  info!("output {} is {}", INFO_FILE, friendly::bytes(file_size(INFO_FILE)?));
 
   Ok(())
 }

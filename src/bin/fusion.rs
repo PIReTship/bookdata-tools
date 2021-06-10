@@ -1,5 +1,4 @@
 use std::path::{PathBuf};
-use std::time::Instant;
 use std::fs::{File, read_to_string};
 use std::future::Future;
 use std::sync::Arc;
@@ -173,13 +172,13 @@ pub fn main() -> Result<()> {
   let script = read_to_string(&opts.script)?;
 
   info!("evaluating script");
-  let start = Instant::now();
+  let start = Timer::new();
   if let Err(e) = interp.eval(&script) {
     error!("error running script: {:?}", e);
     Err(anyhow!("TCL error {}: {}", e.error_code().as_str(), e.error_info().as_str()))
   } else {
     info!("script completed successfully in {}",
-          human_time(start.elapsed()));
+          start.human_elapsed());
     Ok(())
   }
 }
