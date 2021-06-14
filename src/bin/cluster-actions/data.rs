@@ -25,7 +25,7 @@ pub trait Source {
 #[derive(Deserialize)]
 pub struct RatingRow {
   pub user: u32,
-  pub cluster: i32,
+  pub item: i32,
   pub rating: Option<f32>,
   pub timestamp: i64
 }
@@ -35,7 +35,7 @@ impl Interaction for RatingRow {
     self.user
   }
   fn get_item(&self) -> i32 {
-    self.cluster
+    self.item
   }
   fn get_rating(&self) -> Option<f32> {
     self.rating

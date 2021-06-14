@@ -4,6 +4,8 @@ use std::sync::Arc;
 use std::pin::Pin;
 use std::future::Future;
 
+use lazy_static::lazy_static;
+
 use futures::future;
 use futures::stream::{Stream, StreamExt};
 use serde::de::DeserializeOwned;
@@ -15,9 +17,11 @@ use arrow::array::*;
 use datafusion::prelude::*;
 use datafusion::physical_plan::merge::MergeExec;
 use datafusion::physical_plan::functions::make_scalar_function;
+use datafusion::physical_plan::udf::ScalarUDF;
 use datafusion::physical_plan::ColumnarValue;
 use datafusion::physical_plan::ExecutionPlan;
 use datafusion::physical_plan::SendableRecordBatchStream;
+use datafusion::logical_plan::Expr;
 use datafusion::error::{Result as FusionResult, DataFusionError};
 use parquet::arrow::ArrowWriter;
 use parquet::file::writer::ParquetWriter;
@@ -138,6 +142,19 @@ fn udf_fillna(args: &[ColumnarValue]) -> datafusion::error::Result<ColumnarValue
   Ok(ColumnarValue::Array(Arc::new(res.finish()) as ArrayRef))
 }
 
+lazy_static! {
+  static ref FILLNA_UDF: ScalarUDF = create_udf(
+    "fillna",
+    vec![DataType::Utf8, DataType::Utf8],
+    Arc::new(DataType::Utf8),
+    Arc::new(udf_fillna));
+}
+
+/// The coalesce function for SQL.
+pub fn coalesce(args: Vec<Expr>) -> Expr {
+  FILLNA_UDF.call(args)
+}
+
 /// Add our UDFs.
 pub fn add_udfs(ctx: &mut ExecutionContext) {
   let norm = create_udf(
@@ -146,12 +163,7 @@ pub fn add_udfs(ctx: &mut ExecutionContext) {
     make_scalar_function(udf_norm_unicode));
   ctx.register_udf(norm);
 
-  let fillna = create_udf(
-    "fillna",
-    vec![DataType::Utf8, DataType::Utf8],
-    Arc::new(DataType::Utf8),
-    Arc::new(udf_fillna));
-  ctx.register_udf(fillna);
+  ctx.register_udf(FILLNA_UDF.clone());
 
   codes::add_udfs(ctx);
 }

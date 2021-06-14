@@ -20,7 +20,12 @@ impl Source for Ratings {
     // load ratings
     let ratings = ctx.read_parquet("az2014/ratings.parquet")?;
     let rlink = ratings.join(ic_link, JoinType::Inner, &["asin"], &["isbn"])?;
-    let rlink = rlink.select_columns(&["user", "cluster", "rating", "timestamp"])?;
+    let rlink = rlink.select(vec![
+      col("user"),
+      col("cluster").alias("item"),
+      col("rating"),
+      col("timestamp")
+    ])?;
 
     Ok(rlink)
   }

@@ -28,6 +28,10 @@ pub struct ClusterActions {
   #[structopt(short="s", long="source")]
   source: String,
 
+  /// Use native works instead of clusters (if supported).
+  #[structopt(long="native-works")]
+  native_works: bool,
+
   /// Rating output file
   #[structopt(short="o", long="output", name="FILE", parse(from_os_str))]
   outfile: PathBuf,
@@ -63,8 +67,8 @@ async fn main() -> Result<()> {
     "az-ratings" => scan_and_save(amazon::Ratings, &mut ctx, dst).await?,
     "bx-ratings" => scan_and_save(bx::Ratings, &mut ctx, dst).await?,
     "bx-actions" => scan_and_save(bx::Actions, &mut ctx, dst).await?,
-    "gr-ratings" => scan_and_save(goodreads::Ratings, &mut ctx, dst).await?,
-    "gr-actions" => scan_and_save(goodreads::Actions, &mut ctx, dst).await?,
+    "gr-ratings" => scan_and_save(goodreads::Ratings::new(opts.native_works), &mut ctx, dst).await?,
+    "gr-actions" => scan_and_save(goodreads::Actions::new(opts.native_works), &mut ctx, dst).await?,
     s => return Err(anyhow!("invalid data source {}", s))
   };
 
