@@ -10,8 +10,9 @@ use std::mem::take;
 
 use log::*;
 use anyhow::{Result, anyhow};
+use friendly;
 
-use bookdata::io::ObjectWriter;
+use bookdata::io::{ObjectWriter, file_size};
 use bookdata::arrow::*;
 use crate as bookdata;
 
@@ -101,7 +102,10 @@ impl RatingDedup {
 
   /// Save the rating table disk.
   pub fn write_ratings<P: AsRef<Path>>(&mut self, path: P, times: bool) -> Result<usize> {
-    info!("writing {} deduplicated ratings to {}", self.table.len(), path.as_ref().display());
+    let path = path.as_ref();
+    info!("writing {} deduplicated ratings to {}",
+          friendly::scalar(self.table.len()),
+          path.display());
     let mut twb = TableWriterBuilder::new();
     if !times {
       twb = twb.project(&["user", "item", "rating", "nratings"]);
@@ -146,7 +150,11 @@ impl RatingDedup {
       }
     }
 
-    writer.finish()
+    let rv = writer.finish()?;
+
+    info!("wrote ratings, file is {}", friendly::bytes(file_size(path)?));
+
+    Ok(rv)
   }
 }
 
