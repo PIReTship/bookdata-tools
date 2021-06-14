@@ -116,6 +116,9 @@ fn cmd_table(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> MoltResult 
       ctx.df_context.register_parquet(table, file)?;
     } else if file.ends_with(".csv") {
       ctx.df_context.register_csv(table, file, CsvReadOptions::new().has_header(true))?;
+    } else {
+      error!("unknown table type");
+      return Err(anyhow!("{} has unkown table type", file));
     }
     Ok(())
   })
@@ -136,6 +139,7 @@ fn cmd_save_results(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> Molt
   }
 
   wrap_errs(|| {
+    info!("have {} registered tables", ctx.df_context.tables()?.len());
     info!("planning query");
     debug!("query text: {}", query);
     let lplan = ctx.df_context.create_logical_plan(&query)?;
