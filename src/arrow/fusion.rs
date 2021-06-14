@@ -12,11 +12,11 @@ use serde::de::DeserializeOwned;
 
 use anyhow::Result;
 
-use arrow::datatypes::DataType;
+use arrow::datatypes::*;
 use arrow::array::*;
 use datafusion::prelude::*;
 use datafusion::physical_plan::merge::MergeExec;
-use datafusion::physical_plan::functions::make_scalar_function;
+use datafusion::physical_plan::functions::{make_scalar_function, Signature};
 use datafusion::physical_plan::udf::ScalarUDF;
 use datafusion::physical_plan::ColumnarValue;
 use datafusion::physical_plan::ExecutionPlan;
@@ -98,27 +98,13 @@ fn udf_norm_unicode(args: &[ArrayRef]) -> datafusion::error::Result<ArrayRef> {
   Ok(Arc::new(res) as ArrayRef)
 }
 
-/// UDF to implement fillna (a limited version of COALESCE)
-fn udf_fillna(args: &[ColumnarValue]) -> datafusion::error::Result<ColumnarValue> {
-  assert_eq!(args.len(), 2);
-  let nargs = args.len();
-  let mut arrays = Vec::with_capacity(nargs);
-  let mut n = 0;
-  for i in 0..nargs {
-    let a = match &args[i] {
-      ColumnarValue::Array(arr) => arr.clone(),
-      ColumnarValue::Scalar(s) => s.to_array()
-    };
-    if a.len() > n {
-      n = a.len();
-    }
-    arrays.push(a);
-  }
-  let arefs: Vec<&StringArray> = arrays.iter().map(|a| {
-    a.as_any().downcast_ref::<StringArray>().expect("invalid array cast")
+fn prim_coalesce<T: ArrowPrimitiveType>(arrays: Vec<ArrayRef>) -> FusionResult<ArrayRef> {
+  let arefs: Vec<&PrimitiveArray<T>> = arrays.iter().map(|a| {
+    a.as_any().downcast_ref::<PrimitiveArray<T>>().expect("invalid array cast")
   }).collect();
+  let n = arefs.iter().map(|a| a.len()).max().unwrap();
 
-  let mut res = StringBuilder::new(arefs[0].get_array_memory_size());
+  let mut res: PrimitiveBuilder<T> = PrimitiveBuilder::new(n);
 
   for i in 0..n {
     let mut added = false;
@@ -131,6 +117,7 @@ fn udf_fillna(args: &[ColumnarValue]) -> datafusion::error::Result<ColumnarValue
       if a.is_valid(ai) {
         res.append_value(a.value(ai))?;
         added = true;
+        break;
       }
     }
 
@@ -139,15 +126,55 @@ fn udf_fillna(args: &[ColumnarValue]) -> datafusion::error::Result<ColumnarValue
     }
   }
 
-  Ok(ColumnarValue::Array(Arc::new(res.finish()) as ArrayRef))
+  Ok(Arc::new(res.finish()) as ArrayRef)
+}
+
+/// UDF to implement fillna (a limited version of COALESCE)
+fn udf_fillna(args: &[ColumnarValue]) -> FusionResult<ColumnarValue> {
+  assert!(args.len() >= 1);
+  let nargs = args.len();
+  let mut arrays = Vec::with_capacity(nargs);
+  for i in 0..nargs {
+    let a = match &args[i] {
+      ColumnarValue::Array(arr) => arr.clone(),
+      ColumnarValue::Scalar(s) => s.to_array()
+    };
+    arrays.push(a);
+  }
+  let dt = arrays[0].data_type();
+
+  let res = match dt {
+    DataType::Int8 => prim_coalesce::<Int8Type>(arrays)?,
+    DataType::Int16 => prim_coalesce::<Int16Type>(arrays)?,
+    DataType::Int32 => prim_coalesce::<Int32Type>(arrays)?,
+    DataType::Int64 => prim_coalesce::<Int64Type>(arrays)?,
+    DataType::UInt8 => prim_coalesce::<UInt8Type>(arrays)?,
+    DataType::UInt16 => prim_coalesce::<UInt16Type>(arrays)?,
+    DataType::UInt32 => prim_coalesce::<UInt32Type>(arrays)?,
+    DataType::UInt64 => prim_coalesce::<UInt64Type>(arrays)?,
+    DataType::Float32 => prim_coalesce::<Float32Type>(arrays)?,
+    DataType::Float64 => prim_coalesce::<Float64Type>(arrays)?,
+    _ => Err(DataFusionError::NotImplemented(format!("coalesce: unsupported type {}", dt)))?,
+  };
+
+  Ok(ColumnarValue::Array(res))
+}
+
+fn coalesce_return(arg_types: &[DataType]) -> FusionResult<Arc<DataType>> {
+  if arg_types.len() < 1 {
+    Err(DataFusionError::NotImplemented("no-args coalesce".to_owned()))
+  } else {
+    Ok(Arc::new(arg_types[0].clone()))
+  }
 }
 
 lazy_static! {
-  static ref FILLNA_UDF: ScalarUDF = create_udf(
-    "fillna",
-    vec![DataType::Utf8, DataType::Utf8],
-    Arc::new(DataType::Utf8),
-    Arc::new(udf_fillna));
+  static ref FILLNA_UDF: ScalarUDF = ScalarUDF {
+    name: "coalesce".to_owned(),
+    signature: Signature::VariadicEqual,
+    return_type: Arc::new(coalesce_return),
+    fun: Arc::new(udf_fillna)
+  };
 }
 
 /// The coalesce function for SQL.

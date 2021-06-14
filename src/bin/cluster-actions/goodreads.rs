@@ -56,6 +56,7 @@ impl Source for Ratings {
       (col("updated").cast_to(&num, schema)? / lit(1000)).alias("timestamp"),
       col("rating"),
     ])?;
+    debug!("GR rating schema: {:#?}", ratings.schema());
 
     Ok(ratings)
   }
@@ -95,6 +96,7 @@ impl Source for Actions {
       (col("updated").cast_to(&num, schema)? / lit(1000)).alias("timestamp"),
       col("rating"),
     ])?;
+    debug!("GR action schema: {}", ratings.schema());
 
     Ok(ratings)
   }
