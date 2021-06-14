@@ -14,6 +14,7 @@ use friendly;
 
 use bookdata::io::{ObjectWriter, file_size};
 use bookdata::arrow::*;
+use bookdata::util::Timer;
 use crate as bookdata;
 
 /// Trait for an interaction.
@@ -112,6 +113,8 @@ impl RatingDedup {
     }
     let mut writer = twb.open(path)?;
 
+    let mut timer = Timer::new_with_count(self.table.len());
+
     // we're going to consume the hashtable.
     for (k, vec) in take(&mut self.table) {
       let mut vec = vec;
@@ -148,11 +151,15 @@ impl RatingDedup {
           nratings: vec.len() as u32
         })?;
       }
+      timer.complete(1);
+      timer.log_status("writing ratings", 5.0);
     }
 
     let rv = writer.finish()?;
 
-    info!("wrote ratings, file is {}", friendly::bytes(file_size(path)?));
+    info!("wrote ratings in {}, file is {}",
+          timer.human_elapsed(),
+          friendly::bytes(file_size(path)?));
 
     Ok(rv)
   }
@@ -196,12 +203,16 @@ impl ActionDedup {
 
   /// Save the rating table disk.
   pub fn write_actions<P: AsRef<Path>>(&mut self, path: P, times: bool) -> Result<usize> {
-    info!("writing {} deduplicated actions to {}", self.table.len(), path.as_ref().display());
+    let path = path.as_ref();
+    info!("writing {} deduplicated actions to {}",
+          friendly::scalar(self.table.len()),
+          path.display());
     let mut twb = TableWriterBuilder::new();
     if !times {
       twb = twb.project(&["user", "item", "nactions"]);
     }
     let mut writer = twb.open(path)?;
+    let mut timer = Timer::new_with_count(self.table.len());
 
     // we're going to consume the hashtable.
     for (k, vec) in take(&mut self.table) {
@@ -237,8 +248,17 @@ impl ActionDedup {
           nactions: vec.len() as u32
         })?;
       }
+
+      timer.complete(1);
+      timer.log_status("writing acitons", 5.0);
     }
 
-    writer.finish()
+    let rv = writer.finish()?;
+
+    info!("wrote ratings in {}, file is {}",
+          timer.human_elapsed(),
+          friendly::bytes(file_size(path)?));
+
+    Ok(rv)
   }
 }
