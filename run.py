@@ -2,7 +2,8 @@
 Run a Python script.  The script name should come from a script name in 'scripts'.
 """
 
-import os, os.path
+import os
+import os.path
 import sys
 import runpy
 from pathlib import Path
@@ -15,7 +16,6 @@ src_dir = Path(__file__).parent
 sys.path.insert(0, src_dir)
 
 from bookdata import setup, bin_dir
-from bookdata.db import db_url
 
 
 def run_rust():
