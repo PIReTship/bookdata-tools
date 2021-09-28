@@ -1,12 +1,9 @@
 //! Helpers for DataFusion.
 use std::io::Write;
 use std::sync::Arc;
-use std::pin::Pin;
-use std::future::Future;
 
 use lazy_static::lazy_static;
 
-use futures::future;
 use futures::stream::{Stream, StreamExt};
 use serde::de::DeserializeOwned;
 
@@ -15,12 +12,11 @@ use anyhow::Result;
 use arrow::datatypes::*;
 use arrow::array::*;
 use datafusion::prelude::*;
-use datafusion::physical_plan::merge::MergeExec;
+use datafusion::physical_plan::execute_stream;
 use datafusion::physical_plan::functions::{make_scalar_function, Signature};
 use datafusion::physical_plan::udf::ScalarUDF;
 use datafusion::physical_plan::ColumnarValue;
 use datafusion::physical_plan::ExecutionPlan;
-use datafusion::physical_plan::SendableRecordBatchStream;
 use datafusion::logical_plan::Expr;
 use datafusion::error::{Result as FusionResult, DataFusionError};
 use parquet::arrow::ArrowWriter;
@@ -32,12 +28,7 @@ use super::row_de::RecordBatchDeserializer;
 
 /// Evaluate a DataFusion plan to a CSV file.
 pub async fn eval_to_csv<W: Write>(out: &mut arrow::csv::Writer<W>, plan: Arc<dyn ExecutionPlan>) -> Result<()> {
-  let plan = if plan.output_partitioning().partition_count() > 1 {
-    Arc::new(MergeExec::new(plan.clone()))
-  } else {
-    plan
-  };
-  let mut batches = plan.execute(0).await?;
+  let mut batches = execute_stream(plan).await?;
   while let Some(batch) = batches.next().await {
     let batch = batch?;
     out.write(&batch)?;
@@ -47,12 +38,7 @@ pub async fn eval_to_csv<W: Write>(out: &mut arrow::csv::Writer<W>, plan: Arc<dy
 
 /// Evaluate a DataFusion plan to a Parquet file.
 pub async fn eval_to_parquet<W: ParquetWriter + 'static>(out: &mut ArrowWriter<W>, plan: Arc<dyn ExecutionPlan>) -> Result<()> {
-  let plan = if plan.output_partitioning().partition_count() > 1 {
-    Arc::new(MergeExec::new(plan.clone()))
-  } else {
-    plan
-  };
-  let mut batches = plan.execute(0).await?;
+  let mut batches = execute_stream(plan).await?;
   while let Some(batch) = batches.next().await {
     let batch = batch?;
     out.write(&batch)?;
@@ -65,21 +51,7 @@ pub fn plan_df(ctx: &mut ExecutionContext, df: Arc<dyn DataFrame>) -> Result<Arc
   let plan = df.to_logical_plan();
   let plan = ctx.optimize(&plan)?;
   let plan = ctx.create_physical_plan(&plan)?;
-  let plan = if plan.output_partitioning().partition_count() > 1 {
-    Arc::new(MergeExec::new(plan))
-  } else {
-    plan
-  };
   Ok(plan)
-}
-
-/// Run a plan and get a stream of record batches.
-pub fn run_plan<'a, 'async_trait>(plan: &'a Arc<dyn ExecutionPlan>) -> Pin<Box<dyn Future<Output = FusionResult<SendableRecordBatchStream>> + Send + 'async_trait>> where 'a: 'async_trait {
-  if plan.output_partitioning().partition_count() != 1 {
-    Box::pin(future::err(DataFusionError::Execution("plan has multiple partitions".to_string())))
-  } else {
-    plan.execute(0)
-  }
 }
 
 /// Deserialize rows of a data frame as a stream.
@@ -87,7 +59,7 @@ pub async fn df_rows<R>(ctx: &mut ExecutionContext, df: Arc<dyn DataFrame>) -> R
 where R: DeserializeOwned
 {
   let plan = plan_df(ctx, df)?;
-  let stream = run_plan(&plan).await?;
+  let stream = execute_stream(plan).await?;
   Ok(RecordBatchDeserializer::for_stream(stream))
 }
 

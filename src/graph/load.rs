@@ -5,6 +5,7 @@ use anyhow::{Result, anyhow};
 use futures::stream::StreamExt;
 
 use datafusion::prelude::*;
+use datafusion::physical_plan::execute_stream;
 
 use crate::arrow::fusion::*;
 use crate::arrow::row_de::RecordBatchDeserializer;
@@ -17,7 +18,7 @@ async fn add_vertices(g: &mut IdGraph, nodes: &mut NodeMap, ctx: &mut ExecutionC
   info!("scanning vertices from {:?}", src);
   let node_df = src.read_node_ids(ctx)?;
   let plan = plan_df(ctx, node_df)?;
-  let batches = run_plan(&plan).await?;
+  let batches = execute_stream(plan).await?;
   let ninit = nodes.len();
 
   let mut iter = RecordBatchDeserializer::for_stream(batches);
@@ -37,7 +38,7 @@ async fn add_edges(g: &mut IdGraph, nodes: &NodeMap, ctx: &mut ExecutionContext,
   info!("scanning edges from {:?}", src);
   let edge_df = src.read_edges(ctx)?;
   let plan = plan_df(ctx, edge_df)?;
-  let batches = run_plan(&plan).await?;
+  let batches = execute_stream(plan).await?;
   let mut iter = RecordBatchDeserializer::for_stream(batches);
 
   while let Some(row) = iter.next().await {

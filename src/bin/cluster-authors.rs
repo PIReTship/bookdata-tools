@@ -11,7 +11,7 @@ use serde::{Serialize, Deserialize};
 use tokio;
 
 use datafusion::prelude::*;
-use datafusion::physical_plan::ExecutionPlan;
+use datafusion::physical_plan::{ExecutionPlan, execute_stream};
 use bookdata::prelude::*;
 use bookdata::arrow::*;
 use bookdata::arrow::fusion::*;
@@ -55,7 +55,7 @@ async fn write_authors_dedup<P: AsRef<Path>>(plan: Arc<dyn ExecutionPlan>, path:
   let mut writer = TableWriter::open(path)?;
 
   info!("scanning author batches");
-  let stream = plan.execute(0).await?;
+  let stream = execute_stream(plan).await?;
   let mut last = ClusterAuthor::default();
   let mut rec_stream = RecordBatchDeserializer::for_stream(stream);
   while let Some(row) = rec_stream.next().await {
