@@ -149,3 +149,19 @@ plot_bars(fractionalize(act_counts, link_codes, unlink_codes))
 
 # %%
 plot_bars(fractionalize(act_counts, ['female', 'male']))
+
+# %% [markdown]
+# ## Metrics
+#
+# Finally, we're going to write coverage metrics.
+
+# %%
+book_tots = book_counts.sum(axis=1)
+book_link = book_counts['male'] + book_counts['female'] + book_counts['ambiguous']
+book_cover = book_link / book_tots
+book_cover
+
+# %%
+book_cover.to_json('book-coverage.json')
+
+# %%
