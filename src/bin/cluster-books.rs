@@ -5,7 +5,7 @@ use bookdata::arrow::*;
 use bookdata::graph::{construct_graph, save_graph};
 use bookdata::ids::codes::NS_ISBN;
 
-use petgraph::algo::tarjan_scc;
+use petgraph::algo::kosaraju_scc;
 
 /// Run the book clustering algorithm.
 #[derive(StructOpt, Debug)]
@@ -45,7 +45,7 @@ pub async fn main() -> Result<()> {
   save_graph(&graph, "book-links/book-graph.mp.zst")?;
 
   info!("computing connected components");
-  let clusters = tarjan_scc(&graph);
+  let clusters = kosaraju_scc(&graph);
   let msize = clusters.iter().map(|v| v.len()).max().unwrap_or_default();
 
   info!("computed {} clusters, largest has {} nodes", clusters.len(), msize);
