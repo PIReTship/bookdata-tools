@@ -2,8 +2,8 @@ use tokio;
 
 use bookdata::prelude::*;
 use bookdata::arrow::*;
-use bookdata::graph::{construct_graph, save_graph};
-use bookdata::ids::codes::NS_ISBN;
+use bookdata::graph::{BookID, construct_graph, save_graph};
+use bookdata::ids::codes::{NS_ISBN, ns_of_book_code};
 
 use petgraph::algo::kosaraju_scc;
 
@@ -28,10 +28,40 @@ struct ClusterCode {
   book_code: i32,
 }
 
-#[derive(TableRow, Debug)]
+#[derive(TableRow, Debug, Default)]
 struct ClusterStat {
   cluster: i32,
-  n_isbns: u32
+  n_nodes: u32,
+  n_isbns: u32,
+  n_loc_recs: u32,
+  n_ol_editions: u32,
+  n_ol_works: u32,
+  n_gr_books: u32,
+  n_gr_works: u32,
+}
+
+impl ClusterStat {
+  /// Create a cluster statistics object from a list of books codes.
+  fn create(cluster: i32, nodes: &Vec<&BookID>) -> ClusterStat {
+    let mut cs = ClusterStat::default();
+    cs.cluster = cluster;
+    cs.n_nodes = nodes.len() as u32;
+    for node in nodes {
+      if let Some(ns) = ns_of_book_code(node.code) {
+        match ns.name {
+          "ISBN" => cs.n_isbns += 1,
+          "LOC" => cs.n_loc_recs += 1,
+          "OL-W" => cs.n_ol_works += 1,
+          "OL-E" => cs.n_ol_editions += 1,
+          "GR-W" => cs.n_gr_works += 1,
+          "GR-B" => cs.n_gr_books += 1,
+          _ => ()
+        }
+      }
+    }
+
+    cs
+  }
 }
 
 #[tokio::main]
@@ -63,9 +93,7 @@ pub async fn main() -> Result<()> {
       graph.node_weight(*v).unwrap()
     }).collect();
     let cluster = vids.iter().map(|b| b.code).min().unwrap();
-    cs_w.write_object(ClusterStat {
-      cluster, n_isbns: vids.len() as u32
-    })?;
+    cs_w.write_object(ClusterStat::create(cluster, &vids))?;
     for v in &vids {
       cc_w.write_object(ClusterCode {
         cluster, book_code: v.code

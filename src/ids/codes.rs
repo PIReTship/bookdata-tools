@@ -9,9 +9,9 @@ use datafusion::execution::context::ExecutionContext;
 use log::*;
 
 pub struct NS<'a> {
-  name: &'a str,
-  fn_name: &'a str,
-  code: i32
+  pub name: &'a str,
+  pub fn_name: &'a str,
+  pub code: i32
 }
 
 const NS_MULT_BASE: i32 = 100_000_000;
