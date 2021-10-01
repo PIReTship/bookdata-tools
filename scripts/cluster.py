@@ -110,7 +110,7 @@ def _hash_frame(df):
 
 def cluster(txout, dry=False):
     "Cluster ISBNs"
-    with db.connect() as dbc, dbc:
+    with db.connect() as dbc:
         tracking.begin_stage(dbc, 'cluster')
 
         with db.engine().connect() as cxn:
@@ -134,7 +134,8 @@ def cluster(txout, dry=False):
 
         if not dry:
             _log.info('saving cluster records to database')
-            _import_clusters(dbc, clusters)
+            with dbc:
+                _import_clusters(dbc, clusters)
 
             _log.info('saving ID graph')
             g.vp['cluster'] = comps
