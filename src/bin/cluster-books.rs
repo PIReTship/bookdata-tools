@@ -28,6 +28,12 @@ struct ClusterCode {
   book_code: i32,
 }
 
+#[derive(TableRow, Debug)]
+struct GraphEdge {
+  src: i32,
+  dst: i32
+}
+
 #[derive(TableRow, Debug, Default)]
 struct ClusterStat {
   cluster: i32,
@@ -109,6 +115,18 @@ pub async fn main() -> Result<()> {
   ic_w.finish()?;
   cc_w.finish()?;
   cs_w.finish()?;
+
+  info!("writing graph edges");
+  let mut e_w = TableWriter::open("book-links/cluster-graph-edges.parquet")?;
+  for e in graph.edge_indices() {
+    let (s, d) = graph.edge_endpoints(e).unwrap();
+    let src = graph.node_weight(s).unwrap().code;
+    let dst = graph.node_weight(d).unwrap().code;
+    e_w.write_object(GraphEdge {
+      src, dst
+    })?;
+  }
+  e_w.finish()?;
 
   Ok(())
 }
