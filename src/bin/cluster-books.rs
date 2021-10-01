@@ -1,9 +1,13 @@
+use std::fs::File;
+
 use tokio;
 
 use bookdata::prelude::*;
 use bookdata::arrow::*;
 use bookdata::graph::{BookID, construct_graph, save_graph};
 use bookdata::ids::codes::{NS_ISBN, ns_of_book_code};
+
+use serde::Serialize;
 
 use petgraph::algo::kosaraju_scc;
 
@@ -44,6 +48,12 @@ struct ClusterStat {
   n_ol_works: u32,
   n_gr_books: u32,
   n_gr_works: u32,
+}
+
+#[derive(Serialize, Debug)]
+struct ClusteringStatistics {
+  clusters: usize,
+  largest: usize,
 }
 
 impl ClusterStat {
@@ -127,6 +137,14 @@ pub async fn main() -> Result<()> {
     })?;
   }
   e_w.finish()?;
+
+  info!("saving statistics");
+  let stats = ClusteringStatistics {
+    clusters: clusters.len(),
+    largest: msize,
+  };
+  let statf = File::create("book-links/cluster-stats.json")?;
+  serde_json::to_writer(statf, &stats)?;
 
   Ok(())
 }

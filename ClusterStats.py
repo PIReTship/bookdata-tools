@@ -113,18 +113,6 @@ len(gr_big) / clusters['n_gr_books'].count()
 gr_big.head()
 
 # %% [markdown]
-# ## Output Cluster Statistics
-#
-# Let's compute some cluster statistics and show them.
-
-# %%
-import json
-with open('book-links/cluster-stats.json', 'w') as sf:
-    json.dump({
-        'clusters': len(clusters)
-    }, sf)
-
-# %% [markdown]
 # ## Huge Cluster Debugging
 #
 # We have a very large cluster:
