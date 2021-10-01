@@ -189,7 +189,7 @@ impl <'p, 's> IsbnParser<'p, 's> {
   fn read_isbn(&mut self) -> Option<ISBN> {
     self.eat(&self.defs.lead);
     self.read(&self.defs.isbn).map(|m| ISBN {
-      text: self.defs.clean.replace_all(m.as_str(), "").to_string(),
+      text: self.defs.clean.replace_all(m.as_str(), "").to_uppercase(),
       tags: self.read_tags()
     })
   }

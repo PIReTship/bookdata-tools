@@ -50,13 +50,29 @@ clusters.describe()
 # 75% of clusters only contain 2 ISBNs (probably -10 and -13) and one book. OpenLibrary also contributes to the largest number of clusters.
 
 # %% [markdown]
+# ## Clusters per Source
+#
+# How many clusters are connected to each source?
+
+# %%
+src_counts = pd.Series(dict(
+    (c, np.sum(clusters[c] > 0)) for c in clusters.columns
+))
+src_counts
+
+# %%
+src_counts.plot.barh()
+plt.xlabel('# of Clusters')
+plt.show()
+
+# %% [markdown]
 # ## Distributions
 #
 # Let's look at the distributions of cluster sizes.
 
 # %%
 size_dist = pd.concat(dict(
-    (c, clusters[c].value_counts()) for c in clusters.columns
+    (c, clusters[c].value_counts()) for c in clusters.columns if c != 'n_nodes'
 ), names=['RecType'])
 size_dist.index.set_names(['RecType', 'RecCount'], inplace=True)
 size_dist = size_dist.reset_index(name='Clusters')
