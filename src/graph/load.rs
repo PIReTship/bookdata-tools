@@ -40,6 +40,7 @@ async fn add_edges(g: &mut IdGraph, nodes: &NodeMap, ctx: &mut ExecutionContext,
   let plan = plan_df(ctx, edge_df)?;
   let batches = execute_stream(plan).await?;
   let mut iter = RecordBatchDeserializer::for_stream(batches);
+  let mut n = 0;
 
   while let Some(row) = iter.next().await {
     let row: (i32, i32) = row?;
@@ -52,7 +53,10 @@ async fn add_edges(g: &mut IdGraph, nodes: &NodeMap, ctx: &mut ExecutionContext,
       anyhow!("unknown destination node {}", sn)
     })?;
     g.add_edge(*sid, *did, ());
+    n += 1;
   }
+
+  info!("added {} edges from {:?}", n, src);
 
   Ok(())
 }
