@@ -1,6 +1,6 @@
 use std::path::Path;
 use std::fs::File;
-use zstd::Encoder;
+use zstd::{Encoder, Decoder};
 
 use serde::{Serialize, Deserialize};
 use petgraph::{Graph, Undirected};
@@ -28,4 +28,12 @@ pub fn save_graph<P: AsRef<Path>>(graph: &IdGraph, path: P) -> Result<()> {
   let mut out = Encoder::new(file, 9)?;
   rmp_serde::encode::write(&mut out, &graph)?;
   Ok(())
+}
+
+/// Save a graph to a compressed, encoded file.
+pub fn load_graph<P: AsRef<Path>>(path: P) -> Result<IdGraph> {
+  let file = File::open(path)?;
+  let rdr = Decoder::new(file)?;
+  let g = rmp_serde::decode::from_read(rdr)?;
+  Ok(g)
 }
