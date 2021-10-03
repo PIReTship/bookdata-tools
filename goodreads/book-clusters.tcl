@@ -1,4 +1,4 @@
-table clusters "../book-links/cluster-codes.parquet"
+table clusters "../book-links/cluster-graph-nodes.parquet"
 table book_ids "gr-book-ids.parquet"
 
 save-results "gr-book-link.parquet" {

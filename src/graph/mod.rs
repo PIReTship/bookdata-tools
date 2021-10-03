@@ -32,7 +32,7 @@ pub fn save_graph<P: AsRef<Path>>(graph: &IdGraph, path: P) -> Result<()> {
   Ok(())
 }
 
-/// Save a graph to a compressed, encoded file.
+/// Load a graph from a compressed, encoded file.
 pub fn load_graph<P: AsRef<Path>>(path: P) -> Result<IdGraph> {
   let file = File::open(path)?;
   let rdr = Decoder::new(file)?;

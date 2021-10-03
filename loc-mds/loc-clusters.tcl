@@ -1,4 +1,4 @@
-table clusters "../book-links/cluster-codes.parquet"
+table clusters "../book-links/cluster-graph-nodes.parquet"
 
 save-results loc-clusters.parquet {
     SELECT cluster, COUNT(book_code) AS n_recs

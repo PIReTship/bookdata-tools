@@ -28,8 +28,10 @@ struct ISBNClusterRec {
 
 #[derive(TableRow, Debug)]
 struct ClusterCode {
-  cluster: i32,
   book_code: i32,
+  cluster: i32,
+  node_type: String,
+  label: Option<String>,
 }
 
 #[derive(TableRow, Debug)]
@@ -98,8 +100,8 @@ pub async fn main() -> Result<()> {
 
   let mut ic_w = TableWriter::open("book-links/isbn-clusters.parquet")?;
 
-  let cc_wb = TableWriterBuilder::new();
-  let mut cc_w = cc_wb.open("book-links/cluster-codes.parquet")?;
+  let n_wb = TableWriterBuilder::new();
+  let mut n_w = n_wb.open("book-links/cluster-graph-nodes.parquet")?;
 
   let mut cs_w = TableWriter::open("book-links/cluster-stats.parquet")?;
 
@@ -111,8 +113,10 @@ pub async fn main() -> Result<()> {
     let cluster = vids.iter().map(|b| b.code).min().unwrap();
     cs_w.write_object(ClusterStat::create(cluster, &vids))?;
     for v in &vids {
-      cc_w.write_object(ClusterCode {
-        cluster, book_code: v.code
+      n_w.write_object(ClusterCode {
+        cluster, book_code: v.code,
+        node_type: ns_of_book_code(v.code).unwrap().name.to_string(),
+        label: v.label.clone(),
       })?;
       if let Some(id) = NS_ISBN.from_code(v.code) {
         ic_w.write_object(ISBNClusterRec {
@@ -123,7 +127,7 @@ pub async fn main() -> Result<()> {
   }
 
   ic_w.finish()?;
-  cc_w.finish()?;
+  n_w.finish()?;
   cs_w.finish()?;
 
   info!("writing graph edges");
