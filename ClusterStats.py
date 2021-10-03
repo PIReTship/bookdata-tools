@@ -101,7 +101,7 @@ gr_big = clusters[clusters['n_gr_works'] > 1].sort_values('n_gr_works', ascendin
 gr_big.info()
 
 # %% [markdown]
-# We have 6K of these clusters. What fraction of the GoodReads-affected clusters is this?
+# We have a lot of these clusters. What fraction of the GoodReads-affected clusters is this?
 
 # %%
 len(gr_big) / clusters['n_gr_books'].count()
@@ -129,14 +129,14 @@ isbns = pd.read_parquet('book-links/all-isbns.parquet').set_index('isbn_id')
 isbns.head()
 
 # %%
-links = pd.read_parquet('book-links/isbn-clusters.parquet')
+links = pd.read_parquet('book-links/isbn-clusters.parquet', columns=['isbn_id', 'cluster'])
 links.head()
 
 # %%
 big_id = big.index[0]
-bl = links[links['cluster'] == big_id].sort_values('isbn').drop(columns=['cluster'])
-bl = bl.join(isbns.drop(columns=['isbn']), on='isbn_id')
-bl
+bl = links[links['cluster'] == big_id].drop(columns=['cluster'])
+bl = bl.join(isbns, on='isbn_id')
+bl.sort_values('isbn')
 
 # %% [markdown]
 # GoodReads gives us some wacky ISBNs.  Are there any of these that have a really large record count?
@@ -144,5 +144,19 @@ bl
 # %%
 bl['btot'] = bl.iloc[:, 2:-2].sum(axis=1)
 bl.nlargest(20, 'btot')
+
+# %% [markdown]
+# ### Loading the Graph
+#
+# Let's try to load this huge graph and inspect it.
+
+# %%
+import igraph
+nodes = pd.read_parquet('book-links/cluster-graph-nodes.parquet')
+nodes.info()
+
+# %%
+edges = pd.read_parquet('book-links/cluster-graph-edges.parquet')
+edges.info()
 
 # %%
