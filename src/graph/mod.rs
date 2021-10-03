@@ -9,11 +9,13 @@ use petgraph::graph::NodeIndex;
 
 use anyhow::Result;
 
+/// A book identifier with optional label used as a graph node.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BookID {
   pub code: i32,
   pub label: Option<String>
 }
+
 pub type IdGraph = Graph<BookID, (), Undirected>;
 pub type IdNode = NodeIndex<DefaultIx>;
 
