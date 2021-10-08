@@ -21,14 +21,17 @@ pub type IdNode = NodeIndex<DefaultIx>;
 
 mod sources;
 mod load;
+mod gml;
 
 pub use load::construct_graph;
+pub use gml::save_gml;
 
 /// Save a graph to a compressed, encoded file.
 pub fn save_graph<P: AsRef<Path>>(graph: &IdGraph, path: P) -> Result<()> {
   let file = File::create(path)?;
-  let mut out = Encoder::new(file, 9)?;
+  let mut out = Encoder::new(file, 6)?;
   rmp_serde::encode::write(&mut out, &graph)?;
+  out.finish()?;
   Ok(())
 }
 

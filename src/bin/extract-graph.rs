@@ -7,7 +7,7 @@ use tokio;
 
 use bookdata::prelude::*;
 use bookdata::arrow::*;
-use bookdata::graph::{BookID, IdGraph, IdNode, load_graph};
+use bookdata::graph::{BookID, IdGraph, IdNode, load_graph, save_gml};
 use bookdata::ids::codes::{NS_ISBN, ns_of_book_code};
 
 use serde::Serialize;
@@ -26,6 +26,9 @@ pub struct ExtractGraph {
 
   #[structopt(short="c", long="cluster")]
   cluster: Option<i32>,
+
+  #[structopt(long="output", short="o")]
+  out_file: Option<PathBuf>,
 }
 
 /// Search for a cluster containing a particular graph.
@@ -76,6 +79,10 @@ fn main() -> Result<()> {
   };
 
   let subgraph = filter_to_nodes(&graph, &nodes);
+
+  if let Some(outf) = opts.out_file {
+    save_gml(&subgraph, &outf)?;
+  }
 
   Ok(())
 }
