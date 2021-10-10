@@ -10,12 +10,14 @@ use crate::common::*;
 pub struct OLWorkRecord {
   #[serde(default)]
   authors: Vec<Author>,
+  title: Option<String>,
 }
 
 #[derive(TableRow)]
 struct WorkRec {
   id: u32,
-  key: String
+  key: String,
+  title: Option<String>,
 }
 
 #[derive(TableRow)]
@@ -47,7 +49,7 @@ impl OLProcessor<OLWorkRecord> for Processor {
     let id = self.last_id;
 
     self.rec_writer.write_object(WorkRec {
-      id, key: row.key.clone()
+      id, key: row.key.clone(), title: row.record.title.clone(),
     })?;
 
     for pos in 0..row.record.authors.len() {
