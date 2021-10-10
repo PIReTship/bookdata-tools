@@ -94,9 +94,8 @@ pub async fn main() -> Result<()> {
 
   info!("computing connected components");
   let clusters = kosaraju_scc(&graph);
-  let msize = clusters.iter().map(|v| v.len()).max().unwrap_or_default();
 
-  info!("computed {} clusters, largest has {} nodes", clusters.len(), msize);
+  info!("computed {} clusters", clusters.len());
 
   let mut ic_w = TableWriter::open("book-links/isbn-clusters.parquet")?;
 
@@ -105,12 +104,19 @@ pub async fn main() -> Result<()> {
 
   let mut cs_w = TableWriter::open("book-links/cluster-stats.parquet")?;
 
+  let mut m_size = 0;
+  let mut m_id = 0;
+
   for ci in 0..clusters.len() {
     let verts = &clusters[ci];
     let vids: Vec<_> = verts.iter().map(|v| {
       graph.node_weight(*v).unwrap()
     }).collect();
     let cluster = vids.iter().map(|b| b.code).min().unwrap();
+    if vids.len() > m_size {
+      m_size = vids.len();
+      m_id = cluster;
+    }
     cs_w.write_object(ClusterStat::create(cluster, &vids))?;
     for v in &vids {
       n_w.write_object(ClusterCode {
@@ -130,6 +136,8 @@ pub async fn main() -> Result<()> {
   n_w.finish()?;
   cs_w.finish()?;
 
+  info!("largest cluster {} has {} nodes", m_id, m_size);
+
   info!("writing graph edges");
   let mut e_w = TableWriter::open("book-links/cluster-graph-edges.parquet")?;
   for e in graph.edge_indices() {
@@ -145,7 +153,7 @@ pub async fn main() -> Result<()> {
   info!("saving statistics");
   let stats = ClusteringStatistics {
     clusters: clusters.len(),
-    largest: msize,
+    largest: m_size,
   };
   let statf = File::create("book-links/cluster-stats.json")?;
   serde_json::to_writer(statf, &stats)?;
