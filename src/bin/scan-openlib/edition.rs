@@ -17,6 +17,9 @@ pub struct OLEditionRecord {
   asin: Vec<String>,
 
   #[serde(default)]
+  title: Option<String>,
+
+  #[serde(default)]
   works: Vec<Keyed>,
   #[serde(default)]
   authors: Vec<Author>,
@@ -25,7 +28,8 @@ pub struct OLEditionRecord {
 #[derive(TableRow)]
 struct EditionRec {
   id: u32,
-  key: String
+  key: String,
+  title: Option<String>,
 }
 
 /// Link between edition and work
@@ -76,7 +80,7 @@ impl OLProcessor<OLEditionRecord> for Processor {
     let id = self.last_id;
 
     self.rec_writer.write_object(EditionRec {
-      id, key: row.key.clone()
+      id, key: row.key.clone(), title: row.record.title.clone(),
     })?;
 
     self.save_isbns(id, row.record.isbn_10, clean_isbn_chars)?;

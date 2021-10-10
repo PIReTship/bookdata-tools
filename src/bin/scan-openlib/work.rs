@@ -10,6 +10,7 @@ use crate::common::*;
 pub struct OLWorkRecord {
   #[serde(default)]
   authors: Vec<Author>,
+  #[serde(default)]
   title: Option<String>,
 }
 
