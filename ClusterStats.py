@@ -145,18 +145,4 @@ bl.sort_values('isbn')
 bl['btot'] = bl.iloc[:, 2:-2].sum(axis=1)
 bl.nlargest(20, 'btot')
 
-# %% [markdown]
-# ### Loading the Graph
-#
-# Let's try to load this huge graph and inspect it.
-
-# %%
-import igraph
-nodes = pd.read_parquet('book-links/cluster-graph-nodes.parquet')
-nodes.info()
-
-# %%
-edges = pd.read_parquet('book-links/cluster-graph-edges.parquet')
-edges.info()
-
 # %%
