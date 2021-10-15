@@ -165,7 +165,7 @@ fn cmd_save_results(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> Molt
 
 /// Run a query and show its results.
 fn cmd_query(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> MoltResult {
-  check_args(1, argv, 1, 1, "query")?;
+  check_args(1, argv, 2, 2, "query")?;
   let ctx: &mut ScriptContext = interp.context(ctx);
 
   let query = argv[1].as_str();
@@ -176,7 +176,8 @@ fn cmd_query(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> MoltResult 
 
     let df = ctx.df_context.sql(query)?;
     let res = ctx.run(df.collect())?;
-    pretty_format_batches(&res)?;
+    debug!("finished with {} batches", res.len());
+    println!("{}", pretty_format_batches(&res)?);
 
     Ok(())
   })

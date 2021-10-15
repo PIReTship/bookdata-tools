@@ -1,7 +1,16 @@
 table works "openlibrary/works.parquet"
+table edition_works "openlibrary/edition-works.parquet"
+
+set id 18334306
 
 query {
     SELECT *
     FROM works
-    WHERE id = 10000
+    WHERE key = '/works/OL8193418W'
+}
+
+query {
+    SELECT *
+    FROM edition_works
+    WHERE work = 18334306
 }
