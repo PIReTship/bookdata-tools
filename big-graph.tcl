@@ -1,3 +1,4 @@
+table editions "openlibrary/editions.parquet"
 table works "openlibrary/works.parquet"
 table edition_works "openlibrary/edition-works.parquet"
 
@@ -7,6 +8,12 @@ query {
     SELECT *
     FROM works
     WHERE key = '/works/OL8193418W'
+}
+
+query {
+    SELECT *
+    FROM editions
+    WHERE key = '/books/OL29216808M'
 }
 
 query {
