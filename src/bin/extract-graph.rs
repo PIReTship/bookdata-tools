@@ -3,14 +3,8 @@ use std::convert::From;
 use std::path::PathBuf;
 use std::collections::HashSet;
 
-use tokio;
-
 use bookdata::prelude::*;
-use bookdata::arrow::*;
-use bookdata::graph::{BookID, IdGraph, IdNode, load_graph, save_gml};
-use bookdata::ids::codes::{NS_ISBN, ns_of_book_code};
-
-use serde::Serialize;
+use bookdata::graph::{IdGraph, IdNode, load_graph, save_gml};
 
 use petgraph::algo::kosaraju_scc;
 
@@ -54,7 +48,7 @@ fn filter_to_nodes(graph: &IdGraph, nodes: &HashSet<IdNode>) -> IdGraph {
     } else {
       None
     }
-  }, |ei, e| Some(()))
+  }, |_ei, _e| Some(()))
 }
 
 fn main() -> Result<()> {
