@@ -14,6 +14,7 @@ use molt::*;
 use parquet::basic::Compression;
 use parquet::file::properties::WriterProperties;
 use parquet::arrow::ArrowWriter;
+use arrow::util::pretty::pretty_format_batches;
 use datafusion::prelude::*;
 use datafusion::physical_plan::{ExecutionPlan};
 
@@ -162,6 +163,25 @@ fn cmd_save_results(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> Molt
   })
 }
 
+/// Run a query and show its results.
+fn cmd_query(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> MoltResult {
+  check_args(1, argv, 1, 1, "query")?;
+  let ctx: &mut ScriptContext = interp.context(ctx);
+
+  let query = argv[1].as_str();
+
+  wrap_errs(|| {
+    info!("preparing query");
+    debug!("query text: {}", query);
+
+    let df = ctx.df_context.sql(query)?;
+    let res = ctx.run(df.collect())?;
+    pretty_format_batches(&res)?;
+
+    Ok(())
+  })
+}
+
 pub fn main() -> Result<()> {
   let opts = Fusion::from_args();
   opts.common.init()?;
@@ -171,6 +191,7 @@ pub fn main() -> Result<()> {
   let scid = interp.save_context(ctx);
   interp.add_context_command("table", cmd_table, scid);
   interp.add_context_command("save-results", cmd_save_results, scid);
+  interp.add_context_command("query", cmd_query, scid);
 
   info!("reading script from {}", &opts.script.to_string_lossy());
   let script = read_to_string(&opts.script)?;
