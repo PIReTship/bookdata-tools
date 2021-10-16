@@ -1,6 +1,6 @@
 use std::path::Path;
 use std::fs::File;
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use zstd::{Encoder, Decoder};
 
 use serde::{Serialize, Deserialize};
@@ -31,6 +31,7 @@ pub use gml::save_gml;
 pub fn save_graph<P: AsRef<Path>>(graph: &IdGraph, path: P) -> Result<()> {
   let file = File::create(path)?;
   let mut out = Encoder::new(file, 6)?;
+  // out.multithread(2)?;
   rmp_serde::encode::write(&mut out, &graph)?;
   out.finish()?;
   Ok(())
@@ -44,18 +45,34 @@ pub fn load_graph<P: AsRef<Path>>(path: P) -> Result<IdGraph> {
   Ok(g)
 }
 
-/// Convert indices to a node set
-pub fn node_set(indexes: &Vec<IdNode>) -> HashSet<IdNode> {
-  indexes.iter().map(|i| *i).collect()
-}
-
 /// Filter a graph to contain only some nodes.
-pub fn filter_to_nodes(graph: &IdGraph, nodes: &HashSet<IdNode>) -> IdGraph {
-  graph.filter_map(|ni, n| {
-    if nodes.contains(&ni) {
-      Some(n.clone())
-    } else {
-      None
+pub fn filter_to_nodes(graph: &IdGraph, nodes: &Vec<IdNode>) -> IdGraph {
+  let mut g2 = IdGraph::with_capacity(nodes.len(), nodes.len());
+  let mut emap = HashMap::new();
+
+  for node in nodes {
+    let w = graph.node_weight(*node).unwrap();
+    let n2 = g2.add_node(w.clone());
+    emap.insert(node, n2);
+  }
+
+  for src in nodes {
+    for dst in graph.neighbors(*src) {
+      if dst.index() > src.index() {
+        let s2 = emap.get(src).unwrap();
+        let d2 = emap.get(&dst).unwrap();
+        g2.add_edge(*s2, *d2, ());
+      }
     }
-  }, |_ei, _e| Some(()))
+  }
+
+  g2
+
+  // graph.filter_map(|ni, n| {
+  //   if nodes.contains(&ni) {
+  //     Some(n.clone())
+  //   } else {
+  //     None
+  //   }
+  // }, |_ei, _e| Some(()))
 }

@@ -87,13 +87,17 @@ impl ClusterStat {
   }
 }
 
-fn diameters(graph: &IdGraph, clusters: &Vec<HashSet<IdNode>>) -> Vec<f32> {
+fn diameters(graph: &IdGraph, clusters: &Vec<Vec<IdNode>>) -> Vec<f32> {
   let mut res = Vec::with_capacity(clusters.len());
 
   clusters.par_iter().map(|s| {
-    let g = filter_to_nodes(graph, s);
-    let diam = diameter(&g);
-    diam.unwrap_or(f32::NAN)
+    if s.len() <= 2 {
+      1.0
+    } else {
+      let g = filter_to_nodes(graph, s);
+      let diam = diameter(&g);
+      diam.unwrap_or(f32::NAN)
+    }
   }).collect_into_vec(&mut res);
 
   res
@@ -111,8 +115,6 @@ pub async fn main() -> Result<()> {
 
   info!("computing connected components");
   let clusters = kosaraju_scc(&graph);
-  info!("making component sets");
-  let clusters: Vec<HashSet<IdNode>> = clusters.iter().map(node_set).collect();
 
   info!("computed {} clusters", clusters.len());
 

@@ -25,18 +25,19 @@ pub struct ExtractGraph {
 }
 
 /// Search for a cluster containing a particular graph.
-fn find_cluster(graph: &IdGraph, cc: &Vec<Vec<IdNode>>, code: i32) -> HashSet<IdNode> {
+fn find_cluster(graph: &IdGraph, cc: &Vec<Vec<IdNode>>, code: i32) -> Vec<IdNode> {
   info!("finding cluster {}", code);
   for c in cc {
     for ni in c {
       let book = graph.node_weight(*ni).unwrap();
       if book.code == code {
-        return c.iter().map(|i| *i).collect();
+        // return c.iter().map(|i| *i).collect();
+        return c.clone();
       }
     }
   }
 
-  return HashSet::new();
+  return Vec::new();
 }
 
 fn main() -> Result<()> {
@@ -57,7 +58,7 @@ fn main() -> Result<()> {
   let nodes = if let Some(c) = opts.cluster {
     find_cluster(&graph, &cc, c)
   } else {
-    HashSet::new()
+    Vec::new()
   };
 
   info!("filtering graph to {} nodes", nodes.len());

@@ -113,7 +113,8 @@ impl NodeRead for OLWorks {
   fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     let df = ctx.read_parquet("openlibrary/all-works.parquet")?;
     let df = df.select(vec![
-      id_col("id", NS_WORK).alias("code")
+      id_col("id", NS_WORK).alias("code"),
+      col("key").alias("label")
     ])?;
     Ok(df)
   }
