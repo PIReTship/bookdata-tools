@@ -1,4 +1,3 @@
-use std::fs::File;
 use std::convert::From;
 use std::path::PathBuf;
 use std::collections::HashSet;
