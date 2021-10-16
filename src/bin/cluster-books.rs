@@ -1,9 +1,7 @@
 use std::fs::File;
-use std::collections::HashSet;
 
 use tokio;
 
-use rayon::prelude::*;
 use bookdata::prelude::*;
 use bookdata::arrow::*;
 use bookdata::graph::*;
@@ -12,7 +10,6 @@ use bookdata::ids::codes::{NS_ISBN, ns_of_book_code};
 use serde::Serialize;
 
 use petgraph::algo::kosaraju_scc;
-use graphalgs::metrics::diameter;
 
 /// Run the book clustering algorithm.
 #[derive(StructOpt, Debug)]
@@ -53,7 +50,6 @@ struct ClusterStat {
   n_ol_works: u32,
   n_gr_books: u32,
   n_gr_works: u32,
-  diameter: f32,
 }
 
 #[derive(Serialize, Debug)]
@@ -64,11 +60,10 @@ struct ClusteringStatistics {
 
 impl ClusterStat {
   /// Create a cluster statistics object from a list of books codes.
-  fn create(cluster: i32, nodes: &Vec<&BookID>, diam: f32) -> ClusterStat {
+  fn create(cluster: i32, nodes: &Vec<&BookID>) -> ClusterStat {
     let mut cs = ClusterStat::default();
     cs.cluster = cluster;
     cs.n_nodes = nodes.len() as u32;
-    cs.diameter = diam;
     for node in nodes {
       if let Some(ns) = ns_of_book_code(node.code) {
         match ns.name {
@@ -87,39 +82,33 @@ impl ClusterStat {
   }
 }
 
-fn diameters(graph: &IdGraph, clusters: &Vec<Vec<IdNode>>) -> Vec<f32> {
-  let mut res = Vec::with_capacity(clusters.len());
-
-  clusters.par_iter().map(|s| {
-    if s.len() <= 2 {
-      1.0
-    } else {
-      let g = filter_to_nodes(graph, s);
-      let diam = diameter(&g);
-      diam.unwrap_or(f32::NAN)
-    }
-  }).collect_into_vec(&mut res);
-
-  res
-}
-
 #[tokio::main]
 pub async fn main() -> Result<()> {
   let opts = ClusterBooks::from_args();
   opts.common.init()?;
 
-  let graph = construct_graph().await?;
-
-  info!("saving graph");
-  save_graph(&graph, "book-links/book-graph.mp.zst")?;
+  let mut graph = construct_graph().await?;
 
   info!("computing connected components");
   let clusters = kosaraju_scc(&graph);
 
   info!("computed {} clusters", clusters.len());
 
-  info!("computing diameters");
-  let diams = diameters(&graph, &clusters);
+  info!("adding cluster notations");
+  for ci in 0..clusters.len() {
+    let verts = &clusters[ci];
+    let vids: Vec<_> = verts.iter().map(|v| {
+      graph.node_weight(*v).unwrap()
+    }).collect();
+    let cluster = vids.iter().map(|b| b.code).min().unwrap();
+    for v in verts {
+      let node = graph.node_weight_mut(*v).unwrap();
+      node.cluster = cluster;
+    }
+  }
+
+  info!("saving graph");
+  save_graph(&graph, "book-links/book-graph.mp.zst")?;
 
   info!("preparing to write graph results");
   let mut ic_w = TableWriter::open("book-links/isbn-clusters.parquet")?;
@@ -134,7 +123,6 @@ pub async fn main() -> Result<()> {
 
   for ci in 0..clusters.len() {
     let verts = &clusters[ci];
-    let diam = diams[ci];
     let vids: Vec<_> = verts.iter().map(|v| {
       graph.node_weight(*v).unwrap()
     }).collect();
@@ -143,7 +131,7 @@ pub async fn main() -> Result<()> {
       m_size = vids.len();
       m_id = cluster;
     }
-    cs_w.write_object(ClusterStat::create(cluster, &vids, diam))?;
+    cs_w.write_object(ClusterStat::create(cluster, &vids))?;
     for v in &vids {
       n_w.write_object(ClusterCode {
         cluster, book_code: v.code,

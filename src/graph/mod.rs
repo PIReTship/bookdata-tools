@@ -1,6 +1,6 @@
 use std::path::Path;
 use std::fs::File;
-use std::collections::{HashSet, HashMap};
+use std::collections::HashMap;
 use zstd::{Encoder, Decoder};
 
 use serde::{Serialize, Deserialize};
@@ -14,7 +14,9 @@ use anyhow::Result;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BookID {
   pub code: i32,
-  pub label: Option<String>
+  pub label: Option<String>,
+  #[serde(default)]
+  pub cluster: i32,
 }
 
 pub type IdGraph = Graph<BookID, (), Undirected>;

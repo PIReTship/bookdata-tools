@@ -1,6 +1,5 @@
 use std::convert::From;
 use std::path::PathBuf;
-use std::collections::HashSet;
 
 use bookdata::prelude::*;
 use bookdata::graph::{IdGraph, IdNode, load_graph, save_gml, filter_to_nodes};
