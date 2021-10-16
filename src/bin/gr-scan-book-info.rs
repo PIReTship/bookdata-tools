@@ -87,9 +87,9 @@ impl ObjectWriter<RawBook> for BookWriter {
     self.id_out.write_object(IdRecord {
       book_id,
       work_id: parse_opt(&row.work_id)?,
-      isbn10: trim_opt(&row.isbn).map(|s| clean_asin_chars(s)).filter(|s| s.len() >= 8),
-      isbn13: trim_opt(&row.isbn13).map(|s| clean_asin_chars(s)).filter(|s| s.len() >= 8),
-      asin: trim_opt(&row.asin).map(|s| clean_asin_chars(s)).filter(|s| s.len() >= 8),
+      isbn10: trim_opt(&row.isbn).map(|s| clean_asin_chars(s)).filter(|s| s.len() >= 7),
+      isbn13: trim_opt(&row.isbn13).map(|s| clean_asin_chars(s)).filter(|s| s.len() >= 7),
+      asin: trim_opt(&row.asin).map(|s| clean_asin_chars(s)).filter(|s| s.len() >= 7),
     })?;
 
     let pub_year = parse_opt(&row.publication_year)?;

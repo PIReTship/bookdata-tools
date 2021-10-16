@@ -59,6 +59,7 @@ impl ScriptContext {
 fn save_parquet(ctx: &ScriptContext, plan: Arc<dyn ExecutionPlan>, file: &str, partitioned: bool) -> Result<()> {
   let props = WriterProperties::builder();
   let props = props.set_compression(Compression::ZSTD);
+  let props = props.set_dictionary_enabled(false);
   let props = props.build();
 
   if partitioned {
