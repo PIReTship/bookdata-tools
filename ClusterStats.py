@@ -113,9 +113,9 @@ len(gr_big) / clusters['n_gr_books'].count()
 gr_big.head()
 
 # %% [markdown]
-# ## Huge Cluster Debugging
+# ## Large Cluster Debugging
 #
-# We have a very large cluster:
+# We have some pretty big clusters:
 
 # %%
 big = clusters.nlargest(5, 'n_nodes')
@@ -139,10 +139,39 @@ bl = bl.join(isbns, on='isbn_id')
 bl.sort_values('isbn')
 
 # %% [markdown]
-# GoodReads gives us some wacky ISBNs.  Are there any of these that have a really large record count?
+# What are the things with the highest record count (besides ratings)?
 
 # %%
 bl['btot'] = bl.iloc[:, 2:-2].sum(axis=1)
 bl.nlargest(20, 'btot')
+
+# %% [markdown]
+# ### Graph Analysis
+#
+# Now let's start looking at this graph itself.
+
+# %%
+from igraph import Graph
+
+# %%
+g = Graph.Read_GML('book-links/debug-graph.gml')
+g
+
+# %%
+btw = g.betweenness()
+btw = np.array(btw)
+btw
+
+# %%
+gdf = pd.DataFrame.from_records(v.attributes() for v in g.vs)
+gdf['btw'] = btw
+gdf.nlargest(15, 'btw')
+
+# %%
+g.diameter()
+
+# %%
+gdf['ecc'] = g.eccentricity()
+gdf.nsmallest(15, 'ecc')
 
 # %%

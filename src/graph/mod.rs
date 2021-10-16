@@ -1,5 +1,6 @@
 use std::path::Path;
 use std::fs::File;
+use std::collections::HashSet;
 use zstd::{Encoder, Decoder};
 
 use serde::{Serialize, Deserialize};
@@ -41,4 +42,20 @@ pub fn load_graph<P: AsRef<Path>>(path: P) -> Result<IdGraph> {
   let rdr = Decoder::new(file)?;
   let g = rmp_serde::decode::from_read(rdr)?;
   Ok(g)
+}
+
+/// Convert indices to a node set
+pub fn node_set(indexes: &Vec<IdNode>) -> HashSet<IdNode> {
+  indexes.iter().map(|i| *i).collect()
+}
+
+/// Filter a graph to contain only some nodes.
+pub fn filter_to_nodes(graph: &IdGraph, nodes: &HashSet<IdNode>) -> IdGraph {
+  graph.filter_map(|ni, n| {
+    if nodes.contains(&ni) {
+      Some(n.clone())
+    } else {
+      None
+    }
+  }, |_ei, _e| Some(()))
 }

@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::collections::HashSet;
 
 use bookdata::prelude::*;
-use bookdata::graph::{IdGraph, IdNode, load_graph, save_gml};
+use bookdata::graph::{IdGraph, IdNode, load_graph, save_gml, filter_to_nodes};
 
 use petgraph::algo::kosaraju_scc;
 
@@ -40,17 +40,6 @@ fn find_cluster(graph: &IdGraph, cc: &Vec<Vec<IdNode>>, code: i32) -> HashSet<Id
   return HashSet::new();
 }
 
-fn filter_to_nodes(graph: &IdGraph, nodes: &HashSet<IdNode>) -> IdGraph {
-  info!("filtering graph to {} nodes", nodes.len());
-  graph.filter_map(|ni, n| {
-    if nodes.contains(&ni) {
-      Some(n.clone())
-    } else {
-      None
-    }
-  }, |_ei, _e| Some(()))
-}
-
 fn main() -> Result<()> {
   let opts = ExtractGraph::from_args();
   opts.common.init()?;
@@ -72,6 +61,7 @@ fn main() -> Result<()> {
     HashSet::new()
   };
 
+  info!("filtering graph to {} nodes", nodes.len());
   let subgraph = filter_to_nodes(&graph, &nodes);
 
   if let Some(outf) = opts.out_file {
