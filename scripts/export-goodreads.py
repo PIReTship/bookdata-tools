@@ -185,6 +185,8 @@ if args['--work-authors']:
     export_work_authors()
 if args['--work-genres']:
     export_work_genres()
+if args['--work-genders']:
+    export_work_genders()
 if args['--work-ratings']:
     export_work_ratings()
 if args['--work-actions']:
