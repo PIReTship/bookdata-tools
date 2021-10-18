@@ -6,6 +6,7 @@ Usage:
     export.py --work-titles
     export.py --work-authors
     export.py --work-genres
+    export.py --work-genders
     export.py --work-ratings
     export.py --work-actions
 """
@@ -76,6 +77,27 @@ def export_work_genres():
     genres.to_parquet(pq_fn, index=False, compression='brotli')
     _log.info('writing CSV')
     genres.to_csv('gr-work-genres.csv.gz', index=False)
+
+
+def export_work_genders():
+    query = f'''
+        SELECT DISTINCT gr_work_id AS work_id, cluster, gender
+        FROM gr.book_ids
+        JOIN gr.book_isbn USING (gr_book_id)
+        JOIN isbn_cluster USING (isbn_id)
+        JOIN cluster_first_author_gender USING (cluster)
+        ORDER BY work_id
+    '''
+
+    with db.connect() as dbc:
+        _log.info('reading work genders')
+        genders = db.load_table(dbc, query)
+
+    pq_fn = 'gr-work-genders.parquet'
+    _log.info('writing parquet to %s', pq_fn)
+    genders.to_parquet(pq_fn, index=False, compression='brotli')
+    _log.info('writing CSV')
+    genders.to_csv('gr-work-genders.csv.gz', index=False)
 
 
 def export_work_authors():
