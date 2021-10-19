@@ -81,11 +81,11 @@ def export_work_genres():
 
 def export_work_genders():
     query = f'''
-        SELECT DISTINCT gr_work_id AS work_id, cluster, gender
+        SELECT DISTINCT gr_work_id AS work_id, cluster, COALESCE(gender, 'no-book') AS gender
         FROM gr.book_ids
-        JOIN gr.book_isbn USING (gr_book_id)
-        JOIN isbn_cluster USING (isbn_id)
-        JOIN cluster_first_author_gender USING (cluster)
+        LEFT JOIN gr.book_isbn USING (gr_book_id)
+        LEFT JOIN isbn_cluster USING (isbn_id)
+        LEFT JOIN cluster_first_author_gender USING (cluster)
         ORDER BY work_id
     '''
 
