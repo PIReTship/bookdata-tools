@@ -7,6 +7,16 @@ table az_rating "../az2014/az-cluster-ratings.parquet"
 table gr_rating "../goodreads/gr-cluster-ratings.parquet"
 table gr_action "../goodreads/gr-cluster-actions.parquet"
 
+table nodes "cluster-graph-nodes.parquet"
+
+save-results "cluster-nogr.parquet" {
+    SELECT DISTINCT cluster
+    FROM nodes
+    WHERE node_type NOT IN ('GR-W', 'GR-B')
+}
+
+table ngr_cluster "cluster-nogr.parquet"
+
 set full_query ""
 
 proc add-query {query} {
@@ -50,14 +60,16 @@ add-query {
 add-query {
     SELECT 'GR-I' as dataset, gender, COUNT(DISTINCT item) AS n_books, COUNT(item) AS n_actions
     FROM gr_action
-    JOIN gender ON (item = cluster)
+    JOIN ngr_cluster ON (item = cluster)
+    JOIN gender USING (cluster)
     GROUP BY gender
 }
 
 add-query {
     SELECT 'GR-E' as dataset, gender, COUNT(DISTINCT item) AS n_books, COUNT(item) AS n_actions
     FROM gr_rating
-    JOIN gender ON (item = cluster)
+    JOIN ngr_cluster ON (item = cluster)
+    JOIN gender USING (cluster)
     GROUP BY gender
 }
 
