@@ -12,16 +12,9 @@ table nodes "cluster-graph-nodes.parquet"
 query {
     SELECT node_type, COUNT(cluster)
     FROM nodes
-    GROUP BY node_type;
+    GROUP BY node_type
+    ORDER BY node_type
 }
-
-save-results "cluster-nogr.parquet" {
-    SELECT DISTINCT cluster
-    FROM nodes
-    WHERE node_type <> 'GR-W' AND node_type <> 'GR-B'
-}
-
-table ngr_cluster "cluster-nogr.parquet"
 
 set full_query ""
 
@@ -66,16 +59,14 @@ add-query {
 add-query {
     SELECT 'GR-I' as dataset, gender, COUNT(DISTINCT item) AS n_books, COUNT(item) AS n_actions
     FROM gr_action
-    JOIN ngr_cluster ON (item = cluster)
-    JOIN gender USING (cluster)
+    JOIN gender ON (item = cluster)
     GROUP BY gender
 }
 
 add-query {
     SELECT 'GR-E' as dataset, gender, COUNT(DISTINCT item) AS n_books, COUNT(item) AS n_actions
     FROM gr_rating
-    JOIN ngr_cluster ON (item = cluster)
-    JOIN gender USING (cluster)
+    JOIN gender ON (item = cluster)
     GROUP BY gender
 }
 
