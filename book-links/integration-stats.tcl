@@ -9,10 +9,16 @@ table gr_action "../goodreads/gr-cluster-actions.parquet"
 
 table nodes "cluster-graph-nodes.parquet"
 
+query {
+    SELECT node_type, COUNT(cluster)
+    FROM nodes
+    GROUP BY node_type;
+}
+
 save-results "cluster-nogr.parquet" {
     SELECT DISTINCT cluster
     FROM nodes
-    WHERE node_type NOT IN ('GR-W', 'GR-B')
+    WHERE node_type <> 'GR-W' AND node_type <> 'GR-B'
 }
 
 table ngr_cluster "cluster-nogr.parquet"
