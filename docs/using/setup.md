@@ -61,7 +61,6 @@ This needs the following Python dependencies:
 - pandas
 - colorama
 - chromalog
-- natural
 - dvc (0.90 or later)
 - sqlparse
 - sqlalchemy
