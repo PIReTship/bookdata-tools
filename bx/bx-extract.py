@@ -2,9 +2,11 @@
 Import BookCrossing ratings, with data cleaning for invalid characters.
 
 Usage:
-    bx-import.py <zip> <output>
+    bx-import.py [options] <zip> <output>
 
 Options:
+    -v, --verbose
+        Turn on debug logging.
     <zip>
         The zip file to read.
     <output>
@@ -19,8 +21,8 @@ import pandas as pd
 from io import BytesIO
 from zipfile import ZipFile
 
-_log = script_log(__name__)
 opts = docopt(__doc__)
+_log = script_log(__name__, debug=opts['--verbose'])
 
 _log.info("extracting BX rating data")
 with ZipFile(opts['<zip>'], 'r') as zf:

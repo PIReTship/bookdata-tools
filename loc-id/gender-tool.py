@@ -1,6 +1,8 @@
 """
 Output gender statistics.
 
+NOT CURRENTLY WORKING.
+
 Usage:
     gender-tool.py --stats (--mds|--lcnaf) [-o FILE]
     gender-tool.py --import-codes [-T TFILE] FILE
