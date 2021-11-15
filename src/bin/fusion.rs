@@ -141,7 +141,7 @@ fn cmd_save_results(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> Molt
   }
 
   wrap_errs(|| {
-    info!("have {} registered tables", ctx.df_context.tables()?.len());
+    log_exc_info(&ctx.df_context)?;
     info!("planning query");
     debug!("query text: {}", query);
     let lplan = ctx.df_context.create_logical_plan(&query)?;
@@ -172,6 +172,7 @@ fn cmd_query(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> MoltResult 
   let query = argv[1].as_str();
 
   wrap_errs(|| {
+    log_exc_info(&ctx.df_context)?;
     info!("preparing query");
     debug!("query text: {}", query);
 

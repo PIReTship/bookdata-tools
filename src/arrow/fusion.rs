@@ -3,6 +3,7 @@ use std::io::Write;
 use std::sync::Arc;
 
 use lazy_static::lazy_static;
+use log::*;
 
 use futures::stream::{Stream, StreamExt};
 use serde::de::DeserializeOwned;
@@ -25,6 +26,20 @@ use parquet::file::writer::ParquetWriter;
 use crate::ids::codes;
 use crate::cleaning::strings::norm_unicode;
 use super::row_de::RecordBatchDeserializer;
+
+/// Log basic info about an execution context.
+pub fn log_exc_info(exc: &ExecutionContext) -> Result<()> {
+  let state = exc.state.lock().expect("mutex fail");
+  debug!("catalogs: {:?}", state.catalog_list.catalog_names());
+  let cp = state.catalog_list.catalog("datafusion").unwrap();
+  debug!("schemas in datafusion: {:?}", cp.schema_names());
+  let tables = cp.schema("public").unwrap().table_names();
+  info!("have {} registered tables", tables.len());
+  for t in &tables {
+    debug!("table: datafusion.public.{}", t);
+  }
+  Ok(())
+}
 
 /// Evaluate a DataFusion plan to a CSV file.
 pub async fn eval_to_csv<W: Write>(out: &mut arrow::csv::Writer<W>, plan: Arc<dyn ExecutionPlan>) -> Result<()> {
