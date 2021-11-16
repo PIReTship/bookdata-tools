@@ -250,7 +250,7 @@ impl ActionDedup {
       }
 
       timer.complete(1);
-      timer.log_status("writing acitons", 5.0);
+      timer.log_status("writing actions", 5.0);
     }
 
     let rv = writer.finish()?;

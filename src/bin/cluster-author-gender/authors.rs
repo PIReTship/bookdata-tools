@@ -87,7 +87,7 @@ pub fn viaf_author_table() -> Result<AuthorTable> {
     }
   }
 
-  info!("read {} gender records in {}", table.len(), timer);
+  info!("merged {} gender records in {}", table.len(), timer);
 
   Ok(table)
 }
