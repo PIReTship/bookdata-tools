@@ -1,0 +1,268 @@
+schema: '2.0'
+stages:
+  collect-isbns:
+    cmd: python run.py --rust collect-isbns
+    deps:
+    - path: az2014/ratings.parquet
+      md5: 95cd58874b4a8bb97c9708291501a2f3
+      size: 147876996
+    - path: bx/cleaned-ratings.csv
+      md5: da3196d4af84ae39b3713e73c59677c7
+      size: 22627884
+    - path: goodreads/gr-book-ids.parquet
+      md5: 32f46ee2566515e7452b41e111351a83
+      size: 36149035
+    - path: loc-mds/book-isbns.parquet
+      md5: 0f6f3e5cae82b390c43451040916c087
+      size: 54350954
+    - path: openlibrary/edition-isbns.parquet
+      md5: 5538527022436ea7e99d9dfd22895028
+      size: 132775401
+    - path: src/bin/collect-isbns.rs
+      md5: 622781b36fe4c74d94c22787d8d4ea29
+      size: 4166
+    outs:
+    - path: book-links/all-isbns.parquet
+      md5: c3b298952b9b06b3aa52bccc89787fca
+      size: 253051496
+  cluster:
+    cmd: python run.py --rust cluster-books
+    deps:
+    - path: book-links/all-isbns.parquet
+      md5: c3b298952b9b06b3aa52bccc89787fca
+      size: 253051496
+    - path: goodreads/book-isbn-ids.parquet
+      md5: 7354e489b7554b25ab9c7625c2684631
+      size: 20849709
+    - path: goodreads/gr-book-ids.parquet
+      md5: 32f46ee2566515e7452b41e111351a83
+      size: 36149035
+    - path: loc-mds/book-ids.parquet
+      md5: cb26ddb248b9e595577c20b9fca13e4d
+      size: 64879592
+    - path: loc-mds/book-isbn-ids.parquet
+      md5: 3437b6682f099f393b6269d6346e9802
+      size: 51771561
+    - path: openlibrary/all-works.parquet
+      md5: afcf8b373b68927906b0b419f7917bb5
+      size: 147844776
+    - path: openlibrary/edition-isbn-ids.parquet
+      md5: 60f1ce1f3cf9ad7819aaaab6f5d33956
+      size: 155268879
+    - path: openlibrary/edition-works.parquet
+      md5: 53b2411bb98c5f37f51d3e23b2b6e876
+      size: 146525245
+    - path: openlibrary/editions.parquet
+      md5: 14711ccac136c604e043cadf803cad7e
+      size: 725126663
+    - path: src/bin/cluster-books.rs
+      md5: d49e58b7a543f64b122c4dceb2492506
+      size: 4249
+    - path: src/graph/
+      md5: be3cc19e9d6a55b2efdacac78eb346ee.dir
+      size: 10332
+      nfiles: 4
+    outs:
+    - path: book-links/book-graph.mp.zst
+      md5: cbb067efc568960af703f83f5b73e9ac
+      size: 1283174149
+    - path: book-links/cluster-graph-edges.parquet
+      md5: e3c674b2a94c12debef1257ad3df52ab
+      size: 390172257
+    - path: book-links/cluster-graph-nodes.parquet
+      md5: 4bf5b5536fbc55c57e59698a726cd9f8
+      size: 680435666
+    - path: book-links/cluster-stats.json
+      md5: 285ad00f741e212b9e89405ced7deffa
+      size: 37
+    - path: book-links/cluster-stats.parquet
+      md5: b67fbc2e25107276331332cb941afa5d
+      size: 138730793
+    - path: book-links/isbn-clusters.parquet
+      md5: c3f6d63cd02e10ecf73b399c65ba9f3c
+      size: 257318790
+  cluster-ol-first-authors:
+    cmd: python run.py --rust cluster-authors -o book-links/cluster-ol-first-authors.parquet
+      --first-author -s openlib
+    deps:
+    - path: book-links/isbn-clusters.parquet
+      md5: c3f6d63cd02e10ecf73b399c65ba9f3c
+      size: 257318790
+    - path: openlibrary/author-names.parquet
+      md5: c380afae0b1aec42d7fbc1fd25097d00
+      size: 126446479
+    - path: openlibrary/edition-authors.parquet
+      md5: 06d076cd39843ef8daeb4204f4d2fc2b
+      size: 136280190
+    - path: openlibrary/edition-isbn-ids.parquet
+      md5: 60f1ce1f3cf9ad7819aaaab6f5d33956
+      size: 155268879
+    - path: src/bin/cluster-authors.rs
+      md5: d8bb6ef8de585d8cd2deb2b6dbd17bb0
+      size: 5199
+    outs:
+    - path: book-links/cluster-ol-first-authors.parquet
+      md5: dc5036c533418b0325b6133f0af9c986
+      size: 144474982
+  cluster-loc-first-authors:
+    cmd: python run.py --rust cluster-authors -o book-links/cluster-loc-first-authors.parquet
+      --first-author -s loc
+    deps:
+    - path: book-links/isbn-clusters.parquet
+      md5: c3f6d63cd02e10ecf73b399c65ba9f3c
+      size: 257318790
+    - path: loc-mds/book-authors.parquet
+      md5: 4cdf63248f24c8cabe7ddf8aed74547c
+      size: 103944306
+    - path: loc-mds/book-isbn-ids.parquet
+      md5: 3437b6682f099f393b6269d6346e9802
+      size: 51771561
+    - path: src/bin/cluster-authors.rs
+      md5: d8bb6ef8de585d8cd2deb2b6dbd17bb0
+      size: 5199
+    outs:
+    - path: book-links/cluster-loc-first-authors.parquet
+      md5: 070fe409d439733449d21b1acefc8154
+      size: 55837080
+  cluster-irst-authors:
+    cmd: python run.py --rust cluster-authors -o book-links/cluster-first-authors.parquet
+      --first-author -s openlib -s loc
+    deps:
+    - path: book-links/isbn-clusters.parquet
+      md5: 5ee9bb4b67de722e24363e140ea2791f
+      size: 161946382
+    - path: loc-mds/book-authors.parquet
+      md5: 2d3212dbf2405c48fb8bf2587a8587c3
+      size: 127567010
+    - path: loc-mds/book-isbn-ids.parquet
+      md5: 6a764a693a9baad23d7c489cd3f7bfc9
+      size: 70553002
+    - path: openlibrary/author-names.parquet
+      md5: 4e002793c585a769fc1334827697837e
+      size: 142462847
+    - path: openlibrary/edition-authors.parquet
+      md5: 7172b92182942d728830cdac0b4862b6
+      size: 164027959
+    - path: openlibrary/edition-isbn-ids.parquet
+      md5: afa5abff7a53ed402ba9ce4fb2a09635
+      size: 214125175
+    - path: src/bin/cluster-authors.rs
+      md5: 76f614625858e7ad84e273e875861490
+      size: 5253
+    outs:
+    - path: book-links/cluster-first-authors.parquet
+      md5: a7f439659cccd809efe4ac2ea276b058
+      size: 157637977
+  cluster-first-authors:
+    cmd: python run.py --rust cluster-authors -o book-links/cluster-first-authors.parquet
+      --first-author -s openlib -s loc
+    deps:
+    - path: book-links/isbn-clusters.parquet
+      md5: c3f6d63cd02e10ecf73b399c65ba9f3c
+      size: 257318790
+    - path: loc-mds/book-authors.parquet
+      md5: 4cdf63248f24c8cabe7ddf8aed74547c
+      size: 103944306
+    - path: loc-mds/book-isbn-ids.parquet
+      md5: 3437b6682f099f393b6269d6346e9802
+      size: 51771561
+    - path: openlibrary/author-names.parquet
+      md5: c380afae0b1aec42d7fbc1fd25097d00
+      size: 126446479
+    - path: openlibrary/edition-authors.parquet
+      md5: 06d076cd39843ef8daeb4204f4d2fc2b
+      size: 136280190
+    - path: openlibrary/edition-isbn-ids.parquet
+      md5: 60f1ce1f3cf9ad7819aaaab6f5d33956
+      size: 155268879
+    - path: src/bin/cluster-authors.rs
+      md5: d8bb6ef8de585d8cd2deb2b6dbd17bb0
+      size: 5038
+    outs:
+    - path: book-links/cluster-first-authors.parquet
+      md5: 69eb773c994bff045c01e7aae349f571
+      size: 177743343
+  cluster-genders:
+    cmd: python run.py --rust cluster-author-gender -o book-links/cluster-genders.parquet
+      -A book-links/cluster-first-authors.parquet
+    deps:
+    - path: book-links/cluster-first-authors.parquet
+      md5: 69eb773c994bff045c01e7aae349f571
+      size: 177743343
+    - path: book-links/cluster-stats.parquet
+      md5: b67fbc2e25107276331332cb941afa5d
+      size: 138730793
+    - path: src/bin/cluster-author-gender/
+      md5: a04a15876bc2eb5ff97448bb73f9792f.dir
+      size: 7452
+      nfiles: 3
+    - path: viaf/author-genders.parquet
+      md5: d44250d50199492e92cd67afac0610df
+      size: 103296580
+    - path: viaf/author-name-index.parquet
+      md5: c950aac9e518b66dafcd8a3bf09cbaba
+      size: 483847946
+    outs:
+    - path: book-links/cluster-genders.parquet
+      md5: 9f19495b5161ae06d635250dec042dd2
+      size: 115791104
+  gender-stats:
+    cmd: python ../run.py --rust fusion integration-stats.tcl
+    deps:
+    - path: ../az2014/az-cluster-ratings.parquet
+      md5: eeee32842fe90be1a6f95f545d83b47c
+      size: 302806565
+    - path: ../bx/bx-cluster-actions.parquet
+      md5: 0cde16b0719fd1f2beb8c8e4dcb50d6d
+      size: 7249018
+    - path: ../bx/bx-cluster-ratings.parquet
+      md5: 1e62750c0bb2a14e71ee5c629806c39c
+      size: 3043344
+    - path: ../goodreads/gr-cluster-actions.parquet
+      md5: 7b74753b62b853f8be7f804180b0821a
+      size: 2917522695
+    - path: ../goodreads/gr-cluster-ratings.parquet
+      md5: 3ad9aada5492cde40a92a3f3c129f223
+      size: 1400690193
+    - path: ../loc-mds/book-isbn-ids.parquet
+      md5: 3437b6682f099f393b6269d6346e9802
+      size: 51771561
+    - path: cluster-genders.parquet
+      md5: 9f19495b5161ae06d635250dec042dd2
+      size: 115791104
+    - path: integration-stats.tcl
+      md5: 0b47c45c920d62c0c476e1eca3b312a5
+      size: 1946
+    - path: isbn-clusters.parquet
+      md5: c3f6d63cd02e10ecf73b399c65ba9f3c
+      size: 257318790
+    outs:
+    - path: gender-stats.csv
+      md5: f485e3539394d60df530e522e6dda281
+      size: 1115
+  cluster-hashes:
+    cmd: python ../run.py --rust cluster-hashes -o cluster-hashes.parquet
+    deps:
+    - path: ../src/bin/cluster-hashes.rs
+      md5: f2ed9ba4d715d2e891917c466429f41f
+      size: 2807
+    - path: isbn-clusters.parquet
+      md5: c3f6d63cd02e10ecf73b399c65ba9f3c
+      size: 257318790
+    outs:
+    - path: cluster-hashes.parquet
+      md5: 8c47242735bc2e61666ed7388a9773dd
+      size: 269661931
+  debug-graph:
+    cmd: python ./run.py --rust extract-graph --cluster 100004141 -o book-links/debug-graph.gml
+    deps:
+    - path: book-links/book-graph.mp.zst
+      md5: cbb067efc568960af703f83f5b73e9ac
+      size: 1283174149
+    - path: src/bin/extract-graph.rs
+      md5: c22a75eb91d779306a11d8bd2065b3e6
+      size: 1142
+    outs:
+    - path: book-links/debug-graph.gml
+      md5: b2fb3c4a07ace6f85a1b880b54ab5da8
+      size: 2144356

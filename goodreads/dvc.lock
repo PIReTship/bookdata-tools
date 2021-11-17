@@ -1,0 +1,173 @@
+schema: '2.0'
+stages:
+  scan-interactions:
+    cmd: python ../run.py --rust gr-scan-interactions ../data/goodreads/goodreads_interactions.json.gz
+    deps:
+    - path: ../data/goodreads/goodreads_interactions.json.gz
+      md5: f2d054a85f33d405a9bff6933005ba89
+      size: 9388113365
+    - path: ../src/bin/gr-scan-interactions.rs
+      md5: ae76a92eb876f8fc6d8041d2ab0c1da6
+      size: 3305
+    - path: gr-book-link.parquet
+      md5: 84878dc46c66a321fc7e9ae2f667cbab
+      size: 24818859
+    outs:
+    - path: gr-interactions.parquet
+      md5: b3251db0ab69e1d0b002f0d68427d156
+      size: 2918239776
+  scan-book-info:
+    cmd: python ../run.py --rust gr-scan-book-info ../data/goodreads/goodreads_books.json.gz
+    deps:
+    - path: ../data/goodreads/goodreads_books.json.gz
+      md5: 01b40c70a00fb6aa321ee478f0fd0d6b
+      size: 2043729443
+    - path: ../src/bin/gr-scan-book-info.rs
+      md5: b62f644fe83ae74fc6e188658b81e30a
+      size: 3336
+    outs:
+    - path: gr-book-ids.parquet
+      md5: 32f46ee2566515e7452b41e111351a83
+      size: 36149035
+    - path: gr-book-info.parquet
+      md5: fe606d0eb8061bb02ad810ea937a2d21
+      size: 15217332
+  scan-work-info:
+    cmd: python ../run.py --rust gr-scan-works ../data/goodreads/goodreads_book_works.json.gz
+    deps:
+    - path: ../data/goodreads/goodreads_book_works.json.gz
+      md5: e80738a88d02d2b0081cd249d9b4f081
+      size: 81412944
+    - path: ../src/bin/gr-scan-works.rs
+      md5: 94ae6c1f18906eeb735ff22f9cca2dbe
+      size: 1908
+    outs:
+    - path: gr-work-info.parquet
+      md5: 3fef786b4b9cf886a9cd02a9a48b47c0
+      size: 24553263
+  book-isbn-ids:
+    cmd: python ../run.py --rust fusion book-isbn-ids.tcl
+    deps:
+    - path: ../book-links/all-isbns.parquet
+      md5: c3b298952b9b06b3aa52bccc89787fca
+      size: 253051496
+    - path: book-isbn-ids.tcl
+      md5: cfc117dbae890985d5c9c3ac5ef650dd
+      size: 454
+    - path: gr-book-ids.parquet
+      md5: 32f46ee2566515e7452b41e111351a83
+      size: 36149035
+    outs:
+    - path: book-isbn-ids.parquet
+      md5: 7354e489b7554b25ab9c7625c2684631
+      size: 20849709
+  cluster-ratings:
+    cmd: python run.py --rust cluster-actions -s gr-ratings -o goodreads/gr-cluster-ratings.parquet
+    deps:
+    - path: goodreads/gr-book-link.parquet
+      md5: 84878dc46c66a321fc7e9ae2f667cbab
+      size: 24818859
+    - path: goodreads/gr-interactions.parquet
+      md5: b3251db0ab69e1d0b002f0d68427d156
+      size: 2918239776
+    - path: src/bin/cluster-actions/
+      md5: b49ab85f7fdc9c61b5e43d5829c8d8cc.dir
+      size: 8637
+      nfiles: 5
+    outs:
+    - path: goodreads/gr-cluster-ratings.parquet
+      md5: 3ad9aada5492cde40a92a3f3c129f223
+      size: 1400690193
+  book-links:
+    cmd: python ../run.py --rust fusion book-clusters.tcl
+    deps:
+    - path: ../book-links/cluster-graph-nodes.parquet
+      md5: 4bf5b5536fbc55c57e59698a726cd9f8
+      size: 680435666
+    - path: book-clusters.tcl
+      md5: 8f54dc3fabb9b0720a6b7a8edae5485b
+      size: 346
+    - path: gr-book-ids.parquet
+      md5: 32f46ee2566515e7452b41e111351a83
+      size: 36149035
+    outs:
+    - path: gr-book-link.parquet
+      md5: 84878dc46c66a321fc7e9ae2f667cbab
+      size: 24818859
+  cluster-interactions:
+    cmd: python cluster-ratings.py
+    deps:
+    - path: cluster-ratings.py
+      md5: d44be03784268f02b28c1b40bc108c27
+      size: 1219
+    - path: gr-book-link.parquet
+      md5: f31fc29c8644c439e192af9868604a93
+      size: 29380146
+    - path: gr-interactions.parquet
+      md5: 0ee400ec374aa0263198b25e9d9140e0
+      size: 1619196241
+    outs:
+    - path: gr-cluster-ratings.parquet
+      md5: af8b42db6e3b8f0ded896f7cab433530
+      size: 327784394
+  cluster-actions:
+    cmd: python run.py --rust cluster-actions -s gr-actions -o goodreads/gr-cluster-actions.parquet
+    deps:
+    - path: goodreads/gr-book-link.parquet
+      md5: 84878dc46c66a321fc7e9ae2f667cbab
+      size: 24818859
+    - path: goodreads/gr-interactions.parquet
+      md5: b3251db0ab69e1d0b002f0d68427d156
+      size: 2918239776
+    - path: src/bin/cluster-actions/
+      md5: b49ab85f7fdc9c61b5e43d5829c8d8cc.dir
+      size: 8637
+      nfiles: 5
+    outs:
+    - path: goodreads/gr-cluster-actions.parquet
+      md5: 7b74753b62b853f8be7f804180b0821a
+      size: 2917522695
+  work-ratings:
+    cmd: python run.py --rust cluster-actions -s gr-ratings --native-works -o goodreads/gr-work-ratings.parquet
+    deps:
+    - path: goodreads/gr-interactions.parquet
+      md5: b3251db0ab69e1d0b002f0d68427d156
+      size: 2918239776
+    - path: src/bin/cluster-actions/
+      md5: b49ab85f7fdc9c61b5e43d5829c8d8cc.dir
+      size: 8986
+      nfiles: 5
+    outs:
+    - path: goodreads/gr-work-ratings.parquet
+      md5: cf1903ec5d47060286f5c363cd831b6c
+      size: 1415452276
+  work-actions:
+    cmd: python run.py --rust cluster-actions -s gr-actions --native-works -o goodreads/gr-work-actions.parquet
+    deps:
+    - path: goodreads/gr-interactions.parquet
+      md5: b3251db0ab69e1d0b002f0d68427d156
+      size: 2918239776
+    - path: src/bin/cluster-actions/
+      md5: b49ab85f7fdc9c61b5e43d5829c8d8cc.dir
+      size: 8986
+      nfiles: 5
+    outs:
+    - path: goodreads/gr-work-actions.parquet
+      md5: 074f143a3e9b2f88ffa6ae3285c415d0
+      size: 3046665776
+  work-gender:
+    cmd: python ../run.py --rust fusion work-gender.tcl
+    deps:
+    - path: ../book-links/cluster-genders.parquet
+      md5: d746eda82155d5e0b0235dd8e0f8a4cf
+      size: 113429608
+    - path: gr-book-link.parquet
+      md5: 79b492d12110f82ac9c0f6b29640af34
+      size: 24985798
+    - path: work-gender.tcl
+      md5: 0e1dc0a1bfaa8047a3686a318fd31d24
+      size: 233
+    outs:
+    - path: gr-work-gender.parquet
+      md5: 57b41d705bad2ce1db4ef96b4de2140f
+      size: 12592486

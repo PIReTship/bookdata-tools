@@ -1,0 +1,45 @@
+stages:
+  scan-authors:
+    cmd: python ../run.py --rust scan-openlib -m author ../data/openlib/ol_dump_authors.txt.gz
+    deps:
+    - ../src/bin/scan-openlib/
+    - ../data/openlib/ol_dump_authors.txt.gz
+    outs:
+    - authors.parquet
+    - author-names.parquet
+
+  scan-works:
+    cmd: python ../run.py --rust scan-openlib -m work ../data/openlib/ol_dump_works.txt.gz
+    deps:
+    - ../src/bin/scan-openlib/
+    - ../data/openlib/ol_dump_works.txt.gz
+    - authors.parquet
+    outs:
+    - works.parquet
+    - work-authors.parquet
+    - author-ids-after-works.parquet
+
+  scan-editions:
+    cmd: python ../run.py --rust scan-openlib -m edition ../data/openlib/ol_dump_editions.txt.gz
+    deps:
+    - ../src/bin/scan-openlib/
+    - ../data/openlib/ol_dump_editions.txt.gz
+    - authors.parquet
+    - works.parquet
+    - author-ids-after-works.parquet
+    outs:
+    - editions.parquet
+    - edition-works.parquet
+    - edition-isbns.parquet
+    - edition-authors.parquet
+    - all-works.parquet
+    - all-authors.parquet
+
+  edition-isbn-ids:
+    cmd: python ../run.py --rust fusion edition-isbn-ids.tcl
+    deps:
+    - edition-isbn-ids.tcl
+    - edition-isbns.parquet
+    - ../book-links/all-isbns.parquet
+    outs:
+    - edition-isbn-ids.parquet

@@ -5,7 +5,6 @@ nav_order: 8
 ---
 
 # Book Clusters
-{: .no_toc}
 
 For recommendation and analysis, we often want to look at *works* instead of individual books or
 editions of those books.  The same material by the same author(s) may be reprinted in many different

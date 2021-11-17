@@ -5,12 +5,22 @@ nav_order: 2
 ---
 
 # Setting Up the Environment
-{: .no_toc}
 
 These tools require PostgreSQL and an Anaconda installation.
 
-1. TOC
-{:toc}
+## System Requirements
+
+You will need:
+
+- A PostgreSQL server with at least 500GB of disk space available for the database and ample RAM.
+- An environment to save the raw files and run the import code.  This can be the same machine as the PostgreSQL server, but needs:
+  - Anaconda or Miniconda
+  - 100GB of disk space for input files
+  - A few GB of memory
+  - Linux or macOS (since graph-tool isn't built for Windows right now)
+
+The scripts don't have substantial memory requirements, but do need a good deal of disk space.
+The most memory-intensive operation is the connected components computation for book clustering.
 
 ## PostgreSQL Database
 
@@ -51,7 +61,6 @@ This needs the following Python dependencies:
 - pandas
 - colorama
 - chromalog
-- natural
 - dvc (0.90 or later)
 - sqlparse
 - sqlalchemy
@@ -72,6 +81,8 @@ a config file `db.cfg`.  This file should look like:
 [DEFAULT]
 host = localhost
 database = bookdata
+user = user
+password = password
 ```
 
 This file additionally supports branch-specfic configuration sections that will apply to work

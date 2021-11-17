@@ -1,0 +1,58 @@
+schema: '2.0'
+stages:
+  scan-authors:
+    cmd: python ../run.py --rust scan-marc -L -o viaf.parquet ../data/viaf-clusters-marc21.xml.gz
+    deps:
+    - path: ../data/viaf-clusters-marc21.xml.gz
+      md5: 2f1af5262584d38f7331d333dec81cc3
+      size: 10662471024
+    - path: ../src/bin/scan-marc
+      md5: 71159598863602bab1f76664ef699ba5.dir
+      size: 6853
+      nfiles: 3
+    outs:
+    - path: viaf.parquet
+      md5: 0a507e35628c05542cd952e90c6788ce
+      size: 10563863034
+  author-names:
+    cmd: python ../run.py --rust fusion author-names.tcl
+    deps:
+    - path: author-names.tcl
+      md5: d0ebf76118c885cd85ce01ddc87cdb64
+      size: 223
+    - path: viaf.parquet
+      md5: 0a507e35628c05542cd952e90c6788ce
+      size: 10563863034
+    outs:
+    - path: author-names.csv.gz
+      md5: d872c958d1043e901b4b13f7221b38f7
+      size: 418696279
+  author-genders:
+    cmd: python ../run.py --rust fusion author-genders.tcl
+    deps:
+    - path: author-genders.tcl
+      md5: 53a3022f70f9a5b5662a0b97501c891b
+      size: 183
+    - path: viaf.parquet
+      md5: 0a507e35628c05542cd952e90c6788ce
+      size: 10563863034
+    outs:
+    - path: author-genders.parquet
+      md5: d44250d50199492e92cd67afac0610df
+      size: 103296580
+  index-names:
+    cmd: python ../run.py --rust index-names author-names.csv.gz author-name-index.parquet
+    deps:
+    - path: ../src/bin/index-names.rs
+      md5: 7a7b82c5d405052d960126d630a97dfa
+      size: 2480
+    - path: author-names.csv.gz
+      md5: d872c958d1043e901b4b13f7221b38f7
+      size: 418696279
+    outs:
+    - path: author-name-index.csv.gz
+      md5: ab8acdc49ca3584b066f9a5a699660ed
+      size: 497227671
+    - path: author-name-index.parquet
+      md5: c950aac9e518b66dafcd8a3bf09cbaba
+      size: 483847946

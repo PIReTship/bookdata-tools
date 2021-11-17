@@ -1,0 +1,59 @@
+stages:
+  scan-books:
+    cmd: python ../run.py --rust scan-marc --book-mode --glob "../data/loc-books/BooksAll.2016*.xml.gz"
+    deps:
+    - ../src/bin/scan-marc
+    - ../data/loc-books
+    outs:
+    - book-fields.parquet
+    - book-ids.parquet
+    - book-isbns.parquet
+
+  scan-names:
+    cmd: python ../run.py --rust scan-marc --glob "../data/loc-names/Names.2016*.xml.gz"
+      -o name-fields.parquet
+    deps:
+    - ../src/bin/scan-marc
+    - ../data/loc-names
+    outs:
+    - name-fields.parquet
+
+  book-isbn-ids:
+    cmd: python ../run.py --rust fusion book-isbn-ids.tcl
+    deps:
+    - book-isbn-ids.tcl
+    - book-isbns.parquet
+    - ../book-links/all-isbns.parquet
+    outs:
+    - book-isbn-ids.parquet
+
+  book-authors:
+    cmd: python ../run.py --rust fusion book-authors.tcl
+    deps:
+    - book-authors.tcl
+    - book-fields.parquet
+    outs:
+    - book-authors.parquet
+
+  author-names:
+    cmd: python ../run.py --rust fusion author-names.tcl
+    deps:
+    - author-names.tcl
+    - name-fields.parquet
+    outs:
+    - author-names.csv.gz
+
+  author-genders:
+    cmd: python ../run.py --rust fusion author-genders.tcl
+    deps:
+    - author-genders.tcl
+    - name-fields.parquet
+    outs:
+    - author-genders.csv.gz
+  loc-clusters:
+    cmd: python ../run.py --rust fusion loc-clusters.tcl
+    deps:
+    - ../book-links/cluster-graph-nodes.parquet
+    - loc-clusters.tcl
+    outs:
+    - loc-clusters.parquet

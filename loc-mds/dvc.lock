@@ -1,0 +1,107 @@
+schema: '2.0'
+stages:
+  scan-books:
+    cmd: python ../run.py --rust scan-marc --book-mode --glob "../data/loc-books/BooksAll.2016*.xml.gz"
+    deps:
+    - path: ../data/loc-books
+      md5: 1b1e7ab1d98cc81e373dfc53345d4bb7.dir
+      size: 3129774145
+      nfiles: 43
+    - path: ../src/bin/scan-marc
+      md5: 71159598863602bab1f76664ef699ba5.dir
+      size: 7117
+      nfiles: 3
+    outs:
+    - path: book-fields.parquet
+      md5: f87417b80024f7b03c53b1d7a4518c4d
+      size: 3097075045
+    - path: book-ids.parquet
+      md5: cb26ddb248b9e595577c20b9fca13e4d
+      size: 64879592
+    - path: book-isbns.parquet
+      md5: 0f6f3e5cae82b390c43451040916c087
+      size: 54350954
+  book-authors:
+    cmd: python ../run.py --rust fusion book-authors.tcl
+    deps:
+    - path: book-authors.tcl
+      md5: 76dd9093a7e1610f34513c447a92ba58
+      size: 245
+    - path: book-fields.parquet
+      md5: f87417b80024f7b03c53b1d7a4518c4d
+      size: 3097075045
+    outs:
+    - path: book-authors.parquet
+      md5: 4cdf63248f24c8cabe7ddf8aed74547c
+      size: 103944306
+  scan-names:
+    cmd: python ../run.py --rust scan-marc --glob "../data/loc-names/Names.2016*.xml.gz"
+      -o name-fields.parquet
+    deps:
+    - path: ../data/loc-names
+      md5: fc488a8775561070cced774803fe0d72.dir
+      size: 1410755359
+      nfiles: 40
+    - path: ../src/bin/scan-marc
+      md5: 797f3c50607fbba52ac2dc3b4eb2b133.dir
+      size: 7102
+      nfiles: 3
+    outs:
+    - path: name-fields.parquet
+      md5: ab2d68742778f5b48121cb1c3ffb6740
+      size: 1485894735
+  author-names:
+    cmd: python ../run.py --rust fusion author-names.tcl
+    deps:
+    - path: author-names.tcl
+      md5: 29c68172aa2a10d6054b73656c21567c
+      size: 193
+    - path: name-fields.parquet
+      md5: ab2d68742778f5b48121cb1c3ffb6740
+      size: 1485894735
+    outs:
+    - path: author-names.csv.gz
+      md5: f495008113fb1ffa1c188aec77343e5a
+      size: 87274346
+  author-genders:
+    cmd: python ../run.py --rust fusion author-genders.tcl
+    deps:
+    - path: author-genders.tcl
+      md5: 58abbe4a110eb782450d9db0e461e087
+      size: 197
+    - path: name-fields.parquet
+      md5: ab2d68742778f5b48121cb1c3ffb6740
+      size: 1485894735
+    outs:
+    - path: author-genders.csv.gz
+      md5: faccd4a046601777c7776a171f91cd52
+      size: 1468374
+  book-isbn-ids:
+    cmd: python ../run.py --rust fusion book-isbn-ids.tcl
+    deps:
+    - path: ../book-links/all-isbns.parquet
+      md5: c3b298952b9b06b3aa52bccc89787fca
+      size: 253051496
+    - path: book-isbn-ids.tcl
+      md5: 3633693602c7d0045687c23cb45b92e2
+      size: 187
+    - path: book-isbns.parquet
+      md5: 0f6f3e5cae82b390c43451040916c087
+      size: 54350954
+    outs:
+    - path: book-isbn-ids.parquet
+      md5: 3437b6682f099f393b6269d6346e9802
+      size: 51771561
+  loc-clusters:
+    cmd: python ../run.py --rust fusion loc-clusters.tcl
+    deps:
+    - path: ../book-links/cluster-codes.parquet
+      md5: 4e95b48d725cbf6b2e907f6f4fcc5919
+      size: 552510575
+    - path: loc-clusters.tcl
+      md5: b9202d00b5f4dd0605a6f706018b4d6b
+      size: 215
+    outs:
+    - path: loc-clusters.parquet
+      md5: 8a99ca97eeb582f9461a5e906938b129
+      size: 34554806

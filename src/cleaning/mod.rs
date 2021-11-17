@@ -1,5 +1,4 @@
-mod pg;
-mod json;
-
-pub use self::pg::write_pgencoded;
-pub use self::json::clean_json;
+//! Utilities for cleaning data.
+pub mod strings;
+pub mod isbns;
+pub mod names;

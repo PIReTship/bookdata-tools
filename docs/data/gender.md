@@ -5,14 +5,14 @@ nav_order: 9
 ---
 
 # Book Author Gender
-{: .no_toc}
 
 We compute the author gender for book clusters using the integrated data set.
 
-**See the paper for important limitations.**
+:::{warning}
+See the [paper][] for important limitations and ethical considerations.
+:::
 
-1. TOC
-{:toc}
+[paper]: https://md.ekstrandom.net/pubs/bag-extended
 
 ## Import Steps
 
