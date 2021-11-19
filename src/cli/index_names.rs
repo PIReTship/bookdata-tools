@@ -1,3 +1,4 @@
+//! Index names from authority records.
 use std::collections::{HashSet, HashMap};
 use std::path::{PathBuf, Path};
 use std::fs::File;
@@ -9,14 +10,17 @@ use flate2::write::GzEncoder;
 
 use happylog::set_progress;
 
-use bookdata::prelude::*;
-use bookdata::arrow::*;
-use bookdata::cleaning::names::*;
-use bookdata::io::open_gzin_progress;
+use crate::prelude::*;
+use crate::arrow::*;
+use crate::cleaning::names::*;
+use crate::io::open_gzin_progress;
+
+use super::Command;
+use crate as bookdata;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name="index-names")]
-/// Clean and index author names.
+/// Clean and index author names from authority records.
 pub struct IndexNames {
   #[structopt(flatten)]
   common: CommonOpts,
@@ -87,12 +91,14 @@ fn write_index<P: AsRef<Path>>(index: NameIndex, path: P) -> Result<()> {
   Ok(())
 }
 
-fn main() -> Result<()> {
-  let opts = IndexNames::from_args();
-  opts.common.init()?;
+impl Command for IndexNames {
+  fn exec(self) -> Result<()> {
+    let opts = IndexNames::from_args();
+    opts.common.init()?;
 
-  let names = scan_names(&opts.infile)?;
-  write_index(names, opts.outfile)?;
+    let names = scan_names(&opts.infile)?;
+    write_index(names, opts.outfile)?;
 
-  Ok(())
+    Ok(())
+  }
 }
