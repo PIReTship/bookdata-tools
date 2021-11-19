@@ -1,17 +1,16 @@
 //! Scan the nodes in an RDF ntriples file.
-use bookdata::prelude::*;
-use bookdata::io::LineProcessor;
-use bookdata::rdf::model::*;
-use bookdata::rdf::nodeindex::NodeIndex;
-use bookdata::rdf::nsmap::NSMap;
+use crate::prelude::*;
+use crate::io::LineProcessor;
+use crate::rdf::model::*;
+use crate::rdf::nodeindex::NodeIndex;
+use crate::rdf::nsmap::NSMap;
+
+use super::Command;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name="rdf-scan-nodes")]
 /// Scan the nodes in one or more RDF triples files.
 pub struct ScanNodes {
-  #[structopt(flatten)]
-  common: CommonOpts,
-
   /// Use a namespace map file.
   #[structopt(short="m", long="ns-map")]
   nsmap: Option<PathBuf>,
@@ -52,25 +51,24 @@ pub fn term_id(idx: &mut NodeIndex, obj: &Term) -> Result<Option<i32>> {
   }
 }
 
-pub fn main() -> Result<()> {
-  let opts = ScanNodes::from_args();
-  opts.common.init()?;
+impl Command for ScanNodes {
+  fn exec(self) -> Result<()> {
+    let mut idx = if let Some(path) = &self.outfile {
+      NodeIndex::new_with_file(path)?
+    } else {
+      NodeIndex::new_in_memory()
+    };
+    if let Some(path) = &self.nsmap {
+      let map = NSMap::load(path)?;
+      idx.set_nsmap(&map);
+    }
 
-  let mut idx = if let Some(path) = &opts.outfile {
-    NodeIndex::new_with_file(path)?
-  } else {
-    NodeIndex::new_in_memory()
-  };
-  if let Some(path) = &opts.nsmap {
-    let map = NSMap::load(path)?;
-    idx.set_nsmap(&map);
+    for file in self.infiles {
+      scan_file(&mut idx, file.as_ref())?;
+    }
+
+    idx.finish()?;
+
+    Ok(())
   }
-
-  for file in opts.infiles {
-    scan_file(&mut idx, file.as_ref())?;
-  }
-
-  idx.finish()?;
-
-  Ok(())
 }

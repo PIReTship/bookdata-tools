@@ -5,13 +5,18 @@
 //! implemented as subcommands.  Each subcommand implements the [Command] trait, which
 //! exposes the command line arguments and invocation.
 mod support;
+
 mod fusion;
+mod rdf_scan_nodes;
+mod rdf_scan_triples;
 
 pub use support::{CmdEntry, Command};
 
 pub fn commands() -> Vec<Box<dyn CmdEntry>> {
   vec![
     fusion::Fusion::entry(),
+    rdf_scan_nodes::ScanNodes::entry(),
+    rdf_scan_triples::ScanTriples::entry(),
   ]
 }
 

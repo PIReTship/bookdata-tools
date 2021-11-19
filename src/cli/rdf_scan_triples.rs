@@ -1,18 +1,19 @@
 //! Scan the nodes in an RDF ntriples file.
-use bookdata::prelude::*;
-use bookdata::io::{LineProcessor, ObjectWriter};
-use bookdata::rdf::model::*;
-use bookdata::rdf::nodeindex::NodeIndex;
-use bookdata::rdf::nsmap::NSMap;
-use bookdata::arrow::*;
+use crate::prelude::*;
+use crate::io::{LineProcessor, ObjectWriter};
+use crate::rdf::model::*;
+use crate::rdf::nodeindex::NodeIndex;
+use crate::rdf::nsmap::NSMap;
+use crate::arrow::*;
+
+use crate as bookdata;
+
+use super::Command;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name="rdf-scan-triples")]
 /// Scan and import RDF triples.
-pub struct ScanNodes {
-  #[structopt(flatten)]
-  common: CommonOpts,
-
+pub struct ScanTriples {
   /// Use a namespace map file.
   #[structopt(short="m", long="ns-map")]
   nsmap: Option<PathBuf>,
@@ -56,7 +57,7 @@ struct TripleScanner {
 }
 
 impl TripleScanner {
-  fn open(opts: &ScanNodes) -> Result<TripleScanner> {
+  fn open(opts: &ScanTriples) -> Result<TripleScanner> {
     let mut nodes = NodeIndex::new_with_file(&opts.node_file)?;
     if let Some(path) = &opts.nsmap {
       let map = NSMap::load(path)?;
@@ -113,18 +114,17 @@ impl TripleScanner {
   }
 }
 
-pub fn main() -> Result<()> {
-  let opts = ScanNodes::from_args();
-  opts.common.init()?;
+impl Command for ScanTriples {
+  fn exec(self) -> Result<()> {
+    let mut scanner = TripleScanner::open(&self)?;
 
-  let mut scanner = TripleScanner::open(&opts)?;
+    for file in &self.infiles {
+      scanner.scan_file(file.as_ref())?;
+    }
 
-  for file in &opts.infiles {
-    scanner.scan_file(file.as_ref())?;
+    let n = scanner.finish()?;
+    info!("saved {} triples from {} files", n, self.infiles.len());
+
+    Ok(())
   }
-
-  let n = scanner.finish()?;
-  info!("saved {} triples from {} files", n, opts.infiles.len());
-
-  Ok(())
 }
