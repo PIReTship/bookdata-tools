@@ -1,3 +1,4 @@
+//! DataFusion script runner.
 use std::path::{PathBuf};
 use std::fs::{File, read_to_string};
 use std::future::Future;
@@ -6,8 +7,9 @@ use std::sync::Arc;
 use tokio;
 use tokio::runtime::Runtime;
 
-use bookdata::prelude::*;
-use bookdata::arrow::fusion::*;
+use crate::prelude::*;
+use crate::arrow::fusion::*;
+use super::Command;
 
 use flate2::write::GzEncoder;
 use molt::*;
@@ -25,9 +27,6 @@ use datafusion::physical_plan::{ExecutionPlan};
 #[derive(StructOpt, Debug)]
 #[structopt(name="fusion")]
 pub struct Fusion {
-  #[structopt(flatten)]
-  common: CommonOpts,
-
   /// Operation specification to run.
   #[structopt(name = "SCRIPT", parse(from_os_str))]
   script: PathBuf
@@ -185,28 +184,28 @@ fn cmd_query(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> MoltResult 
   })
 }
 
-pub fn main() -> Result<()> {
-  let opts = Fusion::from_args();
-  opts.common.init()?;
 
-  let ctx = ScriptContext::create()?;
-  let mut interp = Interp::new();
-  let scid = interp.save_context(ctx);
-  interp.add_context_command("table", cmd_table, scid);
-  interp.add_context_command("save-results", cmd_save_results, scid);
-  interp.add_context_command("query", cmd_query, scid);
+impl Command for Fusion {
+  fn exec(self) -> Result<()> {
+    let ctx = ScriptContext::create()?;
+    let mut interp = Interp::new();
+    let scid = interp.save_context(ctx);
+    interp.add_context_command("table", cmd_table, scid);
+    interp.add_context_command("save-results", cmd_save_results, scid);
+    interp.add_context_command("query", cmd_query, scid);
 
-  info!("reading script from {}", &opts.script.to_string_lossy());
-  let script = read_to_string(&opts.script)?;
+    info!("reading script from {}", self.script.to_string_lossy());
+    let script = read_to_string(self.script)?;
 
-  info!("evaluating script");
-  let start = Timer::new();
-  if let Err(e) = interp.eval(&script) {
-    error!("error running script: {:?}", e);
-    Err(anyhow!("TCL error {}: {}", e.error_code().as_str(), e.error_info().as_str()))
-  } else {
-    info!("script completed successfully in {}",
-          start.human_elapsed());
-    Ok(())
+    info!("evaluating script");
+    let start = Timer::new();
+    if let Err(e) = interp.eval(&script) {
+      error!("error running script: {:?}", e);
+      Err(anyhow!("TCL error {}: {}", e.error_code().as_str(), e.error_info().as_str()))
+    } else {
+      info!("script completed successfully in {}",
+            start.human_elapsed());
+      Ok(())
+    }
   }
 }
