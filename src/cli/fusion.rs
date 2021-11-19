@@ -186,7 +186,7 @@ fn cmd_query(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> MoltResult 
 
 
 impl Command for Fusion {
-  fn exec(self) -> Result<()> {
+  fn exec(&self) -> Result<()> {
     let ctx = ScriptContext::create()?;
     let mut interp = Interp::new();
     let scid = interp.save_context(ctx);
@@ -195,7 +195,7 @@ impl Command for Fusion {
     interp.add_context_command("query", cmd_query, scid);
 
     info!("reading script from {}", self.script.to_string_lossy());
-    let script = read_to_string(self.script)?;
+    let script = read_to_string(&self.script)?;
 
     info!("evaluating script");
     let start = Timer::new();

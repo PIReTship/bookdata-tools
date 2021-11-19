@@ -52,7 +52,7 @@ pub fn term_id(idx: &mut NodeIndex, obj: &Term) -> Result<Option<i32>> {
 }
 
 impl Command for ScanNodes {
-  fn exec(self) -> Result<()> {
+  fn exec(&self) -> Result<()> {
     let mut idx = if let Some(path) = &self.outfile {
       NodeIndex::new_with_file(path)?
     } else {
@@ -63,7 +63,7 @@ impl Command for ScanNodes {
       idx.set_nsmap(&map);
     }
 
-    for file in self.infiles {
+    for file in &self.infiles {
       scan_file(&mut idx, file.as_ref())?;
     }
 

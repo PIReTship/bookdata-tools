@@ -6,17 +6,21 @@
 //! exposes the command line arguments and invocation.
 pub mod fusion;
 pub mod index_names;
+pub mod extract_graph;
+pub mod cluster_books;
 pub mod rdf_scan_nodes;
 pub mod rdf_scan_triples;
 
 use structopt::StructOpt;
+use tokio::runtime::Runtime;
 use enum_dispatch::enum_dispatch;
+use async_trait::async_trait;
 
 /// Trait implemented by book data commands.
 #[enum_dispatch]
 pub trait Command {
   /// Run the command with options
-  fn exec(self) -> Result<()>;
+  fn exec(&self) -> Result<()>;
 }
 
 /// Enum to collect and dispatch CLI commands.
@@ -24,7 +28,9 @@ pub trait Command {
 #[derive(StructOpt, Debug)]
 pub enum BDCommand {
   Fusion(fusion::Fusion),
+  ClusterBooks(cluster_books::ClusterBooks),
   IndexNames(index_names::IndexNames),
+  ExtractGraph(extract_graph::ExtractGraph),
   RDF(RDFWrapper)
 }
 
@@ -36,7 +42,7 @@ pub struct RDFWrapper {
 }
 
 impl Command for RDFWrapper {
-  fn exec(self) -> Result<()> {
+  fn exec(&self) -> Result<()> {
     self.command.exec()
   }
 }
@@ -46,6 +52,21 @@ impl Command for RDFWrapper {
 pub enum RDFCommand {
   ScanNodes(rdf_scan_nodes::ScanNodes),
   ScanTriples(rdf_scan_triples::ScanTriples),
+}
+
+/// Trait for implementing commands asynchronously.
+#[async_trait]
+pub trait AsyncCommand {
+  async fn exec_future(&self) -> Result<()>;
+}
+
+#[async_trait]
+impl <T: AsyncCommand> Command for T {
+  fn exec(&self) -> Result<()> {
+    let runtime = Runtime::new()?;
+    let task = self.exec_future();
+    runtime.block_on(task)
+  }
 }
 
 use happylog::args::LogOpts;

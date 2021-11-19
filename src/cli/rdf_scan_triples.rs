@@ -115,7 +115,7 @@ impl TripleScanner {
 }
 
 impl Command for ScanTriples {
-  fn exec(self) -> Result<()> {
+  fn exec(&self) -> Result<()> {
     let mut scanner = TripleScanner::open(&self)?;
 
     for file in &self.infiles {

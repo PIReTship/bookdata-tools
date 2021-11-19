@@ -29,28 +29,6 @@ pub struct GRBooks;
 #[derive(Debug)]
 pub struct GRWorks;
 
-pub fn edge_sources() -> Vec<Box<dyn EdgeRead>> {
-  vec![
-    Box::new(LOC),
-    Box::new(OLEditions),
-    Box::new(OLWorks),
-    Box::new(GRBooks),
-    Box::new(GRWorks)
-  ]
-}
-
-#[allow(dead_code)]
-pub fn node_sources() -> Vec<Box<dyn NodeRead>> {
-  vec![
-    Box::new(ISBN),
-    Box::new(LOC),
-    Box::new(OLEditions),
-    Box::new(OLWorks),
-    Box::new(GRBooks),
-    Box::new(GRWorks)
-  ]
-}
-
 /// Get an ID column and apply the appropriate namespace adjustment.
 fn id_col(name: &str, ns: NS<'_>) -> Expr {
   col(name) + lit(ns.base())

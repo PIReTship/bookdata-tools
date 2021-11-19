@@ -92,7 +92,7 @@ fn write_index<P: AsRef<Path>>(index: NameIndex, path: P) -> Result<()> {
 }
 
 impl Command for IndexNames {
-  fn exec(self) -> Result<()> {
+  fn exec(&self) -> Result<()> {
     let opts = IndexNames::from_args();
     opts.common.init()?;
 
