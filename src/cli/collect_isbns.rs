@@ -1,5 +1,3 @@
-use tokio;
-
 use std::fmt::Debug;
 use std::sync::Arc;
 use std::collections::HashMap;
@@ -8,17 +6,19 @@ use datafusion::prelude::*;
 use paste::paste;
 
 use serde::Deserialize;
+use async_trait::async_trait;
 
-use bookdata::prelude::*;
-use bookdata::arrow::*;
-use bookdata::arrow::row_de::RecordBatchDeserializer;
+use crate::prelude::*;
+use crate::arrow::*;
+use crate::arrow::row_de::RecordBatchDeserializer;
+use crate as bookdata;
 
-/// Run the book clustering algorithm.
+use super::AsyncCommand;
+
+/// Collect ISBNs from across the data sources.
 #[derive(StructOpt, Debug)]
 #[structopt(name="collect-isbns")]
 pub struct CollectISBNs {
-  #[structopt(flatten)]
-  common: CommonOpts,
 }
 
 #[derive(TableRow, Debug, Default, Clone)]
@@ -131,29 +131,28 @@ async fn record_isbns<T: ISBNSrc>(acc: &mut Accum, df: Arc<dyn DataFrame>, ty: T
   Ok(())
 }
 
-#[tokio::main]
-pub async fn main() -> Result<()> {
-  let opts = CollectISBNs::from_args();
-  opts.common.init()?;
+#[async_trait]
+impl AsyncCommand for CollectISBNs {
+  async fn exec_future(&self) -> Result<()> {
+    let mut acc = Accum::new();
+    let mut ctx = ExecutionContext::new();
 
-  let mut acc = Accum::new();
-  let mut ctx = ExecutionContext::new();
+    record_isbns(&mut acc, read_loc(&mut ctx).await?, LOC).await?;
+    record_isbns(&mut acc, read_ol(&mut ctx).await?, OL).await?;
+    record_isbns(&mut acc, read_gr(&mut ctx).await?, GR).await?;
+    record_isbns(&mut acc, read_bx(&mut ctx).await?, BX).await?;
+    record_isbns(&mut acc, read_az(&mut ctx).await?, AZ).await?;
 
-  record_isbns(&mut acc, read_loc(&mut ctx).await?, LOC).await?;
-  record_isbns(&mut acc, read_ol(&mut ctx).await?, OL).await?;
-  record_isbns(&mut acc, read_gr(&mut ctx).await?, GR).await?;
-  record_isbns(&mut acc, read_bx(&mut ctx).await?, BX).await?;
-  record_isbns(&mut acc, read_az(&mut ctx).await?, AZ).await?;
+    info!("found {} distinct ISBNs", acc.len());
 
-  info!("found {} distinct ISBNs", acc.len());
+    let mut writer = TableWriter::open("book-links/all-isbns.parquet")?;
+    for ir in acc.values() {
+      writer.write_object(ir.clone())?;
+    }
+    writer.finish()?;
 
-  let mut writer = TableWriter::open("book-links/all-isbns.parquet")?;
-  for ir in acc.values() {
-    writer.write_object(ir.clone())?;
+    info!("wrote ISBNs to book-links/all-isbns.parquet");
+
+    Ok(())
   }
-  writer.finish()?;
-
-  info!("wrote ISBNs to book-links/all-isbns.parquet");
-
-  Ok(())
 }

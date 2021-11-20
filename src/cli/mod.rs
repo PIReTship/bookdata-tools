@@ -8,6 +8,7 @@ pub mod fusion;
 pub mod index_names;
 pub mod extract_graph;
 pub mod cluster_books;
+pub mod collect_isbns;
 pub mod rdf_scan_nodes;
 pub mod rdf_scan_triples;
 
@@ -31,6 +32,7 @@ pub enum BDCommand {
   ClusterBooks(cluster_books::ClusterBooks),
   IndexNames(index_names::IndexNames),
   ExtractGraph(extract_graph::ExtractGraph),
+  CollectISBNS(collect_isbns::CollectISBNs),
   RDF(RDFWrapper)
 }
 
