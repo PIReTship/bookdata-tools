@@ -12,11 +12,35 @@ pub mod cluster_books;
 pub mod cluster;
 pub mod collect_isbns;
 pub mod rdf;
+pub mod amazon;
 
+use paste::paste;
 use structopt::StructOpt;
 use tokio::runtime::Runtime;
 use enum_dispatch::enum_dispatch;
 use async_trait::async_trait;
+
+/// Macro to generate wrappers for subcommand enums.
+///
+/// This is for subcommands that only exist to contain further subcommands,
+/// to make it easier to implement their wrapper classes.
+macro_rules! wrap_subcommands {
+  ($name:ty) => {
+    paste! {
+      #[derive(StructOpt, Debug)]
+      pub struct [<$name Wrapper>] {
+        #[structopt(subcommand)]
+        command: $name
+      }
+
+      impl Command for [<$name Wrapper>] {
+        fn exec(&self) -> Result<()> {
+          self.command.exec()
+        }
+      }
+    }
+  };
+}
 
 /// Trait implemented by book data commands.
 #[enum_dispatch]
@@ -35,21 +59,22 @@ pub enum BDCommand {
   IndexNames(index_names::IndexNames),
   ExtractGraph(extract_graph::ExtractGraph),
   CollectISBNS(collect_isbns::CollectISBNs),
-  Cluster(ClusterWrapper),
-  RDF(RDFWrapper),
+  /// Commands for processing Amazon data.
+  Amazon(AmazonCommandWrapper),
+  /// Commands for working with clusters.
+  Cluster(ClusterCommandWrapper),
+  /// Commands for working with RDF data.
+  RDF(RDFCommandWrapper),
 }
 
-/// Tools for processing RDF.
+wrap_subcommands!(AmazonCommand);
+wrap_subcommands!(ClusterCommand);
+wrap_subcommands!(RDFCommand);
+
+#[enum_dispatch(Command)]
 #[derive(StructOpt, Debug)]
-pub struct RDFWrapper {
-  #[structopt(subcommand)]
-  command: RDFCommand
-}
-
-impl Command for RDFWrapper {
-  fn exec(&self) -> Result<()> {
-    self.command.exec()
-  }
+enum AmazonCommand {
+  ScanRatings(amazon::ScanRatings),
 }
 
 #[enum_dispatch(Command)]
@@ -57,19 +82,6 @@ impl Command for RDFWrapper {
 pub enum RDFCommand {
   ScanNodes(rdf::ScanNodes),
   ScanTriples(rdf::ScanTriples),
-}
-
-/// Tools for processing book clusters.
-#[derive(StructOpt, Debug)]
-pub struct ClusterWrapper {
-  #[structopt(subcommand)]
-  command: ClusterCommand
-}
-
-impl Command for ClusterWrapper {
-  fn exec(&self) -> Result<()> {
-    self.command.exec()
-  }
 }
 
 #[enum_dispatch(Command)]

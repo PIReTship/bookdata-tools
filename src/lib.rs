@@ -14,6 +14,7 @@ pub mod gender;
 pub mod graph;
 pub mod marc;
 pub mod rdf;
+pub mod schemas;
 pub mod arrow;
 pub mod ratings;
 pub mod cli;
