@@ -9,6 +9,7 @@ pub mod scan_marc;
 pub mod index_names;
 pub mod extract_graph;
 pub mod cluster_books;
+pub mod cluster;
 pub mod collect_isbns;
 pub mod rdf;
 

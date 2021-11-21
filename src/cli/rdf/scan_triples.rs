@@ -6,10 +6,6 @@ use crate::rdf::nodeindex::NodeIndex;
 use crate::rdf::nsmap::NSMap;
 use crate::arrow::*;
 
-use crate as bookdata;
-
-use crate::cli::Command;
-
 #[derive(StructOpt, Debug)]
 #[structopt(name="rdf-scan-triples")]
 /// Scan and import RDF triples.

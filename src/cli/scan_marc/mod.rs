@@ -18,8 +18,6 @@ use crate::marc::parse::{read_records, read_records_delim};
 mod generic;
 mod book;
 
-use super::Command;
-
 /// Scan MARC records and extract basic information.
 ///
 /// This tool scans MARC-XML records, in either raw or delimited-line format,

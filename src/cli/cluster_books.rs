@@ -12,8 +12,6 @@ use async_trait::async_trait;
 use serde::Serialize;
 use petgraph::algo::kosaraju_scc;
 
-use crate as bookdata;
-
 /// Run the book clustering algorithm.
 #[derive(StructOpt, Debug)]
 #[structopt(name="cluster-books")]

@@ -9,7 +9,6 @@ use tokio::runtime::Runtime;
 
 use crate::prelude::*;
 use crate::arrow::fusion::*;
-use super::Command;
 
 use flate2::write::GzEncoder;
 use molt::*;

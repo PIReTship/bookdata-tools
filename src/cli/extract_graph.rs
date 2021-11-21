@@ -5,8 +5,6 @@ use std::path::PathBuf;
 use crate::prelude::*;
 use crate::graph::{load_graph, save_gml};
 
-use super::Command;
-
 /// Extract a subgraph.
 #[derive(StructOpt, Debug)]
 #[structopt(name="extract-graph")]

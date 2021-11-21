@@ -12,6 +12,9 @@ pub use crate::io::ObjectWriter;
 pub use crate::io::file_size;
 pub use crate::json_from_str;
 pub use crate::util::Timer;
+pub use crate::cli::Command;
+
+pub use crate as bookdata;
 
 /// Macro to implement FromStr using JSON.
 #[macro_export]

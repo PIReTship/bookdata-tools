@@ -15,9 +15,6 @@ use crate::arrow::*;
 use crate::cleaning::names::*;
 use crate::io::open_gzin_progress;
 
-use super::Command;
-use crate as bookdata;
-
 #[derive(StructOpt, Debug)]
 #[structopt(name="index-names")]
 /// Clean and index author names from authority records.

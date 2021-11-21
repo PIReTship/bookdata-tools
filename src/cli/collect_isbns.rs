@@ -11,7 +11,6 @@ use async_trait::async_trait;
 use crate::prelude::*;
 use crate::arrow::*;
 use crate::arrow::row_de::RecordBatchDeserializer;
-use crate as bookdata;
 
 use super::AsyncCommand;
 
