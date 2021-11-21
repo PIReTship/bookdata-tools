@@ -5,7 +5,7 @@ use crate::rdf::model::*;
 use crate::rdf::nodeindex::NodeIndex;
 use crate::rdf::nsmap::NSMap;
 
-use super::Command;
+use crate::cli::Command;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name="rdf-scan-nodes")]

@@ -8,7 +8,7 @@ use crate::arrow::*;
 
 use crate as bookdata;
 
-use super::Command;
+use crate::cli::Command;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name="rdf-scan-triples")]

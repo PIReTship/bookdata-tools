@@ -10,8 +10,7 @@ pub mod index_names;
 pub mod extract_graph;
 pub mod cluster_books;
 pub mod collect_isbns;
-pub mod rdf_scan_nodes;
-pub mod rdf_scan_triples;
+pub mod rdf;
 
 use structopt::StructOpt;
 use tokio::runtime::Runtime;
@@ -54,8 +53,8 @@ impl Command for RDFWrapper {
 #[enum_dispatch(Command)]
 #[derive(StructOpt, Debug)]
 pub enum RDFCommand {
-  ScanNodes(rdf_scan_nodes::ScanNodes),
-  ScanTriples(rdf_scan_triples::ScanTriples),
+  ScanNodes(rdf::ScanNodes),
+  ScanTriples(rdf::ScanTriples),
 }
 
 /// Trait for implementing commands asynchronously.
