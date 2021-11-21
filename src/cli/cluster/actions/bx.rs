@@ -1,8 +1,8 @@
 use std::sync::Arc;
 use serde::Deserialize;
 use datafusion::prelude::*;
-use bookdata::prelude::*;
-use bookdata::ratings::*;
+use crate::prelude::*;
+use crate::ratings::*;
 
 use super::data::*;
 

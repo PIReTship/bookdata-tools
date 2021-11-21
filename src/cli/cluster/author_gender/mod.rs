@@ -15,10 +15,10 @@ use structopt::StructOpt;
 
 use serde::{Serialize, Deserialize};
 
-use bookdata::prelude::*;
-use bookdata::gender::*;
-use bookdata::arrow::*;
-use bookdata::ids::codes::*;
+use crate::prelude::*;
+use crate::gender::*;
+use crate::arrow::*;
+use crate::ids::codes::*;
 
 mod authors;
 mod clusters;
@@ -30,12 +30,9 @@ mod clusters;
 // }
 
 #[derive(StructOpt, Debug)]
-#[structopt(name="cluster-author-genders")]
-/// Extract cluster author data from extracted book data.
-struct CLI {
-  #[structopt(flatten)]
-  common: CommonOpts,
-
+#[structopt(name="extract-author-genders")]
+/// Extract cluster author gender data from extracted book data.
+pub struct AuthorGender {
   /// Specify output file
   #[structopt(short="o", long="output")]
   output: PathBuf,
@@ -84,14 +81,13 @@ fn save_genders(clusters: Vec<i32>, genders: clusters::ClusterTable, outf: &Path
   Ok(())
 }
 
-fn main() -> Result<()> {
-  let opts = CLI::from_args();
-  opts.common.init()?;
+impl Command for AuthorGender {
+  fn exec(&self) -> Result<()> {
+    let clusters = clusters::all_clusters("book-links/cluster-stats.parquet")?;
+    let name_genders = authors::viaf_author_table()?;
+    let cluster_genders = clusters::read_resolve(&self.author_file, &name_genders)?;
+    save_genders(clusters, cluster_genders, self.output.as_ref())?;
 
-  let clusters = clusters::all_clusters("book-links/cluster-stats.parquet")?;
-  let name_genders = authors::viaf_author_table()?;
-  let cluster_genders = clusters::read_resolve(opts.author_file, &name_genders)?;
-  save_genders(clusters, cluster_genders, opts.output.as_ref())?;
-
-  Ok(())
+    Ok(())
+  }
 }

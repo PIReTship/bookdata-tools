@@ -8,14 +8,14 @@ use futures::{StreamExt};
 
 use serde::{Serialize, Deserialize};
 
-use tokio;
-
 use datafusion::prelude::*;
 use datafusion::physical_plan::{ExecutionPlan, execute_stream};
-use bookdata::prelude::*;
-use bookdata::arrow::*;
-use bookdata::arrow::fusion::*;
-use bookdata::arrow::row_de::RecordBatchDeserializer;
+use crate::prelude::*;
+use crate::arrow::*;
+use crate::arrow::fusion::*;
+use crate::arrow::row_de::RecordBatchDeserializer;
+use crate::cli::AsyncCommand;
+use async_trait::async_trait;
 
 #[derive(Display, FromStr, Debug)]
 #[display(style="lowercase")]
@@ -25,12 +25,9 @@ enum Source {
 }
 
 #[derive(StructOpt, Debug)]
-#[structopt(name="cluster-authors")]
+#[structopt(name="extract-authors")]
 /// Extract cluster author data from extracted book data.
-struct ClusterAuthors {
-  #[structopt(flatten)]
-  common: CommonOpts,
-
+pub struct ClusterAuthors {
   /// Only extract first authors
   #[structopt(long="first-author")]
   first_author: bool,
@@ -128,34 +125,33 @@ async fn scan_loc(ctx: &mut ExecutionContext, first_only: bool) -> Result<Arc<dy
   Ok(authors)
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
-  let opts = ClusterAuthors::from_args();
-  opts.common.init()?;
+#[async_trait]
+impl AsyncCommand for ClusterAuthors {
+  async fn exec_future(&self) -> Result<()> {
+    let mut ctx = ExecutionContext::new();
 
-  let mut ctx = ExecutionContext::new();
-
-  let mut authors: Option<Arc<dyn DataFrame>> = None;
-  for source in &opts.sources {
-    let astr = match source {
-      Source::OpenLib => scan_openlib(&mut ctx, opts.first_author).await?,
-      Source::LOC => scan_loc(&mut ctx, opts.first_author).await?,
-    };
-    debug!("author source {} has schema {:?}", source, astr.schema());
-    if let Some(adf) = authors {
-      authors = Some(adf.union(astr)?);
-    } else {
-      authors = Some(astr);
+    let mut authors: Option<Arc<dyn DataFrame>> = None;
+    for source in &self.sources {
+      let astr = match source {
+        Source::OpenLib => scan_openlib(&mut ctx, self.first_author).await?,
+        Source::LOC => scan_loc(&mut ctx, self.first_author).await?,
+      };
+      debug!("author source {} has schema {:?}", source, astr.schema());
+      if let Some(adf) = authors {
+        authors = Some(adf.union(astr)?);
+      } else {
+        authors = Some(astr);
+      }
     }
+    let authors = authors.ok_or(anyhow!("no sources specified"))?;
+    let authors = authors.sort(vec![
+      col("cluster").sort(true, true),
+      col("author_name").sort(true, true)
+      ])?;
+
+    let plan = plan_df(&mut ctx, authors)?;
+    write_authors_dedup(plan, &self.output).await?;
+
+    Ok(())
   }
-  let authors = authors.ok_or(anyhow!("no sources specified"))?;
-  let authors = authors.sort(vec![
-    col("cluster").sort(true, true),
-    col("author_name").sort(true, true)
-    ])?;
-
-  let plan = plan_df(&mut ctx, authors)?;
-  write_authors_dedup(plan, opts.output).await?;
-
-  Ok(())
 }

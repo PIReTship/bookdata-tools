@@ -4,8 +4,8 @@ use serde::de::{DeserializeOwned};
 use serde::Deserialize;
 
 use datafusion::prelude::*;
-use bookdata::prelude::*;
-use bookdata::ratings::{Interaction, Dedup};
+use crate::prelude::*;
+use crate::ratings::{Interaction, Dedup};
 
 /// Trait for data sources.
 pub trait Source {

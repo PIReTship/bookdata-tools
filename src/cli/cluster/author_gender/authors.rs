@@ -3,9 +3,9 @@ use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize};
 
-use bookdata::prelude::*;
-use bookdata::gender::*;
-use bookdata::arrow::row_de::scan_parquet_file;
+use crate::prelude::*;
+use crate::gender::*;
+use crate::arrow::row_de::scan_parquet_file;
 
 #[derive(Debug, Default)]
 pub struct AuthorInfo {

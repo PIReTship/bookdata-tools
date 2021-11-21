@@ -4,10 +4,10 @@ use datafusion::prelude::*;
 use datafusion::logical_plan::Expr;
 use arrow::datatypes::*;
 
-use bookdata::prelude::*;
-use bookdata::ratings::*;
-use bookdata::ids::codes::*;
-use bookdata::arrow::fusion::coalesce;
+use crate::prelude::*;
+use crate::ratings::*;
+use crate::ids::codes::*;
+use crate::arrow::fusion::coalesce;
 
 use super::data::*;
 

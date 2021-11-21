@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use datafusion::prelude::*;
-use bookdata::prelude::*;
-use bookdata::ratings::RatingDedup;
+use crate::prelude::*;
+use crate::ratings::RatingDedup;
 
 use super::data::*;
 

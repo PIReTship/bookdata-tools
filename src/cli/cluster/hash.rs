@@ -9,20 +9,17 @@ use hex;
 
 use serde::{Serialize, Deserialize};
 
-use tokio;
-
 use datafusion::prelude::*;
-use bookdata::prelude::*;
-use bookdata::arrow::*;
-use bookdata::arrow::row_de::RecordBatchDeserializer;
+use crate::prelude::*;
+use crate::arrow::*;
+use crate::arrow::row_de::RecordBatchDeserializer;
+use crate::cli::AsyncCommand;
+use async_trait::async_trait;
 
 #[derive(StructOpt, Debug)]
-#[structopt(name="cluster-authors")]
-/// Extract cluster author data from extracted book data.
-struct ClusterAuthors {
-  #[structopt(flatten)]
-  common: CommonOpts,
-
+#[structopt(name="hash")]
+/// Compute a hash for each cluster.
+pub struct HashCmd {
   /// Specify output file
   #[structopt(short="o", long="output")]
   output: PathBuf,
@@ -96,14 +93,13 @@ async fn write_hashes_dedup<P: AsRef<Path>>(df: Arc<dyn DataFrame>, path: P) -> 
   Ok(())
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
-  let opts = ClusterAuthors::from_args();
-  opts.common.init()?;
+#[async_trait]
+impl AsyncCommand for HashCmd {
+  async fn exec_future(&self) -> Result<()> {
+    let mut ctx = ExecutionContext::new();
+    let df = scan_isbns(&mut ctx).await?;
+    write_hashes_dedup(df, &self.output).await?;
 
-  let mut ctx = ExecutionContext::new();
-  let df = scan_isbns(&mut ctx).await?;
-  write_hashes_dedup(df, opts.output).await?;
-
-  Ok(())
+    Ok(())
+  }
 }

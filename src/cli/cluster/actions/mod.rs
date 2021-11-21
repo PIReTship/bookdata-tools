@@ -1,12 +1,12 @@
 //! Scan Amazon ratings or reviews.
 use futures::stream::{StreamExt};
 
-use tokio;
-
 use datafusion::prelude::*;
-use bookdata::prelude::*;
-use bookdata::arrow::fusion::*;
-use bookdata::ratings::*;
+use crate::prelude::*;
+use crate::arrow::fusion::*;
+use crate::ratings::*;
+use crate::cli::AsyncCommand;
+use async_trait::async_trait;
 
 use anyhow::Result;
 
@@ -18,12 +18,9 @@ mod goodreads;
 use data::Source;
 
 /// Cluster ratings or interactions
-#[derive(StructOpt)]
-#[structopt(name="cluster-actions")]
+#[derive(StructOpt, Debug)]
+#[structopt(name="group-actions")]
 pub struct ClusterActions {
-  #[structopt(flatten)]
-  common: CommonOpts,
-
   /// The data to cluster.
   #[structopt(short="s", long="source")]
   source: String,
@@ -55,22 +52,21 @@ async fn scan_and_save<S: Source>(src: S, ctx: &mut ExecutionContext, dst: &Path
   dedup.save(dst, src.has_timestamps())
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
-  let opts = ClusterActions::from_args();
-  opts.common.init()?;
+#[async_trait]
+impl AsyncCommand for ClusterActions {
+  async fn exec_future(&self) -> Result<()> {
+    let mut ctx = ExecutionContext::new();
 
-  let mut ctx = ExecutionContext::new();
+    let dst = self.outfile.as_ref();
+    match self.source.as_str() {
+      "az-ratings" => scan_and_save(amazon::Ratings, &mut ctx, dst).await?,
+      "bx-ratings" => scan_and_save(bx::Ratings, &mut ctx, dst).await?,
+      "bx-actions" => scan_and_save(bx::Actions, &mut ctx, dst).await?,
+      "gr-ratings" => scan_and_save(goodreads::Ratings::new(self.native_works), &mut ctx, dst).await?,
+      "gr-actions" => scan_and_save(goodreads::Actions::new(self.native_works), &mut ctx, dst).await?,
+      s => return Err(anyhow!("invalid data source {}", s))
+    };
 
-  let dst = opts.outfile.as_ref();
-  match opts.source.as_str() {
-    "az-ratings" => scan_and_save(amazon::Ratings, &mut ctx, dst).await?,
-    "bx-ratings" => scan_and_save(bx::Ratings, &mut ctx, dst).await?,
-    "bx-actions" => scan_and_save(bx::Actions, &mut ctx, dst).await?,
-    "gr-ratings" => scan_and_save(goodreads::Ratings::new(opts.native_works), &mut ctx, dst).await?,
-    "gr-actions" => scan_and_save(goodreads::Actions::new(opts.native_works), &mut ctx, dst).await?,
-    s => return Err(anyhow!("invalid data source {}", s))
-  };
-
-  Ok(())
+    Ok(())
+  }
 }

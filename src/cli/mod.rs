@@ -35,7 +35,8 @@ pub enum BDCommand {
   IndexNames(index_names::IndexNames),
   ExtractGraph(extract_graph::ExtractGraph),
   CollectISBNS(collect_isbns::CollectISBNs),
-  RDF(RDFWrapper)
+  Cluster(ClusterWrapper),
+  RDF(RDFWrapper),
 }
 
 /// Tools for processing RDF.
@@ -56,6 +57,28 @@ impl Command for RDFWrapper {
 pub enum RDFCommand {
   ScanNodes(rdf::ScanNodes),
   ScanTriples(rdf::ScanTriples),
+}
+
+/// Tools for processing book clusters.
+#[derive(StructOpt, Debug)]
+pub struct ClusterWrapper {
+  #[structopt(subcommand)]
+  command: ClusterCommand
+}
+
+impl Command for ClusterWrapper {
+  fn exec(&self) -> Result<()> {
+    self.command.exec()
+  }
+}
+
+#[enum_dispatch(Command)]
+#[derive(StructOpt, Debug)]
+pub enum ClusterCommand {
+  Hash(cluster::hash::HashCmd),
+  ExtractAuthors(cluster::authors::ClusterAuthors),
+  ExtractAuthorGender(cluster::author_gender::AuthorGender),
+  GroupActions(cluster::actions::ClusterActions),
 }
 
 /// Trait for implementing commands asynchronously.
