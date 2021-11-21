@@ -19,9 +19,6 @@ use crate::io::open_gzin_progress;
 #[structopt(name="index-names")]
 /// Clean and index author names from authority records.
 pub struct IndexNames {
-  #[structopt(flatten)]
-  common: CommonOpts,
-
   /// Name input CSV file.
   #[structopt(name = "INFILE", parse(from_os_str))]
   infile: PathBuf,
@@ -90,11 +87,8 @@ fn write_index<P: AsRef<Path>>(index: NameIndex, path: P) -> Result<()> {
 
 impl Command for IndexNames {
   fn exec(&self) -> Result<()> {
-    let opts = IndexNames::from_args();
-    opts.common.init()?;
-
-    let names = scan_names(&opts.infile)?;
-    write_index(names, opts.outfile)?;
+    let names = scan_names(&self.infile)?;
+    write_index(names, self.outfile)?;
 
     Ok(())
   }

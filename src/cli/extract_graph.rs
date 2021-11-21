@@ -9,9 +9,6 @@ use crate::graph::{load_graph, save_gml};
 #[derive(StructOpt, Debug)]
 #[structopt(name="extract-graph")]
 pub struct ExtractGraph {
-  #[structopt(flatten)]
-  common: CommonOpts,
-
   #[structopt(long="graph-file")]
   graph_file: Option<PathBuf>,
 
@@ -24,10 +21,7 @@ pub struct ExtractGraph {
 
 impl Command for ExtractGraph {
   fn exec(&self) -> Result<()> {
-    let opts = ExtractGraph::from_args();
-    opts.common.init()?;
-
-    let path = match &opts.graph_file {
+    let path = match &self.graph_file {
       Some(p) => p.clone(),
       None => PathBuf::from("book-links/book-graph.mp.zst")
     };
@@ -35,17 +29,17 @@ impl Command for ExtractGraph {
     info!("loading graph from {}", path.to_string_lossy());
     let mut graph = load_graph(path)?;
 
-    if let Some(c) = opts.cluster {
+    if let Some(c) = &self.cluster {
       graph.retain_nodes(|g, n| {
         let book = g.node_weight(n).unwrap();
-        book.cluster == c
+        book.cluster == *c
       });
     }
 
     info!("filtered graph to {} nodes", graph.node_count());
 
-    if let Some(outf) = opts.out_file {
-      save_gml(&graph, &outf)?;
+    if let Some(outf) = &self.out_file {
+      save_gml(&graph, outf)?;
     }
 
     Ok(())
