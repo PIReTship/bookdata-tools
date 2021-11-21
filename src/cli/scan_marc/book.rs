@@ -1,10 +1,12 @@
 use serde::Serialize;
 
-use bookdata::prelude::*;
-use bookdata::arrow::*;
-use bookdata::cleaning::isbns::{ParserDefs, ParseResult};
-use bookdata::marc::MARCRecord;
-use bookdata::marc::flat_fields::FieldOutput;
+use crate::prelude::*;
+use crate::arrow::*;
+use crate::cleaning::isbns::{ParserDefs, ParseResult};
+use crate::marc::MARCRecord;
+use crate::marc::flat_fields::FieldOutput;
+
+use crate as bookdata;
 
 #[derive(TableRow, Debug)]
 struct BookIds {

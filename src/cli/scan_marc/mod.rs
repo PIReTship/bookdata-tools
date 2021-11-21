@@ -1,3 +1,4 @@
+//! Scan MARC records.  See [ScanMARC] for documentation.
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -8,25 +9,27 @@ use structopt::StructOpt;
 use fallible_iterator::FallibleIterator;
 use happylog::set_progress;
 
-use bookdata::prelude::*;
-use bookdata::io::open_gzin_progress;
+use crate::prelude::*;
+use crate::io::open_gzin_progress;
 
-use bookdata::marc::MARCRecord;
-use bookdata::marc::parse::{read_records, read_records_delim};
+use crate::marc::MARCRecord;
+use crate::marc::parse::{read_records, read_records_delim};
 
 mod generic;
 mod book;
 
+use super::Command;
+
 /// Scan MARC records and extract basic information.
 ///
-/// This program scans MARC-XML records, in either raw or delimited-line format,
+/// This tool scans MARC-XML records, in either raw or delimited-line format,
 /// and writes the fields to a Parquet file of flat field records.  It has two
 /// modes: normal, which simply writes MARC fields to the Parquet file, and
 /// 'book mode', which only saves books and produces additional output files
 /// summarizing book record information and book ISBNs.
 #[derive(StructOpt, Debug)]
 #[structopt(name="scan-marc")]
-struct ParseMarcBooks {
+pub struct ScanMARC {
   #[structopt(flatten)]
   common: CommonOpts,
 
@@ -55,31 +58,30 @@ struct ParseMarcBooks {
   files: Vec<PathBuf>
 }
 
-fn main() -> Result<()> {
-  let opts = ParseMarcBooks::from_args();
-  opts.common.init()?;
-
-  // dispatch based on our operating mode
-  if opts.book_mode {
-    let pfx = match &opts.prefix {
-      Some(p) => p,
-      None => "book"
+impl Command for ScanMARC {
+  fn exec(&self) -> Result<()> {
+    // dispatch based on our operating mode
+    if self.book_mode {
+      let pfx = match &self.prefix {
+        Some(p) => p,
+        None => "book"
+      };
+      let output = book::BookOutput::open(pfx)?;
+      self.process_records(output)?;
+    } else {
+      let ofn = match &self.output {
+        Some(p) => p.clone(),
+        None => PathBuf::from("marc-fields.parquet")
+      };
+      let output = generic::open_output(ofn)?;
+      self.process_records(output)?;
     };
-    let output = book::BookOutput::open(pfx)?;
-    opts.process_records(output)?;
-  } else {
-    let ofn = match &opts.output {
-      Some(p) => p.clone(),
-      None => PathBuf::from("marc-fields.parquet")
-    };
-    let output = generic::open_output(ofn)?;
-    opts.process_records(output)?;
-  };
 
-  Ok(())
+    Ok(())
+  }
 }
 
-impl ParseMarcBooks {
+impl ScanMARC {
   fn find_files(&self) -> Result<Vec<PathBuf>> {
     if let Some(ref gs) = self.glob {
       info!("scanning for files {}", gs);

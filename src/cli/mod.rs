@@ -5,6 +5,7 @@
 //! implemented as subcommands.  Each subcommand implements the [Command] trait, which
 //! exposes the command line arguments and invocation.
 pub mod fusion;
+pub mod scan_marc;
 pub mod index_names;
 pub mod extract_graph;
 pub mod cluster_books;
@@ -29,6 +30,7 @@ pub trait Command {
 #[derive(StructOpt, Debug)]
 pub enum BDCommand {
   Fusion(fusion::Fusion),
+  ScanMARC(scan_marc::ScanMARC),
   ClusterBooks(cluster_books::ClusterBooks),
   IndexNames(index_names::IndexNames),
   ExtractGraph(extract_graph::ExtractGraph),
