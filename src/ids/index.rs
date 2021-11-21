@@ -1,3 +1,4 @@
+//! Data structure for mapping string keys to numeric identifiers.
 use std::path::{Path};
 use hashbrown::hash_map::{HashMap, Keys};
 use std::hash::Hash;
