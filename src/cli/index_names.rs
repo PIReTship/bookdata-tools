@@ -88,7 +88,7 @@ fn write_index<P: AsRef<Path>>(index: NameIndex, path: P) -> Result<()> {
 impl Command for IndexNames {
   fn exec(&self) -> Result<()> {
     let names = scan_names(&self.infile)?;
-    write_index(names, self.outfile)?;
+    write_index(names, &self.outfile)?;
 
     Ok(())
   }
