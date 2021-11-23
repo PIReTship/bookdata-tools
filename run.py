@@ -1,5 +1,19 @@
 """
-Run a Python script.  The script name should come from a script name in 'scripts'.
+Helper to set up environments & run book data tools properly.
+
+Usage:
+    run.py --rust TOOL ARGS...
+    run.py SCRIPT ARGS...
+
+Options:
+    --rust
+        Run a Rust tool instead of a Python script.
+    TOOL
+        The name of the Rust tool to run
+    SCRIPT
+        The name of the Python script to run.
+    ARGS
+        The arguments to the tool or script.
 """
 
 import os
