@@ -21,27 +21,17 @@ from bookdata import setup, bin_dir
 def run_rust():
     # this is a rust command
     del sys.argv[1]
-    # we need to fix up Rust environment
+    # we need to fix up Rust environment in some cases
     sysroot = os.environ.get('CONDA_BUILD_SYSROOT', None)
     if sysroot and 'RUSTFLAGS' not in os.environ:
         _log.info('setting Rust flags from sysroot')
         os.environ['RUSTFLAGS'] = f'-L native={sysroot}/usr/lib64 -L native={sysroot}/lib64'
-    # build the Rust tools
-    # TODO support alternate working directories
+
+    # shell out to 'cargo run' to run the command
     tool_name = sys.argv[1]
 
-    _log.info('compiling Rust tool %s', tool_name)
-    sp.run(['cargo', 'build', '--release', '--bin', tool_name], check=True)
-
-    tool = bin_dir / tool_name
-    args = sys.argv[2:]
-    if sys.platform == 'win32':
-        tool = tool.with_suffix('.exe')
-
-    _log.info('running program %s', tool)
-
-    tool = os.fspath(tool)
-    sp.run([tool] + args, check=True)
+    _log.info('building and running Rust tool %s', tool_name)
+    sp.run(['cargo', 'run', '--release', '--'] + sys.argv[1:], check=True)
 
 
 def run_script():
