@@ -66,6 +66,7 @@ pub enum BDCommand {
   Amazon(AmazonCommandWrapper),
   /// Commands for processing OpenLibrary data,
   Openlib(openlib::OpenLib),
+  Goodreads(goodreads::Goodreads),
   /// Commands for working with clusters.
   Cluster(ClusterCommandWrapper),
   /// Commands for working with RDF data.
