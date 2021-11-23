@@ -20,15 +20,15 @@ enum DataType {
   /// Parse OpenLibrary works.
   ///
   /// Authors must be processed first.
-  Work(Input),
+  ScanWorks(Input),
 
   /// Parse OpenLibrary editions.
   ///
   /// Authors and works must be processed first.
-  Edition(Input),
+  ScanEditions(Input),
 
   /// Parse OpenLibrary authors.
-  Author(Input)
+  ScanAuthors(Input)
 }
 
 /// Scan OpenLibrary data.
@@ -68,13 +68,13 @@ where P: AsRef<Path>, Proc: ObjectWriter<Row<R>>, R: DeserializeOwned
 impl Command for OpenLib {
   fn exec(&self) -> Result<()> {
     match &self.mode {
-      DataType::Author(opts) => {
+      DataType::ScanAuthors(opts) => {
         scan_openlib(&opts.infile, AuthorProcessor::new()?)?;
       },
-      DataType::Work(opts) => {
+      DataType::ScanWorks(opts) => {
         scan_openlib(&opts.infile, WorkProcessor::new()?)?;
       },
-      DataType::Edition(opts) => {
+      DataType::ScanEditions(opts) => {
         scan_openlib(&opts.infile, EditionProcessor::new()?)?;
       }
     };
