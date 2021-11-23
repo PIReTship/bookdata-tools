@@ -13,6 +13,7 @@ pub mod cluster;
 pub mod collect_isbns;
 pub mod rdf;
 pub mod amazon;
+pub mod openlib;
 
 use paste::paste;
 use structopt::StructOpt;
@@ -61,6 +62,8 @@ pub enum BDCommand {
   CollectISBNS(collect_isbns::CollectISBNs),
   /// Commands for processing Amazon data.
   Amazon(AmazonCommandWrapper),
+  /// Commands for processing OpenLibrary data,
+  OpenLib(openlib::OpenLib),
   /// Commands for working with clusters.
   Cluster(ClusterCommandWrapper),
   /// Commands for working with RDF data.

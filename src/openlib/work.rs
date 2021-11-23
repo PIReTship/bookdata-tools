@@ -1,51 +1,51 @@
-use serde::Deserialize;
+//! OpenLibrary work schemas.
+use crate::prelude::*;
+use crate::arrow::*;
+use crate::ids::index::IdIndex;
 
-use bookdata::prelude::*;
-use bookdata::arrow::*;
-use bookdata::ids::index::IdIndex;
+use super::source::Row;
+pub use super::source::OLWorkRecord;
 
-use crate::common::*;
-
-#[derive(Deserialize)]
-pub struct OLWorkRecord {
-  #[serde(default)]
-  authors: Vec<Author>,
-  #[serde(default)]
-  title: Option<String>,
-}
-
+/// Work row in extracted Parquet.
 #[derive(TableRow)]
-struct WorkRec {
-  id: u32,
-  key: String,
-  title: Option<String>,
+pub struct WorkRec {
+  pub id: u32,
+  pub key: String,
+  pub title: Option<String>,
 }
 
+/// Work-author link in extracted Parquet.
 #[derive(TableRow)]
-struct WorkAuthorRec {
-  id: u32,
-  pos: u16,
-  author: u32
+pub struct WorkAuthorRec {
+  pub id: u32,
+  pub pos: u16,
+  pub author: u32
 }
 
-pub struct Processor {
+/// Process author source records into Parquet.
+///
+/// This must be run **after** the author processor.
+pub struct WorkProcessor {
   last_id: u32,
   author_ids: IdIndex<String>,
   rec_writer: TableWriter<WorkRec>,
   author_writer: TableWriter<WorkAuthorRec>
 }
 
-impl OLProcessor<OLWorkRecord> for Processor {
-  fn new() -> Result<Processor> {
-    Ok(Processor {
+impl WorkProcessor {
+  /// Create a new work processor.
+  pub fn new() -> Result<WorkProcessor> {
+    Ok(WorkProcessor {
       last_id: 0,
       author_ids: IdIndex::load_standard("authors.parquet")?,
       rec_writer: TableWriter::open("works.parquet")?,
       author_writer: TableWriter::open("work-authors.parquet")?
     })
   }
+}
 
-  fn process_row(&mut self, row: Row<OLWorkRecord>) -> Result<()> {
+impl ObjectWriter<Row<OLWorkRecord>> for WorkProcessor {
+  fn write_object(&mut self, row: Row<OLWorkRecord>) -> Result<()> {
     self.last_id += 1;
     let id = self.last_id;
 
@@ -67,10 +67,10 @@ impl OLProcessor<OLWorkRecord> for Processor {
     Ok(())
   }
 
-  fn finish(self) -> Result<()> {
+  fn finish(self) -> Result<usize> {
     self.rec_writer.finish()?;
     self.author_writer.finish()?;
     self.author_ids.save_standard("author-ids-after-works.parquet")?;
-    Ok(())
+    Ok(self.last_id as usize)
   }
 }

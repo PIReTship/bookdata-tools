@@ -5,7 +5,7 @@ use csv;
 use crate::prelude::*;
 use crate::arrow::*;
 use crate::ids::index::IdIndex;
-use crate::schemas::amazon::*;
+use crate::amazon::*;
 
 /// Scan an Amazon rating file file into Parquet.
 #[derive(StructOpt, Debug)]

@@ -1,58 +1,47 @@
-use serde::Deserialize;
+//! OpenLibrary edition schemas.
+use crate::prelude::*;
+use crate::arrow::*;
+use crate::ids::index::IdIndex;
+use crate::cleaning::isbns::clean_asin_chars;
+use crate::cleaning::isbns::clean_isbn_chars;
 
-use bookdata::prelude::*;
-use bookdata::arrow::*;
-use bookdata::cleaning::isbns::*;
-use bookdata::ids::index::IdIndex;
+use super::source::Row;
+pub use super::source::OLEditionRecord;
 
-use crate::common::*;
-
-#[derive(Deserialize)]
-pub struct OLEditionRecord {
-  #[serde(default)]
-  isbn_10: Vec<String>,
-  #[serde(default)]
-  isbn_13: Vec<String>,
-  #[serde(default)]
-  asin: Vec<String>,
-
-  #[serde(default)]
-  title: Option<String>,
-
-  #[serde(default)]
-  works: Vec<Keyed>,
-  #[serde(default)]
-  authors: Vec<Author>,
-}
-
+/// An edition row in the extracted Parquet.
 #[derive(TableRow)]
-struct EditionRec {
-  id: u32,
-  key: String,
-  title: Option<String>,
+pub struct EditionRec {
+  pub id: u32,
+  pub key: String,
+  pub title: Option<String>,
 }
 
-/// Link between edition and work
+/// Link between edition and work.
 #[derive(TableRow)]
-struct LinkRec {
-  edition: u32,
-  work: u32
+pub struct LinkRec {
+  pub edition: u32,
+  pub work: u32
 }
 
+/// Edition ISBN record.
 #[derive(TableRow)]
-struct ISBNrec {
-  edition: u32,
-  isbn: String
+pub struct ISBNrec {
+  pub edition: u32,
+  pub isbn: String
 }
 
+/// Edition author record.
 #[derive(TableRow)]
-struct EditionAuthorRec {
-  edition: u32,
-  pos: u16,
-  author: u32
+pub struct EditionAuthorRec {
+  pub edition: u32,
+  pub pos: u16,
+  pub author: u32
 }
 
-pub struct Processor {
+/// Process edition records into Parquet.
+///
+/// This must be run **after** the author and work processors.
+pub struct EditionProcessor {
   last_id: u32,
   author_ids: IdIndex<String>,
   work_ids: IdIndex<String>,
@@ -62,9 +51,9 @@ pub struct Processor {
   author_writer: TableWriter<EditionAuthorRec>
 }
 
-impl OLProcessor<OLEditionRecord> for Processor {
-  fn new() -> Result<Processor> {
-    Ok(Processor {
+impl EditionProcessor {
+  pub fn new() -> Result<EditionProcessor> {
+    Ok(EditionProcessor {
       last_id: 0,
       author_ids: IdIndex::load_standard("author-ids-after-works.parquet")?,
       work_ids: IdIndex::load_standard("works.parquet")?,
@@ -75,7 +64,23 @@ impl OLProcessor<OLEditionRecord> for Processor {
     })
   }
 
-  fn process_row(&mut self, row: Row<OLEditionRecord>) -> Result<()> {
+  fn save_isbns(&mut self, edition: u32, isbns: Vec<String>, clean: fn(&str) -> String) -> Result<()> {
+    for isbn in isbns {
+      let isbn = clean(&isbn);
+      // filter but with a reasonable threshold of error
+      if isbn.len() >= 8 {
+        self.isbn_writer.write_object(ISBNrec {
+          edition, isbn
+        })?;
+      }
+    }
+
+    Ok(())
+  }
+}
+
+impl ObjectWriter<Row<OLEditionRecord>> for EditionProcessor {
+  fn write_object(&mut self, row: Row<OLEditionRecord>) -> Result<()> {
     self.last_id += 1;
     let id = self.last_id;
 
@@ -108,29 +113,17 @@ impl OLProcessor<OLEditionRecord> for Processor {
     Ok(())
   }
 
-  fn finish(self) -> Result<()> {
+  fn finish(self) -> Result<usize> {
     self.rec_writer.finish()?;
     self.author_writer.finish()?;
     self.link_writer.finish()?;
     self.isbn_writer.finish()?;
     self.author_ids.save_standard("all-authors.parquet")?;
     self.work_ids.save_standard("all-works.parquet")?;
-    Ok(())
+    Ok(self.last_id as usize)
   }
 }
 
-impl Processor {
-  fn save_isbns(&mut self, edition: u32, isbns: Vec<String>, clean: fn(&str) -> String) -> Result<()> {
-    for isbn in isbns {
-      let isbn = clean(&isbn);
-      // filter but with a reasonable threshold of error
-      if isbn.len() >= 8 {
-        self.isbn_writer.write_object(ISBNrec {
-          edition, isbn
-        })?;
-      }
-    }
+impl EditionProcessor {
 
-    Ok(())
-  }
 }

@@ -1,18 +1,23 @@
+//! Parse OpenLibrary JSON.
 use std::str::FromStr;
 
 use serde::Deserialize;
 use serde::de;
 use thiserror::Error;
+use log::*;
 
-use bookdata::prelude::*;
-use bookdata::tsv::split_first;
+use crate::tsv::split_first;
 
 /// Struct representing a row of the OpenLibrary dump file.
+///
+/// The row extracts the key and record, deserializing the record from JSON to the
+/// appropriate type.
 pub struct Row<T> {
   pub key: String,
   pub record: T
 }
 
+/// Error type for parsing an OpenLibrary JSON row.
 #[derive(Error, Debug)]
 pub enum RowError {
   #[error("line has insufficient fields, failed splitting {0}")]
@@ -44,19 +49,12 @@ impl <T: de::DeserializeOwned> FromStr for Row<T> {
   }
 }
 
-/// Trait for processing OL data.
-pub trait OLProcessor<T> where Self: Sized {
-  /// Construct a new processor.
-  fn new() -> Result<Self>;
-
-  /// Process one row
-  fn process_row(&mut self, row: Row<T>) -> Result<()>;
-
-  /// Finish writing
-  fn finish(self) -> Result<()>;
-}
-
 /// Struct representing an author link in OL.
+///
+/// There are several different formats in which we can find author references.
+/// This enum encapsulates them, and Serde automatically deserializes it into the
+/// appropraite variant.  We then use the [key] function to extract the key itself,
+/// no matter the variant.
 #[derive(Deserialize, Debug)]
 #[serde(untagged)]
 pub enum Author {
@@ -77,6 +75,7 @@ pub struct Keyed {
 }
 
 impl Author {
+  /// Get the key out of an author reference.
   pub fn key<'a>(&'a self) -> Option<&'a str> {
     match self {
       Author::Object { key } => Some(key.as_ref()),
@@ -85,4 +84,43 @@ impl Author {
       Author::Empty {} => None
     }
   }
+}
+
+/// An author record parsed from OpenLibrary JSON.
+#[derive(Deserialize)]
+pub struct OLAuthorSource {
+  #[serde(default)]
+  pub name: Option<String>,
+  #[serde(default)]
+  pub personal_name: Option<String>,
+  #[serde(default)]
+  pub alternate_names: Vec<String>
+}
+
+/// An edition record parsed from OpenLibrary JSON.
+#[derive(Deserialize)]
+pub struct OLEditionRecord {
+  #[serde(default)]
+  pub isbn_10: Vec<String>,
+  #[serde(default)]
+  pub isbn_13: Vec<String>,
+  #[serde(default)]
+  pub asin: Vec<String>,
+
+  #[serde(default)]
+  pub title: Option<String>,
+
+  #[serde(default)]
+  pub works: Vec<Keyed>,
+  #[serde(default)]
+  pub authors: Vec<Author>,
+}
+
+/// An author record parsed from OpenLibrary JSON.
+#[derive(Deserialize)]
+pub struct OLWorkRecord {
+  #[serde(default)]
+  pub authors: Vec<Author>,
+  #[serde(default)]
+  pub title: Option<String>,
 }
