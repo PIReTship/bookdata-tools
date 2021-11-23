@@ -1,6 +1,11 @@
 """
 Helper to set up environments & run book data tools properly.
 
+Most DVC stages will use this to actually run the code.  It makes
+sure we compile the Rust tools, routes arguments properly, and sets
+environment variables that may be needed.  For Python scripts, it
+ensures the search path is set correctly.
+
 Usage:
     run.py --rust TOOL ARGS...
     run.py SCRIPT ARGS...
