@@ -1,4 +1,5 @@
 pub use std::path::{Path, PathBuf};
+pub use std::borrow::Cow;
 pub use std::convert::{TryFrom, TryInto};
 pub use anyhow::{Result, Error, anyhow};
 pub use log::*;
@@ -9,6 +10,8 @@ pub use crate::cli::CommonOpts;
 pub use crate::io::LineProcessor;
 pub use crate::io::progress::default_progress;
 pub use crate::io::ObjectWriter;
+pub use crate::io::DataSink;
+pub use crate::io::path_list;
 pub use crate::io::file_size;
 pub use crate::json_from_str;
 pub use crate::util::Timer;

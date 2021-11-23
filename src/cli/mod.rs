@@ -14,6 +14,7 @@ pub mod collect_isbns;
 pub mod rdf;
 pub mod amazon;
 pub mod openlib;
+pub mod goodreads;
 
 use paste::paste;
 use structopt::StructOpt;

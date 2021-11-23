@@ -16,6 +16,7 @@ pub mod marc;
 pub mod rdf;
 pub mod openlib;
 pub mod amazon;
+pub mod goodreads;
 pub mod arrow;
 pub mod ratings;
 pub mod cli;

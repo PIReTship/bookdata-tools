@@ -1,77 +1,65 @@
-use std::path::PathBuf;
-
+//! GoodReads book schemas.
 use serde::Deserialize;
 use chrono::NaiveDate;
-use friendly;
 
-use bookdata::prelude::*;
-use bookdata::arrow::*;
-use bookdata::parsing::*;
-use bookdata::cleaning::isbns::*;
+use crate::prelude::*;
+use crate::arrow::*;
+use crate::parsing::*;
+use crate::cleaning::isbns::*;
 
 const ID_FILE: &'static str = "gr-book-ids.parquet";
 const INFO_FILE: &'static str = "gr-book-info.parquet";
 
-/// Scan GoodReads book info into Parquet
-#[derive(StructOpt)]
-#[structopt(name="scan-book-info")]
-pub struct ScanInteractions {
-  #[structopt(flatten)]
-  common: CommonOpts,
-
-  /// Input file
-  #[structopt(name = "INPUT", parse(from_os_str))]
-  infile: PathBuf
-}
-
 // the records we read from JSON
 #[derive(Deserialize)]
-struct RawBook {
-  book_id: String,
-  work_id: String,
-  isbn: String,
-  isbn13: String,
-  asin: String,
+pub struct RawBook {
+  pub book_id: String,
+  pub work_id: String,
+  pub isbn: String,
+  pub isbn13: String,
+  pub asin: String,
   #[serde(default)]
-  title: String,
+  pub title: String,
   #[serde(default)]
-  publication_year: String,
+  pub publication_year: String,
   #[serde(default)]
-  publication_month: String,
+  pub publication_month: String,
   #[serde(default)]
-  publication_day: String,
+  pub publication_day: String,
 }
 
 // the book ID records to write to Parquet.
 #[derive(TableRow)]
-struct IdRecord {
+pub struct BookIdRecord {
   #[parquet(statistics)]
-  book_id: i32,
+  pub book_id: i32,
   #[parquet(statistics)]
-  work_id: Option<i32>,
-  isbn10: Option<String>,
-  isbn13: Option<String>,
-  asin: Option<String>,
+  pub work_id: Option<i32>,
+  pub isbn10: Option<String>,
+  pub isbn13: Option<String>,
+  pub asin: Option<String>,
 }
 
 // book info records to actually write
 #[derive(TableRow)]
-struct InfoRecord {
+pub struct BookRecord {
   #[parquet(statistics)]
-  book_id: i32,
-  title: Option<String>,
-  pub_year: Option<u16>,
-  pub_month: Option<u8>,
-  pub_date: Option<NaiveDate>,
+  pub book_id: i32,
+  pub title: Option<String>,
+  pub pub_year: Option<u16>,
+  pub pub_month: Option<u8>,
+  pub pub_date: Option<NaiveDate>,
 }
 
-struct BookWriter {
-  id_out: TableWriter<IdRecord>,
-  info_out: TableWriter<InfoRecord>
+
+/// Output handler for GoodReads books.
+pub struct BookWriter {
+  id_out: TableWriter<BookIdRecord>,
+  info_out: TableWriter<BookRecord>
 }
 
 impl BookWriter {
-  fn open() -> Result<BookWriter> {
+  pub fn open() -> Result<BookWriter> {
     let id_out = TableWriter::open(ID_FILE)?;
     let info_out = TableWriter::open(INFO_FILE)?;
     Ok(BookWriter {
@@ -80,11 +68,17 @@ impl BookWriter {
   }
 }
 
+impl DataSink for BookWriter {
+  fn output_files<'a>(&'a self) -> Vec<PathBuf> {
+    path_list(&[ID_FILE, INFO_FILE])
+  }
+}
+
 impl ObjectWriter<RawBook> for BookWriter {
   fn write_object(&mut self, row: RawBook) -> Result<()> {
     let book_id: i32 = row.book_id.parse()?;
 
-    self.id_out.write_object(IdRecord {
+    self.id_out.write_object(BookIdRecord {
       book_id,
       work_id: parse_opt(&row.work_id)?,
       isbn10: trim_opt(&row.isbn).map(|s| clean_asin_chars(s)).filter(|s| s.len() >= 7),
@@ -97,7 +91,7 @@ impl ObjectWriter<RawBook> for BookWriter {
     let pub_day: Option<u32> = parse_opt(&row.publication_day)?;
     let pub_date = maybe_date(pub_year, pub_month, pub_day);
 
-    self.info_out.write_object(InfoRecord {
+    self.info_out.write_object(BookRecord {
       book_id,
       title: trim_owned(&row.title),
       pub_year, pub_month, pub_date
@@ -111,21 +105,4 @@ impl ObjectWriter<RawBook> for BookWriter {
     self.info_out.finish()?;
     Ok(0)
   }
-}
-
-fn main() -> Result<()> {
-  let options = ScanInteractions::from_args();
-  options.common.init()?;
-
-  info!("reading books from {}", &options.infile.display());
-  let proc = LineProcessor::open_gzip(&options.infile)?;
-
-  let mut writer = BookWriter::open()?;
-  proc.process_json(&mut writer)?;
-  writer.finish()?;
-
-  info!("output {} is {}", ID_FILE, friendly::bytes(file_size(ID_FILE)?));
-  info!("output {} is {}", INFO_FILE, friendly::bytes(file_size(INFO_FILE)?));
-
-  Ok(())
 }
