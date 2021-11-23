@@ -7,6 +7,7 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum GenderError {
   #[error("could not parse gender from string")]
+  #[allow(dead_code)]
   ParseError
 }
 
