@@ -18,6 +18,7 @@ pub mod goodreads;
 
 use paste::paste;
 use structopt::StructOpt;
+use anyhow::Result;
 use tokio::runtime::Runtime;
 use enum_dispatch::enum_dispatch;
 use async_trait::async_trait;
@@ -109,21 +110,5 @@ impl <T: AsyncCommand> Command for T {
     let runtime = Runtime::new()?;
     let task = self.exec_future();
     runtime.block_on(task)
-  }
-}
-
-use happylog::args::LogOpts;
-use anyhow::Result;
-
-#[derive(StructOpt, Debug)]
-pub struct CommonOpts {
-  #[structopt(flatten)]
-  logging: LogOpts
-}
-
-impl CommonOpts {
-  pub fn init(&self) -> Result<()> {
-    self.logging.init()?;
-    Ok(())
   }
 }

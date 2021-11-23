@@ -16,8 +16,6 @@ use petgraph::algo::kosaraju_scc;
 #[derive(StructOpt, Debug)]
 #[structopt(name="cluster-books")]
 pub struct ClusterBooks {
-  #[structopt(flatten)]
-  common: CommonOpts,
 }
 
 #[derive(TableRow, Debug)]

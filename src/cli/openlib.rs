@@ -35,9 +35,6 @@ enum DataType {
 #[derive(StructOpt, Debug)]
 #[structopt(name="openlib")]
 pub struct OpenLib {
-  #[structopt(flatten)]
-  common: CommonOpts,
-
   #[structopt(subcommand)]
   mode: DataType,
 }

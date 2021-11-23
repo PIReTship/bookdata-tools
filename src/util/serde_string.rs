@@ -18,6 +18,9 @@
 //! ```
 //!
 //! It will use [ToString] and [FromStr] to serialize and deserialize the data.
+//!
+// This isn't currently in use anywhere.
+#![allow(dead_code)]
 use std::fmt;
 use std::str::FromStr;
 use std::marker::PhantomData;

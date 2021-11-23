@@ -6,7 +6,6 @@ pub use log::*;
 pub use happylog::set_progress;
 pub use structopt::StructOpt;
 pub use fallible_iterator::FallibleIterator;
-pub use crate::cli::CommonOpts;
 pub use crate::io::LineProcessor;
 pub use crate::io::progress::default_progress;
 pub use crate::io::ObjectWriter;

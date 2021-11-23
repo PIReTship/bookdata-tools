@@ -110,7 +110,7 @@ impl Timer {
 
   /// Get the elapsed time on this timer, wrapped for human presentation.
   pub fn human_elapsed(&self) -> HumanDuration {
-    self.started.elapsed().into()
+    self.elapsed().into()
   }
 
   /// Get the elapsed time and ETA on this timer.
@@ -220,6 +220,7 @@ impl <'a, I> FallibleIterator for ProgressFailIter<'a, I> where I: FallibleItera
 }
 
 /// Format a duration with a human-readable string.
+#[cfg(test)]
 pub fn human_time(dur: Duration) -> String {
   let hd = HumanDuration::from(dur);
   hd.to_string()

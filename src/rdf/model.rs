@@ -59,6 +59,7 @@ impl Term {
     })
   }
 
+  #[allow(dead_code)] // TODO use or remove
   pub fn literal_lang<V: Into<String>, L: Into<String>>(s: V, lang: L) -> Term {
     Term::Literal(Literal {
       value: s.into(),
@@ -67,6 +68,7 @@ impl Term {
     })
   }
 
+  #[allow(dead_code)] // TODO use or remove
   pub fn literal_schema<V: Into<String>, S: Into<String>>(s: V, schema: S) -> Term {
     Term::Literal(Literal {
       value: s.into(),

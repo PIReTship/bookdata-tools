@@ -28,9 +28,6 @@ mod book;
 #[derive(StructOpt, Debug)]
 #[structopt(name="scan-marc")]
 pub struct ScanMARC {
-  #[structopt(flatten)]
-  common: CommonOpts,
-
   /// Output files for normal mode.
   #[structopt(short="o", long="output", parse(from_os_str))]
   output: Option<PathBuf>,

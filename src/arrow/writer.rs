@@ -80,6 +80,8 @@ impl <R> TableWriterBuilder<R> where R: TableRow {
     self
   }
 
+  /// Set the batch size for a table writer builder.
+  #[allow(dead_code)]
   pub fn batch_size(mut self, size: usize) -> TableWriterBuilder<R> {
     self.bsize = size;
     self
@@ -102,6 +104,8 @@ impl <R> TableWriterBuilder<R> where R: TableRow {
     self
   }
 
+  /// Set the encoding for a particular column.
+  #[allow(dead_code)]
   pub fn column_encoding<C: Into<ColumnPath>>(mut self, col: C, enc: Encoding) -> TableWriterBuilder<R> {
     self.props = self.props.set_column_encoding(col.into(), enc);
     self
