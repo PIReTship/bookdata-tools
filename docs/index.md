@@ -5,11 +5,14 @@ nav_order: 1
 
 # Book Data Tools
 
-The PIReT Book Data Tools are a set of tools for ingesting, integrating, and indexing
-a variety of sources of book data, created by the [People and Information Research Team](https://piret.info)
-at [Boise State University](https://boisestate.edu).  The result of running these tools is a PostgreSQL
-database with the raw data, various useful extracted features, and integrated identifiers across the various
-data sources for cross-linking.
+The PIReT Book Data Tools are a set of tools for ingesting, integrating, and indexing a variety of
+sources of book data, created by the [People and Information Research Team](https://piret.info) at
+[Boise State University](https://boisestate.edu).  The result of running these tools is a set of
+Parquet files with raw data in a more usable form, various useful extracted features, and integrated
+identifiers across the various data sources for cross-linking.  These tools are updated from the
+version used to support our original paper; we have dropped PostgreSQL in favor of a pipeline
+implemented with DVC, Rust, and DataFusion that is more efficient (integration times have dropped
+from 8 hours to less than 3) and requires significantly less disk space.
 
 If you use these scripts in any published research, cite [our paper][paper] ([PDF][]):
 
@@ -53,7 +56,7 @@ I recorded a video walking through the integration as an example for my [Data Sc
 
 These tools are under the MIT license:
 
-> Copyright 2019-2020 Boise State University
+> Copyright 2019-2021 Boise State University
 >
 > Permission is hereby granted, free of charge, to any person obtaining a copy of
 > this software and associated documentation files (the "Software"), to deal in

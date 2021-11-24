@@ -1,7 +1,7 @@
 ---
 title: Dataset Design
 parent: Implementation
-nav_order: 3
+nav_order: 2
 ---
 
 # Design for Datasets
