@@ -47,10 +47,10 @@ use happylog::args::LogOpts;
 
 use cli::{Command, BDCommand};
 
-/// BookData import tools
+/// BookData import tools.
 #[derive(StructOpt, Debug)]
 #[structopt(name="bookdata")]
-struct Opt {
+struct CLI {
   #[structopt(flatten)]
   logging: LogOpts,
 
@@ -59,7 +59,7 @@ struct Opt {
 }
 
 fn main() -> Result<()> {
-  let opt = Opt::from_args();
+  let opt = CLI::from_args();
   opt.logging.init()?;
   opt.command.exec()
 }
