@@ -74,7 +74,7 @@ impl <K> IdIndex<K> where K: Eq + Hash {
     self.map.get(key).map(|i| *i)
   }
 
-  /// Iterate over keys (see [std::collection::HashMap::keys]).
+  /// Iterate over keys (see [std::collections::HashMap::keys]).
   #[allow(dead_code)]
   pub fn keys(&self) -> Keys<'_, K, Id> {
     self.map.keys()

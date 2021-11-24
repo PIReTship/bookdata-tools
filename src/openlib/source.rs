@@ -53,7 +53,7 @@ impl <T: de::DeserializeOwned> FromStr for Row<T> {
 ///
 /// There are several different formats in which we can find author references.
 /// This enum encapsulates them, and Serde automatically deserializes it into the
-/// appropraite variant.  We then use the [key] function to extract the key itself,
+/// appropraite variant.  We then use the [Author::key] function to extract the key itself,
 /// no matter the variant.
 #[derive(Deserialize, Debug)]
 #[serde(untagged)]

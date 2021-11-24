@@ -6,23 +6,23 @@
 //! currently usable as a library; you can extend them by adding additional commands
 //! to the [cli] module.
 
-mod cleaning;
-mod parsing;
-mod tsv;
-mod util;
-mod io;
-mod ids;
-mod gender;
-mod graph;
-mod marc;
-mod rdf;
-mod openlib;
-mod amazon;
-mod goodreads;
-mod arrow;
-mod ratings;
-mod cli;
-mod prelude;
+pub mod cleaning;
+pub mod parsing;
+pub mod tsv;
+pub mod util;
+pub mod io;
+pub mod ids;
+pub mod gender;
+pub mod graph;
+pub mod marc;
+pub mod rdf;
+pub mod openlib;
+pub mod amazon;
+pub mod goodreads;
+pub mod arrow;
+pub mod ratings;
+pub mod cli;
+pub mod prelude;
 
 // jemalloc makes this code faster
 #[cfg(target_env="gnu")]

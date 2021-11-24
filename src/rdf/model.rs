@@ -83,9 +83,9 @@ impl Term {
 /// This represents a complete triple read from an RDF file.
 ///
 /// There is also the concept of an *empty* triple.  When parsed from a string using
-/// the [FromStr] trait implementation, valid lines that do not contain triples (e.g.
+/// the [std::str::FromStr] trait implementation, valid lines that do not contain triples (e.g.
 /// blank lines or comment lines) will parse to the empty triple.  A triple's emptiness
-/// can be tested with [is_empty].
+/// can be tested with [Triple::is_empty].
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Triple {
   pub subject: Node,
