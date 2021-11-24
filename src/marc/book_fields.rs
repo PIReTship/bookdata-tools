@@ -1,3 +1,4 @@
+//! Code for writing extracted information specific to books.
 use serde::Serialize;
 
 use crate::prelude::*;
@@ -6,8 +7,7 @@ use crate::cleaning::isbns::{ParserDefs, ParseResult};
 use crate::marc::MARCRecord;
 use crate::marc::flat_fields::FieldOutput;
 
-use crate as bookdata;
-
+/// Structure recording book identifiers from a MARC field.
 #[derive(TableRow, Debug)]
 struct BookIds {
   rec_id: u32,
@@ -18,6 +18,7 @@ struct BookIds {
   bib_level: u8
 }
 
+/// Structure recording an ISBN record from a book.
 #[derive(Serialize, TableRow, Debug)]
 struct ISBNrec {
   rec_id: u32,
@@ -25,9 +26,11 @@ struct ISBNrec {
   tag: Option<String>
 }
 
+/// Output that writes books to set of Parquet files.
 pub struct BookOutput {
   n_books: u32,
   parser: ParserDefs,
+  prefix: String,
   fields: FieldOutput,
   ids: TableWriter<BookIds>,
   isbns: TableWriter<ISBNrec>
@@ -51,8 +54,19 @@ impl BookOutput {
     Ok(BookOutput {
       n_books: 0,
       parser: ParserDefs::new(),
+      prefix: prefix.to_string(),
       fields, ids, isbns
     })
+  }
+}
+
+impl DataSink for BookOutput {
+  fn output_files(&self) -> Vec<PathBuf> {
+      vec![
+        format!("{}-fields.parquet", &self.prefix).into(),
+        format!("{}-ids.parquet", &self.prefix).into(),
+        format!("{}-isbns.parquet", &self.prefix).into(),
+      ]
   }
 }
 

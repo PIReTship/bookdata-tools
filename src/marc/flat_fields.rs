@@ -1,8 +1,9 @@
+use std::path::Path;
 use anyhow::Result;
 
 use crate::arrow::*;
 use super::record::*;
-use crate::io::ObjectWriter;
+use crate::io::*;
 use crate as bookdata;  // hack to make derive macro work
 
 /// Flat MARC field record.
@@ -30,6 +31,18 @@ impl FieldOutput {
       rec_count: 0,
       writer
     }
+  }
+
+  /// Open a field output going to a file.
+  pub fn open<P: AsRef<Path>>(path: P) -> Result<FieldOutput> {
+    let writer = TableWriter::open(path)?;
+    Ok(Self::new(writer))
+  }
+}
+
+impl DataSink for FieldOutput {
+  fn output_files(&self) -> Vec<std::path::PathBuf> {
+    self.writer.output_files()
   }
 }
 

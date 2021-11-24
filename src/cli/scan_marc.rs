@@ -14,9 +14,8 @@ use crate::io::open_gzin_progress;
 
 use crate::marc::MARCRecord;
 use crate::marc::parse::{read_records, read_records_delim};
-
-mod generic;
-mod book;
+use crate::marc::book_fields::BookOutput;
+use crate::marc::flat_fields::FieldOutput;
 
 /// Scan MARC records and extract basic information.
 ///
@@ -61,14 +60,14 @@ impl Command for ScanMARC {
         Some(p) => p,
         None => "book"
       };
-      let output = book::BookOutput::open(pfx)?;
+      let output = BookOutput::open(pfx)?;
       self.process_records(output)?;
     } else {
       let ofn = match &self.output {
         Some(p) => p.clone(),
         None => PathBuf::from("marc-fields.parquet")
       };
-      let output = generic::open_output(ofn)?;
+      let output = FieldOutput::open(ofn)?;
       self.process_records(output)?;
     };
 
