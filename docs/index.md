@@ -48,7 +48,7 @@ GitHub repository <https://github.com/BoiseState/bookdata-tools>
 
 ## Video
 
-I recorded a video walking through the integration as an example for my [Data Science class](httsp://cs533.ekstrandom.net).
+I recorded a video walking through the integration as an example for my [Data Science class](https://cs533.ekstrandom.net).
 
 <iframe src="https://boisestate.hosted.panopto.com/Panopto/Pages/Embed.aspx?id=3ddd5f50-f4bf-4c27-94fb-ac4a0042ab0b&autoplay=false&offerviewer=true&showtitle=true&showbrand=false&start=0&interactivity=all" height="405" width="720" style="border: 1px solid #464646;" allowfullscreen allow="autoplay"></iframe>
 
