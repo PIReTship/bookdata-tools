@@ -1,12 +1,13 @@
 ---
-title: Layout
+title: Code Layout
 parent: Implementation
 nav_order: 1
 ---
 
-# Layout
+# Code Layout
 
-The import code consists of Python, Rust, and some SQL code, wired together with DVC.
+The import code consists of Python, Rust, and some SQL code, wired together with DVC, with data
+in several directories to facilitate ease of discovery.
 
 ## Python Scripts
 
@@ -37,6 +38,9 @@ the Rust tools.
 
 For writing new commands, there is a lot of utility code under `src`.  Consult the
 [Rust API documentation](../apidocs/bookdata/) for further details.
+
+The `bd-macros` directory contains the `TableRow` derive macro, because procedural macros cannot
+live in the same crate in which they are used.  Most users won't need to adjust this macro.
 
 ## DataFusion SQL
 

@@ -16,6 +16,7 @@ The data is organized into PostgreSQL schemas to make it easier to navigate; one
 ```{toctree}
 :maxdepth: 1
 
+layout
 ids
 loc
 openlib

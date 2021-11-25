@@ -6,10 +6,11 @@ nav_order: 2
 
 # Design for Datasets
 
-The general import philosophy is that we import the data into a PostgreSQL table in a raw form,
-only doing those conversions necessary to be able to access it with PostgreSQL commands and
-functions.  We then extract information from this raw form into other tables and materialized
-views to enable relational queries.
+The general import philosophy is that we scan raw data from underlying data sets into a tabular
+form, and then integrate it with further code; when an integration stage can be written as a
+performant SQL query, we do so with DataFusion.  We use Parquet for storing all outputs, both
+intermediate stages and final products; when an output is particularly small, and a CSV version
+would be convenient, we sometimes also produce compressed CSV.
 
 Each data set's import process follows the following steps:
 
