@@ -1,7 +1,6 @@
 ---
 title: Source Data
 parent: Importing
-nav_order: 3
 ---
 
 # Downloading Source Data

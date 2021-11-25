@@ -1,7 +1,6 @@
 ---
 title: Code Layout
 parent: Implementation
-nav_order: 1
 ---
 
 # Code Layout
