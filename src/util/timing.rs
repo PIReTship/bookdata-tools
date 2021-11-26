@@ -1,7 +1,7 @@
 use std::fmt;
 use std::time::{Instant, Duration};
 use friendly::temporal::HumanDuration;
-use friendly::{scalar, duration};
+use friendly::{scalar, bytes, duration};
 
 use fallible_iterator::FallibleIterator;
 
@@ -14,6 +14,7 @@ pub struct Timer {
   task_count: Option<usize>,
   completed: usize,
   last_write: LastWrite,
+  count_format: fn(f64) -> Box<dyn fmt::Display>,
 }
 
 #[derive(Debug)]
@@ -24,6 +25,17 @@ enum LastWrite {
     count: usize,
   }
 }
+
+/// Helper to format counts in decimal.
+fn decimal_format(n: f64) -> Box<dyn fmt::Display> {
+  Box::new(scalar(n))
+}
+
+/// Helper to format counts in binary.
+fn bytes_format(n: f64) -> Box<dyn fmt::Display> {
+  Box::new(bytes(n))
+}
+
 
 /// Struct wrapping an iterator to report progress.
 ///
@@ -46,6 +58,7 @@ impl Timer {
       task_count: None,
       completed: 0,
       last_write: LastWrite::Never,
+      count_format: decimal_format,
     }
   }
 
@@ -54,6 +67,11 @@ impl Timer {
     let mut timer = Timer::new();
     timer.task_count = Some(n);
     timer
+  }
+
+  /// Convert this timer to use binary count formatting.
+  pub fn set_binary(&mut self) {
+    self.count_format = bytes_format;
   }
 
   /// Advance the completed-task count.
@@ -170,10 +188,10 @@ impl fmt::Display for Timer {
     let per = (self.completed as f64) / el.as_secs_f64();
     if let Some(eta) = eta {
       write!(f, "{} / {} in {} ({}/s, ETA {})",
-             scalar(self.completed),
-             scalar(self.task_count.unwrap_or_default()),
+             (self.count_format)(self.completed as f64),
+             (self.count_format)(self.task_count.unwrap_or_default() as f64),
              duration(el),
-             scalar(per),
+             (self.count_format)(per),
              duration(eta))
     } else if self.completed > 0 {
       write!(f, "{} in {} ({:.0}/s)", scalar(self.completed), duration(el), scalar(per))
