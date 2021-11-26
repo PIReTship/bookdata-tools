@@ -25,14 +25,13 @@ enum LastWrite {
   }
 }
 
-pub struct ProgressFailIter<'a, I> where I: FallibleIterator {
-  timer: &'a mut Timer,
-  prefix: &'a str,
-  interval_secs: f32,
-  iter: I
-}
-
-pub struct ProgressIter<'a, I> where I: Iterator {
+/// Struct wrapping an iterator to report progress.
+///
+/// This struct makes it easy to report progress to the logging infrastructure
+/// while iterating. It can wrap either [Iterator] or [FallibleIterator], and
+/// implements the same trait as the wrapped iterator type (type bounds on the
+/// trait implementations accomplish this).
+pub struct ProgressIter<'a, I> {
   timer: &'a mut Timer,
   prefix: &'a str,
   interval_secs: f32,
@@ -128,7 +127,7 @@ impl Timer {
     }
   }
 
-  /// Emit progress from an iterator
+  /// Emit progress from an iterator.
   pub fn iter_progress<'a, I: Iterator>(&'a mut self, prefix: &'a str, interval_secs: f32, iter: I) -> ProgressIter<'a, I> {
     // try for size
     let (lb, ub) = iter.size_hint();
@@ -146,8 +145,8 @@ impl Timer {
     }
   }
 
-  /// Emit progress from a fallible iterator
-  pub fn fallible_iter_progress<'a, I: FallibleIterator>(&'a mut self, prefix: &'a str, interval_secs: f32, iter: I) -> ProgressFailIter<'a, I> {
+  /// Emit progress from a fallible iterator.
+  pub fn fallible_iter_progress<'a, I: FallibleIterator>(&'a mut self, prefix: &'a str, interval_secs: f32, iter: I) -> ProgressIter<'a, I> {
     // try for size
     let (lb, ub) = iter.size_hint();
     if let Some(n) = ub {
@@ -157,7 +156,7 @@ impl Timer {
     } else {
       self.task_count = None;
     }
-    ProgressFailIter {
+    ProgressIter {
       timer: self,
       prefix, interval_secs,
       iter
@@ -201,7 +200,7 @@ impl <'a, I> Iterator for ProgressIter<'a, I> where I: Iterator {
   }
 }
 
-impl <'a, I> FallibleIterator for ProgressFailIter<'a, I> where I: FallibleIterator {
+impl <'a, I> FallibleIterator for ProgressIter<'a, I> where I: FallibleIterator {
   type Item = I::Item;
   type Error = I::Error;
 
