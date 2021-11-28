@@ -40,7 +40,7 @@ struct ClusterIsbn {
 
 /// Load ISBN data
 async fn scan_isbns(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-  let icl = ctx.read_parquet("isbn-clusters.parquet")?;
+  let icl = ctx.read_parquet("isbn-clusters.parquet").await?;
   let icl = icl.select_columns(&["isbn", "cluster"])?;
   let icl = icl.sort(vec![
     col("cluster").sort(true, true),

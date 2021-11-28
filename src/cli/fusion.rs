@@ -33,7 +33,7 @@ pub struct Fusion {
 
 struct ScriptContext {
   runtime: Runtime,
-  df_context: ExecutionContext
+  df_context: ExecutionContext,
 }
 
 impl ScriptContext {
@@ -46,50 +46,68 @@ impl ScriptContext {
       runtime, df_context
     })
   }
-
-  /// Run an asynchronous task.
-  fn run<F: Future>(&self, task: F) -> <F as Future>::Output {
-    self.runtime.block_on(task)
-  }
 }
 
 /// Save an execution plan results to a Parquet directory.
-fn save_parquet(ctx: &ScriptContext, plan: Arc<dyn ExecutionPlan>, file: &str, partitioned: bool) -> Result<()> {
+///
+/// The weird lifetime on this function is to handle using a reference in an asynchonous function.
+/// Rust doesn't naturally support those very well.
+fn save_parquet<'x>(ctx: &'x ExecutionContext, plan: Arc<dyn ExecutionPlan>, file: &str, partitioned: bool) -> impl Future<Output=Result<()>> + 'x {
+  // take ownership of the file
+  let file = file.to_string();
+  // set up the writer
   let props = WriterProperties::builder();
   let props = props.set_compression(Compression::ZSTD);
   let props = props.set_dictionary_enabled(false);
   let props = props.build();
 
-  if partitioned {
-    ctx.run(ctx.df_context.write_parquet(plan, file.to_owned(), Some(props)))?;
-  } else {
-    let file = File::create(file)?;
-    let mut write = ArrowWriter::try_new(file, plan.schema(), Some(props))?;
-    ctx.run(eval_to_parquet(&mut write, plan))?;
-    write.close()?;
-  }
+  async move {
+    if partitioned {
+      ctx.write_parquet(plan, file.to_owned(), Some(props)).await?;
+    } else {
+      let file = File::create(file)?;
+      let mut write = ArrowWriter::try_new(file, plan.schema(), Some(props))?;
+      eval_to_parquet(&mut write, plan).await?;
+      write.close()?;
+    }
 
-  Ok(())
+    Ok(())
+  }
 }
 
 /// Save an execution plan results to a CSV file.
-fn save_csv(ctx: &ScriptContext, plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
+async fn save_csv(plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
   info!("saving to CSV file");
+  // take ownership of the filename string
+  let file = file.to_string();
+
+  // set up the output
   let out = File::create(file)?;
   let mut csvw = arrow::csv::WriterBuilder::new().has_headers(true).build(out);
 
-  ctx.run(eval_to_csv(&mut csvw, plan))?;
+  eval_to_csv(&mut csvw, plan).await?;
   Ok(())
 }
 
-fn save_csvgz(ctx: &ScriptContext, plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
+async fn save_csvgz(plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
   info!("saving to compressed CSV file");
+  // take ownership of the filename string
+  let file = file.to_string();
+
+  // set up the output
   let out = File::create(file)?;
   let out = GzEncoder::new(out, flate2::Compression::best());
   let mut csvw = arrow::csv::WriterBuilder::new().has_headers(true).build(out);
 
-  ctx.run(eval_to_csv(&mut csvw, plan))?;
+  eval_to_csv(&mut csvw, plan).await?;
   Ok(())
+}
+
+/// Helper function to wrap asynchronous tasks with errors in Molt
+fn async_wrap_errs<F, T>(rt: &Runtime, task: F) -> MoltResult where F: Future<Output=Result<T>> {
+  wrap_errs(|| {
+    rt.block_on(task)
+  })
 }
 
 /// Helper function to wrap Rust errors in Molt
@@ -110,12 +128,12 @@ fn cmd_table(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> MoltResult 
   let ctx: &mut ScriptContext = interp.context(ctx);
   let table = argv[1].as_str();
   let file = argv[2].as_str();
-  wrap_errs(|| {
+  async_wrap_errs(&ctx.runtime, async {
     info!("mounting table {} from {}", table, file);
     if file.ends_with(".parquet") {
-      ctx.df_context.register_parquet(table, file)?;
+      ctx.df_context.register_parquet(table, file).await?;
     } else if file.ends_with(".csv") {
-      ctx.df_context.register_csv(table, file, CsvReadOptions::new().has_header(true))?;
+      ctx.df_context.register_csv(table, file, CsvReadOptions::new().has_header(true)).await?;
     } else {
       error!("unknown table type");
       return Err(anyhow!("{} has unkown table type", file));
@@ -138,23 +156,23 @@ fn cmd_save_results(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> Molt
     query = argv[3].as_str();
   }
 
-  wrap_errs(|| {
+  async_wrap_errs(&ctx.runtime, async {
     log_exc_info(&ctx.df_context)?;
     info!("planning query");
     debug!("query text: {}", query);
     let lplan = ctx.df_context.create_logical_plan(&query)?;
     let lplan = ctx.df_context.optimize(&lplan)?;
-    let plan = ctx.df_context.create_physical_plan(&lplan)?;
+    let plan = ctx.df_context.create_physical_plan(&lplan).await?;
     debug!("query plan: {:?}", plan);
 
     info!("executing script to file {}", file);
 
     if file.ends_with(".parquet") {
-      save_parquet(ctx, plan, file, partitioned)?;
+      save_parquet(&ctx.df_context, plan, file, partitioned).await?;
     } else if file.ends_with(".csv") {
-      save_csv(ctx, plan, file)?;
+      save_csv(plan, file).await?;
     } else if file.ends_with(".csv.gz") {
-      save_csvgz(ctx, plan, file)?;
+      save_csvgz(plan, file).await?;
     } else {
       return Err(anyhow!("unknown suffix in file {}", file));
     }
@@ -169,13 +187,13 @@ fn cmd_query(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> MoltResult 
 
   let query = argv[1].as_str();
 
-  wrap_errs(|| {
+  async_wrap_errs(&ctx.runtime, async {
     log_exc_info(&ctx.df_context)?;
     info!("preparing query");
     debug!("query text: {}", query);
 
-    let df = ctx.df_context.sql(query)?;
-    let res = ctx.run(df.collect())?;
+    let df = ctx.df_context.sql(query).await?;
+    let res = df.collect().await?;
     debug!("finished with {} batches", res.len());
     println!("{}", pretty_format_batches(&res)?);
 

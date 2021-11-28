@@ -37,18 +37,19 @@ impl Ratings {
   }
 }
 
+#[async_trait]
 impl Source for Ratings {
   type Act = RatingRow;
   type DD = RatingDedup;
 
-  fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+  async fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     info!("setting up to scan GoodReads ratings from {}", GR_INPUT_FILE);
 
-    let ratings = ctx.read_parquet(GR_INPUT_FILE)?;
+    let ratings = ctx.read_parquet(GR_INPUT_FILE).await?;
     let ratings = ratings.filter(col("rating").is_not_null())?;
     let schema = ratings.schema();
     let num = DataType::Int64;
-    let books = ctx.read_parquet(GR_LINK_FILE)?;
+    let books = ctx.read_parquet(GR_LINK_FILE).await?;
     let ratings = ratings.join(books, JoinType::Inner, &["book_id"], &["book_id"])?;
     let ratings = ratings.select(vec![
       col("user_id").alias("user"),
@@ -78,17 +79,18 @@ impl Actions {
   }
 }
 
+#[async_trait]
 impl Source for Actions {
   type Act = RatingRow;
   type DD = ActionDedup;
 
-  fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+  async fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     info!("setting up to scan GoodReads actions from {}", GR_INPUT_FILE);
 
-    let ratings = ctx.read_parquet(GR_INPUT_FILE)?;
+    let ratings = ctx.read_parquet(GR_INPUT_FILE).await?;
     let schema = ratings.schema();
     let num = DataType::Int64;
-    let books = ctx.read_parquet(GR_LINK_FILE)?;
+    let books = ctx.read_parquet(GR_LINK_FILE).await?;
     let ratings = ratings.join(books, JoinType::Inner, &["book_id"], &["book_id"])?;
     let ratings = ratings.select(vec![
       col("user_id").alias("user"),

@@ -14,7 +14,7 @@ use arrow::datatypes::*;
 use arrow::array::*;
 use datafusion::prelude::*;
 use datafusion::physical_plan::execute_stream;
-use datafusion::physical_plan::functions::{make_scalar_function, Signature};
+use datafusion::physical_plan::functions::{make_scalar_function, Signature, Volatility};
 use datafusion::physical_plan::udf::ScalarUDF;
 use datafusion::physical_plan::ColumnarValue;
 use datafusion::physical_plan::ExecutionPlan;
@@ -62,10 +62,10 @@ pub async fn eval_to_parquet<W: ParquetWriter + 'static>(out: &mut ArrowWriter<W
 }
 
 /// Plan a data frame.
-pub fn plan_df(ctx: &mut ExecutionContext, df: Arc<dyn DataFrame>) -> Result<Arc<dyn ExecutionPlan>> {
+pub async fn plan_df(ctx: &mut ExecutionContext, df: Arc<dyn DataFrame>) -> Result<Arc<dyn ExecutionPlan>> {
   let plan = df.to_logical_plan();
   let plan = ctx.optimize(&plan)?;
-  let plan = ctx.create_physical_plan(&plan)?;
+  let plan = ctx.create_physical_plan(&plan).await?;
   Ok(plan)
 }
 
@@ -73,7 +73,7 @@ pub fn plan_df(ctx: &mut ExecutionContext, df: Arc<dyn DataFrame>) -> Result<Arc
 pub async fn df_rows<R>(ctx: &mut ExecutionContext, df: Arc<dyn DataFrame>) -> Result<impl Stream<Item=Result<R>>>
 where R: DeserializeOwned
 {
-  let plan = plan_df(ctx, df)?;
+  let plan = plan_df(ctx, df).await?;
   let stream = execute_stream(plan).await?;
   Ok(RecordBatchDeserializer::for_stream(stream))
 }
@@ -158,7 +158,7 @@ fn coalesce_return(arg_types: &[DataType]) -> FusionResult<Arc<DataType>> {
 lazy_static! {
   static ref FILLNA_UDF: ScalarUDF = ScalarUDF {
     name: "coalesce".to_owned(),
-    signature: Signature::VariadicEqual,
+    signature: Signature::variadic_equal(Volatility::Immutable),
     return_type: Arc::new(coalesce_return),
     fun: Arc::new(udf_fillna)
   };
@@ -174,6 +174,7 @@ pub fn add_udfs(ctx: &mut ExecutionContext) {
   let norm = create_udf(
     "norm_unicode",
     vec![DataType::Utf8], Arc::new(DataType::Utf8),
+    Volatility::Immutable,
     make_scalar_function(udf_norm_unicode));
   ctx.register_udf(norm);
 

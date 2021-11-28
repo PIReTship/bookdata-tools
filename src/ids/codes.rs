@@ -12,7 +12,7 @@ use std::sync::Arc;
 use arrow::datatypes::*;
 use arrow::array::*;
 use datafusion::prelude::create_udf;
-use datafusion::physical_plan::functions::make_scalar_function;
+use datafusion::physical_plan::functions::{make_scalar_function, Volatility};
 use datafusion::physical_plan::udf::ScalarUDF;
 use datafusion::execution::context::ExecutionContext;
 
@@ -125,6 +125,7 @@ impl NS<'static> {
       name.as_str(),
       vec![DataType::Int32],
       Arc::new(DataType::Int32),
+      Volatility::Immutable,
       make_scalar_function(func))
   }
 
@@ -144,6 +145,7 @@ impl NS<'static> {
       name.as_str(),
       vec![DataType::Int32],
       Arc::new(DataType::Boolean),
+      Volatility::Immutable,
       make_scalar_function(func))
   }
 }

@@ -72,21 +72,21 @@ make_accumulator!(bx, BX);
 make_accumulator!(az, AZ);
 
 async fn read_loc(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-  let df = ctx.read_parquet("loc-mds/book-isbns.parquet")?;
+  let df = ctx.read_parquet("loc-mds/book-isbns.parquet").await?;
   let df = df.select_columns(&["isbn"])?;
   let df = df.filter(col("isbn").is_not_null())?;
   Ok(df)
 }
 
 async fn read_ol(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-  let df = ctx.read_parquet("openlibrary/edition-isbns.parquet")?;
+  let df = ctx.read_parquet("openlibrary/edition-isbns.parquet").await?;
   let df = df.select_columns(&["isbn"])?;
   let df = df.filter(col("isbn").is_not_null())?;
   Ok(df)
 }
 
 async fn read_gr(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-  let df = ctx.read_parquet("goodreads/gr-book-ids.parquet")?;
+  let df = ctx.read_parquet("goodreads/gr-book-ids.parquet").await?;
   let df_10 = df.select(vec![
     col("isbn10").alias("isbn")
   ])?.filter(col("isbn").is_not_null())?;
@@ -102,14 +102,14 @@ async fn read_gr(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
 
 async fn read_bx(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
   let opts = CsvReadOptions::new().has_header(true);
-  let df = ctx.read_csv("bx/cleaned-ratings.csv", opts)?;
+  let df = ctx.read_csv("bx/cleaned-ratings.csv", opts).await?;
   let df = df.select_columns(&["isbn"])?;
   let df = df.filter(col("isbn").is_not_null())?;
   Ok(df)
 }
 
 async fn read_az(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-  let df = ctx.read_parquet("az2014/ratings.parquet")?;
+  let df = ctx.read_parquet("az2014/ratings.parquet").await?;
   let df = df.select(vec![
     col("asin").alias("isbn")
   ])?;

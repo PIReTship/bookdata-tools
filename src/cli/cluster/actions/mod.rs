@@ -35,7 +35,7 @@ pub struct ClusterActions {
 }
 
 async fn scan_and_save<S: Source>(src: S, ctx: &mut ExecutionContext, dst: &Path) -> Result<usize> {
-  let source = src.scan_linked_actions(ctx)?;
+  let source = src.scan_linked_actions(ctx).await?;
 
   let mut dedup = src.make_dedup();
 

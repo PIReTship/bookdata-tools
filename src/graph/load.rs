@@ -23,8 +23,8 @@ struct GraphBuilder {
 impl GraphBuilder {
   async fn add_vertices<R: NodeRead>(&mut self, src: R) -> Result<()> {
     info!("scanning vertices from {:?}", src);
-    let node_df = src.read_node_ids(&mut self.ctx)?;
-    let plan = plan_df(&mut self.ctx, node_df)?;
+    let node_df = src.read_node_ids(&mut self.ctx).await?;
+    let plan = plan_df(&mut self.ctx, node_df).await?;
     let batches = execute_stream(plan).await?;
     let ninit = self.nodes.len();
 
@@ -43,8 +43,8 @@ impl GraphBuilder {
 
   async fn add_edges<R: EdgeRead>(&mut self, src: R) -> Result<()> {
     info!("scanning edges from {:?}", src);
-    let edge_df = src.read_edges(&mut self.ctx)?;
-    let plan = plan_df(&mut self.ctx, edge_df)?;
+    let edge_df = src.read_edges(&mut self.ctx).await?;
+    let plan = plan_df(&mut self.ctx, edge_df).await?;
     let batches = execute_stream(plan).await?;
     let mut iter = RecordBatchDeserializer::for_stream(batches);
     let mut n = 0;

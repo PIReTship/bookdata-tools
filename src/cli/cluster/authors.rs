@@ -74,18 +74,18 @@ async fn write_authors_dedup<P: AsRef<Path>>(plan: Arc<dyn ExecutionPlan>, path:
 async fn scan_openlib(ctx: &mut ExecutionContext, first_only: bool) -> Result<Arc<dyn DataFrame>> {
   info!("scanning OpenLibrary author data");
   info!("reading ISBN clusters");
-  let icl = ctx.read_parquet("book-links/isbn-clusters.parquet")?;
+  let icl = ctx.read_parquet("book-links/isbn-clusters.parquet").await?;
   let icl = icl.select_columns(&["isbn_id", "cluster"])?;
   info!("reading edition IDs");
-  let edl = ctx.read_parquet("openlibrary/edition-isbn-ids.parquet")?;
+  let edl = ctx.read_parquet("openlibrary/edition-isbn-ids.parquet").await?;
   let edl = edl.filter(col("isbn_id").is_not_null())?;
   info!("reading edition authors");
-  let mut eau = ctx.read_parquet("openlibrary/edition-authors.parquet")?;
+  let mut eau = ctx.read_parquet("openlibrary/edition-authors.parquet").await?;
   if first_only {
     eau = eau.filter(col("pos").eq(lit(0)))?;
   }
   info!("reading author names");
-  let auth = ctx.read_parquet("openlibrary/author-names.parquet")?;
+  let auth = ctx.read_parquet("openlibrary/author-names.parquet").await?;
   let linked = icl.join(edl, JoinType::Inner, &["isbn_id"], &["isbn_id"])?;
   let linked = linked.join(eau, JoinType::Inner, &["edition"], &["edition"])?;
   let linked = linked.join(auth, JoinType::Inner, &["author"], &["id"])?;
@@ -104,14 +104,14 @@ async fn scan_loc(ctx: &mut ExecutionContext, first_only: bool) -> Result<Arc<dy
   }
 
   info!("reading ISBN clusters");
-  let icl = ctx.read_parquet("book-links/isbn-clusters.parquet")?;
+  let icl = ctx.read_parquet("book-links/isbn-clusters.parquet").await?;
   let icl = icl.select_columns(&["isbn_id", "cluster"])?;
 
   info!("reading book records");
-  let books = ctx.read_parquet("loc-mds/book-isbn-ids.parquet")?;
+  let books = ctx.read_parquet("loc-mds/book-isbn-ids.parquet").await?;
 
   info!("reading book authors");
-  let authors = ctx.read_parquet("loc-mds/book-authors.parquet")?;
+  let authors = ctx.read_parquet("loc-mds/book-authors.parquet").await?;
   let authors = authors.filter(col("author_name").is_not_null())?;
 
   let linked = icl.join(books, JoinType::Inner, &["isbn_id"], &["isbn_id"])?;
@@ -149,7 +149,7 @@ impl AsyncCommand for ClusterAuthors {
       col("author_name").sort(true, true)
       ])?;
 
-    let plan = plan_df(&mut ctx, authors)?;
+    let plan = plan_df(&mut ctx, authors).await?;
     write_authors_dedup(plan, &self.output).await?;
 
     Ok(())
