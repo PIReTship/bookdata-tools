@@ -7,7 +7,7 @@ use crate::arrow::*;
 use crate::ids::index::IdIndex;
 use crate::amazon::*;
 
-/// Scan an Amazon rating file file into Parquet.
+/// Scan an Amazon rating CSV file into Parquet.
 #[derive(StructOpt, Debug)]
 #[structopt(name="scan-ratings")]
 pub struct ScanRatings {
