@@ -12,6 +12,21 @@ pub struct SourceRating {
   pub timestamp: i64,
 }
 
+/// A review as it is described in a source JSON file.
+#[derive(Serialize, Deserialize)]
+pub struct SourceReview {
+  #[serde(rename="reviewerID")]
+  pub user: String,
+  pub asin: String,
+  pub summary: String,
+  #[serde(rename="reviewText")]
+  pub text: String,
+  #[serde(rename="overall")]
+  pub rating: f32,
+  #[serde(rename="unixReviewTime")]
+  pub timestamp: i64,
+}
+
 /// Structure for scanned ratings.
 ///
 /// This data structure is seralized to `ratings.parquet` in the Amazon directories.
@@ -21,4 +36,17 @@ pub struct RatingRow {
   pub asin: String,
   pub rating: f32,
   pub timestamp: i64,
+}
+
+/// Structure for scanned reviews.
+///
+/// This data structure is serialized to `reviews.parquet` in the Amazon directories.
+#[derive(TableRow, Serialize, Deserialize)]
+pub struct ReviewRow {
+  pub user: u32,
+  pub asin: String,
+  pub rating: f32,
+  pub timestamp: i64,
+  pub summary: String,
+  pub text: String,
 }
