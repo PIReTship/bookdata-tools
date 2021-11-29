@@ -2,18 +2,21 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use anyhow::Result;
+use async_trait::async_trait;
 
 use datafusion::prelude::*;
 use datafusion::logical_plan::Expr;
 
 use crate::ids::codes::*;
 
+#[async_trait]
 pub trait EdgeRead: Debug {
-  fn read_edges(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>>;
+  async fn read_edges(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>>;
 }
 
+#[async_trait]
 pub trait NodeRead: Debug {
-  fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>>;
+  async fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>>;
 }
 
 #[derive(Debug)]
@@ -29,36 +32,15 @@ pub struct GRBooks;
 #[derive(Debug)]
 pub struct GRWorks;
 
-pub fn edge_sources() -> Vec<Box<dyn EdgeRead>> {
-  vec![
-    Box::new(LOC),
-    Box::new(OLEditions),
-    Box::new(OLWorks),
-    Box::new(GRBooks),
-    Box::new(GRWorks)
-  ]
-}
-
-#[allow(dead_code)]
-pub fn node_sources() -> Vec<Box<dyn NodeRead>> {
-  vec![
-    Box::new(ISBN),
-    Box::new(LOC),
-    Box::new(OLEditions),
-    Box::new(OLWorks),
-    Box::new(GRBooks),
-    Box::new(GRWorks)
-  ]
-}
-
 /// Get an ID column and apply the appropriate namespace adjustment.
 fn id_col(name: &str, ns: NS<'_>) -> Expr {
   col(name) + lit(ns.base())
 }
 
+#[async_trait]
 impl NodeRead for ISBN {
-  fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-    let df = ctx.read_parquet("book-links/all-isbns.parquet")?;
+  async fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+    let df = ctx.read_parquet("book-links/all-isbns.parquet").await?;
     let df = df.select(vec![
       id_col("isbn_id", NS_ISBN).alias("code"),
       col("isbn").alias("label")
@@ -67,9 +49,10 @@ impl NodeRead for ISBN {
   }
 }
 
+#[async_trait]
 impl NodeRead for LOC {
-  fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-    let df = ctx.read_parquet("loc-mds/book-ids.parquet")?;
+  async fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+    let df = ctx.read_parquet("loc-mds/book-ids.parquet").await?;
     let df = df.select(vec![
       id_col("rec_id", NS_LOC_REC).alias("code")
     ])?;
@@ -77,9 +60,10 @@ impl NodeRead for LOC {
   }
 }
 
+#[async_trait]
 impl EdgeRead for LOC {
-  fn read_edges(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-    let df = ctx.read_parquet("loc-mds/book-isbn-ids.parquet")?;
+  async fn read_edges(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+    let df = ctx.read_parquet("loc-mds/book-isbn-ids.parquet").await?;
     let df = df.select(vec![
       id_col("isbn_id", NS_ISBN),
       id_col("rec_id", NS_LOC_REC)
@@ -88,9 +72,10 @@ impl EdgeRead for LOC {
   }
 }
 
+#[async_trait]
 impl NodeRead for OLEditions {
-  fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-    let df = ctx.read_parquet("openlibrary/editions.parquet")?;
+  async fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+    let df = ctx.read_parquet("openlibrary/editions.parquet").await?;
     let df = df.select(vec![
       id_col("id", NS_EDITION).alias("code")
     ])?;
@@ -98,9 +83,10 @@ impl NodeRead for OLEditions {
   }
 }
 
+#[async_trait]
 impl EdgeRead for OLEditions {
-  fn read_edges(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-    let df = ctx.read_parquet("openlibrary/edition-isbn-ids.parquet")?;
+  async fn read_edges(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+    let df = ctx.read_parquet("openlibrary/edition-isbn-ids.parquet").await?;
     let df = df.select(vec![
       id_col("isbn_id", NS_ISBN),
       id_col("edition", NS_EDITION)
@@ -109,9 +95,10 @@ impl EdgeRead for OLEditions {
   }
 }
 
+#[async_trait]
 impl NodeRead for OLWorks {
-  fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-    let df = ctx.read_parquet("openlibrary/all-works.parquet")?;
+  async fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+    let df = ctx.read_parquet("openlibrary/all-works.parquet").await?;
     let df = df.select(vec![
       id_col("id", NS_WORK).alias("code"),
       col("key").alias("label")
@@ -120,9 +107,10 @@ impl NodeRead for OLWorks {
   }
 }
 
+#[async_trait]
 impl EdgeRead for OLWorks {
-  fn read_edges(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-    let df = ctx.read_parquet("openlibrary/edition-works.parquet")?;
+  async fn read_edges(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+    let df = ctx.read_parquet("openlibrary/edition-works.parquet").await?;
     let df = df.select(vec![
       id_col("edition", NS_EDITION),
       id_col("work", NS_WORK)
@@ -131,9 +119,10 @@ impl EdgeRead for OLWorks {
   }
 }
 
+#[async_trait]
 impl NodeRead for GRBooks {
-  fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-    let df = ctx.read_parquet("goodreads/gr-book-ids.parquet")?;
+  async fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+    let df = ctx.read_parquet("goodreads/gr-book-ids.parquet").await?;
     let df = df.select(vec![
       id_col("book_id", NS_GR_BOOK).alias("code")
     ])?;
@@ -141,9 +130,10 @@ impl NodeRead for GRBooks {
   }
 }
 
+#[async_trait]
 impl EdgeRead for GRBooks {
-  fn read_edges(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-    let df = ctx.read_parquet("goodreads/book-isbn-ids.parquet")?;
+  async fn read_edges(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+    let df = ctx.read_parquet("goodreads/book-isbn-ids.parquet").await?;
     let df = df.select(vec![
       id_col("isbn_id", NS_ISBN),
       id_col("book_id", NS_GR_BOOK)
@@ -152,9 +142,10 @@ impl EdgeRead for GRBooks {
   }
 }
 
+#[async_trait]
 impl NodeRead for GRWorks {
-  fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-    let df = ctx.read_parquet("goodreads/gr-book-ids.parquet")?;
+  async fn read_node_ids(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+    let df = ctx.read_parquet("goodreads/gr-book-ids.parquet").await?;
     let df = df.filter(col("work_id").is_not_null())?;
     let df = df.select(vec![
       id_col("work_id", NS_GR_WORK).alias("code")
@@ -163,9 +154,10 @@ impl NodeRead for GRWorks {
   }
 }
 
+#[async_trait]
 impl EdgeRead for GRWorks {
-  fn read_edges(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-    let df = ctx.read_parquet("goodreads/gr-book-ids.parquet")?;
+  async fn read_edges(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+    let df = ctx.read_parquet("goodreads/gr-book-ids.parquet").await?;
     let df = df.filter(col("work_id").is_not_null())?;
     let df = df.select(vec![
       id_col("book_id", NS_GR_BOOK),

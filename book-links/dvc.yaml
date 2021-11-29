@@ -3,7 +3,7 @@ stages:
     cmd: python run.py --rust collect-isbns
     wdir: ..
     deps:
-    - src/bin/collect-isbns.rs
+    - src/cli/collect_isbns.rs
     - loc-mds/book-isbns.parquet
     - openlibrary/edition-isbns.parquet
     - goodreads/gr-book-ids.parquet
@@ -16,7 +16,7 @@ stages:
     cmd: python run.py --rust cluster-books
     wdir: ..
     deps:
-    - src/bin/cluster-books.rs
+    - src/cli/cluster_books.rs
     - src/graph/
     - book-links/all-isbns.parquet
     - loc-mds/book-ids.parquet
@@ -37,11 +37,11 @@ stages:
     - book-links/cluster-stats.json
 
   cluster-ol-first-authors:
-    cmd: python run.py --rust cluster-authors -o book-links/cluster-ol-first-authors.parquet
+    cmd: python run.py --rust cluster extract-authors -o book-links/cluster-ol-first-authors.parquet
       --first-author -s openlib
     wdir: ..
     deps:
-    - src/bin/cluster-authors.rs
+    - src/cli/cluster
     - book-links/isbn-clusters.parquet
     - openlibrary/edition-isbn-ids.parquet
     - openlibrary/edition-authors.parquet
@@ -50,11 +50,11 @@ stages:
     - book-links/cluster-ol-first-authors.parquet
 
   cluster-loc-first-authors:
-    cmd: python run.py --rust cluster-authors -o book-links/cluster-loc-first-authors.parquet
+    cmd: python run.py --rust cluster extract-authors -o book-links/cluster-loc-first-authors.parquet
       --first-author -s loc
     wdir: ..
     deps:
-    - src/bin/cluster-authors.rs
+    - src/cli/cluster
     - book-links/isbn-clusters.parquet
     - loc-mds/book-isbn-ids.parquet
     - loc-mds/book-authors.parquet
@@ -62,11 +62,11 @@ stages:
     - book-links/cluster-loc-first-authors.parquet
 
   cluster-first-authors:
-    cmd: python run.py --rust cluster-authors -o book-links/cluster-first-authors.parquet
+    cmd: python run.py --rust cluster extract-authors -o book-links/cluster-first-authors.parquet
       --first-author -s openlib -s loc
     wdir: ..
     deps:
-    - src/bin/cluster-authors.rs
+    - src/cli/cluster
     - book-links/isbn-clusters.parquet
     - openlibrary/edition-isbn-ids.parquet
     - openlibrary/edition-authors.parquet
@@ -77,11 +77,11 @@ stages:
     - book-links/cluster-first-authors.parquet
 
   cluster-genders:
-    cmd: python run.py --rust cluster-author-gender -o book-links/cluster-genders.parquet
+    cmd: python run.py --rust cluster extract-author-gender -o book-links/cluster-genders.parquet
       -A book-links/cluster-first-authors.parquet
     wdir: ..
     deps:
-    - src/bin/cluster-author-gender/
+    - src/cli/cluster
     - book-links/cluster-stats.parquet
     - book-links/cluster-first-authors.parquet
     - viaf/author-name-index.parquet
@@ -105,18 +105,18 @@ stages:
     - gender-stats.csv
 
   cluster-hashes:
-    cmd: python ../run.py --rust cluster-hashes -o cluster-hashes.parquet
+    cmd: python ../run.py --rust cluster hash -o cluster-hashes.parquet
     deps:
-    - ../src/bin/cluster-hashes.rs
+    - ../src/cli/cluster
     - isbn-clusters.parquet
     outs:
     - cluster-hashes.parquet
 
-  debug-graph:
-    cmd: python ./run.py --rust extract-graph --cluster ${debug.cluster} -o book-links/debug-graph.gml
-    wdir: ..
-    deps:
-    - src/bin/extract-graph.rs
-    - book-links/book-graph.mp.zst
-    outs:
-    - book-links/debug-graph.gml
+  # debug-graph:
+  #   cmd: python ./run.py --rust extract-graph --cluster ${debug.cluster} -o book-links/debug-graph.gml
+  #   wdir: ..
+  #   deps:
+  #   - src/bin/extract-graph.rs
+  #   - book-links/book-graph.mp.zst
+  #   outs:
+  #   - book-links/debug-graph.gml

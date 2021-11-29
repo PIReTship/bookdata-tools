@@ -1,52 +1,65 @@
 ---
-title: Layout
+title: Code Layout
 parent: Implementation
-nav_order: 2
 ---
 
-# Layout
+# Code Layout
 
-The import code consists of Python, Rust, and SQL code, wired together with DVC.
+The import code consists of Python, Rust, and some SQL code, wired together with DVC, with data
+in several directories to facilitate ease of discovery.
 
 ## Python Scripts
 
-Python scripts live under `scripts`, as a Python package.  They should not be launched directly, but
-rather via `run.py`, which will make sure the environment is set up properly for them:
+Python scripts live in the various directories in which they operate. They should not be launched
+directly, but rather via `run.py`, which will make sure the environment is set up properly for them:
 
-    python run.py sql-script [options] script.sql
+    python run.py my-script-file.py
 
-## SQL Scripts
+The `bookdata` package contains a little Python utility code.  The `run.py` script ensures it is
+available in the Python import path.
 
-Our SQL scripts are run with a custom SQL script runner (the `sql-script` Python script), that breaks
-them into chunks, handles errors, and tracks dependencies and script status.  The script runner parses
-directives in SQL comments; for example:
+## Rust
 
-    --- #step ISBN ID storage
-    CREATE TABLE IF NOT EXISTS isbn_id (
-    isbn_id SERIAL PRIMARY KEY,
-    isbn VARCHAR NOT NULL UNIQUE
-    );
+The Rust code all lives under `src`, with the various command-line programs in `src/cli`.  The Rust
+tools are implemented as a monolithic executable with subcommands for various operations, to save
+disk space and compile time.  To see the help:
 
-is a step called "ISBN ID storage".  Each step is processed in a transaction that is committed at the
-end, so steps are atomic (unless marked with `#notx`).
+    cargo run help
 
-These are the directives for steps:
+Or through Python:
 
-- `#step LABEL` starts a new step with the label `LABEL`.  Additional directives before the first
-  SQL statement will apply to this step.
-- `#notx` means the step will run in autocommit mode.  This is needed for certain maintenance commands
-  that do not work within transactions.
-- `#allow CODE` allows the PostgreSQL error 'code', such as `invalid_table_definition`.  The script
-  will not fail if the step fails with this error.  Used for dealing with steps that do things like
-  create indexes, so if the index already exists it is fine to still run the script.
+    python run.py --rust help
 
-In addition, the top of the file can have `#dep` directives, that indicate the dependencies of this
-script.  The only purpose of the `#dep` is to record dependencies in the database stage state
-table, so that modifications can propagate and be detected; dependencies still need to be recorded
-in `.dvc` files to run the import steps in the correct order.
+The `run.py` script with the `--rust` option sets up some environment variables to ensure that
+the Rust code builds correctly inside a Conda environment, and also defaults to using a release
+build (`cargo run` uses debug builds by default).  All DVC pipeline stages use `run.py` to run
+the Rust tools.
 
-## Utility Code
+For writing new commands, there is a lot of utility code under `src`.  Consult the
+[Rust API documentation](../apidocs/bookdata/) for further details.
 
-The `bookdata` package contains Python utility code, and the `src` directory contains a number
-of utility modules for use in the Rust code.  To the extent reasonable, we have tried to mirror
-design patterns and function names.
+The `bd-macros` directory contains the `TableRow` derive macro, because procedural macros cannot
+live in the same crate in which they are used.  Most users won't need to adjust this macro.
+
+## DataFusion SQL
+
+[DF]: https://github.com/apache/arrow-datafusion/
+[Molt]: https://wduquette.github.io/molt/
+
+We do some processing with [DataFusion SQL][DF].  We have used [Molt][] (a Rust-based variant of
+TCL) to implement a small language for setting up tables, running queries, and saving the results.
+The `fusion` bookdata command runs scripts in this language.
+
+The following is a short example script demonstrating a join between two tables:
+
+```tcl
+table isbns "../book-links/all-isbns.parquet"
+table books "book-isbns.parquet"
+
+save-results "book-isbn-ids.parquet" {
+    SELECT rec_id, isbn_id
+    FROM books JOIN isbns USING (isbn)
+}
+```
+
+The `save-results` command can write to either CSV or Parquet.

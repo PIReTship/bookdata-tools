@@ -1,0 +1,43 @@
+---
+title: Data Layout
+---
+
+# Data Layout
+
+We organize the data and pipelines in directories as follows:
+
+data
+:   Contains the raw import data as downloaded from its original source.  Manually-downloaded files
+    and files that can be natively downloaded by DVC are tracked with a `.dvc` file; the `dvc.yaml`
+    pipeline contains stages to automatically download additional files.  The only processing in this
+    directory is downloading.
+
+    Data sets consisting of multiple files generally get a subdirectory under this directory.
+
+loc-mds
+:   Contains the results of processing data from the Library of Congress MDSConnect Open MARC service.
+    See [LOC](loc.md) for details.
+
+openlibrary
+:   Contains the results of processing the [OpenLibrary data](openlib.md).
+
+viaf
+:   Contains [Virtual Internet Authority File processing](viaf.md).
+
+bx
+:   Contains the results of integrating [BookCrossing](bx.md).
+
+az2014
+:   Contains the results of integrating the [Amazon](amazon.md) 2014 ratings data set.
+
+goodreads
+:   Contains the [GoodReads processing and integration](goodreads.md)
+
+book-links
+:   Contains linking book identifiers for integrating the whole set, including the [clustering](cluster.md) and
+    the [integrated author genders](gender.md).
+
+Each directory has a DVC pipeline for managing that directory's outputs.  Post-clustering integrations are stored
+in the data source directory; e.g. the `goodreads` directory contains both the direct tabular GoodReads data, and
+the conversion of ratings into ratings for book clusters based on `book-links` (so the flow from directory to
+directory is not one-directional).

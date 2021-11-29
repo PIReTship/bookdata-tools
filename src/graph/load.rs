@@ -14,64 +14,85 @@ use super::{BookID, IdGraph,IdNode};
 
 type NodeMap = HashMap<i32, IdNode>;
 
-async fn add_vertices(g: &mut IdGraph, nodes: &mut NodeMap, ctx: &mut ExecutionContext, src: &dyn NodeRead) -> Result<()> {
-  info!("scanning vertices from {:?}", src);
-  let node_df = src.read_node_ids(ctx)?;
-  let plan = plan_df(ctx, node_df)?;
-  let batches = execute_stream(plan).await?;
-  let ninit = nodes.len();
-
-  let mut iter = RecordBatchDeserializer::for_stream(batches);
-  while let Some(row) = iter.next().await {
-    let row: BookID = row?;
-    if !nodes.contains_key(&row.code) {
-      nodes.insert(row.code, g.add_node(row));
-    }
-  }
-
-  info!("loaded {} new vertices from {:?}", nodes.len() - ninit, src);
-
-  Ok(())
+struct GraphBuilder {
+  graph: IdGraph,
+  nodes: NodeMap,
+  ctx: ExecutionContext
 }
 
-async fn add_edges(g: &mut IdGraph, nodes: &NodeMap, ctx: &mut ExecutionContext, src: &dyn EdgeRead) -> Result<()> {
-  info!("scanning edges from {:?}", src);
-  let edge_df = src.read_edges(ctx)?;
-  let plan = plan_df(ctx, edge_df)?;
-  let batches = execute_stream(plan).await?;
-  let mut iter = RecordBatchDeserializer::for_stream(batches);
-  let mut n = 0;
+impl GraphBuilder {
+  async fn add_vertices<R: NodeRead>(&mut self, src: R) -> Result<()> {
+    info!("scanning vertices from {:?}", src);
+    let node_df = src.read_node_ids(&mut self.ctx).await?;
+    let plan = plan_df(&mut self.ctx, node_df).await?;
+    let batches = execute_stream(plan).await?;
+    let ninit = self.nodes.len();
 
-  while let Some(row) = iter.next().await {
-    let row: (i32, i32) = row?;
-    let (sn, dn) = row;
+    let mut iter = RecordBatchDeserializer::for_stream(batches);
+    while let Some(row) = iter.next().await {
+      let row: BookID = row?;
+      if !self.nodes.contains_key(&row.code) {
+        self.nodes.insert(row.code, self.graph.add_node(row));
+      }
+    }
 
-    let sid = nodes.get(&sn).ok_or_else(|| {
-      anyhow!("unknown source node {}", sn)
-    })?;
-    let did = nodes.get(&dn).ok_or_else(|| {
-      anyhow!("unknown destination node {}", sn)
-    })?;
-    g.add_edge(*sid, *did, ());
-    n += 1;
+    info!("loaded {} new vertices from {:?}", self.nodes.len() - ninit, src);
+
+    Ok(())
   }
 
-  info!("added {} edges from {:?}", n, src);
+  async fn add_edges<R: EdgeRead>(&mut self, src: R) -> Result<()> {
+    info!("scanning edges from {:?}", src);
+    let edge_df = src.read_edges(&mut self.ctx).await?;
+    let plan = plan_df(&mut self.ctx, edge_df).await?;
+    let batches = execute_stream(plan).await?;
+    let mut iter = RecordBatchDeserializer::for_stream(batches);
+    let mut n = 0;
 
-  Ok(())
+    while let Some(row) = iter.next().await {
+      let row: (i32, i32) = row?;
+      let (sn, dn) = row;
+
+      let sid = self.nodes.get(&sn).ok_or_else(|| {
+        anyhow!("unknown source node {}", sn)
+      })?;
+      let did = self.nodes.get(&dn).ok_or_else(|| {
+        anyhow!("unknown destination node {}", sn)
+      })?;
+      self.graph.add_edge(*sid, *did, ());
+      n += 1;
+    }
+
+    info!("added {} edges from {:?}", n, src);
+
+    Ok(())
+  }
 }
 
 pub async fn construct_graph() -> Result<IdGraph> {
-  let mut graph = IdGraph::new_undirected();
-  let mut nodes = NodeMap::new();
-  let mut ctx = ExecutionContext::new();
+  let graph = IdGraph::new_undirected();
+  let nodes = NodeMap::new();
+  let ctx = ExecutionContext::new();
+  let mut gb = GraphBuilder {
+    graph, nodes, ctx
+  };
+
   info!("loading nodes");
-  for src in node_sources() {
-    add_vertices(&mut graph, &mut nodes, &mut ctx, src.as_ref()).await?;
-  }
-  for src in edge_sources() {
-    add_edges(&mut graph, &nodes, &mut ctx, src.as_ref()).await?;
-  }
+  gb.add_vertices(ISBN).await?;
+  gb.add_vertices(LOC).await?;
+  gb.add_vertices(OLEditions).await?;
+  gb.add_vertices(OLWorks).await?;
+  gb.add_vertices(GRBooks).await?;
+  gb.add_vertices(GRWorks).await?;
+
+  info!("loading edges");
+  gb.add_edges(LOC).await?;
+  gb.add_edges(OLEditions).await?;
+  gb.add_edges(OLWorks).await?;
+  gb.add_edges(GRBooks).await?;
+  gb.add_edges(GRWorks).await?;
+
+  let graph = gb.graph;
   info!("graph has {} nodes, {} edges", graph.node_count(), graph.edge_count());
   Ok(graph)
 }

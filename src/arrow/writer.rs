@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::fs::OpenOptions;
 use std::sync::Arc;
 use std::marker::PhantomData;
@@ -15,15 +15,20 @@ use parquet::arrow::ArrowWriter;
 use anyhow::{Result, anyhow};
 
 use crate::io::object::{ObjectWriter, ThreadWriter};
+use crate::io::DataSink;
 use super::table::TableRow;
 
 const BATCH_SIZE: usize = 1000000;
 
-/// Parquet table writer
+/// Parquet table writer.
+///
+/// A table writer is an [ObjectWriter] for structs implementing [TableRow], that writes
+/// them out to a Parquet file.
 pub struct TableWriter<R: TableRow> {
   schema: SchemaRef,
   select: Vec<usize>,
   writer: Option<ThreadWriter<RecordBatch>>,
+  out_path: Option<PathBuf>,
   batch: R::Batch,
   batch_size: usize,
   batch_count: usize,
@@ -80,6 +85,8 @@ impl <R> TableWriterBuilder<R> where R: TableRow {
     self
   }
 
+  /// Set the batch size for a table writer builder.
+  #[allow(dead_code)]
   pub fn batch_size(mut self, size: usize) -> TableWriterBuilder<R> {
     self.bsize = size;
     self
@@ -102,20 +109,27 @@ impl <R> TableWriterBuilder<R> where R: TableRow {
     self
   }
 
+  /// Set the encoding for a particular column.
+  #[allow(dead_code)]
   pub fn column_encoding<C: Into<ColumnPath>>(mut self, col: C, enc: Encoding) -> TableWriterBuilder<R> {
     self.props = self.props.set_column_encoding(col.into(), enc);
     self
   }
 
+  /// Open the configured table writer.
   pub fn open<P: AsRef<Path>>(self, path: P) -> Result<TableWriter<R>> {
+    let path = path.as_ref();
     let file = OpenOptions::new().create(true).truncate(true).write(true).open(path)?;
     let props = self.props.build();
     let writer = ArrowWriter::try_new(file, self.schema.clone(), Some(props))?;
+    // we're always going to use a background thread
     let writer = ThreadWriter::new(writer);
+    let out_path = Some(path.to_path_buf());
     Ok(TableWriter {
       schema: self.schema,
       select: self.select,
       writer: Some(writer),
+      out_path,
       batch: R::new_batch(self.bsize),
       batch_size: self.bsize,
       batch_count: 0,
@@ -125,6 +139,7 @@ impl <R> TableWriterBuilder<R> where R: TableRow {
 }
 
 impl <R> TableWriter<R> where R: TableRow {
+  /// Open a table writer for a path.
   pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
     let bld = TableWriterBuilder::new();
     bld.open(path)
@@ -139,6 +154,15 @@ impl <R> TableWriter<R> where R: TableRow {
     writer.write_object(batch)?;
     self.batch_count = 0;
     Ok(())
+  }
+}
+
+impl <R> DataSink for TableWriter<R> where R: TableRow {
+  fn output_files(&self) -> Vec<PathBuf> {
+    match &self.out_path {
+      None => Vec::new(),
+      Some(p) => vec![p.clone()]
+    }
   }
 }
 

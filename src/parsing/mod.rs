@@ -1,4 +1,4 @@
-//! Parsing utilities.
+//! Parsing utilities.  Format-specific parsing is in various other modules.
 use std::str::FromStr;
 use std::error::{Error as StdError};
 

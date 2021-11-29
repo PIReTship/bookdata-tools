@@ -1,7 +1,6 @@
 ---
 title: Data Model
 has_children: true
-nav_order: 3
 ---
 
 # Data Model
@@ -16,6 +15,7 @@ The data is organized into PostgreSQL schemas to make it easier to navigate; one
 ```{toctree}
 :maxdepth: 1
 
+layout
 ids
 loc
 openlib

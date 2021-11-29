@@ -1,7 +1,7 @@
 use std::fmt;
 use std::time::{Instant, Duration};
 use friendly::temporal::HumanDuration;
-use friendly::{scalar, duration};
+use friendly::{scalar, bytes, duration};
 
 use fallible_iterator::FallibleIterator;
 
@@ -14,6 +14,7 @@ pub struct Timer {
   task_count: Option<usize>,
   completed: usize,
   last_write: LastWrite,
+  count_format: fn(f64) -> Box<dyn fmt::Display>,
 }
 
 #[derive(Debug)]
@@ -25,14 +26,24 @@ enum LastWrite {
   }
 }
 
-pub struct ProgressFailIter<'a, I> where I: FallibleIterator {
-  timer: &'a mut Timer,
-  prefix: &'a str,
-  interval_secs: f32,
-  iter: I
+/// Helper to format counts in decimal.
+fn decimal_format(n: f64) -> Box<dyn fmt::Display> {
+  Box::new(scalar(n))
 }
 
-pub struct ProgressIter<'a, I> where I: Iterator {
+/// Helper to format counts in binary.
+fn bytes_format(n: f64) -> Box<dyn fmt::Display> {
+  Box::new(bytes(n))
+}
+
+
+/// Struct wrapping an iterator to report progress.
+///
+/// This struct makes it easy to report progress to the logging infrastructure
+/// while iterating. It can wrap either [Iterator] or [FallibleIterator], and
+/// implements the same trait as the wrapped iterator type (type bounds on the
+/// trait implementations accomplish this).
+pub struct ProgressIter<'a, I> {
   timer: &'a mut Timer,
   prefix: &'a str,
   interval_secs: f32,
@@ -47,6 +58,7 @@ impl Timer {
       task_count: None,
       completed: 0,
       last_write: LastWrite::Never,
+      count_format: decimal_format,
     }
   }
 
@@ -55,6 +67,11 @@ impl Timer {
     let mut timer = Timer::new();
     timer.task_count = Some(n);
     timer
+  }
+
+  /// Convert this timer to use binary count formatting.
+  pub fn set_binary(&mut self) {
+    self.count_format = bytes_format;
   }
 
   /// Advance the completed-task count.
@@ -110,7 +127,7 @@ impl Timer {
 
   /// Get the elapsed time on this timer, wrapped for human presentation.
   pub fn human_elapsed(&self) -> HumanDuration {
-    self.started.elapsed().into()
+    self.elapsed().into()
   }
 
   /// Get the elapsed time and ETA on this timer.
@@ -128,7 +145,7 @@ impl Timer {
     }
   }
 
-  /// Emit progress from an iterator
+  /// Emit progress from an iterator.
   pub fn iter_progress<'a, I: Iterator>(&'a mut self, prefix: &'a str, interval_secs: f32, iter: I) -> ProgressIter<'a, I> {
     // try for size
     let (lb, ub) = iter.size_hint();
@@ -146,8 +163,8 @@ impl Timer {
     }
   }
 
-  /// Emit progress from a fallible iterator
-  pub fn fallible_iter_progress<'a, I: FallibleIterator>(&'a mut self, prefix: &'a str, interval_secs: f32, iter: I) -> ProgressFailIter<'a, I> {
+  /// Emit progress from a fallible iterator.
+  pub fn fallible_iter_progress<'a, I: FallibleIterator>(&'a mut self, prefix: &'a str, interval_secs: f32, iter: I) -> ProgressIter<'a, I> {
     // try for size
     let (lb, ub) = iter.size_hint();
     if let Some(n) = ub {
@@ -157,7 +174,7 @@ impl Timer {
     } else {
       self.task_count = None;
     }
-    ProgressFailIter {
+    ProgressIter {
       timer: self,
       prefix, interval_secs,
       iter
@@ -171,10 +188,10 @@ impl fmt::Display for Timer {
     let per = (self.completed as f64) / el.as_secs_f64();
     if let Some(eta) = eta {
       write!(f, "{} / {} in {} ({}/s, ETA {})",
-             scalar(self.completed),
-             scalar(self.task_count.unwrap_or_default()),
+             (self.count_format)(self.completed as f64),
+             (self.count_format)(self.task_count.unwrap_or_default() as f64),
              duration(el),
-             scalar(per),
+             (self.count_format)(per),
              duration(eta))
     } else if self.completed > 0 {
       write!(f, "{} in {} ({:.0}/s)", scalar(self.completed), duration(el), scalar(per))
@@ -201,7 +218,7 @@ impl <'a, I> Iterator for ProgressIter<'a, I> where I: Iterator {
   }
 }
 
-impl <'a, I> FallibleIterator for ProgressFailIter<'a, I> where I: FallibleIterator {
+impl <'a, I> FallibleIterator for ProgressIter<'a, I> where I: FallibleIterator {
   type Item = I::Item;
   type Error = I::Error;
 
@@ -220,6 +237,7 @@ impl <'a, I> FallibleIterator for ProgressFailIter<'a, I> where I: FallibleItera
 }
 
 /// Format a duration with a human-readable string.
+#[cfg(test)]
 pub fn human_time(dur: Duration) -> String {
   let hd = HumanDuration::from(dur);
   hd.to_string()

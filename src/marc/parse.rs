@@ -104,11 +104,6 @@ pub fn read_records_delim<B: BufRead>(reader: B) -> Records<B> {
   }
 }
 
-/// Read a single MARC record from XML.
-pub fn read_single_record<B: BufRead>(reader: &mut Reader<B>) -> Result<MARCRecord> {
-  read_record(reader)
-}
-
 /// Parse a single MARC record from an XML string.
 pub fn parse_record<S: AsRef<str>>(xml: S) -> Result<MARCRecord> {
   let mut parse = Reader::from_str(xml.as_ref());

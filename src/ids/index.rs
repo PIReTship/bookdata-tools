@@ -1,3 +1,4 @@
+//! Data structure for mapping string keys to numeric identifiers.
 use std::path::{Path};
 use hashbrown::hash_map::{HashMap, Keys};
 use std::hash::Hash;
@@ -68,11 +69,13 @@ impl <K> IdIndex<K> where K: Eq + Hash {
   }
 
   /// Look up the ID for a key if it is present.
+  #[allow(dead_code)]
   pub fn lookup<Q>(&self, key: &Q) -> Option<Id> where K: Borrow<Q>, Q: Hash + Eq + ?Sized {
     self.map.get(key).map(|i| *i)
   }
 
-  /// Iterate over keys (see [std::collection::HashMap::keys]).
+  /// Iterate over keys (see [std::collections::HashMap::keys]).
+  #[allow(dead_code)]
   pub fn keys(&self) -> Keys<'_, K, Id> {
     self.map.keys()
   }

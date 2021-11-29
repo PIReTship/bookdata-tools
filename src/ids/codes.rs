@@ -1,19 +1,35 @@
+//! Book codes and their number spaces.
+//!
+//! This implements the [book codes][bc] for the book integration.  In this module,
+//! we use *book code* to refer to the numberspaced numeric code representing the
+//! book record in the common code space, and *identifier* (or *underlying identifier*)
+//! for the native identifier of the underlying record.  Identifiers are translated
+//! into codes by adding the number space's base, which partitions the code space
+//! into different regions.
+//!
+//! [bc]: https://bookdata.piret.info/data/ids.html#book-codes
 use std::sync::Arc;
 use arrow::datatypes::*;
 use arrow::array::*;
 use datafusion::prelude::create_udf;
-use datafusion::physical_plan::functions::make_scalar_function;
+use datafusion::physical_plan::functions::{make_scalar_function, Volatility};
 use datafusion::physical_plan::udf::ScalarUDF;
 use datafusion::execution::context::ExecutionContext;
 
 use log::*;
 
+/// The "number space" structure for identifier spaces.
 pub struct NS<'a> {
+  /// The name of this numberspace.
   pub name: &'a str,
+  /// The name usable as a part of an identifier name (snake_case).
   pub fn_name: &'a str,
+  /// The number space numeric code.
   pub code: i32
 }
 
+/// The multiplier base for distinguishing numbers in a number space.
+/// Each space supports up to 100K identifiers.
 const NS_MULT_BASE: i32 = 100_000_000;
 
 #[allow(dead_code)]
@@ -48,30 +64,39 @@ const NAMESPACES: &'static [&'static NS<'static>] = &[
 use quickcheck::quickcheck;
 
 impl <'a> NS<'a> {
+  /// Create a new number space. Internal only.
   const fn new(name: &'a str, fn_name: &'a str, code: i32) -> NS<'a> {
     NS {
       name, fn_name, code
     }
   }
 
+  /// Get the name of the number space.
   #[allow(dead_code)]
   pub fn name(&'a self) -> &'a str {
     self.name
   }
 
+  /// Get the numeric code of the number space.
   pub fn code(&'a self) -> i32 {
     self.code
   }
 
+  /// Get the base of the number space. Identifiers are translated into this space
+  /// by adding the base.
   pub fn base(&'a self) -> i32 {
     self.code() * NS_MULT_BASE
   }
 
+  /// Convert a numeric identifier to a book code in this number space.
   #[allow(dead_code)]
   pub fn to_code(&'a self, n: i32) -> i32 {
+    assert!(n >= 0);
+    assert!(n <= NS_MULT_BASE);
     n + self.base()
   }
 
+  /// Extract a numeric identifier from a book code in this number space.
   pub fn from_code(&'a self, n: i32) -> Option<i32> {
     let lo = self.base();
     let hi = lo + NS_MULT_BASE;
@@ -100,6 +125,7 @@ impl NS<'static> {
       name.as_str(),
       vec![DataType::Int32],
       Arc::new(DataType::Int32),
+      Volatility::Immutable,
       make_scalar_function(func))
   }
 
@@ -119,6 +145,7 @@ impl NS<'static> {
       name.as_str(),
       vec![DataType::Int32],
       Arc::new(DataType::Boolean),
+      Volatility::Immutable,
       make_scalar_function(func))
   }
 }

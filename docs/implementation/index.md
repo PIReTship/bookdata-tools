@@ -15,7 +15,6 @@ These data and integration tools are designed to support several goals:
 - Efficient import and integration
 
 ```{toctree}
-status
 layout
 dataset
 ```
@@ -25,10 +24,9 @@ dataset
 These goals are realized through a few technology and design decisions:
 
 - Script all import steps with a tool that can track stage dependencies and check whether a stage is up-to-date ([DVC](https://dvc.org)).
-- Stage each data source with a schema file, a raw import, and subsequent SQL files that reformat and extract data into more usable format.
-- Implement as much data integration as possible in declarative SQL.
-- Make SQL scripts re-runnable, so they will either refresh or delete and recreate their outputs. Deletes cascading to downstream steps are fine, because the stage runner will re-run those stages anyway.
-
+- Make individual import stages self-contained and limited.
+- Extract data from raw sources into tabular form, *then* integrate as a separate step.
+- When feasible and performant, implement integration and processing steps with declarative SQL.
 
 ## DVC Dependency Graph
 
