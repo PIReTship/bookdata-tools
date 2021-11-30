@@ -81,6 +81,7 @@ wrap_subcommands!(RDFCommand);
 #[derive(StructOpt, Debug)]
 enum AmazonCommand {
   ScanRatings(amazon::ScanRatings),
+  ScanReviews(amazon::ScanReviews),
 }
 
 #[enum_dispatch(Command)]

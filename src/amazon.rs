@@ -18,13 +18,14 @@ pub struct SourceReview {
   #[serde(rename="reviewerID")]
   pub user: String,
   pub asin: String,
-  pub summary: String,
-  #[serde(rename="reviewText")]
-  pub text: String,
   #[serde(rename="overall")]
   pub rating: f32,
   #[serde(rename="unixReviewTime")]
   pub timestamp: i64,
+  pub summary: Option<String>,
+  #[serde(rename="reviewText")]
+  pub text: Option<String>,
+  pub verified: bool,
 }
 
 /// Structure for scanned ratings.
