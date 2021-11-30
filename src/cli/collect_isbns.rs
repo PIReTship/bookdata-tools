@@ -28,7 +28,8 @@ struct ISBNRecord {
   ol_recs: i32,
   gr_recs: i32,
   bx_recs: i32,
-  az_recs: i32,
+  az14_recs: i32,
+  az18_recs: i32,
 }
 
 #[derive(Deserialize)]
@@ -36,7 +37,7 @@ struct ISBN {
   isbn: String
 }
 
-type Accum = HashMap<String,ISBNRecord>;
+type Accum = HashMap<String, ISBNRecord>;
 
 trait ISBNSrc where Self: Debug {
   fn record(acc: &mut Accum, isbn: String);
@@ -69,7 +70,8 @@ make_accumulator!(loc, LOC);
 make_accumulator!(ol, OL);
 make_accumulator!(gr, GR);
 make_accumulator!(bx, BX);
-make_accumulator!(az, AZ);
+make_accumulator!(az14, AZ14);
+make_accumulator!(az18, AZ18);
 
 async fn read_loc(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
   let df = ctx.read_parquet("loc-mds/book-isbns.parquet").await?;
@@ -108,8 +110,9 @@ async fn read_bx(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
   Ok(df)
 }
 
-async fn read_az(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-  let df = ctx.read_parquet("az2014/ratings.parquet").await?;
+async fn read_az(ctx: &mut ExecutionContext, dir: &str) -> Result<Arc<dyn DataFrame>> {
+  let path = format!("{}/ratings.parquet", dir);
+  let df = ctx.read_parquet(path).await?;
   let df = df.select(vec![
     col("asin").alias("isbn")
   ])?;
@@ -140,7 +143,8 @@ impl AsyncCommand for CollectISBNs {
     record_isbns(&mut acc, read_ol(&mut ctx).await?, OL).await?;
     record_isbns(&mut acc, read_gr(&mut ctx).await?, GR).await?;
     record_isbns(&mut acc, read_bx(&mut ctx).await?, BX).await?;
-    record_isbns(&mut acc, read_az(&mut ctx).await?, AZ).await?;
+    record_isbns(&mut acc, read_az(&mut ctx, "az2014").await?, AZ14).await?;
+    record_isbns(&mut acc, read_az(&mut ctx, "az2018").await?, AZ18).await?;
 
     info!("found {} distinct ISBNs", acc.len());
 
