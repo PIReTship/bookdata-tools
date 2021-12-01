@@ -34,6 +34,8 @@ enum GRScan {
   Books(ScanInput),
   /// Scan GoodReads interactions.
   Interactions(ScanInput),
+  /// Scan GoodReads reviews.
+  Reviews(ScanInput),
 }
 
 fn scan_gr<P, R, W>(path: P, proc: W) -> Result<()>
@@ -74,6 +76,10 @@ impl Command for Goodreads {
       GRCmd::Scan { data: GRScan::Interactions(opts) } => {
         info!("scanning GoodReads interactions");
         scan_gr(&opts.infile, interaction::IntWriter::open()?)?;
+      }
+      GRCmd::Scan { data: GRScan::Reviews(opts) } => {
+        info!("scanning GoodReads reviews");
+        scan_gr(&opts.infile, review::ReviewWriter::open()?)?;
       }
     }
 
