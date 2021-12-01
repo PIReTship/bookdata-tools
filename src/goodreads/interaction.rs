@@ -8,7 +8,10 @@ use crate::ids::index::IdIndex;
 use crate::parsing::*;
 use crate::parsing::dates::*;
 
-const OUT_FILE: &'static str = "gr-interactions.parquet";
+pub const OUT_FILE: &'static str = "gr-interactions.parquet";
+pub const USER_FILE: &'static str = "gr-users.parquet";
+pub const UID_COL: &'static str = "user";
+pub const UHASH_COL: &'static str = "user_hash";
 
 // the records we read from JSON
 #[derive(Deserialize)]
@@ -49,7 +52,7 @@ pub struct IntRecord {
 // Object writer to transform and write GoodReads interactions
 pub struct IntWriter {
   writer: TableWriter<IntRecord>,
-  users: IdIndex<Vec<u8>>,
+  users: IdIndex<String>,
   review_ids: HashSet<i64>,
   n_recs: u32,
 }
@@ -78,8 +81,7 @@ impl ObjectWriter<RawInteraction> for IntWriter {
   fn write_object(&mut self, row: RawInteraction) -> Result<()> {
     self.n_recs += 1;
     let rec_id = self.n_recs;
-    let user_key = hex::decode(row.user_id.as_bytes())?;
-    let user_id = self.users.intern_owned(user_key);
+    let user_id = self.users.intern_owned(row.user_id);
     let book_id: i32 = row.book_id.parse()?;
     let (rev_hi, rev_lo) = decode_hex_i64_pair(&row.review_id)?;
     let review_id = rev_hi ^ rev_lo;
@@ -107,6 +109,9 @@ impl ObjectWriter<RawInteraction> for IntWriter {
   // Clean up and finalize output
   fn finish(self) -> Result<usize> {
     info!("wrote {} records for {} users, closing output", self.n_recs, self.users.len());
-    self.writer.finish()
+    let res = self.writer.finish()?;
+    info!("saving {} users", self.users.len());
+    self.users.save(USER_FILE, UID_COL, UHASH_COL)?;
+    Ok(res)
   }
 }
