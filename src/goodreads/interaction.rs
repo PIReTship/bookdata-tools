@@ -1,3 +1,4 @@
+use hashbrown::HashSet;
 pub use serde::Deserialize;
 use chrono::{DateTime, FixedOffset};
 
@@ -14,7 +15,7 @@ const OUT_FILE: &'static str = "gr-interactions.parquet";
 pub struct RawInteraction {
   pub user_id: String,
   pub book_id: String,
-  // review_id: String,
+  pub review_id: String,
   #[serde(rename="isRead")]
   pub is_read: bool,
   pub rating: f32,
@@ -28,6 +29,13 @@ pub struct RawInteraction {
 #[derive(TableRow)]
 pub struct IntRecord {
   pub rec_id: u32,
+  /// The review ID.
+  ///
+  /// This is derived from the hexadecimal review ID by interpreting the hexadecimal-encoded
+  /// review ID from the source data as two big-endian i64s and XORing them.  The import
+  /// process checks that this does not result in duplicate review IDs, and emits warnings
+  /// if any are encountered.
+  pub review_id: i64,
   pub user_id: u32,
   pub book_id: i32,
   pub is_read: u8,
@@ -42,6 +50,7 @@ pub struct IntRecord {
 pub struct IntWriter {
   writer: TableWriter<IntRecord>,
   users: IdIndex<Vec<u8>>,
+  review_ids: HashSet<i64>,
   n_recs: u32,
 }
 
@@ -52,7 +61,8 @@ impl IntWriter {
     Ok(IntWriter {
       writer,
       users: IdIndex::new(),
-      n_recs: 0
+      review_ids: HashSet::new(),
+      n_recs: 0,
     })
   }
 }
@@ -71,6 +81,11 @@ impl ObjectWriter<RawInteraction> for IntWriter {
     let user_key = hex::decode(row.user_id.as_bytes())?;
     let user_id = self.users.intern_owned(user_key);
     let book_id: i32 = row.book_id.parse()?;
+    let (rev_hi, rev_lo) = decode_hex_i64_pair(&row.review_id)?;
+    let rev_id = rev_hi ^ rev_lo;
+    if !self.review_ids.insert(rev_id) {
+      warn!("review id {} duplicated ({})", rev_id, row.review_id);
+    }
 
     self.writer.write_object(IntRecord {
       rec_id, user_id, book_id,
