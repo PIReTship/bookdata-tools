@@ -82,13 +82,13 @@ impl ObjectWriter<RawInteraction> for IntWriter {
     let user_id = self.users.intern_owned(user_key);
     let book_id: i32 = row.book_id.parse()?;
     let (rev_hi, rev_lo) = decode_hex_i64_pair(&row.review_id)?;
-    let rev_id = rev_hi ^ rev_lo;
-    if !self.review_ids.insert(rev_id) {
-      warn!("review id {} duplicated ({})", rev_id, row.review_id);
+    let review_id = rev_hi ^ rev_lo;
+    if !self.review_ids.insert(review_id) {
+      warn!("review id {} duplicated ({})", review_id, row.review_id);
     }
 
     self.writer.write_object(IntRecord {
-      rec_id, user_id, book_id,
+      rec_id, review_id, user_id, book_id,
       is_read: row.is_read as u8,
       rating: if row.rating > 0.0 {
         Some(row.rating)
