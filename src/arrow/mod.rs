@@ -1,5 +1,4 @@
 pub mod types;
-pub mod table;
 pub mod row_de;
 pub mod writer;
 pub mod fusion;
