@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use hashbrown::HashSet;
 pub use serde::Deserialize;
 use chrono::{DateTime, FixedOffset};
@@ -29,7 +30,7 @@ pub struct RawInteraction {
 }
 
 // the records we're actually going to write to the table
-#[derive(TableRow)]
+#[derive(ParquetRecordWriter)]
 pub struct IntRecord {
   pub rec_id: u32,
   /// The review ID.
@@ -39,14 +40,14 @@ pub struct IntRecord {
   /// process checks that this does not result in duplicate review IDs, and emits warnings
   /// if any are encountered.
   pub review_id: i64,
-  pub user_id: u32,
+  pub user_id: i32,
   pub book_id: i32,
   pub is_read: u8,
   pub rating: Option<f32>,
-  pub added: DateTime<FixedOffset>,
-  pub updated: DateTime<FixedOffset>,
-  pub read_started: Option<DateTime<FixedOffset>>,
-  pub read_finished: Option<DateTime<FixedOffset>>,
+  pub added: NaiveDateTime,
+  pub updated: NaiveDateTime,
+  pub read_started: Option<NaiveDateTime>,
+  pub read_finished: Option<NaiveDateTime>,
 }
 
 // Object writer to transform and write GoodReads interactions

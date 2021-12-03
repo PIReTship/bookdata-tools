@@ -8,13 +8,13 @@ use super::data::*;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct BXRating {
-  user: u32,
+  user: i32,
   cluster: i32,
   rating: f32,
 }
 
 impl Interaction for BXRating {
-  fn get_user(&self) -> u32 {
+  fn get_user(&self) -> i32 {
     self.user
   }
   fn get_item(&self) -> i32 {

@@ -7,26 +7,26 @@ use super::source::Row;
 pub use super::source::OLWorkRecord;
 
 /// Work row in extracted Parquet.
-#[derive(TableRow)]
+#[derive(ParquetRecordWriter)]
 pub struct WorkRec {
-  pub id: u32,
+  pub id: i32,
   pub key: String,
   pub title: Option<String>,
 }
 
 /// Work-author link in extracted Parquet.
-#[derive(TableRow)]
+#[derive(ParquetRecordWriter)]
 pub struct WorkAuthorRec {
-  pub id: u32,
-  pub pos: u16,
-  pub author: u32
+  pub id: i32,
+  pub pos: i16,
+  pub author: i32
 }
 
 /// Process author source records into Parquet.
 ///
 /// This must be run **after** the author processor.
 pub struct WorkProcessor {
-  last_id: u32,
+  last_id: i32,
   author_ids: IdIndex<String>,
   rec_writer: TableWriter<WorkRec>,
   author_writer: TableWriter<WorkAuthorRec>
@@ -57,7 +57,7 @@ impl ObjectWriter<Row<OLWorkRecord>> for WorkProcessor {
       let akey = row.record.authors[pos].key();
       if let Some(akey) = akey {
         let aid = self.author_ids.intern(akey);
-        let pos = pos as u16;
+        let pos = pos as i16;
         self.author_writer.write_object(WorkAuthorRec {
           id, pos, author: aid
         })?;

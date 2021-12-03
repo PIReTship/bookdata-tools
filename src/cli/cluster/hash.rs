@@ -25,7 +25,7 @@ pub struct HashCmd {
   output: PathBuf,
 }
 
-#[derive(Serialize, Deserialize, Hash, PartialEq, Eq, Clone, TableRow, Default)]
+#[derive(Serialize, Deserialize, Hash, PartialEq, Eq, Clone, ParquetRecordWriter, Default)]
 struct ClusterHash {
   cluster: i32,
   isbn_hash: String,

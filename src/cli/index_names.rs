@@ -38,7 +38,7 @@ struct RecAuthor {
   name: String,
 }
 
-#[derive(TableRow, Serialize, Clone)]
+#[derive(ParquetRecordWriter, Serialize, Clone)]
 struct IndexEntry {
   rec_id: u32,
   name: String,

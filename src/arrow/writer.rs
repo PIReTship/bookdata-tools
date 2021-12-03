@@ -1,88 +1,78 @@
 use std::path::{Path, PathBuf};
-use std::fs::OpenOptions;
+use std::fs::{OpenOptions, File};
+use std::mem::drop;
 use std::sync::Arc;
 use std::marker::PhantomData;
 
 use log::*;
 use arrow::datatypes::{Schema, SchemaRef, Field};
 use arrow::array::*;
-use arrow::record_batch::RecordBatch;
-use parquet::schema::types::ColumnPath;
+use parquet::record::RecordWriter;
+use parquet::schema::types::{ColumnPath, SchemaDescriptor};
 use parquet::basic::{Compression, Encoding};
 use parquet::file::properties::{WriterProperties, WriterPropertiesBuilder};
-use parquet::file::writer::ParquetWriter;
-use parquet::arrow::ArrowWriter;
+use parquet::file::writer::{FileWriter, ParquetWriter, RowGroupWriter, SerializedFileWriter};
+use parquet::arrow::{ArrowWriter, parquet_to_arrow_schema};
 use anyhow::{Result, anyhow};
 
-use crate::io::object::{ObjectWriter, ThreadWriter};
+use crate::io::object::{ObjectWriter};
 use crate::io::DataSink;
-use super::table::TableRow;
 
 const BATCH_SIZE: usize = 1000000;
 
 /// Parquet table writer.
 ///
-/// A table writer is an [ObjectWriter] for structs implementing [TableRow], that writes
+/// A table writer is an [ObjectWriter] for structs implementing [RecordWriter], that writes
 /// them out to a Parquet file.
-pub struct TableWriter<R: TableRow> {
-  schema: SchemaRef,
-  select: Vec<usize>,
-  writer: Option<ThreadWriter<RecordBatch>>,
+pub struct TableWriter<R> {
+  _phantom: PhantomData<R>,
+  schema: SchemaDescriptor,
+  writer: SerializedFileWriter<File>,
   out_path: Option<PathBuf>,
-  batch: R::Batch,
+  batch: Vec<R>,
   batch_size: usize,
-  batch_count: usize,
   row_count: usize
 }
 
 /// Builder for Parquet table writers.
-pub struct TableWriterBuilder<R: TableRow> {
-  phantom: PhantomData<R>,
-  schema: SchemaRef,
+pub struct TableWriterBuilder<R> {
+  _phantom: PhantomData<R>,
+  schema: SchemaDescriptor,
   select: Vec<usize>,
   props: WriterPropertiesBuilder,
   bsize: usize,
 }
 
-impl <W> ObjectWriter<RecordBatch> for ArrowWriter<W> where W: ParquetWriter + 'static {
-  fn write_object(&mut self, batch: RecordBatch) -> Result<()> {
-    self.write(&batch)?;
-    Ok(())
-  }
-
-  fn finish(mut self) -> Result<usize> {
-    self.close()?;
-    Ok(0)
-  }
-}
-
-impl <R> TableWriterBuilder<R> where R: TableRow {
-  pub fn new() -> TableWriterBuilder<R> {
-    let schema = Arc::new(R::schema());
-    let select = (0..schema.fields().len()).collect::<Vec<usize>>();
+impl <R> TableWriterBuilder<R> where R: 'static, for<'a> &'a [R]: RecordWriter<R> {
+  pub fn new() -> Result<TableWriterBuilder<R>> {
+    let v: Vec<R> = Vec::new();
+    let vr: &[R] = &v;
+    let schema = vr.schema()?;
+    let schema = SchemaDescriptor::new(schema);
+    let select = (0..schema.num_columns()).collect::<Vec<usize>>();
     let props = WriterProperties::builder();
     let props = props.set_dictionary_enabled(false);
     let props = props.set_compression(Compression::ZSTD);
-    let props = R::adjust_writer_props(props);
-    TableWriterBuilder {
-      phantom: PhantomData,
+    Ok(TableWriterBuilder {
+      _phantom: PhantomData,
       schema, select, props,
       bsize: BATCH_SIZE,
-    }
+    })
   }
 
   pub fn rename(mut self, orig: &str, tgt: &str) -> TableWriterBuilder<R> {
-    let fields = self.schema.fields();
-    let mut f2 = Vec::with_capacity(fields.len());
-    for f in fields {
-      if f.name() == orig {
-        f2.push(Field::new(tgt, f.data_type().clone(), f.is_nullable()))
-      } else {
-        f2.push(f.clone())
-      }
-    }
-    self.schema = Arc::new(Schema::new(f2));
-    self
+    panic!("does not work");
+    // let fields = self.schema.columns();
+    // let mut f2 = Vec::with_capacity(fields.len());
+    // for f in fields {
+    //   if f.name() == orig {
+    //     f2.push(Field::new(tgt, f.data_type().clone(), f.is_nullable()))
+    //   } else {
+    //     f2.push(f.clone())
+    //   }
+    // }
+    // self.schema = Arc::new(Schema::new(f2));
+    // self
   }
 
   /// Set the batch size for a table writer builder.
@@ -96,18 +86,18 @@ impl <R> TableWriterBuilder<R> where R: TableRow {
   ///
   /// This filters the resulting writer. The columns are still assembled in memory (for
   /// implementation convenience), but will not be written the output file.
-  pub fn project(mut self, cols: &[&str]) -> TableWriterBuilder<R> {
-    let mut f2 = Vec::with_capacity(cols.len());
-    let mut s2 = Vec::with_capacity(cols.len());
-    for c in cols {
-      let idx = self.schema.index_of(c).expect("cannot project to unknown field");
-      s2.push(self.select[idx]);
-      f2.push(self.schema.field(idx).clone());
-    }
-    self.schema = Arc::new(Schema::new(f2));
-    self.select = s2;
-    self
-  }
+  // pub fn project(mut self, cols: &[&str]) -> TableWriterBuilder<R> {
+  //   let mut f2 = Vec::with_capacity(cols.len());
+  //   let mut s2 = Vec::with_capacity(cols.len());
+  //   for c in cols {
+  //     let idx = self.schema.index_of(c).expect("cannot project to unknown field");
+  //     s2.push(self.select[idx]);
+  //     f2.push(self.schema.field(idx).clone());
+  //   }
+  //   self.schema = Arc::new(Schema::new(f2));
+  //   self.select = s2;
+  //   self
+  // }
 
   /// Set the encoding for a particular column.
   #[allow(dead_code)]
@@ -121,43 +111,46 @@ impl <R> TableWriterBuilder<R> where R: TableRow {
     let path = path.as_ref();
     let file = OpenOptions::new().create(true).truncate(true).write(true).open(path)?;
     let props = self.props.build();
-    let writer = ArrowWriter::try_new(file, self.schema.clone(), Some(props))?;
-    // we're always going to use a background thread
-    let writer = ThreadWriter::new(writer);
+    let props = Arc::new(props);
+    let schema = self.schema.root_schema_ptr();
+    let writer = SerializedFileWriter::new(file, schema, props)?;
     let out_path = Some(path.to_path_buf());
     Ok(TableWriter {
+      _phantom: PhantomData,
       schema: self.schema,
-      select: self.select,
-      writer: Some(writer),
+      writer,
       out_path,
-      batch: R::new_batch(self.bsize),
+      batch: Vec::with_capacity(self.bsize),
       batch_size: self.bsize,
-      batch_count: 0,
       row_count: 0,
     })
   }
 }
 
-impl <R> TableWriter<R> where R: TableRow {
+impl <R> TableWriter<R> where R: 'static, for<'a> &'a [R]: RecordWriter<R> {
   /// Open a table writer for a path.
   pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
-    let bld = TableWriterBuilder::new();
+    let bld = TableWriterBuilder::new()?;
     bld.open(path)
   }
 
   fn write_batch(&mut self) -> Result<()> {
-    debug!("writing batch");
-    let cols = R::finish_batch(&mut self.batch);
-    let proj_cols: Vec<ArrayRef> = self.select.iter().map(|i| cols[*i].clone()).collect();
-    let batch = RecordBatch::try_new(self.schema.clone(), proj_cols)?;
-    let writer = self.writer.as_mut().ok_or(anyhow!("writer has been closed"))?;
-    writer.write_object(batch)?;
-    self.batch_count = 0;
+    if self.batch.is_empty() {
+      return Ok(());
+    }
+
+    let br: &[R] = &self.batch;
+    let mut rg = self.writer.next_row_group()?;
+    br.write_to_row_group(&mut rg);
+    self.writer.close_row_group(rg)?;
+
+    drop(br);
+    self.batch.truncate(0);
     Ok(())
   }
 }
 
-impl <R> DataSink for TableWriter<R> where R: TableRow {
+impl <R> DataSink for TableWriter<R> {
   fn output_files(&self) -> Vec<PathBuf> {
     match &self.out_path {
       None => Vec::new(),
@@ -166,35 +159,36 @@ impl <R> DataSink for TableWriter<R> where R: TableRow {
   }
 }
 
-impl <R> ObjectWriter<R> for TableWriter<R> where R: TableRow {
+impl <R> ObjectWriter<R> for TableWriter<R> where R: 'static,  for<'a> &'a [R]: RecordWriter<R> {
   fn write_object(&mut self, row: R) -> Result<()> {
-    row.write_to_batch(&mut self.batch)?;
-    self.batch_count += 1;
-    self.row_count += 1;
-    if self.batch_count >= self.batch_size {
+    self.batch.push(row);
+    if self.batch.len() >= self.batch_size {
       self.write_batch()?;
     }
+    self.row_count += 1;
+
     Ok(())
   }
 
   fn finish(mut self) -> Result<usize> {
-    if self.batch_count > 0 {
+    if !self.batch.is_empty() {
       self.write_batch()?;
     }
-    if let Some(writer) = self.writer.take() {
-      info!("closing Parquet writer");
-      writer.finish()?;
-    } else {
-      warn!("writer already closed");
-    }
+    self.writer.close()?;
+    // if let Some(writer) = self.writer.take() {
+    //   info!("closing Parquet writer");
+    //   writer.finish()?;
+    // } else {
+    //   warn!("writer already closed");
+    // }
     Ok(self.row_count)
   }
 }
 
-impl <R> Drop for TableWriter<R> where R: TableRow {
-  fn drop(&mut self) {
-    if self.writer.is_some() {
-      error!("Parquet table writer not closed");
-    }
-  }
-}
+// impl <W> Drop for TableWriter<W> where W: RecordWriter<W> {
+//   fn drop(&mut self) {
+//     if self.writer.is_some() {
+//       error!("Parquet table writer not closed");
+//     }
+//   }
+// }

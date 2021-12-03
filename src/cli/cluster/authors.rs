@@ -41,7 +41,7 @@ pub struct ClusterAuthors {
   sources: Vec<Source>
 }
 
-#[derive(Serialize, Deserialize, Hash, PartialEq, Eq, Clone, TableRow, Default)]
+#[derive(Serialize, Deserialize, Hash, PartialEq, Eq, Clone, ParquetRecordWriter, Default)]
 struct ClusterAuthor {
   cluster: i32,
   author_name: String

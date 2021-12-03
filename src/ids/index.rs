@@ -21,7 +21,7 @@ use tempfile::tempdir;
 use crate as bookdata;
 
 /// The type of index identifiers.
-pub type Id = u32;
+pub type Id = i32;
 
 /// Index identifiers from a data type
 pub struct IdIndex<K> {
@@ -29,9 +29,9 @@ pub struct IdIndex<K> {
 }
 
 /// Internal struct for ID records.
-#[derive(TableRow)]
+#[derive(ParquetRecordWriter)]
 struct IdRec {
-  id: Id,
+  id: i32,
   key: String,
 }
 
@@ -125,7 +125,7 @@ impl IdIndex<String> {
     let mut map = HashMap::new();
 
     for row in read {
-      let id = row.get_uint(0)?;
+      let id = row.get_int(0)?;
       let key = row.get_string(1)?;
       map.insert(key.clone(), id);
     }
@@ -144,7 +144,7 @@ impl IdIndex<String> {
 
   /// Save to a Parquet file with the standard configuration.
   pub fn save<P: AsRef<Path>>(&self, path: P, id_col: &str, key_col: &str) -> Result<()> {
-    let mut wb = TableWriterBuilder::new();
+    let mut wb = TableWriterBuilder::new()?;
     wb = wb.rename("id", id_col);
     wb = wb.rename("key", key_col);
     let mut writer = wb.open(path)?;

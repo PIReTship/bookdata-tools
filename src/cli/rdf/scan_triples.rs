@@ -1,4 +1,5 @@
 //! Scan the nodes in an RDF ntriples file.
+use parquet;
 use crate::prelude::*;
 use crate::io::{LineProcessor, ObjectWriter};
 use crate::rdf::model::*;
@@ -31,14 +32,14 @@ pub struct ScanTriples {
   infiles: Vec<PathBuf>,
 }
 
-#[derive(TableRow)]
+#[derive(ParquetRecordWriter)]
 struct TripleRow {
   subject: i32,
   predicate: i32,
   object: i32,
 }
 
-#[derive(TableRow)]
+#[derive(ParquetRecordWriter)]
 struct LitRow {
   subject: i32,
   predicate: i32,

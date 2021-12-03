@@ -19,7 +19,7 @@ use crate as bookdata;
 
 /// Trait for an interaction.
 pub trait Interaction {
-  fn get_user(&self) -> u32;
+  fn get_user(&self) -> i32;
   fn get_item(&self) -> i32;
   fn get_rating(&self) -> Option<f32>;
   fn get_timestamp(&self) -> i64;
@@ -35,36 +35,53 @@ pub trait Dedup<I: Interaction> {
 }
 
 /// Record for a single output rating.
-#[derive(TableRow, Debug)]
+#[derive(ParquetRecordWriter, Debug)]
 pub struct RatingRecord {
-  user: u32,
+  user: i32,
   item: i32,
   rating: f32,
   last_rating: f32,
   timestamp: i64,
   last_time: i64,
-  nratings: u32,
+  nratings: i32,
+}
+
+/// Record for a single output rating without time.
+#[derive(ParquetRecordWriter, Debug)]
+pub struct TimelessRatingRecord {
+  user: i32,
+  item: i32,
+  rating: f32,
+  nratings: i32,
 }
 
 /// Record for a single output action.
-#[derive(TableRow, Debug)]
+#[derive(ParquetRecordWriter, Debug)]
 pub struct ActionRecord {
-  user: u32,
+  user: i32,
   item: i32,
   first_time: i64,
   last_time: i64,
   last_rating: Option<f32>,
-  nactions: u32,
+  nactions: i32,
+}
+
+/// Record for a single output action without time.
+#[derive(ParquetRecordWriter, Debug)]
+pub struct TimelessActionRecord {
+  user: i32,
+  item: i32,
+  nactions: i32,
 }
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Key {
-  user: u32,
+  user: i32,
   item: i32
 }
 
 impl Key {
-  fn new(user: u32, item: i32) -> Key {
+  fn new(user: i32, item: i32) -> Key {
     Key {
       user, item
     }
@@ -93,7 +110,7 @@ impl <I: Interaction> Dedup<I> for RatingDedup {
 
 impl RatingDedup {
   /// Add a rating to the deduplicator.
-  pub fn record(&mut self, user: u32, item: i32, rating: f32, timestamp: i64) {
+  pub fn record(&mut self, user: i32, item: i32, rating: f32, timestamp: i64) {
     let k = Key::new(user, item);
     // get the vector for this user/item pair
     let vec = self.table.entry(k).or_insert_with(|| Vec::with_capacity(1));
@@ -107,9 +124,9 @@ impl RatingDedup {
     info!("writing {} deduplicated ratings to {}",
           friendly::scalar(self.table.len()),
           path.display());
-    let mut twb = TableWriterBuilder::new();
+    let mut twb = TableWriterBuilder::new()?;
     if !times {
-      twb = twb.project(&["user", "item", "rating", "nratings"]);
+      // twb = twb.project(&["user", "item", "rating", "nratings"]);
     }
     let mut writer = twb.open(path)?;
 
@@ -148,7 +165,7 @@ impl RatingDedup {
           item: k.item,
           rating, timestamp,
           last_rating, last_time,
-          nratings: vec.len() as u32
+          nratings: vec.len() as i32
         })?;
       }
       timer.complete(1);
@@ -191,7 +208,7 @@ impl <I: Interaction> Dedup<I> for ActionDedup {
 
 impl ActionDedup {
   /// Add an action to the deduplicator.
-  pub fn record(&mut self, user: u32, item: i32, timestamp: i64, rating: Option<f32>) {
+  pub fn record(&mut self, user: i32, item: i32, timestamp: i64, rating: Option<f32>) {
     let k = Key::new(user, item);
     // get the vector for this user/item pair
     let vec = self.table.entry(k).or_insert_with(|| Vec::with_capacity(1));
@@ -207,9 +224,9 @@ impl ActionDedup {
     info!("writing {} deduplicated actions to {}",
           friendly::scalar(self.table.len()),
           path.display());
-    let mut twb = TableWriterBuilder::new();
+    let mut twb = TableWriterBuilder::new()?;
     if !times {
-      twb = twb.project(&["user", "item", "nactions"]);
+      // twb = twb.project(&["user", "item", "nactions"]);
     }
     let mut writer = twb.open(path)?;
     let mut timer = Timer::new_with_count(self.table.len());
@@ -245,7 +262,7 @@ impl ActionDedup {
           first_time: first.timestamp,
           last_time: last.timestamp,
           last_rating,
-          nactions: vec.len() as u32
+          nactions: vec.len() as i32
         })?;
       }
 

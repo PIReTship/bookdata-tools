@@ -18,14 +18,14 @@ use petgraph::algo::kosaraju_scc;
 pub struct ClusterBooks {
 }
 
-#[derive(TableRow, Debug)]
+#[derive(ParquetRecordWriter, Debug)]
 struct ISBNClusterRec {
   isbn: Option<String>,
   isbn_id: i32,
   cluster: i32
 }
 
-#[derive(TableRow, Debug)]
+#[derive(ParquetRecordWriter, Debug)]
 struct ClusterCode {
   book_code: i32,
   cluster: i32,
@@ -33,13 +33,13 @@ struct ClusterCode {
   label: Option<String>,
 }
 
-#[derive(TableRow, Debug)]
+#[derive(ParquetRecordWriter, Debug)]
 struct GraphEdge {
   src: i32,
   dst: i32
 }
 
-#[derive(TableRow, Debug, Default)]
+#[derive(ParquetRecordWriter, Debug, Default)]
 struct ClusterStat {
   cluster: i32,
   n_nodes: u32,
@@ -110,7 +110,7 @@ impl AsyncCommand for ClusterBooks {
     info!("preparing to write graph results");
     let mut ic_w = TableWriter::open("book-links/isbn-clusters.parquet")?;
 
-    let n_wb = TableWriterBuilder::new();
+    let n_wb = TableWriterBuilder::new()?;
     let mut n_w = n_wb.open("book-links/cluster-graph-nodes.parquet")?;
 
     let mut cs_w = TableWriter::open("book-links/cluster-stats.parquet")?;

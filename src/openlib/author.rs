@@ -7,7 +7,7 @@ use super::source::Row;
 pub use super::source::OLAuthorSource;
 
 /// An author record in the extracted Parquet.
-#[derive(TableRow)]
+#[derive(ParquetRecordWriter)]
 pub struct AuthorRec {
   pub id: u32,
   pub key: String,
@@ -15,7 +15,7 @@ pub struct AuthorRec {
 }
 
 /// An author-name record in the extracted Parquet.
-#[derive(TableRow)]
+#[derive(ParquetRecordWriter)]
 pub struct AuthorNameRec {
   pub id: u32,
   pub source: u8,

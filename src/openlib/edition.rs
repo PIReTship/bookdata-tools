@@ -9,40 +9,40 @@ use super::source::Row;
 pub use super::source::OLEditionRecord;
 
 /// An edition row in the extracted Parquet.
-#[derive(TableRow)]
+#[derive(ParquetRecordWriter)]
 pub struct EditionRec {
-  pub id: u32,
+  pub id: i32,
   pub key: String,
   pub title: Option<String>,
 }
 
 /// Link between edition and work.
-#[derive(TableRow)]
+#[derive(ParquetRecordWriter)]
 pub struct LinkRec {
-  pub edition: u32,
-  pub work: u32
+  pub edition: i32,
+  pub work: i32
 }
 
 /// Edition ISBN record.
-#[derive(TableRow)]
+#[derive(ParquetRecordWriter)]
 pub struct ISBNrec {
-  pub edition: u32,
+  pub edition: i32,
   pub isbn: String
 }
 
 /// Edition author record.
-#[derive(TableRow)]
+#[derive(ParquetRecordWriter)]
 pub struct EditionAuthorRec {
-  pub edition: u32,
-  pub pos: u16,
-  pub author: u32
+  pub edition: i32,
+  pub pos: i16,
+  pub author: i32
 }
 
 /// Process edition records into Parquet.
 ///
 /// This must be run **after** the author and work processors.
 pub struct EditionProcessor {
-  last_id: u32,
+  last_id: i32,
   author_ids: IdIndex<String>,
   work_ids: IdIndex<String>,
   rec_writer: TableWriter<EditionRec>,
@@ -64,7 +64,7 @@ impl EditionProcessor {
     })
   }
 
-  fn save_isbns(&mut self, edition: u32, isbns: Vec<String>, clean: fn(&str) -> String) -> Result<()> {
+  fn save_isbns(&mut self, edition: i32, isbns: Vec<String>, clean: fn(&str) -> String) -> Result<()> {
     for isbn in isbns {
       let isbn = clean(&isbn);
       // filter but with a reasonable threshold of error
@@ -103,7 +103,7 @@ impl ObjectWriter<Row<OLEditionRecord>> for EditionProcessor {
       let akey = row.record.authors[pos].key();
       if let Some(akey) = akey {
         let aid = self.author_ids.intern(akey);
-        let pos = pos as u16;
+        let pos = pos as i16;
         self.author_writer.write_object(EditionAuthorRec {
           edition: id, pos, author: aid
         })?;

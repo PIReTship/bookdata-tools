@@ -7,9 +7,11 @@ pub mod fusion;
 pub use row_de::RecordBatchDeserializer;
 pub use row_de::scan_parquet_file;
 pub use table::TableRow;
+pub use parquet::record::RecordWriter;
+pub use parquet::file::reader::FileReader;
+pub use parquet_derive::ParquetRecordWriter;
 pub use writer::{TableWriter, TableWriterBuilder};
 pub use types::*;
-pub use parquet::file::reader::FileReader;
 
 use std::path::Path;
 use std::fs::File;
