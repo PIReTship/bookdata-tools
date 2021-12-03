@@ -25,16 +25,15 @@ pub type Id = u32;
 
 /// Index identifiers from a data type
 pub struct IdIndex<K> {
-  map: HashMap<K,Id>
+  map: HashMap<K,Id>,
 }
 
 /// Internal struct for ID records.
 #[derive(TableRow)]
 struct IdRec {
   id: Id,
-  key: String
+  key: String,
 }
-
 
 impl <K> IdIndex<K> where K: Eq + Hash {
   /// Create a new index.
@@ -78,6 +77,20 @@ impl <K> IdIndex<K> where K: Eq + Hash {
   #[allow(dead_code)]
   pub fn keys(&self) -> Keys<'_, K, Id> {
     self.map.keys()
+  }
+
+  /// Get the keys in order.
+  pub fn key_vec(&self) -> Vec<&K> {
+    let mut vec = Vec::with_capacity(self.len());
+    vec.resize(self.len(), None);
+    for (k, n) in self.map.iter() {
+      let i = (n - 1) as usize;
+      assert!(vec[i].is_none());
+      vec[i] = Some(k);
+    }
+
+    let vec = vec.iter().map(|ro| ro.unwrap()).collect();
+    vec
   }
 }
 

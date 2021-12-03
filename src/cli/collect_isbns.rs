@@ -1,16 +1,19 @@
+//! Collect ISBNs from across the data sources.
+use std::fs::read_to_string;
 use std::fmt::Debug;
-use std::sync::Arc;
 use std::collections::HashMap;
 use futures::StreamExt;
 use datafusion::prelude::*;
-use paste::paste;
 
 use serde::Deserialize;
+use toml;
 use async_trait::async_trait;
 
+use arrow::array::*;
+use friendly::bytes;
+
 use crate::prelude::*;
-use crate::arrow::*;
-use crate::arrow::row_de::RecordBatchDeserializer;
+use crate::ids::collector::KeyCollector;
 
 use super::AsyncCommand;
 
@@ -18,113 +21,65 @@ use super::AsyncCommand;
 #[derive(StructOpt, Debug)]
 #[structopt(name="collect-isbns")]
 pub struct CollectISBNs {
+  /// Path to the output file (in Parquet format)
+  #[structopt(short="o", long="output")]
+  out_file: PathBuf,
+
+  /// path to the ISBN source definition file (in TOML format)
+  #[structopt(name="DEFS")]
+  source_file: PathBuf
 }
 
-#[derive(TableRow, Debug, Default, Clone)]
-struct ISBNRecord {
-  isbn: String,
-  isbn_id: i32,
-  loc_recs: i32,
-  ol_recs: i32,
-  gr_recs: i32,
-  bx_recs: i32,
-  az_recs: i32,
+#[derive(Deserialize, Debug)]
+#[serde(untagged)]
+enum MultiSource {
+  Single(ISBNSource),
+  Multi(Vec<ISBNSource>),
 }
 
-#[derive(Deserialize)]
-struct ISBN {
-  isbn: String
+#[derive(Deserialize, Debug)]
+struct ISBNSource {
+  path: String,
+  #[serde(default)]
+  column: Option<String>,
 }
 
-type Accum = HashMap<String,ISBNRecord>;
+/// The type of ISBN source set specifications.
+type SourceSet = HashMap<String, MultiSource>;
 
-trait ISBNSrc where Self: Debug {
-  fn record(acc: &mut Accum, isbn: String);
-}
-
-macro_rules! make_accumulator {
-  ($src:ident, $ty:ident) => {
-    paste! {
-      #[derive(Debug)]
-      struct $ty;
-
-      impl ISBNSrc for $ty {
-        fn record(acc: &mut Accum, isbn: String) {
-          let n = acc.len() as i32;
-          let mut obj = acc.entry(isbn.clone()).or_insert_with(|| {
-            let mut r = ISBNRecord::default();
-            r.isbn = isbn;
-            r.isbn_id = n + 1;
-            r
-          });
-          obj.[<$src _recs>] += 1;
-        }
-      }
-
+impl MultiSource {
+  fn to_list(&self) -> Vec<&ISBNSource> {
+    match self {
+      MultiSource::Single(s) => vec![&s],
+      MultiSource::Multi(ss) => ss.iter().map(|s| s).collect(),
     }
+  }
+}
+
+/// Read a single ISBN source into the accumulator.
+async fn read_source(ctx: &mut ExecutionContext, kc: &mut KeyCollector, name: &str, src: &ISBNSource) -> Result<()> {
+  let mut acc = kc.accum(name);
+  let id_col = src.column.as_deref().unwrap_or("isbn");
+
+  info!("reading ISBNs from {} (column {})", src.path, id_col);
+
+  let df = if src.path.ends_with(".csv") {
+    let opts = CsvReadOptions::new().has_header(true);
+    ctx.read_csv(&src.path, opts).await?
+  } else {
+    ctx.read_parquet(&src.path).await?
   };
-}
-
-make_accumulator!(loc, LOC);
-make_accumulator!(ol, OL);
-make_accumulator!(gr, GR);
-make_accumulator!(bx, BX);
-make_accumulator!(az, AZ);
-
-async fn read_loc(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-  let df = ctx.read_parquet("loc-mds/book-isbns.parquet").await?;
-  let df = df.select_columns(&["isbn"])?;
-  let df = df.filter(col("isbn").is_not_null())?;
-  Ok(df)
-}
-
-async fn read_ol(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-  let df = ctx.read_parquet("openlibrary/edition-isbns.parquet").await?;
-  let df = df.select_columns(&["isbn"])?;
-  let df = df.filter(col("isbn").is_not_null())?;
-  Ok(df)
-}
-
-async fn read_gr(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-  let df = ctx.read_parquet("goodreads/gr-book-ids.parquet").await?;
-  let df_10 = df.select(vec![
-    col("isbn10").alias("isbn")
-  ])?.filter(col("isbn").is_not_null())?;
-  let df_13 = df.select(vec![
-    col("isbn13").alias("isbn")
-  ])?.filter(col("isbn").is_not_null())?;
-  let df_az = df.select(vec![
-    col("asin").alias("isbn")
-  ])?.filter(col("isbn").is_not_null())?;
-  let df = df_10.union(df_13)?.union(df_az)?;
-  Ok(df)
-}
-
-async fn read_bx(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-  let opts = CsvReadOptions::new().has_header(true);
-  let df = ctx.read_csv("bx/cleaned-ratings.csv", opts).await?;
-  let df = df.select_columns(&["isbn"])?;
-  let df = df.filter(col("isbn").is_not_null())?;
-  Ok(df)
-}
-
-async fn read_az(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-  let df = ctx.read_parquet("az2014/ratings.parquet").await?;
   let df = df.select(vec![
-    col("asin").alias("isbn")
+    col(id_col).alias("isbn")
   ])?;
   let df = df.filter(col("isbn").is_not_null())?;
-  Ok(df)
-}
 
-async fn record_isbns<T: ISBNSrc>(acc: &mut Accum, df: Arc<dyn DataFrame>, ty: T) -> Result<()> {
-  info!("recording ISBNs from {:?}", ty);
-
-  let stream = df.execute_stream().await?;
-  let mut rec_stream = RecordBatchDeserializer::for_stream(stream);
-  while let Some(row) = rec_stream.next().await {
-    let row: ISBN = row?;
-    T::record(acc, row.isbn);
+  let mut batches = df.execute_stream().await?;
+  while let Some(batch) = batches.next().await {
+    let batch = batch?;
+    let col = batch.column(0);
+    let col = col.as_any().downcast_ref::<StringArray>().expect("failed to downcast");
+    acc.add_keys(col.iter().flatten());
   }
 
   Ok(())
@@ -133,24 +88,21 @@ async fn record_isbns<T: ISBNSrc>(acc: &mut Accum, df: Arc<dyn DataFrame>, ty: T
 #[async_trait]
 impl AsyncCommand for CollectISBNs {
   async fn exec_future(&self) -> Result<()> {
-    let mut acc = Accum::new();
+    info!("reading spec from {}", self.source_file.display());
+    let spec = read_to_string(&self.source_file)?;
+    let spec: SourceSet = toml::de::from_str(&spec)?;
+
     let mut ctx = ExecutionContext::new();
-
-    record_isbns(&mut acc, read_loc(&mut ctx).await?, LOC).await?;
-    record_isbns(&mut acc, read_ol(&mut ctx).await?, OL).await?;
-    record_isbns(&mut acc, read_gr(&mut ctx).await?, GR).await?;
-    record_isbns(&mut acc, read_bx(&mut ctx).await?, BX).await?;
-    record_isbns(&mut acc, read_az(&mut ctx).await?, AZ).await?;
-
-    info!("found {} distinct ISBNs", acc.len());
-
-    let mut writer = TableWriter::open("book-links/all-isbns.parquet")?;
-    for ir in acc.values() {
-      writer.write_object(ir.clone())?;
+    let mut kc = KeyCollector::new();
+    for (name, ms) in spec {
+      for source in ms.to_list() {
+        read_source(&mut ctx, &mut kc, &name, source).await?;
+      }
     }
-    writer.finish()?;
 
-    info!("wrote ISBNs to book-links/all-isbns.parquet");
+    info!("saving {} ISBNs to {}", kc.len(), self.out_file.display());
+    let n = kc.save("isbn", "isbn_id", &self.out_file)?;
+    info!("wrote {} rows in {}", n, bytes(file_size(&self.out_file)?));
 
     Ok(())
   }
