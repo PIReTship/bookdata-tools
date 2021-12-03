@@ -7,8 +7,6 @@ use parquet::file::properties::WriterPropertiesBuilder;
 
 use anyhow::{Result};
 
-pub use bd_macros::TableRow;
-
 /// Trait for serializing records into Arrow/Parquet tables.
 ///
 /// This trait can be derived:
