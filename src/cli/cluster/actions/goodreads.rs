@@ -5,7 +5,7 @@ use datafusion::logical_plan::Expr;
 use arrow::datatypes::*;
 
 use crate::prelude::*;
-use crate::ratings::*;
+use crate::interactions::*;
 use crate::ids::codes::*;
 use crate::arrow::fusion::coalesce;
 
@@ -46,7 +46,7 @@ impl Ratings {
 #[async_trait]
 impl Source for Ratings {
   type Act = RatingRow;
-  type DD = RatingDedup;
+  type DD = RatingDedup<TimestampRatingRecord>;
 
   async fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     info!("setting up to scan GoodReads ratings from {}", self.path);
@@ -66,10 +66,6 @@ impl Source for Ratings {
     debug!("GR rating schema: {:#?}", ratings.schema());
 
     Ok(ratings)
-  }
-
-  fn has_timestamps(&self) -> bool {
-    true
   }
 }
 
@@ -93,7 +89,7 @@ impl Actions {
 #[async_trait]
 impl Source for Actions {
   type Act = RatingRow;
-  type DD = ActionDedup;
+  type DD = ActionDedup<TimestampActionRecord>;
 
   async fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     info!("setting up to scan GoodReads actions from {}", self.path);
@@ -112,9 +108,5 @@ impl Source for Actions {
     debug!("GR action schema: {}", ratings.schema());
 
     Ok(ratings)
-  }
-
-  fn has_timestamps(&self) -> bool {
-    true
   }
 }

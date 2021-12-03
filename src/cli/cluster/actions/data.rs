@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use datafusion::prelude::*;
 use crate::prelude::*;
-use crate::ratings::{Interaction, Dedup};
+use crate::interactions::{Interaction, Dedup};
 pub use async_trait::async_trait;
 
 /// Trait for data sources.
@@ -15,8 +15,6 @@ pub trait Source {
   type DD: Dedup<Self::Act> + Default + 'static;
 
   async fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>>;
-
-  fn has_timestamps(&self) -> bool;
 
   fn make_dedup(&self) -> Self::DD {
     Self::DD::default()

@@ -4,7 +4,7 @@ use futures::stream::{StreamExt};
 use datafusion::prelude::*;
 use crate::prelude::*;
 use crate::arrow::fusion::*;
-use crate::ratings::*;
+use crate::interactions::*;
 use crate::cli::AsyncCommand;
 use async_trait::async_trait;
 
@@ -54,7 +54,7 @@ async fn scan_and_save<S: Source>(src: S, ctx: &mut ExecutionContext, dst: &Path
     timer.log_status("scanning ratings", 5.0);
   }
 
-  dedup.save(dst, src.has_timestamps())
+  dedup.save(dst)
 }
 
 #[async_trait]

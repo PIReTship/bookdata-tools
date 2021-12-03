@@ -78,23 +78,6 @@ impl <R> TableWriterBuilder<R> where R: 'static, for<'a> &'a [R]: RecordWriter<R
     self
   }
 
-  /// Write a subset of the columns.
-  ///
-  /// This filters the resulting writer. The columns are still assembled in memory (for
-  /// implementation convenience), but will not be written the output file.
-  // pub fn project(mut self, cols: &[&str]) -> TableWriterBuilder<R> {
-  //   let mut f2 = Vec::with_capacity(cols.len());
-  //   let mut s2 = Vec::with_capacity(cols.len());
-  //   for c in cols {
-  //     let idx = self.schema.index_of(c).expect("cannot project to unknown field");
-  //     s2.push(self.select[idx]);
-  //     f2.push(self.schema.field(idx).clone());
-  //   }
-  //   self.schema = Arc::new(Schema::new(f2));
-  //   self.select = s2;
-  //   self
-  // }
-
   /// Set the encoding for a particular column.
   #[allow(dead_code)]
   pub fn column_encoding<C: Into<ColumnPath>>(mut self, col: C, enc: Encoding) -> TableWriterBuilder<R> {

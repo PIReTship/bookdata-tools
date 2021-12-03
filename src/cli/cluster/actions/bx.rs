@@ -2,7 +2,7 @@ use std::sync::Arc;
 use serde::Deserialize;
 use datafusion::prelude::*;
 use crate::prelude::*;
-use crate::ratings::*;
+use crate::interactions::*;
 
 use super::data::*;
 
@@ -37,7 +37,7 @@ pub struct Ratings;
 #[async_trait]
 impl Source for Ratings {
   type Act = BXRating;
-  type DD = RatingDedup;
+  type DD = RatingDedup<TimelessRatingRecord>;
 
   async fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     info!("setting up to scan BookCrossing ratings");
@@ -56,10 +56,6 @@ impl Source for Ratings {
 
     Ok(rlink)
   }
-
-  fn has_timestamps(&self) -> bool {
-    false
-  }
 }
 
 pub struct Actions;
@@ -67,7 +63,7 @@ pub struct Actions;
 #[async_trait]
 impl Source for Actions {
   type Act = BXRating;
-  type DD = ActionDedup;
+  type DD = ActionDedup<TimelessActionRecord>;
 
   async fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     info!("setting up to scan BookCrossing actions");
@@ -84,9 +80,5 @@ impl Source for Actions {
     let rlink = rlink.select_columns(&["user", "cluster", "rating"])?;
 
     Ok(rlink)
-  }
-
-  fn has_timestamps(&self) -> bool {
-    false
   }
 }
