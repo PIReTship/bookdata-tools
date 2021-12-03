@@ -4,7 +4,6 @@ use anyhow::Result;
 use crate::arrow::*;
 use super::record::*;
 use crate::io::*;
-use crate as bookdata;  // hack to make derive macro work
 
 /// Flat MARC field record.
 #[derive(ParquetRecordWriter, Debug, Default)]

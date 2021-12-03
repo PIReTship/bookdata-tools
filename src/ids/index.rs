@@ -18,8 +18,6 @@ use quickcheck::{Arbitrary,Gen};
 #[cfg(test)]
 use tempfile::tempdir;
 
-use crate as bookdata;
-
 /// The type of index identifiers.
 pub type Id = i32;
 

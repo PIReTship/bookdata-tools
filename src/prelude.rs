@@ -16,8 +16,6 @@ pub use crate::json_from_str;
 pub use crate::util::Timer;
 pub use crate::cli::Command;
 
-pub use crate as bookdata;
-
 /// Macro to implement FromStr using JSON.
 #[macro_export]
 macro_rules! json_from_str {

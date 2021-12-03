@@ -12,10 +12,9 @@ use log::*;
 use anyhow::{Result, anyhow};
 use friendly;
 
-use bookdata::io::{ObjectWriter, file_size};
-use bookdata::arrow::*;
-use bookdata::util::Timer;
-use crate as bookdata;
+use crate::io::{ObjectWriter, file_size};
+use crate::arrow::*;
+use crate::util::Timer;
 
 /// Trait for an interaction.
 pub trait Interaction {

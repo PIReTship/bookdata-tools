@@ -4,16 +4,12 @@ use std::mem::drop;
 use std::sync::Arc;
 use std::marker::PhantomData;
 
-use log::*;
-use arrow::datatypes::{Schema, SchemaRef, Field};
-use arrow::array::*;
 use parquet::record::RecordWriter;
 use parquet::schema::types::{ColumnPath, SchemaDescriptor};
 use parquet::basic::{Compression, Encoding};
 use parquet::file::properties::{WriterProperties, WriterPropertiesBuilder};
-use parquet::file::writer::{FileWriter, ParquetWriter, RowGroupWriter, SerializedFileWriter};
-use parquet::arrow::{ArrowWriter, parquet_to_arrow_schema};
-use anyhow::{Result, anyhow};
+use parquet::file::writer::{FileWriter, SerializedFileWriter};
+use anyhow::Result;
 
 use crate::io::object::{ObjectWriter};
 use crate::io::DataSink;
