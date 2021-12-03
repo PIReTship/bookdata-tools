@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::marker::PhantomData;
 
 use parquet::record::RecordWriter;
-use parquet::schema::types::{ColumnPath, SchemaDescriptor};
+use parquet::schema::types::{ColumnPath, Type};
 use parquet::basic::{Compression, Encoding};
 use parquet::file::properties::{WriterProperties, WriterPropertiesBuilder};
 use parquet::file::writer::{FileWriter, SerializedFileWriter};
@@ -22,7 +22,6 @@ const BATCH_SIZE: usize = 1000000;
 /// them out to a Parquet file.
 pub struct TableWriter<R> {
   _phantom: PhantomData<R>,
-  schema: SchemaDescriptor,
   writer: SerializedFileWriter<File>,
   out_path: Option<PathBuf>,
   batch: Vec<R>,
@@ -33,8 +32,7 @@ pub struct TableWriter<R> {
 /// Builder for Parquet table writers.
 pub struct TableWriterBuilder<R> {
   _phantom: PhantomData<R>,
-  schema: SchemaDescriptor,
-  select: Vec<usize>,
+  schema: Arc<Type>,
   props: WriterPropertiesBuilder,
   bsize: usize,
 }
@@ -44,31 +42,49 @@ impl <R> TableWriterBuilder<R> where R: 'static, for<'a> &'a [R]: RecordWriter<R
     let v: Vec<R> = Vec::new();
     let vr: &[R] = &v;
     let schema = vr.schema()?;
-    let schema = SchemaDescriptor::new(schema);
-    let select = (0..schema.num_columns()).collect::<Vec<usize>>();
     let props = WriterProperties::builder();
     let props = props.set_dictionary_enabled(false);
     let props = props.set_compression(Compression::ZSTD);
     Ok(TableWriterBuilder {
       _phantom: PhantomData,
-      schema, select, props,
+      schema, props,
       bsize: BATCH_SIZE,
     })
   }
 
   pub fn rename(mut self, orig: &str, tgt: &str) -> TableWriterBuilder<R> {
-    panic!("does not work");
-    // let fields = self.schema.columns();
-    // let mut f2 = Vec::with_capacity(fields.len());
-    // for f in fields {
-    //   if f.name() == orig {
-    //     f2.push(Field::new(tgt, f.data_type().clone(), f.is_nullable()))
-    //   } else {
-    //     f2.push(f.clone())
-    //   }
-    // }
-    // self.schema = Arc::new(Schema::new(f2));
-    // self
+    let fields = self.schema.get_fields();
+    let mut nf = Vec::new();
+
+    for field in fields {
+      if field.name() == orig {
+        if let Type::PrimitiveType {
+          basic_info, physical_type,
+          type_length, scale, precision,
+        } = field.as_ref() {
+          let t = Type::primitive_type_builder(tgt, physical_type.clone())
+            .with_repetition(basic_info.repetition())
+            .with_converted_type(basic_info.converted_type())
+            .with_logical_type(basic_info.logical_type())
+            .with_length(*type_length)
+            .with_scale(*scale)
+            .with_precision(*precision)
+            .build().expect("type reconstruction failure");
+          nf.push(Arc::new(t));
+        } else {
+          panic!("column type is not primitive");
+        }
+      } else {
+        nf.push(field.clone());
+      }
+    }
+
+    let g = Type::group_type_builder(self.schema.name())
+      .with_fields(&mut nf)
+      .build().expect("type reconstruction failure");
+
+    self.schema = Arc::new(g);
+    self
   }
 
   /// Set the batch size for a table writer builder.
@@ -91,12 +107,11 @@ impl <R> TableWriterBuilder<R> where R: 'static, for<'a> &'a [R]: RecordWriter<R
     let file = OpenOptions::new().create(true).truncate(true).write(true).open(path)?;
     let props = self.props.build();
     let props = Arc::new(props);
-    let schema = self.schema.root_schema_ptr();
+    let schema = self.schema.clone();
     let writer = SerializedFileWriter::new(file, schema, props)?;
     let out_path = Some(path.to_path_buf());
     Ok(TableWriter {
       _phantom: PhantomData,
-      schema: self.schema,
       writer,
       out_path,
       batch: Vec::with_capacity(self.bsize),
@@ -120,7 +135,7 @@ impl <R> TableWriter<R> where R: 'static, for<'a> &'a [R]: RecordWriter<R> {
 
     let br: &[R] = &self.batch;
     let mut rg = self.writer.next_row_group()?;
-    br.write_to_row_group(&mut rg);
+    br.write_to_row_group(&mut rg)?;
     self.writer.close_row_group(rg)?;
 
     drop(br);
