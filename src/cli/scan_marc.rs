@@ -11,6 +11,7 @@ use happylog::set_progress;
 
 use crate::prelude::*;
 use crate::io::open_gzin_progress;
+use crate::io::object::ThreadWriter;
 
 use crate::marc::MARCRecord;
 use crate::marc::parse::{read_records, read_records_delim};
@@ -90,8 +91,8 @@ impl ScanMARC {
     }
   }
 
-  fn process_records<W: ObjectWriter<MARCRecord>>(&self, output: W) -> Result<()> {
-    let mut output = output;
+  fn process_records<W: ObjectWriter<MARCRecord> + Send + 'static>(&self, output: W) -> Result<()> {
+    let mut output = ThreadWriter::new(output);
     let mut nfiles = 0;
     let mut all_recs = 0;
     let all_start = Instant::now();
