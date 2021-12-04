@@ -35,8 +35,7 @@ struct Cluster {
 pub type ClusterTable = HashMap<i32,ClusterStats>;
 
 /// Read cluster author names and resolve them to gender information.
-pub fn read_resolve<P: AsRef<Path>>(path: P, authors: &AuthorTable) -> Result<ClusterTable> {
-  let path = path.as_ref();
+pub fn read_resolve(path: &Path, authors: &AuthorTable) -> Result<ClusterTable> {
   let timer = Timer::builder().label("reading cluster authors").interval(5.0).build();
   info!("reading cluster authors from {}", path.display());
   let iter = scan_parquet_file(path)?;

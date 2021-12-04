@@ -36,9 +36,8 @@ enum GRScan {
   Interactions(ScanInput),
 }
 
-fn scan_gr<P, R, W>(path: P, proc: W) -> Result<()>
+fn scan_gr<R, W>(path: &Path, proc: W) -> Result<()>
 where
-  P: AsRef<Path>,
   W: ObjectWriter<R> + DataSink + Send + 'static,
   R: DeserializeOwned + Send + Sync + 'static
 {

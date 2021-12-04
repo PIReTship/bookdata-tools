@@ -50,8 +50,7 @@ async fn scan_isbns(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
 }
 
 /// Write out cluster hah records to file, without duplicates.
-async fn write_hashes_dedup<P: AsRef<Path>>(df: Arc<dyn DataFrame>, path: P) -> Result<()> {
-  let path: &Path = path.as_ref();
+async fn write_hashes_dedup(df: Arc<dyn DataFrame>, path: &Path) -> Result<()> {
   info!("saving output to {}", path.to_string_lossy());
   let mut writer = TableWriter::open(path)?;
 
