@@ -115,13 +115,13 @@ impl IdIndex<String> {
       Field::new(key_col, DataType::Utf8, false),
     ]);
     let pqs = arrow_to_parquet_schema(&schema)?;
+    debug!("projecting to {:?}", pqs);
     let proj = pqs.root_schema();
 
     let path_str = path.as_ref().to_string_lossy();
     info!("reading index from file {}", path_str);
-    debug!("opening file");
     let read = open_parquet_file(path.as_ref())?;
-    debug!("initializing projection");
+    debug!("file schema: {:?}", read.metadata().file_metadata().schema_descr());
     let read = RowIter::from_file(Some(proj.clone()), &read)?;
     let mut map = HashMap::new();
 
