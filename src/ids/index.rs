@@ -117,7 +117,7 @@ impl IdIndex<String> {
     let file_schema = read.metadata().file_metadata().schema();
     debug!("file schema: {:?}", file_schema);
 
-    let id_type = LogicalType::INTEGER(IntType::new(32, false));
+    let id_type = LogicalType::INTEGER(IntType::new(32, true));
     let key_type = LogicalType::STRING(StringType::new());
     let mut tgt_fields = vec![
       Arc::new(Type::primitive_type_builder(id_col, PhysicalType::INT32)
