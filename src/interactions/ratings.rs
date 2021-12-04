@@ -112,7 +112,7 @@ pub struct RatingDedup<R> where R: FromRatingSet, for<'a> &'a [R]: RecordWriter<
   table: HashMap<Key, Vec<(f32, i64)>>
 }
 
-impl <I: Interaction, R> Dedup<I> for RatingDedup<R> where R: FromRatingSet + 'static, for<'a> &'a [R]: RecordWriter<R> {
+impl <I: Interaction, R> Dedup<I> for RatingDedup<R> where R: FromRatingSet + Send + Sync + 'static, for<'a> &'a [R]: RecordWriter<R> {
   fn add_interaction(&mut self, act: I) -> Result<()> {
     let rating = act.get_rating().ok_or_else(|| {
       anyhow!("rating deduplicator requires ratings")
@@ -126,7 +126,7 @@ impl <I: Interaction, R> Dedup<I> for RatingDedup<R> where R: FromRatingSet + 's
   }
 }
 
-impl <R> Default for RatingDedup<R> where R: FromRatingSet + 'static, for<'a> &'a [R]: RecordWriter<R> {
+impl <R> Default for RatingDedup<R> where R: FromRatingSet + Send + Sync + 'static, for<'a> &'a [R]: RecordWriter<R> {
   fn default() -> RatingDedup<R> {
     RatingDedup {
       _phantom: PhantomData,
@@ -135,7 +135,7 @@ impl <R> Default for RatingDedup<R> where R: FromRatingSet + 'static, for<'a> &'
   }
 }
 
-impl <R> RatingDedup<R> where R: FromRatingSet + 'static, for<'a> &'a [R]: RecordWriter<R> {
+impl <R> RatingDedup<R> where R: FromRatingSet + Send + Sync + 'static, for<'a> &'a [R]: RecordWriter<R> {
   /// Add a rating to the deduplicator.
   pub fn record(&mut self, user: i32, item: i32, rating: f32, timestamp: i64) {
     let k = Key::new(user, item);

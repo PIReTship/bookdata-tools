@@ -99,7 +99,7 @@ impl <R> Default for ActionDedup<R> where R: FromActionSet + 'static, for<'a> &'
   }
 }
 
-impl <I: Interaction, R> Dedup<I> for ActionDedup<R> where R: FromActionSet + 'static, for<'a> &'a [R]: RecordWriter<R> {
+impl <I: Interaction, R> Dedup<I> for ActionDedup<R> where R: FromActionSet + Send + Sync + 'static, for<'a> &'a [R]: RecordWriter<R> {
   fn add_interaction(&mut self, act: I) -> Result<()> {
     self.record(act.get_user(), act.get_item(), act.get_timestamp(), act.get_rating());
     Ok(())
@@ -110,7 +110,7 @@ impl <I: Interaction, R> Dedup<I> for ActionDedup<R> where R: FromActionSet + 's
   }
 }
 
-impl <R> ActionDedup<R> where R: FromActionSet + 'static, for<'a> &'a [R]: RecordWriter<R> {
+impl <R> ActionDedup<R> where R: FromActionSet + Send + Sync + 'static, for<'a> &'a [R]: RecordWriter<R> {
   /// Add an action to the deduplicator.
   pub fn record(&mut self, user: i32, item: i32, timestamp: i64, rating: Option<f32>) {
     let k = Key::new(user, item);
