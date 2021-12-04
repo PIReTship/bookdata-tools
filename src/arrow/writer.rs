@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
-use std::fs::{OpenOptions, File};
-use std::mem::drop;
+use std::fs::{OpenOptions};
+use std::mem::{replace};
 use std::sync::Arc;
 use std::marker::PhantomData;
 
@@ -8,11 +8,11 @@ use parquet::record::RecordWriter;
 use parquet::schema::types::{ColumnPath, Type};
 use parquet::basic::{Compression, Encoding};
 use parquet::file::properties::{WriterProperties, WriterPropertiesBuilder};
-use parquet::file::writer::{FileWriter, SerializedFileWriter};
+use parquet::file::writer::{FileWriter, SerializedFileWriter, ParquetWriter};
 use anyhow::Result;
 
-use crate::io::object::{ObjectWriter};
-use crate::io::DataSink;
+use crate::io::object::{ObjectWriter, ThreadWriter};
+use crate::io::{DataSink};
 
 const BATCH_SIZE: usize = 1024 * 1024;
 
@@ -20,9 +20,9 @@ const BATCH_SIZE: usize = 1024 * 1024;
 ///
 /// A table writer is an [ObjectWriter] for structs implementing [RecordWriter], that writes
 /// them out to a Parquet file.
-pub struct TableWriter<R> {
+pub struct TableWriter<R: Send + Sync + 'static> {
   _phantom: PhantomData<R>,
-  writer: SerializedFileWriter<File>,
+  writer: ThreadWriter<Vec<R>>,
   out_path: Option<PathBuf>,
   batch: Vec<R>,
   batch_size: usize,
@@ -37,7 +37,22 @@ pub struct TableWriterBuilder<R> {
   bsize: usize,
 }
 
-impl <R> TableWriterBuilder<R> where R: 'static, for<'a> &'a [R]: RecordWriter<R> {
+impl <W, R> ObjectWriter<Vec<R>> for SerializedFileWriter<W> where R: Send + Sync + 'static, for<'a> &'a [R]: RecordWriter<R>, W: ParquetWriter + 'static {
+  fn write_object(&mut self, object: Vec<R>) -> Result<()> {
+    let oref: &[R] = &object;
+    let mut rg = self.next_row_group()?;
+    oref.write_to_row_group(&mut rg)?;
+    self.close_row_group(rg)?;
+    Ok(())
+  }
+
+  fn finish(mut self) -> Result<usize> {
+    self.close()?;
+    Ok(0)
+  }
+}
+
+impl <R> TableWriterBuilder<R> where R: Send + Sync + 'static, for<'a> &'a [R]: RecordWriter<R> {
   pub fn new() -> Result<TableWriterBuilder<R>> {
     let v: Vec<R> = Vec::new();
     let vr: &[R] = &v;
@@ -109,6 +124,7 @@ impl <R> TableWriterBuilder<R> where R: 'static, for<'a> &'a [R]: RecordWriter<R
     let props = Arc::new(props);
     let schema = self.schema.clone();
     let writer = SerializedFileWriter::new(file, schema, props)?;
+    let writer = ThreadWriter::new(writer);
     let out_path = Some(path.to_path_buf());
     Ok(TableWriter {
       _phantom: PhantomData,
@@ -121,7 +137,7 @@ impl <R> TableWriterBuilder<R> where R: 'static, for<'a> &'a [R]: RecordWriter<R
   }
 }
 
-impl <R> TableWriter<R> where R: 'static, for<'a> &'a [R]: RecordWriter<R> {
+impl <R> TableWriter<R> where R: Send + Sync + 'static, for<'a> &'a [R]: RecordWriter<R> {
   /// Open a table writer for a path.
   pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
     let bld = TableWriterBuilder::new()?;
@@ -133,18 +149,14 @@ impl <R> TableWriter<R> where R: 'static, for<'a> &'a [R]: RecordWriter<R> {
       return Ok(());
     }
 
-    let br: &[R] = &self.batch;
-    let mut rg = self.writer.next_row_group()?;
-    br.write_to_row_group(&mut rg)?;
-    self.writer.close_row_group(rg)?;
+    let batch = replace(&mut self.batch, Vec::with_capacity(self.batch_size));
+    self.writer.write_object(batch)?;
 
-    drop(br);
-    self.batch.truncate(0);
     Ok(())
   }
 }
 
-impl <R> DataSink for TableWriter<R> {
+impl <R> DataSink for TableWriter<R> where R: Send + Sync + 'static {
   fn output_files(&self) -> Vec<PathBuf> {
     match &self.out_path {
       None => Vec::new(),
@@ -153,7 +165,7 @@ impl <R> DataSink for TableWriter<R> {
   }
 }
 
-impl <R> ObjectWriter<R> for TableWriter<R> where R: 'static,  for<'a> &'a [R]: RecordWriter<R> {
+impl <R> ObjectWriter<R> for TableWriter<R> where R: Send + Sync + 'static,  for<'a> &'a [R]: RecordWriter<R> {
   fn write_object(&mut self, row: R) -> Result<()> {
     self.batch.push(row);
     if self.batch.len() >= self.batch_size {
@@ -168,7 +180,7 @@ impl <R> ObjectWriter<R> for TableWriter<R> where R: 'static,  for<'a> &'a [R]: 
     if !self.batch.is_empty() {
       self.write_batch()?;
     }
-    self.writer.close()?;
+    self.writer.finish()?;
     // if let Some(writer) = self.writer.take() {
     //   info!("closing Parquet writer");
     //   writer.finish()?;
