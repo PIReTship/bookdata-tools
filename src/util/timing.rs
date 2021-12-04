@@ -406,7 +406,9 @@ impl <R: Read> Read for TimedRead<R> {
     }
 
     if size > 0 {
-      self.timer.maybe_log_status_interval(interval);
+      if self.timer.maybe_log_status_interval(interval) {
+        self.nlogs += 1;
+      }
     } else {
       self.timer.log_status();
     }
