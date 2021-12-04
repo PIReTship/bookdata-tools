@@ -1,15 +1,16 @@
 //! Data structure for mapping string keys to numeric identifiers.
 use std::path::{Path};
-use hashbrown::hash_map::{HashMap, Keys};
+use std::sync::Arc;
 use std::hash::Hash;
 use std::borrow::Borrow;
+use hashbrown::hash_map::{HashMap, Keys};
 
 use log::*;
 use anyhow::Result;
-use arrow::datatypes::*;
-use parquet::arrow::arrow_to_parquet_schema;
 use parquet::record::reader::RowIter;
 use parquet::record::RowAccessor;
+use parquet::basic::{Type as PhysicalType, LogicalType, IntType, StringType, Repetition};
+use parquet::schema::types::Type;
 use crate::io::ObjectWriter;
 use crate::arrow::*;
 
@@ -109,20 +110,29 @@ impl IdIndex<String> {
   /// have type `UInt32` (or a type projectable to it), and the key column should
   /// be `Utf8`.
   pub fn load<P: AsRef<Path>>(path: P, id_col: &str, key_col: &str) -> Result<IdIndex<String>> {
-    debug!("setting up schema (id={}, key={})", id_col, key_col);
-    let schema = Schema::new(vec![
-      Field::new(id_col, DataType::UInt32, false),
-      Field::new(key_col, DataType::Utf8, false),
-    ]);
-    let pqs = arrow_to_parquet_schema(&schema)?;
-    debug!("projecting to {:?}", pqs);
-    let proj = pqs.root_schema();
-
     let path_str = path.as_ref().to_string_lossy();
     info!("reading index from file {}", path_str);
     let read = open_parquet_file(path.as_ref())?;
-    debug!("file schema: {:?}", read.metadata().file_metadata().schema_descr());
-    let read = RowIter::from_file(Some(proj.clone()), &read)?;
+
+    let file_schema = read.metadata().file_metadata().schema();
+    debug!("file schema: {:?}", file_schema);
+
+    let id_type = LogicalType::INTEGER(IntType::new(32, false));
+    let key_type = LogicalType::STRING(StringType::new());
+    let mut tgt_fields = vec![
+      Arc::new(Type::primitive_type_builder(id_col, PhysicalType::INT32)
+        .with_logical_type(Some(id_type))
+        .with_repetition(Repetition::REQUIRED)
+        .build()?),
+      Arc::new(Type::primitive_type_builder(key_col, PhysicalType::BYTE_ARRAY)
+        .with_logical_type(Some(key_type))
+        .with_repetition(Repetition::REQUIRED)
+        .build()?),
+    ];
+    let tgt_schema = Type::group_type_builder(file_schema.name()).with_fields(&mut tgt_fields).build()?;
+    debug!("target schema: {:?}", tgt_schema);
+
+    let read = RowIter::from_file(Some(tgt_schema), &read)?;
     let mut map = HashMap::new();
 
     debug!("reading file contents");
