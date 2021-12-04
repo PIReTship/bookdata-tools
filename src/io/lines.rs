@@ -53,7 +53,7 @@ impl <R: DeserializeOwned> Iterator for JSONRecords<R> {
 
 impl LineProcessor {
   /// Open a line processor from a gzipped source.
-  pub fn open_gzip<P: AsRef<Path>>(path: P) -> Result<LineProcessor> {
+  pub fn open_gzip(path: &Path) -> Result<LineProcessor> {
     let read = open_gzin_progress(path)?;
     Ok(LineProcessor {
       reader: Box::new(read),
@@ -61,7 +61,7 @@ impl LineProcessor {
   }
 
   /// Open a line processor from a zipped source.
-  pub fn open_solo_zip<P: AsRef<Path>>(path: P) -> Result<LineProcessor> {
+  pub fn open_solo_zip(path: &Path) -> Result<LineProcessor> {
     let read = open_solo_zip(path)?;
     Ok(LineProcessor {
       reader: Box::new(read),

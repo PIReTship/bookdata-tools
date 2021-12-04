@@ -36,8 +36,7 @@ impl Read for ThreadRead {
 }
 
 /// Open a gzip-compressed file for input, with a progress bar.
-pub fn open_gzin_progress<P: AsRef<Path>>(path: P) -> Result<Box<dyn BufRead>> {
-  let path = path.as_ref();
+pub fn open_gzin_progress(path: &Path) -> Result<impl BufRead> {
   let name = path.file_name().unwrap().to_string_lossy();
   let read = File::open(path)?;
   let read = Timer::builder().label(&name).interval(30.0).log_target(module_path!()).file_progress(read)?;
@@ -64,10 +63,10 @@ pub fn open_gzin_progress<P: AsRef<Path>>(path: P) -> Result<Box<dyn BufRead>> {
 /// Some of our data source (particularly Library of Congress linked data files) are
 /// delived as ZIP archives containing a single member.  This function opens such a file
 /// as a reader.  Zip decompression is handled in a background thread.
-pub fn open_solo_zip<P: AsRef<Path>>(path: P) -> Result<Box<dyn BufRead>> {
-  let pstr = path.as_ref().to_string_lossy();
+pub fn open_solo_zip(path: &Path) -> Result<impl BufRead> {
+  let pstr = path.to_string_lossy();
   info!("opening zip file from {}", pstr);
-  let file = File::open(path.as_ref())?;
+  let file = File::open(path)?;
   let file = BufReader::new(file);
   let zf = ZipArchive::new(file)?;
   if zf.len() > 1 {
