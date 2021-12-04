@@ -101,7 +101,7 @@ impl ScanMARC {
       let inf = inf.as_path();
       let file_start = Instant::now();
       info!("reading from compressed file {}", inf.display());
-      let (read, pb) = open_gzin_progress(inf)?;
+      let read = open_gzin_progress(inf)?;
       let mut records = if self.line_mode {
         read_records_delim(read)
       } else {
@@ -114,7 +114,6 @@ impl ScanMARC {
         nrecs += 1;
       }
 
-      pb.finish_and_clear();
       info!("processed {} records from {} in {:.2}s",
             nrecs, inf.display(), file_start.elapsed().as_secs_f32());
       all_recs += nrecs;

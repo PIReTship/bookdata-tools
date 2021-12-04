@@ -13,3 +13,4 @@ pub fn default_progress(n: u64) -> ProgressBar {
   pb.set_style(default_progress_style());
   pb
 }
+

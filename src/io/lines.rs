@@ -7,7 +7,6 @@ use std::marker::PhantomData;
 
 use log::*;
 use anyhow::Result;
-use indicatif::ProgressBar;
 use serde::de::DeserializeOwned;
 
 use super::compress::{open_gzin_progress, open_solo_zip};
@@ -15,8 +14,6 @@ use super::ObjectWriter;
 
 /// Read lines from a file with buffering, decompression, and parsing.
 pub struct LineProcessor {
-  #[allow(dead_code)]
-  progress: ProgressBar,
   reader: Box<dyn BufRead>,
 }
 
@@ -57,18 +54,16 @@ impl <R: DeserializeOwned> Iterator for JSONRecords<R> {
 impl LineProcessor {
   /// Open a line processor from a gzipped source.
   pub fn open_gzip<P: AsRef<Path>>(path: P) -> Result<LineProcessor> {
-    let (read, progress) = open_gzin_progress(path)?;
+    let read = open_gzin_progress(path)?;
     Ok(LineProcessor {
-      progress,
       reader: Box::new(read),
     })
   }
 
   /// Open a line processor from a zipped source.
   pub fn open_solo_zip<P: AsRef<Path>>(path: P) -> Result<LineProcessor> {
-    let (read, progress) = open_solo_zip(path)?;
+    let read = open_solo_zip(path)?;
     Ok(LineProcessor {
-      progress,
       reader: Box::new(read),
     })
   }
@@ -102,7 +97,6 @@ impl LineProcessor {
   /// is a failure. It does **not** call [ObjectWriter::finish] when it is done - the caller needs to do that.
   pub fn process_json<W, R>(self, writer: &mut W) -> Result<usize> where R: DeserializeOwned, W: ObjectWriter<R> {
     let mut line_no = 0;
-    let pb = self.progress.clone();
     for line in self.json_records() {
       line_no += 1;
       let obj: R = line.map_err(|e| {
@@ -115,12 +109,7 @@ impl LineProcessor {
       })?;
     }
 
-    if pb.length() != pb.position() {
-      warn!("reading file did not consume all input");
-    }
-
-    debug!("read {} lines in {} bytes", line_no, pb.position());
-    pb.finish_and_clear();
+    debug!("read {} lines", line_no);
 
     Ok(line_no)
   }

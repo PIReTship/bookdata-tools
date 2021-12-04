@@ -6,12 +6,11 @@ use std::thread::{spawn, JoinHandle};
 
 use log::*;
 use anyhow::{Result, anyhow};
-use indicatif::ProgressBar;
 use flate2::bufread::MultiGzDecoder;
 use zip::read::*;
 use os_pipe::{pipe, PipeReader};
 
-use super::progress::default_progress;
+use crate::util::Timer;
 
 struct ThreadRead {
   read: PipeReader,
@@ -37,12 +36,13 @@ impl Read for ThreadRead {
 }
 
 /// Open a gzip-compressed file for input, with a progress bar.
-pub fn open_gzin_progress<P: AsRef<Path>>(path: P) -> Result<(Box<dyn BufRead>, ProgressBar)> {
+pub fn open_gzin_progress<P: AsRef<Path>>(path: P) -> Result<Box<dyn BufRead>> {
+  let path = path.as_ref();
+  let name = path.file_name().unwrap().to_string_lossy();
   let read = File::open(path)?;
-  let pb = default_progress(read.metadata()?.len());
-  let pbr = pb.wrap_read(read);
-  let pbr = BufReader::new(pbr);
-  let gzf = MultiGzDecoder::new(pbr);
+  let read = Timer::builder().label(&name).interval(30.0).file_progress(read)?;
+  let read = BufReader::new(read);
+  let gzf = MultiGzDecoder::new(read);
 
   let (read, writer) = pipe()?;
 
@@ -56,7 +56,7 @@ pub fn open_gzin_progress<P: AsRef<Path>>(path: P) -> Result<(Box<dyn BufRead>, 
     read, handle: Some(jh)
   };
   let bfs = BufReader::new(thr);
-  Ok((Box::new(bfs), pb))
+  Ok(Box::new(bfs))
 }
 
 /// Open a zingle member from a zip file for input, with a progress bar.
@@ -64,7 +64,7 @@ pub fn open_gzin_progress<P: AsRef<Path>>(path: P) -> Result<(Box<dyn BufRead>, 
 /// Some of our data source (particularly Library of Congress linked data files) are
 /// delived as ZIP archives containing a single member.  This function opens such a file
 /// as a reader.  Zip decompression is handled in a background thread.
-pub fn open_solo_zip<P: AsRef<Path>>(path: P) -> Result<(Box<dyn BufRead>, ProgressBar)> {
+pub fn open_solo_zip<P: AsRef<Path>>(path: P) -> Result<Box<dyn BufRead>> {
   let pstr = path.as_ref().to_string_lossy();
   info!("opening zip file from {}", pstr);
   let file = File::open(path.as_ref())?;
@@ -77,13 +77,10 @@ pub fn open_solo_zip<P: AsRef<Path>>(path: P) -> Result<(Box<dyn BufRead>, Progr
     error!("{}: empty input archive", pstr);
     return Err(anyhow!("empty input archive"));
   }
-  let pb = default_progress(1024);
-  let pb2 = pb.clone(); // make a copy for the thread to own
   let (read, write) = pipe()?;
 
   let handle = spawn(|| {
     // move in the things we will own
-    let pb = pb2;
     let mut zf = zf;
     let mut dst = write;
 
@@ -91,8 +88,11 @@ pub fn open_solo_zip<P: AsRef<Path>>(path: P) -> Result<(Box<dyn BufRead>, Progr
     debug!("opening member from file");
     let member = zf.by_index(0)?;
     info!("processing member {:?} with {} bytes", member.name(), member.size());
-    pb.set_length(member.size());
-    let mut read = pb.wrap_read(member);
+    let mut timer = Timer::builder();
+    timer.task_count(member.size() as usize);
+    timer.label(member.name());
+    timer.interval(30.0);
+    let mut read = timer.read_progress(member);
     copy(&mut read, &mut dst)
   });
 
@@ -100,5 +100,5 @@ pub fn open_solo_zip<P: AsRef<Path>>(path: P) -> Result<(Box<dyn BufRead>, Progr
     read, handle: Some(handle)
   };
   let bfs = BufReader::new(thr);
-  Ok((Box::new(bfs), pb))
+  Ok(Box::new(bfs))
 }

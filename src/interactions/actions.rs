@@ -130,14 +130,14 @@ impl <R> ActionDedup<R> where R: FromActionSet + Send + Sync + 'static, for<'a> 
           path.display());
     let twb = TableWriterBuilder::new()?;
     let mut writer = twb.open(path)?;
-    let mut timer = Timer::new_with_count(self.table.len());
+    let mut timer = Timer::builder().task_count(self.table.len()).label("writing actions").interval(5.0).build();
 
     // we're going to consume the hashtable.
     for (k, vec) in take(&mut self.table) {
       let record = R::create(k.user, k.item, vec);
       writer.write_object(record)?;
       timer.complete(1);
-      timer.log_status("writing actions", 5.0);
+      timer.maybe_log_status();
     }
 
     let rv = writer.finish()?;
