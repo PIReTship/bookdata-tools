@@ -113,3 +113,21 @@ impl <T: AsyncCommand> Command for T {
     runtime.block_on(task)
   }
 }
+
+/// BookData import tools.
+#[derive(StructOpt, Debug)]
+#[structopt(name="bookdata")]
+pub struct CLI {
+  #[structopt(flatten)]
+  logging: LogOpts,
+
+  #[structopt(subcommand)]
+  command: BDCommand,
+}
+
+impl CLI {
+  pub fn exec(self) -> Result<()> {
+    self.logging.init()?;
+    self.command.exec()
+  }
+}
