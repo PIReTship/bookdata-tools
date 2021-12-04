@@ -14,7 +14,7 @@ use anyhow::Result;
 use crate::io::object::{ObjectWriter};
 use crate::io::DataSink;
 
-const BATCH_SIZE: usize = 1000000;
+const BATCH_SIZE: usize = 1024 * 1024;
 
 /// Parquet table writer.
 ///
