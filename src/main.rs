@@ -43,9 +43,7 @@ static GLOBAL: MiMalloc = MiMalloc;
 use anyhow::Result;
 use structopt::StructOpt;
 
-use happylog::args::LogOpts;
-
-use cli::{Command, BDCommand};
+use cli::CLI;
 
 fn main() -> Result<()> {
   let opt = CLI::from_args();

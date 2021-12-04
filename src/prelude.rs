@@ -3,7 +3,6 @@ pub use std::borrow::Cow;
 pub use std::convert::{TryFrom, TryInto};
 pub use anyhow::{Result, Error, anyhow};
 pub use log::*;
-pub use happylog::set_progress;
 pub use structopt::StructOpt;
 pub use fallible_iterator::FallibleIterator;
 pub use crate::io::LineProcessor;

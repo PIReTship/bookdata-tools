@@ -7,7 +7,6 @@ use log::*;
 use glob::glob;
 use structopt::StructOpt;
 use fallible_iterator::FallibleIterator;
-use happylog::set_progress;
 
 use crate::prelude::*;
 use crate::io::open_gzin_progress;
@@ -103,7 +102,6 @@ impl ScanMARC {
       let file_start = Instant::now();
       info!("reading from compressed file {}", inf.display());
       let (read, pb) = open_gzin_progress(inf)?;
-      let _pbl = set_progress(&pb);
       let mut records = if self.line_mode {
         read_records_delim(read)
       } else {

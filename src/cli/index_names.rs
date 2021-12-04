@@ -8,8 +8,6 @@ use csv;
 use serde::{Deserialize, Serialize};
 use flate2::write::GzEncoder;
 
-use happylog::set_progress;
-
 use crate::prelude::*;
 use crate::arrow::*;
 use crate::cleaning::names::*;
@@ -47,8 +45,7 @@ struct IndexEntry {
 fn scan_names<P: AsRef<Path>>(path: P) -> Result<NameIndex> {
   info!("reading names from {}", path.as_ref().to_string_lossy());
   let mut index = NameIndex::new();
-  let (reader, pb) = open_gzin_progress(path)?;
-  let _pbl = set_progress(&pb);
+  let (reader, _pb) = open_gzin_progress(path)?;
   let mut reader = csv::Reader::from_reader(reader);
   for line in reader.deserialize() {
     let record: RecAuthor = line?;
