@@ -40,7 +40,7 @@ pub fn open_gzin_progress<P: AsRef<Path>>(path: P) -> Result<Box<dyn BufRead>> {
   let path = path.as_ref();
   let name = path.file_name().unwrap().to_string_lossy();
   let read = File::open(path)?;
-  let read = Timer::builder().label(&name).interval(30.0).file_progress(read)?;
+  let read = Timer::builder().label(&name).interval(30.0).log_target(module_path!()).file_progress(read)?;
   let read = BufReader::new(read);
   let gzf = MultiGzDecoder::new(read);
 
@@ -89,6 +89,7 @@ pub fn open_solo_zip<P: AsRef<Path>>(path: P) -> Result<Box<dyn BufRead>> {
     let member = zf.by_index(0)?;
     info!("processing member {:?} with {} bytes", member.name(), member.size());
     let mut timer = Timer::builder();
+    timer.log_target(module_path!());
     timer.task_count(member.size() as usize);
     timer.label(member.name());
     timer.interval(30.0);

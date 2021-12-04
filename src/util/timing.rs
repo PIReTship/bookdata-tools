@@ -73,6 +73,7 @@ pub struct ProgressIter<I> {
 pub struct TimedRead<R: Read> {
   timer: Timer,
   reader: R,
+  nlogs: usize,
 }
 
 impl TimerConfig {
@@ -149,7 +150,8 @@ impl TimerConfig {
     clone.binary();
     Ok(TimedRead {
       reader: file,
-      timer: clone.into_timer()
+      timer: clone.into_timer(),
+      nlogs: 0,
     })
   }
 
@@ -161,7 +163,8 @@ impl TimerConfig {
     clone.binary();
     TimedRead {
       reader,
-      timer: clone.into_timer()
+      timer: clone.into_timer(),
+      nlogs: 0,
     }
   }
 
@@ -346,7 +349,7 @@ impl fmt::Display for Timer {
              (self.config.count_format)(per),
              duration(eta))
     } else if self.completed > 0 {
-      write!(f, "{} in {} ({:.0}/s)", scalar(self.completed), duration(el), scalar(per))
+      write!(f, "{} in {} ({:.0}/s)", (self.config.count_format)(self.completed as f64), duration(el), (self.config.count_format)(per))
     } else {
       write!(f, "{}", self.human_elapsed())
     }
@@ -392,8 +395,18 @@ impl <R: Read> Read for TimedRead<R> {
   fn read(&mut self, buf: &mut [u8]) -> IOResult<usize> {
     let size = self.reader.read(buf)?;
     self.timer.complete(size);
+
+    let mut interval = self.timer.config.interval;
+    if interval > 5.0 {
+      if self.nlogs == 0 {
+        interval = 5.0;
+      } else if self.nlogs == 1 {
+        interval -= 5.0;
+      }
+    }
+
     if size > 0 {
-      self.timer.maybe_log_status();
+      self.timer.maybe_log_status_interval(interval);
     } else {
       self.timer.log_status();
     }
