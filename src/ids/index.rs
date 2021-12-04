@@ -109,6 +109,7 @@ impl IdIndex<String> {
   /// have type `UInt32` (or a type projectable to it), and the key column should
   /// be `Utf8`.
   pub fn load<P: AsRef<Path>>(path: P, id_col: &str, key_col: &str) -> Result<IdIndex<String>> {
+    debug!("setting up schema (id={}, key={})", id_col, key_col);
     let schema = Schema::new(vec![
       Field::new(id_col, DataType::UInt32, false),
       Field::new(key_col, DataType::Utf8, false),
@@ -118,10 +119,13 @@ impl IdIndex<String> {
 
     let path_str = path.as_ref().to_string_lossy();
     info!("reading index from file {}", path_str);
+    debug!("opening file");
     let read = open_parquet_file(path.as_ref())?;
+    debug!("initializing projection");
     let read = RowIter::from_file(Some(proj.clone()), &read)?;
     let mut map = HashMap::new();
 
+    debug!("reading file contents");
     for row in read {
       let id = row.get_int(0)?;
       let key = row.get_string(1)?;
