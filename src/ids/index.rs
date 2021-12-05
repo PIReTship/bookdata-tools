@@ -1,15 +1,16 @@
 //! Data structure for mapping string keys to numeric identifiers.
 use std::path::{Path};
-use hashbrown::hash_map::{HashMap, Keys};
+use std::sync::Arc;
 use std::hash::Hash;
 use std::borrow::Borrow;
+use hashbrown::hash_map::{HashMap, Keys};
 
 use log::*;
 use anyhow::Result;
-use arrow::datatypes::*;
-use parquet::arrow::arrow_to_parquet_schema;
 use parquet::record::reader::RowIter;
 use parquet::record::RowAccessor;
+use parquet::basic::{Type as PhysicalType, LogicalType, IntType, StringType, Repetition};
+use parquet::schema::types::Type;
 use crate::io::ObjectWriter;
 use crate::arrow::*;
 
@@ -18,23 +19,20 @@ use quickcheck::{Arbitrary,Gen};
 #[cfg(test)]
 use tempfile::tempdir;
 
-use crate as bookdata;
-
 /// The type of index identifiers.
-pub type Id = u32;
+pub type Id = i32;
 
 /// Index identifiers from a data type
 pub struct IdIndex<K> {
-  map: HashMap<K,Id>
+  map: HashMap<K,Id>,
 }
 
 /// Internal struct for ID records.
-#[derive(TableRow)]
+#[derive(ParquetRecordWriter)]
 struct IdRec {
-  id: Id,
-  key: String
+  id: i32,
+  key: String,
 }
-
 
 impl <K> IdIndex<K> where K: Eq + Hash {
   /// Create a new index.
@@ -79,6 +77,20 @@ impl <K> IdIndex<K> where K: Eq + Hash {
   pub fn keys(&self) -> Keys<'_, K, Id> {
     self.map.keys()
   }
+
+  /// Get the keys in order.
+  pub fn key_vec(&self) -> Vec<&K> {
+    let mut vec = Vec::with_capacity(self.len());
+    vec.resize(self.len(), None);
+    for (k, n) in self.map.iter() {
+      let i = (n - 1) as usize;
+      assert!(vec[i].is_none());
+      vec[i] = Some(k);
+    }
+
+    let vec = vec.iter().map(|ro| ro.unwrap()).collect();
+    vec
+  }
 }
 
 impl IdIndex<String> {
@@ -98,21 +110,34 @@ impl IdIndex<String> {
   /// have type `UInt32` (or a type projectable to it), and the key column should
   /// be `Utf8`.
   pub fn load<P: AsRef<Path>>(path: P, id_col: &str, key_col: &str) -> Result<IdIndex<String>> {
-    let schema = Schema::new(vec![
-      Field::new(id_col, DataType::UInt32, false),
-      Field::new(key_col, DataType::Utf8, false),
-    ]);
-    let pqs = arrow_to_parquet_schema(&schema)?;
-    let proj = pqs.root_schema();
-
     let path_str = path.as_ref().to_string_lossy();
     info!("reading index from file {}", path_str);
     let read = open_parquet_file(path.as_ref())?;
-    let read = RowIter::from_file(Some(proj.clone()), &read)?;
+
+    let file_schema = read.metadata().file_metadata().schema();
+    debug!("file schema: {:?}", file_schema);
+
+    let id_type = LogicalType::INTEGER(IntType::new(32, true));
+    let key_type = LogicalType::STRING(StringType::new());
+    let mut tgt_fields = vec![
+      Arc::new(Type::primitive_type_builder(id_col, PhysicalType::INT32)
+        .with_logical_type(Some(id_type))
+        .with_repetition(Repetition::REQUIRED)
+        .build()?),
+      Arc::new(Type::primitive_type_builder(key_col, PhysicalType::BYTE_ARRAY)
+        .with_logical_type(Some(key_type))
+        .with_repetition(Repetition::REQUIRED)
+        .build()?),
+    ];
+    let tgt_schema = Type::group_type_builder(file_schema.name()).with_fields(&mut tgt_fields).build()?;
+    debug!("target schema: {:?}", tgt_schema);
+
+    let read = RowIter::from_file(Some(tgt_schema), &read)?;
     let mut map = HashMap::new();
 
+    debug!("reading file contents");
     for row in read {
-      let id = row.get_uint(0)?;
+      let id = row.get_int(0)?;
       let key = row.get_string(1)?;
       map.insert(key.clone(), id);
     }
@@ -131,7 +156,7 @@ impl IdIndex<String> {
 
   /// Save to a Parquet file with the standard configuration.
   pub fn save<P: AsRef<Path>>(&self, path: P, id_col: &str, key_col: &str) -> Result<()> {
-    let mut wb = TableWriterBuilder::new();
+    let mut wb = TableWriterBuilder::new()?;
     wb = wb.rename("id", id_col);
     wb = wb.rename("key", key_col);
     let mut writer = wb.open(path)?;

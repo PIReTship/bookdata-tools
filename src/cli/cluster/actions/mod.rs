@@ -4,7 +4,7 @@ use futures::stream::{StreamExt};
 use datafusion::prelude::*;
 use crate::prelude::*;
 use crate::arrow::fusion::*;
-use crate::ratings::*;
+use crate::interactions::*;
 use crate::cli::AsyncCommand;
 use async_trait::async_trait;
 
@@ -44,17 +44,17 @@ async fn scan_and_save<S: Source>(src: S, ctx: &mut ExecutionContext, dst: &Path
 
   let mut dedup = src.make_dedup();
 
-  let mut timer = Timer::new();
+  let mut timer = Timer::builder().label("scanning ratings").interval(5.0).build();
   let mut rows = df_rows(ctx, source).await?;
   info!("scanning ratings for deduplication");
   while let Some(row) = rows.next().await {
     let row: S::Act = row?;
     dedup.add_interaction(row)?;
     timer.complete(1);
-    timer.log_status("scanning ratings", 5.0);
+    timer.maybe_log_status();
   }
 
-  dedup.save(dst, src.has_timestamps())
+  dedup.save(dst)
 }
 
 #[async_trait]

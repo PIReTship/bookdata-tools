@@ -7,7 +7,6 @@ use anyhow::Result;
 
 use hashbrown::HashMap;
 
-use crate as bookdata;
 use crate::io::ObjectWriter;
 use crate::arrow::*;
 use super::model::Node;
@@ -23,9 +22,9 @@ pub enum NodeIndexError {
 }
 
 /// Data format for saving index rows
-#[derive(Debug, TableRow)]
+#[derive(Debug, ParquetRecordWriter)]
 struct IndexRow {
-  id: Id,
+  id: i32,
   abbr: String,
   iri: String
 }

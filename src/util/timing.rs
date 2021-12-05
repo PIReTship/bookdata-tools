@@ -1,4 +1,7 @@
 use std::fmt;
+use std::io::Read;
+use std::io::{Result as IOResult};
+use std::fs::File;
 use std::time::{Instant, Duration};
 use friendly::temporal::HumanDuration;
 use friendly::{scalar, bytes, duration};
@@ -7,17 +10,32 @@ use fallible_iterator::FallibleIterator;
 
 use log::*;
 
-/// A timer for monitoring task completion.
-#[derive(Debug)]
-pub struct Timer {
-  started: Instant,
+/// Build and configure a [Timer] or a related structure.
+///
+/// This strucutre supports building timers and timed wrappers for things like iterators
+/// and input streams.  It implements the [builder pattern][bp] for non-consuming builders.
+///
+/// [bp]: https://doc.rust-lang.org/1.12.0/style/ownership/builders.html
+#[derive(Debug, Clone)]
+pub struct TimerConfig {
   task_count: Option<usize>,
-  completed: usize,
-  last_write: LastWrite,
+  interval: f32,
+  log_prefix: Option<String>,
+  log_target: String,
+  started_at: Option<Instant>,
   count_format: fn(f64) -> Box<dyn fmt::Display>,
 }
 
-#[derive(Debug)]
+/// A timer for monitoring task completion.
+#[derive(Debug, Clone)]
+pub struct Timer {
+  config: TimerConfig,
+  started: Instant,
+  completed: usize,
+  last_write: LastWrite,
+}
+
+#[derive(Debug, Clone)]
 enum LastWrite {
   Never,
   At {
@@ -43,35 +61,173 @@ fn bytes_format(n: f64) -> Box<dyn fmt::Display> {
 /// while iterating. It can wrap either [Iterator] or [FallibleIterator], and
 /// implements the same trait as the wrapped iterator type (type bounds on the
 /// trait implementations accomplish this).
-pub struct ProgressIter<'a, I> {
-  timer: &'a mut Timer,
-  prefix: &'a str,
-  interval_secs: f32,
+pub struct ProgressIter<I> {
+  timer: Timer,
   iter: I
 }
 
-impl Timer {
-  /// Create a new timer.
-  pub fn new() -> Timer {
-    Timer {
-      started: Instant::now(),
+/// Report progress on reading data.
+///
+/// This struct supports [Timer]'s ability to wrap a [Read] and automatically
+/// report progress as data passes through.
+pub struct TimedRead<R: Read> {
+  timer: Timer,
+  reader: R,
+  nlogs: usize,
+}
+
+impl TimerConfig {
+  /// Start a new timer configuration.
+  fn new() -> TimerConfig {
+    TimerConfig {
       task_count: None,
-      completed: 0,
-      last_write: LastWrite::Never,
+      interval: 1.0,
+      log_prefix: None,
+      log_target: module_path!().to_string(),
+      started_at: None,
       count_format: decimal_format,
     }
   }
 
-  /// Create a new timer with a task count.
-  pub fn new_with_count(n: usize) -> Timer {
-    let mut timer = Timer::new();
-    timer.task_count = Some(n);
-    timer
+  /// Convert this timer to use binary count formatting.
+  pub fn binary(&mut self) -> &mut Self {
+    self.count_format = bytes_format;
+    self
   }
 
-  /// Convert this timer to use binary count formatting.
-  pub fn set_binary(&mut self) {
-    self.count_format = bytes_format;
+  /// Set the task count on this timer.
+  pub fn task_count(&mut self, count: usize) -> &mut Self {
+    self.task_count = Some(count);
+    self
+  }
+
+  /// Set the default interval for this timer.
+  pub fn interval(&mut self, interval: f32) -> &mut Self {
+    self.interval = interval;
+    self
+  }
+
+  /// Set the log label on this timer.
+  pub fn label(&mut self, prefix: &str) -> &mut Self {
+    self.log_prefix = Some(prefix.to_string());
+    self
+  }
+
+  /// Set the log target on this timer.
+  pub fn log_target(&mut self, target: &str) -> &mut Self {
+    self.log_target = target.to_string();
+    self
+  }
+
+  /// Configure an initial start time for this timer.
+  pub fn start_time(&mut self, start: Instant) -> &mut Self {
+    self.started_at = Some(start);
+    self
+  }
+
+  /// Build a timer.
+  pub fn build(&self) -> Timer {
+    let config = self.clone();
+    config.into_timer()
+  }
+
+  /// Internal helper to build without a clone, used for build methods that clone.
+  fn into_timer(self) -> Timer {
+    let started = self.started_at.clone().unwrap_or_else(Instant::now);
+    Timer {
+      config: self,
+      started,
+      completed: 0,
+      last_write: LastWrite::Never,
+    }
+  }
+
+  /// Create a wrapper that reports progress on reading a file. See [read_progress].
+  pub fn file_progress(&self, file: File) -> IOResult<TimedRead<File>> {
+    let meta = file.metadata()?;
+    let mut clone = self.clone();
+    clone.task_count(meta.len() as usize);
+    clone.binary();
+    Ok(TimedRead {
+      reader: file,
+      timer: clone.into_timer(),
+      nlogs: 0,
+    })
+  }
+
+  /// Use this timer to track progress in a reader.
+  ///
+  /// This method **copies** the timer into the progress reader.
+  pub fn read_progress<R: Read>(&self, reader: R) -> TimedRead<R> {
+    let mut clone = self.clone();
+    clone.binary();
+    TimedRead {
+      reader,
+      timer: clone.into_timer(),
+      nlogs: 0,
+    }
+  }
+
+  /// Emit progress from an iterator.
+  pub fn iter_progress<I: Iterator>(&self, iter: I) -> ProgressIter<I> {
+    let mut config = self.clone();
+    // try for size
+    let (lb, ub) = iter.size_hint();
+    if let Some(n) = ub {
+      config.task_count = Some(n);
+    } else if lb > 0 {
+      config.task_count = Some(lb);
+    } else {
+      config.task_count = None;
+    }
+    ProgressIter {
+      timer: config.into_timer(),
+      iter
+    }
+  }
+
+  /// Emit progress from a fallible iterator.
+  pub fn fallible_iter_progress<'a, I: FallibleIterator>(&self, iter: I) -> ProgressIter<I> {
+    let mut config = self.clone();
+    // try for size
+    let (lb, ub) = iter.size_hint();
+    if let Some(n) = ub {
+      config.task_count = Some(n);
+    } else if lb > 0 {
+      config.task_count = Some(lb);
+    } else {
+      config.task_count = None;
+    }
+    ProgressIter {
+      timer: config.into_timer(),
+      iter
+    }
+  }
+}
+
+impl Timer {
+  /// Create a new timer with defaults.
+  pub fn new() -> Timer {
+    Self::builder().build()
+  }
+
+  /// Create a new timer builder.
+  pub fn builder() -> TimerConfig {
+    TimerConfig::new()
+  }
+
+  /// Get a clone of the timer's configuration as a new builder.
+  ///
+  /// This is useful for doing things like wrapping iterators.
+  pub fn copy_builder(&self) -> TimerConfig {
+    let mut config = self.config.clone();
+    config.start_time(self.started);
+    config
+  }
+
+  /// Create a new timer with a task count.
+  pub fn new_with_count(n: usize) -> Timer {
+    Self::builder().task_count(n).build()
   }
 
   /// Advance the completed-task count.
@@ -80,7 +236,12 @@ impl Timer {
   }
 
   /// Check if we want to write progress updates.
-  pub fn want_write(&self, interval_secs: f32) -> bool {
+  pub fn want_write(&self) -> bool {
+    self.want_write_interval(self.config.interval)
+  }
+
+  /// Check if we want to write progress updates with a custom interval.
+  pub fn want_write_interval(&self, interval_secs: f32) -> bool {
     let (lt, lc) = match self.last_write {
       LastWrite::Never => (self.started, 0),
       LastWrite::At { time, count } => (time, count)
@@ -112,11 +273,41 @@ impl Timer {
     }
   }
 
-  /// Write status to the logger at specified interval.
-  pub fn log_status(&mut self, prefix: &str, interval_secs: f32) {
-    if self.want_write(interval_secs) {
-      info!("{}: {}", prefix, self);
+  /// Write status to the logger at the timer's interval.
+  pub fn maybe_log_status(&mut self) -> bool {
+    self.maybe_log_status_interval(self.config.interval)
+  }
+
+  /// Write status to the logger at a specified interval.
+  pub fn maybe_log_status_interval(&mut self, interval_secs: f32) -> bool {
+    if self.want_write_interval(interval_secs) {
+      self.log_status();
       self.record_write();
+      true
+    } else {
+      false
+    }
+  }
+
+  /// Log the current status unconditionally.
+  ///
+  /// This method does **not** call [record_write].
+  pub fn log_status(&self) {
+    if let Some(pfx) = &self.config.log_prefix {
+      info!(target: &self.config.log_target, "{}: {}", pfx, self);
+    } else {
+      info!(target: &self.config.log_target, "{}", self);
+    }
+  }
+
+  /// Log the current status unconditionally, with a message before the status.
+  ///
+  /// This method does **not** call [record_write].
+  pub fn log_status_msg(&self, msg: &str) {
+    if let Some(pfx) = &self.config.log_prefix {
+      info!(target: &self.config.log_target, "{}: {} {}", pfx, msg, self);
+    } else {
+      info!(target: &self.config.log_target, "{} {}", msg, self);
     }
   }
 
@@ -133,8 +324,8 @@ impl Timer {
   /// Get the elapsed time and ETA on this timer.
   pub fn timings(&self) -> (Duration, Option<Duration>) {
     let elapsed = self.started.elapsed();
-    match self.task_count {
-      Some(n) if self.completed > 0 => {
+    match self.config.task_count {
+      Some(n) if self.completed > 0 && self.completed < n => {
         let remaining = n - self.completed;
         let ds = elapsed.as_secs_f64();
         let per = ds / (self.completed as f64);
@@ -142,42 +333,6 @@ impl Timer {
         (elapsed, Some(Duration::from_secs_f64(dr)))
       },
       _ => (elapsed, None)
-    }
-  }
-
-  /// Emit progress from an iterator.
-  pub fn iter_progress<'a, I: Iterator>(&'a mut self, prefix: &'a str, interval_secs: f32, iter: I) -> ProgressIter<'a, I> {
-    // try for size
-    let (lb, ub) = iter.size_hint();
-    if let Some(n) = ub {
-      self.task_count = Some(n);
-    } else if lb > 0 {
-      self.task_count = Some(lb);
-    } else {
-      self.task_count = None;
-    }
-    ProgressIter {
-      timer: self,
-      prefix, interval_secs,
-      iter
-    }
-  }
-
-  /// Emit progress from a fallible iterator.
-  pub fn fallible_iter_progress<'a, I: FallibleIterator>(&'a mut self, prefix: &'a str, interval_secs: f32, iter: I) -> ProgressIter<'a, I> {
-    // try for size
-    let (lb, ub) = iter.size_hint();
-    if let Some(n) = ub {
-      self.task_count = Some(n);
-    } else if lb > 0 {
-      self.task_count = Some(lb);
-    } else {
-      self.task_count = None;
-    }
-    ProgressIter {
-      timer: self,
-      prefix, interval_secs,
-      iter
     }
   }
 }
@@ -188,27 +343,27 @@ impl fmt::Display for Timer {
     let per = (self.completed as f64) / el.as_secs_f64();
     if let Some(eta) = eta {
       write!(f, "{} / {} in {} ({}/s, ETA {})",
-             (self.count_format)(self.completed as f64),
-             (self.count_format)(self.task_count.unwrap_or_default() as f64),
+             (self.config.count_format)(self.completed as f64),
+             (self.config.count_format)(self.config.task_count.unwrap_or_default() as f64),
              duration(el),
-             (self.count_format)(per),
+             (self.config.count_format)(per),
              duration(eta))
     } else if self.completed > 0 {
-      write!(f, "{} in {} ({:.0}/s)", scalar(self.completed), duration(el), scalar(per))
+      write!(f, "{} in {} ({:.0}/s)", (self.config.count_format)(self.completed as f64), duration(el), (self.config.count_format)(per))
     } else {
       write!(f, "{}", self.human_elapsed())
     }
   }
 }
 
-impl <'a, I> Iterator for ProgressIter<'a, I> where I: Iterator {
+impl <I> Iterator for ProgressIter<I> where I: Iterator {
   type Item = I::Item;
 
   fn next(&mut self) -> Option<I::Item> {
     let res = self.iter.next();
     if let Some(_) = res {
       self.timer.complete(1);
-      self.timer.log_status(self.prefix, self.interval_secs);
+      self.timer.maybe_log_status();
     }
     res
   }
@@ -218,7 +373,7 @@ impl <'a, I> Iterator for ProgressIter<'a, I> where I: Iterator {
   }
 }
 
-impl <'a, I> FallibleIterator for ProgressIter<'a, I> where I: FallibleIterator {
+impl <I> FallibleIterator for ProgressIter<I> where I: FallibleIterator {
   type Item = I::Item;
   type Error = I::Error;
 
@@ -226,13 +381,38 @@ impl <'a, I> FallibleIterator for ProgressIter<'a, I> where I: FallibleIterator 
     let res = self.iter.next();
     if let Ok(Some(_)) = res {
       self.timer.complete(1);
-      self.timer.log_status(self.prefix, self.interval_secs);
+      self.timer.maybe_log_status();
     }
     res
   }
 
   fn size_hint(&self) -> (usize, Option<usize>) {
     self.iter.size_hint()
+  }
+}
+
+impl <R: Read> Read for TimedRead<R> {
+  fn read(&mut self, buf: &mut [u8]) -> IOResult<usize> {
+    let size = self.reader.read(buf)?;
+    self.timer.complete(size);
+
+    let mut interval = self.timer.config.interval;
+    if interval > 5.0 {
+      if self.nlogs == 0 {
+        interval = 5.0;
+      } else if self.nlogs == 1 {
+        interval -= 5.0;
+      }
+    }
+
+    if size > 0 {
+      if self.timer.maybe_log_status_interval(interval) {
+        self.nlogs += 1;
+      }
+    } else {
+      self.timer.log_status();
+    }
+    Ok(size)
   }
 }
 

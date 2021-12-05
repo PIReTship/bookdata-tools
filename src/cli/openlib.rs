@@ -40,12 +40,12 @@ pub struct OpenLib {
 }
 
 /// Helper function to route OpenLibrary data.
-fn scan_openlib<P, R, Proc>(path: P, proc: Proc) -> Result<()>
-where P: AsRef<Path>, Proc: ObjectWriter<Row<R>>, R: DeserializeOwned
+fn scan_openlib<R, Proc>(path: &Path, proc: Proc) -> Result<()>
+where Proc: ObjectWriter<Row<R>>, R: DeserializeOwned
 {
   let mut proc = proc;
   let mut nlines = 0;
-  info!("opening file {}", path.as_ref().to_string_lossy());
+  info!("opening file {}", path.to_string_lossy());
   let input = LineProcessor::open_gzip(path)?;
 
   for line in input.records() {

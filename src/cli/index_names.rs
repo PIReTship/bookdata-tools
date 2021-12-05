@@ -8,8 +8,6 @@ use csv;
 use serde::{Deserialize, Serialize};
 use flate2::write::GzEncoder;
 
-use happylog::set_progress;
-
 use crate::prelude::*;
 use crate::arrow::*;
 use crate::cleaning::names::*;
@@ -38,17 +36,16 @@ struct RecAuthor {
   name: String,
 }
 
-#[derive(TableRow, Serialize, Clone)]
+#[derive(ParquetRecordWriter, Serialize, Clone)]
 struct IndexEntry {
   rec_id: u32,
   name: String,
 }
 
-fn scan_names<P: AsRef<Path>>(path: P) -> Result<NameIndex> {
-  info!("reading names from {}", path.as_ref().to_string_lossy());
+fn scan_names(path: &Path) -> Result<NameIndex> {
+  info!("reading names from {}", path.to_string_lossy());
   let mut index = NameIndex::new();
-  let (reader, pb) = open_gzin_progress(path)?;
-  let _pbl = set_progress(&pb);
+  let reader = open_gzin_progress(path)?;
   let mut reader = csv::Reader::from_reader(reader);
   for line in reader.deserialize() {
     let record: RecAuthor = line?;
@@ -59,13 +56,13 @@ fn scan_names<P: AsRef<Path>>(path: P) -> Result<NameIndex> {
   Ok(index)
 }
 
-fn write_index<P: AsRef<Path>>(index: NameIndex, path: P) -> Result<()> {
+fn write_index(index: NameIndex, path: &Path) -> Result<()> {
   let mut names: Vec<&str> = index.keys().map(|s| s.as_str()).collect();
   info!("sorting {} names", names.len());
   names.sort();
-  info!("writing deduplicated names to {}", path.as_ref().to_string_lossy());
+  info!("writing deduplicated names to {}", path.to_string_lossy());
   let mut writer = TableWriter::open(&path)?;
-  let mut csv_fn = PathBuf::from(path.as_ref());
+  let mut csv_fn = PathBuf::from(path);
   csv_fn.set_extension("csv.gz");
   let out = File::create(&csv_fn)?;
   let out = GzEncoder::new(out, flate2::Compression::best());

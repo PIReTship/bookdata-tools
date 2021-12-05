@@ -6,8 +6,11 @@ use anyhow::{Result, anyhow};
 
 pub mod combinators;
 pub mod dates;
+pub mod bindata;
 #[cfg(test)]
 mod test_dates;
+
+pub use bindata::decode_hex_i64_pair;
 
 /// Trim a string, and convert to None if it is empty.
 pub fn trim_opt<'a>(s: &'a str) -> Option<&'a str> {

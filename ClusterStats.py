@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.13.0
+#       jupytext_version: 1.13.1
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -144,34 +144,5 @@ bl.sort_values('isbn')
 # %%
 bl['btot'] = bl.iloc[:, 2:-2].sum(axis=1)
 bl.nlargest(20, 'btot')
-
-# %% [markdown]
-# ### Graph Analysis
-#
-# Now let's start looking at this graph itself.
-
-# %%
-from igraph import Graph
-
-# %%
-g = Graph.Read_GML('book-links/debug-graph.gml')
-g
-
-# %%
-btw = g.betweenness()
-btw = np.array(btw)
-btw
-
-# %%
-gdf = pd.DataFrame.from_records(v.attributes() for v in g.vs)
-gdf['btw'] = btw
-gdf.nlargest(15, 'btw')
-
-# %%
-g.diameter()
-
-# %%
-gdf['ecc'] = g.eccentricity()
-gdf.nsmallest(15, 'ecc')
 
 # %%

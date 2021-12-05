@@ -4,17 +4,16 @@ use anyhow::Result;
 use crate::arrow::*;
 use super::record::*;
 use crate::io::*;
-use crate as bookdata;  // hack to make derive macro work
 
 /// Flat MARC field record.
-#[derive(TableRow, Debug, Default)]
+#[derive(ParquetRecordWriter, Debug, Default)]
 pub struct FieldRecord {
   rec_id: u32,
   fld_no: u32,
   tag: i16,
-  ind1: Code,
-  ind2: Code,
-  sf_code: Code,
+  ind1: u8,
+  ind2: u8,
+  sf_code: u8,
   contents: String,
 }
 
@@ -76,8 +75,8 @@ impl ObjectWriter<MARCRecord> for FieldOutput {
         fld_no += 1;
         self.writer.write_object(FieldRecord {
           rec_id, fld_no,
-          tag: df.tag, ind1: df.ind1, ind2: df.ind2,
-          sf_code: sf.code,
+          tag: df.tag, ind1: df.ind1.into(), ind2: df.ind2.into(),
+          sf_code: sf.code.into(),
           contents: sf.content
         })?;
       }

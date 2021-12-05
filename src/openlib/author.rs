@@ -7,23 +7,23 @@ use super::source::Row;
 pub use super::source::OLAuthorSource;
 
 /// An author record in the extracted Parquet.
-#[derive(TableRow)]
+#[derive(ParquetRecordWriter)]
 pub struct AuthorRec {
-  pub id: u32,
+  pub id: i32,
   pub key: String,
   pub name: Option<String>
 }
 
 /// An author-name record in the extracted Parquet.
-#[derive(TableRow)]
+#[derive(ParquetRecordWriter)]
 pub struct AuthorNameRec {
-  pub id: u32,
+  pub id: i32,
   pub source: u8,
   pub name: String
 }
 
 /// Get a list of author name records for an author.
-pub fn author_name_records(src: &OLAuthorSource, id: u32) -> Vec<AuthorNameRec> {
+pub fn author_name_records(src: &OLAuthorSource, id: i32) -> Vec<AuthorNameRec> {
   let mut names = Vec::new();
 
   if let Some(n) = &src.name {
@@ -49,7 +49,7 @@ pub fn author_name_records(src: &OLAuthorSource, id: u32) -> Vec<AuthorNameRec> 
 
 /// Process author records into Parquet.
 pub struct AuthorProcessor {
-  last_id: u32,
+  last_id: i32,
   rec_writer: TableWriter<AuthorRec>,
   name_writer: TableWriter<AuthorNameRec>
 }

@@ -7,10 +7,10 @@ use log::*;
 use glob::glob;
 use structopt::StructOpt;
 use fallible_iterator::FallibleIterator;
-use happylog::set_progress;
 
 use crate::prelude::*;
 use crate::io::open_gzin_progress;
+use crate::io::object::ThreadWriter;
 
 use crate::marc::MARCRecord;
 use crate::marc::parse::{read_records, read_records_delim};
@@ -90,8 +90,8 @@ impl ScanMARC {
     }
   }
 
-  fn process_records<W: ObjectWriter<MARCRecord>>(&self, output: W) -> Result<()> {
-    let mut output = output;
+  fn process_records<W: ObjectWriter<MARCRecord> + Send + 'static>(&self, output: W) -> Result<()> {
+    let mut output = ThreadWriter::new(output);
     let mut nfiles = 0;
     let mut all_recs = 0;
     let all_start = Instant::now();
@@ -101,8 +101,7 @@ impl ScanMARC {
       let inf = inf.as_path();
       let file_start = Instant::now();
       info!("reading from compressed file {}", inf.display());
-      let (read, pb) = open_gzin_progress(inf)?;
-      let _pbl = set_progress(&pb);
+      let read = open_gzin_progress(inf)?;
       let mut records = if self.line_mode {
         read_records_delim(read)
       } else {
@@ -115,7 +114,6 @@ impl ScanMARC {
         nrecs += 1;
       }
 
-      pb.finish_and_clear();
       info!("processed {} records from {} in {:.2}s",
             nrecs, inf.display(), file_start.elapsed().as_secs_f32());
       all_recs += nrecs;

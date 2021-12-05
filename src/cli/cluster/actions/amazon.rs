@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use datafusion::prelude::*;
 use crate::prelude::*;
-use crate::ratings::RatingDedup;
+use crate::interactions::{RatingDedup, TimestampRatingRecord};
 
 use super::data::*;
 
@@ -27,7 +27,7 @@ impl Ratings {
 #[async_trait]
 impl Source for Ratings {
   type Act = RatingRow;
-  type DD = RatingDedup;
+  type DD = RatingDedup<TimestampRatingRecord>;
 
   async fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
     info!("setting up to scan Amazon ratings from {}", self.path);
@@ -48,9 +48,5 @@ impl Source for Ratings {
     ])?;
 
     Ok(rlink)
-  }
-
-  fn has_timestamps(&self) -> bool {
-    true
   }
 }

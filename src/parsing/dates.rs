@@ -23,6 +23,6 @@ pub fn maybe_date<Y: Into<i32>, M: Into<u32>, D: Into<u32>>(year: Option<Y>, mon
 
 
 /// Parse a GoodReads date.
-pub fn parse_gr_date(s: &str) -> ParseResult<DateTime<FixedOffset>> {
-  DateTime::parse_from_str(s, GR_DATE_FMT)
+pub fn parse_gr_date(s: &str) -> ParseResult<NaiveDateTime> {
+  Ok(DateTime::parse_from_str(s, GR_DATE_FMT)?.naive_utc())
 }

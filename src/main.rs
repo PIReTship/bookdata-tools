@@ -20,7 +20,7 @@ pub mod openlib;
 pub mod amazon;
 pub mod goodreads;
 pub mod arrow;
-pub mod ratings;
+pub mod interactions;
 pub mod cli;
 pub mod prelude;
 
@@ -43,23 +43,9 @@ static GLOBAL: MiMalloc = MiMalloc;
 use anyhow::Result;
 use structopt::StructOpt;
 
-use happylog::args::LogOpts;
-
-use cli::{Command, BDCommand};
-
-/// BookData import tools.
-#[derive(StructOpt, Debug)]
-#[structopt(name="bookdata")]
-struct CLI {
-  #[structopt(flatten)]
-  logging: LogOpts,
-
-  #[structopt(subcommand)]
-  command: BDCommand,
-}
+use cli::CLI;
 
 fn main() -> Result<()> {
   let opt = CLI::from_args();
-  opt.logging.init()?;
-  opt.command.exec()
+  opt.exec()
 }

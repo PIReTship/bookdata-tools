@@ -2,7 +2,6 @@ use std::path::{Path, PathBuf};
 use std::io::{Result as IOResult};
 use std::fs;
 
-pub mod progress;
 pub mod compress;
 pub mod lines;
 pub mod object;

@@ -30,9 +30,8 @@ impl Command for ScanRatings {
     let src = File::open(&self.infile)?;
     let src = csv::ReaderBuilder::new().has_headers(false).from_reader(src);
     let src = src.into_deserialize();
-    let mut timer = Timer::new();
     let mut index: IdIndex<String> = IdIndex::new();
-    let iter = timer.iter_progress("reading ratings", 2.5, src);
+    let iter = Timer::builder().label("reading ratings").interval(2.5).iter_progress(src);
     for row in iter {
       let row: SourceRating = row?;
       let user = index.intern(row.user.as_str());

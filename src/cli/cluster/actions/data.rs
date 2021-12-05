@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use datafusion::prelude::*;
 use crate::prelude::*;
-use crate::ratings::{Interaction, Dedup};
+use crate::interactions::{Interaction, Dedup};
 pub use async_trait::async_trait;
 
 /// Trait for data sources.
@@ -16,8 +16,6 @@ pub trait Source {
 
   async fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>>;
 
-  fn has_timestamps(&self) -> bool;
-
   fn make_dedup(&self) -> Self::DD {
     Self::DD::default()
   }
@@ -26,14 +24,14 @@ pub trait Source {
 /// Generic rating row usable by most data sources.
 #[derive(Deserialize)]
 pub struct RatingRow {
-  pub user: u32,
+  pub user: i32,
   pub item: i32,
   pub rating: Option<f32>,
   pub timestamp: i64
 }
 
 impl Interaction for RatingRow {
-  fn get_user(&self) -> u32 {
+  fn get_user(&self) -> i32 {
     self.user
   }
   fn get_item(&self) -> i32 {

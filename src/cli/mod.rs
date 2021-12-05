@@ -16,12 +16,15 @@ pub mod amazon;
 pub mod openlib;
 pub mod goodreads;
 
+use std::env;
+use log::*;
 use paste::paste;
 use structopt::StructOpt;
 use anyhow::Result;
 use tokio::runtime::Runtime;
 use enum_dispatch::enum_dispatch;
 use async_trait::async_trait;
+use pretty_env_logger::formatted_timed_builder;
 
 /// Macro to generate wrappers for subcommand enums.
 ///
@@ -112,5 +115,50 @@ impl <T: AsyncCommand> Command for T {
     let runtime = Runtime::new()?;
     let task = self.exec_future();
     runtime.block_on(task)
+  }
+}
+
+/// Entry point for the Book Data Tools.
+///
+/// This program runs the various book data tools, exposed as subcommands.  The top-level
+/// command handles setting up logging.  Logging can be configured in detail with the
+/// environment variable `BOOKDATA_LOG`, using the `env_logger` crate; the command
+/// line options provide shortcuts but are overridden by the environment variable.
+#[derive(StructOpt, Debug)]
+#[structopt(name="bookdata")]
+pub struct CLI {
+  /// Verbose mode (-v, -vv, -vvv, etc.)
+  #[structopt(short="v", long="verbose", parse(from_occurrences))]
+  verbose: usize,
+
+  /// Silence output (overrides -v)
+  #[structopt(short="q", long="quiet")]
+  quiet: bool,
+
+  #[structopt(subcommand)]
+  command: BDCommand,
+}
+
+impl CLI {
+  pub fn exec(self) -> Result<()> {
+    let mut lb = formatted_timed_builder();
+    if self.quiet {
+      lb.filter_level(LevelFilter::Error);
+    } else if self.verbose == 1 {
+      lb.filter_level(LevelFilter::Debug);
+      lb.filter_module("bookdata", LevelFilter::Info);
+    } else if self.verbose == 2 {
+      lb.filter_level(LevelFilter::Debug);
+    } else if self.verbose >= 3 {
+      lb.filter_level(LevelFilter::Trace);
+    } else {
+      lb.filter_level(LevelFilter::Info);
+    }
+    if let Ok(filt) = env::var("BOOKDATA_LOG") {
+      lb.parse_filters(&filt);
+    }
+    lb.try_init()?;
+
+    self.command.exec()
   }
 }
