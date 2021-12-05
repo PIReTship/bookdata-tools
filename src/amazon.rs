@@ -42,9 +42,9 @@ pub struct RatingRow {
 /// Structure for scanned reviews.
 ///
 /// This data structure is serialized to `reviews.parquet` in the Amazon directories.
-#[derive(TableRow, Serialize, Deserialize)]
+#[derive(ParquetRecordWriter, Serialize, Deserialize)]
 pub struct ReviewRow {
-  pub user: u32,
+  pub user: i32,
   pub asin: String,
   pub rating: f32,
   pub timestamp: i64,

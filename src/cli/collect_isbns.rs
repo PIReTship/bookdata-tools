@@ -82,6 +82,11 @@ async fn read_source(ctx: &mut ExecutionContext, kc: &mut KeyCollector, name: &s
     acc.add_keys(col.iter().flatten());
   }
 
+  Ok(())
+}
+
+#[async_trait]
+impl AsyncCommand for CollectISBNs {
   async fn exec_future(&self) -> Result<()> {
     info!("reading spec from {}", self.source_file.display());
     let spec = read_to_string(&self.source_file)?;

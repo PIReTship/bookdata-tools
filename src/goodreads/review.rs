@@ -1,6 +1,6 @@
 //! GoodReads review data model.
 pub use serde::Deserialize;
-use chrono::{DateTime, FixedOffset};
+use chrono::NaiveDateTime;
 
 use crate::prelude::*;
 use crate::arrow::*;
@@ -26,16 +26,17 @@ pub struct RawReview {
 }
 
 /// Review records to write to the Parquet table.
-#[derive(TableRow)]
+#[derive(ParquetRecordWriter)]
 pub struct ReviewRecord {
   pub rec_id: u32,
-  pub user_id: u32,
+  pub review_id: i64,
+  pub user_id: i32,
   pub book_id: i32,
   pub rating: Option<f32>,
   pub review: String,
   pub n_votes: i32,
-  pub added: DateTime<FixedOffset>,
-  pub updated: DateTime<FixedOffset>,
+  pub added: NaiveDateTime,
+  pub updated: NaiveDateTime,
 }
 
 // Object writer to transform and write GoodReads reviews
@@ -71,9 +72,11 @@ impl ObjectWriter<RawReview> for ReviewWriter {
     let user_key = hex::decode(row.user_id.as_bytes())?;
     let user_id = self.users.intern_owned(user_key);
     let book_id: i32 = row.book_id.parse()?;
+    let (rev_hi, rev_lo) = decode_hex_i64_pair(&row.review_id)?;
+    let review_id = rev_hi ^ rev_lo;
 
     self.writer.write_object(ReviewRecord {
-      rec_id, user_id, book_id,
+      rec_id, review_id, user_id, book_id,
       review: row.review_text,
       rating: if row.rating > 0.0 {
         Some(row.rating)
