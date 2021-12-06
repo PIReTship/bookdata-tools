@@ -26,6 +26,9 @@ use enum_dispatch::enum_dispatch;
 use async_trait::async_trait;
 use pretty_env_logger::formatted_timed_builder;
 
+#[cfg(unix)]
+use crate::util::process;
+
 /// Macro to generate wrappers for subcommand enums.
 ///
 /// This is for subcommands that only exist to contain further subcommands,
@@ -158,6 +161,9 @@ impl CLI {
     }
     lb.try_init()?;
 
-    self.command.exec()
+    let res = self.command.exec();
+    #[cfg(unix)]
+    process::log_process_stats();
+    res
   }
 }
