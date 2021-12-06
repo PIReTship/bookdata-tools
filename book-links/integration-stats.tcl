@@ -3,7 +3,8 @@ table isbn_cluster "isbn-clusters.parquet"
 table loc "../loc-mds/book-isbn-ids.parquet"
 table bx_action "../bx/bx-cluster-actions.parquet"
 table bx_rating "../bx/bx-cluster-ratings.parquet"
-table az_rating "../az2014/az-cluster-ratings.parquet"
+table az14_rating "../az2014/az-cluster-ratings.parquet"
+table az18_rating "../az2018/az-cluster-ratings.parquet"
 table gr_rating "../goodreads/gr-cluster-ratings.parquet"
 table gr_action "../goodreads/gr-cluster-actions.parquet"
 
@@ -50,8 +51,15 @@ add-query {
 }
 
 add-query {
-    SELECT 'AZ' as dataset, gender, COUNT(DISTINCT item) AS n_books, COUNT(item) AS n_actions
-    FROM az_rating
+    SELECT 'AZ14' as dataset, gender, COUNT(DISTINCT item) AS n_books, COUNT(item) AS n_actions
+    FROM az14_rating
+    JOIN gender ON (item = cluster)
+    GROUP BY gender
+}
+
+add-query {
+    SELECT 'AZ18' as dataset, gender, COUNT(DISTINCT item) AS n_books, COUNT(item) AS n_actions
+    FROM az18_rating
     JOIN gender ON (item = cluster)
     GROUP BY gender
 }
