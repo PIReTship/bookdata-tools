@@ -1,6 +1,5 @@
 //! GoodReads review data model.
 pub use serde::Deserialize;
-use chrono::NaiveDateTime;
 
 use crate::prelude::*;
 use crate::arrow::*;
@@ -35,8 +34,8 @@ pub struct ReviewRecord {
   pub rating: Option<f32>,
   pub review: String,
   pub n_votes: i32,
-  pub added: NaiveDateTime,
-  pub updated: NaiveDateTime,
+  pub added: f32,
+  pub updated: f32,
 }
 
 // Object writer to transform and write GoodReads reviews
@@ -84,8 +83,8 @@ impl ObjectWriter<RawReview> for ReviewWriter {
         None
       },
       n_votes: row.n_votes,
-      added: parse_gr_date(&row.date_added)?,
-      updated: parse_gr_date(&row.date_updated)?,
+      added: parse_gr_date(&row.date_added).map(check_ts("added", 2005))?,
+      updated: parse_gr_date(&row.date_updated).map(check_ts("updated", 2005))?,
     })?;
 
     Ok(())
