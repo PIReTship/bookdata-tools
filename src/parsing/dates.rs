@@ -1,5 +1,6 @@
 use chrono::prelude::*;
 use chrono::ParseResult;
+use log::*;
 
 /// The date format used in the GoodReads data.
 ///
@@ -24,5 +25,16 @@ pub fn maybe_date<Y: Into<i32>, M: Into<u32>, D: Into<u32>>(year: Option<Y>, mon
 
 /// Parse a GoodReads date.
 pub fn parse_gr_date(s: &str) -> ParseResult<NaiveDateTime> {
-  Ok(DateTime::parse_from_str(s, GR_DATE_FMT)?.naive_utc())
+  let date = DateTime::parse_from_str(s, GR_DATE_FMT)?.naive_utc();
+  Ok(date)
+}
+
+/// Check a date and convert to a timestamp.
+pub fn check_ts(context: &'static str, cutoff: i32) -> impl Fn(NaiveDateTime) -> f32 {
+  move |date| {
+    if date.year() < cutoff {
+      warn!("{} is ancient: {}", context, date);
+    }
+    date.timestamp() as f32
+  }
 }
