@@ -1,5 +1,4 @@
 use hashbrown::HashSet;
-use chrono::NaiveDateTime;
 use serde::Deserialize;
 
 use crate::prelude::*;
@@ -28,7 +27,11 @@ pub struct RawInteraction {
   pub started_at: String,
 }
 
-// the records we're actually going to write to the table
+/// GoodReads interaction records as actually written to the table.
+///
+/// This struct is written to `gr-interactions.parquet` and records actual interaction data.
+/// Timestamps are UNIX timestamps recorded as 64-bit integers; they do not use a Parquet
+/// timestamp time, due to out-of-range values causing problems when loaded into Python.
 #[derive(ParquetRecordWriter)]
 pub struct IntRecord {
   pub rec_id: u32,
@@ -43,10 +46,10 @@ pub struct IntRecord {
   pub book_id: i32,
   pub is_read: u8,
   pub rating: Option<f32>,
-  pub added: NaiveDateTime,
-  pub updated: NaiveDateTime,
-  pub read_started: Option<NaiveDateTime>,
-  pub read_finished: Option<NaiveDateTime>,
+  pub added: f32,
+  pub updated: f32,
+  pub read_started: Option<f32>,
+  pub read_finished: Option<f32>,
 }
 
 // Object writer to transform and write GoodReads interactions
@@ -97,10 +100,10 @@ impl ObjectWriter<RawInteraction> for IntWriter {
       } else {
         None
       },
-      added: parse_gr_date(&row.date_added)?,
-      updated: parse_gr_date(&row.date_updated)?,
-      read_started: trim_opt(&row.started_at).map(parse_gr_date).transpose()?,
-      read_finished: trim_opt(&row.read_at).map(parse_gr_date).transpose()?,
+      added: parse_gr_date(&row.date_added).map(check_ts("added", 2005))?,
+      updated: parse_gr_date(&row.date_updated).map(check_ts("updated", 2005))?,
+      read_started: trim_opt(&row.started_at).map(parse_gr_date).transpose()?.map(check_ts("started", 1900)),
+      read_finished: trim_opt(&row.read_at).map(parse_gr_date).transpose()?.map(check_ts("finished", 1900)),
     })?;
 
     Ok(())
