@@ -1,7 +1,5 @@
 ---
 title: Setup
-parent: Importing
-nav_order: 2
 ---
 
 # Setting Up the Environment
