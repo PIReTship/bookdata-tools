@@ -12,8 +12,8 @@ the environment definitions to automate use with Anaconda.
 You will need:
 
 - Anaconda or Miniconda
-- 100GB of disk space for input files
-- Several GB of memory (lower limit not know; the code is known to run in 64GB of RAM; 16GB may be feasible)
+- 250GB of disk space
+- At least 24 GB of memory (lower may be possible)
 
 ## Import Tool Dependencies
 
