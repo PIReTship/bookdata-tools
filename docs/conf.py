@@ -7,6 +7,8 @@ from pybtex.style.formatting import plain
 project = 'Book Data Tools'
 copyright = '2020–2021 Boise State University'
 author = 'Michael D. Ekstrand'
+version = '2.0'
+release = version
 
 extensions = [
     'myst_parser',

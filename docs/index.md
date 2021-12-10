@@ -11,7 +11,9 @@ Parquet files with raw data in a more usable form, various useful extracted feat
 identifiers across the various data sources for cross-linking.  These tools are updated from the
 version used to support our original paper; we have dropped PostgreSQL in favor of a pipeline
 implemented with DVC, Rust, and DataFusion that is more efficient (integration times have dropped
-from 8 hours to less than 3) and requires significantly less disk space.
+from 8 hours to less than 3) and requires significantly less disk space.[^bftag]
+
+[^bftag]: The original tools are available on the `before-fusion` tag in the Git repository.
 
 If you use these scripts in any published research, cite [our paper][paper] ([PDF][]):
 
