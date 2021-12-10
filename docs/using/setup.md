@@ -34,6 +34,8 @@ This needs the following Python dependencies:
 - numpy
 - pandas
 - seaborn
+- jupyter
+- jupytext
 - dvc (2.0 or later)
 
 ### Rust
