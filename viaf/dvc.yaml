@@ -1,0 +1,34 @@
+stages:
+  scan-authors:
+    cmd: python ../run.py --rust scan-marc -L -o viaf.parquet ../data/viaf-clusters-marc21.xml.gz
+    deps:
+    - ../src/cli/scan_marc.rs
+    - ../src/marc
+    - ../data/viaf-clusters-marc21.xml.gz
+    outs:
+    - viaf.parquet
+
+  author-names:
+    cmd: python ../run.py --rust fusion author-names.tcl
+    deps:
+    - author-names.tcl
+    - viaf.parquet
+    outs:
+    - author-names.csv.gz
+
+  author-genders:
+    cmd: python ../run.py --rust fusion author-genders.tcl
+    deps:
+    - author-genders.tcl
+    - viaf.parquet
+    outs:
+    - author-genders.parquet
+
+  index-names:
+    cmd: python ../run.py --rust index-names author-names.csv.gz author-name-index.parquet
+    deps:
+    - ../src/cli/index_names.rs
+    - author-names.csv.gz
+    outs:
+    - author-name-index.parquet
+    - author-name-index.csv.gz

@@ -1,8 +1,28 @@
 """
-Run a Python script.  The script name should come from a script name in 'scripts'.
+Helper to set up environments & run book data tools properly.
+
+Most DVC stages will use this to actually run the code.  It makes
+sure we compile the Rust tools, routes arguments properly, and sets
+environment variables that may be needed.  For Python scripts, it
+ensures the search path is set correctly.
+
+Usage:
+    run.py --rust TOOL ARGS...
+    run.py SCRIPT ARGS...
+
+Options:
+    --rust
+        Run a Rust tool instead of a Python script.
+    TOOL
+        The name of the Rust tool to run
+    SCRIPT
+        The name of the Python script to run.
+    ARGS
+        The arguments to the tool or script.
 """
 
 import os
+import os.path
 import sys
 import runpy
 from pathlib import Path
@@ -15,30 +35,33 @@ src_dir = Path(__file__).parent
 sys.path.insert(0, src_dir)
 
 from bookdata import setup, bin_dir
-from bookdata.db import db_url
 
 
 def run_rust():
     # this is a rust command
     del sys.argv[1]
-    # build the Rust tools
-    # TODO support alternate working directories
-    _log.info('compiling Rust tools')
-    sp.run(['cargo', 'build', '--release'], check=True)
-    tool = bin_dir / 'bookdata'
-    tool = os.fspath(tool)
+    # we need to fix up Rust environment in some cases
+    sysroot = os.environ.get('CONDA_BUILD_SYSROOT', None)
+    if sysroot and 'RUSTFLAGS' not in os.environ:
+        _log.info('setting Rust flags from sysroot')
+        os.environ['RUSTFLAGS'] = f'-L native={sysroot}/usr/lib64 -L native={sysroot}/lib64'
 
-    if 'DB_URL' not in os.environ:
-        os.environ['DB_URL'] = db_url()
-    _log.info('running tool %s', sys.argv[1:])
-    sp.run([tool] + sys.argv[1:], check=True)
+    # shell out to 'cargo run' to run the command
+    tool_name = sys.argv[1]
+
+    _log.info('building and running Rust tool %s', tool_name)
+    sp.run(['cargo', 'run', '--release', '--'] + sys.argv[1:], check=True)
 
 
 def run_script():
     script = sys.argv[1]
-    _log.info('preparing to run scripts.%s', script)
     del sys.argv[1]
-    runpy.run_module(f'scripts.{script}', alter_sys=True)
+    if os.path.exists(script):
+        _log.info('running %s', script)
+        runpy.run_path(script)
+    else:
+        _log.info('preparing to run scripts.%s', script)
+        runpy.run_module(f'scripts.{script}', alter_sys=True)
 
 
 if __name__ == '__main__':

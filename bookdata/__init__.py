@@ -11,7 +11,7 @@ _simple_format = logging.Formatter('{asctime} [{levelname:7s}] {name} {message}'
 _initialized = False
 
 data_dir = Path('data')
-tgt_dir = Path('target')
+tgt_dir = Path(__file__).parent.parent / 'target'
 bin_dir = tgt_dir / 'release'
 bdtool = bin_dir / 'bookdata'
 

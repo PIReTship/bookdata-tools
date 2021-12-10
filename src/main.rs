@@ -1,41 +1,51 @@
-mod cleaning;
-mod tsv;
-mod db;
-mod io;
-mod tracking;
-mod commands;
+//! Code for processing and integrating book data.
+//!
+//! The book data tools are developed as a monolithic executable.  The commands
+//! themselves live under [cli], while the rest of the package contains data
+//! definitions and helper routines that build on this code.  The tools are not
+//! currently usable as a library; you can extend them by adding additional commands
+//! to the [cli] module.
 
-use anyhow::{anyhow, Result};
-use log::*;
+pub mod cleaning;
+pub mod parsing;
+pub mod tsv;
+pub mod util;
+pub mod io;
+pub mod ids;
+pub mod gender;
+pub mod graph;
+pub mod marc;
+pub mod rdf;
+pub mod openlib;
+pub mod amazon;
+pub mod goodreads;
+pub mod arrow;
+pub mod interactions;
+pub mod cli;
+pub mod prelude;
+
+// jemalloc makes this code faster
+#[cfg(target_env="gnu")]
+use jemallocator::Jemalloc;
+
+#[cfg(target_env="gnu")]
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
+
+// but jemalloc doesn't work on msvc, so use mimalloc
+#[cfg(target_env="msvc")]
+use mimalloc::MiMalloc;
+
+#[cfg(target_env="msvc")]
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
+
+use anyhow::Result;
 use structopt::StructOpt;
 
-use happylog::args::LogOpts;
-use commands::*;
-
-/// BookData import tools
-#[derive(StructOpt, Debug)]
-#[structopt(name="bookdata")]
-struct Opt {
-  #[structopt(flatten)]
-  logging: LogOpts
-}
+use cli::CLI;
 
 fn main() -> Result<()> {
-  let mut app = Opt::clap();
-  let cmds = commands();
-  for cmd in &cmds {
-    app = app.subcommand(cmd.app().clone());
-  }
-  let matches = app.get_matches();
-
-  let opt = Opt::from_clap(&matches);
-  opt.logging.init()?;
-  let (sc_name, sc_app) = matches.subcommand();
-  debug!("subcommand name {}", sc_name);
-  for cmd in &cmds {
-    if cmd.name() == sc_name {
-      cmd.run(sc_app.ok_or(anyhow!("no options"))?)?
-    }
-  }
-  Ok(())
+  let opt = CLI::from_args();
+  opt.exec()
 }

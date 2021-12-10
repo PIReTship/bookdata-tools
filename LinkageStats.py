@@ -21,48 +21,50 @@
 # %% [markdown]
 # ## Setup
 
-# %%
+# %% tags=[]
 import pandas as pd
 import seaborn as sns
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-# %%
-from bookdata.db import db_url
-
 # %% [markdown]
 # ## Load Link Stats
 #
-# The `integration_stats` table in the database contains link success statistics in our data.
+# We compute dataset linking statitsics as `gender-stats.csv` using DataFusion.  Let's load those:
 
-# %%
-link_stats = pd.read_sql_table('integration_stats', db_url())
+# %% tags=[]
+link_stats = pd.read_csv('book-links/gender-stats.csv')
 link_stats.head()
 
 # %% [markdown]
-# Let's create lists for our different codes, in order, for later handling.  We'll start with the resolved codes:
+# Now let's define variables for our variou codes. We are first going to define our gender codes.  We'll start with the resolved codes:
 
-# %%
+# %% tags=[]
 link_codes = ['female', 'male', 'ambiguous', 'unknown']
 
 # %% [markdown]
 # We want the unlink codes in order, so the last is the first link failure:
 
-# %%
-unlink_codes = ['no-viaf-author', 'no-loc-author', 'no-book']
+# %% tags=[]
+unlink_codes = ['no-author-rec', 'no-book-author', 'no-book']
+
+# %% tags=[]
+all_codes = link_codes + unlink_codes
 
 # %% [markdown]
+# ## Processing Statistics
+#
 # Now we'll pivot each of our count columns into a table for easier reference.
 
-# %%
-book_counts = link_stats.pivot(index='dataset', columns='gender', values='n_books')
-book_counts = book_counts.reindex(columns=link_codes + unlink_codes)
-book_counts
+# %% tags=[]
+book_counts = link_stats.pivot('dataset', 'gender', 'n_books')
+book_counts = book_counts.reindex(columns=all_codes)
+book_counts.assign(total=book_counts.sum(axis=1))
 
-# %%
-act_counts = link_stats.pivot(index='dataset', columns='gender', values='n_actions')
-act_counts = act_counts.reindex(columns=link_codes + unlink_codes)
+# %% tags=[]
+act_counts = link_stats.pivot('dataset', 'gender', 'n_actions')
+act_counts = act_counts.reindex(columns=all_codes)
 act_counts.drop(index='LOC-MDS', inplace=True)
 act_counts
 
@@ -73,6 +75,7 @@ act_counts
 # %%
 def fractionalize(data, columns, unlinked=None):
     fracs = data[columns]
+    fracs.columns = fracs.columns.astype('str')
     if unlinked:
         fracs = fracs.assign(unlinked=data[unlinked].sum(axis=1))
     totals = fracs.sum(axis=1)
@@ -93,13 +96,13 @@ def plot_bars(fracs, ax=None, cmap=mpl.cm.Dark2):
         vals = fracs.iloc[:, i]
         rects = ax.barh(ind, vals, size, left=start, label=col, color=cmap(i))
         for j, rec in enumerate(rects):
-            if vals.iloc[j] < 0.1: continue
+            if vals.iloc[j] < 0.1 or np.isnan(vals.iloc[j]): continue
             y = rec.get_y() + rec.get_height() / 2
             x = start.iloc[j] + vals.iloc[j] / 2
             ax.annotate('{:.1f}%'.format(vals.iloc[j] * 100),
                         xy=(x,y), ha='center', va='center', color='white',
                         fontweight='bold')
-        start += vals
+        start += vals.fillna(0)
     ax.set_xlabel('Fraction of Books')
     ax.set_ylabel('Data Set')
     ax.set_yticks(ind)

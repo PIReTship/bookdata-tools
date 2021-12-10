@@ -1,6 +1,7 @@
-This repository contains the code to import and integrate the book and rating data that we work with.
-It imports and integrates data from several sources in a single PostgreSQL database; import scripts
-are primarily in Python, with Rust code for high-throughput processing of raw data files.
+This repository contains the code to import and integrate the book and rating data that we work
+with. It imports and integrates data from several sources in a homogenous tabular outputs; import
+scripts are primarily Rust, with Python to orchestrate things and and implement analyses, and
+DataFusion SQL for some integration steps.
 
 If you use these scripts in any published research, cite [our paper][paper] ([PDF][]):
 

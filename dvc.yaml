@@ -1,48 +1,31 @@
 stages:
-  schema:
-    cmd: 'true'
+  ClusterStats:
+    cmd: jupytext --to ipynb --execute ClusterStats.py
     deps:
-    - schemas/common-schema.status
-    - schemas/loc-mds-schema.status
-    - schemas/ol-schema.status
-    - schemas/az-schema.status
-    - schemas/bx-schema.status
-    - schemas/gr-schema.status
-    - schemas/viaf-schema.status
+    - ClusterStats.py
+    - book-links/cluster-stats.parquet
+    outs:
+    - ClusterStats.ipynb:
+        cache: false
 
-  all:
-    cmd: 'true'
-    deps:
-    - index/loc-mds-book-info.status
-    - index/gr-book-info.status
-    - integrate/author-info.status
-    - integrate/author-stats.status
-    - integrate/cluster-stats.status
-    - index/loc-mds-index-names.status
-
-  coverage:
-    cmd: jupytext --sync --exec LinkageStats.py
+  LinkageStats:
+    cmd: jupytext --to ipynb --execute LinkageStats.py
     deps:
     - LinkageStats.py
-    - index/loc-mds-book-info.status
-    - index/gr-book-info.status
-    - integrate/author-info.status
-    - integrate/author-stats.status
-    - integrate/cluster-stats.status
-    - index/loc-mds-index-names.status
+    - book-links/gender-stats.csv
     outs:
     - LinkageStats.ipynb:
         cache: false
     metrics:
     - book-coverage.json
 
-  cluster-stats:
-    cmd: jupytext --sync --exec ClusterStats.py
-    deps:
-    - ClusterStats.py
-    - integrate/cluster-stats.status
-    outs:
-    - ClusterStats.ipynb:
-        cache: false
-    metrics:
-    - book-links/cluster-stats.json
+  html-report:
+    foreach:
+    - LinkageStats
+    - ClusterStats
+    do:
+      cmd: jupyter nbconvert --to html "${item}.ipynb"
+      deps:
+      - ${item}.ipynb
+      outs:
+      - ${item}.html
