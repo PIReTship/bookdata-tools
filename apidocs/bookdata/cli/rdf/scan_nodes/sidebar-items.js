@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["scan_file",""],["scan_triple",""],["term_id","Generate an ID for an RDF term."]],"struct":[["ScanNodes","Scan the nodes in one or more RDF triples files."]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["LitRow",""],["ScanTriples","Scan and import RDF triples."],["TripleRow",""],["TripleScanner",""]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["NodeIndexError","Error codes reported by the node index."]],"struct":[["IndexRow","Data format for saving index rows"],["NodeIndex","Index for looking up node IDs from IRIs or blank labels."]],"type":[["Id",""]]});

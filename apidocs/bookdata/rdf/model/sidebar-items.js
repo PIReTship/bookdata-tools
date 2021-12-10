@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Node","A named or blank node"],["Term","An object term"]],"static":[["EMPTY_IRI","The object IRI for the designated empty triple."]],"struct":[["Literal","A literal value"],["Triple","An RDF triple."]],"type":[["IRI","An IRI for a named node"]]});

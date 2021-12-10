@@ -1,7 +1,5 @@
 ---
 title: Importing
-has_children: true
-nav_order: 2
 ---
 
 # Using the Tools
@@ -9,7 +7,8 @@ nav_order: 2
 This section of the documentation describes how to set up and use the book data integration tools.
 
 ```{toctree}
-running
 setup
+storage
 sources
+running
 ```

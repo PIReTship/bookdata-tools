@@ -1,10 +1,10 @@
 <!doctype html>
 <html class="no-js">
   <head><meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1"/><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Design for Datasets" href="dataset.html" /><link rel="prev" title="Status Tracking" href="status.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1"/><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Design for Datasets" href="dataset.html" /><link rel="prev" title="Design and Implementation" href="index.html" />
 
     <meta name="generator" content="sphinx-3.5.2, furo 2021.02.28.beta28"/>
-        <title>Layout - Book Data Tools documentation</title>
+        <title>Code Layout - Book Data Tools documentation</title>
       <link rel="stylesheet" href="../_static/styles/furo.css?digest=be5985a4059b5c2cd56ed0804790452beca62674">
     <link rel="stylesheet" href="../_static/pygments.css">
     <link media="(prefers-color-scheme: dark)" rel="stylesheet" href="../_static/pygments_dark.css">
@@ -117,12 +117,14 @@
 </form><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul class="current">
 <li class="toctree-l1 has-children"><a class="reference internal" href="../using/index.html">Using the Tools</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label for="toctree-checkbox-1"><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../using/running.html">Running the Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../using/setup.html">Setting Up the Environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using/storage.html">Configuring Data Storage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../using/sources.html">Downloading Source Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using/running.html">Running the Tools</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../data/index.html">Data Model</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label for="toctree-checkbox-2"><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../data/layout.html">Data Layout</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../data/ids.html">Common Identifiers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../data/loc.html">Library of Congress</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../data/openlib.html">OpenLibrary</a></li>
@@ -135,8 +137,7 @@
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Design and Implementation</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/><label for="toctree-checkbox-3"><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="status.html">Status Tracking</a></li>
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Layout</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Code Layout</a></li>
 <li class="toctree-l2"><a class="reference internal" href="dataset.html">Design for Datasets</a></li>
 </ul>
 </li>
@@ -156,51 +157,57 @@
         <label class="toc-overlay-icon toc-content-icon" for="__toc">
           <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
         </label>
-        <div class="section" id="layout">
-<h1>Layout<a class="headerlink" href="#layout" title="Permalink to this headline">¶</a></h1>
-<p>The import code consists of Python, Rust, and SQL code, wired together with DVC.</p>
+        <div class="section" id="code-layout">
+<h1>Code Layout<a class="headerlink" href="#code-layout" title="Permalink to this headline">¶</a></h1>
+<p>The import code consists of Python, Rust, and some SQL code, wired together with DVC, with data
+in several directories to facilitate ease of discovery.</p>
 <div class="section" id="python-scripts">
 <h2>Python Scripts<a class="headerlink" href="#python-scripts" title="Permalink to this headline">¶</a></h2>
-<p>Python scripts live under <code class="docutils literal notranslate"><span class="pre">scripts</span></code>, as a Python package.  They should not be launched directly, but
-rather via <code class="docutils literal notranslate"><span class="pre">run.py</span></code>, which will make sure the environment is set up properly for them:</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>python run.py sql-script [options] script.sql
+<p>Python scripts live in the various directories in which they operate. They should not be launched
+directly, but rather via <code class="docutils literal notranslate"><span class="pre">run.py</span></code>, which will make sure the environment is set up properly for them:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>python run.py my-script-file.py
 </pre></div>
 </div>
+<p>The <code class="docutils literal notranslate"><span class="pre">bookdata</span></code> package contains a little Python utility code.  The <code class="docutils literal notranslate"><span class="pre">run.py</span></code> script ensures it is
+available in the Python import path.</p>
 </div>
-<div class="section" id="sql-scripts">
-<h2>SQL Scripts<a class="headerlink" href="#sql-scripts" title="Permalink to this headline">¶</a></h2>
-<p>Our SQL scripts are run with a custom SQL script runner (the <code class="docutils literal notranslate"><span class="pre">sql-script</span></code> Python script), that breaks
-them into chunks, handles errors, and tracks dependencies and script status.  The script runner parses
-directives in SQL comments; for example:</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>--- #step ISBN ID storage
-CREATE TABLE IF NOT EXISTS isbn_id (
-isbn_id SERIAL PRIMARY KEY,
-isbn VARCHAR NOT NULL UNIQUE
-);
+<div class="section" id="rust">
+<h2>Rust<a class="headerlink" href="#rust" title="Permalink to this headline">¶</a></h2>
+<p>The Rust code all lives under <code class="docutils literal notranslate"><span class="pre">src</span></code>, with the various command-line programs in <code class="docutils literal notranslate"><span class="pre">src/cli</span></code>.  The Rust
+tools are implemented as a monolithic executable with subcommands for various operations, to save
+disk space and compile time.  To see the help:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>cargo run help
 </pre></div>
 </div>
-<p>is a step called “ISBN ID storage”.  Each step is processed in a transaction that is committed at the
-end, so steps are atomic (unless marked with <code class="docutils literal notranslate"><span class="pre">#notx</span></code>).</p>
-<p>These are the directives for steps:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">#step</span> <span class="pre">LABEL</span></code> starts a new step with the label <code class="docutils literal notranslate"><span class="pre">LABEL</span></code>.  Additional directives before the first
-SQL statement will apply to this step.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">#notx</span></code> means the step will run in autocommit mode.  This is needed for certain maintenance commands
-that do not work within transactions.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">#allow</span> <span class="pre">CODE</span></code> allows the PostgreSQL error ‘code’, such as <code class="docutils literal notranslate"><span class="pre">invalid_table_definition</span></code>.  The script
-will not fail if the step fails with this error.  Used for dealing with steps that do things like
-create indexes, so if the index already exists it is fine to still run the script.</p></li>
-</ul>
-<p>In addition, the top of the file can have <code class="docutils literal notranslate"><span class="pre">#dep</span></code> directives, that indicate the dependencies of this
-script.  The only purpose of the <code class="docutils literal notranslate"><span class="pre">#dep</span></code> is to record dependencies in the database stage state
-table, so that modifications can propagate and be detected; dependencies still need to be recorded
-in <code class="docutils literal notranslate"><span class="pre">.dvc</span></code> files to run the import steps in the correct order.</p>
+<p>Or through Python:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>python run.py --rust help
+</pre></div>
 </div>
-<div class="section" id="utility-code">
-<h2>Utility Code<a class="headerlink" href="#utility-code" title="Permalink to this headline">¶</a></h2>
-<p>The <code class="docutils literal notranslate"><span class="pre">bookdata</span></code> package contains Python utility code, and the <code class="docutils literal notranslate"><span class="pre">src</span></code> directory contains a number
-of utility modules for use in the Rust code.  To the extent reasonable, we have tried to mirror
-design patterns and function names.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">run.py</span></code> script with the <code class="docutils literal notranslate"><span class="pre">--rust</span></code> option sets up some environment variables to ensure that
+the Rust code builds correctly inside a Conda environment, and also defaults to using a release
+build (<code class="docutils literal notranslate"><span class="pre">cargo</span> <span class="pre">run</span></code> uses debug builds by default).  All DVC pipeline stages use <code class="docutils literal notranslate"><span class="pre">run.py</span></code> to run
+the Rust tools.</p>
+<p>For writing new commands, there is a lot of utility code under <code class="docutils literal notranslate"><span class="pre">src</span></code>.  Consult the
+<span class="xref myst">Rust API documentation</span> for further details.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">bd-macros</span></code> directory contains the <code class="docutils literal notranslate"><span class="pre">TableRow</span></code> derive macro, because procedural macros cannot
+live in the same crate in which they are used.  Most users won’t need to adjust this macro.</p>
+</div>
+<div class="section" id="datafusion-sql">
+<h2>DataFusion SQL<a class="headerlink" href="#datafusion-sql" title="Permalink to this headline">¶</a></h2>
+<p>We do some processing with <a class="reference external" href="https://github.com/apache/arrow-datafusion/">DataFusion SQL</a>.  We have used <a class="reference external" href="https://wduquette.github.io/molt/">Molt</a> (a Rust-based variant of
+TCL) to implement a small language for setting up tables, running queries, and saving the results.
+The <code class="docutils literal notranslate"><span class="pre">fusion</span></code> bookdata command runs scripts in this language.</p>
+<p>The following is a short example script demonstrating a join between two tables:</p>
+<div class="highlight-tcl notranslate"><div class="highlight"><pre><span></span>table isbns "../book-links/all-isbns.parquet"
+table books "book-isbns.parquet"
+
+save-results "book-isbn-ids.parquet" {
+    SELECT rec_id, isbn_id
+    FROM books JOIN isbns USING (isbn)
+}
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">save-results</span></code> command can write to either CSV or Parquet.</p>
 </div>
 </div>
 
@@ -217,14 +224,14 @@ design patterns and function names.</p>
               </div>
               <svg><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="status.html">
+          <a class="prev-page" href="index.html">
               <svg><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Status Tracking</div>
+                <div class="title">Design and Implementation</div>
                 
               </div>
             </a>
@@ -258,10 +265,10 @@ design patterns and function names.</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Layout</a><ul>
+<li><a class="reference internal" href="#">Code Layout</a><ul>
 <li><a class="reference internal" href="#python-scripts">Python Scripts</a></li>
-<li><a class="reference internal" href="#sql-scripts">SQL Scripts</a></li>
-<li><a class="reference internal" href="#utility-code">Utility Code</a></li>
+<li><a class="reference internal" href="#rust">Rust</a></li>
+<li><a class="reference internal" href="#datafusion-sql">DataFusion SQL</a></li>
 </ul>
 </li>
 </ul>

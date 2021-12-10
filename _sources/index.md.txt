@@ -1,15 +1,17 @@
 ---
 title: Overview
-nav_order: 1
 ---
 
 # Book Data Tools
 
-The PIReT Book Data Tools are a set of tools for ingesting, integrating, and indexing
-a variety of sources of book data, created by the [People and Information Research Team](https://piret.info)
-at [Boise State University](https://boisestate.edu).  The result of running these tools is a PostgreSQL
-database with the raw data, various useful extracted features, and integrated identifiers across the various
-data sources for cross-linking.
+The PIReT Book Data Tools are a set of tools for ingesting, integrating, and indexing a variety of
+sources of book data, created by the [People and Information Research Team](https://piret.info) at
+[Boise State University](https://boisestate.edu).  The result of running these tools is a set of
+Parquet files with raw data in a more usable form, various useful extracted features, and integrated
+identifiers across the various data sources for cross-linking.  These tools are updated from the
+version used to support our original paper; we have dropped PostgreSQL in favor of a pipeline
+implemented with DVC, Rust, and DataFusion that is more efficient (integration times have dropped
+from 8 hours to less than 3) and requires significantly less disk space.
 
 If you use these scripts in any published research, cite [our paper][paper] ([PDF][]):
 
@@ -45,7 +47,7 @@ GitHub repository <https://github.com/BoiseState/bookdata-tools>
 
 ## Video
 
-I recorded a video walking through the integration as an example for my [Data Science class](httsp://cs533.ekstrandom.net).
+I recorded a video walking through the integration as an example for my [Data Science class](https://cs533.ekstrandom.net).
 
 <iframe src="https://boisestate.hosted.panopto.com/Panopto/Pages/Embed.aspx?id=3ddd5f50-f4bf-4c27-94fb-ac4a0042ab0b&autoplay=false&offerviewer=true&showtitle=true&showbrand=false&start=0&interactivity=all" height="405" width="720" style="border: 1px solid #464646;" allowfullscreen allow="autoplay"></iframe>
 
@@ -53,7 +55,7 @@ I recorded a video walking through the integration as an example for my [Data Sc
 
 These tools are under the MIT license:
 
-> Copyright 2019-2020 Boise State University
+> Copyright 2019-2021 Boise State University
 >
 > Permission is hereby granted, free of charge, to any person obtaining a copy of
 > this software and associated documentation files (the "Software"), to deal in

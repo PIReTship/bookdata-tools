@@ -1,7 +1,7 @@
 <!doctype html>
 <html class="no-js">
   <head><meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1"/><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Downloading Source Data" href="sources.html" /><link rel="prev" title="Running the Tools" href="running.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1"/><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Configuring Data Storage" href="storage.html" /><link rel="prev" title="Using the Tools" href="index.html" />
 
     <meta name="generator" content="sphinx-3.5.2, furo 2021.02.28.beta28"/>
         <title>Setting Up the Environment - Book Data Tools documentation</title>
@@ -117,12 +117,14 @@
 </form><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul class="current">
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Using the Tools</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label for="toctree-checkbox-1"><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="running.html">Running the Tools</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Setting Up the Environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="storage.html">Configuring Data Storage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sources.html">Downloading Source Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="running.html">Running the Tools</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../data/index.html">Data Model</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label for="toctree-checkbox-2"><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../data/layout.html">Data Layout</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../data/ids.html">Common Identifiers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../data/loc.html">Library of Congress</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../data/openlib.html">OpenLibrary</a></li>
@@ -135,8 +137,7 @@
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../implementation/index.html">Design and Implementation</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/><label for="toctree-checkbox-3"><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../implementation/status.html">Status Tracking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../implementation/layout.html">Layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../implementation/layout.html">Code Layout</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../implementation/dataset.html">Design for Datasets</a></li>
 </ul>
 </li>
@@ -158,43 +159,22 @@
         </label>
         <div class="section" id="setting-up-the-environment">
 <h1>Setting Up the Environment<a class="headerlink" href="#setting-up-the-environment" title="Permalink to this headline">¶</a></h1>
-<p>These tools require PostgreSQL and an Anaconda installation.</p>
+<p>These tools require an Anaconda installation.  It is possible to use them without Anaconda, but we have provided
+the environment definitions to automate use with Anaconda.</p>
 <div class="section" id="system-requirements">
 <h2>System Requirements<a class="headerlink" href="#system-requirements" title="Permalink to this headline">¶</a></h2>
 <p>You will need:</p>
 <ul class="simple">
-<li><p>A PostgreSQL server with at least 500GB of disk space available for the database and ample RAM.</p></li>
-<li><p>An environment to save the raw files and run the import code.  This can be the same machine as the PostgreSQL server, but needs:</p>
-<ul>
 <li><p>Anaconda or Miniconda</p></li>
 <li><p>100GB of disk space for input files</p></li>
-<li><p>A few GB of memory</p></li>
-<li><p>Linux or macOS (since graph-tool isn’t built for Windows right now)</p></li>
+<li><p>Several GB of memory (lower limit not know; the code is known to run in 64GB of RAM; 16GB may be feasible)</p></li>
 </ul>
-</li>
-</ul>
-<p>The scripts don’t have substantial memory requirements, but do need a good deal of disk space.
-The most memory-intensive operation is the connected components computation for book clustering.</p>
-</div>
-<div class="section" id="postgresql-database">
-<h2>PostgreSQL Database<a class="headerlink" href="#postgresql-database" title="Permalink to this headline">¶</a></h2>
-<p>The book data tools require PostgreSQL (at least version 10), with the following extensions installed:</p>
-<ul class="simple">
-<li><p><a class="reference external" href="https://github.com/orafce/orafce">orafce</a></p></li>
-<li><p>PostgreSQL Contrib (specifically <code class="docutils literal notranslate"><span class="pre">pg_prewarm</span></code> and <code class="docutils literal notranslate"><span class="pre">uuid-ossp</span></code>)</p></li>
-</ul>
-<p>The database will take approximately 500GB.</p>
-<p>Create a database for the book data, e.g. <code class="docutils literal notranslate"><span class="pre">bookdata</span></code>, owned by the database user you will be using to run the data integration tools.  The tools will create various tables and schemas.</p>
-<p>Once you have created the database, run the following as the database superuser to enable the PostgreSQL extensions:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="n">EXTENSION</span> <span class="n">pg_prewarm</span><span class="p">;</span>
-<span class="k">CREATE</span> <span class="n">EXTENSION</span> <span class="n">orafce</span><span class="p">;</span>
-<span class="k">CREATE</span> <span class="n">EXTENSION</span> <span class="ss">"uuid-ossp"</span><span class="p">;</span>
-</pre></div>
-</div>
 </div>
 <div class="section" id="import-tool-dependencies">
 <h2>Import Tool Dependencies<a class="headerlink" href="#import-tool-dependencies" title="Permalink to this headline">¶</a></h2>
-<p>The import tools are written in Python and Rust.  The provided <code class="docutils literal notranslate"><span class="pre">environment.yml</span></code> file defines an Anaconda environment (named <code class="docutils literal notranslate"><span class="pre">bookdata</span></code> by default) that contains all required runtimes and libraries:</p>
+<p>The import tools are written in Python and Rust.  The provided <code class="docutils literal notranslate"><span class="pre">environment.yml</span></code> file defines an
+Anaconda environment (named <code class="docutils literal notranslate"><span class="pre">bookdata</span></code> by default) that contains all required runtimes and
+libraries:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>conda env create -f environment.yml
 conda activate bookdata
 </pre></div>
@@ -204,50 +184,19 @@ conda activate bookdata
 <h3>Python<a class="headerlink" href="#python" title="Permalink to this headline">¶</a></h3>
 <p>This needs the following Python dependencies:</p>
 <ul class="simple">
-<li><p>Python 3.6 or later</p></li>
-<li><p>psycopg2</p></li>
+<li><p>Python 3.8 or later</p></li>
 <li><p>numpy</p></li>
-<li><p>tqdm</p></li>
 <li><p>pandas</p></li>
-<li><p>colorama</p></li>
-<li><p>chromalog</p></li>
-<li><p>natural</p></li>
-<li><p>dvc (0.90 or later)</p></li>
-<li><p>sqlparse</p></li>
-<li><p>sqlalchemy</p></li>
+<li><p>seaborn</p></li>
+<li><p>dvc (2.0 or later)</p></li>
 </ul>
 </div>
 <div class="section" id="rust">
 <h3>Rust<a class="headerlink" href="#rust" title="Permalink to this headline">¶</a></h3>
-<p>The Rust tools need Rust version 1.40 or later.  The easiest way to install this — besides Anaconda — is with
+<p>The Rust tools need Rust version 1.55 or later.  The easiest way to install this — besides Anaconda — is with
 <a class="reference external" href="https://www.rust-lang.org/learn/get-started">rustup</a>.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">cargo</span></code> build tool will automatically download all Rust libraries required.  The Rust code does not depend on any specific system libraries.</p>
 </div>
-</div>
-<div class="section" id="database-configuration">
-<h2>Database Configuration<a class="headerlink" href="#database-configuration" title="Permalink to this headline">¶</a></h2>
-<p>All scripts read database configuration from the <code class="docutils literal notranslate"><span class="pre">DB_URL</span></code> environment variable, or alternately
-a config file <code class="docutils literal notranslate"><span class="pre">db.cfg</span></code>.  This file should look like:</p>
-<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[DEFAULT]</span>
-<span class="na">host</span> <span class="o">=</span> <span class="s">localhost</span>
-<span class="na">database</span> <span class="o">=</span> <span class="s">bookdata</span>
-<span class="na">user</span> <span class="o">=</span> <span class="s">user</span>
-<span class="na">password</span> <span class="o">=</span> <span class="s">password</span>
-</pre></div>
-</div>
-<p>This file additionally supports branch-specfic configuration sections that will apply to work
-on different Git branches, e.g.:</p>
-<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[DEFAULT]</span>
-<span class="na">host</span> <span class="o">=</span> <span class="s">localhost</span>
-<span class="na">database</span> <span class="o">=</span> <span class="s">bookdata</span>
-
-<span class="k">[master]</span>
-<span class="na">database</span> <span class="o">=</span> <span class="s">bdorig</span>
-</pre></div>
-</div>
-<p>This setup will use <code class="docutils literal notranslate"><span class="pre">bookdata</span></code> for most branches, but will connect to <code class="docutils literal notranslate"><span class="pre">bdorig</span></code> when working
-from the <code class="docutils literal notranslate"><span class="pre">master</span></code> branch in the git repository.</p>
-<p>This file should <strong>not</strong> be committed to Git.  It is ignored in <code class="docutils literal notranslate"><span class="pre">.gitignore</span></code>.</p>
 </div>
 </div>
 
@@ -255,23 +204,23 @@ from the <code class="docutils literal notranslate"><span class="pre">master</sp
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="sources.html">
+          <a class="next-page" href="storage.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Downloading Source Data</div>
+                <div class="title">Configuring Data Storage</div>
               </div>
               <svg><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="running.html">
+          <a class="prev-page" href="index.html">
               <svg><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Running the Tools</div>
+                <div class="title">Using the Tools</div>
                 
               </div>
             </a>
@@ -307,13 +256,11 @@ from the <code class="docutils literal notranslate"><span class="pre">master</sp
             <ul>
 <li><a class="reference internal" href="#">Setting Up the Environment</a><ul>
 <li><a class="reference internal" href="#system-requirements">System Requirements</a></li>
-<li><a class="reference internal" href="#postgresql-database">PostgreSQL Database</a></li>
 <li><a class="reference internal" href="#import-tool-dependencies">Import Tool Dependencies</a><ul>
 <li><a class="reference internal" href="#python">Python</a></li>
 <li><a class="reference internal" href="#rust">Rust</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#database-configuration">Database Configuration</a></li>
 </ul>
 </li>
 </ul>
