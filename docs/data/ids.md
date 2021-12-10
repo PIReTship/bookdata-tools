@@ -1,7 +1,5 @@
 ---
 title: Common Identifiers
-parent: Data Model
-nav_order: 1
 ---
 
 # Common Identifiers
@@ -10,9 +8,11 @@ There are two key identifiers that are used across data sets.
 
 ## ISBNs
 
-We use ISBNs for a lot of data linking.  In order to speed up ISBN-based operations, we map textual ISBNs to numeric 'ISBN IDs`.
+We use ISBNs for a lot of data linking.  In order to speed up ISBN-based
+operations, we map textual ISBNs to numeric 'ISBN IDs`.
 
-The `isbn_id` table manages ISBN IDs and their mappings:
+The `book-links/all-isbns.parquet` file manages ISBN IDs and their mappings,
+along with statistics about their usage in other records.
 
 | Column  | Purpose         |
 | ------- | --------------- |
@@ -21,7 +21,9 @@ The `isbn_id` table manages ISBN IDs and their mappings:
 
 Each type of ISBN (ISBN-10, ISBN-13) is considered a distinct ISBN. We also consider other ISBN-like things, particularly ASINs, to be ISBNs.
 
-Most derived tables that work with ISBNs use `isbn_id`s.
+Most other tables that work with ISBNs use `isbn_id`s.
+
+Additional fields in this table contain the number of records from different sources that reference this ISBN.
 
 ## Book Codes
 
