@@ -1,6 +1,5 @@
 ---
 title: Code Layout
-parent: Implementation
 ---
 
 # Code Layout
