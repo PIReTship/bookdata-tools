@@ -25,9 +25,3 @@ These goals are realized through a few technology and design decisions:
 - Make individual import stages self-contained and limited.
 - Extract data from raw sources into tabular form, *then* integrate as a separate step.
 - When feasible and performant, implement integration and processing steps with declarative SQL.
-
-## DVC Dependency Graph
-
-:::{image} /pipeline.svg
-:alt: DVC dependency graph
-:::
