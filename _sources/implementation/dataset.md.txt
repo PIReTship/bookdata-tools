@@ -1,6 +1,5 @@
 ---
 title: Dataset Design
-parent: Implementation
 ---
 
 # Design for Datasets
