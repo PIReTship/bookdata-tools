@@ -28,7 +28,6 @@ These goals are realized through a few technology and design decisions:
 
 ## DVC Dependency Graph
 
-![DVC Dep Graph](../pipeline.svg)
-
-- [SVG file](../pipeline.svg)
-- [GraphViz source](../pipeline.dot)
+:::{image} /pipeline.svg
+:alt: DVC dependency graph
+:::
