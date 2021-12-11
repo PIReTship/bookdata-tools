@@ -35,7 +35,7 @@ build (`cargo run` uses debug builds by default).  All DVC pipeline stages use `
 the Rust tools.
 
 For writing new commands, there is a lot of utility code under `src`.  Consult the
-[Rust API documentation](../apidocs/bookdata/) for further details.
+[Rust API documentation](/apidocs/bookdata/) for further details.
 
 The `bd-macros` directory contains the `TableRow` derive macro, because procedural macros cannot
 live in the same crate in which they are used.  Most users won't need to adjust this macro.

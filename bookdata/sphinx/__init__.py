@@ -3,14 +3,21 @@ Extension code for rendering the book data documentation using Sphinx.
 """
 
 from sphinx.application import Sphinx
+from docutils import nodes
 
 
-def missing_ref(app: Sphinx, env, node, contnode):
-    print('missing reference: ', node)
+def missing_ref(app: Sphinx, env, node, content):
+    tgt = node['reftarget']
+    if tgt.startswith('/apidocs/'):
+        # it's an API doc ref, let it go
+        node = nodes.reference('', '', internal=False)
+        node['refuri'] = tgt
+        node += content
+        return node
 
 
 def setup(app: Sphinx):
-    app.add_object_type('file', 'file', '%s', override=True)
+    app.add_object_type('file', 'file', 'data files; %s', override=True)
     app.connect('missing-reference', missing_ref)
 
     return {
