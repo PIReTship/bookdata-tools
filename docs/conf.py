@@ -27,7 +27,8 @@ extensions = [
 
 myst_enable_extensions = [
     'deflist',
-    'colon_fence'
+    'colon_fence',
+    'substitution',
 ]
 
 bibtex_bibfiles = [
