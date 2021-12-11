@@ -16,21 +16,24 @@ operations, we map textual ISBNs to numeric 'ISBN IDs`.
 
 :::{file} book-links/all-isbns.parquet
 
-The `book-links/all-isbns.parquet` file manages ISBN IDs and their mappings,
-along with statistics about their usage in other records.
+This file manages ISBN IDs and their mappings, along with statistics about their
+usage in other records.
 
 | Column  | Purpose         |
 | ------- | --------------- |
 | isbn_id | ISBN identifier |
 | isbn    | Textual ISBNs   |
 
-Each type of ISBN (ISBN-10, ISBN-13) is considered a distinct ISBN. We also consider other ISBN-like things, particularly ASINs, to be ISBNs.
+Each type of ISBN (ISBN-10, ISBN-13) is considered a distinct ISBN. We also
+consider other ISBN-like things, particularly ASINs, to be ISBNs.
+
+Additional fields in this table contain the number of records from different
+sources that reference this ISBN.
 :::
 
 Many other tables that work with ISBNs use ISBN IDs.
 
-Additional fields in this table contain the number of records from different sources that reference this ISBN.
-
+(book-codes)=
 ## Book Codes
 
 :::{index} book code, identifier; book
