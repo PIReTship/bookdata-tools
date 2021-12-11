@@ -5,6 +5,8 @@ Extension code for rendering the book data documentation using Sphinx.
 from sphinx.application import Sphinx
 from docutils import nodes
 
+from .rust import RustDomain
+
 
 def missing_ref(app: Sphinx, env, node, content):
     tgt = node['reftarget']
@@ -18,6 +20,7 @@ def missing_ref(app: Sphinx, env, node, content):
 
 def setup(app: Sphinx):
     app.add_object_type('file', 'file', 'data files; %s', override=True)
+    app.add_domain(RustDomain)
     app.connect('missing-reference', missing_ref)
 
     return {

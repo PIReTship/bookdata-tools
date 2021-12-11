@@ -53,9 +53,9 @@ can, if needed, derive the source from a book code.
 | ISBN         | `NS_ISBN`         | 900M     |
 
 
-The [`bookdata::ids::codes`](/apidocs/bookdata/ids/codes/) module contains the Rust API
-for working with these codes, converting identifiers into and out of them, and exposing
-them to DataFusion SQL.
+The {rust:mod}`bookdata::ids::codes` module contains the Rust API for working
+with these codes (including each of the namespace objects), converting
+identifiers into and out of them, and exposing them to DataFusion SQL.
 
 The LOC Work and Instance sources are not currently used; they are intended for
 future use when we are able to import BIBFRAME data from the Library of
