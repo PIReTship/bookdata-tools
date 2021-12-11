@@ -19,6 +19,7 @@ ogp_site_url = 'https://bookdata.piret.info'
 
 extensions = [
     'myst_parser',
+    'sphinx.ext.githubpages',
     'sphinxcontrib.bibtex',
     'sphinxext.opengraph',
     'bookdata.sphinx',
@@ -42,9 +43,9 @@ html_theme_options = {
 }
 html_baseurl = 'https://bookdata.piret.info'
 templates_path = ['_templates']
-html_extra_path = [
-    '_extra'
-]
+# html_extra_path = [
+#     '_extra'
+# ]
 
 
 class ChronoSort(BaseSortingStyle):
