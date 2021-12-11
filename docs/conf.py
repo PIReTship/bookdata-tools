@@ -15,10 +15,12 @@ copyright = '2020–2021 Boise State University'
 author = 'Michael D. Ekstrand'
 version = '2.0'
 release = version
+ogp_site_url = 'https://bookdata.piret.info'
 
 extensions = [
     'myst_parser',
     'sphinxcontrib.bibtex',
+    'sphinxext.opengraph',
     'bookdata.sphinx',
 ]
 
