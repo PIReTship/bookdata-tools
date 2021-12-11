@@ -6,6 +6,7 @@ title: Common Identifiers
 
 There are two key identifiers that are used across data sets.
 
+(isbn-id)=
 ## ISBNs
 
 We use ISBNs for a lot of data linking.  In order to speed up ISBN-based

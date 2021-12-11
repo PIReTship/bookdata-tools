@@ -15,6 +15,7 @@ class RustDomain(Domain):
         'mod': XRefRole(),
         'const': XRefRole(),
         'fn': XRefRole(),
+        'struct': XRefRole(),
     }
 
     uri_base = '/apidocs/'
@@ -27,6 +28,9 @@ class RustDomain(Domain):
 
         if typ == 'mod':
             uri = '/'.join(parts)
+        elif typ == 'struct':
+            uri = '/'.join(parts[:-1])
+            uri += f'/struct.{parts[-1]}.html'
 
         uri = self.uri_base + uri
 
