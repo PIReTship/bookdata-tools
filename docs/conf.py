@@ -1,8 +1,14 @@
 # -*- coding: utf-8 -*-
 
+from os import fspath
+from pathlib import Path
+import sys
 import pybtex.plugin
 from pybtex.style.sorting import BaseSortingStyle
 from pybtex.style.formatting import plain
+
+_root_dir = Path(__file__).parent.parent
+sys.path.insert(0, fspath(_root_dir))
 
 project = 'Book Data Tools'
 copyright = '2020–2021 Boise State University'
@@ -12,7 +18,8 @@ release = version
 
 extensions = [
     'myst_parser',
-    'sphinxcontrib.bibtex'
+    'sphinxcontrib.bibtex',
+    'bookdata.sphinx',
 ]
 
 myst_enable_extensions = [
