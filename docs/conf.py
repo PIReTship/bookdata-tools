@@ -21,7 +21,7 @@ extensions = [
     'myst_parser',
     'sphinx.ext.githubpages',
     'sphinxcontrib.bibtex',
-    'sphinxext.opengraph',
+    # 'sphinxext.opengraph',
     'bookdata.sphinx',
 ]
 
