@@ -95,7 +95,7 @@ produced by converting the ISBNs in {file}`loc-mds/book-isbns.parquet` into
 ISBN IDs.
 :::
 
-:::{file} `loc-mds/book-authors.parquet
+:::{file} loc-mds/book-authors.parquet
 
 Author names for book records.  This only extracts the primary author name (MARC field 100 subfield ‘a’).
 :::
