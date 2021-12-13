@@ -11,7 +11,6 @@ pub mod extract_graph;
 pub mod cluster_books;
 pub mod cluster;
 pub mod collect_isbns;
-pub mod rdf;
 pub mod amazon;
 pub mod openlib;
 pub mod goodreads;
@@ -75,25 +74,15 @@ pub enum BDCommand {
   Goodreads(goodreads::Goodreads),
   /// Commands for working with clusters.
   Cluster(ClusterCommandWrapper),
-  /// Commands for working with RDF data.
-  RDF(RDFCommandWrapper),
 }
 
 wrap_subcommands!(AmazonCommand);
 wrap_subcommands!(ClusterCommand);
-wrap_subcommands!(RDFCommand);
 
 #[enum_dispatch(Command)]
 #[derive(StructOpt, Debug)]
 enum AmazonCommand {
   ScanRatings(amazon::ScanRatings),
-}
-
-#[enum_dispatch(Command)]
-#[derive(StructOpt, Debug)]
-pub enum RDFCommand {
-  ScanNodes(rdf::ScanNodes),
-  ScanTriples(rdf::ScanTriples),
 }
 
 #[enum_dispatch(Command)]

@@ -15,7 +15,6 @@ pub mod ids;
 pub mod gender;
 pub mod graph;
 pub mod marc;
-pub mod rdf;
 pub mod openlib;
 pub mod amazon;
 pub mod goodreads;
