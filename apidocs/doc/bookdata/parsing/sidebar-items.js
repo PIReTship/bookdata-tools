@@ -1,1 +1,0 @@
-initSidebarItems({"fn":[["parse_opt","Parse a possibly-empty string into an option."],["trim_opt","Trim a string, and convert to None if it is empty."],["trim_owned","Trim a string, and convert to None if it is empty."]],"mod":[["bindata","Decoders for binary data types."],["combinators","Extra parsing combinators for Nom."],["dates",""]]});

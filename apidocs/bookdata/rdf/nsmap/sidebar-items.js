@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["NSMap","A namespace map for RDF contexts."]]});

@@ -1,1 +1,0 @@
-initSidebarItems({"constant":[["OUT_FILE",""],["UHASH_COL",""],["UID_COL",""],["USER_FILE",""]],"struct":[["IntRecord","GoodReads interaction records as actually written to the table."],["IntWriter",""],["RawInteraction",""]]});
