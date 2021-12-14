@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["EditionAuthorRec","Edition author record."],["EditionProcessor","Process edition records into Parquet."],["EditionRec","An edition row in the extracted Parquet."],["ISBNrec","Edition ISBN record."],["LinkRec","Link between edition and work."]]});

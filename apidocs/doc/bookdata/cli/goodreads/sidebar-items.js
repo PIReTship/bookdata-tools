@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["GRCmd",""],["GRScan",""]],"fn":[["scan_gr",""]],"struct":[["Goodreads","GoodReads processing commands."],["ScanInput",""]]});
