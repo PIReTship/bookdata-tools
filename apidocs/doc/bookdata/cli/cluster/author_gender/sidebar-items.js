@@ -1,1 +1,0 @@
-initSidebarItems({"fn":[["save_genders",""]],"mod":[["authors","Support for loading author info."],["clusters","Read cluster information."]],"struct":[["AuthorGender","Extract cluster author gender data from extracted book data."],["ClusterGenderInfo","Record format for saving gender information."]]});

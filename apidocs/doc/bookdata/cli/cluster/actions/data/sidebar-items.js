@@ -1,1 +1,0 @@
-initSidebarItems({"attr":[["async_trait",""]],"struct":[["RatingRow","Generic rating row usable by most data sources."]],"trait":[["Source","Trait for data sources."]]});
