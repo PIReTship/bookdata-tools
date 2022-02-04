@@ -79,3 +79,12 @@ These tools are under the MIT license:
 > COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 > IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 > CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+## Acknowledgments
+
+This material is based upon work supported by the National Science Foundation
+under Grant No. [IIS 17-51278](https://md.ekstrandom.net/research/career). Any
+opinions, findings, and conclusions or recommendations expressed in this
+material are those of the author(s) and do not necessarily reflect the views of
+the National Science Foundation.  This page has not been approved by Boise State
+University and does not reflect official university positions.
