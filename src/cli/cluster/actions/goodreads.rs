@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use datafusion::prelude::*;
-use datafusion::logical_plan::Expr;
+use datafusion::logical_plan::{Expr, ExprSchemable};
 use arrow::datatypes::*;
 
 use crate::prelude::*;
