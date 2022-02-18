@@ -153,9 +153,6 @@
 <span id="152">152</span>
 <span id="153">153</span>
 <span id="154">154</span>
-<span id="155">155</span>
-<span id="156">156</span>
-<span id="157">157</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Extract author information for book clusters.</span>
 <span class="kw">use</span> <span class="ident">std::path</span>::{<span class="ident">Path</span>, <span class="ident">PathBuf</span>};
 <span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
@@ -167,10 +164,8 @@
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>};
 
 <span class="kw">use</span> <span class="ident">datafusion::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">datafusion::physical_plan</span>::{<span class="ident">ExecutionPlan</span>, <span class="ident">execute_stream</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::arrow</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::arrow::fusion</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::arrow::row_de::RecordBatchDeserializer</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::cli::AsyncCommand</span>;
 <span class="kw">use</span> <span class="ident">async_trait::async_trait</span>;
@@ -206,11 +201,11 @@
 }
 
 <span class="doccomment">/// Write out author records to file, without duplicates.</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">write_authors_dedup</span><span class="op">&lt;</span><span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="ident">plan</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">ExecutionPlan</span><span class="op">&gt;</span>, <span class="ident">path</span>: <span class="ident">P</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">write_authors_dedup</span><span class="op">&lt;</span><span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="ident">df</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">DataFrame</span><span class="op">&gt;</span>, <span class="ident">path</span>: <span class="ident">P</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
   <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">writer</span> <span class="op">=</span> <span class="ident">TableWriter::open</span>(<span class="ident">path</span>)<span class="question-mark">?</span>;
 
   <span class="macro">info!</span>(<span class="string">&quot;scanning author batches&quot;</span>);
-  <span class="kw">let</span> <span class="ident">stream</span> <span class="op">=</span> <span class="ident">execute_stream</span>(<span class="ident">plan</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+  <span class="kw">let</span> <span class="ident">stream</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">execute_stream</span>().<span class="kw">await</span><span class="question-mark">?</span>;
   <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">last</span> <span class="op">=</span> <span class="ident">ClusterAuthor::default</span>();
   <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rec_stream</span> <span class="op">=</span> <span class="ident">RecordBatchDeserializer::for_stream</span>(<span class="ident">stream</span>);
   <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">row</span>) <span class="op">=</span> <span class="ident">rec_stream</span>.<span class="ident">next</span>().<span class="kw">await</span> {
@@ -307,8 +302,7 @@
       <span class="ident">col</span>(<span class="string">&quot;author_name&quot;</span>).<span class="ident">sort</span>(<span class="bool-val">true</span>, <span class="bool-val">true</span>)
       ])<span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">plan</span> <span class="op">=</span> <span class="ident">plan_df</span>(<span class="kw-2">&amp;mut</span> <span class="ident">ctx</span>, <span class="ident">authors</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="ident">write_authors_dedup</span>(<span class="ident">plan</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">output</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="ident">write_authors_dedup</span>(<span class="ident">authors</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">output</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
   }
