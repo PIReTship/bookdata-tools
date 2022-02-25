@@ -28,9 +28,21 @@ these tools.
 
 ## Running Everything
 
+The dependencies are declared in `pyproject.toml`, in a format suitable for use with
+[conda-lock][].  We provide lockfiles for Windows, macOS, and Linux; to create a Conda
+environment, run:
+
+    conda create -n bookdata --file conda-linux-64.lock
+
 You can run the entire import process with:
 
     dvc repro
+
+To regenerate or update the lockfiles, run:
+
+    conda-lock lock --mamba -f pyproject.toml
+
+[conda-lock]: https://github.com/conda-incubator/conda-lock/
 
 ## Copyright and Acknowledgements
 
