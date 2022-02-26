@@ -1,1 +1,0 @@
-initSidebarItems({"enum":[["ParseCodeError","Error parsing a code"]],"struct":[["Code","An indicator or subfield code."],["ControlField","A control field (00X) in a MARC record."],["Field","A field in a MARC record."],["MARCRecord","A MARC record."],["Subfield","A subfield in a MARC record."]]});

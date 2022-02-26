@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["BookIds","Structure recording book identifiers from a MARC field."],["BookOutput","Output that writes books to set of Parquet files."],["ISBNrec","Structure recording an ISBN record from a book."]]});

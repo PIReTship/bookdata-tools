@@ -17,11 +17,11 @@ You will need:
 
 ## Import Tool Dependencies
 
-The import tools are written in Python and Rust.  The provided `environment.yml` file defines an
-Anaconda environment (named `bookdata` by default) that contains all required runtimes and
-libraries:
+The import tools are written in Python and Rust.  The provided Conda lockfiles,
+along with `pyproject.toml, provide the data to define an Anaconda environment
+that contains all required runtimes and libraries:
 
-    conda env create -f environment.yml
+    conda create -n bookdata --file conda-linux-64.lock
     conda activate bookdata
 
 If you don't want to use Anaconda, see the following for more details on dependencies.
@@ -38,9 +38,17 @@ This needs the following Python dependencies:
 - jupytext
 - dvc (2.0 or later)
 
+The Python dependencies are defined in `pyproject.toml`.
+
 ### Rust
 
-The Rust tools need Rust version 1.55 or later.  The easiest way to install this — besides Anaconda — is with
+The Rust tools need Rust version 1.59 or later.  The easiest way to install this — besides Anaconda — is with
 [rustup](https://www.rust-lang.org/learn/get-started).
 
 The `cargo` build tool will automatically download all Rust libraries required.  The Rust code does not depend on any specific system libraries.
+
+### Regenerating Lockfiles
+
+If you update dependencies, you can re-generate the Conda lockfiles with `conda-lock`:
+
+    conda-lock lock --mamba -f pyproject.toml
