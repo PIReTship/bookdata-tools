@@ -25,7 +25,7 @@ impl GraphBuilder {
     info!("scanning vertices from {:?}", src);
     let node_df = src.read_node_ids(&mut self.ctx).await?;
     let plan = plan_df(&mut self.ctx, node_df).await?;
-    let batches = execute_stream(plan).await?;
+    let batches = execute_stream(plan, self.ctx.runtime_env()).await?;
     let ninit = self.nodes.len();
 
     let mut iter = RecordBatchDeserializer::for_stream(batches);
@@ -45,7 +45,7 @@ impl GraphBuilder {
     info!("scanning edges from {:?}", src);
     let edge_df = src.read_edges(&mut self.ctx).await?;
     let plan = plan_df(&mut self.ctx, edge_df).await?;
-    let batches = execute_stream(plan).await?;
+    let batches = execute_stream(plan, self.ctx.runtime_env()).await?;
     let mut iter = RecordBatchDeserializer::for_stream(batches);
     let mut n = 0;
 

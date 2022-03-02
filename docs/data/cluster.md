@@ -4,6 +4,7 @@ parent: Data Model
 nav_order: 8
 ---
 
+(cluster)=
 # Book Clusters
 
 For recommendation and analysis, we often want to look at *works* instead of individual books or

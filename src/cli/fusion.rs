@@ -4,6 +4,7 @@ use std::fs::{File, read_to_string};
 use std::future::Future;
 use std::sync::Arc;
 
+use futures::stream::{StreamExt};
 use tokio;
 use tokio::runtime::Runtime;
 
@@ -12,12 +13,13 @@ use crate::arrow::fusion::*;
 
 use flate2::write::GzEncoder;
 use molt::*;
+use arrow::record_batch::RecordBatch;
 use parquet::basic::Compression;
 use parquet::file::properties::WriterProperties;
 use parquet::arrow::ArrowWriter;
 use arrow::util::pretty::pretty_format_batches;
 use datafusion::prelude::*;
-use datafusion::physical_plan::{ExecutionPlan};
+use datafusion::physical_plan::{ExecutionPlan, execute_stream};
 
 /// Run a DataFusion script and save its results.
 ///
@@ -48,6 +50,22 @@ impl ScriptContext {
   }
 }
 
+/// Save an execution plan to a writer.
+async fn write_plan_results<W>(ctx: &ExecutionContext, plan: Arc<dyn ExecutionPlan>, mut out: W) -> Result<()>
+  where W: for <'a> ObjectWriter<&'a RecordBatch>
+{
+  let runtime = ctx.runtime_env();
+  let mut batches = execute_stream(plan, runtime).await?;
+  while let Some(batch) = batches.next().await {
+    let batch = batch?;
+    out.write_object(&batch)?;
+  }
+
+  out.finish()?;
+
+  Ok(())
+}
+
 /// Save an execution plan results to a Parquet directory.
 ///
 /// The weird lifetime on this function is to handle using a reference in an asynchonous function.
@@ -66,9 +84,8 @@ fn save_parquet<'x>(ctx: &'x ExecutionContext, plan: Arc<dyn ExecutionPlan>, fil
       ctx.write_parquet(plan, file.to_owned(), Some(props)).await?;
     } else {
       let file = File::create(file)?;
-      let mut write = ArrowWriter::try_new(file, plan.schema(), Some(props))?;
-      eval_to_parquet(&mut write, plan).await?;
-      write.close()?;
+      let write = ArrowWriter::try_new(file, plan.schema(), Some(props))?;
+      write_plan_results(ctx, plan, write).await?;
     }
 
     Ok(())
@@ -76,20 +93,20 @@ fn save_parquet<'x>(ctx: &'x ExecutionContext, plan: Arc<dyn ExecutionPlan>, fil
 }
 
 /// Save an execution plan results to a CSV file.
-async fn save_csv(plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
+async fn save_csv(ctx: &ExecutionContext, plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
   info!("saving to CSV file");
   // take ownership of the filename string
   let file = file.to_string();
 
   // set up the output
   let out = File::create(file)?;
-  let mut csvw = arrow::csv::WriterBuilder::new().has_headers(true).build(out);
+  let csvw = arrow::csv::WriterBuilder::new().has_headers(true).build(out);
+  write_plan_results(ctx, plan, csvw).await?;
 
-  eval_to_csv(&mut csvw, plan).await?;
   Ok(())
 }
 
-async fn save_csvgz(plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
+async fn save_csvgz(ctx: &ExecutionContext, plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
   info!("saving to compressed CSV file");
   // take ownership of the filename string
   let file = file.to_string();
@@ -97,9 +114,9 @@ async fn save_csvgz(plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
   // set up the output
   let out = File::create(file)?;
   let out = GzEncoder::new(out, flate2::Compression::best());
-  let mut csvw = arrow::csv::WriterBuilder::new().has_headers(true).build(out);
+  let csvw = arrow::csv::WriterBuilder::new().has_headers(true).build(out);
+  write_plan_results(ctx, plan, csvw).await?;
 
-  eval_to_csv(&mut csvw, plan).await?;
   Ok(())
 }
 
@@ -170,9 +187,9 @@ fn cmd_save_results(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> Molt
     if file.ends_with(".parquet") {
       save_parquet(&ctx.df_context, plan, file, partitioned).await?;
     } else if file.ends_with(".csv") {
-      save_csv(plan, file).await?;
+      save_csv(&ctx.df_context, plan, file).await?;
     } else if file.ends_with(".csv.gz") {
-      save_csvgz(plan, file).await?;
+      save_csvgz(&ctx.df_context, plan, file).await?;
     } else {
       return Err(anyhow!("unknown suffix in file {}", file));
     }

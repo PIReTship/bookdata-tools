@@ -11,7 +11,9 @@ Parquet files with raw data in a more usable form, various useful extracted feat
 identifiers across the various data sources for cross-linking.  These tools are updated from the
 version used to support our original paper; we have dropped PostgreSQL in favor of a pipeline
 implemented with DVC, Rust, and DataFusion that is more efficient (integration times have dropped
-from 8 hours to less than 3) and requires significantly less disk space.
+from 8 hours to less than 3) and requires significantly less disk space.[^bftag]
+
+[^bftag]: The original tools are available on the `before-fusion` tag in the Git repository.
 
 If you use these scripts in any published research, cite [our paper][paper] ([PDF][]):
 
@@ -23,10 +25,12 @@ If you use these scripts in any published research, cite [our paper][paper] ([PD
 We also ask that you contact Michael Ekstrand to let us know about your use of the data, so we can
 include your paper in our list of relying publications.
 
-**Note:** the limitations section of the paper contains important information about
+:::{note}
+The limitations section of the paper contains important information about
 the limitations of the data these scripts compile.  **Do not use the gender information
 in this data data or tools without understanding those limitations**.  In particular,
 VIAF's gender information is incomplete and, in a number of cases, incorrect.
+:::
 
 In addition, several of the data sets integrated by this project come from other sources
 with their own publications.  **If you use any of the rating or interaction data, cite the
@@ -42,6 +46,8 @@ using/index
 data/index
 implementation/index
 papers
+genindex
+Rust API <https://bookdata.piret.info/apidocs/bookdata/index.html>
 GitHub repository <https://github.com/BoiseState/bookdata-tools>
 ```
 
@@ -73,3 +79,12 @@ These tools are under the MIT license:
 > COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 > IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 > CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+## Acknowledgments
+
+This material is based upon work supported by the National Science Foundation
+under Grant No. [IIS 17-51278](https://md.ekstrandom.net/research/career). Any
+opinions, findings, and conclusions or recommendations expressed in this
+material are those of the author(s) and do not necessarily reflect the views of
+the National Science Foundation.  This page has not been approved by Boise State
+University and does not reflect official university positions.

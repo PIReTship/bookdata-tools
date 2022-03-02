@@ -8,39 +8,31 @@ One of our sources of book data is the Library of Congress [MDSConnect Books](ht
 
 We download and import the XML versions of these files.
 
-Imported data lives under the `locmds` schema.
+:::{index} pair: directory; loc-mds
+:::
 
-## Data Model Diagram
-
-![LOC data model](loc.svg)
-
-- [SVG file](loc.svg)
-- [PlantUML source](loc.puml)
+Imported data lives under the `loc-mds` directory.
 
 ## Import Steps
 
 The import is controlled by the following DVC steps:
 
-`schemas/loc-mds-schema.dvc`
-:   Run `loc-mds-schema.sql` to set up the base schema.
+`scan-books`
+:   Scan the book MARC data from `data/loc-books` into Parquet files (described in [book data](loc-mds-raw)).
 
-`import/loc-mds-books.dvc`
-:   Import raw MARC data from `data/loc-books/`.
+`book-isbn-ids`
+:   Resolve ISBNs from LOC books into [ISBN IDs](isbn-id), producing {file}`loc-mds/book-isbn-ids.parquet`.
 
-`import/loc-mds-extract-isbns.dvc`
-:   Parse ISBNs from LOC ISBN records.
+`book-authors`
+:   Extract (and clean up) author names for LOC books.
 
-`index/loc-mds-index-books.dvc`
-:   Run `loc-mds-index-books.sql` to index the book data and extract tables.
+`loc-clusters`
+:   Resolve LOC books into [book clusters](clusters), producing {file}`loc-mds/loc-clusters.parquet`.
 
-`index/loc-mds-book-info.dvc`
-:   Run `loc-mds-book-info.sql` to extract additional book data into tables.
+(marc-format)=
+## Raw MARC data
 
-## Raw Book Data
-
-The `locmds.book_marc_fields` table contains the raw data imported from the MARC files, as MARC fields.  The LOC book data follows the [MARC 21 Bibliographic Data format](https://www.loc.gov/marc/bibliographic/); the various tags, field codes, and indicators are defined there.  This table is not terribly useful on its own, but it is the source from which the other tables are derived.
-
-It has the following columns:
+When importing MARC data, we create a “fields” file that contains the data exactly as recorded in MARC. We then process this data to produce additional files.  One of these MARC field files contains the following columns (defined by {rust:struct}`bookdata::marc::flat_fields::FieldRecord`):
 
 `rec_id`
 :   The record identifier (generated at import)
@@ -50,7 +42,7 @@ It has the following columns:
     containing data from MARC subfields will share a `fld_no` with their containing field.
 
 `tag`
-:   The MARC tag; either a three-digit number, or `LDR` for the MARC leader.
+:   The MARC tag; either a three-digit number, or -1 for the MARC leader.
 
 `ind1`, `ind2`
 :   MARC indicators.  Their meanings are defined in the MARC specification.
@@ -63,40 +55,47 @@ It has the following columns:
 
 ## Extracted Book Tables
 
-We then extract a number of tables and views from this MARC data.  These tables include:
+We extract a number of tables from the LOC MDS book data. These tables only
+contain information about actual “books” in the collection, as opposed to other
+types of materials.  We consider a book to be anything that has MARC record type
+‘a’ or ‘t’ (language material), and is not also classified as a government
+record in MARC field 008.
 
-`book_record_info`
-:   Code information for each book record.
+:::{file} loc-mds/book-fields.parquet
 
-    - MARC Control Number
-    - Library of Congress Control Number (LCCN)
-    - Record status
-    - Record type
-    - Bibliographic level
+The `book-fields` table contains the raw data imported from the MARC files, as ][MARC fields](marc-format).  The LOC book data follows the [MARC 21 Bibliographic Data format](https://www.loc.gov/marc/bibliographic/); the various tags, field codes, and indicators are defined there.  This table is not terribly useful on its own, but it is the source from which the other tables are derived.
+:::
 
-    More information about the last three is in the [leader specification](https://www.loc.gov/marc/bibliographic/bdleader.html).
+:::{file} loc-mds/book-ids.parquet
 
-`book`
-:   A subset of `book_record_info` intended to capture the actual books in the collection,
-    as opposed to other types of materials.  We consider a book to be anything that has MARC
-    record type ‘a’ or ‘t’ (language material), and is not also classified as a government
-    record in MARC field 008.
+This table includes code information for each book record.
 
-`book_extracted_isbn`
-:   Textual ISBNs as extracted from LOC records.  The actual ISBN strings (tag 020 subfield ‘a’) are
-    quite messy; the Rust program `parse-isbns` parses out ISBNs, along with additional tags or
-    descriptors, from the ISBN strings using a number of best-effort heuristics.  This table contains
-    the results of that process.
+- MARC Control Number
+- Library of Congress Control Number (LCCN)
+- Record status
+- Record type
+- Bibliographic level
 
-`book_rec_isbn`
-:   Map book records to their ISBNs.
+More information about the last three is in the [leader specification](https://www.loc.gov/marc/bibliographic/bdleader.html).  This file's schema is defined by {rust:struct}`bookdata::marc::book_fields::BookIds`.
+:::
 
-`book_author_name`
-:   Author names for book records.  This only extracts the primary author name (MARC field 100
-    subfield ‘a’).
+:::{file} loc-mds/book-isbns.parquet
 
-`book_pub_year`
-:   Book publication year (MARC field 260 subfield ‘c’).
+Textual ISBNs as extracted from LOC records.  The actual ISBN strings (tag 020
+subfield ‘a’) are quite messy; the parser in {rust:mod}`bookdata::cleaning::isbns` parses out ISBNs,
+along with additional tags or descriptors, from the ISBN strings using a number
+of best-effort heuristics. This table contains the results of that process.
+It is defined by {rust:struct}`bookdata::marc::book_fields::ISBNrec`.
+:::
 
-`book_title`
-:   Book title (MARC field 245 subfield ‘a’).
+:::{file} loc-mds/book-isbn-ids.parquet
+
+Map book records (LOC book `rec_id` values) to [ISBN IDs](isbn-id). It is
+produced by converting the ISBNs in {file}`loc-mds/book-isbns.parquet` into
+ISBN IDs.
+:::
+
+:::{file} loc-mds/book-authors.parquet
+
+Author names for book records.  This only extracts the primary author name (MARC field 100 subfield ‘a’).
+:::

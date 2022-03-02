@@ -1,11 +1,10 @@
 //! Helpers for DataFusion.
-use std::io::Write;
 use std::sync::Arc;
 
 use lazy_static::lazy_static;
 use log::*;
 
-use futures::stream::{Stream, StreamExt};
+use futures::stream::{Stream};
 use serde::de::DeserializeOwned;
 
 use anyhow::Result;
@@ -13,15 +12,12 @@ use anyhow::Result;
 use arrow::datatypes::*;
 use arrow::array::*;
 use datafusion::prelude::*;
-use datafusion::physical_plan::execute_stream;
 use datafusion::physical_plan::functions::{make_scalar_function, Signature, Volatility};
 use datafusion::physical_plan::udf::ScalarUDF;
 use datafusion::physical_plan::ColumnarValue;
 use datafusion::physical_plan::ExecutionPlan;
 use datafusion::logical_plan::Expr;
 use datafusion::error::{Result as FusionResult, DataFusionError};
-use parquet::arrow::ArrowWriter;
-use parquet::file::writer::ParquetWriter;
 
 use crate::ids::codes;
 use crate::cleaning::strings::norm_unicode;
@@ -29,7 +25,7 @@ use super::row_de::RecordBatchDeserializer;
 
 /// Log basic info about an execution context.
 pub fn log_exc_info(exc: &ExecutionContext) -> Result<()> {
-  let state = exc.state.lock().expect("mutex fail");
+  let state = exc.state.lock();
   debug!("catalogs: {:?}", state.catalog_list.catalog_names());
   let cp = state.catalog_list.catalog("datafusion").unwrap();
   debug!("schemas in datafusion: {:?}", cp.schema_names());
@@ -37,26 +33,6 @@ pub fn log_exc_info(exc: &ExecutionContext) -> Result<()> {
   info!("have {} registered tables", tables.len());
   for t in &tables {
     debug!("table: datafusion.public.{}", t);
-  }
-  Ok(())
-}
-
-/// Evaluate a DataFusion plan to a CSV file.
-pub async fn eval_to_csv<W: Write>(out: &mut arrow::csv::Writer<W>, plan: Arc<dyn ExecutionPlan>) -> Result<()> {
-  let mut batches = execute_stream(plan).await?;
-  while let Some(batch) = batches.next().await {
-    let batch = batch?;
-    out.write(&batch)?;
-  }
-  Ok(())
-}
-
-/// Evaluate a DataFusion plan to a Parquet file.
-pub async fn eval_to_parquet<W: ParquetWriter + 'static>(out: &mut ArrowWriter<W>, plan: Arc<dyn ExecutionPlan>) -> Result<()> {
-  let mut batches = execute_stream(plan).await?;
-  while let Some(batch) = batches.next().await {
-    let batch = batch?;
-    out.write(&batch)?;
   }
   Ok(())
 }
@@ -70,11 +46,10 @@ pub async fn plan_df(ctx: &mut ExecutionContext, df: Arc<dyn DataFrame>) -> Resu
 }
 
 /// Deserialize rows of a data frame as a stream.
-pub async fn df_rows<R>(ctx: &mut ExecutionContext, df: Arc<dyn DataFrame>) -> Result<impl Stream<Item=Result<R>>>
+pub async fn df_rows<R>(df: Arc<dyn DataFrame>) -> Result<impl Stream<Item=Result<R>>>
 where R: DeserializeOwned
 {
-  let plan = plan_df(ctx, df).await?;
-  let stream = execute_stream(plan).await?;
+  let stream = df.execute_stream().await?;
   Ok(RecordBatchDeserializer::for_stream(stream))
 }
 

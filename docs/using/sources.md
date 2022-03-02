@@ -1,6 +1,5 @@
 ---
 title: Source Data
-parent: Importing
 ---
 
 # Downloading Source Data

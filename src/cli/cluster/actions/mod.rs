@@ -45,7 +45,7 @@ async fn scan_and_save<S: Source>(src: S, ctx: &mut ExecutionContext, dst: &Path
   let mut dedup = src.make_dedup();
 
   let mut timer = Timer::builder().label("scanning ratings").interval(5.0).build();
-  let mut rows = df_rows(ctx, source).await?;
+  let mut rows = df_rows(source).await?;
   info!("scanning ratings for deduplication");
   while let Some(row) = rows.next().await {
     let row: S::Act = row?;

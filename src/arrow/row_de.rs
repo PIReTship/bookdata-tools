@@ -37,7 +37,7 @@ use serde::de::{
   DeserializeSeed,
 };
 
-/// Error raised by row deserialization
+/// Error type raised by row deserialization failures.
 #[derive(Error, Debug)]
 pub enum RowError {
   #[error("Serde decode error {0}")]

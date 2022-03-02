@@ -9,10 +9,8 @@ use futures::{StreamExt};
 use serde::{Serialize, Deserialize};
 
 use datafusion::prelude::*;
-use datafusion::physical_plan::{ExecutionPlan, execute_stream};
 use crate::prelude::*;
 use crate::arrow::*;
-use crate::arrow::fusion::*;
 use crate::arrow::row_de::RecordBatchDeserializer;
 use crate::cli::AsyncCommand;
 use async_trait::async_trait;
@@ -48,11 +46,11 @@ struct ClusterAuthor {
 }
 
 /// Write out author records to file, without duplicates.
-async fn write_authors_dedup<P: AsRef<Path>>(plan: Arc<dyn ExecutionPlan>, path: P) -> Result<()> {
+async fn write_authors_dedup<P: AsRef<Path>>(df: Arc<dyn DataFrame>, path: P) -> Result<()> {
   let mut writer = TableWriter::open(path)?;
 
   info!("scanning author batches");
-  let stream = execute_stream(plan).await?;
+  let stream = df.execute_stream().await?;
   let mut last = ClusterAuthor::default();
   let mut rec_stream = RecordBatchDeserializer::for_stream(stream);
   while let Some(row) = rec_stream.next().await {
@@ -149,8 +147,7 @@ impl AsyncCommand for ClusterAuthors {
       col("author_name").sort(true, true)
       ])?;
 
-    let plan = plan_df(&mut ctx, authors).await?;
-    write_authors_dedup(plan, &self.output).await?;
+    write_authors_dedup(authors, &self.output).await?;
 
     Ok(())
   }

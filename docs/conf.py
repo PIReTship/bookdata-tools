@@ -1,21 +1,34 @@
 # -*- coding: utf-8 -*-
 
+from os import fspath
+from pathlib import Path
+import sys
 import pybtex.plugin
 from pybtex.style.sorting import BaseSortingStyle
 from pybtex.style.formatting import plain
 
+_root_dir = Path(__file__).parent.parent
+sys.path.insert(0, fspath(_root_dir))
+
 project = 'Book Data Tools'
 copyright = '2020–2021 Boise State University'
 author = 'Michael D. Ekstrand'
+version = '2.0'
+release = version
+ogp_site_url = 'https://bookdata.piret.info'
 
 extensions = [
     'myst_parser',
-    'sphinxcontrib.bibtex'
+    'sphinx.ext.githubpages',
+    'sphinxcontrib.bibtex',
+    # 'sphinxext.opengraph',
+    'bookdata.sphinx',
 ]
 
 myst_enable_extensions = [
     'deflist',
-    'colon_fence'
+    'colon_fence',
+    'substitution',
 ]
 
 bibtex_bibfiles = [
@@ -31,9 +44,9 @@ html_theme_options = {
 }
 html_baseurl = 'https://bookdata.piret.info'
 templates_path = ['_templates']
-html_extra_path = [
-    '_extra'
-]
+# html_extra_path = [
+#     '_extra'
+# ]
 
 
 class ChronoSort(BaseSortingStyle):

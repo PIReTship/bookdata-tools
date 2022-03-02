@@ -1,9 +1,12 @@
 ---
 title: Dataset Design
-parent: Implementation
 ---
 
 # Design for Datasets
+
+:::{note}
+This document is not up-to-date.
+:::
 
 The general import philosophy is that we scan raw data from underlying data sets into a tabular
 form, and then integrate it with further code; when an integration stage can be written as a
