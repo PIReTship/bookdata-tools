@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["RatingRow","Structure for scanned ratings."],["SourceRating","A rating as described in a source CSV file."]]});
