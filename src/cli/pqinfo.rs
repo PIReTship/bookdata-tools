@@ -7,6 +7,7 @@ use std::fmt::Debug;
 use serde::Serialize;
 use serde_json::Value;
 
+use arrow::datatypes::Schema;
 use parquet::arrow::parquet_to_arrow_schema;
 use parquet::file::reader::{SerializedFileReader, FileReader};
 use friendly::{bytes, scalar};
@@ -33,7 +34,7 @@ struct InfoStruct {
   row_count: i64,
   file_size: u64,
   #[serde(flatten)]
-  schema: Value,
+  schema: Schema,
 }
 
 impl Command for PQInfo {
@@ -63,7 +64,7 @@ impl Command for PQInfo {
       let info = InfoStruct {
         row_count: file_meta.num_rows(),
         file_size: fmeta.len(),
-        schema: arrow_schema.to_json(),
+        schema: arrow_schema,
       };
 
       serde_json::to_writer_pretty(&mut out, &info)?;
