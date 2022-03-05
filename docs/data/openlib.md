@@ -12,29 +12,24 @@ their [developer dumps](https://openlibrary.org/developers/dumps).
 The DVC control files automatically download the appropriate version.  The version can be
 updated by modifying the `data/ol_dump_*.txt.gz.dvc` files.
 
-Imported data lives in the `ol` schema.
+:::{index} pair: directory; openlibrary
+:::
+
+Imported data lives under the `openlibrary` directory.
 
 ## Import Steps
 
 The import is controlled by the following DVC steps:
 
-`schemas/ol-schema.dvc`
-:   Run `ol-schema.sql` to set up the base schema.
+`scan-*`
+:   The various `scan-*` stages (e.g. `scan-authors`) scan an OpenLibrary JSON file into the
+    resulting Parquet files.  There are dependencies, to resolve OpenLibrary keys to numeric
+    identifiers for cross-referencing.  These scan stages do not currently extract all available
+    data from the OpenLibrary JSON; they only extract the fields we currently use, and need to
+    be extended to extract and save additional fields.
 
-`import/ol-works.dvc`
-:   Import raw OpenLibrary works from `data/ol_dump_works.txt.gz`.
-
-`import/ol-editions.dvc`
-:   Import raw OpenLibrary editions from `data/ol_dump_editions.txt.gz`.
-
-`import/ol-authors.dvc`
-:   Import raw OpenLibrary authors from `data/ol_dump_authors.txt.gz`.
-
-`index/ol-index.dvc`
-:   Run `ol-index.sql` to index the book data and extract tables.
-
-`index/ol-book-info.dvc`
-:   Run `ol-book-info.sql` to extract additional book data into tables.
+`edition-isbn-ids`
+:   Convert edition ISBNs into [ISBN IDs](isbn-id), producing {file}`openlib/edition-isbn-ids.parquet`.
 
 ## Raw Data
 
@@ -94,6 +89,12 @@ We extract the following tables from OpenLibrary works:
 
 ## Extracted Author Tables
 
-`author_name`
-:   The names for each author.  An author may have more than one listed name; this extracts
-    all of them.
+:::{file} openlibrary/authors.parquet
+
+This file contains basic information about OpenLibrary authors.
+:::
+
+:::{file} openlibrary/author-names.parquet
+
+This file contains the names associated with each author in {file}`openlibrary/authors.parquet`.
+:::
