@@ -14,6 +14,7 @@ pub mod collect_isbns;
 pub mod amazon;
 pub mod openlib;
 pub mod goodreads;
+pub mod pqinfo;
 
 use std::env;
 use log::*;
@@ -74,6 +75,7 @@ pub enum BDCommand {
   Goodreads(goodreads::Goodreads),
   /// Commands for working with clusters.
   Cluster(ClusterCommandWrapper),
+  PQInfo(pqinfo::PQInfo),
 }
 
 wrap_subcommands!(AmazonCommand);
