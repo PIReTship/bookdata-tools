@@ -5,7 +5,6 @@ use std::fs::File;
 use std::fmt::Debug;
 
 use serde::Serialize;
-use serde_json::Value;
 
 use arrow::datatypes::Schema;
 use parquet::arrow::parquet_to_arrow_schema;
