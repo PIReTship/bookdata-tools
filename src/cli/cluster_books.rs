@@ -166,7 +166,7 @@ impl AsyncCommand for ClusterBooks {
       clusters: clusters.len(),
       largest: m_size,
     };
-    let statf = File::create("book-links/cluster-stats.json")?;
+    let statf = File::create("book-links/cluster-metrics.json")?;
     serde_json::to_writer(statf, &stats)?;
 
     Ok(())

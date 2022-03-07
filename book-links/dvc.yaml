@@ -34,7 +34,7 @@ stages:
     - book-links/cluster-graph-edges.parquet
     - book-links/book-graph.mp.zst
     metrics:
-    - book-links/cluster-stats.json
+    - book-links/cluster-metrics.json
 
   cluster-ol-first-authors:
     cmd: python run.py --rust cluster extract-authors -o book-links/cluster-ol-first-authors.parquet
@@ -111,6 +111,22 @@ stages:
     - isbn-clusters.parquet
     outs:
     - cluster-hashes.parquet
+
+  schema:
+    foreach:
+    - all-isbns
+    - isbn-clusters
+    - cluster-stats
+    - cluster-first-authors
+    - cluster-genders
+    - cluster-hashes
+    do:
+      cmd: python ../run.py --rust pq-info -o ${item}.json ${item}.parquet
+      deps:
+      - ${item}.parquet
+      outs:
+      - ${item}.json:
+          cache: false
 
   # debug-graph:
   #   cmd: python ./run.py --rust extract-graph --cluster ${debug.cluster} -o book-links/debug-graph.gml
