@@ -21,8 +21,7 @@ The import tools are written in Python and Rust.  The provided Conda lockfiles,
 along with `pyproject.toml, provide the data to define an Anaconda environment
 that contains all required runtimes and libraries:
 
-    conda install -c conda-forge conda-lock
-    conda-lock install -n bookdata --file conda-lock.yml
+    conda create -n bookdata --file conda-lock.yml
     conda activate bookdata
 
 If you don't want to use Anaconda, see the following for more details on dependencies.
