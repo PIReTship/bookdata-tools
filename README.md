@@ -32,7 +32,7 @@ The dependencies are declared in `pyproject.toml`, in a format suitable for use 
 [conda-lock][].  We provide lockfiles for Windows, macOS, and Linux; to create a Conda
 environment, run:
 
-    conda create -n bookdata --file conda-linux-64.lock
+    conda-lock install -n bookdata conda-lock.yml
 
 You can run the entire import process with:
 
@@ -46,8 +46,9 @@ To regenerate or update the lockfiles, run:
 
 ## Copyright and Acknowledgements
 
-Copyright &copy; 2020 Boise State University.  Distributed under the MIT License; see LICENSE.md.
-This material is based upon work supported by the National Science Foundation under
-Grant No. IIS 17-51278. Any opinions, findings, and conclusions or recommendations
-expressed in this material are those of the author(s) and do not necessarily reflect
-the views of the National Science Foundation.
+Copyright ⓒ 2020–2022 Boise State University.  Distributed under the MIT
+License; see LICENSE.md. This material is based upon work supported by the
+National Science Foundation under Grant No. IIS 17-51278. Any opinions,
+findings, and conclusions or recommendations expressed in this material are
+those of the author(s) and do not necessarily reflect the views of the National
+Science Foundation.
