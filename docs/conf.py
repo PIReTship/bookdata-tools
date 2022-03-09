@@ -22,6 +22,7 @@ extensions = [
     'sphinx.ext.githubpages',
     'sphinxcontrib.bibtex',
     # 'sphinxext.opengraph',
+    'sphinxcontrib.mermaid',
     'bookdata.sphinx',
 ]
 
