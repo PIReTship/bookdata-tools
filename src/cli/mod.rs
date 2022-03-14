@@ -24,6 +24,7 @@ use anyhow::Result;
 use tokio::runtime::Runtime;
 use enum_dispatch::enum_dispatch;
 use async_trait::async_trait;
+use cpu_time::ProcessTime;
 use pretty_env_logger::formatted_timed_builder;
 
 #[cfg(unix)]
@@ -153,6 +154,11 @@ impl CLI {
     lb.try_init()?;
 
     let res = self.command.exec();
+
+    match ProcessTime::try_now() {
+      Ok(pt) => info!("used {} CPU time", friendly::duration(pt.as_duration())),
+      Err(e) => error!("error fetching CPU time: {}", e)
+    };
     #[cfg(unix)]
     process::log_process_stats();
     res
