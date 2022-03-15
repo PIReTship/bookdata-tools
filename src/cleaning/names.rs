@@ -1,3 +1,5 @@
+//! Extract and normalize author names.  [`name_variants`] is the primary entry point
+//! for using this module.
 use nom::{
   IResult, Finish,
   bytes::complete::*,
@@ -108,6 +110,9 @@ fn name_entry(entry: &str) -> IResult<&str, NameEntry> {
   ))(entry)
 }
 
+/// Extract all variants from a name.
+///
+/// See the [module documentation][self] for details on this parsing process.
 pub fn name_variants(name: &str) -> Result<Vec<String>, NameError> {
   let (_r, parse) = name_entry(name).finish()?;
   let mut variants = Vec::new();

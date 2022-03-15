@@ -25,12 +25,18 @@ class RustDomain(Domain):
 
     def resolve_xref(self, env, fromdocname, builder, typ, target, node, contnode):
         parts = target.split('::')
+        if parts[0][0] == '~':
+            parts[0] = parts[0][1:]
+            contnode.children[0] = nodes.Text(parts[-1])
 
         if typ == 'mod':
             uri = '/'.join(parts)
         elif typ == 'struct':
             uri = '/'.join(parts[:-1])
             uri += f'/struct.{parts[-1]}.html'
+        elif typ == 'fn':
+            uri = '/'.join(parts[:-1])
+            uri += f'/fn.{parts[-1]}.html'
 
         uri = self.uri_base + uri
 

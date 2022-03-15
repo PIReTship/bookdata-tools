@@ -50,8 +50,8 @@ class FileDirective(ObjectDescription):
         head = nodes.thead()
         hrow = nodes.row()
         head += hrow
-        hrow += nodes.entry('', nodes.strong('', 'Field'))
-        hrow += nodes.entry('', nodes.strong('', 'Type'))
+        hrow += nodes.entry('', nodes.paragraph('', '', nodes.inline('', 'Field')))
+        hrow += nodes.entry('', nodes.paragraph('', '', nodes.inline('', 'Type')))
         tg += head
 
         # write the field table
@@ -59,12 +59,12 @@ class FileDirective(ObjectDescription):
         tg += tb
         for field in schema.get('fields', []):
             row = nodes.row()
-            row += nodes.entry('', nodes.literal('', field['name']))
+            row += nodes.entry('', nodes.paragraph('', '', nodes.literal('', field['name'])))
 
             type = field['data_type']
             if field['nullable']:
                 type += '?'
-            row += nodes.entry('', nodes.literal('', type))
+            row += nodes.entry('', nodes.paragraph('', '', nodes.literal('', type)))
             tb += row
 
         contentnode += table

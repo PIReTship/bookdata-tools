@@ -1,7 +1,6 @@
 ---
 title: OpenLibrary
 parent: Data Model
-nav_order: 3
 ---
 
 # OpenLibrary
@@ -16,6 +15,31 @@ updated by modifying the `data/ol_dump_*.txt.gz.dvc` files.
 :::
 
 Imported data lives under the `openlibrary` directory.
+
+```{mermaid}
+erDiagram
+    editions ||--o{ edition-isbn-ids : ""
+    edition-isbn-ids }o--|| all-isbns : ""
+    editions {
+        Int32 id PK
+        Utf8 key
+        Utf8 title
+    }
+    editions }o--o{ works : "edition-works"
+    works {
+        Int32 id PK
+        Utf8 key
+        Utf8 title
+    }
+    authors {
+        Int32 id PK
+        Utf8 key
+        Utf8 name
+    }
+    authors ||--o{ author-names : ""
+    editions }o--o{ authors : "edition-authors"
+    works }o--o{ authors : "work-authors"
+```
 
 ## Import Steps
 
@@ -33,59 +57,59 @@ The import is controlled by the following DVC steps:
 
 ## Raw Data
 
-OpenLibrary provides its data as JSON.  It is imported as-is into a JSONB column in three tables:
-
-- `ol.author`
-- `ol.work`
-- `ol.edition`
-
-Each of these has the following columns:
-
-*type*_id
-:    A numeric record identifier generated at import.
-
-*type*_key
-:    The OpenLibrary identifier key (e.g. `/books/3180A3`).
-
-*type*_data
-:    The raw JSON data containing the record.
-
-We use PostgreSQL's JSON operators and functions to extract the data from these tables for the
-rest of the OpenLibrary data model.
+The raw data lives in the `data/openlib` directory, as compressed JSON files.  Right now we do not
+extract very many fields from OpenLibrary; additional fields can be extracted by extending the
+import scripts.
 
 ## Extracted Edition Tables
 
 We extract the following tables from OpenLibrary editions:
 
-`edition_author`
-:   Links `edition` and `author` to record an edition's authors.
+:::{file} openlibrary/editions.parquet
 
-`edition_first_author`
-:   Links `edition` and `author` to record an edition's first author.
+This file contains a primary record for each edition, with the numeric edition ID, OpenLibrary key,
+and edition data.
+:::
 
-`edition_work`
-:   Links each `edition` to its `work`(s)
+:::{file} openlibrary/edition-authors.parquet
 
-`edition_isbn`
-:   The raw ISBNs for each `edition` (*not* ISBN IDs)
+This file contains mappings between editions and their authors.
+:::
 
-`isbn_link`
-:   Link ISBNs, editions, and works, along with the book code derived from an edition's
-    work and edition IDs.  If an edition belongs to multiple works, it will appear multiple
-    times here.  This table violates 4NF.
+:::{file} openlibrary/edition-works.parquet
+
+This maps editions to their works.
+:::
+
+:::{file} openlibrary/edition-isbns.parquet
+
+This contains the ISBN fields extracted from each OpenLibrary edition.  This is
+primarily for internal purposes and most people won't need to use it.  ISBNs are
+cleaned (with {rust:fn}`~bookdata::cleaning::isbns::clean_isbn_chars` or
+{rust:fn}`~bookdata::cleaning::isbns::clean_asin_chars`) prior to being stored in this
+file.
+:::
+
+:::{file} openlibrary/edition-isbn-ids.parquet
+
+This file maps editions to numeric [ISBN identifiers](isbn-id).  It is derived
+from {file}`openlibrary/edition-isbns.parquet`.
+:::
 
 ## Extracted Work Tables
 
 We extract the following tables from OpenLibrary works:
 
-`work_author`
-:   Links `work` and `author` to record an work's authors.
+:::{file} openlibrary/works.parquet
 
-`work_first_author`
-:   Links `work` and `author` to record an work's first author.
+This file contains the primary record for each work, mapping a numeric ID to its OpenLibrary key and containing
+other per-work fields.
+:::
 
-`work_subject`
-:   The `subjects` entries for each work.
+:::{file} openlibrary/work-authors.parquet
+
+This file links work records to the work's author list (works may have separate author lists from their editions).
+:::
 
 ## Extracted Author Tables
 
