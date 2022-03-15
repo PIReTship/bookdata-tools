@@ -1,5 +1,21 @@
-//! Extract and normalize author names.  [`name_variants`] is the primary entry point
-//! for using this module.
+//! Extract and normalize author names.
+//!
+//! Names in the book data — both in author records and in their references in
+//! book records — come in a variety of formats.  This module is responsible for
+//! expanding and normalizing those name formats to improve data linkability.
+//! Some records also include a year or date range for the author's lifetime. We
+//! normalize names as follows:
+//!
+//! - If the name is “Last, First”, we emit both “Last, First” and “First Last”
+//!   variants.
+//! - If the name has a year, we emit each variant both with and without the
+//!   year.
+//! - Leading and trailing junk is cleaned
+//!
+//! This maximizes our ability to match records across sources recording names
+//! in different formats.
+//!
+//! [`name_variants`] is the primary entry point for using this module.
 use nom::{
   IResult, Finish,
   bytes::complete::*,
