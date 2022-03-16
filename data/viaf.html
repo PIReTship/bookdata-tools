@@ -5,10 +5,10 @@
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="BookCrossing" href="bx.html" /><link rel="prev" title="OpenLibrary" href="openlib.html" />
 
-    <meta name="generator" content="sphinx-4.4.0, furo 2022.02.14.1"/>
+    <meta name="generator" content="sphinx-4.4.0, furo 2022.03.04"/>
         <title>Virtual Internet Authority File - Book Data Tools 2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=a8f031f701c6af50c9919b48f173a5785af06fac" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=935aa2abcc5c1da4283d1dc201fb1f0add16d23a" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=25ceb02ed1c46dc30f2321ff83e92799f69dfdb9" />
     
     
@@ -22,16 +22,18 @@
   --font-stack--monospace: Source Code Pro, monospace;
   
   }
-  body[data-theme="dark"] {
-    --color-code-background: #202020;
-  --color-code-foreground: #d0d0d0;
-  
-  }
-  @media (prefers-color-scheme: dark) {
-    body:not([data-theme="light"]) {
+  @media not print {
+    body[data-theme="dark"] {
       --color-code-background: #202020;
   --color-code-foreground: #d0d0d0;
   
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
     }
   }
 </style>
@@ -199,6 +201,12 @@
   <div class="main">
     <div class="content">
       <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
         <div class="content-icon-container"><div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle">
               <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
@@ -218,42 +226,113 @@
 <p>We source author data from the <a class="reference external" href="http://viaf.org">Virtual Internet Authority File</a>, as downloaded from
 their <a class="reference external" href="http://viaf.org/viaf/data">data dumps</a>.  This file is slow and error-prone to download, and is
 not* auto-downloaded.</p>
-<p>Imported data lives in the <code class="docutils literal notranslate"><span class="pre">viaf</span></code> schema.</p>
+<p>Imported data lives under the <code class="docutils literal notranslate"><span class="pre">viaf</span></code> directory.</p>
 <section id="import-steps">
 <h2>Import Steps<a class="headerlink" href="#import-steps" title="Permalink to this headline">#</a></h2>
 <p>The import is controlled by the following DVC steps:</p>
 <dl class="simple myst">
-<dt><code class="docutils literal notranslate"><span class="pre">schemas/viaf-schema.dvc</span></code></dt><dd><p>Run <code class="docutils literal notranslate"><span class="pre">viaf-schema.sql</span></code> to set up the base schema.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">scan-authors</span></code></dt><dd><p>Import the VIAF MARC data into <a class="reference internal" href="#file-viaf-viaf.parquet"><code class="xref std std-file docutils literal notranslate"><span class="pre">viaf/viaf.parquet</span></code></a>.</p>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">import/viaf.dvc</span></code></dt><dd><p>Import raw VIAF MARC data from <code class="docutils literal notranslate"><span class="pre">data/viaf-clusters-marc21.xml.gz</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">author-names</span></code></dt><dd><p>Extract author names from the VIAF MARC data, producing <code class="docutils literal notranslate"><span class="pre">author-names.csv.gz</span></code>.  This is an
+intermediate stage, fed into <code class="docutils literal notranslate"><span class="pre">index-names</span></code> to get usable name records.</p>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">index/viaf-index.dvc</span></code></dt><dd><p>Run <code class="docutils literal notranslate"><span class="pre">viaf-index.sql</span></code> to index the MARC data and extract tables.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">author-genders</span></code></dt><dd><p>Extract author genders from the VIAF MARC data, producing <code class="xref std std-file docutils literal notranslate"><span class="pre">author-genders.parquet</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">index-names</span></code></dt><dd><p>Normalize and expand author names and map to VIAF record IDs, producing <code class="xref std std-file docutils literal notranslate"><span class="pre">author-index-names.parquet</span></code>.</p>
 </dd>
 </dl>
 </section>
 <section id="raw-data">
 <h2>Raw Data<a class="headerlink" href="#raw-data" title="Permalink to this headline">#</a></h2>
-<p>VIAF data is in <a class="reference external" href="https://www.loc.gov/marc/authority/">MARC 21 Authority Record format</a>.  The raw
-MARC data is imported into the <code class="docutils literal notranslate"><span class="pre">marc_field</span></code> table with the <span class="xref myst">same format as LOC</span>.</p>
+<p>The VIAF data is in <a class="reference external" href="https://www.loc.gov/marc/authority/">MARC 21 Authority Record format</a>.  The initial
+scan stage extracts this into a table using the <a class="reference internal" href="loc.html#marc-format"><span class="std std-ref">MARC schema</span></a>.</p>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-viaf-viaf.parquet">
+<span class="sig-name descname"><span class="pre">viaf/viaf.parquet</span></span><a class="headerlink" href="#file-viaf-viaf.parquet" title="Permalink to this definition">#</a></dt>
+<dd><p>The table storing raw MARC fields from VIAF.</p>
+<div class="table-wrapper"><table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><span>Field</span></p></th>
+<th class="head"><p><span>Type</span></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rec_id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UInt32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fld_no</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UInt32</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tag</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int16</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ind1</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UInt8</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ind2</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UInt8</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sf_code</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UInt8</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">contents</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Utf8</span></code></p></td>
+</tr>
+</tbody>
+</table></div>
+</dd></dl>
 </section>
 <section id="extracted-author-tables">
 <h2>Extracted Author Tables<a class="headerlink" href="#extracted-author-tables" title="Permalink to this headline">#</a></h2>
-<p>We extract the following tables for VIAF authors:</p>
-<dl class="simple myst">
-<dt><code class="docutils literal notranslate"><span class="pre">author_name</span></code></dt><dd><p>The author’s name(s).  We insert an author name for each field with tag 700 and subfield code ‘a’.
-For all author names of the form ‘Family, Given’, we insert an additional record with the form
-‘Given Family’ and indicator ‘S’.  This helps maximize links.</p>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">author_gender</span></code></dt><dd><p>The author’s gender, from field 375 subfield ‘a’.  This is a raw extract of all gender identity
-assertions in the record; we resolve multiple assertions later in the data integration process.</p>
-</dd>
-</dl>
+<p>We process the MARC records to produce several derived tables.</p>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-viaf-author-name-index.parquet">
+<span class="sig-name descname"><span class="pre">viaf/author-name-index.parquet</span></span><a class="headerlink" href="#file-viaf-author-name-index.parquet" title="Permalink to this definition">#</a></dt>
+<dd><p>The author-name index file maps record IDs to author names, as defined in field <a class="reference external" href="https://www.loc.gov/marc/authority/ad700.html">700a</a>.  For each record, it stores each of the
+names extracted by <a class="rust mod reference external" href="/apidocs/bookdata/cleaning/names"><code class="xref rust rust-mod docutils literal notranslate"><span class="pre">bookdata::cleaning::names</span></code></a>.</p>
+<div class="table-wrapper"><table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><span>Field</span></p></th>
+<th class="head"><p><span>Type</span></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rec_id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UInt32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">name</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Utf8</span></code></p></td>
+</tr>
+</tbody>
+</table></div>
+</dd></dl>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-viaf-author-genders.parquet">
+<span class="sig-name descname"><span class="pre">viaf/author-genders.parquet</span></span><a class="headerlink" href="#file-viaf-author-genders.parquet" title="Permalink to this definition">#</a></dt>
+<dd><p>This file contains the extracted gender information for each author record (field <a class="reference external" href="https://www.loc.gov/marc/authority/ad375.html">375a</a>).  If a record has multiple
+gender fields, they are all recorded.  Merging gender records happens later in the integration.</p>
+<div class="table-wrapper"><table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><span>Field</span></p></th>
+<th class="head"><p><span>Type</span></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rec_id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UInt32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">gender</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Utf8?</span></code></p></td>
+</tr>
+</tbody>
+</table></div>
+</dd></dl>
 </section>
 <section id="viaf-gender-vocabulary">
 <h2>VIAF Gender Vocabulary<a class="headerlink" href="#viaf-gender-vocabulary" title="Permalink to this headline">#</a></h2>
-<p>The MARC <a class="reference external" href="https://www.loc.gov/marc/authority/ad375.html">gender field</a> is defined as the author’s
-gender <em>identity</em>.  It allows identities from an open vocabulary, along with start and end dates
-for the validity of each identity.</p>
+<p>The MARC <a class="reference external" href="https://www.loc.gov/marc/authority/ad375.html">gender field</a> is defined as the author’s gender <em>identity</em>.  It
+allows identities from an open vocabulary, along with start and end dates for
+the validity of each identity.</p>
 <p>The Program for Cooperative Cataloging Task Group on Gender in Name Authority Records produced a
 <a class="reference external" href="https://www.loc.gov/aba/pcc/documents/Gender_375%20field_RecommendationReport.pdf">report</a> with
 recommendations for how to record this field.  Many libraries contributing to the Library of Congress
@@ -261,8 +340,8 @@ file, from which many VIAF records are sourced, follow these recommendations, bu
 to assume they are universally followed by all VIAF contributors.</p>
 <p>Further, as near as we can tell, the VIAF removes all non-binary gender identities or converts them
 to ‘unknown’.</p>
-<p>This data should only be used with great care.  We discuss these limitations in <a class="reference external" href="https://md.ekstrandom.net/pubs/bag-extended">the extended
-preprint</a>.</p>
+<p>This data should only be used with great care.  We discuss these limitations in
+<a class="reference external" href="https://md.ekstrandom.net/pubs/bag-extended">the extended paper</a>.</p>
 </section>
 </section>
 
@@ -344,5 +423,7 @@ preprint</a>.</p>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/scripts/furo.js"></script>
+    <script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({startOnLoad:true});</script>
     </body>
 </html>

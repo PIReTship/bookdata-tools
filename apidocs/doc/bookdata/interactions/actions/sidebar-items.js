@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["ActionDedup","Action deduplicator."],["ActionInstance",""],["TimelessActionRecord","Record for a single output action without time."],["TimestampActionRecord","Record for a single output action."]],"trait":[["FromActionSet","Collapse a sequence of actions into an action record."]]});

@@ -1,1 +1,0 @@
-initSidebarItems({"mod":[["accum",""],["process",""],["serde_string","Utility module for serializing with to/from string."],["timing",""]],"struct":[["DataAccumulator","Activatable data acumulator."]]});

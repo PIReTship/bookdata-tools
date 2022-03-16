@@ -5,10 +5,10 @@
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Virtual Internet Authority File" href="viaf.html" /><link rel="prev" title="Library of Congress" href="loc.html" />
 
-    <meta name="generator" content="sphinx-4.4.0, furo 2022.02.14.1"/>
+    <meta name="generator" content="sphinx-4.4.0, furo 2022.03.04"/>
         <title>OpenLibrary - Book Data Tools 2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=a8f031f701c6af50c9919b48f173a5785af06fac" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=935aa2abcc5c1da4283d1dc201fb1f0add16d23a" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=25ceb02ed1c46dc30f2321ff83e92799f69dfdb9" />
     
     
@@ -22,16 +22,18 @@
   --font-stack--monospace: Source Code Pro, monospace;
   
   }
-  body[data-theme="dark"] {
-    --color-code-background: #202020;
-  --color-code-foreground: #d0d0d0;
-  
-  }
-  @media (prefers-color-scheme: dark) {
-    body:not([data-theme="light"]) {
+  @media not print {
+    body[data-theme="dark"] {
       --color-code-background: #202020;
   --color-code-foreground: #d0d0d0;
   
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
     }
   }
 </style>
@@ -199,6 +201,12 @@
   <div class="main">
     <div class="content">
       <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
         <div class="content-icon-container"><div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle">
               <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
@@ -219,82 +227,265 @@
 their <a class="reference external" href="https://openlibrary.org/developers/dumps">developer dumps</a>.</p>
 <p>The DVC control files automatically download the appropriate version.  The version can be
 updated by modifying the <code class="docutils literal notranslate"><span class="pre">data/ol_dump_*.txt.gz.dvc</span></code> files.</p>
-<p>Imported data lives in the <code class="docutils literal notranslate"><span class="pre">ol</span></code> schema.</p>
-<section id="import-steps">
+<p id="index-0">Imported data lives under the <code class="docutils literal notranslate"><span class="pre">openlibrary</span></code> directory.</p>
+<div class="mermaid">
+            erDiagram
+    editions ||--o{ edition-isbn-ids : ""
+    edition-isbn-ids }o--|| all-isbns : ""
+    editions {
+        Int32 id PK
+        Utf8 key
+        Utf8 title
+    }
+    editions }o--o{ works : "edition-works"
+    works {
+        Int32 id PK
+        Utf8 key
+        Utf8 title
+    }
+    authors {
+        Int32 id PK
+        Utf8 key
+        Utf8 name
+    }
+    authors ||--o{ author-names : ""
+    editions }o--o{ authors : "edition-authors"
+    works }o--o{ authors : "work-authors"
+        </div><section id="import-steps">
 <h2>Import Steps<a class="headerlink" href="#import-steps" title="Permalink to this headline">#</a></h2>
 <p>The import is controlled by the following DVC steps:</p>
 <dl class="simple myst">
-<dt><code class="docutils literal notranslate"><span class="pre">schemas/ol-schema.dvc</span></code></dt><dd><p>Run <code class="docutils literal notranslate"><span class="pre">ol-schema.sql</span></code> to set up the base schema.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">scan-*</span></code></dt><dd><p>The various <code class="docutils literal notranslate"><span class="pre">scan-*</span></code> stages (e.g. <code class="docutils literal notranslate"><span class="pre">scan-authors</span></code>) scan an OpenLibrary JSON file into the
+resulting Parquet files.  There are dependencies, to resolve OpenLibrary keys to numeric
+identifiers for cross-referencing.  These scan stages do not currently extract all available
+data from the OpenLibrary JSON; they only extract the fields we currently use, and need to
+be extended to extract and save additional fields.</p>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">import/ol-works.dvc</span></code></dt><dd><p>Import raw OpenLibrary works from <code class="docutils literal notranslate"><span class="pre">data/ol_dump_works.txt.gz</span></code>.</p>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">import/ol-editions.dvc</span></code></dt><dd><p>Import raw OpenLibrary editions from <code class="docutils literal notranslate"><span class="pre">data/ol_dump_editions.txt.gz</span></code>.</p>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">import/ol-authors.dvc</span></code></dt><dd><p>Import raw OpenLibrary authors from <code class="docutils literal notranslate"><span class="pre">data/ol_dump_authors.txt.gz</span></code>.</p>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">index/ol-index.dvc</span></code></dt><dd><p>Run <code class="docutils literal notranslate"><span class="pre">ol-index.sql</span></code> to index the book data and extract tables.</p>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">index/ol-book-info.dvc</span></code></dt><dd><p>Run <code class="docutils literal notranslate"><span class="pre">ol-book-info.sql</span></code> to extract additional book data into tables.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">edition-isbn-ids</span></code></dt><dd><p>Convert edition ISBNs into <a class="reference internal" href="ids.html#isbn-id"><span class="std std-ref">ISBN IDs</span></a>, producing <code class="xref std std-file docutils literal notranslate"><span class="pre">openlib/edition-isbn-ids.parquet</span></code>.</p>
 </dd>
 </dl>
 </section>
 <section id="raw-data">
 <h2>Raw Data<a class="headerlink" href="#raw-data" title="Permalink to this headline">#</a></h2>
-<p>OpenLibrary provides its data as JSON.  It is imported as-is into a JSONB column in three tables:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">ol.author</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ol.work</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ol.edition</span></code></p></li>
-</ul>
-<p>Each of these has the following columns:</p>
-<dl class="simple myst">
-<dt><em>type</em>_id</dt><dd><p>A numeric record identifier generated at import.</p>
-</dd>
-<dt><em>type</em>_key</dt><dd><p>The OpenLibrary identifier key (e.g. <code class="docutils literal notranslate"><span class="pre">/books/3180A3</span></code>).</p>
-</dd>
-<dt><em>type</em>_data</dt><dd><p>The raw JSON data containing the record.</p>
-</dd>
-</dl>
-<p>We use PostgreSQL’s JSON operators and functions to extract the data from these tables for the
-rest of the OpenLibrary data model.</p>
+<p>The raw data lives in the <code class="docutils literal notranslate"><span class="pre">data/openlib</span></code> directory, as compressed JSON files.  Right now we do not
+extract very many fields from OpenLibrary; additional fields can be extracted by extending the
+import scripts.</p>
 </section>
 <section id="extracted-edition-tables">
 <h2>Extracted Edition Tables<a class="headerlink" href="#extracted-edition-tables" title="Permalink to this headline">#</a></h2>
 <p>We extract the following tables from OpenLibrary editions:</p>
-<dl class="simple myst">
-<dt><code class="docutils literal notranslate"><span class="pre">edition_author</span></code></dt><dd><p>Links <code class="docutils literal notranslate"><span class="pre">edition</span></code> and <code class="docutils literal notranslate"><span class="pre">author</span></code> to record an edition’s authors.</p>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">edition_first_author</span></code></dt><dd><p>Links <code class="docutils literal notranslate"><span class="pre">edition</span></code> and <code class="docutils literal notranslate"><span class="pre">author</span></code> to record an edition’s first author.</p>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">edition_work</span></code></dt><dd><p>Links each <code class="docutils literal notranslate"><span class="pre">edition</span></code> to its <code class="docutils literal notranslate"><span class="pre">work</span></code>(s)</p>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">edition_isbn</span></code></dt><dd><p>The raw ISBNs for each <code class="docutils literal notranslate"><span class="pre">edition</span></code> (<em>not</em> ISBN IDs)</p>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">isbn_link</span></code></dt><dd><p>Link ISBNs, editions, and works, along with the book code derived from an edition’s
-work and edition IDs.  If an edition belongs to multiple works, it will appear multiple
-times here.  This table violates 4NF.</p>
-</dd>
-</dl>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-openlibrary-editions.parquet">
+<span class="sig-name descname"><span class="pre">openlibrary/editions.parquet</span></span><a class="headerlink" href="#file-openlibrary-editions.parquet" title="Permalink to this definition">#</a></dt>
+<dd><p>This file contains a primary record for each edition, with the numeric edition ID, OpenLibrary key,
+and edition data.</p>
+<div class="table-wrapper"><table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><span>Field</span></p></th>
+<th class="head"><p><span>Type</span></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">key</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Utf8</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">title</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Utf8?</span></code></p></td>
+</tr>
+</tbody>
+</table></div>
+</dd></dl>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-openlibrary-edition-authors.parquet">
+<span class="sig-name descname"><span class="pre">openlibrary/edition-authors.parquet</span></span><a class="headerlink" href="#file-openlibrary-edition-authors.parquet" title="Permalink to this definition">#</a></dt>
+<dd><p>This file contains mappings between editions and their authors.</p>
+<div class="table-wrapper"><table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><span>Field</span></p></th>
+<th class="head"><p><span>Type</span></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">edition</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">pos</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int16</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">author</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+</tbody>
+</table></div>
+</dd></dl>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-openlibrary-edition-works.parquet">
+<span class="sig-name descname"><span class="pre">openlibrary/edition-works.parquet</span></span><a class="headerlink" href="#file-openlibrary-edition-works.parquet" title="Permalink to this definition">#</a></dt>
+<dd><p>This maps editions to their works.</p>
+<div class="table-wrapper"><table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><span>Field</span></p></th>
+<th class="head"><p><span>Type</span></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">edition</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">work</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+</tbody>
+</table></div>
+</dd></dl>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-openlibrary-edition-isbns.parquet">
+<span class="sig-name descname"><span class="pre">openlibrary/edition-isbns.parquet</span></span><a class="headerlink" href="#file-openlibrary-edition-isbns.parquet" title="Permalink to this definition">#</a></dt>
+<dd><p>This contains the ISBN fields extracted from each OpenLibrary edition.  This is
+primarily for internal purposes and most people won’t need to use it.  ISBNs are
+cleaned (with <a class="rust fn reference external" href="/apidocs/bookdata/cleaning/isbns/fn.clean_isbn_chars.html"><code class="xref rust rust-fn docutils literal notranslate"><span class="pre">clean_isbn_chars</span></code></a> or
+<a class="rust fn reference external" href="/apidocs/bookdata/cleaning/isbns/fn.clean_asin_chars.html"><code class="xref rust rust-fn docutils literal notranslate"><span class="pre">clean_asin_chars</span></code></a>) prior to being stored in this
+file.</p>
+<div class="table-wrapper"><table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><span>Field</span></p></th>
+<th class="head"><p><span>Type</span></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">edition</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">isbn</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Utf8</span></code></p></td>
+</tr>
+</tbody>
+</table></div>
+</dd></dl>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-openlibrary-edition-isbn-ids.parquet">
+<span class="sig-name descname"><span class="pre">openlibrary/edition-isbn-ids.parquet</span></span><a class="headerlink" href="#file-openlibrary-edition-isbn-ids.parquet" title="Permalink to this definition">#</a></dt>
+<dd><p>This file maps editions to numeric <a class="reference internal" href="ids.html#isbn-id"><span class="std std-ref">ISBN identifiers</span></a>.  It is derived
+from <a class="reference internal" href="#file-openlibrary-edition-isbns.parquet"><code class="xref std std-file docutils literal notranslate"><span class="pre">openlibrary/edition-isbns.parquet</span></code></a>.</p>
+<div class="table-wrapper"><table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><span>Field</span></p></th>
+<th class="head"><p><span>Type</span></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">edition</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">isbn_id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+</tbody>
+</table></div>
+</dd></dl>
 </section>
 <section id="extracted-work-tables">
 <h2>Extracted Work Tables<a class="headerlink" href="#extracted-work-tables" title="Permalink to this headline">#</a></h2>
 <p>We extract the following tables from OpenLibrary works:</p>
-<dl class="simple myst">
-<dt><code class="docutils literal notranslate"><span class="pre">work_author</span></code></dt><dd><p>Links <code class="docutils literal notranslate"><span class="pre">work</span></code> and <code class="docutils literal notranslate"><span class="pre">author</span></code> to record an work’s authors.</p>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">work_first_author</span></code></dt><dd><p>Links <code class="docutils literal notranslate"><span class="pre">work</span></code> and <code class="docutils literal notranslate"><span class="pre">author</span></code> to record an work’s first author.</p>
-</dd>
-<dt><code class="docutils literal notranslate"><span class="pre">work_subject</span></code></dt><dd><p>The <code class="docutils literal notranslate"><span class="pre">subjects</span></code> entries for each work.</p>
-</dd>
-</dl>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-openlibrary-works.parquet">
+<span class="sig-name descname"><span class="pre">openlibrary/works.parquet</span></span><a class="headerlink" href="#file-openlibrary-works.parquet" title="Permalink to this definition">#</a></dt>
+<dd><p>This file contains the primary record for each work, mapping a numeric ID to its OpenLibrary key and containing
+other per-work fields.</p>
+<div class="table-wrapper"><table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><span>Field</span></p></th>
+<th class="head"><p><span>Type</span></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">key</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Utf8</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">title</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Utf8?</span></code></p></td>
+</tr>
+</tbody>
+</table></div>
+</dd></dl>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-openlibrary-work-authors.parquet">
+<span class="sig-name descname"><span class="pre">openlibrary/work-authors.parquet</span></span><a class="headerlink" href="#file-openlibrary-work-authors.parquet" title="Permalink to this definition">#</a></dt>
+<dd><p>This file links work records to the work’s author list (works may have separate author lists from their editions).</p>
+<div class="table-wrapper"><table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><span>Field</span></p></th>
+<th class="head"><p><span>Type</span></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">pos</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int16</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">author</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+</tbody>
+</table></div>
+</dd></dl>
 </section>
 <section id="extracted-author-tables">
 <h2>Extracted Author Tables<a class="headerlink" href="#extracted-author-tables" title="Permalink to this headline">#</a></h2>
-<dl class="simple myst">
-<dt><code class="docutils literal notranslate"><span class="pre">author_name</span></code></dt><dd><p>The names for each author.  An author may have more than one listed name; this extracts
-all of them.</p>
-</dd>
-</dl>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-openlibrary-authors.parquet">
+<span class="sig-name descname"><span class="pre">openlibrary/authors.parquet</span></span><a class="headerlink" href="#file-openlibrary-authors.parquet" title="Permalink to this definition">#</a></dt>
+<dd><p>This file contains basic information about OpenLibrary authors.</p>
+<div class="table-wrapper"><table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><span>Field</span></p></th>
+<th class="head"><p><span>Type</span></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">key</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Utf8</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">name</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Utf8?</span></code></p></td>
+</tr>
+</tbody>
+</table></div>
+</dd></dl>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-openlibrary-author-names.parquet">
+<span class="sig-name descname"><span class="pre">openlibrary/author-names.parquet</span></span><a class="headerlink" href="#file-openlibrary-author-names.parquet" title="Permalink to this definition">#</a></dt>
+<dd><p>This file contains the names associated with each author in <a class="reference internal" href="#file-openlibrary-authors.parquet"><code class="xref std std-file docutils literal notranslate"><span class="pre">openlibrary/authors.parquet</span></code></a>.</p>
+<div class="table-wrapper"><table class="colwidths-auto docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><span>Field</span></p></th>
+<th class="head"><p><span>Type</span></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">source</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UInt8</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">name</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Utf8</span></code></p></td>
+</tr>
+</tbody>
+</table></div>
+</dd></dl>
 </section>
 </section>
 
@@ -377,5 +568,7 @@ all of them.</p>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/scripts/furo.js"></script>
+    <script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({startOnLoad:true});</script>
     </body>
 </html>

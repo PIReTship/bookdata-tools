@@ -158,6 +158,14 @@
 <span id="156">156</span>
 <span id="157">157</span>
 <span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Command line interface for book data.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! The book data tools are implemented as a single monolithic executable (to reduce</span>
@@ -174,6 +182,7 @@
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">amazon</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">openlib</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">goodreads</span>;
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">pqinfo</span>;
 
 <span class="kw">use</span> <span class="ident">std::env</span>;
 <span class="kw">use</span> <span class="ident">log</span>::<span class="kw-2">*</span>;
@@ -183,6 +192,7 @@
 <span class="kw">use</span> <span class="ident">tokio::runtime::Runtime</span>;
 <span class="kw">use</span> <span class="ident">enum_dispatch::enum_dispatch</span>;
 <span class="kw">use</span> <span class="ident">async_trait::async_trait</span>;
+<span class="kw">use</span> <span class="ident">cpu_time::ProcessTime</span>;
 <span class="kw">use</span> <span class="ident">pretty_env_logger::formatted_timed_builder</span>;
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">unix</span>)]</span>
@@ -234,6 +244,7 @@
   <span class="ident">Goodreads</span>(<span class="ident">goodreads::Goodreads</span>),
   <span class="doccomment">/// Commands for working with clusters.</span>
   <span class="ident">Cluster</span>(<span class="ident">ClusterCommandWrapper</span>),
+  <span class="ident">PQInfo</span>(<span class="ident">pqinfo::PQInfo</span>),
 }
 
 <span class="macro">wrap_subcommands!</span>(<span class="ident">AmazonCommand</span>);
@@ -311,6 +322,11 @@
     <span class="ident">lb</span>.<span class="ident">try_init</span>()<span class="question-mark">?</span>;
 
     <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">command</span>.<span class="ident">exec</span>();
+
+    <span class="kw">match</span> <span class="ident">ProcessTime::try_now</span>() {
+      <span class="prelude-val">Ok</span>(<span class="ident">pt</span>) =&gt; <span class="macro">info!</span>(<span class="string">&quot;used {} CPU time&quot;</span>, <span class="ident">friendly::duration</span>(<span class="ident">pt</span>.<span class="ident">as_duration</span>())),
+      <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="macro">error!</span>(<span class="string">&quot;error fetching CPU time: {}&quot;</span>, <span class="ident">e</span>)
+    };
     <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">unix</span>)]</span>
     <span class="ident">process::log_process_stats</span>();
     <span class="ident">res</span>

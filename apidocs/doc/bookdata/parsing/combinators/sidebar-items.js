@@ -1,1 +1,0 @@
-initSidebarItems({"fn":[["pair_nongreedy","Match a pair of parsers, matching the second first and the first on the string skipped to reach it."],["take_until_parse","Consume input until a parser succeeds, and return the skipped input and parse result."]]});

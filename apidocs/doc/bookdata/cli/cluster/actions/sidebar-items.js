@@ -1,1 +1,0 @@
-initSidebarItems({"fn":[["scan_and_save",""]],"mod":[["amazon",""],["bx",""],["data",""],["goodreads",""]],"struct":[["ClusterActions","Cluster ratings or interactions"]]});
