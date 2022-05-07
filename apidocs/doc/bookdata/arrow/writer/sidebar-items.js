@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["BATCH_SIZE",""]],"struct":[["TableWriter","Parquet table writer."],["TableWriterBuilder","Builder for Parquet table writers."]]});
