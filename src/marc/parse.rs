@@ -61,9 +61,9 @@ fn next_qxr<B: BufRead>(reader: &mut Reader<B>, buf: &mut Vec<u8>) -> Result<Opt
   loop {
     match reader.read_event(buf)? {
       Event::Start(ref e) => {
-        let name = str::from_utf8(e.local_name())?;
+        let name = e.local_name();
         match name {
-          "record" => {
+          b"record" => {
             return Ok(Some(read_record(reader)?))
           },
           _ => ()
@@ -111,6 +111,7 @@ pub fn parse_record<S: AsRef<str>>(xml: S) -> Result<MARCRecord> {
 }
 
 /// Read a single MARC record from an XML reader.
+#[inline(never)] // make profiling a little easier, this fn isn't worth inlining
 fn read_record<B: BufRead>(rdr: &mut Reader<B>) -> Result<MARCRecord> {
   let mut buf = Vec::new();
   let mut content = DataAccumulator::new();
@@ -125,21 +126,21 @@ fn read_record<B: BufRead>(rdr: &mut Reader<B>) -> Result<MARCRecord> {
   loop {
     match rdr.read_event(&mut buf)? {
       Event::Start(ref e) => {
-        let name = str::from_utf8(e.local_name())?;
+        let name = e.local_name();
         match name {
-          "record" => (),
-          "leader" => {
+          b"record" => (),
+          b"leader" => {
             content.activate();
           },
-          "controlfield" => {
+          b"controlfield" => {
             tag = read_tag_attr(e.attributes())?;
             content.activate();
           },
-          "datafield" => {
+          b"datafield" => {
             let codes = read_code_attrs(e.attributes())?;
             field = codes.into();
           },
-          "subfield" => {
+          b"subfield" => {
             sf_code = read_sf_code_attr(e.attributes())?;
             content.activate();
           }
@@ -147,28 +148,28 @@ fn read_record<B: BufRead>(rdr: &mut Reader<B>) -> Result<MARCRecord> {
         }
       },
       Event::End(ref e) => {
-        let name = str::from_utf8(e.local_name())?;
+        let name = e.local_name();
         match name {
-          "leader" => {
+          b"leader" => {
             record.leader = content.finish_string()?;
           }
-          "controlfield" => {
+          b"controlfield" => {
             record.control.push(ControlField {
               tag: tag.try_into()?,
               content: content.finish_string()?
             })
           }
-          "subfield" => {
+          b"subfield" => {
             field.subfields.push(Subfield {
               code: sf_code,
               content: content.finish_string()?
             })
           },
-          "datafield" => {
+          b"datafield" => {
             record.fields.push(field);
             field = Field::default();
           },
-          "record" => {
+          b"record" => {
             return Ok(record)
           },
           _ => ()
