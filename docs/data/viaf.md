@@ -7,8 +7,14 @@ nav_order: 4
 # Virtual Internet Authority File
 
 We source author data from the [Virtual Internet Authority File](http://viaf.org), as downloaded from
-their [data dumps](http://viaf.org/viaf/data).  This file is slow and error-prone to download, and is
-not* auto-downloaded.
+their [data dumps](http://viaf.org/viaf/data).  This file is slow to download, as the VIAF server is
+rather slow.
+
+:::{note}
+VIAF also does not keep old copies of the dump file.  You may need to edit
+`data/viaf-clusters-marc21.xml.gz.dvc` to update the URL to fetch in order to
+import this data.
+:::
 
 Imported data lives under the `viaf` directory.
 
