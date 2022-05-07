@@ -9,7 +9,8 @@ need to download yourself and save in the `data` directory.  The data sources ar
 
 -   [Library of Congress MDSConnect Open MARC Records](https://www.loc.gov/cds/products/MDSConnect-books_all.html) (auto-downloaded).
 -   [LoC MDSConnect Name Authorities](https://www.loc.gov/cds/products/MDSConnect-name_authorities.html) (auto-downloaded).
--   [Virtual Internet Authority File](http://viaf.org/viaf/data/) MARC 21 XML data (auto-downloaded; download is very slow).
+-   [Virtual Internet Authority File](http://viaf.org/viaf/data/) MARC 21 XML data (auto-downloaded; download is very slow).  They do
+    not keep old files around, so you may need to update the URL to fetch; see the [VIAF page](../data/viaf.md).
 -   [OpenLibrary Dump](https://openlibrary.org/developers/dumps) (auto-downloaded).
 -   [Amazon Ratings](http://jmcauley.ucsd.edu/data/amazon/) 'ratings only' data for _Books_ (**not** auto-downloaded — save CSV file in `data/az2014`).  **If you use this data, cite the paper on that site.**
 -   [BookCrossing](http://www2.informatik.uni-freiburg.de/~cziegler/BX/) (auto-downloaded). **If you use this data, cite the paper on that site.**
