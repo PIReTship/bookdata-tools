@@ -114,6 +114,9 @@ pub struct OLEditionRecord {
   pub works: Vec<Keyed>,
   #[serde(default)]
   pub authors: Vec<Author>,
+
+  #[serde(default)]
+  pub subjects: Vec<String>,
 }
 
 /// An author record parsed from OpenLibrary JSON.
@@ -123,4 +126,6 @@ pub struct OLWorkRecord {
   pub authors: Vec<Author>,
   #[serde(default)]
   pub title: Option<String>,
+  #[serde(default)]
+  pub subjects: Vec<String>,
 }

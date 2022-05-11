@@ -1,4 +1,6 @@
 //! OpenLibrary work schemas.
+use friendly::scalar;
+
 use crate::prelude::*;
 use crate::arrow::*;
 use crate::ids::index::IdIndex;
@@ -22,6 +24,13 @@ pub struct WorkAuthorRec {
   pub author: i32
 }
 
+/// Work-subject record in extracted Parquet.
+#[derive(ParquetRecordWriter)]
+pub struct WorkSubjectRec {
+  pub id: i32,
+  pub subject: String,
+}
+
 /// Process author source records into Parquet.
 ///
 /// This must be run **after** the author processor.
@@ -29,7 +38,8 @@ pub struct WorkProcessor {
   last_id: i32,
   author_ids: IdIndex<String>,
   rec_writer: TableWriter<WorkRec>,
-  author_writer: TableWriter<WorkAuthorRec>
+  author_writer: TableWriter<WorkAuthorRec>,
+  subject_writer: TableWriter<WorkSubjectRec>,
 }
 
 impl WorkProcessor {
@@ -39,7 +49,8 @@ impl WorkProcessor {
       last_id: 0,
       author_ids: IdIndex::load_standard("authors.parquet")?,
       rec_writer: TableWriter::open("works.parquet")?,
-      author_writer: TableWriter::open("work-authors.parquet")?
+      author_writer: TableWriter::open("work-authors.parquet")?,
+      subject_writer: TableWriter::open("work-subjects.parquet")?,
     })
   }
 }
@@ -64,12 +75,20 @@ impl ObjectWriter<Row<OLWorkRecord>> for WorkProcessor {
       }
     }
 
+    for subject in row.record.subjects {
+      self.subject_writer.write_object(WorkSubjectRec { id, subject })?;
+    }
+
     Ok(())
   }
 
   fn finish(self) -> Result<usize> {
-    self.rec_writer.finish()?;
-    self.author_writer.finish()?;
+    let nr = self.rec_writer.finish()?;
+    info!("wrote {} work records", scalar(nr));
+    let na = self.author_writer.finish()?;
+    info!("wrote {} work-author records", scalar(na));
+    let ns = self.subject_writer.finish()?;
+    info!("wrote {} work-subject records", scalar(ns));
     self.author_ids.save_standard("author-ids-after-works.parquet")?;
     Ok(self.last_id as usize)
   }

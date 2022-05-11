@@ -8,6 +8,7 @@ released version has a corresponding Git tag (e.g. `v2.0`).
 Version 2.1 has a few updates but does not change formatting:
 
 -   Updated VIAF to May 1, 2022 dump
+-   Updated OpenLibrary to March 29, 2022 dump
 
 ## Book Data 2.0
 

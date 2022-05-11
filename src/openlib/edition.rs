@@ -1,4 +1,6 @@
 //! OpenLibrary edition schemas.
+use friendly::scalar;
+
 use crate::prelude::*;
 use crate::arrow::*;
 use crate::ids::index::IdIndex;
@@ -38,6 +40,13 @@ pub struct EditionAuthorRec {
   pub author: i32
 }
 
+/// Edition-subject record in extracted Parquet.
+#[derive(ParquetRecordWriter)]
+pub struct EditionSubjectRec {
+  pub id: i32,
+  pub subject: String,
+}
+
 /// Process edition records into Parquet.
 ///
 /// This must be run **after** the author and work processors.
@@ -48,7 +57,8 @@ pub struct EditionProcessor {
   rec_writer: TableWriter<EditionRec>,
   link_writer: TableWriter<LinkRec>,
   isbn_writer: TableWriter<ISBNrec>,
-  author_writer: TableWriter<EditionAuthorRec>
+  author_writer: TableWriter<EditionAuthorRec>,
+  subject_writer: TableWriter<EditionSubjectRec>,
 }
 
 impl EditionProcessor {
@@ -60,7 +70,8 @@ impl EditionProcessor {
       rec_writer: TableWriter::open("editions.parquet")?,
       link_writer: TableWriter::open("edition-works.parquet")?,
       isbn_writer: TableWriter::open("edition-isbns.parquet")?,
-      author_writer: TableWriter::open("edition-authors.parquet")?
+      author_writer: TableWriter::open("edition-authors.parquet")?,
+      subject_writer: TableWriter::open("edition-subjects.parquet")?,
     })
   }
 
@@ -110,14 +121,26 @@ impl ObjectWriter<Row<OLEditionRecord>> for EditionProcessor {
       }
     }
 
+    for subject in row.record.subjects {
+      self.subject_writer.write_object(EditionSubjectRec {
+        id, subject
+      })?;
+    }
+
     Ok(())
   }
 
   fn finish(self) -> Result<usize> {
-    self.rec_writer.finish()?;
-    self.author_writer.finish()?;
-    self.link_writer.finish()?;
-    self.isbn_writer.finish()?;
+    let n = self.rec_writer.finish()?;
+    info!("wrote {} edition records", scalar(n));
+    let n = self.author_writer.finish()?;
+    info!("wrote {} edition-author records", scalar(n));
+    let n = self.link_writer.finish()?;
+    info!("wrote {} edition-work records", scalar(n));
+    let n = self.isbn_writer.finish()?;
+    info!("wrote {} edition-isbn records", scalar(n));
+    let n = self.subject_writer.finish()?;
+    info!("wrote {} edition-subject records", scalar(n));
     self.author_ids.save_standard("all-authors.parquet")?;
     self.work_ids.save_standard("all-works.parquet")?;
     Ok(self.last_id as usize)
