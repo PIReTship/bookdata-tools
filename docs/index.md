@@ -46,6 +46,7 @@ using/index
 data/index
 implementation/index
 papers
+history
 genindex
 Rust API <https://bookdata.piret.info/apidocs/bookdata/index.html>
 GitHub repository <https://github.com/BoiseState/bookdata-tools>
