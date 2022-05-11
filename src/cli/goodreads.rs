@@ -26,6 +26,21 @@ pub struct ScanInput {
   infile: PathBuf
 }
 
+/// Input options for an interaction scan
+#[derive(StructOpt, Debug)]
+pub struct InterInput {
+  /// User ID mapping file
+  #[structopt(name="MAP", long="user-map", parse(from_os_str))]
+  user_map: Option<PathBuf>,
+
+  /// Book ID mapping file (only for CSV input)
+  #[structopt(name="MAP", long="book-map", parse(from_os_str))]
+  book_map: Option<PathBuf>,
+
+  #[structopt(flatten)]
+  scan: ScanInput,
+}
+
 #[derive(StructOpt, Debug)]
 enum GRScan {
   /// Scan GoodReads works.
@@ -33,7 +48,7 @@ enum GRScan {
   /// Scan GoodReads books.
   Books(ScanInput),
   /// Scan GoodReads interactions.
-  Interactions(ScanInput),
+  Interactions(InterInput),
 }
 
 fn scan_gr<R, W>(path: &Path, proc: W) -> Result<()>
@@ -72,7 +87,7 @@ impl Command for Goodreads {
       }
       GRCmd::Scan { data: GRScan::Interactions(opts) } => {
         info!("scanning GoodReads interactions");
-        scan_gr(&opts.infile, interaction::IntWriter::open()?)?;
+        scan_gr(&opts.scan.infile, interaction::IntWriter::open()?)?;
       }
     }
 
