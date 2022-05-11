@@ -5,8 +5,10 @@ use std::hash::Hash;
 use std::borrow::Borrow;
 use hashbrown::hash_map::{HashMap, Keys};
 
+use serde::de::DeserializeOwned;
 use log::*;
 use anyhow::Result;
+use thiserror::Error;
 use parquet::record::reader::RowIter;
 use parquet::record::RowAccessor;
 use parquet::basic::{Type as PhysicalType, LogicalType, IntType, StringType, Repetition};
@@ -22,9 +24,16 @@ use tempfile::tempdir;
 /// The type of index identifiers.
 pub type Id = i32;
 
+#[derive(Error, Debug)]
+pub enum IndexError {
+  #[error("key not present in frozen index")]
+  KeyNotPresent
+}
+
 /// Index identifiers from a data type
 pub struct IdIndex<K> {
   map: HashMap<K,Id>,
+  frozen: bool,
 }
 
 /// Internal struct for ID records.
@@ -38,8 +47,14 @@ impl <K> IdIndex<K> where K: Eq + Hash {
   /// Create a new index.
   pub fn new() -> IdIndex<K> {
     IdIndex {
-      map: HashMap::new()
+      map: HashMap::new(),
+      frozen: false,
     }
+  }
+
+  /// Freeze the index so no new items can be added.
+  pub fn freeze(self) -> IdIndex<K> {
+    IdIndex { map: self.map, frozen: true }
   }
 
   /// Get the index length
@@ -48,22 +63,29 @@ impl <K> IdIndex<K> where K: Eq + Hash {
   }
 
   /// Get the ID for a key, adding it to the index if needed.
-  pub fn intern<Q>(&mut self, key: &Q) -> Id where K: Borrow<Q>, Q: Hash + Eq + ToOwned<Owned=K> + ?Sized {
+  pub fn intern<Q>(&mut self, key: &Q) -> Result<Id, IndexError> where K: Borrow<Q>, Q: Hash + Eq + ToOwned<Owned=K> + ?Sized {
     let n = self.map.len() as Id;
-    // use Hashbrown's raw-entry API to minimize cloning
-    let eb = self.map.raw_entry_mut();
-    let e = eb.from_key(key);
-    let (_, v) = e.or_insert_with(|| {
-      (key.to_owned(), n+1)
-    });
-    *v
+    if self.frozen {
+      self.lookup(key).ok_or(IndexError::KeyNotPresent)
+    } else {
+      // use Hashbrown's raw-entry API to minimize cloning
+      let eb = self.map.raw_entry_mut();
+      let e = eb.from_key(key);
+      let (_, v) = e.or_insert_with(|| {
+        (key.to_owned(), n+1)
+      });
+      Ok(*v)
+    }
   }
 
   /// Get the ID for a key, adding it to the index if needed and transferring ownership.
-  pub fn intern_owned(&mut self, key: K) -> Id {
+  pub fn intern_owned(&mut self, key: K) -> Result<Id, IndexError> {
     let n = self.map.len() as Id;
-    // use Hashbrown's raw-entry API to minimize cloning
-    *self.map.entry(key).or_insert(n+1)
+    if self.frozen {
+      self.lookup(&key).ok_or(IndexError::KeyNotPresent)
+    } else {
+      Ok(*self.map.entry(key).or_insert(n+1))
+    }
   }
 
   /// Look up the ID for a key if it is present.
@@ -145,7 +167,29 @@ impl IdIndex<String> {
     info!("read {} keys from {}", map.len(), path_str);
 
     Ok(IdIndex {
-      map
+      map, frozen: false
+    })
+  }
+
+  /// Load an index from a CSV file.
+  ///
+  /// This loads an index from a CSV file.  It assumes the first column is the ID, and the
+  /// second column is the key.
+  pub fn load_csv<P: AsRef<Path>, K: Eq + Hash + DeserializeOwned>(path: P) -> Result<IdIndex<K>> {
+    info!("reading ID index from from {:?}", path.as_ref());
+    let input = csv::Reader::from_path(path)?;
+    let recs = input.into_deserialize();
+
+    let mut map = HashMap::new();
+
+    for row in recs {
+      let rec: (i32, K) = row?;
+      let (id, key) = rec;
+      map.insert(key, id);
+    }
+
+    Ok(IdIndex {
+      map, frozen: false
     })
   }
 
@@ -187,7 +231,7 @@ fn test_index_empty() {
 fn test_index_intern_one() {
   let mut index: IdIndex<String> = IdIndex::new();
   assert!(index.lookup("hackem muche").is_none());
-  let id = index.intern("hackem muche");
+  let id = index.intern("hackem muche").expect("intern failure");
   assert_eq!(id, 1);
   assert_eq!(index.lookup("hackem muche").unwrap(), 1);
 }
@@ -198,9 +242,9 @@ fn test_index_intern_two() {
   let mut index: IdIndex<String> = IdIndex::new();
   assert!(index.lookup("hackem muche").is_none());
   let id = index.intern("hackem muche");
-  assert_eq!(id, 1);
+  assert_eq!(id.expect("intern failure"), 1);
   let id2 = index.intern("readme");
-  assert_eq!(id2, 2);
+  assert_eq!(id2.expect("intern failure"), 2);
   assert_eq!(index.lookup("hackem muche").unwrap(), 1);
 }
 
@@ -210,9 +254,9 @@ fn test_index_intern_twice() {
   let mut index: IdIndex<String> = IdIndex::new();
   assert!(index.lookup("hackem muche").is_none());
   let id = index.intern("hackem muche");
-  assert_eq!(id, 1);
+  assert_eq!(id.expect("intern failure"), 1);
   let id2 = index.intern("hackem muche");
-  assert_eq!(id2, 1);
+  assert_eq!(id2.expect("intern failure"), 1);
   assert_eq!(index.len(), 1);
 }
 
@@ -221,9 +265,11 @@ fn test_index_intern_twice_owned() {
   let mut index: IdIndex<String> = IdIndex::new();
   assert!(index.lookup("hackem muche").is_none());
   let id = index.intern_owned("hackem muche".to_owned());
-  assert_eq!(id, 1);
+  assert!(id.is_ok());
+  assert_eq!(id.expect("intern failure"), 1);
   let id2 = index.intern_owned("hackem muche".to_owned());
-  assert_eq!(id2, 1);
+  assert!(id2.is_ok());
+  assert_eq!(id2.expect("intern failure"), 1);
   assert_eq!(index.len(), 1);
 }
 
@@ -235,7 +281,7 @@ fn test_index_save() -> Result<()> {
   for _i in 0..10000 {
     let key = String::arbitrary(&mut gen);
     let prev = index.lookup(&key);
-    let id = index.intern(&key);
+    let id = index.intern(&key).expect("intern failure");
     match prev {
       Some(i) => assert_eq!(id, i),
       None => assert_eq!(id as usize, index.len())
@@ -255,4 +301,23 @@ fn test_index_save() -> Result<()> {
   }
 
   Ok(())
+}
+
+
+#[test]
+fn test_index_freeze() {
+  let mut index: IdIndex<String> = IdIndex::new();
+  assert!(index.lookup("hackem muche").is_none());
+  let id = index.intern("hackem muche");
+  assert!(id.is_ok());
+  assert_eq!(id.expect("intern failure"), 1);
+
+  let mut index = index.freeze();
+
+  let id = index.intern("hackem muche");
+  assert!(id.is_ok());
+  assert_eq!(id.expect("intern failure"), 1);
+
+  let id2 = index.intern("foobie bletch");
+  assert!(id2.is_err());
 }

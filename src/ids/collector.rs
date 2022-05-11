@@ -132,7 +132,7 @@ impl KeyCollector {
 impl <'a> KeyCountAccum<'a> {
   /// Add a key to this accumulator.
   pub fn add_key(&mut self, key: &str) {
-    let pos = self.index.intern(key) as usize - 1;
+    let pos = self.index.intern(key).expect("intern failure") as usize - 1;
     if pos >= self.counts.len() {
       self.counts.resize(pos + 1, 0);
     }

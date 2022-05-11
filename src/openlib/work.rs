@@ -56,7 +56,7 @@ impl ObjectWriter<Row<OLWorkRecord>> for WorkProcessor {
     for pos in 0..row.record.authors.len() {
       let akey = row.record.authors[pos].key();
       if let Some(akey) = akey {
-        let aid = self.author_ids.intern(akey);
+        let aid = self.author_ids.intern(akey)?;
         let pos = pos as i16;
         self.author_writer.write_object(WorkAuthorRec {
           id, pos, author: aid

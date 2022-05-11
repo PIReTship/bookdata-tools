@@ -34,7 +34,7 @@ impl Command for ScanRatings {
     let iter = Timer::builder().label("reading ratings").interval(2.5).iter_progress(src);
     for row in iter {
       let row: SourceRating = row?;
-      let user = index.intern(row.user.as_str());
+      let user = index.intern(row.user.as_str())?;
       writer.write_object(RatingRow {
         user,
         asin: row.asin,

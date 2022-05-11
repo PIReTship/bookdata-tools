@@ -93,7 +93,7 @@ impl ObjectWriter<Row<OLEditionRecord>> for EditionProcessor {
     self.save_isbns(id, row.record.asin, clean_asin_chars)?;
 
     for work in row.record.works {
-      let work = self.work_ids.intern_owned(work.key);
+      let work = self.work_ids.intern_owned(work.key)?;
       self.link_writer.write_object(LinkRec {
         edition: id, work
       })?;
@@ -102,7 +102,7 @@ impl ObjectWriter<Row<OLEditionRecord>> for EditionProcessor {
     for pos in 0..row.record.authors.len() {
       let akey = row.record.authors[pos].key();
       if let Some(akey) = akey {
-        let aid = self.author_ids.intern(akey);
+        let aid = self.author_ids.intern(akey)?;
         let pos = pos as i16;
         self.author_writer.write_object(EditionAuthorRec {
           edition: id, pos, author: aid

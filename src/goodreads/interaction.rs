@@ -84,7 +84,7 @@ impl ObjectWriter<RawInteraction> for IntWriter {
   fn write_object(&mut self, row: RawInteraction) -> Result<()> {
     self.n_recs += 1;
     let rec_id = self.n_recs;
-    let user_id = self.users.intern_owned(row.user_id);
+    let user_id = self.users.intern_owned(row.user_id)?;
     let book_id: i32 = row.book_id.parse()?;
     let (rev_hi, rev_lo) = decode_hex_i64_pair(&row.review_id)?;
     let review_id = rev_hi ^ rev_lo;
