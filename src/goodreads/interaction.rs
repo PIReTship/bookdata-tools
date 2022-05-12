@@ -1,3 +1,4 @@
+//! GoodReads interaction record schemas and processing.
 use hashbrown::HashSet;
 use serde::Deserialize;
 
@@ -12,7 +13,7 @@ pub const USER_FILE: &'static str = "gr-users.parquet";
 pub const UID_COL: &'static str = "user";
 pub const UHASH_COL: &'static str = "user_hash";
 
-// the records we read from JSON
+/// Interaction records we read from JSON.
 #[derive(Deserialize)]
 pub struct RawInteraction {
   pub user_id: String,
@@ -52,7 +53,7 @@ pub struct IntRecord {
   pub read_finished: Option<f32>,
 }
 
-// Object writer to transform and write GoodReads interactions
+/// Object writer to transform and write GoodReads interactions
 pub struct IntWriter {
   writer: TableWriter<IntRecord>,
   users: IdIndex<String>,
@@ -61,7 +62,7 @@ pub struct IntWriter {
 }
 
 impl IntWriter {
-  // Open a new output
+  /// Open a new output
   pub fn open() -> Result<IntWriter> {
     let writer = TableWriter::open(OUT_FILE)?;
     Ok(IntWriter {
@@ -80,7 +81,7 @@ impl DataSink for IntWriter {
 }
 
 impl ObjectWriter<RawInteraction> for IntWriter {
-  // Write a single interaction to the output
+  /// Write a single interaction to the output
   fn write_object(&mut self, row: RawInteraction) -> Result<()> {
     self.n_recs += 1;
     let rec_id = self.n_recs;

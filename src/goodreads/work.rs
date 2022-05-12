@@ -1,3 +1,4 @@
+//! GoodReads work schemas and record processing.
 use serde::Deserialize;
 use chrono::NaiveDate;
 
@@ -7,7 +8,7 @@ use crate::parsing::*;
 
 const OUT_FILE: &'static str = "gr-work-info.parquet";
 
-// Work records from JSON.
+/// Work records as parsed from JSON.
 #[derive(Deserialize)]
 pub struct RawWork {
   pub work_id: String,
@@ -21,7 +22,7 @@ pub struct RawWork {
   pub original_publication_day: String,
 }
 
-// Rows in the processed work Parquet table.
+/// Rows in the processed work Parquet table.
 #[derive(ParquetRecordWriter)]
 pub struct WorkRecord {
   pub work_id: i32,
@@ -31,14 +32,14 @@ pub struct WorkRecord {
   pub pub_date: Option<NaiveDate>
 }
 
-// Object writer to transform and write GoodReads works
+/// Object writer to transform and write GoodReads works
 pub struct WorkWriter {
   writer: TableWriter<WorkRecord>,
   n_recs: usize,
 }
 
 impl WorkWriter {
-  // Open a new output
+  /// Open a new output
   pub fn open() -> Result<WorkWriter> {
     let writer = TableWriter::open(OUT_FILE)?;
     Ok(WorkWriter {
