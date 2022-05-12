@@ -18,7 +18,7 @@ pub struct RawInteraction {
   pub user_id: String,
   pub book_id: String,
   pub review_id: String,
-  #[serde(rename="isRead")]
+  #[serde(alias="isRead")]
   pub is_read: bool,
   pub rating: f32,
   pub date_added: String,
