@@ -241,6 +241,7 @@
 <span id="236">236</span>
 <span id="237">237</span>
 <span id="238">238</span>
+<span id="239">239</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::io</span>::{<span class="ident">BufRead</span>, <span class="ident">Lines</span>};
 <span class="kw">use</span> <span class="ident">std::str</span>;
 <span class="kw">use</span> <span class="ident">std::convert::TryInto</span>;
@@ -304,9 +305,9 @@
   <span class="kw">loop</span> {
     <span class="kw">match</span> <span class="ident">reader</span>.<span class="ident">read_event</span>(<span class="ident">buf</span>)<span class="question-mark">?</span> {
       <span class="ident">Event::Start</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) =&gt; {
-        <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">str::from_utf8</span>(<span class="ident">e</span>.<span class="ident">local_name</span>())<span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">local_name</span>();
         <span class="kw">match</span> <span class="ident">name</span> {
-          <span class="string">&quot;record&quot;</span> =&gt; {
+          <span class="string">b&quot;record&quot;</span> =&gt; {
             <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">read_record</span>(<span class="ident">reader</span>)<span class="question-mark">?</span>))
           },
           <span class="kw">_</span> =&gt; ()
@@ -354,6 +355,7 @@
 }
 
 <span class="doccomment">/// Read a single MARC record from an XML reader.</span>
+<span class="attribute">#[<span class="ident">inline</span>(<span class="ident">never</span>)]</span> <span class="comment">// make profiling a little easier, this fn isn&#39;t worth inlining</span>
 <span class="kw">fn</span> <span class="ident">read_record</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">BufRead</span><span class="op">&gt;</span>(<span class="ident">rdr</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Reader</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">MARCRecord</span><span class="op">&gt;</span> {
   <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
   <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">content</span> <span class="op">=</span> <span class="ident">DataAccumulator::new</span>();
@@ -368,21 +370,21 @@
   <span class="kw">loop</span> {
     <span class="kw">match</span> <span class="ident">rdr</span>.<span class="ident">read_event</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>)<span class="question-mark">?</span> {
       <span class="ident">Event::Start</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) =&gt; {
-        <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">str::from_utf8</span>(<span class="ident">e</span>.<span class="ident">local_name</span>())<span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">local_name</span>();
         <span class="kw">match</span> <span class="ident">name</span> {
-          <span class="string">&quot;record&quot;</span> =&gt; (),
-          <span class="string">&quot;leader&quot;</span> =&gt; {
+          <span class="string">b&quot;record&quot;</span> =&gt; (),
+          <span class="string">b&quot;leader&quot;</span> =&gt; {
             <span class="ident">content</span>.<span class="ident">activate</span>();
           },
-          <span class="string">&quot;controlfield&quot;</span> =&gt; {
+          <span class="string">b&quot;controlfield&quot;</span> =&gt; {
             <span class="ident">tag</span> <span class="op">=</span> <span class="ident">read_tag_attr</span>(<span class="ident">e</span>.<span class="ident">attributes</span>())<span class="question-mark">?</span>;
             <span class="ident">content</span>.<span class="ident">activate</span>();
           },
-          <span class="string">&quot;datafield&quot;</span> =&gt; {
+          <span class="string">b&quot;datafield&quot;</span> =&gt; {
             <span class="kw">let</span> <span class="ident">codes</span> <span class="op">=</span> <span class="ident">read_code_attrs</span>(<span class="ident">e</span>.<span class="ident">attributes</span>())<span class="question-mark">?</span>;
             <span class="ident">field</span> <span class="op">=</span> <span class="ident">codes</span>.<span class="ident">into</span>();
           },
-          <span class="string">&quot;subfield&quot;</span> =&gt; {
+          <span class="string">b&quot;subfield&quot;</span> =&gt; {
             <span class="ident">sf_code</span> <span class="op">=</span> <span class="ident">read_sf_code_attr</span>(<span class="ident">e</span>.<span class="ident">attributes</span>())<span class="question-mark">?</span>;
             <span class="ident">content</span>.<span class="ident">activate</span>();
           }
@@ -390,28 +392,28 @@
         }
       },
       <span class="ident">Event::End</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) =&gt; {
-        <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">str::from_utf8</span>(<span class="ident">e</span>.<span class="ident">local_name</span>())<span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">local_name</span>();
         <span class="kw">match</span> <span class="ident">name</span> {
-          <span class="string">&quot;leader&quot;</span> =&gt; {
+          <span class="string">b&quot;leader&quot;</span> =&gt; {
             <span class="ident">record</span>.<span class="ident">leader</span> <span class="op">=</span> <span class="ident">content</span>.<span class="ident">finish_string</span>()<span class="question-mark">?</span>;
           }
-          <span class="string">&quot;controlfield&quot;</span> =&gt; {
+          <span class="string">b&quot;controlfield&quot;</span> =&gt; {
             <span class="ident">record</span>.<span class="ident">control</span>.<span class="ident">push</span>(<span class="ident">ControlField</span> {
               <span class="ident">tag</span>: <span class="ident">tag</span>.<span class="ident">try_into</span>()<span class="question-mark">?</span>,
               <span class="ident">content</span>: <span class="ident">content</span>.<span class="ident">finish_string</span>()<span class="question-mark">?</span>
             })
           }
-          <span class="string">&quot;subfield&quot;</span> =&gt; {
+          <span class="string">b&quot;subfield&quot;</span> =&gt; {
             <span class="ident">field</span>.<span class="ident">subfields</span>.<span class="ident">push</span>(<span class="ident">Subfield</span> {
               <span class="ident">code</span>: <span class="ident">sf_code</span>,
               <span class="ident">content</span>: <span class="ident">content</span>.<span class="ident">finish_string</span>()<span class="question-mark">?</span>
             })
           },
-          <span class="string">&quot;datafield&quot;</span> =&gt; {
+          <span class="string">b&quot;datafield&quot;</span> =&gt; {
             <span class="ident">record</span>.<span class="ident">fields</span>.<span class="ident">push</span>(<span class="ident">field</span>);
             <span class="ident">field</span> <span class="op">=</span> <span class="ident">Field::default</span>();
           },
-          <span class="string">&quot;record&quot;</span> =&gt; {
+          <span class="string">b&quot;record&quot;</span> =&gt; {
             <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">record</span>)
           },
           <span class="kw">_</span> =&gt; ()

@@ -132,7 +132,32 @@
 <span id="127">127</span>
 <span id="128">128</span>
 <span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
 </pre><pre class="rust"><code><span class="doccomment">//! OpenLibrary edition schemas.</span>
+<span class="kw">use</span> <span class="ident">friendly::scalar</span>;
+
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::arrow</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ids::index::IdIndex</span>;
@@ -172,6 +197,13 @@
   <span class="kw">pub</span> <span class="ident">author</span>: <span class="ident">i32</span>
 }
 
+<span class="doccomment">/// Edition-subject record in extracted Parquet.</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">ParquetRecordWriter</span>)]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">EditionSubjectRec</span> {
+  <span class="kw">pub</span> <span class="ident">id</span>: <span class="ident">i32</span>,
+  <span class="kw">pub</span> <span class="ident">subject</span>: <span class="ident">String</span>,
+}
+
 <span class="doccomment">/// Process edition records into Parquet.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// This must be run **after** the author and work processors.</span>
@@ -182,7 +214,8 @@
   <span class="ident">rec_writer</span>: <span class="ident">TableWriter</span><span class="op">&lt;</span><span class="ident">EditionRec</span><span class="op">&gt;</span>,
   <span class="ident">link_writer</span>: <span class="ident">TableWriter</span><span class="op">&lt;</span><span class="ident">LinkRec</span><span class="op">&gt;</span>,
   <span class="ident">isbn_writer</span>: <span class="ident">TableWriter</span><span class="op">&lt;</span><span class="ident">ISBNrec</span><span class="op">&gt;</span>,
-  <span class="ident">author_writer</span>: <span class="ident">TableWriter</span><span class="op">&lt;</span><span class="ident">EditionAuthorRec</span><span class="op">&gt;</span>
+  <span class="ident">author_writer</span>: <span class="ident">TableWriter</span><span class="op">&lt;</span><span class="ident">EditionAuthorRec</span><span class="op">&gt;</span>,
+  <span class="ident">subject_writer</span>: <span class="ident">TableWriter</span><span class="op">&lt;</span><span class="ident">EditionSubjectRec</span><span class="op">&gt;</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">EditionProcessor</span> {
@@ -194,7 +227,8 @@
       <span class="ident">rec_writer</span>: <span class="ident">TableWriter::open</span>(<span class="string">&quot;editions.parquet&quot;</span>)<span class="question-mark">?</span>,
       <span class="ident">link_writer</span>: <span class="ident">TableWriter::open</span>(<span class="string">&quot;edition-works.parquet&quot;</span>)<span class="question-mark">?</span>,
       <span class="ident">isbn_writer</span>: <span class="ident">TableWriter::open</span>(<span class="string">&quot;edition-isbns.parquet&quot;</span>)<span class="question-mark">?</span>,
-      <span class="ident">author_writer</span>: <span class="ident">TableWriter::open</span>(<span class="string">&quot;edition-authors.parquet&quot;</span>)<span class="question-mark">?</span>
+      <span class="ident">author_writer</span>: <span class="ident">TableWriter::open</span>(<span class="string">&quot;edition-authors.parquet&quot;</span>)<span class="question-mark">?</span>,
+      <span class="ident">subject_writer</span>: <span class="ident">TableWriter::open</span>(<span class="string">&quot;edition-subjects.parquet&quot;</span>)<span class="question-mark">?</span>,
     })
   }
 
@@ -227,7 +261,7 @@
     <span class="self">self</span>.<span class="ident">save_isbns</span>(<span class="ident">id</span>, <span class="ident">row</span>.<span class="ident">record</span>.<span class="ident">asin</span>, <span class="ident">clean_asin_chars</span>)<span class="question-mark">?</span>;
 
     <span class="kw">for</span> <span class="ident">work</span> <span class="kw">in</span> <span class="ident">row</span>.<span class="ident">record</span>.<span class="ident">works</span> {
-      <span class="kw">let</span> <span class="ident">work</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">work_ids</span>.<span class="ident">intern_owned</span>(<span class="ident">work</span>.<span class="ident">key</span>);
+      <span class="kw">let</span> <span class="ident">work</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">work_ids</span>.<span class="ident">intern_owned</span>(<span class="ident">work</span>.<span class="ident">key</span>)<span class="question-mark">?</span>;
       <span class="self">self</span>.<span class="ident">link_writer</span>.<span class="ident">write_object</span>(<span class="ident">LinkRec</span> {
         <span class="ident">edition</span>: <span class="ident">id</span>, <span class="ident">work</span>
       })<span class="question-mark">?</span>;
@@ -236,7 +270,7 @@
     <span class="kw">for</span> <span class="ident">pos</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">row</span>.<span class="ident">record</span>.<span class="ident">authors</span>.<span class="ident">len</span>() {
       <span class="kw">let</span> <span class="ident">akey</span> <span class="op">=</span> <span class="ident">row</span>.<span class="ident">record</span>.<span class="ident">authors</span>[<span class="ident">pos</span>].<span class="ident">key</span>();
       <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">akey</span>) <span class="op">=</span> <span class="ident">akey</span> {
-        <span class="kw">let</span> <span class="ident">aid</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">author_ids</span>.<span class="ident">intern</span>(<span class="ident">akey</span>);
+        <span class="kw">let</span> <span class="ident">aid</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">author_ids</span>.<span class="ident">intern</span>(<span class="ident">akey</span>)<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">pos</span> <span class="op">=</span> <span class="ident">pos</span> <span class="kw">as</span> <span class="ident">i16</span>;
         <span class="self">self</span>.<span class="ident">author_writer</span>.<span class="ident">write_object</span>(<span class="ident">EditionAuthorRec</span> {
           <span class="ident">edition</span>: <span class="ident">id</span>, <span class="ident">pos</span>, <span class="ident">author</span>: <span class="ident">aid</span>
@@ -244,14 +278,26 @@
       }
     }
 
+    <span class="kw">for</span> <span class="ident">subject</span> <span class="kw">in</span> <span class="ident">row</span>.<span class="ident">record</span>.<span class="ident">subjects</span> {
+      <span class="self">self</span>.<span class="ident">subject_writer</span>.<span class="ident">write_object</span>(<span class="ident">EditionSubjectRec</span> {
+        <span class="ident">id</span>, <span class="ident">subject</span>
+      })<span class="question-mark">?</span>;
+    }
+
     <span class="prelude-val">Ok</span>(())
   }
 
   <span class="kw">fn</span> <span class="ident">finish</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
-    <span class="self">self</span>.<span class="ident">rec_writer</span>.<span class="ident">finish</span>()<span class="question-mark">?</span>;
-    <span class="self">self</span>.<span class="ident">author_writer</span>.<span class="ident">finish</span>()<span class="question-mark">?</span>;
-    <span class="self">self</span>.<span class="ident">link_writer</span>.<span class="ident">finish</span>()<span class="question-mark">?</span>;
-    <span class="self">self</span>.<span class="ident">isbn_writer</span>.<span class="ident">finish</span>()<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">rec_writer</span>.<span class="ident">finish</span>()<span class="question-mark">?</span>;
+    <span class="macro">info!</span>(<span class="string">&quot;wrote {} edition records&quot;</span>, <span class="ident">scalar</span>(<span class="ident">n</span>));
+    <span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">author_writer</span>.<span class="ident">finish</span>()<span class="question-mark">?</span>;
+    <span class="macro">info!</span>(<span class="string">&quot;wrote {} edition-author records&quot;</span>, <span class="ident">scalar</span>(<span class="ident">n</span>));
+    <span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">link_writer</span>.<span class="ident">finish</span>()<span class="question-mark">?</span>;
+    <span class="macro">info!</span>(<span class="string">&quot;wrote {} edition-work records&quot;</span>, <span class="ident">scalar</span>(<span class="ident">n</span>));
+    <span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">isbn_writer</span>.<span class="ident">finish</span>()<span class="question-mark">?</span>;
+    <span class="macro">info!</span>(<span class="string">&quot;wrote {} edition-isbn records&quot;</span>, <span class="ident">scalar</span>(<span class="ident">n</span>));
+    <span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">subject_writer</span>.<span class="ident">finish</span>()<span class="question-mark">?</span>;
+    <span class="macro">info!</span>(<span class="string">&quot;wrote {} edition-subject records&quot;</span>, <span class="ident">scalar</span>(<span class="ident">n</span>));
     <span class="self">self</span>.<span class="ident">author_ids</span>.<span class="ident">save_standard</span>(<span class="string">&quot;all-authors.parquet&quot;</span>)<span class="question-mark">?</span>;
     <span class="self">self</span>.<span class="ident">work_ids</span>.<span class="ident">save_standard</span>(<span class="string">&quot;all-works.parquet&quot;</span>)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">last_id</span> <span class="kw">as</span> <span class="ident">usize</span>)

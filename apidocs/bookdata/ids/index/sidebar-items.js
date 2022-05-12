@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["IdIndex","Index identifiers from a data type"],["IdRec","Internal struct for ID records."]],"type":[["Id","The type of index identifiers."]]});
+initSidebarItems({"enum":[["IndexError",""]],"struct":[["IdIndex","Index identifiers from a data type"],["IdRec","Internal struct for ID records."]],"type":[["Id","The type of index identifiers."]]});
