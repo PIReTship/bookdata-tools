@@ -9,6 +9,7 @@ Version 2.1 has a few updates but does not change formatting:
 
 -   Updated VIAF to May 1, 2022 dump
 -   Updated OpenLibrary to March 29, 2022 dump
+-   Update to DataFusion 8.0
 
 ## Book Data 2.0
 
