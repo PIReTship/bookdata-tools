@@ -57,7 +57,7 @@ impl MultiSource {
 }
 
 /// Read a single ISBN source into the accumulator.
-async fn read_source(ctx: &mut ExecutionContext, kc: &mut KeyCollector, name: &str, src: &ISBNSource) -> Result<()> {
+async fn read_source(ctx: &mut SessionContext, kc: &mut KeyCollector, name: &str, src: &ISBNSource) -> Result<()> {
   let mut acc = kc.accum(name);
   let id_col = src.column.as_deref().unwrap_or("isbn");
 
@@ -67,7 +67,7 @@ async fn read_source(ctx: &mut ExecutionContext, kc: &mut KeyCollector, name: &s
     let opts = CsvReadOptions::new().has_header(true);
     ctx.read_csv(&src.path, opts).await?
   } else {
-    ctx.read_parquet(&src.path).await?
+    ctx.read_parquet(&src.path, default()).await?
   };
   let df = df.select(vec![
     col(id_col).alias("isbn")
@@ -92,7 +92,7 @@ impl AsyncCommand for CollectISBNs {
     let spec = read_to_string(&self.source_file)?;
     let spec: SourceSet = toml::de::from_str(&spec)?;
 
-    let mut ctx = ExecutionContext::new();
+    let mut ctx = SessionContext::new();
     let mut kc = KeyCollector::new();
     for (name, ms) in spec {
       for source in ms.to_list() {

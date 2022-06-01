@@ -39,11 +39,11 @@ impl Source for Ratings {
   type Act = BXRating;
   type DD = RatingDedup<TimelessRatingRecord>;
 
-  async fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+  async fn scan_linked_actions(&self, ctx: &mut SessionContext) -> Result<Arc<DataFrame>> {
     info!("setting up to scan BookCrossing ratings");
 
     // load linking info
-    let ic_link = ctx.read_parquet("book-links/isbn-clusters.parquet");
+    let ic_link = ctx.read_parquet("book-links/isbn-clusters.parquet", default());
     let ic_link = ic_link.await?;
     let ic_link = ic_link.select_columns(&["isbn", "cluster"])?;
 
@@ -65,11 +65,11 @@ impl Source for Actions {
   type Act = BXRating;
   type DD = ActionDedup<TimelessActionRecord>;
 
-  async fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+  async fn scan_linked_actions(&self, ctx: &mut SessionContext) -> Result<Arc<DataFrame>> {
     info!("setting up to scan BookCrossing actions");
 
     // load linking info
-    let ic_link = ctx.read_parquet("book-links/isbn-clusters.parquet");
+    let ic_link = ctx.read_parquet("book-links/isbn-clusters.parquet", default());
     let ic_link = ic_link.await?;
     let ic_link = ic_link.select_columns(&["isbn", "cluster"])?;
 

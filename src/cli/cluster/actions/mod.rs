@@ -39,7 +39,7 @@ pub struct ClusterActions {
   outfile: PathBuf,
 }
 
-async fn scan_and_save<S: Source>(src: S, ctx: &mut ExecutionContext, dst: &Path) -> Result<usize> {
+async fn scan_and_save<S: Source>(src: S, ctx: &mut SessionContext, dst: &Path) -> Result<usize> {
   let source = src.scan_linked_actions(ctx).await?;
 
   let mut dedup = src.make_dedup();
@@ -60,7 +60,7 @@ async fn scan_and_save<S: Source>(src: S, ctx: &mut ExecutionContext, dst: &Path
 #[async_trait]
 impl AsyncCommand for ClusterActions {
   async fn exec_future(&self) -> Result<()> {
-    let mut ctx = ExecutionContext::new();
+    let mut ctx = SessionContext::new();
     let infile = self.infile.as_ref().map(|s| s.as_str());
 
     let dst = self.outfile.as_ref();

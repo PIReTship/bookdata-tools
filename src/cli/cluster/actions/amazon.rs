@@ -29,15 +29,15 @@ impl Source for Ratings {
   type Act = RatingRow;
   type DD = RatingDedup<TimestampRatingRecord>;
 
-  async fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+  async fn scan_linked_actions(&self, ctx: &mut SessionContext) -> Result<Arc<DataFrame>> {
     info!("setting up to scan Amazon ratings from {}", self.path);
 
     // load linking info
-    let ic_link = ctx.read_parquet(ISBN_CLUSTER_FILE).await?;
+    let ic_link = ctx.read_parquet(ISBN_CLUSTER_FILE, default()).await?;
     let ic_link = ic_link.select_columns(&["isbn", "cluster"])?;
 
     // load ratings
-    let ratings = ctx.read_parquet(&self.path);
+    let ratings = ctx.read_parquet(&self.path, default());
     let ratings = ratings.await?;
     let rlink = ratings.join(ic_link, JoinType::Inner, &["asin"], &["isbn"])?;
     let rlink = rlink.select(vec![

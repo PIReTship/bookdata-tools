@@ -39,8 +39,8 @@ struct ClusterIsbn {
 }
 
 /// Load ISBN data
-async fn scan_isbns(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-  let icl = ctx.read_parquet("isbn-clusters.parquet").await?;
+async fn scan_isbns(ctx: &mut SessionContext) -> Result<Arc<DataFrame>> {
+  let icl = ctx.read_parquet("isbn-clusters.parquet", default()).await?;
   let icl = icl.select_columns(&["isbn", "cluster"])?;
   let icl = icl.sort(vec![
     col("cluster").sort(true, true),
@@ -50,7 +50,7 @@ async fn scan_isbns(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
 }
 
 /// Write out cluster hah records to file, without duplicates.
-async fn write_hashes_dedup(df: Arc<dyn DataFrame>, path: &Path) -> Result<()> {
+async fn write_hashes_dedup(df: Arc<DataFrame>, path: &Path) -> Result<()> {
   info!("saving output to {}", path.to_string_lossy());
   let mut writer = TableWriter::open(path)?;
 
@@ -95,7 +95,7 @@ async fn write_hashes_dedup(df: Arc<dyn DataFrame>, path: &Path) -> Result<()> {
 #[async_trait]
 impl AsyncCommand for HashCmd {
   async fn exec_future(&self) -> Result<()> {
-    let mut ctx = ExecutionContext::new();
+    let mut ctx = SessionContext::new();
     let df = scan_isbns(&mut ctx).await?;
     write_hashes_dedup(df, &self.output).await?;
 

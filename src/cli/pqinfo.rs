@@ -51,7 +51,7 @@ impl Command for PQInfo {
 
     info!("decoding schema");
     let schema = file_meta.schema_descr();
-    let arrow_schema = parquet_to_arrow_schema(schema, &None)?;
+    let arrow_schema = parquet_to_arrow_schema(schema, None)?;
 
     let out = stdout();
     let mut ol = out.lock();

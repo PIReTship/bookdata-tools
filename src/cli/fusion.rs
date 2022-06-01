@@ -35,14 +35,14 @@ pub struct Fusion {
 
 struct ScriptContext {
   runtime: Runtime,
-  df_context: ExecutionContext,
+  df_context: SessionContext,
 }
 
 impl ScriptContext {
   /// Initialize a new script context.
   fn create() -> Result<ScriptContext> {
     let runtime = Runtime::new()?;
-    let mut df_context = ExecutionContext::new();
+    let mut df_context = SessionContext::new();
     add_udfs(&mut df_context);
     Ok(ScriptContext {
       runtime, df_context
@@ -51,11 +51,11 @@ impl ScriptContext {
 }
 
 /// Save an execution plan to a writer.
-async fn write_plan_results<W>(ctx: &ExecutionContext, plan: Arc<dyn ExecutionPlan>, mut out: W) -> Result<()>
+async fn write_plan_results<W>(ctx: &SessionContext, plan: Arc<dyn ExecutionPlan>, mut out: W) -> Result<()>
   where W: for <'a> ObjectWriter<&'a RecordBatch>
 {
-  let runtime = ctx.runtime_env();
-  let mut batches = execute_stream(plan, runtime).await?;
+  let task = ctx.task_ctx();
+  let mut batches = execute_stream(plan, task).await?;
   while let Some(batch) = batches.next().await {
     let batch = batch?;
     out.write_object(&batch)?;
@@ -70,7 +70,7 @@ async fn write_plan_results<W>(ctx: &ExecutionContext, plan: Arc<dyn ExecutionPl
 ///
 /// The weird lifetime on this function is to handle using a reference in an asynchonous function.
 /// Rust doesn't naturally support those very well.
-fn save_parquet<'x>(ctx: &'x ExecutionContext, plan: Arc<dyn ExecutionPlan>, file: &str, partitioned: bool) -> impl Future<Output=Result<()>> + 'x {
+fn save_parquet<'x>(ctx: &'x SessionContext, plan: Arc<dyn ExecutionPlan>, file: &str, partitioned: bool) -> impl Future<Output=Result<()>> + 'x {
   // take ownership of the file
   let file = file.to_string();
   // set up the writer
@@ -93,7 +93,7 @@ fn save_parquet<'x>(ctx: &'x ExecutionContext, plan: Arc<dyn ExecutionPlan>, fil
 }
 
 /// Save an execution plan results to a CSV file.
-async fn save_csv(ctx: &ExecutionContext, plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
+async fn save_csv(ctx: &SessionContext, plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
   info!("saving to CSV file");
   // take ownership of the filename string
   let file = file.to_string();
@@ -106,7 +106,7 @@ async fn save_csv(ctx: &ExecutionContext, plan: Arc<dyn ExecutionPlan>, file: &s
   Ok(())
 }
 
-async fn save_csvgz(ctx: &ExecutionContext, plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
+async fn save_csvgz(ctx: &SessionContext, plan: Arc<dyn ExecutionPlan>, file: &str) -> Result<()> {
   info!("saving to compressed CSV file");
   // take ownership of the filename string
   let file = file.to_string();
@@ -148,7 +148,7 @@ fn cmd_table(interp: &mut Interp, ctx: ContextID, argv: &[Value]) -> MoltResult 
   async_wrap_errs(&ctx.runtime, async {
     info!("mounting table {} from {}", table, file);
     if file.ends_with(".parquet") {
-      ctx.df_context.register_parquet(table, file).await?;
+      ctx.df_context.register_parquet(table, file, default()).await?;
     } else if file.ends_with(".csv") {
       ctx.df_context.register_csv(table, file, CsvReadOptions::new().has_header(true)).await?;
     } else {

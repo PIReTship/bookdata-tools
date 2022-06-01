@@ -12,9 +12,10 @@ use std::sync::Arc;
 use arrow::datatypes::*;
 use arrow::array::*;
 use datafusion::prelude::create_udf;
-use datafusion::physical_plan::functions::{make_scalar_function, Volatility};
+use datafusion::physical_plan::functions::{make_scalar_function};
+use datafusion::logical_expr::Volatility;
 use datafusion::physical_plan::udf::ScalarUDF;
-use datafusion::execution::context::ExecutionContext;
+use datafusion::execution::context::SessionContext;
 
 use log::*;
 
@@ -151,7 +152,7 @@ impl NS<'static> {
 }
 
 /// Add book code UDFs to an execution context.
-pub fn add_udfs(ctx: &mut ExecutionContext) {
+pub fn add_udfs(ctx: &mut SessionContext) {
   for ns in NAMESPACES {
     ctx.register_udf(ns.from_code_udf());
     ctx.register_udf(ns.code_is_udf());
