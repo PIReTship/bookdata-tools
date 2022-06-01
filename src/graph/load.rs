@@ -31,9 +31,8 @@ impl GraphBuilder {
     let mut iter = RecordBatchDeserializer::for_stream(batches);
     while let Some(row) = iter.next().await {
       let row: BookID = row?;
-      if !self.nodes.contains_key(&row.code) {
-        self.nodes.insert(row.code, self.graph.add_node(row));
-      }
+      let entry = self.nodes.entry(row.code);
+      entry.or_insert_with(|| self.graph.add_node(row));
     }
 
     info!("loaded {} new vertices from {:?}", self.nodes.len() - ninit, src);
