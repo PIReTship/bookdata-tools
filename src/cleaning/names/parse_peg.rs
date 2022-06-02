@@ -39,7 +39,7 @@ peg::parser!{
       / y:year_tag() { Some(y) }
 
     rule cs_name() -> NameFmt
-      = last:$([^',']*) "," space()* rest:$(([_] !ending())* [^',' | '.']?) {
+      = last:$([^',']*) "," space()* rest:$(([_] !ending())* [^',']?) {
         NameFmt::TwoPart(last.trim().to_owned(), rest.trim().to_owned())
       }
 
