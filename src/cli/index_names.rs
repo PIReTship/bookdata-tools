@@ -71,7 +71,7 @@ fn write_index(index: NameIndex, path: &Path) -> Result<()> {
   csv_fn.set_extension("csv.zst");
   let out = File::create(&csv_fn)?;
   // let out = GzEncoder::new(out, flate2::Compression::best());
-  let out = Encoder::new(out, 3)?.auto_finish();
+  let out = Encoder::new(out, 2)?.auto_finish();
   let csvw = csv::Writer::from_writer(out);
   let mut csvout = ThreadWriter::new(csvw);
 
