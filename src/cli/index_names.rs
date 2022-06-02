@@ -68,10 +68,10 @@ fn write_index(index: NameIndex, path: &Path) -> Result<()> {
   let mut writer = TableWriter::open(&path)?;
 
   let mut csv_fn = PathBuf::from(path);
-  csv_fn.set_extension("csv.zst");
+  csv_fn.set_extension("csv.gz");
   let out = File::create(&csv_fn)?;
-  // let out = GzEncoder::new(out, flate2::Compression::best());
-  let out = Encoder::new(out, 2)?.auto_finish();
+  let out = GzEncoder::new(out, flate2::Compression::fast());
+  // let out = Encoder::new(out, 2)?.auto_finish();
   let csvw = csv::Writer::from_writer(out);
   let mut csvout = ThreadWriter::new(csvw);
 
