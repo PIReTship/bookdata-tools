@@ -10,6 +10,7 @@ use flate2::write::GzEncoder;
 
 use crate::prelude::*;
 use crate::arrow::*;
+use crate::io::object::ThreadWriter;
 use crate::cleaning::names::*;
 use crate::io::open_gzin_progress;
 
@@ -59,26 +60,31 @@ fn scan_names(path: &Path) -> Result<NameIndex> {
 fn write_index(index: NameIndex, path: &Path) -> Result<()> {
   let mut names: Vec<&str> = index.keys().map(|s| s.as_str()).collect();
   info!("sorting {} names", names.len());
-  names.sort();
+  names.sort_unstable();
+
   info!("writing deduplicated names to {}", path.to_string_lossy());
   let mut writer = TableWriter::open(&path)?;
+
   let mut csv_fn = PathBuf::from(path);
   csv_fn.set_extension("csv.gz");
   let out = File::create(&csv_fn)?;
   let out = GzEncoder::new(out, flate2::Compression::best());
-  let mut csvw = csv::Writer::from_writer(out);
+  let csvw = csv::Writer::from_writer(out);
+  let mut csvout = ThreadWriter::new(csvw);
+
   for name in names {
     for rec_id in index.get(name).unwrap() {
       let e = IndexEntry {
         rec_id: *rec_id,
         name: name.to_string()
       };
-      csvw.serialize(&e)?;
+      csvout.write_object(e.clone())?;
       writer.write_object(e)?;
     }
   }
 
   writer.finish()?;
+  csvout.finish()?;
   Ok(())
 }
 
