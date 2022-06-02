@@ -73,6 +73,8 @@ fn write_index(index: NameIndex, path: &Path) -> Result<()> {
   let mut csvout = ThreadWriter::new(csvw);
 
   for name in names {
+    let mut names: Vec<u32> = index.get(name).unwrap().iter().map(|i| *i).collect();
+    names.sort();
     for rec_id in index.get(name).unwrap() {
       let e = IndexEntry {
         rec_id: *rec_id,
