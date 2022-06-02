@@ -10,7 +10,8 @@ pub enum NameError {
 
 pub enum NameFmt {
   Single(String),
-  TwoPart(String, String)
+  TwoPart(String, String),
+  Empty
 }
 
 pub struct NameEntry {

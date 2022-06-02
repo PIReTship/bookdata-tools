@@ -50,7 +50,8 @@ peg::parser!{
 
     #[no_eof]
     pub rule name_entry() -> NameEntry
-      = name:name() year:ending()? { NameEntry { name, year: year.flatten() } }
+      = year:year_tag() { NameEntry { name:NameFmt::Empty, year: Some(year) } }
+      / name:name() year:ending()? { NameEntry { name, year: year.flatten() } }
   }
 }
 

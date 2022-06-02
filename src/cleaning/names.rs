@@ -38,6 +38,7 @@ pub fn name_variants(name: &str) -> Result<Vec<String>, NameError> {
   let parse = parse_name_entry(name)?;
   let mut variants = Vec::new();
   match parse.name {
+    NameFmt::Empty => (),
     NameFmt::Single(n) => variants.push(n),
     NameFmt::TwoPart(last, first) => {
       variants.push(format!("{} {}", first, last));
@@ -113,4 +114,9 @@ fn test_first_last_year() {
     "Ditlev Reventlow, 1712-1783",
     "Ditlev Reventlow",
   ]);
+}
+
+#[test]
+fn test_year_only() {
+  check_name_decode("1941-", &[]);
 }
