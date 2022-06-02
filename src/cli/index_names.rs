@@ -1,5 +1,6 @@
 //! Index names from authority records.
-use std::collections::{HashSet, HashMap};
+use std::cmp::Reverse;
+use std::collections::{HashSet, HashMap, BinaryHeap};
 use std::path::{PathBuf, Path};
 use std::fs::File;
 
@@ -7,6 +8,7 @@ use structopt::StructOpt;
 use csv;
 use serde::{Deserialize, Serialize};
 use flate2::write::GzEncoder;
+use zstd::stream::Encoder;
 
 use crate::prelude::*;
 use crate::arrow::*;
@@ -58,26 +60,27 @@ fn scan_names(path: &Path) -> Result<NameIndex> {
 }
 
 fn write_index(index: NameIndex, path: &Path) -> Result<()> {
-  let mut names: Vec<&str> = index.keys().map(|s| s.as_str()).collect();
-  info!("sorting {} names", names.len());
-  names.sort_unstable();
+  info!("sorting {} names", index.len());
+  let mut names = BinaryHeap::with_capacity(index.len());
+  names.extend(index.keys().map(|k| Reverse(k)));
 
   info!("writing deduplicated names to {}", path.to_string_lossy());
   let mut writer = TableWriter::open(&path)?;
 
   let mut csv_fn = PathBuf::from(path);
-  csv_fn.set_extension("csv.gz");
+  csv_fn.set_extension("csv.zst");
   let out = File::create(&csv_fn)?;
-  let out = GzEncoder::new(out, flate2::Compression::best());
+  // let out = GzEncoder::new(out, flate2::Compression::best());
+  let out = Encoder::new(out, 2)?.auto_finish();
   let csvw = csv::Writer::from_writer(out);
   let mut csvout = ThreadWriter::new(csvw);
 
-  for name in names {
-    let mut names: Vec<u32> = index.get(name).unwrap().iter().map(|i| *i).collect();
-    names.sort();
-    for rec_id in index.get(name).unwrap() {
+  while let Some(Reverse(name)) = names.pop() {
+    let mut ids: Vec<u32> = index.get(name).unwrap().iter().map(|i| *i).collect();
+    ids.sort();
+    for rec_id in ids {
       let e = IndexEntry {
-        rec_id: *rec_id,
+        rec_id,
         name: name.to_string()
       };
       csvout.write_object(e.clone())?;
