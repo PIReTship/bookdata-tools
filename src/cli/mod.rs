@@ -140,7 +140,7 @@ impl CLI {
       lb.filter_level(LevelFilter::Error);
     } else if self.verbose == 1 {
       lb.filter_level(LevelFilter::Debug);
-      lb.filter_module("bookdata", LevelFilter::Info);
+      lb.filter_module("datafusion", LevelFilter::Info);
     } else if self.verbose == 2 {
       lb.filter_level(LevelFilter::Debug);
     } else if self.verbose >= 3 {
