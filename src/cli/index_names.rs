@@ -4,6 +4,7 @@ use std::collections::{HashSet, HashMap, BinaryHeap};
 use std::path::{PathBuf, Path};
 use std::fs::File;
 
+use datafusion::physical_plan::collect;
 use structopt::StructOpt;
 use csv;
 use serde::{Deserialize, Serialize};
@@ -61,8 +62,8 @@ fn scan_names(path: &Path) -> Result<NameIndex> {
 
 fn write_index(index: NameIndex, path: &Path) -> Result<()> {
   info!("sorting {} names", index.len());
-  let mut names = BinaryHeap::with_capacity(index.len());
-  names.extend(index.keys().map(|k| Reverse(k)));
+  let mut names: Vec<&String> = index.keys().collect();
+  names.sort_unstable();
 
   info!("writing deduplicated names to {}", path.to_string_lossy());
   let mut writer = TableWriter::open(&path)?;
@@ -75,9 +76,9 @@ fn write_index(index: NameIndex, path: &Path) -> Result<()> {
   let csvw = csv::Writer::from_writer(out);
   let mut csvout = ThreadWriter::new(csvw);
 
-  while let Some(Reverse(name)) = names.pop() {
+  for name in names {
     let mut ids: Vec<u32> = index.get(name).unwrap().iter().map(|i| *i).collect();
-    ids.sort();
+    ids.sort_unstable();
     for rec_id in ids {
       let e = IndexEntry {
         rec_id,
