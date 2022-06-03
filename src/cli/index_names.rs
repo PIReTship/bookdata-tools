@@ -1,8 +1,9 @@
 //! Index names from authority records.
-use std::error::Error;
 use std::collections::{HashSet, HashMap};
 use std::path::{PathBuf, Path};
 use std::fs::File;
+use std::thread::{spawn, JoinHandle};
+use std::sync::mpsc::sync_channel;
 
 use structopt::StructOpt;
 use csv;
@@ -51,13 +52,31 @@ fn scan_names(path: &Path) -> Result<NameIndex> {
   info!("reading names from {}", path.to_string_lossy());
   let mut index = NameIndex::new();
   let reader = open_gzin_progress(path)?;
-  let mut reader = csv::Reader::from_reader(reader);
-  for line in reader.deserialize() {
-    let record: RecAuthor = line?;
-    for name in name_variants(&record.name)? {
-      index.entry(name).or_default().insert(record.rec_id);
+  let reader = csv::Reader::from_reader(reader);
+
+  // parse CSV and names in the background
+  let (send, recv) = sync_channel(4096);
+  let h: JoinHandle<Result<usize>> = spawn(move || {
+    let send = send; // move send into here
+    let mut n = 0;
+    for line in reader.into_deserialize() {
+      let record: RecAuthor = line?;
+      for name in name_variants(&record.name)? {
+        send.send((name.clone(), record.rec_id))?;
+      }
+      n += 1;
     }
+
+    Ok(n)
+  });
+
+  // process results and add to list
+  for (name, rec_id) in recv {
+    index.entry(name).or_default().insert(rec_id);
   }
+
+  let n = h.join().expect("thread panic")?;
+  info!("read {} records", n);
   Ok(index)
 }
 
