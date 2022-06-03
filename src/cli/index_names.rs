@@ -13,6 +13,7 @@ use zstd::stream::Encoder;
 
 use crate::prelude::*;
 use crate::arrow::*;
+use crate::io::background::ThreadWrite;
 use crate::io::object::ThreadWriter;
 use crate::cleaning::names::*;
 use crate::io::open_gzin_progress;
@@ -62,7 +63,10 @@ fn scan_names(path: &Path) -> Result<NameIndex> {
 
 fn write_index(index: NameIndex, path: &Path) -> Result<()> {
   info!("sorting {} names", index.len());
-  let mut names: Vec<&String> = index.keys().collect();
+  debug!("copying names");
+  let mut names = Vec::with_capacity(index.len());
+  names.extend(index.keys().map(|s| s.as_str()));
+  debug!("sorting names");
   names.sort_unstable();
 
   info!("writing deduplicated names to {}", path.to_string_lossy());
@@ -72,6 +76,7 @@ fn write_index(index: NameIndex, path: &Path) -> Result<()> {
   csv_fn.set_extension("csv.gz");
   let out = File::create(&csv_fn)?;
   let out = GzEncoder::new(out, flate2::Compression::fast());
+  let out = ThreadWrite::new(out)?;
   // let out = Encoder::new(out, 2)?.auto_finish();
   let csvw = csv::Writer::from_writer(out);
   let mut csvout = ThreadWriter::new(csvw);
