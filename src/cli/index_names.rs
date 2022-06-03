@@ -1,15 +1,15 @@
 //! Index names from authority records.
-use std::cmp::Reverse;
-use std::collections::{HashSet, HashMap, BinaryHeap};
+use std::error::Error;
+use std::collections::{HashSet, HashMap};
 use std::path::{PathBuf, Path};
 use std::fs::File;
 
-use datafusion::physical_plan::collect;
 use structopt::StructOpt;
 use csv;
 use serde::{Deserialize, Serialize};
 use flate2::write::GzEncoder;
-use zstd::stream::Encoder;
+
+use rayon::prelude::*;
 
 use crate::prelude::*;
 use crate::arrow::*;
@@ -67,7 +67,7 @@ fn write_index(index: NameIndex, path: &Path) -> Result<()> {
   let mut names = Vec::with_capacity(index.len());
   names.extend(index.keys().map(|s| s.as_str()));
   debug!("sorting names");
-  names.sort_unstable();
+  names.par_sort_unstable();
 
   info!("writing deduplicated names to {}", path.to_string_lossy());
   let mut writer = TableWriter::open(&path)?;
