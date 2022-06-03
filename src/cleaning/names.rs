@@ -22,14 +22,18 @@ use anyhow::{Result};
 use super::strings::norm_unicode;
 
 mod parse_types;
+#[cfg(feature="nom")]
 mod parse_nom;
+#[cfg(feature="peg")]
 mod parse_peg;
 
 pub use parse_types::NameError;
 use parse_types::NameFmt;
 
-// use parse_nom::parse_name_entry;
-use parse_peg::parse_name_entry;
+#[cfg(feature="nom")]
+pub use parse_nom::parse_name_entry;
+#[cfg(feature="peg")]
+pub use parse_peg::parse_name_entry;
 
 /// Extract all variants from a name.
 ///
@@ -114,6 +118,30 @@ fn test_first_last_year() {
     "Ditlev Reventlow, 1712-1783",
     "Ditlev Reventlow",
   ]);
+}
+
+#[test]
+fn test_trailing_comma() {
+  check_name_decode("Miller, Pat Zietlow,", &[
+    "Pat Zietlow Miller",
+    "Miller, Pat Zietlow",
+  ]);
+}
+
+#[test]
+fn test_trailing_punctuation() {
+  check_name_decode("Miller, Pat Zietlow,.", &[
+    "Pat Zietlow Miller",
+    "Miller, Pat Zietlow",
+  ]);
+}
+
+#[test]
+fn test_single_trailing() {
+  let parse = parse_name_entry("Manopoly,").expect("parse error");
+  assert!(parse.year.is_none());
+  assert_eq!(parse.name, NameFmt::Single("Manopoly".to_string()));
+  check_name_decode("Manopoly,", &["Manopoly"]);
 }
 
 #[test]

@@ -4,6 +4,7 @@ use std::error::{Error as StdError};
 
 use anyhow::{Result, anyhow};
 
+#[cfg(feature="nom")]
 pub mod combinators;
 pub mod dates;
 pub mod bindata;
