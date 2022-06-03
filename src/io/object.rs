@@ -24,7 +24,7 @@ pub struct ThreadWriter<T> where T: Send + Sync + 'static {
 
 impl <T: Send + Sync + 'static> ThreadWriter<T> {
   pub fn new<W: ObjectWriter<T> + Send + 'static>(writer: W) -> ThreadWriter<T> {
-    let (sender, receiver) = sync_channel(1000);
+    let (sender, receiver) = sync_channel(4096);
 
     let handle = spawn(|| {
       let recv = receiver;
