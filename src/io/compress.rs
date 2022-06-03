@@ -1,39 +1,17 @@
 use std::io::prelude::*;
-use std::io::{self, BufReader, copy};
+use std::io::{BufReader, copy};
 use std::fs::File;
 use std::path::Path;
-use std::thread::{spawn, JoinHandle};
+use std::thread::spawn;
 
 use log::*;
 use anyhow::{Result, anyhow};
 use flate2::bufread::MultiGzDecoder;
 use zip::read::*;
-use os_pipe::{pipe, PipeReader};
+use os_pipe::pipe;
 
 use crate::util::Timer;
-
-struct ThreadRead {
-  read: PipeReader,
-  handle: Option<JoinHandle<io::Result<u64>>>
-}
-
-impl Read for ThreadRead {
-  fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-    let size = self.read.read(buf)?;
-    if size == 0 {
-      // eof - make sure thread completed successfully
-      // this makes it so thread failure results in an error
-      // on the last call to `read`, instead of a panic when
-      // the reader is dropped.
-      if let Some(h) = self.handle.take() {
-        let res = h.join().expect("thread error");
-        let sz = res?;
-        debug!("thread copied {} bytes", sz);
-      }
-    }
-    Ok(size)
-  }
-}
+use super::background::ThreadRead;
 
 /// Open a gzip-compressed file for input, with a progress bar.
 pub fn open_gzin_progress(path: &Path) -> Result<impl BufRead> {
@@ -43,17 +21,7 @@ pub fn open_gzin_progress(path: &Path) -> Result<impl BufRead> {
   let read = BufReader::new(read);
   let gzf = MultiGzDecoder::new(read);
 
-  let (read, writer) = pipe()?;
-
-  let jh = spawn(|| {
-    let mut src = gzf;
-    let mut dst = writer;
-    copy(&mut src, &mut dst)
-  });
-
-  let thr = ThreadRead {
-    read, handle: Some(jh)
-  };
+  let thr = ThreadRead::new(gzf)?;
   let bfs = BufReader::new(thr);
   Ok(Box::new(bfs))
 }
@@ -78,7 +46,7 @@ pub fn open_solo_zip(path: &Path) -> Result<impl BufRead> {
   }
   let (read, write) = pipe()?;
 
-  let handle = spawn(|| {
+  let handle = spawn(move || {
     // move in the things we will own
     let mut zf = zf;
     let mut dst = write;
@@ -96,9 +64,7 @@ pub fn open_solo_zip(path: &Path) -> Result<impl BufRead> {
     copy(&mut read, &mut dst)
   });
 
-  let thr = ThreadRead {
-    read, handle: Some(handle)
-  };
+  let thr = ThreadRead::create(read, handle);
   let bfs = BufReader::new(thr);
   Ok(Box::new(bfs))
 }
