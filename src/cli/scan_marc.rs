@@ -16,6 +16,7 @@ use crate::marc::MARCRecord;
 use crate::marc::parse::{read_records, read_records_delim};
 use crate::marc::book_fields::BookOutput;
 use crate::marc::flat_fields::FieldOutput;
+use crate::util::logging::set_progress;
 
 /// Scan MARC records and extract basic information.
 ///
@@ -101,7 +102,8 @@ impl ScanMARC {
       let inf = inf.as_path();
       let file_start = Instant::now();
       info!("reading from compressed file {}", inf.display());
-      let read = open_gzin_progress(inf)?;
+      let (read, pb) = open_gzin_progress(inf)?;
+      let _lg = set_progress(pb);
       let mut records = if self.line_mode {
         read_records_delim(read)
       } else {
