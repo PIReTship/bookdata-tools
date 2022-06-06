@@ -145,6 +145,14 @@ fn test_single_trailing() {
 }
 
 #[test]
+fn test_locked() {
+  check_name_decode("!!!GESPERRT!!!Moro, Simone", &[
+    "Simone Moro",
+    "Moro, Simone"
+  ]);
+}
+
+#[test]
 fn test_year_only() {
   check_name_decode("1941-", &[]);
 }

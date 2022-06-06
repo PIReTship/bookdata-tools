@@ -46,7 +46,7 @@ peg::parser!{
     rule single_name() -> NameFmt
       = name:$(([_] !ending())* [^',' | '.']?) { NameFmt::Single(name.trim().to_owned()) }
 
-    rule name() -> NameFmt = cs_name() / single_name()
+    rule name() -> NameFmt = ("!!!" ['a'..='z' | 'A'..='Z']+ "!!!")? n:(cs_name() / single_name()) { n }
 
     #[no_eof]
     pub rule name_entry() -> NameEntry
