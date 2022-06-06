@@ -5,6 +5,7 @@ use std::fs::File;
 use std::thread::{spawn, JoinHandle};
 use std::sync::mpsc::sync_channel;
 
+use indicatif::ProgressBar;
 use structopt::StructOpt;
 use csv;
 use serde::{Deserialize, Serialize};
@@ -102,7 +103,11 @@ fn write_index(index: NameIndex, path: &Path) -> Result<()> {
   let csvw = csv::Writer::from_writer(out);
   let mut csvout = ThreadWriter::new(csvw);
 
-  for name in names {
+  let pb = ProgressBar::new(names.len() as u64);
+  let pb = pb.with_prefix("names");
+  let _lg = set_progress(pb.clone());
+
+  for name in pb.wrap_iter(names.into_iter()) {
     let mut ids: Vec<u32> = index.get(name).unwrap().iter().map(|i| *i).collect();
     ids.sort_unstable();
     for rec_id in ids {

@@ -14,7 +14,7 @@ use os_pipe::pipe;
 use crate::util::Timer;
 use crate::io::background::ThreadRead;
 
-static FILE_PROGRESS: &'static str = "{prefix}: {bar} {pos}/{len} ({elapsed} elapsed, ETA {eta})";
+static FILE_PROGRESS: &'static str = "{prefix}: {bar} {bytes}/{total_bytes} ({bytes_per_sec}, {elapsed} elapsed, ETA {eta})";
 
 /// Open a gzip-compressed file for input, with a progress bar.
 pub fn open_gzin_progress(path: &Path) -> Result<(impl BufRead, ProgressBar)> {
@@ -22,6 +22,7 @@ pub fn open_gzin_progress(path: &Path) -> Result<(impl BufRead, ProgressBar)> {
   let read = File::open(path)?;
   let pb = ProgressBar::new(read.metadata()?.len());
   let pb = pb.with_style(ProgressStyle::default_bar().template(FILE_PROGRESS));
+  let pb = pb.with_prefix(name.to_string());
 
   let read = Timer::builder().label(&name).interval(30.0).log_target(module_path!()).file_progress(read)?;
   let read = pb.wrap_read(read);
