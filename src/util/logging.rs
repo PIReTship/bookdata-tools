@@ -4,8 +4,9 @@
 //! for dynamically routing log messages based on whether there is an active
 //! progress bar.
 
-use std::{fmt::Arguments, time::SystemTime, mem::MaybeUninit};
+use std::{fmt::Arguments, time::SystemTime, mem::MaybeUninit, sync::RwLock};
 
+use indicatif::ProgressBar;
 use log::*;
 use fern::*;
 use colored::*;
@@ -23,8 +24,21 @@ pub struct LogOptions {
   pub quiet: bool,
 }
 
+/// Guard struct for redirecting log output e.g. to a progress bar.
+///
+/// Resets the log output when dropped.  See [set_progress].
+pub struct LogStateGuard {
+  prev: Target,
+}
+
+#[derive(Debug, Clone)]
+enum Target {
+  Stderr,
+  PB(ProgressBar),
+}
+
 struct LogEnvironment {
-  start: SystemTime,
+  target: RwLock<Target>
 }
 
 static mut LOG_ENV: MaybeUninit<LogEnvironment> = MaybeUninit::uninit();
@@ -41,7 +55,15 @@ fn color_level(level: Level) -> ColoredString {
 }
 
 fn write_console_log(record: &Record<'_>) {
-  eprintln!("{}", record.args());
+  let env = unsafe {
+    LOG_ENV.assume_init_ref()
+  };
+  let lock = env.target.read().expect("poisoned lock");
+  let target = &*lock;
+  match target {
+    Target::Stderr => eprintln!("{}", record.args()),
+    Target::PB(pb) => pb.println(format!("{}", record.args())),
+  }
 }
 
 fn format_console_log(out: FormatCallback<'_>, message: &Arguments<'_>, record: &Record<'_>) {
@@ -75,10 +97,10 @@ impl LogOptions {
     let dispatch = dispatch.format(format_console_log);
     let dispatch = dispatch.chain(Output::call(write_console_log));
 
-    let start = SystemTime::now();
+    let target = RwLock::new(Target::Stderr);
     unsafe {
       // set up the logging environment
-      LOG_ENV.write(LogEnvironment { start });
+      LOG_ENV.write(LogEnvironment { target });
     }
 
     dispatch.apply()?;
@@ -86,3 +108,33 @@ impl LogOptions {
   }
 }
 
+/// Temporarily redirect output to a progress bar.
+///
+/// If you are using a progress bar, this will set the logger to write through it to
+/// coordinate log output and progress output.
+///
+/// ```
+/// let pb = ProgressBar::new();
+/// let _lg = set_progress(pb)
+/// // do things
+/// // log reset when _lg is dropped
+/// ```
+pub fn set_progress(pb: ProgressBar) -> LogStateGuard {
+  let env = unsafe {
+    LOG_ENV.assume_init_ref()
+  };
+  let mut target = env.target.write().expect("lock poisoned");
+  let prev = target.clone();
+  *target = Target::PB(pb);
+  LogStateGuard { prev }
+}
+
+impl Drop for LogStateGuard {
+  fn drop(&mut self) {
+    let env = unsafe {
+      LOG_ENV.assume_init_ref()
+    };
+    let mut target = env.target.write().expect("lock poisoned");
+    *target = self.prev.clone();
+  }
+}
