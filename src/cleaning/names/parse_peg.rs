@@ -39,14 +39,18 @@ peg::parser!{
       / y:year_tag() { Some(y) }
 
     rule cs_name() -> NameFmt
-      = last:$([^',']*) "," space()* rest:$(([_] !ending())+ [^',']?) {
-        NameFmt::TwoPart(last.trim().to_owned(), rest.trim().to_owned())
+      = last:$([^',']*) "," space()* rest:$(([_] !ending())* [^',']?) {
+        if rest.trim().is_empty() {
+          NameFmt::Single(last.trim().to_owned())
+        } else {
+          NameFmt::TwoPart(last.trim().to_owned(), rest.trim().to_owned())
+        }
       }
 
     rule single_name() -> NameFmt
       = name:$(([_] !ending())* [^',' | '.']?) { NameFmt::Single(name.trim().to_owned()) }
 
-    rule name() -> NameFmt = ("!!!" ['a'..='z' | 'A'..='Z']+ "!!!")? n:(cs_name() / single_name()) { n }
+    rule name() -> NameFmt = ("!!!" ['a'..='z' | 'A'..='Z']+ "!!!" space()*)? n:(cs_name() / single_name()) { n }
 
     #[no_eof]
     pub rule name_entry() -> NameEntry

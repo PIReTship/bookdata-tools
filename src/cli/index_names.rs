@@ -5,7 +5,7 @@ use std::fs::File;
 use std::thread::{spawn, JoinHandle};
 use std::sync::mpsc::sync_channel;
 
-use indicatif::ProgressBar;
+use indicatif::{ProgressBar, ProgressStyle};
 use structopt::StructOpt;
 use csv;
 use serde::{Deserialize, Serialize};
@@ -104,7 +104,9 @@ fn write_index(index: NameIndex, path: &Path) -> Result<()> {
   let mut csvout = ThreadWriter::new(csvw);
 
   let pb = ProgressBar::new(names.len() as u64);
+  let pb = pb.with_style(ProgressStyle::default_bar().template("{prefix}: {bar} {pos}/{len} ({percent}%, ETA {eta})"));
   let pb = pb.with_prefix("names");
+  pb.set_draw_delta(5000);
   let _lg = set_progress(pb.clone());
 
   for name in pb.wrap_iter(names.into_iter()) {

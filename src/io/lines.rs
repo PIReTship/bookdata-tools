@@ -17,7 +17,7 @@ use super::ObjectWriter;
 /// Read lines from a file with buffering, decompression, and parsing.
 pub struct LineProcessor {
   reader: Box<dyn BufRead>,
-  guard: Option<LogStateGuard>,
+  _guard: Option<LogStateGuard>,
 }
 
 pub struct Records<R> {
@@ -61,7 +61,7 @@ impl LineProcessor {
     let guard = Some(set_progress(pb));
     Ok(LineProcessor {
       reader: Box::new(read),
-      guard,
+      _guard: guard,
     })
   }
 
@@ -70,7 +70,7 @@ impl LineProcessor {
     let read = open_solo_zip(path)?;
     Ok(LineProcessor {
       reader: Box::new(read),
-      guard: None,
+      _guard: None,
     })
   }
 

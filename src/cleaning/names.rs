@@ -26,6 +26,7 @@ mod parse_types;
 mod parse_nom;
 #[cfg(feature="peg")]
 mod parse_peg;
+mod parse_re;
 
 pub use parse_types::NameError;
 use parse_types::NameFmt;
@@ -34,6 +35,8 @@ use parse_types::NameFmt;
 pub use parse_nom::parse_name_entry;
 #[cfg(feature="peg")]
 pub use parse_peg::parse_name_entry;
+#[cfg(feature="reparse")]
+pub use parse_re::parse_name_entry;
 
 /// Extract all variants from a name.
 ///
@@ -41,7 +44,7 @@ pub use parse_peg::parse_name_entry;
 pub fn name_variants(name: &str) -> Result<Vec<String>, NameError> {
   let parse = parse_name_entry(name)?;
   let mut variants = Vec::new();
-  match parse.name {
+  match parse.name.simplify() {
     NameFmt::Empty => (),
     NameFmt::Single(n) => variants.push(n),
     NameFmt::TwoPart(last, first) => {
@@ -149,6 +152,21 @@ fn test_locked() {
   check_name_decode("!!!GESPERRT!!!Moro, Simone", &[
     "Simone Moro",
     "Moro, Simone"
+  ]);
+}
+
+#[test]
+fn test_single_initial() {
+  check_name_decode("Navarro, P.", &[
+    "Navarro, P",
+    "P Navarro",
+  ])
+}
+
+#[test]
+fn test_leading_comma() {
+  check_name_decode(", Engelbert", &[
+    "Englebert"
   ]);
 }
 
