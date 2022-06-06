@@ -16,7 +16,6 @@ pub mod openlib;
 pub mod goodreads;
 pub mod pqinfo;
 
-use std::env;
 use log::*;
 use paste::paste;
 use structopt::StructOpt;
@@ -25,10 +24,10 @@ use tokio::runtime::Runtime;
 use enum_dispatch::enum_dispatch;
 use async_trait::async_trait;
 use cpu_time::ProcessTime;
-use pretty_env_logger::formatted_timed_builder;
 
 #[cfg(unix)]
 use crate::util::process;
+use crate::util::logging::*;
 
 /// Macro to generate wrappers for subcommand enums.
 ///
@@ -121,13 +120,8 @@ impl <T: AsyncCommand> Command for T {
 #[derive(StructOpt, Debug)]
 #[structopt(name="bookdata")]
 pub struct CLI {
-  /// Verbose mode (-v, -vv, -vvv, etc.)
-  #[structopt(short="v", long="verbose", parse(from_occurrences))]
-  verbose: usize,
-
-  /// Silence output (overrides -v)
-  #[structopt(short="q", long="quiet")]
-  quiet: bool,
+  #[structopt(flatten)]
+  logging: LogOptions,
 
   #[structopt(subcommand)]
   command: BDCommand,
@@ -135,23 +129,7 @@ pub struct CLI {
 
 impl CLI {
   pub fn exec(self) -> Result<()> {
-    let mut lb = formatted_timed_builder();
-    if self.quiet {
-      lb.filter_level(LevelFilter::Error);
-    } else if self.verbose == 1 {
-      lb.filter_level(LevelFilter::Debug);
-      lb.filter_module("datafusion", LevelFilter::Info);
-    } else if self.verbose == 2 {
-      lb.filter_level(LevelFilter::Debug);
-    } else if self.verbose >= 3 {
-      lb.filter_level(LevelFilter::Trace);
-    } else {
-      lb.filter_level(LevelFilter::Info);
-    }
-    if let Ok(filt) = env::var("BOOKDATA_LOG") {
-      lb.parse_filters(&filt);
-    }
-    lb.try_init()?;
+    self.logging.setup()?;
 
     let res = self.command.exec();
 

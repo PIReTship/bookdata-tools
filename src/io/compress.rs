@@ -8,22 +8,29 @@ use log::*;
 use anyhow::{Result, anyhow};
 use flate2::bufread::MultiGzDecoder;
 use zip::read::*;
+use indicatif::{ProgressBar, ProgressStyle};
 use os_pipe::pipe;
 
 use crate::util::Timer;
-use super::background::ThreadRead;
+use crate::io::background::ThreadRead;
+
+static FILE_PROGRESS: &'static str = "{prefix}: {bar} {pos}/{len} ({elapsed} elapsed, ETA {eta})";
 
 /// Open a gzip-compressed file for input, with a progress bar.
-pub fn open_gzin_progress(path: &Path) -> Result<impl BufRead> {
+pub fn open_gzin_progress(path: &Path) -> Result<(impl BufRead, ProgressBar)> {
   let name = path.file_name().unwrap().to_string_lossy();
   let read = File::open(path)?;
+  let pb = ProgressBar::new(read.metadata()?.len());
+  let pb = pb.with_style(ProgressStyle::default_bar().template(FILE_PROGRESS));
+
   let read = Timer::builder().label(&name).interval(30.0).log_target(module_path!()).file_progress(read)?;
+  let read = pb.wrap_read(read);
   let read = BufReader::new(read);
   let gzf = MultiGzDecoder::new(read);
 
   let thr = ThreadRead::new(gzf)?;
   let bfs = BufReader::new(thr);
-  Ok(Box::new(bfs))
+  Ok((Box::new(bfs), pb))
 }
 
 /// Open a zingle member from a zip file for input, with a progress bar.
