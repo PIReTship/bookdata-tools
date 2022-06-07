@@ -21,60 +21,55 @@ use super::parse_types::*;
 
 use const_format::*;
 use lazy_static::lazy_static;
-use regex::Regex;
+use regex::*;
 
 const YEAR_RANGE: &str = r"\d+-\d*";
-const YEAR_TAG: &str = formatcp!(r"\s*,?\s*\(?({YEAR_RANGE})\)?");
-const CS_NAME: &str = r"(.+?),\s*(.+?)";
-const SINGLE_NAME: &str = r"[^,]*?";
+const YEAR_TAG: &str = formatcp!(r"\s*,?\s*\(?(?P<year>{YEAR_RANGE})\)?");
+const CS_NAME: &str = r"(?P<last>.+?),\s*(?P<rest>.+?)";
+const SINGLE_NAME: &str = r",?\s*(?P<single>[^,]*?)";
 const FLAG: &str = r"!!!\w+!!!";
 
-const LINE_CS_YEAR: &str = formatcp!(r"^\s*(?:{FLAG})?{CS_NAME}{YEAR_TAG}");
-const LINE_CS_JUNK: &str = formatcp!(r"^\s*(?:{FLAG})?{CS_NAME}[,.]*\s*$");
-const LINE_SN_YEAR: &str = formatcp!(r"^\s*(?:{FLAG})?,?\s*({SINGLE_NAME}){YEAR_TAG}");
-const LINE_SN_JUNK: &str = formatcp!(r"^\s*(?:{FLAG})?,?\s*({SINGLE_NAME})[,.]*\s*$");
+// const LINE_CS_YEAR: &str = formatcp!(r"^\s*(?:{FLAG})?{CS_NAME}{YEAR_TAG}");
+// const LINE_CS_JUNK: &str = formatcp!(r"^\s*(?:{FLAG})?{CS_NAME}[,.]*\s*$");
+// const LINE_SN_YEAR: &str = formatcp!(r"^\s*(?:{FLAG})?,?\s*({SINGLE_NAME}){YEAR_TAG}");
+// const LINE_SN_JUNK: &str = formatcp!(r"^\s*(?:{FLAG})?,?\s*({SINGLE_NAME})[,.]*\s*$");
 
-struct ParseDefs {
-  cs_year: Regex,
-  cs_junk: Regex,
-  sn_year: Regex,
-  sn_junk: Regex,
-}
+const NAME_RE_STR: &str = formatcp!(r"^\s*(?:{FLAG})?(?:{CS_NAME}|{SINGLE_NAME})(?:{YEAR_TAG}|[,.]*\s*$)");
 
 lazy_static!{
-  static ref DEFS: ParseDefs = ParseDefs {
-    cs_year: Regex::new(LINE_CS_YEAR).unwrap(),
-    cs_junk: Regex::new(LINE_CS_JUNK).unwrap(),
-    sn_year: Regex::new(LINE_SN_YEAR).unwrap(),
-    sn_junk: Regex::new(LINE_SN_JUNK).unwrap(),
-  };
+  static ref NAME_RE: Regex = Regex::new(NAME_RE_STR).unwrap();
+}
+
+fn trim_match<'a>(mm: Option<Match<'a>>) -> Option<&'a str> {
+  mm.map(|m| m.as_str().trim()).filter(|s| !s.is_empty())
 }
 
 pub fn parse_name_entry(name: &str) -> Result<NameEntry, NameError> {
-  let defs = &DEFS;
-  if let Some(m) = defs.cs_year.captures(name) {
-    let name = NameFmt::TwoPart(
-      m.get(1).unwrap().as_str().trim().into(),
-      m.get(2).unwrap().as_str().trim().into());
+  let name_re = &NAME_RE;
+
+  // debug testing
+  #[cfg(test)]
+  println!("regex: {}", NAME_RE_STR);
+  #[cfg(test)]
+  println!("matching “{}”", name);
+
+  if let Some(caps) = name_re.captures(name) {
+    let last = trim_match(caps.name("last"));
+    let rest = trim_match(caps.name("rest"));
+    let name = match (last, rest) {
+      (Some(l), Some(r)) => NameFmt::TwoPart(l.to_string(), r.to_string()),
+      (None, Some(r)) => NameFmt::Single(r.to_string()),
+      (Some(l), None) => NameFmt::Single(l.to_string()),
+      (None, None) => match trim_match(caps.name("single")) {
+        Some(s) => NameFmt::Single(s.to_string()),
+        None => NameFmt::Empty
+      }
+    };
+
+    let year = trim_match(caps.name("year")).map(|s| s.to_string());
+
     Ok(NameEntry {
-      name, year: m.get(3).map(|m| m.as_str().to_owned())
-    })
-  } else if let Some(m) = defs.cs_junk.captures(name) {
-    let name = NameFmt::TwoPart(
-      m.get(1).unwrap().as_str().trim().into(),
-      m.get(2).unwrap().as_str().trim().into());
-    Ok(NameEntry {
-      name, year: None
-    })
-  } else if let Some(m) = defs.sn_year.captures(name) {
-    let name = NameFmt::Single(m.get(1).unwrap().as_str().trim().into());
-    Ok(NameEntry {
-      name, year: m.get(2).map(|m| m.as_str().to_owned())
-    })
-  } else if let Some(m) = defs.sn_junk.captures(name) {
-    let name = NameFmt::Single(m.get(1).unwrap().as_str().trim().into());
-    Ok(NameEntry {
-      name, year: None
+      name, year
     })
   } else {
     Err(NameError::Unmatched(name.to_string()))
