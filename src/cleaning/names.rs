@@ -74,7 +74,9 @@ pub fn name_variants(name: &str) -> Result<Vec<String>, NameError> {
   }
 
 
-  let variants = variants.iter().map(|s| clean_name(s)).collect();
+  let mut variants: Vec<String> = variants.iter().map(|s| clean_name(s)).collect();
+  variants.sort();
+  variants.dedup();
 
   Ok(variants)
 }
@@ -186,4 +188,18 @@ fn test_leading_comma() {
 #[test]
 fn test_year_only() {
   check_name_decode("1941-", &[]);
+}
+
+#[test]
+fn test_clean_point() {
+  let name = "W. Seiler";
+  let clean = clean_name(name);
+  assert_eq!(&clean, "W Seiler");
+}
+
+#[test]
+fn test_clean_spaces() {
+  let name = "Zaphod  Beeblebrox";
+  let clean = clean_name(name);
+  assert_eq!(&clean, "Zaphod Beeblebrox");
 }
