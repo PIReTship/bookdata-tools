@@ -31,8 +31,8 @@ const FLAG: &str = r"!!!\w+!!!";
 
 const LINE_CS_YEAR: &str = formatcp!(r"^\s*(?:{FLAG})?{CS_NAME}{YEAR_TAG}");
 const LINE_CS_JUNK: &str = formatcp!(r"^\s*(?:{FLAG})?{CS_NAME}[,.]*\s*$");
-const LINE_SN_YEAR: &str = formatcp!(r"^\s*(?:{FLAG})?({SINGLE_NAME}){YEAR_TAG}");
-const LINE_SN_JUNK: &str = formatcp!(r"^\s*(?:{FLAG})?({SINGLE_NAME})[,.]*\s*$");
+const LINE_SN_YEAR: &str = formatcp!(r"^\s*(?:{FLAG})?,?\s*({SINGLE_NAME}){YEAR_TAG}");
+const LINE_SN_JUNK: &str = formatcp!(r"^\s*(?:{FLAG})?,?\s*({SINGLE_NAME})[,.]*\s*$");
 
 struct ParseDefs {
   cs_year: Regex,

@@ -22,8 +22,16 @@ pub enum NameFmt {
 impl NameFmt {
   pub fn simplify(self) -> NameFmt {
     match self {
-      NameFmt::TwoPart(l, f) if f.is_empty() => {
-        NameFmt::Single(l)
+      NameFmt::TwoPart(l, f) => {
+        if f.is_empty() && l.is_empty() {
+          NameFmt::Empty
+        } else if f.is_empty() {
+          NameFmt::Single(l)
+        } else if l.is_empty() {
+          NameFmt::Single(f)
+        } else {
+          NameFmt::TwoPart(l, f)
+        }
       },
       NameFmt::Single(n) if n.is_empty() => NameFmt::Empty,
       _ => self

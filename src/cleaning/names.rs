@@ -31,12 +31,12 @@ mod parse_re;
 pub use parse_types::NameError;
 use parse_types::NameFmt;
 
+#[cfg(feature="reparse")]
+pub use parse_re::parse_name_entry;
 #[cfg(feature="nom")]
 pub use parse_nom::parse_name_entry;
 #[cfg(feature="peg")]
 pub use parse_peg::parse_name_entry;
-#[cfg(feature="reparse")]
-pub use parse_re::parse_name_entry;
 
 /// Extract all variants from a name.
 ///
@@ -166,7 +166,7 @@ fn test_single_initial() {
 #[test]
 fn test_leading_comma() {
   check_name_decode(", Engelbert", &[
-    "Englebert"
+    "Engelbert"
   ]);
 }
 
