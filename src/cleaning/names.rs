@@ -28,6 +28,7 @@ mod parse_types;
 mod parse_nom;
 #[cfg(feature="peg")]
 mod parse_peg;
+#[cfg(feature="reparse")]
 mod parse_re;
 
 pub use parse_types::NameError;
