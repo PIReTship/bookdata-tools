@@ -1,1 +1,1 @@
-initSidebarItems({"constant":[["OUT_FILE",""]],"struct":[["RawWork",""],["WorkRecord",""],["WorkWriter",""]]});
+initSidebarItems({"constant":[["OUT_FILE",""]],"struct":[["RawWork","Work records as parsed from JSON."],["WorkRecord","Rows in the processed work Parquet table."],["WorkWriter","Object writer to transform and write GoodReads works"]]});

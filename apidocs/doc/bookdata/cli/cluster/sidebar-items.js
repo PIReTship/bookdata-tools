@@ -1,1 +1,0 @@
-initSidebarItems({"mod":[["actions","Scan Amazon ratings or reviews."],["author_gender","Summarize author gender information for clusters."],["authors","Extract author information for book clusters."],["hash","Extract author information for book clusters."]]});

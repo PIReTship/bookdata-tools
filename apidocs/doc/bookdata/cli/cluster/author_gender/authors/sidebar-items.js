@@ -1,1 +1,0 @@
-initSidebarItems({"fn":[["viaf_author_table","Load the VIAF author gender records."],["viaf_load_genders","Load VIAF author genders"],["viaf_load_names","Load VIAF author names."]],"struct":[["AuthorInfo",""],["GenderRow",""],["NameRow",""]],"type":[["AuthorTable",""]]});
