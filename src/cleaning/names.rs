@@ -16,9 +16,8 @@
 //! in different formats.
 //!
 //! [`name_variants`] is the primary entry point for using this module.
-use std::borrow::Cow;
 
-use anyhow::{Result};
+use anyhow::Result;
 use regex::Regex;
 use lazy_static::lazy_static;
 

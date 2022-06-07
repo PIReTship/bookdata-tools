@@ -5,11 +5,10 @@ use std::str::FromStr;
 use std::path::Path;
 use std::marker::PhantomData;
 
+use indicatif::ProgressBar;
 use log::*;
 use anyhow::Result;
 use serde::de::DeserializeOwned;
-
-use crate::util::logging::{set_progress, LogStateGuard};
 
 use super::compress::{open_gzin_progress, open_solo_zip};
 use super::ObjectWriter;
@@ -17,7 +16,6 @@ use super::ObjectWriter;
 /// Read lines from a file with buffering, decompression, and parsing.
 pub struct LineProcessor {
   reader: Box<dyn BufRead>,
-  _guard: Option<LogStateGuard>,
 }
 
 pub struct Records<R> {
@@ -56,13 +54,11 @@ impl <R: DeserializeOwned> Iterator for JSONRecords<R> {
 
 impl LineProcessor {
   /// Open a line processor from a gzipped source.
-  pub fn open_gzip(path: &Path) -> Result<LineProcessor> {
+  pub fn open_gzip(path: &Path) -> Result<(LineProcessor, ProgressBar)> {
     let (read, pb) = open_gzin_progress(path)?;
-    let guard = Some(set_progress(pb));
-    Ok(LineProcessor {
+    Ok((LineProcessor {
       reader: Box::new(read),
-      _guard: guard,
-    })
+    }, pb))
   }
 
   /// Open a line processor from a zipped source.
@@ -70,7 +66,6 @@ impl LineProcessor {
     let read = open_solo_zip(path)?;
     Ok(LineProcessor {
       reader: Box::new(read),
-      _guard: None,
     })
   }
 

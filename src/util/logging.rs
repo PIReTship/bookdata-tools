@@ -4,7 +4,8 @@
 //! for dynamically routing log messages based on whether there is an active
 //! progress bar.
 
-use std::{fmt::Arguments, time::SystemTime, mem::MaybeUninit, sync::RwLock};
+use std::{fmt::Arguments, time::SystemTime, sync::RwLock};
+use std::mem::{MaybeUninit, drop};
 
 use indicatif::ProgressBar;
 use log::*;
@@ -70,7 +71,7 @@ fn format_console_log(out: FormatCallback<'_>, message: &Arguments<'_>, record: 
   let time: DateTime<Local> = SystemTime::now().into();
   let time = time.time();
   out.finish(format_args!(
-    "[{}] ({}) {}",
+    "[{:5}] ({}) {}",
     color_level(record.level()),
     time.format("%T").to_string().bold(),
     message
@@ -126,6 +127,8 @@ pub fn set_progress(pb: ProgressBar) -> LogStateGuard {
   let mut target = env.target.write().expect("lock poisoned");
   let prev = target.clone();
   *target = Target::PB(pb);
+  drop(target);
+  debug!("rerouting logging to progress bar");
   LogStateGuard { prev }
 }
 
@@ -134,6 +137,7 @@ impl Drop for LogStateGuard {
     let env = unsafe {
       LOG_ENV.assume_init_ref()
     };
+    debug!("restoring log output");
     let mut target = env.target.write().expect("lock poisoned");
     *target = self.prev.clone();
   }

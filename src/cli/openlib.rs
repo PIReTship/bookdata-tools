@@ -46,7 +46,8 @@ where Proc: ObjectWriter<Row<R>>, R: DeserializeOwned
   let mut proc = proc;
   let mut nlines = 0;
   info!("opening file {}", path.to_string_lossy());
-  let input = LineProcessor::open_gzip(path)?;
+  let (input, pb) = LineProcessor::open_gzip(path)?;
+  let _lg = set_progress(pb);
 
   for line in input.records() {
     nlines += 1;

@@ -1,6 +1,8 @@
+use std::mem::drop;
 use crate::prelude::*;
 use crate::goodreads::*;
 use crate::io::object::ThreadWriter;
+use crate::util::logging::set_progress;
 use serde::de::DeserializeOwned;
 
 /// GoodReads processing commands.
@@ -45,11 +47,13 @@ where
   let outs: Vec<_> = proc.output_files().iter().map(|p| p.to_path_buf()).collect();
 
   info!("reading data from {}", path.display());
-  let read = LineProcessor::open_gzip(path)?;
+  let (read, pb) = LineProcessor::open_gzip(path)?;
   let mut writer = ThreadWriter::new(proc);
+  let _lg = set_progress(pb);
   read.process_json(&mut writer)?;
 
   writer.finish()?;
+  drop(_lg);
 
   for out in outs {
     let outf = out.as_path();
