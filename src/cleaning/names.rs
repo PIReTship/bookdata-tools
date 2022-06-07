@@ -16,8 +16,11 @@
 //! in different formats.
 //!
 //! [`name_variants`] is the primary entry point for using this module.
+use std::borrow::Cow;
 
 use anyhow::{Result};
+use regex::Regex;
+use lazy_static::lazy_static;
 
 use super::strings::norm_unicode;
 
@@ -37,6 +40,17 @@ pub use parse_re::parse_name_entry;
 pub use parse_nom::parse_name_entry;
 #[cfg(feature="peg")]
 pub use parse_peg::parse_name_entry;
+
+lazy_static! {
+  static ref NAME_CLEAN_RE: Regex = Regex::new(r"[\s.]+").unwrap();
+}
+
+/// Clean up a name from unnecessary special characters.
+pub fn clean_name<'a>(name: &'a str) -> String {
+  let name = norm_unicode(name);
+  let name = NAME_CLEAN_RE.replace_all(&name, " ");
+  name.to_string()
+}
 
 /// Extract all variants from a name.
 ///
@@ -61,7 +75,7 @@ pub fn name_variants(name: &str) -> Result<Vec<String>, NameError> {
   }
 
 
-  let variants = variants.iter().map(|s| norm_unicode(s.as_str()).into_owned()).collect();
+  let variants = variants.iter().map(|s| clean_name(s)).collect();
 
   Ok(variants)
 }
