@@ -1,6 +1,6 @@
 //! Test name variant expansion
 
-use super::parse_types::*;
+use super::types::*;
 use super::parse_name_entry;
 use super::name_variants;
 

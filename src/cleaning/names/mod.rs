@@ -23,28 +23,18 @@ use anyhow::Result;
 
 use super::strings::norm_unicode;
 
-mod parse_types;
-#[cfg(feature="nom")]
-mod parse_nom;
-#[cfg(feature="peg")]
-mod parse_peg;
-#[cfg(feature="reparse")]
-mod parse_re;
+mod types;
+mod parse;
 
 #[cfg(test)]
 mod test_variants;
 #[cfg(test)]
 mod test_cleaning;
 
-pub use parse_types::NameError;
-use parse_types::NameFmt;
+pub use types::NameError;
+use types::NameFmt;
 
-#[cfg(feature="reparse")]
-pub use parse_re::parse_name_entry;
-#[cfg(feature="nom")]
-pub use parse_nom::parse_name_entry;
-#[cfg(feature="peg")]
-pub use parse_peg::parse_name_entry;
+pub use parse::parse_name_entry;
 
 /// Pre-clean a string without copying.
 ///

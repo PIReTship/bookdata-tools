@@ -17,7 +17,7 @@
 //!
 //! [`name_variants`] is the primary entry point for using this module.
 
-use super::parse_types::*;
+use super::types::*;
 
 peg::parser!{
   grammar name_parser() for str {

@@ -2,10 +2,6 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum NameError {
-  #[cfg(feature="nom")]
-  #[error("Error parsing name entry: {0}")]
-  ParseError(nom::error::Error<String>),
-  #[cfg(feature="peg")]
   #[error("Error parsing name entry: {0}")]
   PEGError(#[from] peg::error::ParseError<peg::str::LineCol>),
   #[error("Could not match {0}")]
