@@ -11,6 +11,7 @@ use serde::{Serialize, Deserialize};
 use datafusion::prelude::*;
 use crate::prelude::*;
 use crate::arrow::*;
+use crate::arrow::fusion::*;
 use crate::arrow::row_de::RecordBatchDeserializer;
 use crate::cli::AsyncCommand;
 use async_trait::async_trait;
@@ -89,7 +90,7 @@ async fn scan_openlib(ctx: &mut SessionContext, first_only: bool) -> Result<Arc<
   let linked = linked.join(auth, JoinType::Inner, &["author"], &["id"])?;
   let authors = linked.select(vec![
     col("cluster"),
-    trim(col("name")).alias("author_name")
+    udf_clean_name(col("name")).alias("author_name")
   ])?;
   Ok(authors)
 }
@@ -114,11 +115,13 @@ async fn scan_loc(ctx: &mut SessionContext, first_only: bool) -> Result<Arc<Data
 
   let linked = icl.join(books, JoinType::Inner, &["isbn_id"], &["isbn_id"])?;
   let linked = linked.join(authors, JoinType::Inner, &["rec_id"], &["rec_id"])?;
-  let authors = linked.select_columns(&["cluster", "author_name"])?;
+  let authors = linked.select(vec![
+    col("cluster"),
+    udf_clean_name(col("author_name")).alias("author_name")
+  ])?;
+
   // we shouldn't have null author names, but the data thinks we do. fix.
-
   let authors = authors.filter(col("author_name").is_not_null())?;
-
 
   Ok(authors)
 }
@@ -145,7 +148,7 @@ impl AsyncCommand for ClusterAuthors {
     let authors = authors.sort(vec![
       col("cluster").sort(true, true),
       col("author_name").sort(true, true)
-      ])?;
+    ])?;
 
     write_authors_dedup(authors, &self.output).await?;
 
