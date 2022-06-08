@@ -8,6 +8,7 @@ use fallible_iterator::FallibleIterator;
 use crate::prelude::*;
 use crate::gender::*;
 use crate::arrow::row_de::scan_parquet_file;
+use crate::util::logging::item_progress;
 use super::authors::AuthorTable;
 
 /// Record for storing a cluster's gender statistics while aggregating.
@@ -36,10 +37,13 @@ pub type ClusterTable = HashMap<i32,ClusterStats>;
 
 /// Read cluster author names and resolve them to gender information.
 pub fn read_resolve(path: &Path, authors: &AuthorTable) -> Result<ClusterTable> {
-  let timer = Timer::builder().label("reading cluster authors").interval(5.0).build();
+  let timer = Timer::new();
   info!("reading cluster authors from {}", path.display());
-  let iter = scan_parquet_file(path)?;
-  let mut iter = timer.copy_builder().fallible_iter_progress(iter);
+  let mut iter = scan_parquet_file(path)?;
+
+  let pb = item_progress(iter.remaining() as u64, "authors");
+  pb.set_draw_delta(5000);
+  let _lg = set_progress(pb.clone());
 
   let mut table = ClusterTable::new();
 
@@ -54,6 +58,7 @@ pub fn read_resolve(path: &Path, authors: &AuthorTable) -> Result<ClusterTable> 
         rec.genders.insert(g.clone());
       }
     }
+    pb.inc(1);
   }
 
   info!("scanned genders for {} clusters in {}", table.len(), timer.human_elapsed());

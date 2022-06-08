@@ -27,7 +27,7 @@ use cpu_time::ProcessTime;
 
 #[cfg(unix)]
 use crate::util::process;
-use crate::util::logging::*;
+use crate::util::{logging::*, Timer};
 
 /// Macro to generate wrappers for subcommand enums.
 ///
@@ -130,9 +130,11 @@ pub struct CLI {
 impl CLI {
   pub fn exec(self) -> Result<()> {
     self.logging.setup()?;
+    let timer = Timer::new();
 
     let res = self.command.exec();
 
+    info!("work completed in {}", timer.human_elapsed());
     match ProcessTime::try_now() {
       Ok(pt) => info!("used {} CPU time", friendly::duration(pt.as_duration())),
       Err(e) => error!("error fetching CPU time: {}", e)

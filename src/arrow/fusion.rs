@@ -80,6 +80,7 @@ lazy_static! {
 }
 
 /// [`clean_name`] as a DataFusion UDF for the expression DSL.
+#[allow(dead_code)]
 pub fn udf_norm_unicode(e: Expr) -> Expr {
   UDF_NORM_UNICODE.call(vec![e])
 }

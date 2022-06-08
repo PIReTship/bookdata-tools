@@ -53,6 +53,7 @@ impl <K> IdIndex<K> where K: Eq + Hash {
   }
 
   /// Freeze the index so no new items can be added.
+  #[allow(dead_code)]
   pub fn freeze(self) -> IdIndex<K> {
     IdIndex { map: self.map, frozen: true }
   }
@@ -175,6 +176,7 @@ impl IdIndex<String> {
   ///
   /// This loads an index from a CSV file.  It assumes the first column is the ID, and the
   /// second column is the key.
+  #[allow(dead_code)]
   pub fn load_csv<P: AsRef<Path>, K: Eq + Hash + DeserializeOwned>(path: P) -> Result<IdIndex<K>> {
     info!("reading ID index from from {:?}", path.as_ref());
     let input = csv::Reader::from_path(path)?;

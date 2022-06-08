@@ -5,6 +5,7 @@ pub enum NameError {
   #[error("Error parsing name entry: {0}")]
   PEGError(#[from] peg::error::ParseError<peg::str::LineCol>),
   #[error("Could not match {0}")]
+  #[allow(dead_code)]
   Unmatched(String),
 }
 

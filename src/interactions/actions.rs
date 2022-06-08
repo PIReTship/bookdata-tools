@@ -9,6 +9,7 @@ use anyhow::{Result};
 use crate::io::{ObjectWriter, file_size};
 use crate::util::Timer;
 use crate::arrow::*;
+use crate::util::logging::{item_progress, set_progress};
 use super::{Interaction, Dedup, Key};
 
 /// Record for a single output action.
@@ -130,19 +131,23 @@ impl <R> ActionDedup<R> where R: FromActionSet + Send + Sync + 'static, for<'a> 
           path.display());
     let twb = TableWriterBuilder::new()?;
     let mut writer = twb.open(path)?;
-    let mut timer = Timer::builder().task_count(self.table.len()).label("writing actions").interval(5.0).build();
+    let timer = Timer::new();
+    let n = self.table.len() as u64;
+    let pb = item_progress(n, "writing actions");
+    let _lg = set_progress(pb.clone());
 
     // we're going to consume the hashtable.
-    for (k, vec) in take(&mut self.table) {
+    let table = take(&mut self.table);
+    for (k, vec) in pb.wrap_iter(table.into_iter()) {
       let record = R::create(k.user, k.item, vec);
       writer.write_object(record)?;
-      timer.complete(1);
-      timer.maybe_log_status();
     }
 
     let rv = writer.finish()?;
+    drop(_lg);
 
-    info!("wrote ratings in {}, file is {}",
+    info!("wrote {} actions in {}, file is {}",
+          friendly::scalar(n),
           timer.human_elapsed(),
           friendly::bytes(file_size(path)?));
 

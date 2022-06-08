@@ -62,6 +62,7 @@ impl LineProcessor {
   }
 
   /// Open a line processor from a zipped source.
+  #[allow(dead_code)]
   pub fn open_solo_zip(path: &Path) -> Result<LineProcessor> {
     let read = open_solo_zip(path)?;
     Ok(LineProcessor {
