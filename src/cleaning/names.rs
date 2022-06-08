@@ -15,7 +15,9 @@
 //! This maximizes our ability to match records across sources recording names
 //! in different formats.
 //!
-//! [`name_variants`] is the primary entry point for using this module.
+//! [`name_variants`] is the primary entry point for using this module.  The
+//! [`clean_name`] function provides cleanup utilities without parsing, for
+//! emitting names from book records.
 
 use anyhow::Result;
 use regex::Regex;
