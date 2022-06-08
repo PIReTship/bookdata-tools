@@ -1,7 +1,4 @@
 use std::fmt;
-use std::io::Read;
-use std::io::{Result as IOResult};
-use std::fs::File;
 use std::time::{Instant, Duration};
 use friendly::temporal::HumanDuration;
 use friendly::{scalar, bytes, duration};
@@ -64,16 +61,6 @@ fn bytes_format(n: f64) -> Box<dyn fmt::Display> {
 pub struct ProgressIter<I> {
   timer: Timer,
   iter: I
-}
-
-/// Report progress on reading data.
-///
-/// This struct supports [Timer]'s ability to wrap a [Read] and automatically
-/// report progress as data passes through.
-pub struct TimedRead<R: Read> {
-  timer: Timer,
-  reader: R,
-  nlogs: usize,
 }
 
 impl TimerConfig {
@@ -139,32 +126,6 @@ impl TimerConfig {
       started,
       completed: 0,
       last_write: LastWrite::Never,
-    }
-  }
-
-  /// Create a wrapper that reports progress on reading a file. See [read_progress].
-  pub fn file_progress(&self, file: File) -> IOResult<TimedRead<File>> {
-    let meta = file.metadata()?;
-    let mut clone = self.clone();
-    clone.task_count(meta.len() as usize);
-    clone.binary();
-    Ok(TimedRead {
-      reader: file,
-      timer: clone.into_timer(),
-      nlogs: 0,
-    })
-  }
-
-  /// Use this timer to track progress in a reader.
-  ///
-  /// This method **copies** the timer into the progress reader.
-  pub fn read_progress<R: Read>(&self, reader: R) -> TimedRead<R> {
-    let mut clone = self.clone();
-    clone.binary();
-    TimedRead {
-      reader,
-      timer: clone.into_timer(),
-      nlogs: 0,
     }
   }
 
@@ -388,31 +349,6 @@ impl <I> FallibleIterator for ProgressIter<I> where I: FallibleIterator {
 
   fn size_hint(&self) -> (usize, Option<usize>) {
     self.iter.size_hint()
-  }
-}
-
-impl <R: Read> Read for TimedRead<R> {
-  fn read(&mut self, buf: &mut [u8]) -> IOResult<usize> {
-    let size = self.reader.read(buf)?;
-    self.timer.complete(size);
-
-    let mut interval = self.timer.config.interval;
-    if interval > 5.0 {
-      if self.nlogs == 0 {
-        interval = 5.0;
-      } else if self.nlogs == 1 {
-        interval -= 5.0;
-      }
-    }
-
-    if size > 0 {
-      if self.timer.maybe_log_status_interval(interval) {
-        self.nlogs += 1;
-      }
-    } else {
-      self.timer.log_status();
-    }
-    Ok(size)
   }
 }
 

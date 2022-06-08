@@ -10,6 +10,7 @@ use flate2::bufread::MultiGzDecoder;
 use zip::read::*;
 use indicatif::ProgressBar;
 use os_pipe::pipe;
+use friendly::bytes;
 
 use crate::util::Timer;
 use crate::io::background::ThreadRead;
@@ -59,15 +60,14 @@ pub fn open_solo_zip(path: &Path) -> Result<impl BufRead> {
 
     // open and read the member
     debug!("opening member from file");
-    let member = zf.by_index(0)?;
+    let mut member = zf.by_index(0)?;
     info!("processing member {:?} with {} bytes", member.name(), member.size());
-    let mut timer = Timer::builder();
-    timer.log_target(module_path!());
-    timer.task_count(member.size() as usize);
-    timer.label(member.name());
-    timer.interval(30.0);
-    let mut read = timer.read_progress(member);
-    copy(&mut read, &mut dst)
+    let timer = Timer::new();
+    let res = copy(&mut member, &mut dst);
+    if let Ok(size) = res {
+      info!("copied {} in {}", bytes(size), timer);
+    }
+    res
   });
 
   let thr = ThreadRead::create(read, handle);

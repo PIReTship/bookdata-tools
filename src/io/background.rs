@@ -6,6 +6,9 @@ use std::thread::{spawn, JoinHandle};
 use anyhow::{Result};
 use log::*;
 use os_pipe::{pipe, PipeReader, PipeWriter};
+use friendly::bytes;
+
+use crate::util::timing::Timer;
 
 /// Reader that reads from a background thread.
 pub struct ThreadRead {
@@ -27,7 +30,12 @@ impl ThreadRead {
     let jh = spawn(move || {
       let mut src = chan;
       let mut dst = writer;
-      copy(&mut src, &mut dst)
+      let timer = Timer::new();
+      let res = copy(&mut src, &mut dst);
+      if let Ok(size) = res {
+        info!("copied {} in {}", bytes(size), timer);
+      }
+      res
     });
 
     Ok(ThreadRead {
