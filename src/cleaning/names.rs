@@ -43,13 +43,15 @@ pub use parse_peg::parse_name_entry;
 
 lazy_static! {
   static ref NAME_CLEAN_RE: Regex = Regex::new(r"[\s.]+").unwrap();
+  static ref COMMA_CLEAN_RE: Regex = Regex::new(r"\s+,").unwrap();
 }
 
 /// Clean up a name from unnecessary special characters.
 pub fn clean_name<'a>(name: &'a str) -> String {
   let name = norm_unicode(name);
   let name = NAME_CLEAN_RE.replace_all(&name, " ");
-  name.to_string()
+  let name = COMMA_CLEAN_RE.replace_all(&name, ",");
+  name.trim().to_string()
 }
 
 /// Extract all variants from a name.
@@ -203,4 +205,19 @@ fn test_clean_spaces() {
   let name = "Zaphod  Beeblebrox";
   let clean = clean_name(name);
   assert_eq!(&clean, "Zaphod Beeblebrox");
+}
+
+
+#[test]
+fn test_clean_final_dot() {
+  let name = "Bob J.";
+  let clean = clean_name(name);
+  assert_eq!(&clean, "Bob J");
+}
+
+#[test]
+fn test_clean_comma() {
+  let name = "Jones Jr., Albert";
+  let clean = clean_name(name);
+  assert_eq!(&clean, "Jones Jr, Albert");
 }
