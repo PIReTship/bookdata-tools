@@ -2,6 +2,7 @@ use std::mem::drop;
 use crate::prelude::*;
 use crate::goodreads::*;
 use crate::io::object::ThreadWriter;
+use crate::util::logging::data_progress;
 use crate::util::logging::set_progress;
 use serde::de::DeserializeOwned;
 
@@ -47,7 +48,8 @@ where
   let outs: Vec<_> = proc.output_files().iter().map(|p| p.to_path_buf()).collect();
 
   info!("reading data from {}", path.display());
-  let (read, pb) = LineProcessor::open_gzip(path)?;
+  let pb = data_progress(0);
+  let read = LineProcessor::open_gzip(path, pb.clone())?;
   let mut writer = ThreadWriter::new(proc);
   let _lg = set_progress(pb);
   read.process_json(&mut writer)?;

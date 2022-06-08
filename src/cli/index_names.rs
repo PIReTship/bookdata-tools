@@ -19,7 +19,7 @@ use crate::io::background::ThreadWrite;
 use crate::io::object::ThreadWriter;
 use crate::cleaning::names::*;
 use crate::io::open_gzin_progress;
-use crate::util::logging::set_progress;
+use crate::util::logging::{set_progress, data_progress};
 
 #[derive(StructOpt, Debug)]
 #[structopt(name="index-names")]
@@ -53,7 +53,8 @@ struct IndexEntry {
 fn scan_names(path: &Path) -> Result<NameIndex> {
   info!("reading names from {}", path.to_string_lossy());
   let mut index = NameIndex::new();
-  let (reader, pb) = open_gzin_progress(path)?;
+  let pb = data_progress(0);
+  let reader = open_gzin_progress(path, pb.clone())?;
   let _lg = set_progress(pb);
   let reader = csv::Reader::from_reader(reader);
 

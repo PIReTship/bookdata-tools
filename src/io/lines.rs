@@ -54,11 +54,11 @@ impl <R: DeserializeOwned> Iterator for JSONRecords<R> {
 
 impl LineProcessor {
   /// Open a line processor from a gzipped source.
-  pub fn open_gzip(path: &Path) -> Result<(LineProcessor, ProgressBar)> {
-    let (read, pb) = open_gzin_progress(path)?;
-    Ok((LineProcessor {
+  pub fn open_gzip(path: &Path, pb: ProgressBar) -> Result<LineProcessor> {
+    let read = open_gzin_progress(path, pb)?;
+    Ok(LineProcessor {
       reader: Box::new(read),
-    }, pb))
+    })
   }
 
   /// Open a line processor from a zipped source.

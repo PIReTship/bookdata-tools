@@ -7,12 +7,15 @@
 use std::{fmt::Arguments, time::SystemTime, sync::RwLock};
 use std::mem::{MaybeUninit, drop};
 
-use indicatif::ProgressBar;
+use indicatif::{ProgressBar, ProgressStyle};
 use log::*;
 use fern::*;
 use colored::*;
 use chrono::{DateTime, Local};
 use structopt::StructOpt;
+
+const DATA_PROGRESS_TMPL: &str = "{prefix}: {bar} {bytes}/{total_bytes} ({bytes_per_sec}, {elapsed} elapsed, ETA {eta})";
+const ITEM_PROGRESS_TMPL: &str = "{prefix}: {bar} {pos}/{len} ({per_sec}, {elapsed} elapsed, ETA {eta}) {msg}";
 
 #[derive(StructOpt, Debug)]
 pub struct LogOptions {
@@ -141,4 +144,19 @@ impl Drop for LogStateGuard {
     let mut target = env.target.write().expect("lock poisoned");
     *target = self.prev.clone();
   }
+}
+
+
+/// Create a progress bar for tracking data.
+///
+/// If the size is unknown at creation time, pass 0.
+pub fn data_progress(len: u64) -> ProgressBar {
+  ProgressBar::new(len).with_style(ProgressStyle::default_bar().template(DATA_PROGRESS_TMPL))
+}
+
+/// Create a progress bar for tracking items.
+///
+/// If the size is unknown at creation time, pass 0.
+pub fn item_progress(len: u64, name: &str) -> ProgressBar {
+  ProgressBar::new(len).with_style(ProgressStyle::default_bar().template(ITEM_PROGRESS_TMPL)).with_prefix(name.to_string())
 }

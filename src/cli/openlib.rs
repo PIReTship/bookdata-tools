@@ -5,6 +5,7 @@ use serde::de::DeserializeOwned;
 use crate::prelude::*;
 use crate::io::LineProcessor;
 use crate::openlib::*;
+use crate::util::logging::data_progress;
 
 use super::Command;
 
@@ -46,7 +47,8 @@ where Proc: ObjectWriter<Row<R>>, R: DeserializeOwned
   let mut proc = proc;
   let mut nlines = 0;
   info!("opening file {}", path.to_string_lossy());
-  let (input, pb) = LineProcessor::open_gzip(path)?;
+  let pb = data_progress(0);
+  let input = LineProcessor::open_gzip(path, pb.clone())?;
   let _lg = set_progress(pb);
 
   for line in input.records() {
