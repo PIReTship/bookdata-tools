@@ -2,6 +2,11 @@ name: Build Docs
 on:
   push:
     branches: [master]
+
+defaults:
+  run:
+    shell: bash -l {0}
+
 jobs:
   doc-site:
     name: Build and deploy docs
@@ -11,11 +16,15 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v2
 
-      - name: Initialize Conda
-        uses: conda-incubator/setup-miniconda@v2
+      - name: Cache conda
+        uses: actions/cache@v2
+        env:
+          # Increase this value to reset cache if etc/example-environment.yml has not changed
+          CACHE_NUMBER: 0
         with:
-          activate-environment: bookdata
-          environment-file: docs-linux-64.lock
+          path: ~/conda_pkgs_dir
+          key:
+            conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('docs-linux-64.lock') }}
 
       - name: Cache Rust dependency builds
         uses: actions/cache@v2
@@ -24,6 +33,13 @@ jobs:
             target
             !target/site
           key: ${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+
+      - name: Initialize Conda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: bookdata
+          environment-file: docs-linux-64.lock
+          use-only-tar-bz2: true
 
       - name: Build site 🕸
         run: |
