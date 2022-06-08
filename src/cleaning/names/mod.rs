@@ -20,8 +20,6 @@
 //! emitting names from book records.
 
 use anyhow::Result;
-use regex::Regex;
-use lazy_static::lazy_static;
 
 use super::strings::norm_unicode;
 
@@ -33,6 +31,11 @@ mod parse_peg;
 #[cfg(feature="reparse")]
 mod parse_re;
 
+#[cfg(test)]
+mod test_variants;
+#[cfg(test)]
+mod test_cleaning;
+
 pub use parse_types::NameError;
 use parse_types::NameFmt;
 
@@ -43,17 +46,73 @@ pub use parse_nom::parse_name_entry;
 #[cfg(feature="peg")]
 pub use parse_peg::parse_name_entry;
 
-lazy_static! {
-  static ref NAME_CLEAN_RE: Regex = Regex::new(r"[\s.]+").unwrap();
-  static ref COMMA_CLEAN_RE: Regex = Regex::new(r"\s+,").unwrap();
+/// Pre-clean a string without copying.
+///
+/// Many strings don't need advanced cleaning. This method tries to pre-clean
+/// a string.  If the string cannot be pre-cleaned, it returns None.
+fn preclean<'a>(name: &'a str) -> Option<&'a str> {
+  let name = name.trim();
+
+  let mut ws_count = 0;
+  for c in name.bytes() {
+    if c == b'.' {
+      return None
+    } else if c.is_ascii_whitespace() {
+      ws_count += 1;
+      if ws_count > 1 {
+        return None
+      }
+    } else {
+      if c == b',' && ws_count > 0 {
+        return None  // need cleaning of space and ,
+      }
+      ws_count = 0;
+    }
+  }
+
+  Some(name)
 }
 
 /// Clean up a name from unnecessary special characters.
 pub fn clean_name<'a>(name: &'a str) -> String {
   let name = norm_unicode(name);
-  let name = NAME_CLEAN_RE.replace_all(&name, " ");
-  let name = COMMA_CLEAN_RE.replace_all(&name, ",");
-  name.trim().to_string()
+
+  // fast path for pretty clean strings
+  // directly copying a string is faster than our character-by-character copying,
+  // probably due to simd, so it's worth scanning for a fast path.
+  if let Some(pc) = preclean(&name) {
+    return pc.to_string()
+  }
+
+  // we use a manually-coded state machine instead of REs for performance
+  let mut res = Vec::with_capacity(name.len());
+  let mut in_seq = false;
+  for c in name.bytes() {
+    if in_seq {
+      if c.is_ascii_whitespace() || c == b'.' {
+        // no-op
+      } else if c == b',' || res.is_empty() {
+        // emit the comma and proceed
+        res.push(c);
+        in_seq = false;
+      } else {
+        // collapse whitespace sequence and proceed
+        res.push(b' ');
+        res.push(c);
+        in_seq = false;
+      }
+    } else {
+      if c.is_ascii_whitespace() || c == b'.' {
+        in_seq = true;
+      } else {
+        res.push(c);
+      }
+    }
+  }
+  unsafe {
+    // since we have copied bytes, except for ASCII manipulations, this is safe
+    String::from_utf8_unchecked(res)
+  }
 }
 
 /// Extract all variants from a name.
@@ -84,142 +143,4 @@ pub fn name_variants(name: &str) -> Result<Vec<String>, NameError> {
   variants.dedup();
 
   Ok(variants)
-}
-
-#[cfg(test)]
-fn check_name_decode(name: &str, exp_variants: &[&str]) {
-  let dec_variants = name_variants(name).expect("parse error");
-  println!("scanned name {}:", name);
-  for v in &dec_variants {
-    println!("- {}", v);
-  }
-  assert_eq!(dec_variants.len(), exp_variants.len());
-  for n in exp_variants {
-    assert!(dec_variants.contains(&(*n).to_owned()), "expected variant {} not found", n);
-  }
-}
-
-#[test]
-fn test_first_last() {
-  check_name_decode("Mary Sumner", &["Mary Sumner"]);
-}
-
-#[test]
-fn test_trim() {
-  check_name_decode("Mary Sumner.", &["Mary Sumner"]);
-}
-
-#[test]
-fn test_last_first_variants() {
-  check_name_decode("Sequeira Moreno, Francisco", &[
-    "Sequeira Moreno, Francisco",
-    "Francisco Sequeira Moreno"
-  ]);
-}
-
-#[test]
-fn test_last_first_punctuation() {
-  check_name_decode("Jomaa-Raad, Wafa,", &[
-    "Wafa Jomaa-Raad",
-    "Jomaa-Raad, Wafa",
-  ]);
-}
-
-#[test]
-fn test_last_first_year() {
-  check_name_decode("Morgan, Michelle, 1967-", &[
-    "Morgan, Michelle, 1967-",
-    "Morgan, Michelle",
-    "Michelle Morgan",
-    "Michelle Morgan, 1967-"
-  ]);
-}
-
-#[test]
-fn test_first_last_year() {
-  check_name_decode("Ditlev Reventlow (1712-1783)", &[
-    "Ditlev Reventlow, 1712-1783",
-    "Ditlev Reventlow",
-  ]);
-}
-
-#[test]
-fn test_trailing_comma() {
-  check_name_decode("Miller, Pat Zietlow,", &[
-    "Pat Zietlow Miller",
-    "Miller, Pat Zietlow",
-  ]);
-}
-
-#[test]
-fn test_trailing_punctuation() {
-  check_name_decode("Miller, Pat Zietlow,.", &[
-    "Pat Zietlow Miller",
-    "Miller, Pat Zietlow",
-  ]);
-}
-
-#[test]
-fn test_single_trailing() {
-  let parse = parse_name_entry("Manopoly,").expect("parse error");
-  assert!(parse.year.is_none());
-  assert_eq!(parse.name, NameFmt::Single("Manopoly".to_string()));
-  check_name_decode("Manopoly,", &["Manopoly"]);
-}
-
-#[test]
-fn test_locked() {
-  check_name_decode("!!!GESPERRT!!!Moro, Simone", &[
-    "Simone Moro",
-    "Moro, Simone"
-  ]);
-}
-
-#[test]
-fn test_single_initial() {
-  check_name_decode("Navarro, P.", &[
-    "Navarro, P",
-    "P Navarro",
-  ])
-}
-
-#[test]
-fn test_leading_comma() {
-  check_name_decode(", Engelbert", &[
-    "Engelbert"
-  ]);
-}
-
-#[test]
-fn test_year_only() {
-  check_name_decode("1941-", &[]);
-}
-
-#[test]
-fn test_clean_point() {
-  let name = "W. Seiler";
-  let clean = clean_name(name);
-  assert_eq!(&clean, "W Seiler");
-}
-
-#[test]
-fn test_clean_spaces() {
-  let name = "Zaphod  Beeblebrox";
-  let clean = clean_name(name);
-  assert_eq!(&clean, "Zaphod Beeblebrox");
-}
-
-
-#[test]
-fn test_clean_final_dot() {
-  let name = "Bob J.";
-  let clean = clean_name(name);
-  assert_eq!(&clean, "Bob J");
-}
-
-#[test]
-fn test_clean_comma() {
-  let name = "Jones Jr., Albert";
-  let clean = clean_name(name);
-  assert_eq!(&clean, "Jones Jr, Albert");
 }
