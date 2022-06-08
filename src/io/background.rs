@@ -101,6 +101,7 @@ impl ThreadWrite {
   }
 
   /// Close and drop the thread writer.
+  #[allow(dead_code)]
   pub fn close(mut self) -> io::Result<u64> {
     self.do_close()
   }

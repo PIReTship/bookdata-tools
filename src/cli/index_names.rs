@@ -16,7 +16,7 @@ use rayon::prelude::*;
 use crate::prelude::*;
 use crate::arrow::*;
 use crate::io::background::ThreadWrite;
-use crate::io::object::ThreadWriter;
+use crate::io::object::ThreadObjectWriter;
 use crate::cleaning::names::*;
 use crate::io::open_gzin_progress;
 use crate::util::logging::{set_progress, data_progress};
@@ -102,7 +102,7 @@ fn write_index(index: NameIndex, path: &Path) -> Result<()> {
   let out = ThreadWrite::new(out)?;
   // let out = Encoder::new(out, 2)?.auto_finish();
   let csvw = csv::Writer::from_writer(out);
-  let mut csvout = ThreadWriter::new(csvw);
+  let mut csvout = ThreadObjectWriter::new(csvw);
 
   let pb = ProgressBar::new(names.len() as u64);
   let pb = pb.with_style(ProgressStyle::default_bar().template("{prefix}: {bar} {pos}/{len} ({percent}%, ETA {eta})"));

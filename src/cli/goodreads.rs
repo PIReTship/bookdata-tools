@@ -1,7 +1,7 @@
 use std::mem::drop;
 use crate::prelude::*;
 use crate::goodreads::*;
-use crate::io::object::ThreadWriter;
+use crate::io::object::ThreadObjectWriter;
 use crate::util::logging::data_progress;
 use crate::util::logging::set_progress;
 use serde::de::DeserializeOwned;
@@ -50,7 +50,7 @@ where
   info!("reading data from {}", path.display());
   let pb = data_progress(0);
   let read = LineProcessor::open_gzip(path, pb.clone())?;
-  let mut writer = ThreadWriter::new(proc);
+  let mut writer = ThreadObjectWriter::new(proc);
   let _lg = set_progress(pb);
   read.process_json(&mut writer)?;
 

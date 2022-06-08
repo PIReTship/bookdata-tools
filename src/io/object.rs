@@ -17,13 +17,13 @@ pub trait ObjectWriter<T> {
 }
 
 /// Write objects in a background thread.
-pub struct ThreadWriter<T> where T: Send + Sync + 'static {
+pub struct ThreadObjectWriter<T> where T: Send + Sync + 'static {
   sender: SyncSender<T>,
   handle: JoinHandle<Result<usize>>
 }
 
-impl <T: Send + Sync + 'static> ThreadWriter<T> {
-  pub fn new<W: ObjectWriter<T> + Send + 'static>(writer: W) -> ThreadWriter<T> {
+impl <T: Send + Sync + 'static> ThreadObjectWriter<T> {
+  pub fn new<W: ObjectWriter<T> + Send + 'static>(writer: W) -> ThreadObjectWriter<T> {
     let (sender, receiver) = sync_channel(4096);
 
     let handle = spawn(|| {
@@ -37,13 +37,13 @@ impl <T: Send + Sync + 'static> ThreadWriter<T> {
       writer.finish()
     });
 
-    ThreadWriter {
+    ThreadObjectWriter {
       sender, handle
     }
   }
 }
 
-impl <T: Send + Sync + 'static> ObjectWriter<T> for ThreadWriter<T> {
+impl <T: Send + Sync + 'static> ObjectWriter<T> for ThreadObjectWriter<T> {
   fn write_object(&mut self, object: T) -> Result<()> {
     self.sender.send(object)?;
     Ok(())
