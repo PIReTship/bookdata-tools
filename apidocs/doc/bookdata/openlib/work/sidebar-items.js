@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["WorkAuthorRec","Work-author link in extracted Parquet."],["WorkProcessor","Process author source records into Parquet."],["WorkRec","Work row in extracted Parquet."],["WorkSubjectRec","Work-subject record in extracted Parquet."]]});
