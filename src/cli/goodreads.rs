@@ -32,10 +32,6 @@ pub struct ScanInput {
 /// Input options for an interaction scan
 #[derive(StructOpt, Debug)]
 pub struct InterInput {
-  /// User ID mapping file
-  #[structopt(name="MAP", long="user-map", parse(from_os_str))]
-  user_map: Option<PathBuf>,
-
   /// Book ID mapping file (only for CSV input)
   #[structopt(name="MAP", long="book-map", parse(from_os_str))]
   book_map: Option<PathBuf>,
@@ -93,7 +89,20 @@ impl Command for Goodreads {
       }
       GRCmd::Scan { data: GRScan::Interactions(opts) } => {
         info!("scanning GoodReads interactions");
-        scan_gr(&opts.scan.infile, interaction::IntWriter::open()?)?;
+        let ext = opts.scan.infile.extension().unwrap_or_default().to_str().unwrap_or_default();
+        if ext == ".csv" {
+          info!("reading partial interactions from CSV file");
+          let map = if let Some(ref path) = opts.book_map {
+            path.as_path()
+          } else {
+            error!("CSV reading must have a book map");
+            return Err(anyhow!("no book map specified"));
+          };
+          scan_gr(&opts.scan.infile, interaction::ShortIntWriter::open(&map)?)?;
+        } else {
+          info!("reading full interactions from JSON file");
+          scan_gr(&opts.scan.infile, interaction::IntWriter::open()?)?;
+        }
       }
     }
 

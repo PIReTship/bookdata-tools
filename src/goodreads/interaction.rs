@@ -9,6 +9,7 @@ use crate::parsing::*;
 use crate::parsing::dates::*;
 
 pub const OUT_FILE: &'static str = "gr-interactions.parquet";
+pub const SHORT_OUT_FILE: &'static str = "gr-short-interactions.parquet";
 pub const USER_FILE: &'static str = "gr-users.parquet";
 pub const UID_COL: &'static str = "user";
 pub const UHASH_COL: &'static str = "user_hash";
@@ -28,7 +29,23 @@ pub struct RawInteraction {
   pub started_at: String,
 }
 
-/// GoodReads interaction records as actually written to the table.
+/// Interaction records we read from CSV.
+#[derive(Deserialize)]
+pub struct RawShortInteraction {
+  pub user_id: i32,
+  pub book_id: i32,
+  pub is_read: bool,
+  pub rating: f32,
+}
+
+/// User map struct
+#[derive(Deserialize)]
+struct BookMapEntry {
+  book_id_csv: usize,
+  book_id: i32,
+}
+
+/// Full GoodReads interaction records as actually written to the table.
 ///
 /// This struct is written to `gr-interactions.parquet` and records actual interaction data.
 /// Timestamps are UNIX timestamps recorded as 64-bit integers; they do not use a Parquet
@@ -51,6 +68,16 @@ pub struct IntRecord {
   pub updated: f32,
   pub read_started: Option<f32>,
   pub read_finished: Option<f32>,
+}
+
+/// Abbreviated GoodReads interaction records from CSV.
+#[derive(ParquetRecordWriter)]
+pub struct ShortIntRecord {
+  pub rec_id: u32,
+  pub user_id: i32,
+  pub book_id: i32,
+  pub rating: Option<f32>,
+  pub is_read: u8,
 }
 
 /// Object writer to transform and write GoodReads interactions
@@ -116,6 +143,76 @@ impl ObjectWriter<RawInteraction> for IntWriter {
     let res = self.writer.finish()?;
     info!("saving {} users", self.users.len());
     self.users.save(USER_FILE, UID_COL, UHASH_COL)?;
+    Ok(res)
+  }
+}
+
+/// Object writer to transform and write GoodReads interactions
+pub struct ShortIntWriter {
+  book_table: Vec<i32>,
+  writer: TableWriter<ShortIntRecord>,
+  n_recs: u32,
+}
+
+fn read_map(path: &Path) -> Result<Vec<i32>> {
+  info!("reading book map from {:?}", path);
+  // the book IDs start from 0
+  let mut vec = Vec::with_capacity(10_000);
+  let read = csv::Reader::from_path(path)?;
+  for rec in read.into_deserialize() {
+    let rec: BookMapEntry = rec?;
+    while vec.len() <= rec.book_id_csv {
+      vec.push(-1);
+    }
+    vec[rec.book_id_csv] = rec.book_id;
+  }
+  Ok(vec)
+}
+
+impl ShortIntWriter {
+  /// Open a new output.
+  pub fn open(map_file: &Path) -> Result<ShortIntWriter> {
+    let book_table = read_map(map_file)?;
+    let writer = TableWriter::open(SHORT_OUT_FILE)?;
+    Ok(ShortIntWriter {
+      book_table, writer,
+      n_recs: 0,
+    })
+  }
+}
+
+impl DataSink for ShortIntWriter {
+  fn output_files(&self) -> Vec<PathBuf> {
+    path_list(&[OUT_FILE])
+  }
+}
+
+impl ObjectWriter<RawShortInteraction> for ShortIntWriter {
+  /// Write a single interaction to the output
+  fn write_object(&mut self, row: RawShortInteraction) -> Result<()> {
+    self.n_recs += 1;
+    let rec_id = self.n_recs;
+    let user_id = row.user_id;
+    let book_id = self.book_table.get(row.book_id as usize).filter(|i| **i >= 0);
+    let book_id = *book_id.ok_or_else(|| anyhow!("unmatched book id {}", row.book_id))?;
+
+    self.writer.write_object(ShortIntRecord {
+      rec_id, user_id, book_id,
+      is_read: row.is_read as u8,
+      rating: if row.rating > 0.0 {
+        Some(row.rating)
+      } else {
+        None
+      },
+    })?;
+
+    Ok(())
+  }
+
+  // Clean up and finalize output
+  fn finish(self) -> Result<usize> {
+    info!("wrote {} records, closing output", self.n_recs);
+    let res = self.writer.finish()?;
     Ok(res)
   }
 }
