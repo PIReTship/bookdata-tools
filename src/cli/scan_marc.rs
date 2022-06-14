@@ -10,12 +10,13 @@ use fallible_iterator::FallibleIterator;
 
 use crate::prelude::*;
 use crate::io::open_gzin_progress;
-use crate::io::object::ThreadWriter;
+use crate::io::object::ThreadObjectWriter;
 
 use crate::marc::MARCRecord;
 use crate::marc::parse::{read_records, read_records_delim};
 use crate::marc::book_fields::BookOutput;
 use crate::marc::flat_fields::FieldOutput;
+use crate::util::logging::{set_progress, data_progress};
 
 /// Scan MARC records and extract basic information.
 ///
@@ -91,7 +92,7 @@ impl ScanMARC {
   }
 
   fn process_records<W: ObjectWriter<MARCRecord> + Send + 'static>(&self, output: W) -> Result<()> {
-    let mut output = ThreadWriter::new(output);
+    let mut output = ThreadObjectWriter::new(output);
     let mut nfiles = 0;
     let mut all_recs = 0;
     let all_start = Instant::now();
@@ -101,7 +102,9 @@ impl ScanMARC {
       let inf = inf.as_path();
       let file_start = Instant::now();
       info!("reading from compressed file {}", inf.display());
-      let read = open_gzin_progress(inf)?;
+      let pb = data_progress(0);
+      let read = open_gzin_progress(inf, pb.clone())?;
+      let _lg = set_progress(pb);
       let mut records = if self.line_mode {
         read_records_delim(read)
       } else {

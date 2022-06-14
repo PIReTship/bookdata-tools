@@ -11,7 +11,7 @@ use parquet::file::properties::{WriterProperties, WriterPropertiesBuilder};
 use parquet::file::writer::{FileWriter, SerializedFileWriter, ParquetWriter};
 use anyhow::Result;
 
-use crate::io::object::{ObjectWriter, ThreadWriter};
+use crate::io::object::{ObjectWriter, ThreadObjectWriter};
 use crate::io::{DataSink};
 
 const BATCH_SIZE: usize = 1024 * 1024;
@@ -22,7 +22,7 @@ const BATCH_SIZE: usize = 1024 * 1024;
 /// them out to a Parquet file.
 pub struct TableWriter<R: Send + Sync + 'static> {
   _phantom: PhantomData<R>,
-  writer: ThreadWriter<Vec<R>>,
+  writer: ThreadObjectWriter<Vec<R>>,
   out_path: Option<PathBuf>,
   batch: Vec<R>,
   batch_size: usize,
@@ -124,7 +124,7 @@ impl <R> TableWriterBuilder<R> where R: Send + Sync + 'static, for<'a> &'a [R]: 
     let props = Arc::new(props);
     let schema = self.schema.clone();
     let writer = SerializedFileWriter::new(file, schema, props)?;
-    let writer = ThreadWriter::new(writer);
+    let writer = ThreadObjectWriter::new(writer);
     let out_path = Some(path.to_path_buf());
     Ok(TableWriter {
       _phantom: PhantomData,

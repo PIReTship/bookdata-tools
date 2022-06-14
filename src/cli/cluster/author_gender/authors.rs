@@ -6,6 +6,7 @@ use serde::{Deserialize};
 use crate::prelude::*;
 use crate::gender::*;
 use crate::arrow::row_de::scan_parquet_file;
+use crate::util::logging::item_progress;
 
 #[derive(Debug, Default)]
 pub struct AuthorInfo {
@@ -32,17 +33,17 @@ fn viaf_load_names() -> Result<HashMap<u32, Vec<String>>> {
   let mut map: HashMap<u32, Vec<String>> = HashMap::new();
 
   info!("loading VIAF author names");
-  let iter = scan_parquet_file("viaf/author-name-index.parquet")?;
+  let mut iter = scan_parquet_file("viaf/author-name-index.parquet")?;
 
-  let mut timer = Timer::builder();
-  timer.label("reading author names");
-  timer.interval(5.0);
-  let mut iter = timer.fallible_iter_progress(iter);
-  let timer = timer.build();
+  let pb = item_progress(iter.remaining() as u64, "authors");
+  pb.set_draw_delta(5000);
+  let _lg = set_progress(pb.clone());
+  let timer = Timer::new();
 
   while let Some(row) = iter.next()? {
     let row: NameRow = row;
     map.entry(row.rec_id).or_default().push(row.name);
+    pb.inc(1);
   }
 
   info!("loaded authors for {} records in {}", map.len(), timer.human_elapsed());
@@ -53,15 +54,20 @@ fn viaf_load_names() -> Result<HashMap<u32, Vec<String>>> {
 /// Load VIAF author genders
 fn viaf_load_genders() -> Result<HashMap<u32, HashSet<Gender>>> {
   let mut map: HashMap<u32, HashSet<Gender>> = HashMap::new();
-  let timer = Timer::builder().label("reading author genders").interval(5.0).build();
+  let timer = Timer::new();
 
   info!("loading VIAF author genders");
-  let iter = scan_parquet_file("viaf/author-genders.parquet")?;
-  let mut iter = timer.copy_builder().fallible_iter_progress(iter);
+  let mut iter = scan_parquet_file("viaf/author-genders.parquet")?;
+
+  let pb = item_progress(iter.remaining() as u64, "authors");
+  pb.set_draw_delta(5000);
+  let _lg = set_progress(pb.clone());
+
   while let Some(row) = iter.next()? {
     let row: GenderRow = row;
     let gender: Gender = row.gender.into();
     map.entry(row.rec_id).or_default().insert(gender);
+    pb.inc(1);
   }
 
   info!("loaded genders for {} records in {}", map.len(), timer.human_elapsed());

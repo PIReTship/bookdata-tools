@@ -5,6 +5,7 @@ use std::str::FromStr;
 use std::path::Path;
 use std::marker::PhantomData;
 
+use indicatif::ProgressBar;
 use log::*;
 use anyhow::Result;
 use serde::de::DeserializeOwned;
@@ -53,14 +54,15 @@ impl <R: DeserializeOwned> Iterator for JSONRecords<R> {
 
 impl LineProcessor {
   /// Open a line processor from a gzipped source.
-  pub fn open_gzip(path: &Path) -> Result<LineProcessor> {
-    let read = open_gzin_progress(path)?;
+  pub fn open_gzip(path: &Path, pb: ProgressBar) -> Result<LineProcessor> {
+    let read = open_gzin_progress(path, pb)?;
     Ok(LineProcessor {
       reader: Box::new(read),
     })
   }
 
   /// Open a line processor from a zipped source.
+  #[allow(dead_code)]
   pub fn open_solo_zip(path: &Path) -> Result<LineProcessor> {
     let read = open_solo_zip(path)?;
     Ok(LineProcessor {

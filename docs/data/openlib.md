@@ -26,10 +26,20 @@ erDiagram
         Utf8 title
     }
     editions }o--o{ works : "edition-works"
+    editions |o--o{ edition-subjects : ""
+    edition-subjects {
+        Int32 id
+        Utf8 subject
+    }
     works {
         Int32 id PK
         Utf8 key
         Utf8 title
+    }
+    works |o--o{ work-subjects : ""
+    work-subjects {
+        Int32 id
+        Utf8 subject
     }
     authors {
         Int32 id PK
@@ -90,6 +100,12 @@ cleaned (with {rust:fn}`~bookdata::cleaning::isbns::clean_isbn_chars` or
 file.
 :::
 
+:::{file} openlibrary/edition-subjects.parquet
+
+This table contains the subjects for OpenLibrary editions.  Each row contains an edition ID and one subject.
+Its schema is in {rust:struct}`~bookdata::openlib::edition::EditionSubjectRec`.
+:::
+
 :::{file} openlibrary/edition-isbn-ids.parquet
 
 This file maps editions to numeric [ISBN identifiers](isbn-id).  It is derived
@@ -109,6 +125,12 @@ other per-work fields.
 :::{file} openlibrary/work-authors.parquet
 
 This file links work records to the work's author list (works may have separate author lists from their editions).
+:::
+
+:::{file} openlibrary/work-subjects.parquet
+
+This table contains the subjects for OpenLibrary editions.  Each row contains an edition ID and one subject.
+Its schema is in {rust:struct}`~bookdata::openlib::work::WorkSubjectRec`.
 :::
 
 ## Extracted Author Tables

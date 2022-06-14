@@ -38,7 +38,7 @@ This needs the following Python dependencies:
 - jupytext
 - dvc (2.0 or later)
 
-The Python dependencies are defined in `pyproject.toml`.
+The Python dependencies are defined in `environment.yml`.
 
 ### Rust
 

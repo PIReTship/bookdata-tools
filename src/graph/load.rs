@@ -17,7 +17,7 @@ type NodeMap = HashMap<i32, IdNode>;
 struct GraphBuilder {
   graph: IdGraph,
   nodes: NodeMap,
-  ctx: ExecutionContext
+  ctx: SessionContext
 }
 
 impl GraphBuilder {
@@ -25,15 +25,14 @@ impl GraphBuilder {
     info!("scanning vertices from {:?}", src);
     let node_df = src.read_node_ids(&mut self.ctx).await?;
     let plan = plan_df(&mut self.ctx, node_df).await?;
-    let batches = execute_stream(plan, self.ctx.runtime_env()).await?;
+    let batches = execute_stream(plan, self.ctx.task_ctx()).await?;
     let ninit = self.nodes.len();
 
     let mut iter = RecordBatchDeserializer::for_stream(batches);
     while let Some(row) = iter.next().await {
       let row: BookID = row?;
-      if !self.nodes.contains_key(&row.code) {
-        self.nodes.insert(row.code, self.graph.add_node(row));
-      }
+      let entry = self.nodes.entry(row.code);
+      entry.or_insert_with(|| self.graph.add_node(row));
     }
 
     info!("loaded {} new vertices from {:?}", self.nodes.len() - ninit, src);
@@ -45,7 +44,7 @@ impl GraphBuilder {
     info!("scanning edges from {:?}", src);
     let edge_df = src.read_edges(&mut self.ctx).await?;
     let plan = plan_df(&mut self.ctx, edge_df).await?;
-    let batches = execute_stream(plan, self.ctx.runtime_env()).await?;
+    let batches = execute_stream(plan, self.ctx.task_ctx()).await?;
     let mut iter = RecordBatchDeserializer::for_stream(batches);
     let mut n = 0;
 
@@ -72,7 +71,7 @@ impl GraphBuilder {
 pub async fn construct_graph() -> Result<IdGraph> {
   let graph = IdGraph::new_undirected();
   let nodes = NodeMap::new();
-  let ctx = ExecutionContext::new();
+  let ctx = SessionContext::new();
   let mut gb = GraphBuilder {
     graph, nodes, ctx
   };

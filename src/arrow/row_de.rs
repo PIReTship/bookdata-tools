@@ -141,6 +141,12 @@ impl <'a> RecordBatchDeserializer {
   }
 }
 
+impl <'de, R: Deserialize<'de>, B: RecordBatchReader> RecordIter<R, B> {
+  pub fn remaining(&self) -> i64 {
+    self.remaining
+  }
+}
+
 impl <'de, R: Deserialize<'de>, B: RecordBatchReader> FallibleIterator for RecordIter<R, B> {
   type Item = R;
   type Error = RowError;

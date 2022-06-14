@@ -11,6 +11,7 @@ use serde::{Serialize, Deserialize};
 use datafusion::prelude::*;
 use crate::prelude::*;
 use crate::arrow::*;
+use crate::arrow::fusion::*;
 use crate::arrow::row_de::RecordBatchDeserializer;
 use crate::cli::AsyncCommand;
 use async_trait::async_trait;
@@ -46,7 +47,7 @@ struct ClusterAuthor {
 }
 
 /// Write out author records to file, without duplicates.
-async fn write_authors_dedup<P: AsRef<Path>>(df: Arc<dyn DataFrame>, path: P) -> Result<()> {
+async fn write_authors_dedup<P: AsRef<Path>>(df: Arc<DataFrame>, path: P) -> Result<()> {
   let mut writer = TableWriter::open(path)?;
 
   info!("scanning author batches");
@@ -69,56 +70,58 @@ async fn write_authors_dedup<P: AsRef<Path>>(df: Arc<dyn DataFrame>, path: P) ->
 }
 
 /// Scan the OpenLibrary data for first authors
-async fn scan_openlib(ctx: &mut ExecutionContext, first_only: bool) -> Result<Arc<dyn DataFrame>> {
+async fn scan_openlib(ctx: &mut SessionContext, first_only: bool) -> Result<Arc<DataFrame>> {
   info!("scanning OpenLibrary author data");
   info!("reading ISBN clusters");
-  let icl = ctx.read_parquet("book-links/isbn-clusters.parquet").await?;
+  let icl = ctx.read_parquet("book-links/isbn-clusters.parquet", default()).await?;
   let icl = icl.select_columns(&["isbn_id", "cluster"])?;
   info!("reading edition IDs");
-  let edl = ctx.read_parquet("openlibrary/edition-isbn-ids.parquet").await?;
+  let edl = ctx.read_parquet("openlibrary/edition-isbn-ids.parquet", default()).await?;
   let edl = edl.filter(col("isbn_id").is_not_null())?;
   info!("reading edition authors");
-  let mut eau = ctx.read_parquet("openlibrary/edition-authors.parquet").await?;
+  let mut eau = ctx.read_parquet("openlibrary/edition-authors.parquet", default()).await?;
   if first_only {
     eau = eau.filter(col("pos").eq(lit(0)))?;
   }
   info!("reading author names");
-  let auth = ctx.read_parquet("openlibrary/author-names.parquet").await?;
+  let auth = ctx.read_parquet("openlibrary/author-names.parquet", default()).await?;
   let linked = icl.join(edl, JoinType::Inner, &["isbn_id"], &["isbn_id"])?;
   let linked = linked.join(eau, JoinType::Inner, &["edition"], &["edition"])?;
   let linked = linked.join(auth, JoinType::Inner, &["author"], &["id"])?;
   let authors = linked.select(vec![
     col("cluster"),
-    trim(col("name")).alias("author_name")
+    udf_clean_name(col("name")).alias("author_name")
   ])?;
   Ok(authors)
 }
 
 /// Scan the Library of Congress data for first authors.
-async fn scan_loc(ctx: &mut ExecutionContext, first_only: bool) -> Result<Arc<dyn DataFrame>> {
+async fn scan_loc(ctx: &mut SessionContext, first_only: bool) -> Result<Arc<DataFrame>> {
   if !first_only {
     error!("only first-author extraction is currently supported");
     return Err(anyhow!("cannot extract multiple authors"));
   }
 
   info!("reading ISBN clusters");
-  let icl = ctx.read_parquet("book-links/isbn-clusters.parquet").await?;
+  let icl = ctx.read_parquet("book-links/isbn-clusters.parquet", default()).await?;
   let icl = icl.select_columns(&["isbn_id", "cluster"])?;
 
   info!("reading book records");
-  let books = ctx.read_parquet("loc-mds/book-isbn-ids.parquet").await?;
+  let books = ctx.read_parquet("loc-mds/book-isbn-ids.parquet", default()).await?;
 
   info!("reading book authors");
-  let authors = ctx.read_parquet("loc-mds/book-authors.parquet").await?;
+  let authors = ctx.read_parquet("loc-mds/book-authors.parquet", default()).await?;
   let authors = authors.filter(col("author_name").is_not_null())?;
 
   let linked = icl.join(books, JoinType::Inner, &["isbn_id"], &["isbn_id"])?;
   let linked = linked.join(authors, JoinType::Inner, &["rec_id"], &["rec_id"])?;
-  let authors = linked.select_columns(&["cluster", "author_name"])?;
+  let authors = linked.select(vec![
+    col("cluster"),
+    udf_clean_name(col("author_name")).alias("author_name")
+  ])?;
+
   // we shouldn't have null author names, but the data thinks we do. fix.
-
   let authors = authors.filter(col("author_name").is_not_null())?;
-
 
   Ok(authors)
 }
@@ -126,9 +129,9 @@ async fn scan_loc(ctx: &mut ExecutionContext, first_only: bool) -> Result<Arc<dy
 #[async_trait]
 impl AsyncCommand for ClusterAuthors {
   async fn exec_future(&self) -> Result<()> {
-    let mut ctx = ExecutionContext::new();
+    let mut ctx = SessionContext::new();
 
-    let mut authors: Option<Arc<dyn DataFrame>> = None;
+    let mut authors: Option<Arc<DataFrame>> = None;
     for source in &self.sources {
       let astr = match source {
         Source::OpenLib => scan_openlib(&mut ctx, self.first_author).await?,
@@ -145,7 +148,7 @@ impl AsyncCommand for ClusterAuthors {
     let authors = authors.sort(vec![
       col("cluster").sort(true, true),
       col("author_name").sort(true, true)
-      ])?;
+    ])?;
 
     write_authors_dedup(authors, &self.output).await?;
 

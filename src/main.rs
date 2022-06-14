@@ -6,22 +6,22 @@
 //! currently usable as a library; you can extend them by adding additional commands
 //! to the [cli] module.
 
-pub mod cleaning;
-pub mod parsing;
-pub mod tsv;
-pub mod util;
-pub mod io;
-pub mod ids;
-pub mod gender;
-pub mod graph;
-pub mod marc;
-pub mod openlib;
-pub mod amazon;
-pub mod goodreads;
-pub mod arrow;
-pub mod interactions;
-pub mod cli;
-pub mod prelude;
+mod cleaning;
+mod parsing;
+mod tsv;
+mod util;
+mod io;
+mod ids;
+mod gender;
+mod graph;
+mod marc;
+mod openlib;
+mod amazon;
+mod goodreads;
+mod arrow;
+mod interactions;
+mod cli;
+mod prelude;
 
 use mimalloc::MiMalloc;
 

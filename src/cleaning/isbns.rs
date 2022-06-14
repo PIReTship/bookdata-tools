@@ -10,7 +10,6 @@
 //! may have multiple ISBNs in one string, descriptive tags, and all manner of other messes.
 //! The multi-ISBN parser exposed through [ParserDefs] supports cleaning these ISBN strings.
 use regex::{Regex, RegexSet, Match, Captures};
-use lazy_static::lazy_static;
 
 /// Single ISBN parsed from a string.
 #[derive(Debug, PartialEq)]
@@ -30,22 +29,39 @@ pub enum ParseResult {
   Unmatched(String)
 }
 
-lazy_static! {
-  static ref ISBN_CLEAN_RE: Regex = Regex::new(r"[^0-9Xx]").expect("invalid regex");
-  static ref ASIN_CLEAN_RE: Regex = Regex::new(r"[^0-9A-Za-z]").expect("invalid regex");
-}
-
 /// Crude ISBN cleanup.
 ///
 /// To be used with ISBN strings that are relatively well-formed, but may have invalid
 /// characters.
 pub fn clean_isbn_chars(isbn: &str) -> String {
-  return ISBN_CLEAN_RE.replace_all(isbn, "").to_uppercase();
+  let mut vec = Vec::with_capacity(isbn.len());
+  let bytes = isbn.as_bytes();
+  for i in 0..bytes.len() {
+    let b = bytes[i];
+    if b.is_ascii_digit() || b == b'X' {
+      vec.push(b)
+    } else if b == b'x' {
+      vec.push(b'X')
+    }
+  }
+  unsafe {  // we know it's only ascii
+    String::from_utf8_unchecked(vec)
+  }
 }
 
 /// Crude ASIN cleanup.
 pub fn clean_asin_chars(isbn: &str) -> String {
-  return ASIN_CLEAN_RE.replace_all(isbn, "").to_uppercase();
+  let mut vec = Vec::with_capacity(isbn.len());
+  let bytes = isbn.as_bytes();
+  for i in 0..bytes.len() {
+    let b = bytes[i];
+    if b.is_ascii_alphanumeric() {
+      vec.push(b.to_ascii_uppercase())
+    }
+  }
+  unsafe {  // we know it's only ascii
+    String::from_utf8_unchecked(vec)
+  }
 }
 
 /// Regular expressions for unparsable ISBN strings to ignore.

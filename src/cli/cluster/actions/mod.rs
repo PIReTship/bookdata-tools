@@ -2,6 +2,7 @@
 use futures::stream::{StreamExt};
 
 use datafusion::prelude::*;
+use indicatif::ProgressBar;
 use crate::prelude::*;
 use crate::arrow::fusion::*;
 use crate::interactions::*;
@@ -39,20 +40,25 @@ pub struct ClusterActions {
   outfile: PathBuf,
 }
 
-async fn scan_and_save<S: Source>(src: S, ctx: &mut ExecutionContext, dst: &Path) -> Result<usize> {
+async fn scan_and_save<S: Source>(src: S, ctx: &mut SessionContext, dst: &Path) -> Result<usize> {
   let source = src.scan_linked_actions(ctx).await?;
 
   let mut dedup = src.make_dedup();
 
-  let mut timer = Timer::builder().label("scanning ratings").interval(5.0).build();
+  let timer = Timer::new();
+  let pb = ProgressBar::new_spinner().with_prefix("interactions");
+  let _lg = set_progress(pb.clone());
   let mut rows = df_rows(source).await?;
   info!("scanning ratings for deduplication");
+  let mut n: usize = 0;
   while let Some(row) = rows.next().await {
     let row: S::Act = row?;
     dedup.add_interaction(row)?;
-    timer.complete(1);
-    timer.maybe_log_status();
+    pb.inc(1);
+    n += 1;
   }
+
+  info!("scanned {} ratings in {}", friendly::scalar(n), timer.human_elapsed());
 
   dedup.save(dst)
 }
@@ -60,7 +66,7 @@ async fn scan_and_save<S: Source>(src: S, ctx: &mut ExecutionContext, dst: &Path
 #[async_trait]
 impl AsyncCommand for ClusterActions {
   async fn exec_future(&self) -> Result<()> {
-    let mut ctx = ExecutionContext::new();
+    let mut ctx = SessionContext::new();
     let infile = self.infile.as_ref().map(|s| s.as_str());
 
     let dst = self.outfile.as_ref();

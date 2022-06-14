@@ -6,6 +6,7 @@ use crate::prelude::*;
 use crate::arrow::*;
 use crate::ids::index::IdIndex;
 use crate::amazon::*;
+use crate::util::logging::data_progress;
 
 /// Scan an Amazon rating CSV file into Parquet.
 #[derive(StructOpt, Debug)]
@@ -28,11 +29,14 @@ impl Command for ScanRatings {
     let mut writer = TableWriter::open(out)?;
 
     let src = File::open(&self.infile)?;
+    let pb = data_progress(src.metadata()?.len());
+    pb.set_prefix(self.infile.to_string_lossy().to_string());
+    let _lg = set_progress(pb.clone());
+    let src = pb.wrap_read(src);
     let src = csv::ReaderBuilder::new().has_headers(false).from_reader(src);
     let src = src.into_deserialize();
     let mut index: IdIndex<String> = IdIndex::new();
-    let iter = Timer::builder().label("reading ratings").interval(2.5).iter_progress(src);
-    for row in iter {
+    for row in src {
       let row: SourceRating = row?;
       let user = index.intern(row.user.as_str())?;
       writer.write_object(RatingRow {

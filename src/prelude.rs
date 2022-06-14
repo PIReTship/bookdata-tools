@@ -12,6 +12,8 @@ pub use crate::io::path_list;
 pub use crate::io::file_size;
 pub use crate::json_from_str;
 pub use crate::util::Timer;
+pub use crate::util::default;
+pub use crate::util::logging::set_progress;
 pub use crate::cli::Command;
 
 /// Macro to implement FromStr using JSON.

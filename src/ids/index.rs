@@ -11,7 +11,7 @@ use anyhow::Result;
 use thiserror::Error;
 use parquet::record::reader::RowIter;
 use parquet::record::RowAccessor;
-use parquet::basic::{Type as PhysicalType, LogicalType, IntType, StringType, Repetition};
+use parquet::basic::{Type as PhysicalType, LogicalType, Repetition};
 use parquet::schema::types::Type;
 use crate::io::ObjectWriter;
 use crate::arrow::*;
@@ -53,6 +53,7 @@ impl <K> IdIndex<K> where K: Eq + Hash {
   }
 
   /// Freeze the index so no new items can be added.
+  #[allow(dead_code)]
   pub fn freeze(self) -> IdIndex<K> {
     IdIndex { map: self.map, frozen: true }
   }
@@ -139,8 +140,8 @@ impl IdIndex<String> {
     let file_schema = read.metadata().file_metadata().schema();
     debug!("file schema: {:?}", file_schema);
 
-    let id_type = LogicalType::INTEGER(IntType::new(32, true));
-    let key_type = LogicalType::STRING(StringType::new());
+    let id_type = LogicalType::Integer { bit_width: 32, is_signed: true };
+    let key_type = LogicalType::String;
     let mut tgt_fields = vec![
       Arc::new(Type::primitive_type_builder(id_col, PhysicalType::INT32)
         .with_logical_type(Some(id_type))
@@ -175,6 +176,7 @@ impl IdIndex<String> {
   ///
   /// This loads an index from a CSV file.  It assumes the first column is the ID, and the
   /// second column is the key.
+  #[allow(dead_code)]
   pub fn load_csv<P: AsRef<Path>, K: Eq + Hash + DeserializeOwned>(path: P) -> Result<IdIndex<K>> {
     info!("reading ID index from from {:?}", path.as_ref());
     let input = csv::Reader::from_path(path)?;

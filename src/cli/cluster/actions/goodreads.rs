@@ -1,13 +1,12 @@
 use std::sync::Arc;
 
 use datafusion::prelude::*;
-use datafusion::logical_plan::{Expr, ExprSchemable};
+use datafusion::logical_plan::{ExprSchemable};
 use arrow::datatypes::*;
 
 use crate::prelude::*;
 use crate::interactions::*;
 use crate::ids::codes::*;
-use crate::arrow::fusion::coalesce;
 
 use super::data::*;
 
@@ -48,14 +47,14 @@ impl Source for Ratings {
   type Act = RatingRow;
   type DD = RatingDedup<TimestampRatingRecord>;
 
-  async fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+  async fn scan_linked_actions(&self, ctx: &mut SessionContext) -> Result<Arc<DataFrame>> {
     info!("setting up to scan GoodReads ratings from {}", self.path);
 
-    let ratings = ctx.read_parquet(&self.path).await?;
+    let ratings = ctx.read_parquet(&self.path, Default::default()).await?;
     let ratings = ratings.filter(col("rating").is_not_null())?;
     let schema = ratings.schema();
     let num = DataType::Int64;
-    let books = ctx.read_parquet(GR_LINK_FILE).await?;
+    let books = ctx.read_parquet(GR_LINK_FILE, Default::default()).await?;
     let ratings = ratings.join(books, JoinType::Inner, &["book_id"], &["book_id"])?;
     let ratings = ratings.select(vec![
       col("user_id").alias("user"),
@@ -91,13 +90,13 @@ impl Source for Actions {
   type Act = RatingRow;
   type DD = ActionDedup<TimestampActionRecord>;
 
-  async fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
+  async fn scan_linked_actions(&self, ctx: &mut SessionContext) -> Result<Arc<DataFrame>> {
     info!("setting up to scan GoodReads actions from {}", self.path);
 
-    let ratings = ctx.read_parquet(&self.path).await?;
+    let ratings = ctx.read_parquet(&self.path, default()).await?;
     let schema = ratings.schema();
     let num = DataType::Int64;
-    let books = ctx.read_parquet(GR_LINK_FILE).await?;
+    let books = ctx.read_parquet(GR_LINK_FILE, default()).await?;
     let ratings = ratings.join(books, JoinType::Inner, &["book_id"], &["book_id"])?;
     let ratings = ratings.select(vec![
       col("user_id").alias("user"),

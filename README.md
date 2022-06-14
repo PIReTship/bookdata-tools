@@ -28,7 +28,7 @@ these tools.
 
 ## Running Everything
 
-The dependencies are declared in `pyproject.toml`, in a format suitable for use with
+The dependencies are declared in `environment.yml`, in a format suitable for use with
 [conda-lock][].  We provide lockfiles for Windows, macOS, and Linux; to create a Conda
 environment, run:
 
@@ -40,7 +40,7 @@ You can run the entire import process with:
 
 To regenerate or update the lockfiles, run:
 
-    conda-lock lock --mamba -f pyproject.toml
+    conda-lock lock --mamba -f environment.yml -f dev-environment.yml -f doc-environment.yml
 
 [conda-lock]: https://github.com/conda-incubator/conda-lock/
 

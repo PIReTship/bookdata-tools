@@ -1,4 +1,4 @@
-//! GoodReads book schemas.
+//! GoodReads book schemas and record processing.
 use serde::Deserialize;
 use chrono::NaiveDate;
 

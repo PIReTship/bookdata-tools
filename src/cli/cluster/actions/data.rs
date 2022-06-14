@@ -14,7 +14,7 @@ pub trait Source {
   type Act: Interaction + DeserializeOwned;
   type DD: Dedup<Self::Act> + Default + 'static;
 
-  async fn scan_linked_actions(&self, ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>>;
+  async fn scan_linked_actions(&self, ctx: &mut SessionContext) -> Result<Arc<DataFrame>>;
 
   fn make_dedup(&self) -> Self::DD {
     Self::DD::default()
