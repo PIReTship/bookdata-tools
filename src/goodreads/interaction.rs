@@ -34,7 +34,7 @@ pub struct RawInteraction {
 pub struct RawShortInteraction {
   pub user_id: i32,
   pub book_id: i32,
-  pub is_read: bool,
+  pub is_read: u8,
   pub rating: f32,
 }
 
@@ -103,7 +103,7 @@ impl IntWriter {
 
 impl DataSink for IntWriter {
   fn output_files(&self) -> Vec<PathBuf> {
-    path_list(&[OUT_FILE])
+    path_list(&[OUT_FILE, USER_FILE])
   }
 }
 
@@ -183,7 +183,7 @@ impl ShortIntWriter {
 
 impl DataSink for ShortIntWriter {
   fn output_files(&self) -> Vec<PathBuf> {
-    path_list(&[OUT_FILE])
+    path_list(&[SHORT_OUT_FILE])
   }
 }
 

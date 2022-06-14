@@ -1,3 +1,4 @@
+use std::fs::File;
 use std::mem::drop;
 use crate::prelude::*;
 use crate::goodreads::*;
@@ -76,6 +77,39 @@ where
   Ok(())
 }
 
+fn scan_gr_csv<R, W>(path: &Path, proc: W) -> Result<()>
+where
+  W: ObjectWriter<R> + DataSink + Send + 'static,
+  R: DeserializeOwned + Send + Sync + 'static
+{
+  let path: &Path = path.as_ref();
+  let outs: Vec<_> = proc.output_files().iter().map(|p| p.to_path_buf()).collect();
+
+  info!("reading data from {}", path.display());
+  let read = File::open(path)?;
+  let pb = data_progress(read.metadata()?.len());
+  pb.set_prefix(path.file_name().unwrap_or_default().to_string_lossy().to_string());
+  let read = pb.wrap_read(read);
+  let read = csv::Reader::from_reader(read);
+  let mut writer = ThreadObjectWriter::new(proc);
+  let _lg = set_progress(pb);
+
+  for line in read.into_deserialize() {
+    let rec: R = line?;
+    writer.write_object(rec)?;
+  }
+
+  writer.finish()?;
+  drop(_lg);
+
+  for out in outs {
+    let outf = out.as_path();
+    info!("output {} is {}", outf.display(), friendly::bytes(file_size(outf)?));
+  }
+
+  Ok(())
+}
+
 impl Command for Goodreads {
   fn exec(&self) -> Result<()> {
     match &self.command {
@@ -90,7 +124,7 @@ impl Command for Goodreads {
       GRCmd::Scan { data: GRScan::Interactions(opts) } => {
         info!("scanning GoodReads interactions");
         let ext = opts.scan.infile.extension().unwrap_or_default().to_str().unwrap_or_default();
-        if ext == ".csv" {
+        if ext == "csv" {
           info!("reading partial interactions from CSV file");
           let map = if let Some(ref path) = opts.book_map {
             path.as_path()
@@ -98,7 +132,7 @@ impl Command for Goodreads {
             error!("CSV reading must have a book map");
             return Err(anyhow!("no book map specified"));
           };
-          scan_gr(&opts.scan.infile, interaction::ShortIntWriter::open(&map)?)?;
+          scan_gr_csv(&opts.scan.infile, interaction::ShortIntWriter::open(&map)?)?;
         } else {
           info!("reading full interactions from JSON file");
           scan_gr(&opts.scan.infile, interaction::IntWriter::open()?)?;
