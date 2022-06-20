@@ -133,6 +133,10 @@ impl CLI {
     let timer = Timer::new();
 
     let res = self.command.exec();
+    if let Err(e) = &res {
+      error!("command failed: {}", e);
+      return res;
+    }
 
     info!("work completed in {}", timer.human_elapsed());
     match ProcessTime::try_now() {

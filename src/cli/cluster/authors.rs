@@ -72,18 +72,18 @@ async fn write_authors_dedup<P: AsRef<Path>>(df: Arc<DataFrame>, path: P) -> Res
 /// Scan the OpenLibrary data for first authors
 async fn scan_openlib(ctx: &mut SessionContext, first_only: bool) -> Result<Arc<DataFrame>> {
   info!("scanning OpenLibrary author data");
-  info!("reading ISBN clusters");
+  info!("opening ISBN clusters");
   let icl = ctx.read_parquet("book-links/isbn-clusters.parquet", default()).await?;
   let icl = icl.select_columns(&["isbn_id", "cluster"])?;
-  info!("reading edition IDs");
+  info!("opening edition IDs");
   let edl = ctx.read_parquet("openlibrary/edition-isbn-ids.parquet", default()).await?;
   let edl = edl.filter(col("isbn_id").is_not_null())?;
-  info!("reading edition authors");
+  info!("opening edition authors");
   let mut eau = ctx.read_parquet("openlibrary/edition-authors.parquet", default()).await?;
   if first_only {
     eau = eau.filter(col("pos").eq(lit(0)))?;
   }
-  info!("reading author names");
+  info!("opening author names");
   let auth = ctx.read_parquet("openlibrary/author-names.parquet", default()).await?;
   let linked = icl.join(edl, JoinType::Inner, &["isbn_id"], &["isbn_id"])?;
   let linked = linked.join(eau, JoinType::Inner, &["edition"], &["edition"])?;
