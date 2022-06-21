@@ -33,7 +33,7 @@ pub struct RawInteraction {
 /// This struct is written to `gr-interactions.parquet` and records actual interaction data.
 /// Timestamps are UNIX timestamps recorded as 64-bit integers; they do not use a Parquet
 /// timestamp time, due to out-of-range values causing problems when loaded into Python.
-#[derive(ParquetRecordWriter)]
+#[derive(ParquetRecordWriter, ArrowField)]
 pub struct IntRecord {
   pub rec_id: u32,
   /// The review ID.

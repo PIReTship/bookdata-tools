@@ -9,6 +9,7 @@ pub use row_de::scan_parquet_file;
 pub use parquet::record::RecordWriter;
 pub use parquet::file::reader::FileReader;
 pub use parquet_derive::ParquetRecordWriter;
+pub use arrow2_convert::ArrowField;
 pub use writer::{TableWriter, TableWriterBuilder};
 pub use types::*;
 
