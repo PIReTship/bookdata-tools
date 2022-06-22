@@ -1,4 +1,4 @@
-pub mod types;
+// pub mod types;
 pub mod row_de;
 pub mod writer;
 pub mod batch_io;
@@ -11,7 +11,6 @@ pub use parquet::file::reader::FileReader;
 pub use arrow2_convert::ArrowField;
 pub use arrow2_convert::serialize::ArrowSerialize;
 pub use writer::TableWriter;
-pub use types::*;
 
 use std::path::Path;
 use std::fs::File;
