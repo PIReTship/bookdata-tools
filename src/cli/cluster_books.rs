@@ -4,6 +4,7 @@ use std::fs::File;
 use crate::prelude::*;
 use crate::arrow::*;
 use crate::graph::*;
+use crate::arrow::writer2::TableWriter;
 use crate::ids::codes::{NS_ISBN, ns_of_book_code};
 
 use super::AsyncCommand;
@@ -16,16 +17,18 @@ use petgraph::algo::kosaraju_scc;
 #[derive(StructOpt, Debug)]
 #[structopt(name="cluster-books")]
 pub struct ClusterBooks {
+  #[structopt(long="save-graph", parse(from_os_str))]
+  save_graph: Option<PathBuf>,
 }
 
-#[derive(ParquetRecordWriter, Debug)]
+#[derive(ArrowField, Debug)]
 struct ISBNClusterRec {
   isbn: Option<String>,
   isbn_id: i32,
   cluster: i32
 }
 
-#[derive(ParquetRecordWriter, Debug)]
+#[derive(ArrowField, Debug)]
 struct ClusterCode {
   book_code: i32,
   cluster: i32,
@@ -33,13 +36,13 @@ struct ClusterCode {
   label: Option<String>,
 }
 
-#[derive(ParquetRecordWriter, Debug)]
+#[derive(ArrowField, Debug)]
 struct GraphEdge {
   src: i32,
   dst: i32
 }
 
-#[derive(ParquetRecordWriter, Debug, Default)]
+#[derive(ArrowField, Debug, Default)]
 struct ClusterStat {
   cluster: i32,
   n_nodes: u32,
@@ -104,15 +107,15 @@ impl AsyncCommand for ClusterBooks {
       }
     }
 
-    info!("saving graph");
-    save_graph(&graph, "book-links/book-graph.mp.zst")?;
+    if let Some(gf) = &self.save_graph {
+      info!("saving graph to {:?}", gf);
+      save_graph(&graph, &gf)?;
+    }
 
     info!("preparing to write graph results");
     let mut ic_w = TableWriter::open("book-links/isbn-clusters.parquet")?;
 
-    let n_wb = TableWriterBuilder::new()?;
-    let mut n_w = n_wb.open("book-links/cluster-graph-nodes.parquet")?;
-
+    let mut n_w = TableWriter::open("book-links/cluster-graph-nodes.parquet")?;
     let mut cs_w = TableWriter::open("book-links/cluster-stats.parquet")?;
 
     let mut m_size = 0;
