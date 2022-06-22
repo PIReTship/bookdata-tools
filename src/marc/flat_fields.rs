@@ -6,7 +6,7 @@ use super::record::*;
 use crate::io::*;
 
 /// Flat MARC field record.
-#[derive(ParquetRecordWriter, Debug, Default)]
+#[derive(ArrowField, Debug, Default)]
 pub struct FieldRecord {
   rec_id: u32,
   fld_no: u32,

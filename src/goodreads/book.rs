@@ -29,7 +29,7 @@ pub struct RawBook {
 }
 
 // the book ID records to write to Parquet.
-#[derive(ParquetRecordWriter)]
+#[derive(ArrowField)]
 pub struct BookIdRecord {
   pub book_id: i32,
   pub work_id: Option<i32>,
@@ -39,7 +39,7 @@ pub struct BookIdRecord {
 }
 
 // book info records to actually write
-#[derive(ParquetRecordWriter)]
+#[derive(ArrowField)]
 pub struct BookRecord {
   pub book_id: i32,
   pub title: Option<String>,

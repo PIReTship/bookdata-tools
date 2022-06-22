@@ -11,7 +11,7 @@ use super::source::Row;
 pub use super::source::OLEditionRecord;
 
 /// An edition row in the extracted Parquet.
-#[derive(ParquetRecordWriter)]
+#[derive(ArrowField)]
 pub struct EditionRec {
   pub id: i32,
   pub key: String,
@@ -19,21 +19,21 @@ pub struct EditionRec {
 }
 
 /// Link between edition and work.
-#[derive(ParquetRecordWriter)]
+#[derive(ArrowField)]
 pub struct LinkRec {
   pub edition: i32,
   pub work: i32
 }
 
 /// Edition ISBN record.
-#[derive(ParquetRecordWriter)]
+#[derive(ArrowField)]
 pub struct ISBNrec {
   pub edition: i32,
   pub isbn: String
 }
 
 /// Edition author record.
-#[derive(ParquetRecordWriter)]
+#[derive(ArrowField)]
 pub struct EditionAuthorRec {
   pub edition: i32,
   pub pos: i16,
@@ -41,7 +41,7 @@ pub struct EditionAuthorRec {
 }
 
 /// Edition-subject record in extracted Parquet.
-#[derive(ParquetRecordWriter)]
+#[derive(ArrowField)]
 pub struct EditionSubjectRec {
   pub id: i32,
   pub subject: String,

@@ -9,7 +9,7 @@ use super::source::Row;
 pub use super::source::OLWorkRecord;
 
 /// Work row in extracted Parquet.
-#[derive(ParquetRecordWriter)]
+#[derive(ArrowField)]
 pub struct WorkRec {
   pub id: i32,
   pub key: String,
@@ -17,7 +17,7 @@ pub struct WorkRec {
 }
 
 /// Work-author link in extracted Parquet.
-#[derive(ParquetRecordWriter)]
+#[derive(ArrowField)]
 pub struct WorkAuthorRec {
   pub id: i32,
   pub pos: i16,
@@ -25,7 +25,7 @@ pub struct WorkAuthorRec {
 }
 
 /// Work-subject record in extracted Parquet.
-#[derive(ParquetRecordWriter)]
+#[derive(ArrowField)]
 pub struct WorkSubjectRec {
   pub id: i32,
   pub subject: String,

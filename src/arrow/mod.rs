@@ -1,7 +1,6 @@
 pub mod types;
 pub mod row_de;
 pub mod writer;
-pub mod writer2;
 pub mod batch_io;
 pub mod fusion;
 
@@ -11,7 +10,8 @@ pub use parquet::record::RecordWriter;
 pub use parquet::file::reader::FileReader;
 pub use parquet_derive::ParquetRecordWriter;
 pub use arrow2_convert::ArrowField;
-pub use writer::{TableWriter, TableWriterBuilder};
+pub use arrow2_convert::serialize::ArrowSerialize;
+pub use writer::TableWriter;
 pub use types::*;
 
 use std::path::Path;

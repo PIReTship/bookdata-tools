@@ -4,7 +4,6 @@ use std::fs::File;
 use crate::prelude::*;
 use crate::arrow::*;
 use crate::graph::*;
-use crate::arrow::writer2::TableWriter;
 use crate::ids::codes::{NS_ISBN, ns_of_book_code};
 
 use super::AsyncCommand;

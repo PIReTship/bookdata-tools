@@ -8,7 +8,7 @@ use crate::marc::MARCRecord;
 use crate::marc::flat_fields::FieldOutput;
 
 /// Structure recording book identifiers from a MARC field.
-#[derive(ParquetRecordWriter, Debug)]
+#[derive(ArrowField, Debug)]
 struct BookIds {
   rec_id: u32,
   marc_cn: String,
@@ -19,7 +19,7 @@ struct BookIds {
 }
 
 /// Structure recording an ISBN record from a book.
-#[derive(Serialize, ParquetRecordWriter, Debug)]
+#[derive(Serialize, ArrowField, Debug)]
 struct ISBNrec {
   rec_id: u32,
   isbn: String,

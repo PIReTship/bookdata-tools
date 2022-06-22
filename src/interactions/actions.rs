@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use std::path::Path;
 use std::mem::take;
 
+use arrow2::array::TryExtend;
 use log::*;
 use anyhow::{Result};
 
@@ -13,7 +14,7 @@ use crate::util::logging::{item_progress, set_progress};
 use super::{Interaction, Dedup, Key};
 
 /// Record for a single output action.
-#[derive(ParquetRecordWriter, Debug)]
+#[derive(ArrowField, Debug)]
 pub struct TimestampActionRecord {
   pub user: i32,
   pub item: i32,
@@ -24,7 +25,7 @@ pub struct TimestampActionRecord {
 }
 
 /// Record for a single output action without time.
-#[derive(ParquetRecordWriter, Debug)]
+#[derive(ArrowField, Debug)]
 pub struct TimelessActionRecord {
   pub user: i32,
   pub item: i32,
@@ -86,12 +87,12 @@ impl FromActionSet for TimelessActionRecord {
 }
 
 /// Action deduplicator.
-pub struct ActionDedup<R> where R: FromActionSet, for<'a> &'a [R]: RecordWriter<R> {
+pub struct ActionDedup<R> where R: FromActionSet + ArrowSerialize {
   _phantom: PhantomData<R>,
   table: HashMap<Key, Vec<ActionInstance>>
 }
 
-impl <R> Default for ActionDedup<R> where R: FromActionSet + 'static, for<'a> &'a [R]: RecordWriter<R> {
+impl <R> Default for ActionDedup<R> where R: FromActionSet + ArrowSerialize + 'static {
   fn default() -> ActionDedup<R> {
     ActionDedup {
       _phantom: PhantomData,
@@ -100,7 +101,7 @@ impl <R> Default for ActionDedup<R> where R: FromActionSet + 'static, for<'a> &'
   }
 }
 
-impl <I: Interaction, R> Dedup<I> for ActionDedup<R> where R: FromActionSet + Send + Sync + 'static, for<'a> &'a [R]: RecordWriter<R> {
+impl <I: Interaction, R> Dedup<I> for ActionDedup<R> where R: FromActionSet + ArrowSerialize + Send + Sync + 'static, R::MutableArrayType: TryExtend<Option<R>> {
   fn add_interaction(&mut self, act: I) -> Result<()> {
     self.record(act.get_user(), act.get_item(), act.get_timestamp(), act.get_rating());
     Ok(())
@@ -111,7 +112,7 @@ impl <I: Interaction, R> Dedup<I> for ActionDedup<R> where R: FromActionSet + Se
   }
 }
 
-impl <R> ActionDedup<R> where R: FromActionSet + Send + Sync + 'static, for<'a> &'a [R]: RecordWriter<R> {
+impl <R> ActionDedup<R> where R: FromActionSet + ArrowSerialize + Send + Sync + 'static, R::MutableArrayType: TryExtend<Option<R>> {
   /// Add an action to the deduplicator.
   pub fn record(&mut self, user: i32, item: i32, timestamp: i64, rating: Option<f32>) {
     let k = Key::new(user, item);
@@ -129,8 +130,7 @@ impl <R> ActionDedup<R> where R: FromActionSet + Send + Sync + 'static, for<'a> 
     info!("writing {} deduplicated actions to {}",
           friendly::scalar(self.table.len()),
           path.display());
-    let twb = TableWriterBuilder::new()?;
-    let mut writer = twb.open(path)?;
+    let mut writer = TableWriter::open(path)?;
     let timer = Timer::new();
     let n = self.table.len() as u64;
     let pb = item_progress(n, "writing actions");
