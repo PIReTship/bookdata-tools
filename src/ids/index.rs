@@ -4,6 +4,8 @@ use std::fs::File;
 use std::sync::Arc;
 use std::hash::Hash;
 use std::borrow::Borrow;
+#[cfg(test)]
+use arrow2::io::parquet::read::read_metadata;
 use hashbrown::hash_map::{HashMap, Keys};
 
 use serde::de::DeserializeOwned;
@@ -15,7 +17,6 @@ use parquet::record::reader::RowIter;
 use parquet::record::RowAccessor;
 use parquet::basic::{Type as PhysicalType, LogicalType, Repetition};
 use parquet::schema::types::Type;
-use crate::io::ObjectWriter;
 use crate::arrow::*;
 
 #[cfg(test)]
@@ -147,11 +148,11 @@ impl IdIndex<String> {
     let mut tgt_fields = vec![
       Arc::new(Type::primitive_type_builder(id_col, PhysicalType::INT32)
         .with_logical_type(Some(id_type))
-        .with_repetition(Repetition::REQUIRED)
+        .with_repetition(Repetition::OPTIONAL)
         .build()?),
       Arc::new(Type::primitive_type_builder(key_col, PhysicalType::BYTE_ARRAY)
         .with_logical_type(Some(key_type))
-        .with_repetition(Repetition::REQUIRED)
+        .with_repetition(Repetition::OPTIONAL)
         .build()?),
     ];
     let tgt_schema = Type::group_type_builder(file_schema.name()).with_fields(&mut tgt_fields).build()?;
@@ -214,9 +215,10 @@ impl IdIndex<String> {
     }
 
     let ids = Series::from_vec(id_col, ids);
-    let keys = Series::from_vec(key_col, keys);
+    let keys = Series::new(key_col, &keys);
     let mut frame = DataFrame::new(vec![ids, keys])?;
 
+    let path = path.as_ref();
     info!("saving index to {:?}", path);
     let file = File::create(path)?;
     let writer = ParquetWriter::new(file)
@@ -283,7 +285,8 @@ fn test_index_intern_twice_owned() {
 }
 
 
-#[test]
+#[cfg(test)]
+#[test_log::test]
 fn test_index_save() -> Result<()> {
   let mut index: IdIndex<String> = IdIndex::new();
   let mut gen = Gen::new(100);
@@ -300,6 +303,11 @@ fn test_index_save() -> Result<()> {
   let dir = tempdir()?;
   let pq = dir.path().join("index.parquet");
   index.save_standard(&pq).expect("save error");
+
+  let mut pqf = File::open(&pq).expect("open error");
+  let meta = read_metadata(&mut pqf).expect("meta error");
+  println!("file metadata: {:?}", meta);
+  std::mem::drop(pqf);
 
   let i2 = IdIndex::load_standard(&pq).expect("load error");
   assert_eq!(i2.len(), index.len());
