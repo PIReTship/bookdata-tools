@@ -1,6 +1,7 @@
 pub mod types;
 pub mod row_de;
 pub mod writer;
+pub mod writer2;
 pub mod batch_io;
 pub mod fusion;
 
