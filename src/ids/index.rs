@@ -1,5 +1,6 @@
 //! Data structure for mapping string keys to numeric identifiers.
 use std::path::{Path};
+use std::fs::File;
 use std::sync::Arc;
 use std::hash::Hash;
 use std::borrow::Borrow;
@@ -9,6 +10,7 @@ use serde::de::DeserializeOwned;
 use log::*;
 use anyhow::Result;
 use thiserror::Error;
+use polars::prelude::*;
 use parquet::record::reader::RowIter;
 use parquet::record::RowAccessor;
 use parquet::basic::{Type as PhysicalType, LogicalType, Repetition};
@@ -202,19 +204,24 @@ impl IdIndex<String> {
 
   /// Save to a Parquet file with the standard configuration.
   pub fn save<P: AsRef<Path>>(&self, path: P, id_col: &str, key_col: &str) -> Result<()> {
-    let mut wb = TableWriterBuilder::new()?;
-    wb = wb.rename("id", id_col);
-    wb = wb.rename("key", key_col);
-    let mut writer = wb.open(path)?;
+    debug!("preparing data frame for index");
+    let mut ids = Vec::with_capacity(self.map.len());
+    let mut keys = Vec::with_capacity(self.map.len());
 
     for (k, v) in &self.map {
-      writer.write_object(IdRec {
-        id: *v,
-        key: k.clone()
-      })?;
+      ids.push(*v);
+      keys.push(k.as_str());
     }
 
-    writer.finish()?;
+    let ids = Series::from_vec(id_col, ids);
+    let keys = Series::from_vec(key_col, keys);
+    let mut frame = DataFrame::new(vec![ids, keys])?;
+
+    info!("saving index to {:?}", path);
+    let file = File::create(path)?;
+    let writer = ParquetWriter::new(file)
+      .with_compression(ParquetCompression::Zstd(None));
+    writer.finish(&mut frame)?;
 
     Ok(())
   }
