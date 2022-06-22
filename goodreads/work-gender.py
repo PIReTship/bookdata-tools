@@ -15,7 +15,7 @@ from docopt import docopt
 import polars as pl
 
 opts = docopt(__doc__)
-_log = script_log(__name__, debug=opts['--verbose'])
+_log = script_log('work-gender', debug=opts['--verbose'])
 
 _log.info('scanning input files')
 gender = pl.scan_parquet('../book-links/cluster-genders.parquet')
