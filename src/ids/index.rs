@@ -39,13 +39,6 @@ pub struct IdIndex<K> {
   frozen: bool,
 }
 
-/// Internal struct for ID records.
-#[derive(ParquetRecordWriter)]
-struct IdRec {
-  id: i32,
-  key: String,
-}
-
 impl <K> IdIndex<K> where K: Eq + Hash {
   /// Create a new index.
   pub fn new() -> IdIndex<K> {
