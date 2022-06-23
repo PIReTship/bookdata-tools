@@ -129,8 +129,8 @@ impl Command for ClusterAuthors {
     // clean up nullability
     // we do the writing ourself because we have no nulls, but polars doesn't deal with that
     let mut schema = authors.schema().to_arrow();
-    schema.fields[0].is_nullable = true;
-    schema.fields[1].is_nullable = true;
+    schema.fields[0].is_nullable = false;
+    schema.fields[1].is_nullable = false;
 
     let writer = File::create(&self.output)?;
     let writer = FileWriter::try_new(writer, schema, WriteOptions {
