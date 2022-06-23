@@ -96,9 +96,11 @@ impl <K> IdIndex<K> where K: Eq + Hash {
   pub fn keys(&self) -> Keys<'_, K, Id> {
     self.map.keys()
   }
+}
 
+impl IdIndex<String> {
   /// Get the keys in order.
-  pub fn key_vec(&self) -> Vec<&K> {
+  pub fn key_vec(&self) -> Vec<&str> {
     let mut vec = Vec::with_capacity(self.len());
     vec.resize(self.len(), None);
     for (k, n) in self.map.iter() {
@@ -107,12 +109,21 @@ impl <K> IdIndex<K> where K: Eq + Hash {
       vec[i] = Some(k);
     }
 
-    let vec = vec.iter().map(|ro| ro.unwrap()).collect();
+    let vec = vec.iter().map(|ro| ro.unwrap().as_str()).collect();
     vec
   }
-}
 
-impl IdIndex<String> {
+  /// Conver this ID index into a [DataFrame], with columns for ID and key.
+  pub fn data_frame(&self, id_col: &str, key_col: &str) -> Result<DataFrame, PolarsError> {
+    debug!("preparing data frame for index");
+    let n = self.map.len() as i32;
+    let keys = self.key_vec();
+    let ids = Int32Chunked::new(id_col, 1..(n + 1));
+    let keys = Utf8Chunked::new(key_col, keys);
+
+    DataFrame::new(vec![ids.into_series(), keys.into_series()])
+  }
+
   /// Load from a Parquet file, with a standard configuration.
   ///
   /// This assumes the Parquet file has the following columns:
@@ -198,18 +209,7 @@ impl IdIndex<String> {
 
   /// Save to a Parquet file with the standard configuration.
   pub fn save<P: AsRef<Path>>(&self, path: P, id_col: &str, key_col: &str) -> Result<()> {
-    debug!("preparing data frame for index");
-    let mut ids = Vec::with_capacity(self.map.len());
-    let mut keys = Vec::with_capacity(self.map.len());
-
-    for (k, v) in &self.map {
-      ids.push(*v);
-      keys.push(k.as_str());
-    }
-
-    let ids = Series::from_vec(id_col, ids);
-    let keys = Series::new(key_col, &keys);
-    let mut frame = DataFrame::new(vec![ids, keys])?;
+    let mut frame = self.data_frame(id_col, key_col)?;
 
     let path = path.as_ref();
     info!("saving index to {:?}", path);

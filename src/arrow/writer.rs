@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use std::fs::{OpenOptions};
 use std::mem::{replace};
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 use log::*;
 use anyhow::{Result, anyhow};
@@ -23,7 +24,7 @@ const BATCH_SIZE: usize = 1024 * 1024;
 /// them out to a Parquet file.
 pub struct TableWriter<R: ArrowSerialize + Send + Sync + 'static> {
   _phantom: PhantomData<R>,
-  writer: ThreadObjectWriter<Vec<R>>,
+  writer: ThreadObjectWriter<Chunk<Arc<dyn Array>>>,
   out_path: Option<PathBuf>,
   batch: Vec<R>,
   batch_size: usize,
@@ -69,6 +70,7 @@ impl <R> TableWriter<R> where R: ArrowSerialize + Send + Sync + 'static, R::Muta
     }
 
     let batch = replace(&mut self.batch, Vec::with_capacity(self.batch_size));
+    let batch = vec_to_chunk(batch)?;
     self.writer.write_object(batch)?;
 
     Ok(())
@@ -118,28 +120,23 @@ impl <R> ObjectWriter<R> for TableWriter<R> where R: ArrowSerialize + Send + Syn
 //   }
 // }
 
-impl <W, R> ObjectWriter<Vec<R>> for FileWriter<W> where W: Write, R: ArrowSerialize + Send + Sync + 'static, R::MutableArrayType: TryExtend<Option<R>> {
-  fn write_object(&mut self, object: Vec<R>) -> Result<()> {
-    let mut array = R::new_array();
-    array.try_extend(object.into_iter().map(Some))?;
+/// Convert a vector of records to a chunk.
+pub fn vec_to_chunk<R>(vec: Vec<R>) -> Result<Chunk<Arc<dyn Array>>>
+where R: ArrowSerialize, R::MutableArrayType: TryExtend<Option<R>>
+{
+  let mut array = R::new_array();
+  array.try_extend(vec.into_iter().map(Some))?;
 
-    // get the struct array to chunkify
-    let array = array.as_box();
-    let sa = array.as_any().downcast_ref::<StructArray>();
-    let sa = sa.ok_or_else(|| anyhow!("invalid array type (not a structure)"))?;
-    let (_fields, cols, validity) = sa.to_owned().into_data();
-    if validity.is_some() {
-      return Err(anyhow!("structure arrays with validity not supported"))
-    }
-    let chunk = Chunk::new(cols);
-
-    self.write_object(chunk)
+  // get the struct array to chunkify
+  let array = array.as_box();
+  let sa = array.as_any().downcast_ref::<StructArray>();
+  let sa = sa.ok_or_else(|| anyhow!("invalid array type (not a structure)"))?;
+  let (_fields, cols, validity) = sa.to_owned().into_data();
+  if validity.is_some() {
+    return Err(anyhow!("structure arrays with validity not supported"))
   }
-
-  fn finish(mut self) -> Result<usize> {
-    self.end(None)?;
-    Ok(0)
-  }
+  let chunk = Chunk::new(cols);
+  Ok(chunk)
 }
 
 impl <W, A> ObjectWriter<Chunk<A>> for FileWriter<W> where W: Write, A: AsRef<dyn Array + 'static> + Send + Sync + 'static {
