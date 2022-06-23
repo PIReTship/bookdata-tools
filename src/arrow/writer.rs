@@ -7,7 +7,7 @@ use std::marker::PhantomData;
 use log::*;
 use anyhow::{Result, anyhow};
 use arrow2::io::parquet::write::*;
-use arrow2::array::{MutableArray, TryExtend, StructArray};
+use arrow2::array::{MutableArray, TryExtend, StructArray, Array};
 use arrow2::chunk::Chunk;
 use arrow2::datatypes::*;
 use arrow2_convert::serialize::ArrowSerialize;
@@ -125,14 +125,27 @@ impl <W, R> ObjectWriter<Vec<R>> for FileWriter<W> where W: Write, R: ArrowSeria
 
     // get the struct array to chunkify
     let array = array.as_box();
-    let sa = array.as_any().downcast_ref::<StructArray>().ok_or_else(|| anyhow!("invalid array type"))?;
-    let (fields, cols, validity) = sa.to_owned().into_data();
-    assert!(validity.is_none());
+    let sa = array.as_any().downcast_ref::<StructArray>();
+    let sa = sa.ok_or_else(|| anyhow!("invalid array type (not a structure)"))?;
+    let (_fields, cols, validity) = sa.to_owned().into_data();
+    if validity.is_some() {
+      return Err(anyhow!("structure arrays with validity not supported"))
+    }
     let chunk = Chunk::new(cols);
 
-    // write this
-    let encodings: Vec<_> = fields.iter().map(|f| transverse(&f.data_type, |_| Encoding::Plain)).collect();
-    let schema = Schema { fields, metadata: Default::default() };
+    self.write_object(chunk)
+  }
+
+  fn finish(mut self) -> Result<usize> {
+    self.end(None)?;
+    Ok(0)
+  }
+}
+
+impl <W, A> ObjectWriter<Chunk<A>> for FileWriter<W> where W: Write, A: AsRef<dyn Array + 'static> + Send + Sync + 'static {
+  fn write_object(&mut self, chunk: Chunk<A>) -> Result<()> {
+    let schema = self.schema();
+    let encodings: Vec<_> = schema.fields.iter().map(|f| transverse(&f.data_type, |_| Encoding::Plain)).collect();
     let options = self.options();
     let chunks = vec![Ok(chunk)];
     let groups = RowGroupIterator::try_new(chunks.into_iter(), &schema, options, encodings)?;
