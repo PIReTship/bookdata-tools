@@ -37,34 +37,6 @@ pub struct ClusterAuthors {
   sources: Vec<Source>
 }
 
-// #[derive(Serialize, Deserialize, Hash, PartialEq, Eq, Clone, ArrowField, Default)]
-// struct ClusterAuthor {
-//   cluster: i32,
-//   author_name: String
-// }
-
-// /// Write out author records to file, without duplicates.
-// async fn write_authors_dedup<P: AsRef<Path>>(df: Arc<DataFrame>, path: P) -> Result<()> {
-//   let mut writer = TableWriter::open(path)?;
-
-//   info!("scanning author batches");
-//   let stream = df.execute_stream().await?;
-//   let mut last = ClusterAuthor::default();
-//   let mut rec_stream = RecordBatchDeserializer::for_stream(stream);
-//   while let Some(row) = rec_stream.next().await {
-//     let row: ClusterAuthor = row?;
-//     if row != last {
-//       writer.write_object(row.clone())?;
-//       last = row;
-//     }
-//   }
-
-//   let n = writer.finish()?;
-//   info!("wrote {} cluster-author links", n);
-
-//   Ok(())
-// }
-
 /// Scan the OpenLibrary data for authors.
 fn scan_openlib(first_only: bool) -> Result<LazyFrame> {
   info!("scanning OpenLibrary author data");
@@ -141,16 +113,8 @@ impl Command for ClusterAuthors {
       col("author_name").is_not_null()
       .and(col("author_name").neq("".lit()))
     );
-    let authors = authors.sort_by_exprs([
-      col("cluster"),
-      col("author_name"),
-    ], vec![false, false]);
 
-    // now we're going to de-duplicate - we can do this within:
-    let authors = authors.filter(
-      col("cluster").neq(col("cluster").shift(1))
-      .or(col("author_name").neq(col("author_name").shift(1)))
-    );
+    let authors = authors.unique(None, UniqueKeepStrategy::First);
 
     debug!("plan: {}", authors.describe_plan());
 
@@ -163,7 +127,7 @@ impl Command for ClusterAuthors {
 
     info!("saving to {:?}", &self.output);
     // clean up nullability
-    // we do the writing ourself because we have no nulls
+    // we do the writing ourself because we have no nulls, but polars doesn't deal with that
     let mut schema = authors.schema().to_arrow();
     schema.fields[0].is_nullable = true;
     schema.fields[1].is_nullable = true;
