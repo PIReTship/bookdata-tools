@@ -2,6 +2,7 @@
 pub mod row_de;
 pub mod writer;
 pub mod batch_io;
+pub mod dfext;
 pub mod fusion;
 
 pub use row_de::RecordBatchDeserializer;
