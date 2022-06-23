@@ -1,20 +1,16 @@
 //! Extract author information for book clusters.
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
+use std::fs::File;
 use std::sync::Arc;
 
 use structopt::StructOpt;
-use futures::{StreamExt};
 use md5::{Md5, Digest};
 use hex;
 
-use serde::{Serialize, Deserialize};
-
-use datafusion::prelude::*;
+use polars::prelude::*;
 use crate::prelude::*;
-use crate::arrow::*;
-use crate::arrow::row_de::RecordBatchDeserializer;
-use crate::cli::AsyncCommand;
-use async_trait::async_trait;
+
+use crate::prelude::Result;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name="hash")]
@@ -25,79 +21,48 @@ pub struct HashCmd {
   output: PathBuf,
 }
 
-#[derive(Serialize, Deserialize, Hash, PartialEq, Eq, Clone, ArrowField, Default)]
-struct ClusterHash {
-  cluster: i32,
-  isbn_hash: String,
-  isbn_dcode: i8,
+fn hash_isbns(isbns: Series) -> Result<Series, PolarsError> {
+  let s2 = isbns.sort(false);
+  let s2 = s2.utf8()?;
+  let mut hash = Md5::default();
+  for elt in s2 {
+    if let Some(isbn) = elt {
+      hash.update(isbn.as_bytes());
+    }
+  }
+  let res = Series::new("isbn_hash", vec![hex::encode(hash.finalize())]);
+  Ok(res)
 }
 
-#[derive(Deserialize, Clone, Default)]
-struct ClusterIsbn {
-  cluster: i32,
-  isbn: String,
+fn hash_field(_schema: &Schema, _ctx: Context, _fields: &[Field]) -> Field {
+  Field::new("isbn_hash", DataType::Utf8)
 }
 
 /// Load ISBN data
-async fn scan_isbns(ctx: &mut SessionContext) -> Result<Arc<DataFrame>> {
-  let icl = ctx.read_parquet("isbn-clusters.parquet", default()).await?;
-  let icl = icl.select_columns(&["isbn", "cluster"])?;
-  let icl = icl.sort(vec![
-    col("cluster").sort(true, true),
-    col("isbn").sort(true, true)
-  ])?;
+fn scan_isbns() -> Result<LazyFrame> {
+  let icl = LazyFrame::scan_parquet("isbn-clusters.parquet".to_string(), default())?;
+  let icl = icl.select(&[col("isbn"), col("cluster")]);
   Ok(icl)
 }
 
-/// Write out cluster hah records to file, without duplicates.
-async fn write_hashes_dedup(df: Arc<DataFrame>, path: &Path) -> Result<()> {
-  info!("saving output to {}", path.to_string_lossy());
-  let mut writer = TableWriter::open(path)?;
+impl Command for HashCmd {
+  fn exec(&self) -> Result<()> {
+    let isbns = scan_isbns()?;
+    let hashes = isbns.groupby(&[col("cluster")]).agg(&[
+      col("isbn").apply(hash_isbns, NoEq::new(Arc::new(hash_field)))
+    ]);
 
-  info!("scanning author batches");
-  let stream = df.execute_stream().await?;
-  let mut cluster = -1;
-  let mut hash = Md5::default();
-  let mut rec_stream = RecordBatchDeserializer::for_stream(stream);
-  while let Some(row) = rec_stream.next().await {
-    let row: ClusterIsbn = row?;
-    if row.cluster != cluster {
-      if cluster >= 0 {
-        let h = hash.finalize_reset();
-        writer.write_object(ClusterHash {
-          cluster,
-          isbn_hash: hex::encode(h),
-          isbn_dcode: (h[h.len() - 1] % 2) as i8
-        })?;
-      }
+    info!("computing ISBN hashes");
+    let mut hashes = hashes.collect()?;
+    let (nr, nc) = hashes.shape();
+    assert_eq!(nc, 2);
+    info!("computed hashes for {} clusters", nr);
 
-      cluster = row.cluster;
-    }
-
-    hash.update(row.isbn.as_bytes());
-  }
-
-  if cluster >= 0 {
-    let h = hash.finalize_reset();
-    writer.write_object(ClusterHash {
-      cluster,
-      isbn_hash: hex::encode(h),
-      isbn_dcode: (h[h.len() - 1] % 2) as i8
-    })?;
-  }
-
-  let n = writer.finish()?;
-  info!("wrote {} cluster-author links", n);
-
-  Ok(())
-}
-
-#[async_trait]
-impl AsyncCommand for HashCmd {
-  async fn exec_future(&self) -> Result<()> {
-    let mut ctx = SessionContext::new();
-    let df = scan_isbns(&mut ctx).await?;
-    write_hashes_dedup(df, &self.output).await?;
+    let path = self.output.as_path();
+    info!("saving Parquet to {:?}", path);
+    let file = File::create(path)?;
+    let write = ParquetWriter::new(file).with_compression(ParquetCompression::Zstd(None));
+    write.finish(&mut hashes)?;
 
     Ok(())
   }
