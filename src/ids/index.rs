@@ -13,10 +13,6 @@ use log::*;
 use anyhow::Result;
 use thiserror::Error;
 use polars::prelude::*;
-use parquet::record::reader::RowIter;
-use parquet::record::RowAccessor;
-use parquet::basic::{Type as PhysicalType, LogicalType, Repetition};
-use parquet::schema::types::Type;
 use crate::arrow::*;
 
 #[cfg(test)]
@@ -142,34 +138,21 @@ impl IdIndex<String> {
   pub fn load<P: AsRef<Path>>(path: P, id_col: &str, key_col: &str) -> Result<IdIndex<String>> {
     let path_str = path.as_ref().to_string_lossy();
     info!("reading index from file {}", path_str);
-    let read = open_parquet_file(path.as_ref())?;
+    let file = File::open(path.as_ref())?;
+    let frame = ParquetReader::new(file).finish()?;
+    debug!("file schema: {:?}", frame.schema());
 
-    let file_schema = read.metadata().file_metadata().schema();
-    debug!("file schema: {:?}", file_schema);
+    let ic = frame.column(id_col)?.i32()?;
+    let kc = frame.column(key_col)?.utf8()?;
 
-    let id_type = LogicalType::Integer { bit_width: 32, is_signed: true };
-    let key_type = LogicalType::String;
-    let mut tgt_fields = vec![
-      Arc::new(Type::primitive_type_builder(id_col, PhysicalType::INT32)
-        .with_logical_type(Some(id_type))
-        .with_repetition(Repetition::OPTIONAL)
-        .build()?),
-      Arc::new(Type::primitive_type_builder(key_col, PhysicalType::BYTE_ARRAY)
-        .with_logical_type(Some(key_type))
-        .with_repetition(Repetition::OPTIONAL)
-        .build()?),
-    ];
-    let tgt_schema = Type::group_type_builder(file_schema.name()).with_fields(&mut tgt_fields).build()?;
-    debug!("target schema: {:?}", tgt_schema);
-
-    let read = RowIter::from_file(Some(tgt_schema), &read)?;
     let mut map = HashMap::new();
 
     debug!("reading file contents");
-    for row in read {
-      let id = row.get_int(0)?;
-      let key = row.get_string(1)?;
-      map.insert(key.clone(), id);
+    let iter = ic.into_iter().zip(kc.into_iter());
+    for pair in iter {
+      if let (Some(id), Some(key)) = pair {
+        map.insert(key.to_string(), id);
+      }
     }
 
     info!("read {} keys from {}", map.len(), path_str);
