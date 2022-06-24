@@ -1,6 +1,23 @@
-from numpy import dtype
+"""
+Extract BookCrossing actions for book clusters.
+
+Usage:
+    bx-cluster-actions.py [options]
+
+Options:
+    -v, --verbose
+        Turn on debug logging.
+"""
+
+from bookdata import script_log
+from docopt import docopt
+
 import polars as pl
 
+opts = docopt(__doc__)
+_log = script_log('bx-cluster-actions', debug=opts['--verbose'])
+
+_log.info('setting up data inputs')
 isbns = pl.scan_parquet("../book-links/isbn-clusters.parquet")
 isbns = isbns.select(['isbn', 'cluster'])
 
@@ -11,11 +28,17 @@ ratings = ratings.select([
 ])
 
 joined = ratings.join(isbns, on='isbn')
-joined = joined.select(['user', 'cluster'])
-
-actions = joined.groupby(['user', 'cluster']).agg([
-    pl.col('cluster').count().alias('nactions')
+joined = joined.select([
+    pl.col('user'),
+    pl.col('cluster').alias('item'),
 ])
+
+actions = joined.groupby(['user', 'item']).agg([
+    pl.col('item').count().alias('nactions')
+])
+
+_log.info('collecting results')
 actions = actions.collect()
 
+_log.info('writing %d actions to Parquet', actions.height)
 actions.write_parquet('bx-cluster-actions.parquet', compression='zstd')
