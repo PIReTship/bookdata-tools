@@ -6,8 +6,3 @@ pub use reader::scan_parquet_file;
 pub use arrow2_convert::ArrowField;
 pub use arrow2_convert::serialize::ArrowSerialize;
 pub use writer::TableWriter;
-
-use std::path::Path;
-use std::fs::File;
-
-use anyhow::Result;

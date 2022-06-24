@@ -1,7 +1,6 @@
 //! Data structure for mapping string keys to numeric identifiers.
 use std::path::{Path};
 use std::fs::File;
-use std::sync::Arc;
 use std::hash::Hash;
 use std::borrow::Borrow;
 #[cfg(test)]
@@ -13,7 +12,6 @@ use log::*;
 use anyhow::Result;
 use thiserror::Error;
 use polars::prelude::*;
-use crate::arrow::*;
 
 #[cfg(test)]
 use quickcheck::{Arbitrary,Gen};
