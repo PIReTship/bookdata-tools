@@ -15,6 +15,8 @@ from bookdata import script_log
 from docopt import docopt
 
 import polars as pl
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 opts = docopt(__doc__)
 _log = script_log('book-isbn-ids', debug=opts['--verbose'])
@@ -41,7 +43,15 @@ all_isbns = pl.concat([
 _log.info('collecting results')
 all_isbns = all_isbns.collect()
 
+# non-null
+table = all_isbns.to_arrow()
+table = table.cast(pa.schema([
+    pa.field(fn, ft, False)
+    for (fn, ft) in zip(table.schema.names, table.schema.types)
+]))
+
 _log.info('writing %d records to output', all_isbns.height)
-all_isbns.write_parquet('book-isbn-ids.parquet', compression='zstd')
+# all_isbns.write_parquet('book-isbn-ids.parquet', compression='zstd')
+pq.write_table(table, 'book-isbn-ids.parquet', compression='zstd')
 
 _log.info('finished')
