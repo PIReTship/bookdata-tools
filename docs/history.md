@@ -17,7 +17,10 @@ corrected name parsing & normalization flow.
 
 ### Logic Updates
 
--   Updated to DataFusion 8.0
+-   Switched from DataFusion to [Polars](https://www.pola.rs/), to reduce volatility and improve
+    maintainability.  This also involved a switch from Arrow to Arrow2, which seems to have cleaner
+    code (and less custom logic needed for IO).  Python Polars code replaces the custom TCL driving
+    DataFusion.
 -   Improved name parsing
     -   Replaced `nom`-based name parser for {rust:fn}`~bookdata::cleaning::names::name_variants`
         with a new one written in [`peg`], that is both easier to read/maintain and more efficient.
@@ -25,6 +28,7 @@ corrected name parsing & normalization flow.
     -   Added `clean_name` function, used across all name formatting, to normalize whitespace and
         punctuation in name records from any source.
     -   Added more tests for name parsing and normalization.
+-   Fixed a bug in GoodReads integration, where we were not extracting ASINs.
 -   Updated various Rust dependencies
 -   Better progress reporting for data scans
 
