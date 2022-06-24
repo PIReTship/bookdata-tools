@@ -6,7 +6,6 @@ pub mod batch_io;
 pub mod dfext;
 pub mod fusion;
 
-pub use row_de::RecordBatchDeserializer;
 pub use reader::scan_parquet_file;
 pub use parquet::record::RecordWriter;
 pub use parquet::file::reader::FileReader;
