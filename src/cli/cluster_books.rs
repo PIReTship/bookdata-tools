@@ -6,9 +6,6 @@ use crate::arrow::*;
 use crate::graph::*;
 use crate::ids::codes::{NS_ISBN, ns_of_book_code};
 
-use super::AsyncCommand;
-use async_trait::async_trait;
-
 use serde::Serialize;
 use petgraph::algo::kosaraju_scc;
 
@@ -83,17 +80,16 @@ impl ClusterStat {
   }
 }
 
-#[async_trait]
-impl AsyncCommand for ClusterBooks {
-  async fn exec_future(&self) -> Result<()> {
-    let mut graph = construct_graph().await?;
+impl Command for ClusterBooks {
+  fn exec(&self) -> Result<()> {
+    let mut graph = construct_graph()?;
 
     info!("computing connected components");
     let clusters = kosaraju_scc(&graph);
 
     info!("computed {} clusters", clusters.len());
 
-    info!("adding cluster notations");
+    info!("adding cluster annotations");
     for ci in 0..clusters.len() {
       let verts = &clusters[ci];
       let vids: Vec<_> = verts.iter().map(|v| {
