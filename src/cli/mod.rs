@@ -93,7 +93,6 @@ pub enum ClusterCommand {
   Hash(cluster::hash::HashCmd),
   ExtractAuthors(cluster::authors::ClusterAuthors),
   ExtractAuthorGender(cluster::author_gender::AuthorGender),
-  GroupActions(cluster::actions::ClusterActions),
 }
 
 /// Trait for implementing commands asynchronously.
