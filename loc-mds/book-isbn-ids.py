@@ -1,5 +1,5 @@
 """
-Extract GoodReads ISBN IDs.
+Extract LOC ISBN IDs.
 
 Usage:
     book-isbn-ids.py [options]
@@ -21,34 +21,22 @@ _log = script_log('book-isbn-ids', debug=opts['--verbose'])
 
 _log.info('setting up inputs')
 isbns = pl.scan_parquet('../book-links/all-isbns.parquet')
-books = pl.scan_parquet('gr-book-ids.parquet')
+books = pl.scan_parquet('book-isbns.parquet')
 
-isbn10s = books.filter(
-    pl.col('isbn10').is_not_null()
-).join(isbns, left_on='isbn10', right_on='isbn')
-isbn13s = books.filter(
-    pl.col('isbn13').is_not_null()
-).join(isbns, left_on='isbn13', right_on='isbn')
-asins = books.filter(
-    pl.col('asin').is_not_null()
-).join(isbns, left_on='asin', right_on='isbn')
-
-all_isbns = pl.concat([
-    frame.select(['book_id', 'isbn_id'])
-    for frame in [isbn10s, isbn13s, asins]
-]).distinct(False)
+books = books.join(isbns, on='isbn').select(['rec_id', 'isbn_id'])
 
 _log.info('collecting results')
-all_isbns = all_isbns.collect()
+books = books.collect()
+
+_log.info('saving {} book ISBNs to Parquet', books.height)
 
 # non-null
-table = all_isbns.to_arrow()
+table = books.to_arrow()
 table = table.cast(pa.schema([
     pa.field(fn, ft, False)
     for (fn, ft) in zip(table.schema.names, table.schema.types)
 ]))
 
-_log.info('writing %d records to output', all_isbns.height)
 # all_isbns.write_parquet('book-isbn-ids.parquet', compression='zstd')
 pq.write_table(table, 'book-isbn-ids.parquet', compression='zstd')
 
