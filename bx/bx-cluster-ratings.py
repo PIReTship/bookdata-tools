@@ -25,13 +25,14 @@ ratings = pl.scan_csv('cleaned-ratings.csv')
 ratings = ratings.select([
     pl.col('user').cast(pl.Int32),
     pl.col('isbn'),
+    pl.col('rating').cast(pl.Float32),
 ]).filter(pl.col('rating') > pl.lit(0))
 
 joined = ratings.join(isbns, on='isbn')
 joined = joined.select([
     pl.col('user'),
     pl.col('cluster').alias('item'),
-    pl.col('rating').cast(pl.Float32),
+    pl.col('rating'),
 ])
 
 actions = joined.groupby(['user', 'item']).agg([

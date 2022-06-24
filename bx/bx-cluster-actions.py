@@ -34,7 +34,7 @@ joined = joined.select([
 ])
 
 actions = joined.groupby(['user', 'item']).agg([
-    pl.col('item').count().alias('nactions')
+    pl.col('item').count().alias('nactions'),
 ])
 
 _log.info('collecting results')
