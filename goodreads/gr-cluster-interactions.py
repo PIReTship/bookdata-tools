@@ -25,7 +25,7 @@ from docopt import docopt
 import polars as pl
 
 opts = docopt(__doc__)
-_log = script_log('gr-cluster-ratings', debug=opts['--verbose'])
+_log = script_log('gr-cluster-interactions', debug=opts['--verbose'])
 
 _log.info('setting up input')
 interactions = pl.scan_parquet('gr-interactions.parquet')
