@@ -16,8 +16,8 @@ static GR_LINK_FILE: &'static str = "goodreads/gr-book-link.parquet";
 fn item_col(native: bool) -> Expr {
   if native {
     coalesce(vec![
-      col("work_id") + lit(NS_GR_WORK.code()),
-      col("book_id") + lit(NS_GR_BOOK.code())
+      col("work_id") + lit(NS_GR_WORK.base()),
+      col("book_id") + lit(NS_GR_BOOK.base())
     ]).alias("item")
   } else {
     col("cluster").alias("item")
