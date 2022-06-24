@@ -8,13 +8,13 @@ use crate::io::*;
 /// Flat MARC field record.
 #[derive(ArrowField, Debug, Default)]
 pub struct FieldRecord {
-  rec_id: u32,
-  fld_no: u32,
-  tag: i16,
-  ind1: u8,
-  ind2: u8,
-  sf_code: u8,
-  contents: String,
+  pub rec_id: u32,
+  pub fld_no: u32,
+  pub tag: i16,
+  pub ind1: u8,
+  pub ind2: u8,
+  pub sf_code: u8,
+  pub contents: String,
 }
 
 /// Output for writing flat MARC fields to Parquet.

@@ -25,10 +25,6 @@ The import is controlled by the following DVC steps:
 `scan-authors`
 :   Import the VIAF MARC data into {file}`viaf/viaf.parquet`.
 
-`author-names`
-:   Extract author names from the VIAF MARC data, producing `author-names.csv.gz`.  This is an
-    intermediate stage, fed into `index-names` to get usable name records.
-
 `author-genders`
 :   Extract author genders from the VIAF MARC data, producing {file}`author-genders.parquet`.
 
