@@ -1,3 +1,4 @@
+# This file is not currently used.
 table fields "name-fields.parquet"
 
 save-results "author-genders.csv.gz" {
