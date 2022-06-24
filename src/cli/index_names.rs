@@ -91,6 +91,7 @@ fn write_index(index: NameIndex, path: &Path) -> Result<()> {
 
   let mut csv_fn = PathBuf::from(path);
   csv_fn.set_extension("csv.gz");
+  info!("writing CSV version to {:?}", csv_fn);
   let out = File::create(&csv_fn)?;
   let out = GzEncoder::new(out, flate2::Compression::fast());
   let out = ThreadWrite::new(out)?;

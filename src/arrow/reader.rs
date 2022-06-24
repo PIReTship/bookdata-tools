@@ -18,7 +18,8 @@ use arrow2_convert::deserialize::*;
 /// Iterator over deserialized records from a Parquet file.
 pub struct RecordIter<R> where R: ArrowDeserialize + Send + Sync + 'static, for <'a> &'a R::ArrayType: IntoIterator {
   remaining: usize,
-  channel: Receiver<Result<R>>,
+  channel: Receiver<Result<Vec<R>>>,
+  batch: Option<std::vec::IntoIter<R>>,
 }
 
 impl <R> RecordIter<R> where R: ArrowDeserialize + Send + Sync + 'static, for <'a> &'a R::ArrayType: IntoIterator {
@@ -55,7 +56,8 @@ where
   info!("scanning {:?} with {} rows", path, row_count);
   drop(meta);
 
-  let (send, receive) = sync_channel(500);
+  // use a small bound since we're sending whole batches
+  let (send, receive) = sync_channel(5);
 
   spawn(move || {
     let send = send;
@@ -70,15 +72,14 @@ where
           panic!("decode error in writer thread");
         }
       };
-      for rec in recs {
-        send.send(Ok(rec)).expect("channel send error");
-      }
+      send.send(Ok(recs)).expect("channel send error");
     }
   });
 
   Ok(RecordIter {
     remaining: row_count,
     channel: receive,
+    batch: None,
   })
 }
 
@@ -90,11 +91,28 @@ where
   type Item = Result<R>;
 
   fn next(&mut self) -> Option<Self::Item> {
-    if let Ok(res) = self.channel.recv() {
-      self.remaining -= 1;
-      Some(res)
-    } else {
-      None
+    loop {
+      // try to get another item from the current batch
+      let next = self.batch.as_mut().map(|i| i.next()).flatten();
+      if let Some(row) = next {
+        // we got something! return it
+        self.remaining -= 1;
+        return Some(Ok(row));
+      } else if let Ok(br) = self.channel.recv() {
+        // fetch a new batch and try again
+        match br {
+          Ok(batch) => {
+            self.batch = Some(batch.into_iter());
+          },
+          Err(e) => {
+            // error on the channel
+            return Some(Err(e))
+          }
+        }
+      } else {
+        // we're done
+        return None
+      }
     }
   }
 }
