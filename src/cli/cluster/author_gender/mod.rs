@@ -2,10 +2,6 @@
 //!
 //! This script reads the cluster author information and author gender
 //! information, in order to aggregate author genders for each cluster.
-//! We do this in Rust code, because DataFusion's aggregate support is
-//! not performant for very high-cardinality aggregations.  Therefore
-//! we use DataFusion to load and join the data, but perform the final
-//! summarization directly in Rust.
 //!
 //! We use a lot of left joins so that we can compute statistics across
 //! the integration pipeline.
