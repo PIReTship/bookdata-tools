@@ -1,10 +1,7 @@
-// pub mod types;
-pub mod row_de;
 pub mod reader;
 pub mod writer;
 pub mod batch_io;
 pub mod dfext;
-pub mod fusion;
 
 pub use reader::scan_parquet_file;
 pub use parquet::record::RecordWriter;
