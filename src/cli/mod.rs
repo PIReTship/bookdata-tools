@@ -19,9 +19,7 @@ use log::*;
 use paste::paste;
 use structopt::StructOpt;
 use anyhow::Result;
-use tokio::runtime::Runtime;
 use enum_dispatch::enum_dispatch;
-use async_trait::async_trait;
 use cpu_time::ProcessTime;
 
 #[cfg(unix)]
@@ -91,21 +89,6 @@ pub enum ClusterCommand {
   Hash(cluster::hash::HashCmd),
   ExtractAuthors(cluster::authors::ClusterAuthors),
   ExtractAuthorGender(cluster::author_gender::AuthorGender),
-}
-
-/// Trait for implementing commands asynchronously.
-#[async_trait]
-pub trait AsyncCommand {
-  async fn exec_future(&self) -> Result<()>;
-}
-
-#[async_trait]
-impl <T: AsyncCommand> Command for T {
-  fn exec(&self) -> Result<()> {
-    let runtime = Runtime::new()?;
-    let task = self.exec_future();
-    runtime.block_on(task)
-  }
 }
 
 /// Entry point for the Book Data Tools.
