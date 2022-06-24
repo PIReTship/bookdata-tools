@@ -5,6 +5,7 @@ pub use anyhow::{Result, Error, anyhow};
 pub use log::*;
 pub use structopt::StructOpt;
 pub use fallible_iterator::FallibleIterator;
+pub use arrow2_convert::ArrowField;
 pub use crate::io::LineProcessor;
 pub use crate::io::ObjectWriter;
 pub use crate::io::DataSink;

@@ -131,6 +131,7 @@ impl Command for ClusterAuthors {
     let mut schema = authors.schema().to_arrow();
     schema.fields[0].is_nullable = false;
     schema.fields[1].is_nullable = false;
+    debug!("schema: {:?}", schema);
 
     let writer = File::create(&self.output)?;
     let writer = FileWriter::try_new(writer, schema, WriteOptions {

@@ -1,12 +1,13 @@
 // pub mod types;
 pub mod row_de;
+pub mod reader;
 pub mod writer;
 pub mod batch_io;
 pub mod dfext;
 pub mod fusion;
 
 pub use row_de::RecordBatchDeserializer;
-pub use row_de::scan_parquet_file;
+pub use reader::scan_parquet_file;
 pub use parquet::record::RecordWriter;
 pub use parquet::file::reader::FileReader;
 pub use arrow2_convert::ArrowField;

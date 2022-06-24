@@ -1,15 +1,16 @@
 //! Read cluster information.
+use std::convert::identity;
 use std::path::Path;
 use std::collections::{HashMap, HashSet};
 
-use serde::Deserialize;
-use fallible_iterator::FallibleIterator;
-
+use arrow2_convert::field::LargeString;
+use polars::prelude::*;
 use crate::prelude::*;
 use crate::gender::*;
-use crate::arrow::row_de::scan_parquet_file;
+use crate::arrow::scan_parquet_file;
 use crate::util::logging::item_progress;
 use super::authors::AuthorTable;
+use anyhow::Result;
 
 /// Record for storing a cluster's gender statistics while aggregating.
 #[derive(Debug, Default)]
@@ -21,16 +22,11 @@ pub struct ClusterStats {
 }
 
 /// Row struct for reading cluster author names.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, ArrowField)]
 struct ClusterAuthor {
   cluster: i32,
+  #[arrow_field(override="LargeString")]
   author_name: String,
-}
-
-/// Row struct for reading cluster IDs.
-#[derive(Debug, Deserialize)]
-struct Cluster {
-  cluster: i32,
 }
 
 pub type ClusterTable = HashMap<i32,ClusterStats>;
@@ -39,7 +35,7 @@ pub type ClusterTable = HashMap<i32,ClusterStats>;
 pub fn read_resolve(path: &Path, authors: &AuthorTable) -> Result<ClusterTable> {
   let timer = Timer::new();
   info!("reading cluster authors from {}", path.display());
-  let mut iter = scan_parquet_file(path)?;
+  let iter = scan_parquet_file(path)?;
 
   let pb = item_progress(iter.remaining() as u64, "authors");
   pb.set_draw_delta(5000);
@@ -47,8 +43,8 @@ pub fn read_resolve(path: &Path, authors: &AuthorTable) -> Result<ClusterTable> 
 
   let mut table = ClusterTable::new();
 
-  while let Some(row) = iter.next()? {
-    let row: ClusterAuthor = row;
+  for row in pb.wrap_iter(iter) {
+    let row: ClusterAuthor = row?;
     let mut rec = table.entry(row.cluster).or_default();
     rec.n_book_authors += 1;
     if let Some(info) = authors.get(row.author_name.as_str()) {
@@ -58,7 +54,6 @@ pub fn read_resolve(path: &Path, authors: &AuthorTable) -> Result<ClusterTable> 
         rec.genders.insert(g.clone());
       }
     }
-    pb.inc(1);
   }
 
   info!("scanned genders for {} clusters in {}", table.len(), timer.human_elapsed());
@@ -69,14 +64,13 @@ pub fn read_resolve(path: &Path, authors: &AuthorTable) -> Result<ClusterTable> 
 /// Read the full list of cluster IDs.
 pub fn all_clusters<P: AsRef<Path>>(path: P) -> Result<Vec<i32>> {
   info!("reading cluster IDs from {}", path.as_ref().display());
-  let mut iter = scan_parquet_file(path)?;
-  let mut ids = Vec::new();
-  while let Some(row) = iter.next()? {
-    let row: Cluster = row;
-    ids.push(row.cluster);
-  }
+  let path = path.as_ref().to_str().map(|s| s.to_string()).ok_or(anyhow!("invalid unicode path"))?;
+  let df = LazyFrame::scan_parquet(path, Default::default())?;
+  let df = df.select([col("cluster")]);
+  let clusters = df.collect()?;
+  let ids = clusters.column("cluster")?.i32()?;
 
   info!("found {} cluster IDs", ids.len());
 
-  Ok(ids)
+  Ok(ids.into_iter().filter_map(identity).collect())
 }
