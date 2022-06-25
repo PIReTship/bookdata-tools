@@ -18,6 +18,7 @@ impl GraphBuilder {
   fn add_vertices<R: NodeRead>(&mut self, src: R) -> Result<()> {
     info!("scanning vertices from {:?}", src);
     let node_df = src.read_node_ids()?;
+    debug!("node schema: {:?}", node_df.schema());
     let mut node_df = node_df.collect()?;
     let ninit = self.nodes.len();
 
@@ -41,7 +42,9 @@ impl GraphBuilder {
 
   fn add_edges<R: EdgeRead>(&mut self, src: R) -> Result<()> {
     info!("scanning edges from {:?}", src);
-    let edge_df = src.read_edges()?.collect()?;
+    let edge_df = src.read_edges()?;
+    debug!("edge schema: {:?}", edge_df.schema());
+    let edge_df = edge_df.collect()?;
     let src_s = edge_df.column("src")?.cast(&DataType::Int32)?;
     let srcs = src_s.i32()?;
     let dst_s = edge_df.column("dst")?.cast(&DataType::Int32)?;
