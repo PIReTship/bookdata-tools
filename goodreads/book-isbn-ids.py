@@ -50,6 +50,6 @@ table = table.cast(pa.schema([
 
 _log.info('writing %d records to output', all_isbns.height)
 # all_isbns.write_parquet('book-isbn-ids.parquet', compression='zstd')
-pq.write_table(table, 'book-isbn-ids.parquet', compression='zstd')
+pq.write_table(table, 'book-isbn-ids.parquet', compression='zstd', version='2.4')
 
 _log.info('finished')

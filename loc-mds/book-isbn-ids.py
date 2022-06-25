@@ -28,7 +28,7 @@ books = books.join(isbns, on='isbn').select(['rec_id', 'isbn_id'])
 _log.info('collecting results')
 books = books.collect()
 
-_log.info('saving {} book ISBNs to Parquet', books.height)
+_log.info('saving %d book ISBNs to Parquet', books.height)
 
 # non-null
 table = books.to_arrow()
@@ -36,8 +36,9 @@ table = table.cast(pa.schema([
     pa.field(fn, ft, False)
     for (fn, ft) in zip(table.schema.names, table.schema.types)
 ]))
+_log.info('writing with schema %s', table.schema)
 
 # all_isbns.write_parquet('book-isbn-ids.parquet', compression='zstd')
-pq.write_table(table, 'book-isbn-ids.parquet', compression='zstd')
+pq.write_table(table, 'book-isbn-ids.parquet', compression='zstd', version='2.4')
 
 _log.info('finished')

@@ -38,6 +38,6 @@ table = table.cast(pa.schema([
     for (fn, ft) in zip(table.schema.names, table.schema.types)
 ]))
 
-pq.write_table(table, 'edition-isbn-ids.parquet', compression='zstd')
+pq.write_table(table, 'edition-isbn-ids.parquet', compression='zstd', version='2.4')
 
 _log.info('finished')

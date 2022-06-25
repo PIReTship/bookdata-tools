@@ -51,4 +51,4 @@ tbl = pa.table([ids, genders], schema=pa.schema([
 ]))
 
 _log.info('writing %d rows to Parquet', tbl.num_rows)
-pq.write_table(tbl, 'author-genders.parquet', compression='zstd')
+pq.write_table(tbl, 'author-genders.parquet', compression='zstd', version='2.4')
