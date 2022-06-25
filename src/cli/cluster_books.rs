@@ -1,5 +1,7 @@
 //! Book clustering command.
 use std::fs::File;
+use std::sync::Arc;
+use std::thread::spawn;
 
 use crate::prelude::*;
 use crate::arrow::*;
@@ -102,10 +104,21 @@ impl Command for ClusterBooks {
       }
     }
 
-    if let Some(gf) = &self.save_graph {
-      info!("saving graph to {:?}", gf);
-      save_graph(&graph, &gf)?;
-    }
+    let graph = Arc::new(graph);
+    let sthread = if let Some(gf) = &self.save_graph {
+      let path = gf.clone();
+      let g2 = graph.clone();
+      Some(spawn(move || {
+        info!("saving graph to {:?} (in background)", path);
+        let res = save_graph(&g2, &path);
+        if let Err(e) = &res {
+          error!("error saving graph: {}", e);
+        }
+        res
+      }))
+    } else {
+      None
+    };
 
     info!("preparing to write graph results");
     let mut ic_w = TableWriter::open("book-links/isbn-clusters.parquet")?;
@@ -166,6 +179,12 @@ impl Command for ClusterBooks {
     };
     let statf = File::create("book-links/cluster-metrics.json")?;
     serde_json::to_writer(statf, &stats)?;
+
+    if let Some(h) = sthread {
+      debug!("waiting on background thread");
+      let br = h.join().expect("thread join failed");
+      br?;
+    }
 
     Ok(())
   }
