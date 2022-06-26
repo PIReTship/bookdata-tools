@@ -46,7 +46,7 @@ genders = pc.array_filter(genders, mask)
 _log.info('reassembling table')
 
 tbl = pa.table([ids, genders], schema=pa.schema([
-    pa.field('rec_id', pa.int32(), False),
+    pa.field('rec_id', pa.uint32(), False),
     pa.field('gender', pa.utf8(), False),
 ]))
 
