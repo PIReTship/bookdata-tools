@@ -139,8 +139,8 @@ where R: ArrowSerialize, R::MutableArrayType: TryExtend<Option<R>>
   Ok(chunk)
 }
 
-impl <W, A> ObjectWriter<Chunk<A>> for FileWriter<W> where W: Write, A: AsRef<dyn Array + 'static> + Send + Sync + 'static {
-  fn write_object(&mut self, chunk: Chunk<A>) -> Result<()> {
+impl <W> ObjectWriter<Chunk<Arc<dyn Array + 'static>>> for FileWriter<W> where W: Write {
+  fn write_object(&mut self, chunk: Chunk<Arc<dyn Array + 'static>>) -> Result<()> {
     let schema = self.schema();
     let encodings: Vec<_> = schema.fields.iter().map(|f| transverse(&f.data_type, |_| Encoding::Plain)).collect();
     let options = self.options();
