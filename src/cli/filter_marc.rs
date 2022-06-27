@@ -3,13 +3,13 @@ use std::path::{PathBuf, Path};
 use std::io::Write;
 use std::fs::File;
 use std::mem;
+use std::sync::mpsc::{sync_channel, SyncSender, Receiver};
 use std::thread::{spawn, JoinHandle};
 
 use arrow2::array::{MutablePrimitiveArray, MutableUtf8Array};
 use arrow2::chunk::Chunk;
 use arrow2::datatypes::{Schema, DataType, Field};
 use arrow2::io::parquet::write::{FileWriter, WriteOptions, Version, CompressionOptions};
-use crossbeam_channel::{bounded, Sender, Receiver};
 use friendly::scalar;
 use structopt::StructOpt;
 
@@ -105,7 +105,7 @@ impl FilterSpec {
 ///
 /// Failes quickly if there is an error opening the file; errors reading the file are
 /// from the thread and are availabl when it is joined.
-fn scan_records(path: &Path, filter: &FilterSpec, send: Sender<FieldRecord>) -> Result<JoinHandle<Result<usize>>> {
+fn scan_records(path: &Path, filter: &FilterSpec, send: SyncSender<FieldRecord>) -> Result<JoinHandle<Result<usize>>> {
   info!("reading names from authority fields in {:?}", path);
   let scanner = scan_parquet_file(path)?;
   let filter = filter.clone(); // to transfer to thread
@@ -203,7 +203,7 @@ fn write_cols<W: Write>(writer: &mut FileWriter<W>, rec_ids: &mut Vec<u32>, valu
 
 impl Command for FilterMARC {
   fn exec(&self) -> Result<()> {
-    let (send, recv) = bounded(4096);
+    let (send, recv) = sync_channel(4096);
     let h = scan_records(self.field_file.as_path(), &self.filter, send)?;
 
     let nwritten = write_records(&self.output, recv)?;

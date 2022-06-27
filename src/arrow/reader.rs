@@ -4,12 +4,12 @@ use std::fs::File;
 use std::sync::Arc;
 use std::thread::spawn;
 use std::mem::drop;
+use std::sync::mpsc::{Receiver, sync_channel};
 
 use arrow2::chunk::Chunk;
 use indicatif::ProgressBar;
 use log::*;
 use anyhow::Result;
-use crossbeam_channel::{Receiver, bounded};
 
 use arrow2::array::{Array, StructArray};
 use arrow2::io::parquet::read::FileReader;
@@ -61,7 +61,7 @@ where
   drop(meta);
 
   // use a small bound since we're sending whole batches
-  let (send, receive) = bounded(5);
+  let (send, receive) = sync_channel(5);
 
   spawn(move || {
     let send = send;
