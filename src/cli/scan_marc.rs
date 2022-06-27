@@ -10,7 +10,6 @@ use fallible_iterator::FallibleIterator;
 
 use crate::prelude::*;
 use crate::io::open_gzin_progress;
-use crate::io::object::ThreadObjectWriter;
 
 use crate::marc::MARCRecord;
 use crate::marc::parse::{read_records, read_records_delim};
@@ -91,8 +90,7 @@ impl ScanMARC {
     }
   }
 
-  fn process_records<W: ObjectWriter<MARCRecord> + Send + 'static>(&self, output: W) -> Result<()> {
-    let mut output = ThreadObjectWriter::new(output);
+  fn process_records<W: ObjectWriter<MARCRecord> + Send + 'static>(&self, mut output: W) -> Result<()> {
     let mut nfiles = 0;
     let mut all_recs = 0;
     let all_start = Instant::now();

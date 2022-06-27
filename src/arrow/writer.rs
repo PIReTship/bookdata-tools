@@ -11,7 +11,7 @@ use arrow2::io::parquet::write::*;
 use arrow2::array::{MutableArray, TryExtend, StructArray, Array};
 use arrow2::chunk::Chunk;
 use arrow2::datatypes::*;
-use arrow2_convert::serialize::ArrowSerialize;
+use arrow2_convert::serialize::{ArrowSerialize, ArrowMutableArray};
 
 use crate::io::object::{ObjectWriter, ThreadObjectWriter};
 use crate::io::{DataSink};
@@ -24,7 +24,7 @@ const BATCH_SIZE: usize = 1024 * 1024;
 /// them out to a Parquet file.
 pub struct TableWriter<R: ArrowSerialize + Send + Sync + 'static> {
   _phantom: PhantomData<R>,
-  writer: ThreadObjectWriter<Chunk<Arc<dyn Array>>>,
+  writer: ThreadObjectWriter<Vec<R>>,
   out_path: Option<PathBuf>,
   batch: Vec<R>,
   batch_size: usize,
@@ -53,6 +53,8 @@ impl <R> TableWriter<R> where R: ArrowSerialize + Send + Sync + 'static, R::Muta
     let file = OpenOptions::new().create(true).truncate(true).write(true).open(path)?;
     let writer = FileWriter::try_new(file, schema, options)?;
     let writer = ThreadObjectWriter::new(writer);
+    let writer = writer.with_transform(vec_to_chunk);
+    let writer = ThreadObjectWriter::new(writer);
     let out_path = Some(path.to_path_buf());
     Ok(TableWriter {
       _phantom: PhantomData,
@@ -70,7 +72,6 @@ impl <R> TableWriter<R> where R: ArrowSerialize + Send + Sync + 'static, R::Muta
     }
 
     let batch = replace(&mut self.batch, Vec::with_capacity(self.batch_size));
-    let batch = vec_to_chunk(batch)?;
     self.writer.write_object(batch)?;
 
     Ok(())
@@ -125,6 +126,7 @@ pub fn vec_to_chunk<R>(vec: Vec<R>) -> Result<Chunk<Arc<dyn Array>>>
 where R: ArrowSerialize, R::MutableArrayType: TryExtend<Option<R>>
 {
   let mut array = R::new_array();
+  array.reserve(vec.len(), vec.len());
   array.try_extend(vec.into_iter().map(Some))?;
 
   // get the struct array to chunkify
