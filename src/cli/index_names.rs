@@ -3,13 +3,13 @@ use std::collections::{HashSet, HashMap};
 use std::path::{PathBuf, Path};
 use std::fs::File;
 use std::thread::{spawn, JoinHandle};
-use std::sync::mpsc::{sync_channel, SyncSender, Receiver};
 
 use indicatif::{ProgressBar, ProgressStyle};
 use structopt::StructOpt;
 use csv;
 use serde::{Serialize};
 use flate2::write::GzEncoder;
+use crossbeam_channel::{bounded, Sender, Receiver};
 
 use rayon::prelude::*;
 
@@ -42,7 +42,7 @@ struct IndexEntry {
   name: String,
 }
 
-fn scan_authority_names(path: &Path, send: SyncSender<(String, u32)>) -> Result<JoinHandle<Result<usize>>> {
+fn scan_authority_names(path: &Path, send: Sender<(String, u32)>) -> Result<JoinHandle<Result<usize>>> {
   info!("reading names from authority fields in {:?}", path);
   let scanner = scan_parquet_file(path)?;
 
@@ -125,7 +125,7 @@ fn write_index(index: NameIndex, path: &Path) -> Result<()> {
 
 impl Command for IndexNames {
   fn exec(&self) -> Result<()> {
-    let (send, recv) = sync_channel(4096);
+    let (send, recv) = bounded(4096);
     let h = if let Some(ref path) = self.marc_authorities {
       scan_authority_names(path.as_path(), send)?
     } else {

@@ -4,7 +4,7 @@ use std::mem::drop;
 
 use serde::Serialize;
 use csv;
-use std::sync::mpsc::{sync_channel, SyncSender};
+use crossbeam_channel::{Sender, bounded};
 use anyhow::{anyhow, Result};
 
 /// Trait for writing objects to some kind of sink.
@@ -18,13 +18,13 @@ pub trait ObjectWriter<T> {
 
 /// Write objects in a background thread.
 pub struct ThreadObjectWriter<T> where T: Send + Sync + 'static {
-  sender: SyncSender<T>,
+  sender: Sender<T>,
   handle: JoinHandle<Result<usize>>
 }
 
 impl <T: Send + Sync + 'static> ThreadObjectWriter<T> {
   pub fn new<W: ObjectWriter<T> + Send + 'static>(writer: W) -> ThreadObjectWriter<T> {
-    let (sender, receiver) = sync_channel(4096);
+    let (sender, receiver) = bounded(4096);
 
     let handle = spawn(|| {
       let recv = receiver;
