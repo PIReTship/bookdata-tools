@@ -5,6 +5,7 @@
 //! progress bar.
 
 use std::{fmt::Arguments, time::SystemTime, sync::RwLock};
+use std::fmt::Debug;
 use std::mem::{MaybeUninit, drop};
 
 use indicatif::{ProgressBar, ProgressStyle};
@@ -150,13 +151,22 @@ impl Drop for LogStateGuard {
 /// Create a progress bar for tracking data.
 ///
 /// If the size is unknown at creation time, pass 0.
-pub fn data_progress(len: u64) -> ProgressBar {
-  ProgressBar::new(len).with_style(ProgressStyle::default_bar().template(DATA_PROGRESS_TMPL))
+pub fn data_progress<S>(len: S) -> ProgressBar
+where S: TryInto<u64>,
+  S::Error: Debug
+{
+  ProgressBar::new(len.try_into().expect("invalid length"))
+    .with_style(ProgressStyle::default_bar().template(DATA_PROGRESS_TMPL))
 }
 
 /// Create a progress bar for tracking items.
 ///
 /// If the size is unknown at creation time, pass 0.
-pub fn item_progress(len: u64, name: &str) -> ProgressBar {
-  ProgressBar::new(len).with_style(ProgressStyle::default_bar().template(ITEM_PROGRESS_TMPL)).with_prefix(name.to_string())
+pub fn item_progress<S>(len: S, name: &str) -> ProgressBar
+where S: TryInto<u64>,
+  S::Error: Debug
+{
+  ProgressBar::new(len.try_into().expect("invalid length"))
+    .with_style(ProgressStyle::default_bar().template(ITEM_PROGRESS_TMPL))
+    .with_prefix(name.to_string())
 }
