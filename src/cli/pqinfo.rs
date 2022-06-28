@@ -1,5 +1,5 @@
 //! Extract basic information from a Parquet file.
-use std::io::{Write, stdout};
+use std::io::{Write, Read, Seek, stdout};
 use std::mem::drop;
 use std::fs::File;
 use std::fmt::Debug;
@@ -19,6 +19,10 @@ use super::Command;
 #[derive(StructOpt, Debug)]
 #[structopt(name="collect-isbns")]
 pub struct PQInfo {
+  /// Check the length by decoding the file.
+  #[structopt(long="check-length")]
+  check_length: bool,
+
   /// Path to the output JSON file.
   #[structopt(short="o", long="output")]
   out_file: Option<PathBuf>,
@@ -52,6 +56,20 @@ impl From<&Field> for FieldStruct {
   }
 }
 
+fn check_length<R: Read + Seek>(reader: &mut FileReader<R>, expected: usize) -> Result<()> {
+  let mut len = 0;
+  for chunk in reader {
+    let chunk = chunk?;
+    len += chunk.len();
+  }
+
+  if len != expected {
+    warn!("expected {} rows but decoded {}", expected, len);
+  }
+
+  Ok(())
+}
+
 impl Command for PQInfo {
   fn exec(&self) -> Result<()> {
     info!("reading {:?}", self.source_file);
@@ -60,9 +78,14 @@ impl Command for PQInfo {
     let fmeta = pqf.metadata()?;
     info!("file size: {}", bytes(fmeta.len()));
 
-    let pqr = FileReader::try_new(pqf, None, None, None, None)?;
-    let meta = pqr.metadata();
+    let mut pqr = FileReader::try_new(pqf, None, None, None, None)?;
+    let meta = pqr.metadata().clone();
     info!("row count: {}", scalar(meta.num_rows));
+    info!("row groups: {}", meta.row_groups.len());
+    let rc2: usize = meta.row_groups.iter().map(|rg| rg.num_rows()).sum();
+    if rc2 != meta.num_rows {
+      warn!("row group total {} != file total {}", rc2, meta.num_rows);
+    }
 
     info!("decoding schema");
     let schema = meta.schema();
@@ -70,7 +93,9 @@ impl Command for PQInfo {
 
     let out = stdout();
     let mut ol = out.lock();
-    write!(&mut ol, "{:?}\n", fields)?;
+    for field in &fields {
+      writeln!(&mut ol, "{:?}", field)?;
+    }
     drop(ol);
 
     if let Some(ref file) = self.out_file {
@@ -82,6 +107,10 @@ impl Command for PQInfo {
       };
 
       serde_json::to_writer_pretty(&mut out, &info)?;
+    }
+
+    if self.check_length {
+      check_length(&mut pqr, meta.num_rows)?;
     }
 
     Ok(())
