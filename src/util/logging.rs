@@ -8,12 +8,13 @@ use std::{fmt::Arguments, time::SystemTime, sync::RwLock};
 use std::fmt::Debug;
 use std::mem::{MaybeUninit, drop};
 
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{ProgressBar, ProgressStyle, MultiProgress, ProgressDrawTarget};
 use log::*;
 use fern::*;
 use colored::*;
 use chrono::{DateTime, Local};
 use structopt::StructOpt;
+use anyhow::Result;
 
 const DATA_PROGRESS_TMPL: &str = "{prefix}: {bar} {bytes}/{total_bytes} ({bytes_per_sec}, {elapsed} elapsed, ETA {eta})";
 const ITEM_PROGRESS_TMPL: &str = "{prefix}: {bar} {pos}/{len} ({per_sec}, {elapsed} elapsed, ETA {eta}) {msg}";
@@ -33,17 +34,65 @@ pub struct LogOptions {
 ///
 /// Resets the log output when dropped.  See [set_progress].
 pub struct LogStateGuard {
-  prev: Target,
+  prev: Box<dyn LogTarget>,
 }
 
-#[derive(Debug, Clone)]
-enum Target {
-  Stderr,
-  PB(ProgressBar),
-}
+#[derive(Clone)]
+struct DefaultTarget;
 
 struct LogEnvironment {
-  target: RwLock<Target>
+  target: RwLock<Box<dyn LogTarget>>
+}
+
+/// Trait describing valid log targets.
+pub trait LogTarget {
+  fn write_msg<'a>(&self, args: &Arguments<'a>) -> Result<()>;
+
+  /// Duplicate the log target.
+  ///
+  /// We need this because [Clone] isn't object-safe.
+  fn duplicate(&self) -> Box<dyn LogTarget>;
+}
+
+impl LogTarget for DefaultTarget {
+  fn write_msg<'a>(&self, args: &Arguments<'a>) -> Result<()> {
+    eprintln!("{}", args);
+    Ok(())
+  }
+
+  fn duplicate(&self) -> Box<dyn LogTarget> {
+    Box::new(self.clone())
+  }
+}
+
+impl LogTarget for ProgressBar {
+  fn write_msg<'a>(&self, args: &Arguments<'a>) -> Result<()> {
+    if self.is_hidden() {
+      DefaultTarget.write_msg(args)
+    } else {
+      self.println(format!("{}", args));
+      Ok(())
+    }
+  }
+
+  fn duplicate(&self) -> Box<dyn LogTarget> {
+    Box::new(self.clone())
+  }
+}
+
+impl LogTarget for MultiProgress {
+  fn write_msg<'a>(&self, args: &Arguments<'a>) -> Result<()> {
+    if self.is_hidden() {
+      DefaultTarget.write_msg(args)
+    } else {
+      self.println(format!("{}", args))?;
+      Ok(())
+    }
+  }
+
+  fn duplicate(&self) -> Box<dyn LogTarget> {
+    Box::new(self.clone())
+  }
 }
 
 static mut LOG_ENV: MaybeUninit<LogEnvironment> = MaybeUninit::uninit();
@@ -65,10 +114,7 @@ fn write_console_log(record: &Record<'_>) {
   };
   let lock = env.target.read().expect("poisoned lock");
   let target = &*lock;
-  match target {
-    Target::Stderr => eprintln!("{}", record.args()),
-    Target::PB(pb) => pb.println(format!("{}", record.args())),
-  }
+  target.write_msg(record.args()).expect("log failure");
 }
 
 fn format_console_log(out: FormatCallback<'_>, message: &Arguments<'_>, record: &Record<'_>) {
@@ -102,7 +148,8 @@ impl LogOptions {
     let dispatch = dispatch.format(format_console_log);
     let dispatch = dispatch.chain(Output::call(write_console_log));
 
-    let target = RwLock::new(Target::Stderr);
+    let target: Box<dyn LogTarget> = Box::new(DefaultTarget);
+    let target = RwLock::new(target);
     unsafe {
       // set up the logging environment
       LOG_ENV.write(LogEnvironment { target });
@@ -124,13 +171,13 @@ impl LogOptions {
 /// // do things
 /// // log reset when _lg is dropped
 /// ```
-pub fn set_progress(pb: ProgressBar) -> LogStateGuard {
+pub fn set_progress<PB: LogTarget + 'static>(pb: PB) -> LogStateGuard {
   let env = unsafe {
     LOG_ENV.assume_init_ref()
   };
   let mut target = env.target.write().expect("lock poisoned");
-  let prev = target.clone();
-  *target = Target::PB(pb);
+  let prev = target.duplicate();
+  *target = Box::new(pb);
   drop(target);
   debug!("rerouting logging to progress bar");
   LogStateGuard { prev }
@@ -143,7 +190,7 @@ impl Drop for LogStateGuard {
     };
     debug!("restoring log output");
     let mut target = env.target.write().expect("lock poisoned");
-    *target = self.prev.clone();
+    *target = self.prev.duplicate();
   }
 }
 
@@ -156,7 +203,7 @@ where S: TryInto<u64>,
   S::Error: Debug
 {
   ProgressBar::new(len.try_into().expect("invalid length"))
-    .with_style(ProgressStyle::default_bar().template(DATA_PROGRESS_TMPL))
+    .with_style(ProgressStyle::default_bar().template(DATA_PROGRESS_TMPL).expect("template error"))
 }
 
 /// Create a progress bar for tracking items.
@@ -166,7 +213,9 @@ pub fn item_progress<S>(len: S, name: &str) -> ProgressBar
 where S: TryInto<u64>,
   S::Error: Debug
 {
-  ProgressBar::new(len.try_into().expect("invalid length"))
-    .with_style(ProgressStyle::default_bar().template(ITEM_PROGRESS_TMPL))
+  let len: u64 = len.try_into().expect("invalid length");
+  let len = Some(len).filter(|l| *l > 0);
+  ProgressBar::with_draw_target(len, ProgressDrawTarget::stderr_with_hz(2))
+    .with_style(ProgressStyle::default_bar().template(ITEM_PROGRESS_TMPL).expect("template error"))
     .with_prefix(name.to_string())
 }

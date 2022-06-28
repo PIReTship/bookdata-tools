@@ -38,7 +38,7 @@ pub fn read_resolve(path: &Path, authors: &AuthorTable) -> Result<ClusterTable> 
   let iter = scan_parquet_file(path)?;
 
   let pb = item_progress(iter.remaining() as u64, "authors");
-  pb.set_draw_delta(5000);
+  // pb.set_draw_delta(5000);
   let _lg = set_progress(pb.clone());
 
   let mut table = ClusterTable::new();

@@ -102,10 +102,10 @@ where
   /// the acutal underlying data sizes, but that's annoyingly difficult.
   pub fn enable_progress(&mut self, name: &str) -> ProgressBar {
     let pb = item_progress(self.remaining, name);
-    if self.remaining > 1_000_000 {
-      // set the progress bar to have a precision of 0.05%
-      pb.set_draw_delta(self.remaining as u64 / 5000);
-    }
+    // if self.remaining > 1_000_000 {
+    //   // set the progress bar to have a precision of 0.05%
+    //   pb.set_draw_delta(self.remaining as u64 / 5000);
+    // }
     self.progress = Some(pb.clone());
     pb
   }
