@@ -16,7 +16,7 @@ use structopt::StructOpt;
 use crate::marc::flat_fields::FieldRecord;
 use crate::prelude::*;
 use crate::arrow::*;
-use crate::util::logging::{set_progress};
+use crate::util::logging::{set_progress, item_progress};
 
 const BATCH_SIZE: usize = 1024 * 1024;
 
@@ -111,8 +111,8 @@ fn scan_records(path: &Path, filter: &FilterSpec, send: SyncSender<FieldRecord>)
   let filter = filter.clone(); // to transfer to thread
 
   Ok(spawn(move || {
-    let mut scanner = scanner;
-    let pb = scanner.enable_progress("fields");
+    let scanner = scanner;
+    let pb = item_progress(scanner.remaining(), "outer");
     let _lg = set_progress(pb.clone());
     let mut n = 0;
     for rec in pb.wrap_iter(scanner) {

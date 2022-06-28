@@ -49,7 +49,6 @@ fn scan_authority_names(path: &Path, send: SyncSender<(String, u32)>) -> Result<
   Ok(spawn(move || {
     let scanner = scanner;
     let pb = item_progress(scanner.remaining() as u64, "fields");
-    // pb.set_draw_delta(10000);
     let _lg = set_progress(pb.clone());
     let mut n = 0;
     for rec in pb.wrap_iter(scanner) {
@@ -99,10 +98,7 @@ fn write_index(index: NameIndex, path: &Path) -> Result<()> {
   let csvw = csv::Writer::from_writer(out);
   let mut csvout = ThreadObjectWriter::new(csvw);
 
-  let pb = ProgressBar::new(names.len() as u64);
-  let pb = pb.with_style(ProgressStyle::default_bar().template("{prefix}: {bar} {pos}/{len} ({percent}%, ETA {eta})")?);
-  let pb = pb.with_prefix("names");
-  // pb.set_draw_delta(5000);
+  let pb = item_progress(names.len(), "names");
   let _lg = set_progress(pb.clone());
 
   for name in pb.wrap_iter(names.into_iter()) {
