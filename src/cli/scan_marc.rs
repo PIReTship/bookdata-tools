@@ -9,7 +9,7 @@ use structopt::StructOpt;
 use fallible_iterator::FallibleIterator;
 
 use crate::prelude::*;
-use crate::io::open_gzin_progress;
+use crate::io::{open_gzin_progress, log_file_info};
 
 use crate::marc::MARCRecord;
 use crate::marc::parse::{read_records, read_records_delim};
@@ -67,7 +67,7 @@ impl Command for ScanMARC {
         Some(p) => p.clone(),
         None => PathBuf::from("marc-fields.parquet")
       };
-      let output = FieldOutput::open(ofn)?;
+      let output = FieldOutput::open(&ofn)?;
       self.process_records(output)?;
     };
 
@@ -90,7 +90,7 @@ impl ScanMARC {
     }
   }
 
-  fn process_records<W: ObjectWriter<MARCRecord> + Send + 'static>(&self, mut output: W) -> Result<()> {
+  fn process_records<W: ObjectWriter<MARCRecord> + DataSink + Send + 'static>(&self, mut output: W) -> Result<()> {
     let mut nfiles = 0;
     let mut all_recs = 0;
     let all_start = Instant::now();
@@ -120,10 +120,12 @@ impl ScanMARC {
       all_recs += nrecs;
     }
 
+    let outs = output.output_files();
     let written = output.finish()?;
 
-    info!("imported {}/{} records from {} files in {:.2}s",
+    info!("imported {} fields from {} records from {} files in {:.2}s",
           written, all_recs, nfiles, all_start.elapsed().as_secs_f32());
+    log_file_info(&outs)?;
 
     Ok(())
   }
