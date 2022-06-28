@@ -7,7 +7,6 @@ use std::mem::drop;
 use std::sync::mpsc::{Receiver, sync_channel};
 
 use arrow2::chunk::Chunk;
-use indicatif::ProgressBar;
 use log::*;
 use anyhow::Result;
 
@@ -16,14 +15,11 @@ use arrow2::io::parquet::read::FileReader;
 
 use arrow2_convert::deserialize::*;
 
-use crate::util::logging::item_progress;
-
 /// Iterator over deserialized records from a Parquet file.
 pub struct RecordIter<R> where R: ArrowDeserialize + Send + Sync + 'static, for <'a> &'a R::ArrayType: IntoIterator {
   remaining: usize,
   channel: Receiver<Result<Vec<R>>>,
   batch: Option<std::vec::IntoIter<R>>,
-  progress: Option<ProgressBar>,
 }
 
 impl <R> RecordIter<R> where R: ArrowDeserialize + Send + Sync + 'static, for <'a> &'a R::ArrayType: IntoIterator {
@@ -86,29 +82,7 @@ where
     remaining: row_count,
     channel: receive,
     batch: None,
-    progress: None,
   })
-}
-
-impl <R> RecordIter<R>
-where
-  R: ArrowDeserialize + Send + Sync + 'static,
-  for <'a> &'a R::ArrayType: IntoIterator
-{
-  /// Set up a progress bar for this reader.
-  ///
-  /// The progress bar will be incremented by *batches*, to record progress through
-  /// the file without the overhead of per-record updates.  It would be nice to support
-  /// the acutal underlying data sizes, but that's annoyingly difficult.
-  pub fn enable_progress(&mut self, name: &str) -> ProgressBar {
-    let pb = item_progress(self.remaining, name);
-    // if self.remaining > 1_000_000 {
-    //   // set the progress bar to have a precision of 0.05%
-    //   pb.set_draw_delta(self.remaining as u64 / 5000);
-    // }
-    self.progress = Some(pb.clone());
-    pb
-  }
 }
 
 impl <R> Iterator for RecordIter<R>
@@ -130,9 +104,6 @@ where
         // fetch a new batch and try again
         match br {
           Ok(batch) => {
-            if let Some(pb) = &self.progress {
-              pb.inc(batch.len() as u64);
-            }
             self.batch = Some(batch.into_iter());
             // loop around and use the batch
           },

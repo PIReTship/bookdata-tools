@@ -5,7 +5,6 @@ use std::fs::File;
 use std::thread::{spawn, JoinHandle};
 use std::sync::mpsc::{sync_channel, SyncSender, Receiver};
 
-use indicatif::{ProgressBar, ProgressStyle};
 use structopt::StructOpt;
 use csv;
 use serde::{Serialize};
