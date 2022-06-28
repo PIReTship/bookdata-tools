@@ -39,9 +39,11 @@ where
   E: std::error::Error + Send + Sync + 'static
 {
   let chunk = chunk?;
+  let chunk_size = chunk.len();
   let sa = StructArray::try_new(R::data_type(), chunk.into_arrays(), None)?;
   let sa: Box<dyn Array> = Box::new(sa);
-  let recs = sa.try_into_collection()?;
+  let recs: Vec<R> = sa.try_into_collection()?;
+  assert_eq!(recs.len(), chunk_size);
   Ok(recs)
 }
 
@@ -132,6 +134,7 @@ where
               pb.inc(batch.len() as u64);
             }
             self.batch = Some(batch.into_iter());
+            // loop around and use the batch
           },
           Err(e) => {
             // error on the channel
