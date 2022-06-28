@@ -17,7 +17,7 @@ use structopt::StructOpt;
 use anyhow::Result;
 
 const DATA_PROGRESS_TMPL: &str = "{prefix}: {bar} {bytes}/{total_bytes} ({bytes_per_sec}, {elapsed} elapsed, ETA {eta})";
-const ITEM_PROGRESS_TMPL: &str = "{prefix}: {bar} {pos}/{len} ({per_sec}, {elapsed} elapsed, ETA {eta}) {msg}";
+const ITEM_PROGRESS_TMPL: &str = "{prefix}: {bar} {human_pos}/{human_len} ({per_sec}, {elapsed} elapsed, ETA {eta}) {msg}";
 
 #[derive(StructOpt, Debug)]
 pub struct LogOptions {
