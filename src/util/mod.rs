@@ -6,6 +6,7 @@ pub mod process;
 pub mod timing;
 pub mod serde_string;
 pub mod logging;
+pub mod iteration;
 
 pub use accum::DataAccumulator;
 pub use timing::Timer;

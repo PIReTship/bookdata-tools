@@ -22,6 +22,7 @@ use structopt::StructOpt;
 use anyhow::Result;
 use enum_dispatch::enum_dispatch;
 use cpu_time::ProcessTime;
+use rayon::ThreadPoolBuilder;
 
 #[cfg(unix)]
 use crate::util::process;
@@ -112,6 +113,11 @@ pub struct CLI {
 impl CLI {
   pub fn exec(self) -> Result<()> {
     self.logging.setup()?;
+
+    let npar = std::cmp::min(num_cpus::get(), num_cpus::get_physical());
+    debug!("setting up Rayon pool with {} threads", npar);
+    ThreadPoolBuilder::new().num_threads(npar).build_global()?;
+
     let timer = Timer::new();
 
     let res = self.command.exec();
