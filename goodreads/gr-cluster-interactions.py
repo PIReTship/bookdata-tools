@@ -30,6 +30,8 @@ _log = script_log('gr-cluster-interactions', debug=opts['--verbose'])
 _log.info('setting up input')
 interactions = pl.scan_parquet('gr-interactions.parquet')
 interactions = interactions.filter(pl.col('rating').is_not_null())
+links = pl.scan_parquet("gr-book-link.parquet")
+interactions = interactions.join(links, on='book_id')
 
 if opts['--native-works']:
     _log.info('grouping by native works')
@@ -42,8 +44,6 @@ if opts['--native-works']:
     )
 else:
     _log.info('grouping by integrated clusters')
-    links = pl.scan_parquet("gr-book-link.parquet")
-    interactions = interactions.join(links, on='book_id')
     id_col = pl.col('cluster')
 
 interactions = interactions.select([
