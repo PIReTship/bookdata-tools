@@ -13,7 +13,7 @@ ratings — both implicit and explicit — of books.
 
 > Cai-Nicolas Ziegler, Sean M. McNee, Joseph A. Konstan, and Georg Lausen. 2005. Improving Recommendation Lists Through Topic Diversification. <cite>Proceedings of the 14th International World Wide Web Conference</cite> (WWW '05), May 10-14, 2005, Chiba, Japan. DOI:[10.1145/1060745.1060754](https://doi.org/10.1145/1060745.1060754).
 
-:::{index} pair: directory; viaf
+:::{index} pair: directory; bx
 :::
 
 Imported data lives in the `bx` directory.  The source data files are automatically downloaded and unpacked by
