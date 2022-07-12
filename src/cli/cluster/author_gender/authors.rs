@@ -56,7 +56,7 @@ fn viaf_load_genders() -> Result<HashMap<u32, HashSet<Gender>>> {
   info!("loading VIAF author genders");
   let iter = scan_parquet_file("viaf/author-genders.parquet")?;
 
-  let pb = item_progress(iter.remaining() as u64, "authors");
+  let pb = item_progress(iter.remaining(), "authors");
   let _lg = set_progress(pb.clone());
   let iter = pb.wrap_iter(iter);
 

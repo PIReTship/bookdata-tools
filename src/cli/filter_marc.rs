@@ -141,7 +141,7 @@ fn write_records(out: &OutputSpec, recv: Receiver<FieldRecord>) -> Result<usize>
       },
       Field {
         name: out.content_name.as_ref().map(|s| s.clone()).unwrap_or("content".into()),
-        data_type: DataType::UInt32,
+        data_type: DataType::Utf8,
         is_nullable: false,
         metadata: Default::default(),
       },
