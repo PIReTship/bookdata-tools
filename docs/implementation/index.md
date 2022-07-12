@@ -24,4 +24,4 @@ These goals are realized through a few technology and design decisions:
 - Script all import steps with a tool that can track stage dependencies and check whether a stage is up-to-date ([DVC](https://dvc.org)).
 - Make individual import stages self-contained and limited.
 - Extract data from raw sources into tabular form, *then* integrate as a separate step.
-- When feasible and performant, implement integration and processing steps with declarative SQL.
+- When feasible and performant, implement integration and processing steps with straightforward data join operations.
