@@ -7,6 +7,9 @@ nav_order: 8
 (cluster)=
 # Book Clusters
 
+:::{index} cluster
+:::
+
 For recommendation and analysis, we often want to look at *works* instead of individual books or
 editions of those books.  The same material by the same author(s) may be reprinted in many different
 editions, with different ISBNs, and sometimes separate ratings from the same user.
