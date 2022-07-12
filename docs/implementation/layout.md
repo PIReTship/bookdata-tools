@@ -4,7 +4,7 @@ title: Code Layout
 
 # Code Layout
 
-The import code consists of Python, Rust, and some SQL code, wired together with DVC, with data
+The import code consists of Python and Rust, wired together with DVC, with data
 in several directories to facilitate ease of discovery.
 
 ## Python Scripts

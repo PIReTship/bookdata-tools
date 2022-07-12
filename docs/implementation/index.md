@@ -25,3 +25,16 @@ These goals are realized through a few technology and design decisions:
 - Make individual import stages self-contained and limited.
 - Extract data from raw sources into tabular form, *then* integrate as a separate step.
 - When feasible and performant, implement integration and processing steps with straightforward data join operations.
+
+## Adding or Modifying Data
+
+1. Add the new data file(s), if necessary, to `data`, and update the
+   documentation to describe how to download them.
+2. Implement a `scan` stage to process the raw imported data into tabular form.
+   The code can be written in either Rust or Python, depending on performance
+   needs.
+3. If necessary, add the inputs to the ISBN collection (under `book-links`) and clustering
+   to connect it with the rest of the code.
+4. Implement stages to integrate the data with the rest of the tools.  Again, this
+   code can be in Rust or Python.  We usually use Polars (either the Rust or the Python
+   API) to efficiently process large data files.
