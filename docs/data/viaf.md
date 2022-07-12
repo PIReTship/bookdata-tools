@@ -29,7 +29,7 @@ The import is controlled by the following DVC steps:
 :   Extract author genders from the VIAF MARC data, producing {file}`author-genders.parquet`.
 
 `index-names`
-:   Normalize and expand author names and map to VIAF record IDs, producing {file}`author-index-names.parquet`.
+:   Normalize and expand author names and map to VIAF record IDs, producing {file}`author-name-index.parquet`.
 
 ## Raw Data
 
@@ -48,7 +48,7 @@ We process the MARC records to produce several derived tables.
 :::{file} viaf/author-name-index.parquet
 
 The author-name index file maps record IDs to author names, as defined in field [700a][].  For each record, it stores each of the
-names extracted by {rust:mod}`bookdata::cleaning::names`.
+names extracted by {rust:mod}`bookdata::cleaning::names`.  This file is also available in `csv.gz` format.
 :::
 
 :::{file} viaf/author-genders.parquet
