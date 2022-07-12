@@ -11,41 +11,37 @@ ratings — both implicit and explicit — of books.
 
 **If you use this data, cite:**
 
-> Cai-Nicolas Ziegler, Sean M. McNee, Joseph A. Konstan, and Georg Lausen. 2005. Improving Recommendation Lists Through Topic Diversification. Proceedings of the 14th International World Wide Web Conference (WWW '05), May 10-14, 2005, Chiba, Japan.
+> Cai-Nicolas Ziegler, Sean M. McNee, Joseph A. Konstan, and Georg Lausen. 2005. Improving Recommendation Lists Through Topic Diversification. <cite>Proceedings of the 14th International World Wide Web Conference</cite> (WWW '05), May 10-14, 2005, Chiba, Japan. DOI:[10.1145/1060745.1060754](https://doi.org/10.1145/1060745.1060754).
 
-Imported data lives in the `bx` schema.  The source data files are automatically downloaded and unpacked by
+:::{index} pair: directory; viaf
+:::
+
+Imported data lives in the `bx` directory.  The source data files are automatically downloaded and unpacked by
 the provided scripts and DVC stages.
-
-## Data Model Diagram
-
-![BookCrossing data model](bx.svg)
-
-- [SVG file](bx.svg)
-- [PlantUML source](bx.puml)
 
 ## Import Steps
 
 The import is controlled by the following DVC steps:
 
-`data/BX.dvc`
-:   Unpack the BookCrossing zip file.
-
 `data/BX-CSV-Dump.zip.dvc`
-:   Download the BookCrossing zip file.s
+:   Download the BookCrossing zip file.
 
-`schemas/bx-schema.dvc`
-:   Run `bx-schema.sql` to set up the base schema.
+`clean-ratings`
+:   Unpack ratings from the downloaded zip file and clean up their invalid characters.
 
-`import/bx-ratings.dvc`
-:   Import raw BookCrossing ratings from `data/BX-Book-Ratings.csv`.
+`cluster-ratings`
+:   Combine BookCrossing ratings with [book clusters](cluster) to produce (user, cluster, rating) from the explicit-feedback ratings. BookCrossing implicit feedback entries (rating of 0) are excluded. Produces {file}`bx/bx-cluster-ratings.parquet`.
 
-`index/bx-index.dvc`
-:   Run `bx-index.sql` to index the rating data and integrate with book data.
+`cluster-actions`
+:   Combine BookCrossing interactions with [book clusters](cluster) to produce (user, cluster) implicit-feedback records. These records include the BookCrossing implicit feedback entries (rating of 0). Produces {file}`bx/bx-cluster-actions.parquet`.
 
 ## Raw Data
 
-The raw rating data, with invalid characters cleaned up, is in the `bx.raw_ratings` table, with
-the following columns:
+The raw rating data, with invalid characters cleaned up, is in the {file}`bx/cleaned-ratings.csv` file.
+
+:::{file} bx/cleaned-ratings.csv
+
+Cleaned-up, but not integrated, book ratings.  Has the following columns:
 
 user_id
 :   The user identifier (numeric).
@@ -54,33 +50,17 @@ isbn
 :   The book ISBN (text).
 
 rating
-:   The book rating.  The ratings are on a 1-10 scale, with 0 indicating an implicit-feedback record.
+:   The book rating {math}`r_{ui}`.  The ratings are on a 1-10 scale, with 0 indicating an implicit-feedback record.
+:::
 
-## Extracted Rating Tables
+## Extracted Actions
 
-We extract the following tables for BookCrossing ratings:
+:::{file} bx/bx-cluster-ratings.parquet
 
-`rating`
-:   The explicit ratings (`rating > 0`) from the raw ratings table.
+The explicit-feedback ratings ({math}`r_{ui}>0` from {file}`bx/cleaned-ratings.csv`), with book clusters as the `item`s.
+:::
 
-`add_action`
-:   Records of users adding books, either by rating or through an implicit feedback action,
-    without rating values.
+:::{file} bx/bx-cluster-actions.parquet
 
-Both of these tables are pre-clustered, so the book IDs refer to book clusters and not individual
-ISBNs or editions.  They have the following columns:
-
-`user_id`
-:   The user ID.
-
-`book_id`
-:   The [book code](ids.html#book-codes) for this book; the cluster identifier if available, or the
-    ISBN-based book code if this book is not in a cluster.
-
-`rating`
-:   The rating value; if the user has rated multiple books in a cluster, the median value is reported.
-    This field is only on the `rating` table.
-
-`nactions`
-:   The number of book actions this user performed on this book.  Equivalent to the number of books in
-    the cluster that the user has added or rated.
+All user-item interactions from {file}`bx/cleaned-ratings.csv`, with book clusters as the `item`s.
+:::

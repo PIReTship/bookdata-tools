@@ -16,6 +16,9 @@ VIAF also does not keep old copies of the dump file.  You may need to edit
 import this data.
 :::
 
+:::{index} pair: directory; viaf
+:::
+
 Imported data lives under the `viaf` directory.
 
 ## Import Steps
