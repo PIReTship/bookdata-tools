@@ -1,1 +1,0 @@
-initSidebarItems({"fn":[["item_col",""]],"static":[["GR_INPUT_FILE",""],["GR_LINK_FILE",""]],"struct":[["Actions",""],["Ratings",""]]});

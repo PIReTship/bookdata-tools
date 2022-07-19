@@ -1,1 +1,0 @@
-initSidebarItems({"enum":[["NameError",""],["NameFmt",""]],"struct":[["NameEntry",""]]});
