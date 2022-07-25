@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["ExtractGraph","Extract a subgraph."]]});

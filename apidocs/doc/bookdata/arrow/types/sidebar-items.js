@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["EPOCH_DAYS_CE",""]],"macro":[["primitive_arrow_type",""]],"trait":[["ArrowTypeInfo","Trait defining how to store a type in Arrow."],["ArrowTypeWrapper","Trait to declare that a type should be serialized as a different Arrow type."]]});

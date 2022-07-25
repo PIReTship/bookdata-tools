@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["file_size","Get the size of a file."],["path_list","Convert a list of strings into owned [PathBuf]s."]],"mod":[["background",""],["compress",""],["lines",""],["object",""]],"trait":[["DataSink","Trait for data processing sinks with input and ouptut files."]]});
