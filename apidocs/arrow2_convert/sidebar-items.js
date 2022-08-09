@@ -1,0 +1,1 @@
+initSidebarItems({"macro":[["arrow_enable_vec_for_type","Enables the blanket implementations of [`Vec<T>`] as an Arrow field if `T` is an Arrow field."]],"mod":[["deserialize",""],["field",""],["serialize",""]]});

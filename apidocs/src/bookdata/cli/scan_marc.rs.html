@@ -145,14 +145,13 @@
 <span class="kw">use</span> <span class="ident">fallible_iterator::FallibleIterator</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::io::open_gzin_progress</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::io::object::ThreadWriter</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::io</span>::{<span class="ident">open_gzin_progress</span>, <span class="ident">log_file_info</span>};
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::marc::MARCRecord</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::marc::parse</span>::{<span class="ident">read_records</span>, <span class="ident">read_records_delim</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::marc::book_fields::BookOutput</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::marc::flat_fields::FieldOutput</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::util::logging::set_progress</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::util::logging::data_progress</span>;
 
 <span class="doccomment">/// Scan MARC records and extract basic information.</span>
 <span class="doccomment">///</span>
@@ -204,7 +203,7 @@
         <span class="prelude-val">Some</span>(<span class="ident">p</span>) =&gt; <span class="ident">p</span>.<span class="ident">clone</span>(),
         <span class="prelude-val">None</span> =&gt; <span class="ident">PathBuf::from</span>(<span class="string">&quot;marc-fields.parquet&quot;</span>)
       };
-      <span class="kw">let</span> <span class="ident">output</span> <span class="op">=</span> <span class="ident">FieldOutput::open</span>(<span class="ident">ofn</span>)<span class="question-mark">?</span>;
+      <span class="kw">let</span> <span class="ident">output</span> <span class="op">=</span> <span class="ident">FieldOutput::open</span>(<span class="kw-2">&amp;</span><span class="ident">ofn</span>)<span class="question-mark">?</span>;
       <span class="self">self</span>.<span class="ident">process_records</span>(<span class="ident">output</span>)<span class="question-mark">?</span>;
     };
 
@@ -227,8 +226,7 @@
     }
   }
 
-  <span class="kw">fn</span> <span class="ident">process_records</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">ObjectWriter</span><span class="op">&lt;</span><span class="ident">MARCRecord</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">output</span>: <span class="ident">W</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output</span> <span class="op">=</span> <span class="ident">ThreadWriter::new</span>(<span class="ident">output</span>);
+  <span class="kw">fn</span> <span class="ident">process_records</span><span class="op">&lt;</span><span class="ident">W</span>: <span class="ident">ObjectWriter</span><span class="op">&lt;</span><span class="ident">MARCRecord</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">DataSink</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">output</span>: <span class="ident">W</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">nfiles</span> <span class="op">=</span> <span class="number">0</span>;
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">all_recs</span> <span class="op">=</span> <span class="number">0</span>;
     <span class="kw">let</span> <span class="ident">all_start</span> <span class="op">=</span> <span class="ident">Instant::now</span>();
@@ -238,8 +236,8 @@
       <span class="kw">let</span> <span class="ident">inf</span> <span class="op">=</span> <span class="ident">inf</span>.<span class="ident">as_path</span>();
       <span class="kw">let</span> <span class="ident">file_start</span> <span class="op">=</span> <span class="ident">Instant::now</span>();
       <span class="macro">info!</span>(<span class="string">&quot;reading from compressed file {}&quot;</span>, <span class="ident">inf</span>.<span class="ident">display</span>());
-      <span class="kw">let</span> (<span class="ident">read</span>, <span class="ident">pb</span>) <span class="op">=</span> <span class="ident">open_gzin_progress</span>(<span class="ident">inf</span>)<span class="question-mark">?</span>;
-      <span class="kw">let</span> <span class="ident">_lg</span> <span class="op">=</span> <span class="ident">set_progress</span>(<span class="ident">pb</span>);
+      <span class="kw">let</span> <span class="ident">pb</span> <span class="op">=</span> <span class="ident">data_progress</span>(<span class="number">0</span>);
+      <span class="kw">let</span> <span class="ident">read</span> <span class="op">=</span> <span class="ident">open_gzin_progress</span>(<span class="ident">inf</span>, <span class="ident">pb</span>.<span class="ident">clone</span>())<span class="question-mark">?</span>;
       <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">records</span> <span class="op">=</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">line_mode</span> {
         <span class="ident">read_records_delim</span>(<span class="ident">read</span>)
       } <span class="kw">else</span> {
@@ -257,10 +255,12 @@
       <span class="ident">all_recs</span> <span class="op">+</span><span class="op">=</span> <span class="ident">nrecs</span>;
     }
 
+    <span class="kw">let</span> <span class="ident">outs</span> <span class="op">=</span> <span class="ident">output</span>.<span class="ident">output_files</span>();
     <span class="kw">let</span> <span class="ident">written</span> <span class="op">=</span> <span class="ident">output</span>.<span class="ident">finish</span>()<span class="question-mark">?</span>;
 
-    <span class="macro">info!</span>(<span class="string">&quot;imported {}/{} records from {} files in {:.2}s&quot;</span>,
+    <span class="macro">info!</span>(<span class="string">&quot;imported {} fields from {} records from {} files in {:.2}s&quot;</span>,
           <span class="ident">written</span>, <span class="ident">all_recs</span>, <span class="ident">nfiles</span>, <span class="ident">all_start</span>.<span class="ident">elapsed</span>().<span class="ident">as_secs_f32</span>());
+    <span class="ident">log_file_info</span>(<span class="kw-2">&amp;</span><span class="ident">outs</span>)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
   }

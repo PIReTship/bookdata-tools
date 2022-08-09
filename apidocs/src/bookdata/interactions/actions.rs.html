@@ -154,21 +154,26 @@
 <span id="149">149</span>
 <span id="150">150</span>
 <span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
 <span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
 <span class="kw">use</span> <span class="ident">std::path::Path</span>;
 <span class="kw">use</span> <span class="ident">std::mem::take</span>;
 
+<span class="kw">use</span> <span class="ident">arrow2::array::TryExtend</span>;
 <span class="kw">use</span> <span class="ident">log</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="prelude-ty">Result</span>};
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::io</span>::{<span class="ident">ObjectWriter</span>, <span class="ident">file_size</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::util::Timer</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::arrow</span>::<span class="kw-2">*</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::util::logging::item_progress</span>;
 <span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">Interaction</span>, <span class="ident">Dedup</span>, <span class="ident">Key</span>};
 
 <span class="doccomment">/// Record for a single output action.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">ParquetRecordWriter</span>, <span class="ident">Debug</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">ArrowField</span>, <span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TimestampActionRecord</span> {
   <span class="kw">pub</span> <span class="ident">user</span>: <span class="ident">i32</span>,
   <span class="kw">pub</span> <span class="ident">item</span>: <span class="ident">i32</span>,
@@ -179,7 +184,7 @@
 }
 
 <span class="doccomment">/// Record for a single output action without time.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">ParquetRecordWriter</span>, <span class="ident">Debug</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">ArrowField</span>, <span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TimelessActionRecord</span> {
   <span class="kw">pub</span> <span class="ident">user</span>: <span class="ident">i32</span>,
   <span class="kw">pub</span> <span class="ident">item</span>: <span class="ident">i32</span>,
@@ -241,12 +246,12 @@
 }
 
 <span class="doccomment">/// Action deduplicator.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ActionDedup</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> <span class="kw">where</span> <span class="ident">R</span>: <span class="ident">FromActionSet</span>, <span class="kw">for</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">R</span>]: <span class="ident">RecordWriter</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ActionDedup</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> <span class="kw">where</span> <span class="ident">R</span>: <span class="ident">FromActionSet</span> <span class="op">+</span> <span class="ident">ArrowSerialize</span> {
   <span class="ident">_phantom</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>,
   <span class="ident">table</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">Key</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ActionInstance</span><span class="op">&gt;</span><span class="op">&gt;</span>
 }
 
-<span class="kw">impl</span> <span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">ActionDedup</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> <span class="kw">where</span> <span class="ident">R</span>: <span class="ident">FromActionSet</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>, <span class="kw">for</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">R</span>]: <span class="ident">RecordWriter</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> {
+<span class="kw">impl</span> <span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">ActionDedup</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> <span class="kw">where</span> <span class="ident">R</span>: <span class="ident">FromActionSet</span> <span class="op">+</span> <span class="ident">ArrowSerialize</span> <span class="op">+</span> <span class="lifetime">&#39;static</span> {
   <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="ident">ActionDedup</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> {
     <span class="ident">ActionDedup</span> {
       <span class="ident">_phantom</span>: <span class="ident">PhantomData</span>,
@@ -255,7 +260,7 @@
   }
 }
 
-<span class="kw">impl</span> <span class="op">&lt;</span><span class="ident">I</span>: <span class="ident">Interaction</span>, <span class="ident">R</span><span class="op">&gt;</span> <span class="ident">Dedup</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ActionDedup</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> <span class="kw">where</span> <span class="ident">R</span>: <span class="ident">FromActionSet</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>, <span class="kw">for</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">R</span>]: <span class="ident">RecordWriter</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> {
+<span class="kw">impl</span> <span class="op">&lt;</span><span class="ident">I</span>: <span class="ident">Interaction</span>, <span class="ident">R</span><span class="op">&gt;</span> <span class="ident">Dedup</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ActionDedup</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> <span class="kw">where</span> <span class="ident">R</span>: <span class="ident">FromActionSet</span> <span class="op">+</span> <span class="ident">ArrowSerialize</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>, <span class="ident">R::MutableArrayType</span>: <span class="ident">TryExtend</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span><span class="op">&gt;</span> {
   <span class="kw">fn</span> <span class="ident">add_interaction</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">act</span>: <span class="ident">I</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
     <span class="self">self</span>.<span class="ident">record</span>(<span class="ident">act</span>.<span class="ident">get_user</span>(), <span class="ident">act</span>.<span class="ident">get_item</span>(), <span class="ident">act</span>.<span class="ident">get_timestamp</span>(), <span class="ident">act</span>.<span class="ident">get_rating</span>());
     <span class="prelude-val">Ok</span>(())
@@ -266,7 +271,7 @@
   }
 }
 
-<span class="kw">impl</span> <span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> <span class="ident">ActionDedup</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> <span class="kw">where</span> <span class="ident">R</span>: <span class="ident">FromActionSet</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>, <span class="kw">for</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">R</span>]: <span class="ident">RecordWriter</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> {
+<span class="kw">impl</span> <span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> <span class="ident">ActionDedup</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> <span class="kw">where</span> <span class="ident">R</span>: <span class="ident">FromActionSet</span> <span class="op">+</span> <span class="ident">ArrowSerialize</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>, <span class="ident">R::MutableArrayType</span>: <span class="ident">TryExtend</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span><span class="op">&gt;</span> {
   <span class="doccomment">/// Add an action to the deduplicator.</span>
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">record</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">user</span>: <span class="ident">i32</span>, <span class="ident">item</span>: <span class="ident">i32</span>, <span class="ident">timestamp</span>: <span class="ident">i64</span>, <span class="ident">rating</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">f32</span><span class="op">&gt;</span>) {
     <span class="kw">let</span> <span class="ident">k</span> <span class="op">=</span> <span class="ident">Key::new</span>(<span class="ident">user</span>, <span class="ident">item</span>);
@@ -284,21 +289,22 @@
     <span class="macro">info!</span>(<span class="string">&quot;writing {} deduplicated actions to {}&quot;</span>,
           <span class="ident">friendly::scalar</span>(<span class="self">self</span>.<span class="ident">table</span>.<span class="ident">len</span>()),
           <span class="ident">path</span>.<span class="ident">display</span>());
-    <span class="kw">let</span> <span class="ident">twb</span> <span class="op">=</span> <span class="ident">TableWriterBuilder::new</span>()<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">writer</span> <span class="op">=</span> <span class="ident">twb</span>.<span class="ident">open</span>(<span class="ident">path</span>)<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">timer</span> <span class="op">=</span> <span class="ident">Timer::builder</span>().<span class="ident">task_count</span>(<span class="self">self</span>.<span class="ident">table</span>.<span class="ident">len</span>()).<span class="ident">label</span>(<span class="string">&quot;writing actions&quot;</span>).<span class="ident">interval</span>(<span class="number">5.0</span>).<span class="ident">build</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">writer</span> <span class="op">=</span> <span class="ident">TableWriter::open</span>(<span class="ident">path</span>)<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">timer</span> <span class="op">=</span> <span class="ident">Timer::new</span>();
+    <span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">table</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u64</span>;
+    <span class="kw">let</span> <span class="ident">pb</span> <span class="op">=</span> <span class="ident">item_progress</span>(<span class="ident">n</span>, <span class="string">&quot;writing actions&quot;</span>);
 
     <span class="comment">// we&#39;re going to consume the hashtable.</span>
-    <span class="kw">for</span> (<span class="ident">k</span>, <span class="ident">vec</span>) <span class="kw">in</span> <span class="ident">take</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">table</span>) {
+    <span class="kw">let</span> <span class="ident">table</span> <span class="op">=</span> <span class="ident">take</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">table</span>);
+    <span class="kw">for</span> (<span class="ident">k</span>, <span class="ident">vec</span>) <span class="kw">in</span> <span class="ident">pb</span>.<span class="ident">wrap_iter</span>(<span class="ident">table</span>.<span class="ident">into_iter</span>()) {
       <span class="kw">let</span> <span class="ident">record</span> <span class="op">=</span> <span class="ident">R::create</span>(<span class="ident">k</span>.<span class="ident">user</span>, <span class="ident">k</span>.<span class="ident">item</span>, <span class="ident">vec</span>);
       <span class="ident">writer</span>.<span class="ident">write_object</span>(<span class="ident">record</span>)<span class="question-mark">?</span>;
-      <span class="ident">timer</span>.<span class="ident">complete</span>(<span class="number">1</span>);
-      <span class="ident">timer</span>.<span class="ident">maybe_log_status</span>();
     }
 
     <span class="kw">let</span> <span class="ident">rv</span> <span class="op">=</span> <span class="ident">writer</span>.<span class="ident">finish</span>()<span class="question-mark">?</span>;
 
-    <span class="macro">info!</span>(<span class="string">&quot;wrote ratings in {}, file is {}&quot;</span>,
+    <span class="macro">info!</span>(<span class="string">&quot;wrote {} actions in {}, file is {}&quot;</span>,
+          <span class="ident">friendly::scalar</span>(<span class="ident">n</span>),
           <span class="ident">timer</span>.<span class="ident">human_elapsed</span>(),
           <span class="ident">friendly::bytes</span>(<span class="ident">file_size</span>(<span class="ident">path</span>)<span class="question-mark">?</span>));
 

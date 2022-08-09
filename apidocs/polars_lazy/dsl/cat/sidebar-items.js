@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["CategoricalOrdering",""]],"struct":[["CategoricalNameSpace","Specialized expressions for Categorical dtypes."]]});

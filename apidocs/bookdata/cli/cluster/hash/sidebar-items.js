@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["scan_isbns","Load ISBN data"],["write_hashes_dedup","Write out cluster hah records to file, without duplicates."]],"struct":[["ClusterHash",""],["ClusterIsbn",""],["HashCmd","Compute a hash for each cluster."]]});
+initSidebarItems({"fn":[["scan_isbns","Load ISBN data"]],"struct":[["ClusterHash",""],["ClusterHashArray",""],["ClusterHashArrayIterator",""],["HashCmd","Compute a hash for each cluster."],["MutableClusterHashArray","A mutable [`arrow2::StructArray`] for elements of ClusterHash which is logically equivalent to a Vec"]]});

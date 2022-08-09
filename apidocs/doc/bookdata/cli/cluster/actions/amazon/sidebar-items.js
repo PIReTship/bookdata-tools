@@ -1,1 +1,0 @@
-initSidebarItems({"static":[["AZ_INPUT_FILE",""],["ISBN_CLUSTER_FILE",""]],"struct":[["Ratings",""]]});

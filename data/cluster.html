@@ -227,7 +227,7 @@
         <article role="main">
           <section id="book-clusters">
 <span id="cluster"></span><h1>Book Clusters<a class="headerlink" href="#book-clusters" title="Permalink to this heading">#</a></h1>
-<p>For recommendation and analysis, we often want to look at <em>works</em> instead of individual books or
+<p id="index-0">For recommendation and analysis, we often want to look at <em>works</em> instead of individual books or
 editions of those books.  The same material by the same author(s) may be reprinted in many different
 editions, with different ISBNs, and sometimes separate ratings from the same user.</p>
 <p>There are a variety of ways to deal with this.  GoodReads and OpenLibrary both have the concept of
@@ -274,6 +274,141 @@ prospect of using this to exclude them from informing clustering decisions.</p><
 <p>If you only need e.g. the GoodReads data, we recommend that you <em>not</em> cluster it for the purpose of
 ratings, and only use clusters to link to out-of-GR book or author data.  We are open to adding
 additional tables that facilitate linking GoodReads works directly to other tables.</p>
+</section>
+<section id="cluster-link-tables">
+<h2>Cluster Link Tables<a class="headerlink" href="#cluster-link-tables" title="Permalink to this heading">#</a></h2>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-book-links-isbn-clusters.parquet">
+<span class="sig-name descname"><span class="pre">book-links/isbn-clusters.parquet</span></span><a class="headerlink" href="#file-book-links-isbn-clusters.parquet" title="Permalink to this definition">#</a></dt>
+<dd><p>This file maps ISBN IDs to book clusters, enabling the various other book identifiers from other
+data sources to be mapped to clusters, since everything resolves to ISBN IDs.</p>
+<div class="table-wrapper"><table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><span>Field</span></p></th>
+<th class="head"><p><span>Type</span></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">isbn</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Utf8?</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">isbn_id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cluster</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+</tbody>
+</table></div>
+</dd></dl>
+<section id="graph-tables">
+<h3>Graph Tables<a class="headerlink" href="#graph-tables" title="Permalink to this heading">#</a></h3>
+<p>We also export the book identifier graph used for clustering to support further analysis.</p>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-book-links-cluster-graph-nodes.parquet">
+<span class="sig-name descname"><span class="pre">book-links/cluster-graph-nodes.parquet</span></span><a class="headerlink" href="#file-book-links-cluster-graph-nodes.parquet" title="Permalink to this definition">#</a></dt>
+<dd><p>The table of nodes (with attributes) from the graph used for book clustering.</p>
+</dd></dl>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-book-links-cluster-graph-edges.parquet">
+<span class="sig-name descname"><span class="pre">book-links/cluster-graph-edges.parquet</span></span><a class="headerlink" href="#file-book-links-cluster-graph-edges.parquet" title="Permalink to this definition">#</a></dt>
+<dd><p>The table of edges rom the book clustering graph.</p>
+</dd></dl>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-book-links-book-graph.mp.zst">
+<span class="sig-name descname"><span class="pre">book-links/book-graph.mp.zst</span></span><a class="headerlink" href="#file-book-links-book-graph.mp.zst" title="Permalink to this definition">#</a></dt>
+<dd><p>This is a serialization of the actual graph itself, using <code class="docutils literal notranslate"><span class="pre">rmp-serde</span></code> to serialize the
+Petgraph structure with MsgPack and compressing ith with ZStandard.  This is unlikely to
+be usable outside of the Rust codebase, whereas the node and edge tables could be loaded
+into something like <code class="docutils literal notranslate"><span class="pre">igraph</span></code> for further analysis.</p>
+</dd></dl>
+</section>
+</section>
+<section id="cluster-information-tables">
+<h2>Cluster Information Tables<a class="headerlink" href="#cluster-information-tables" title="Permalink to this heading">#</a></h2>
+<p>With the clusters, we then extract additional information from other tables.</p>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-book-links-cluster-first-authors.parquet">
+<span class="sig-name descname"><span class="pre">book-links/cluster-first-authors.parquet</span></span><a class="headerlink" href="#file-book-links-cluster-first-authors.parquet" title="Permalink to this definition">#</a></dt>
+<dd><p>All available first-author records for each cluster, to support linking with VIAF.</p>
+<div class="table-wrapper"><table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><span>Field</span></p></th>
+<th class="head"><p><span>Type</span></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cluster</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">author_name</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Utf8</span></code></p></td>
+</tr>
+</tbody>
+</table></div>
+</dd></dl>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-book-links-cluster-hashes.parquet">
+<span class="sig-name descname"><span class="pre">book-links/cluster-hashes.parquet</span></span><a class="headerlink" href="#file-book-links-cluster-hashes.parquet" title="Permalink to this definition">#</a></dt>
+<dd><p>The MD5 checksums of the sorted sequence of ISBNs for each cluster, along with a
+<code class="docutils literal notranslate"><span class="pre">dcode</span></code> that is the least-significant bit of the checksum.</p>
+<div class="table-wrapper"><table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><span>Field</span></p></th>
+<th class="head"><p><span>Type</span></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cluster</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">isbn_hash</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Utf8</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">isbn_dcode</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int8</span></code></p></td>
+</tr>
+</tbody>
+</table></div>
+</dd></dl>
+<dl class="std file">
+<dt class="sig sig-object std" id="file-book-links-cluster-stats.parquet">
+<span class="sig-name descname"><span class="pre">book-links/cluster-stats.parquet</span></span><a class="headerlink" href="#file-book-links-cluster-stats.parquet" title="Permalink to this definition">#</a></dt>
+<dd><p>Statistics for each cluster, useful for auditing and debugging.</p>
+<div class="table-wrapper"><table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><span>Field</span></p></th>
+<th class="head"><p><span>Type</span></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cluster</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">n_nodes</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UInt32</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">n_isbns</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UInt32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">n_loc_recs</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UInt32</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">n_ol_editions</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UInt32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">n_ol_works</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UInt32</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">n_gr_books</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UInt32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">n_gr_works</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UInt32</span></code></p></td>
+</tr>
+</tbody>
+</table></div>
+</dd></dl>
 </section>
 </section>
 
@@ -337,6 +472,11 @@ additional tables that facilitate linking GoodReads works directly to other tabl
 <li><a class="reference internal" href="#">Book Clusters</a><ul>
 <li><a class="reference internal" href="#clustering-algorithm">Clustering Algorithm</a></li>
 <li><a class="reference internal" href="#known-problems">Known Problems</a></li>
+<li><a class="reference internal" href="#cluster-link-tables">Cluster Link Tables</a><ul>
+<li><a class="reference internal" href="#graph-tables">Graph Tables</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#cluster-information-tables">Cluster Information Tables</a></li>
 </ul>
 </li>
 </ul>

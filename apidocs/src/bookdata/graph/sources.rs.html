@@ -156,42 +156,21 @@
 <span id="151">151</span>
 <span id="152">152</span>
 <span id="153">153</span>
-<span id="154">154</span>
-<span id="155">155</span>
-<span id="156">156</span>
-<span id="157">157</span>
-<span id="158">158</span>
-<span id="159">159</span>
-<span id="160">160</span>
-<span id="161">161</span>
-<span id="162">162</span>
-<span id="163">163</span>
-<span id="164">164</span>
-<span id="165">165</span>
-<span id="166">166</span>
-<span id="167">167</span>
-<span id="168">168</span>
-<span id="169">169</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::fmt::Debug</span>;
-<span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
 
 <span class="kw">use</span> <span class="ident">anyhow::Result</span>;
-<span class="kw">use</span> <span class="ident">async_trait::async_trait</span>;
 
-<span class="kw">use</span> <span class="ident">datafusion::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">datafusion::logical_plan::Expr</span>;
+<span class="kw">use</span> <span class="ident">polars::prelude</span>::<span class="kw-2">*</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ids::codes</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::util::default</span>;
 
-<span class="attribute">#[<span class="ident">async_trait</span>]</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">EdgeRead</span>: <span class="ident">Debug</span> {
-  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_edges</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">SessionContext</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+  <span class="kw">fn</span> <span class="ident">read_edges</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">LazyFrame</span><span class="op">&gt;</span>;
 }
 
-<span class="attribute">#[<span class="ident">async_trait</span>]</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">NodeRead</span>: <span class="ident">Debug</span> {
-  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_node_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">SessionContext</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+  <span class="kw">fn</span> <span class="ident">read_node_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">LazyFrame</span><span class="op">&gt;</span>;
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
@@ -212,132 +191,121 @@
   <span class="ident">col</span>(<span class="ident">name</span>) <span class="op">+</span> <span class="ident">lit</span>(<span class="ident">ns</span>.<span class="ident">base</span>())
 }
 
-<span class="attribute">#[<span class="ident">async_trait</span>]</span>
 <span class="kw">impl</span> <span class="ident">NodeRead</span> <span class="kw">for</span> <span class="ident">ISBN</span> {
-  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_node_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">SessionContext</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">read_parquet</span>(<span class="string">&quot;book-links/all-isbns.parquet&quot;</span>, <span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>(<span class="macro">vec!</span>[
+  <span class="kw">fn</span> <span class="ident">read_node_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">LazyFrame</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;book-links/all-isbns.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">default</span>())<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>([
       <span class="ident">id_col</span>(<span class="string">&quot;isbn_id&quot;</span>, <span class="ident">NS_ISBN</span>).<span class="ident">alias</span>(<span class="string">&quot;code&quot;</span>),
       <span class="ident">col</span>(<span class="string">&quot;isbn&quot;</span>).<span class="ident">alias</span>(<span class="string">&quot;label&quot;</span>)
-    ])<span class="question-mark">?</span>;
+    ]);
     <span class="prelude-val">Ok</span>(<span class="ident">df</span>)
   }
 }
 
-<span class="attribute">#[<span class="ident">async_trait</span>]</span>
 <span class="kw">impl</span> <span class="ident">NodeRead</span> <span class="kw">for</span> <span class="ident">LOC</span> {
-  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_node_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">SessionContext</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">read_parquet</span>(<span class="string">&quot;loc-mds/book-ids.parquet&quot;</span>, <span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>(<span class="macro">vec!</span>[
+  <span class="kw">fn</span> <span class="ident">read_node_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">LazyFrame</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;loc-mds/book-ids.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">default</span>())<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>([
       <span class="ident">id_col</span>(<span class="string">&quot;rec_id&quot;</span>, <span class="ident">NS_LOC_REC</span>).<span class="ident">alias</span>(<span class="string">&quot;code&quot;</span>)
-    ])<span class="question-mark">?</span>;
+    ]);
     <span class="prelude-val">Ok</span>(<span class="ident">df</span>)
   }
 }
 
-<span class="attribute">#[<span class="ident">async_trait</span>]</span>
 <span class="kw">impl</span> <span class="ident">EdgeRead</span> <span class="kw">for</span> <span class="ident">LOC</span> {
-  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_edges</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">SessionContext</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">read_parquet</span>(<span class="string">&quot;loc-mds/book-isbn-ids.parquet&quot;</span>, <span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>(<span class="macro">vec!</span>[
-      <span class="ident">id_col</span>(<span class="string">&quot;isbn_id&quot;</span>, <span class="ident">NS_ISBN</span>),
-      <span class="ident">id_col</span>(<span class="string">&quot;rec_id&quot;</span>, <span class="ident">NS_LOC_REC</span>)
-    ])<span class="question-mark">?</span>;
+  <span class="kw">fn</span> <span class="ident">read_edges</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">LazyFrame</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;loc-mds/book-isbn-ids.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">default</span>())<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>([
+      <span class="ident">id_col</span>(<span class="string">&quot;isbn_id&quot;</span>, <span class="ident">NS_ISBN</span>).<span class="ident">alias</span>(<span class="string">&quot;src&quot;</span>),
+      <span class="ident">id_col</span>(<span class="string">&quot;rec_id&quot;</span>, <span class="ident">NS_LOC_REC</span>).<span class="ident">alias</span>(<span class="string">&quot;dst&quot;</span>)
+    ]);
     <span class="prelude-val">Ok</span>(<span class="ident">df</span>)
   }
 }
 
-<span class="attribute">#[<span class="ident">async_trait</span>]</span>
 <span class="kw">impl</span> <span class="ident">NodeRead</span> <span class="kw">for</span> <span class="ident">OLEditions</span> {
-  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_node_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">SessionContext</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">read_parquet</span>(<span class="string">&quot;openlibrary/editions.parquet&quot;</span>, <span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>(<span class="macro">vec!</span>[
+  <span class="kw">fn</span> <span class="ident">read_node_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">LazyFrame</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;openlibrary/editions.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">default</span>())<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>([
       <span class="ident">id_col</span>(<span class="string">&quot;id&quot;</span>, <span class="ident">NS_EDITION</span>).<span class="ident">alias</span>(<span class="string">&quot;code&quot;</span>)
-    ])<span class="question-mark">?</span>;
+    ]);
     <span class="prelude-val">Ok</span>(<span class="ident">df</span>)
   }
 }
 
-<span class="attribute">#[<span class="ident">async_trait</span>]</span>
 <span class="kw">impl</span> <span class="ident">EdgeRead</span> <span class="kw">for</span> <span class="ident">OLEditions</span> {
-  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_edges</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">SessionContext</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">read_parquet</span>(<span class="string">&quot;openlibrary/edition-isbn-ids.parquet&quot;</span>, <span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>(<span class="macro">vec!</span>[
-      <span class="ident">id_col</span>(<span class="string">&quot;isbn_id&quot;</span>, <span class="ident">NS_ISBN</span>),
-      <span class="ident">id_col</span>(<span class="string">&quot;edition&quot;</span>, <span class="ident">NS_EDITION</span>)
-    ])<span class="question-mark">?</span>;
+  <span class="kw">fn</span> <span class="ident">read_edges</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">LazyFrame</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;openlibrary/edition-isbn-ids.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">default</span>())<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>([
+      <span class="ident">id_col</span>(<span class="string">&quot;isbn_id&quot;</span>, <span class="ident">NS_ISBN</span>).<span class="ident">alias</span>(<span class="string">&quot;src&quot;</span>),
+      <span class="ident">id_col</span>(<span class="string">&quot;edition&quot;</span>, <span class="ident">NS_EDITION</span>).<span class="ident">alias</span>(<span class="string">&quot;dst&quot;</span>)
+    ]);
     <span class="prelude-val">Ok</span>(<span class="ident">df</span>)
   }
 }
 
-<span class="attribute">#[<span class="ident">async_trait</span>]</span>
 <span class="kw">impl</span> <span class="ident">NodeRead</span> <span class="kw">for</span> <span class="ident">OLWorks</span> {
-  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_node_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">SessionContext</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">read_parquet</span>(<span class="string">&quot;openlibrary/all-works.parquet&quot;</span>, <span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>(<span class="macro">vec!</span>[
+  <span class="kw">fn</span> <span class="ident">read_node_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">LazyFrame</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;openlibrary/all-works.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">default</span>())<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>([
       <span class="ident">id_col</span>(<span class="string">&quot;id&quot;</span>, <span class="ident">NS_WORK</span>).<span class="ident">alias</span>(<span class="string">&quot;code&quot;</span>),
       <span class="ident">col</span>(<span class="string">&quot;key&quot;</span>).<span class="ident">alias</span>(<span class="string">&quot;label&quot;</span>)
-    ])<span class="question-mark">?</span>;
+    ]);
     <span class="prelude-val">Ok</span>(<span class="ident">df</span>)
   }
 }
 
-<span class="attribute">#[<span class="ident">async_trait</span>]</span>
 <span class="kw">impl</span> <span class="ident">EdgeRead</span> <span class="kw">for</span> <span class="ident">OLWorks</span> {
-  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_edges</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">SessionContext</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">read_parquet</span>(<span class="string">&quot;openlibrary/edition-works.parquet&quot;</span>, <span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>(<span class="macro">vec!</span>[
-      <span class="ident">id_col</span>(<span class="string">&quot;edition&quot;</span>, <span class="ident">NS_EDITION</span>),
-      <span class="ident">id_col</span>(<span class="string">&quot;work&quot;</span>, <span class="ident">NS_WORK</span>)
-    ])<span class="question-mark">?</span>;
+  <span class="kw">fn</span> <span class="ident">read_edges</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">LazyFrame</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;openlibrary/edition-works.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">default</span>())<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>([
+      <span class="ident">id_col</span>(<span class="string">&quot;edition&quot;</span>, <span class="ident">NS_EDITION</span>).<span class="ident">alias</span>(<span class="string">&quot;src&quot;</span>),
+      <span class="ident">id_col</span>(<span class="string">&quot;work&quot;</span>, <span class="ident">NS_WORK</span>).<span class="ident">alias</span>(<span class="string">&quot;dst&quot;</span>)
+    ]);
     <span class="prelude-val">Ok</span>(<span class="ident">df</span>)
   }
 }
 
-<span class="attribute">#[<span class="ident">async_trait</span>]</span>
 <span class="kw">impl</span> <span class="ident">NodeRead</span> <span class="kw">for</span> <span class="ident">GRBooks</span> {
-  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_node_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">SessionContext</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">read_parquet</span>(<span class="string">&quot;goodreads/gr-book-ids.parquet&quot;</span>, <span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>(<span class="macro">vec!</span>[
+  <span class="kw">fn</span> <span class="ident">read_node_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">LazyFrame</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;goodreads/gr-book-ids.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">default</span>())<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>([
       <span class="ident">id_col</span>(<span class="string">&quot;book_id&quot;</span>, <span class="ident">NS_GR_BOOK</span>).<span class="ident">alias</span>(<span class="string">&quot;code&quot;</span>)
-    ])<span class="question-mark">?</span>;
+    ]);
     <span class="prelude-val">Ok</span>(<span class="ident">df</span>)
   }
 }
 
-<span class="attribute">#[<span class="ident">async_trait</span>]</span>
 <span class="kw">impl</span> <span class="ident">EdgeRead</span> <span class="kw">for</span> <span class="ident">GRBooks</span> {
-  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_edges</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">SessionContext</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">read_parquet</span>(<span class="string">&quot;goodreads/book-isbn-ids.parquet&quot;</span>, <span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>(<span class="macro">vec!</span>[
-      <span class="ident">id_col</span>(<span class="string">&quot;isbn_id&quot;</span>, <span class="ident">NS_ISBN</span>),
-      <span class="ident">id_col</span>(<span class="string">&quot;book_id&quot;</span>, <span class="ident">NS_GR_BOOK</span>)
-    ])<span class="question-mark">?</span>;
+  <span class="kw">fn</span> <span class="ident">read_edges</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">LazyFrame</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;goodreads/book-isbn-ids.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">default</span>())<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>([
+      <span class="ident">id_col</span>(<span class="string">&quot;isbn_id&quot;</span>, <span class="ident">NS_ISBN</span>).<span class="ident">alias</span>(<span class="string">&quot;src&quot;</span>),
+      <span class="ident">id_col</span>(<span class="string">&quot;book_id&quot;</span>, <span class="ident">NS_GR_BOOK</span>).<span class="ident">alias</span>(<span class="string">&quot;dst&quot;</span>)
+    ]);
     <span class="prelude-val">Ok</span>(<span class="ident">df</span>)
   }
 }
 
-<span class="attribute">#[<span class="ident">async_trait</span>]</span>
 <span class="kw">impl</span> <span class="ident">NodeRead</span> <span class="kw">for</span> <span class="ident">GRWorks</span> {
-  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_node_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">SessionContext</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">read_parquet</span>(<span class="string">&quot;goodreads/gr-book-ids.parquet&quot;</span>, <span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">filter</span>(<span class="ident">col</span>(<span class="string">&quot;work_id&quot;</span>).<span class="ident">is_not_null</span>())<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>(<span class="macro">vec!</span>[
+  <span class="kw">fn</span> <span class="ident">read_node_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">LazyFrame</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;goodreads/gr-book-ids.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">default</span>())<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">filter</span>(<span class="ident">col</span>(<span class="string">&quot;work_id&quot;</span>).<span class="ident">is_not_null</span>());
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>([
       <span class="ident">id_col</span>(<span class="string">&quot;work_id&quot;</span>, <span class="ident">NS_GR_WORK</span>).<span class="ident">alias</span>(<span class="string">&quot;code&quot;</span>)
-    ])<span class="question-mark">?</span>;
+    ]);
     <span class="prelude-val">Ok</span>(<span class="ident">df</span>)
   }
 }
 
-<span class="attribute">#[<span class="ident">async_trait</span>]</span>
 <span class="kw">impl</span> <span class="ident">EdgeRead</span> <span class="kw">for</span> <span class="ident">GRWorks</span> {
-  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_edges</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">SessionContext</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">read_parquet</span>(<span class="string">&quot;goodreads/gr-book-ids.parquet&quot;</span>, <span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">filter</span>(<span class="ident">col</span>(<span class="string">&quot;work_id&quot;</span>).<span class="ident">is_not_null</span>())<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>(<span class="macro">vec!</span>[
-      <span class="ident">id_col</span>(<span class="string">&quot;book_id&quot;</span>, <span class="ident">NS_GR_BOOK</span>),
-      <span class="ident">id_col</span>(<span class="string">&quot;work_id&quot;</span>, <span class="ident">NS_GR_WORK</span>)
-    ])<span class="question-mark">?</span>;
+  <span class="kw">fn</span> <span class="ident">read_edges</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">LazyFrame</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;goodreads/gr-book-ids.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">default</span>())<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">filter</span>(<span class="ident">col</span>(<span class="string">&quot;work_id&quot;</span>).<span class="ident">is_not_null</span>());
+    <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">select</span>([
+      <span class="ident">id_col</span>(<span class="string">&quot;book_id&quot;</span>, <span class="ident">NS_GR_BOOK</span>).<span class="ident">alias</span>(<span class="string">&quot;src&quot;</span>),
+      <span class="ident">id_col</span>(<span class="string">&quot;work_id&quot;</span>, <span class="ident">NS_GR_WORK</span>).<span class="ident">alias</span>(<span class="string">&quot;dst&quot;</span>)
+    ]);
     <span class="prelude-val">Ok</span>(<span class="ident">df</span>)
   }
 }

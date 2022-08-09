@@ -1,0 +1,1 @@
+initSidebarItems({"trait":[["ArrowSerialize","Trait that is implemented by all types that are serializable to Arrow."],["TryIntoArrow","Top-level API to serialize to Arrow"]]});

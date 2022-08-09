@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["Target",""]],"fn":[["color_level",""],["format_console_log",""],["set_progress","Temporarily redirect output to a progress bar."],["write_console_log",""]],"static":[["LOG_ENV",""]],"struct":[["LogEnvironment",""],["LogOptions",""],["LogStateGuard","Guard struct for redirecting log output e.g. to a progress bar."]]});
+initSidebarItems({"constant":[["DATA_PROGRESS_TMPL",""],["ITEM_PROGRESS_TMPL",""]],"fn":[["data_progress","Create a progress bar for tracking data."],["item_progress","Create a progress bar for tracking items."]]});

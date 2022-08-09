@@ -87,12 +87,10 @@
 <span id="82">82</span>
 <span id="83">83</span>
 <span id="84">84</span>
-<span id="85">85</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::mem::drop</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::goodreads</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::io::object::ThreadWriter</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::util::logging::set_progress</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::io::object::ThreadObjectWriter</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::util::logging::data_progress</span>;
 <span class="kw">use</span> <span class="ident">serde::de::DeserializeOwned</span>;
 
 <span class="doccomment">/// GoodReads processing commands.</span>
@@ -137,13 +135,13 @@
   <span class="kw">let</span> <span class="ident">outs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">proc</span>.<span class="ident">output_files</span>().<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">p</span>.<span class="ident">to_path_buf</span>()).<span class="ident">collect</span>();
 
   <span class="macro">info!</span>(<span class="string">&quot;reading data from {}&quot;</span>, <span class="ident">path</span>.<span class="ident">display</span>());
-  <span class="kw">let</span> (<span class="ident">read</span>, <span class="ident">pb</span>) <span class="op">=</span> <span class="ident">LineProcessor::open_gzip</span>(<span class="ident">path</span>)<span class="question-mark">?</span>;
-  <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">writer</span> <span class="op">=</span> <span class="ident">ThreadWriter::new</span>(<span class="ident">proc</span>);
-  <span class="kw">let</span> <span class="ident">_lg</span> <span class="op">=</span> <span class="ident">set_progress</span>(<span class="ident">pb</span>);
+  <span class="kw">let</span> <span class="ident">pb</span> <span class="op">=</span> <span class="ident">data_progress</span>(<span class="number">0</span>);
+  <span class="kw">let</span> <span class="ident">read</span> <span class="op">=</span> <span class="ident">LineProcessor::open_gzip</span>(<span class="ident">path</span>, <span class="ident">pb</span>.<span class="ident">clone</span>())<span class="question-mark">?</span>;
+  <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">writer</span> <span class="op">=</span> <span class="ident">ThreadObjectWriter::new</span>(<span class="ident">proc</span>);
   <span class="ident">read</span>.<span class="ident">process_json</span>(<span class="kw-2">&amp;mut</span> <span class="ident">writer</span>)<span class="question-mark">?</span>;
+  <span class="ident">pb</span>.<span class="ident">finish_and_clear</span>();
 
   <span class="ident">writer</span>.<span class="ident">finish</span>()<span class="question-mark">?</span>;
-  <span class="ident">drop</span>(<span class="ident">_lg</span>);
 
   <span class="kw">for</span> <span class="ident">out</span> <span class="kw">in</span> <span class="ident">outs</span> {
     <span class="kw">let</span> <span class="ident">outf</span> <span class="op">=</span> <span class="ident">out</span>.<span class="ident">as_path</span>();

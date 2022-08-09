@@ -1,1 +1,0 @@
-initSidebarItems({"constant":[["ID_FILE",""],["INFO_FILE",""]],"struct":[["BookIdRecord",""],["BookRecord",""],["BookWriter","Output handler for GoodReads books."],["RawBook",""]]});

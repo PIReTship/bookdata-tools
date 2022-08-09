@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["ByteBuf","A wrapper around `Vec<u8>` to serialize more efficiently."]]});

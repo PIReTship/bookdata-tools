@@ -1,1 +1,0 @@
-initSidebarItems({"enum":[["Source",""]],"fn":[["scan_loc","Scan the Library of Congress data for first authors."],["scan_openlib","Scan the OpenLibrary data for first authors"],["write_authors_dedup","Write out author records to file, without duplicates."]],"struct":[["ClusterAuthor",""],["ClusterAuthors","Extract cluster author data from extracted book data."]]});

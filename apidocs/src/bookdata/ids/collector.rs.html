@@ -196,24 +196,22 @@
 <span id="191">191</span>
 <span id="192">192</span>
 <span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Support for collecting keys and counting the records that contributed them.</span>
-<span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
 <span class="kw">use</span> <span class="ident">std::fs::File</span>;
 <span class="kw">use</span> <span class="ident">std::path::Path</span>;
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
 <span class="kw">use</span> <span class="ident">std::mem::drop</span>;
 
-<span class="kw">use</span> <span class="ident">arrow</span>::{
-  <span class="ident">array</span>::<span class="kw-2">*</span>,
-  <span class="ident">record_batch::RecordBatch</span>,
-  <span class="ident">datatypes</span>::<span class="op">*</span>
-};
-<span class="kw">use</span> <span class="ident">parquet</span>::{
-  <span class="ident">arrow::ArrowWriter</span>,
-  <span class="ident">basic::Compression</span>,
-  <span class="ident">file::properties::WriterProperties</span>,
-};
+<span class="kw">use</span> <span class="ident">log</span>::<span class="kw-2">*</span>;
+<span class="kw">use</span> <span class="ident">polars::prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">use</span> <span class="ident">arrow2::datatypes</span>::{<span class="ident">DataType</span>, <span class="ident">Field</span>, <span class="ident">Schema</span>};
+<span class="kw">use</span> <span class="ident">parquet2::write::Version</span>;
+<span class="kw">use</span> <span class="ident">arrow2::io::parquet::write</span>::{<span class="ident">FileWriter</span>, <span class="ident">WriteOptions</span>};
+
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::io::ObjectWriter</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::index::IdIndex</span>;
 
 <span class="kw">use</span> <span class="ident">anyhow::Result</span>;
@@ -275,23 +273,34 @@
 
   <span class="doccomment">/// Save to a Parquet file.</span>
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">save</span><span class="op">&lt;</span><span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key_col</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">id_col</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">path</span>: <span class="ident">P</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">batch</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">to_record_batch</span>(<span class="ident">key_col</span>, <span class="ident">id_col</span>)<span class="question-mark">?</span>;
+    <span class="macro">info!</span>(<span class="string">&quot;saving accumulated keys to {:?}&quot;</span>, <span class="ident">path</span>.<span class="ident">as_ref</span>());
+
+    <span class="macro">debug!</span>(<span class="string">&quot;creating data frame&quot;</span>);
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">to_data_frame</span>(<span class="ident">id_col</span>, <span class="ident">key_col</span>)<span class="question-mark">?</span>;
+    <span class="macro">debug!</span>(<span class="string">&quot;rechunking&quot;</span>);
+    <span class="ident">df</span>.<span class="ident">rechunk</span>();
+
+    <span class="macro">debug!</span>(<span class="string">&quot;opening file&quot;</span>);
     <span class="kw">let</span> <span class="ident">file</span> <span class="op">=</span> <span class="ident">File::create</span>(<span class="ident">path</span>)<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">props</span> <span class="op">=</span> <span class="ident">WriterProperties::builder</span>();
-    <span class="kw">let</span> <span class="ident">props</span> <span class="op">=</span> <span class="ident">props</span>.<span class="ident">set_dictionary_enabled</span>(<span class="bool-val">false</span>);
-    <span class="kw">let</span> <span class="ident">props</span> <span class="op">=</span> <span class="ident">props</span>.<span class="ident">set_compression</span>(<span class="ident">Compression::ZSTD</span>);
-    <span class="kw">let</span> <span class="ident">props</span> <span class="op">=</span> <span class="ident">props</span>.<span class="ident">build</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">w</span> <span class="op">=</span> <span class="ident">ArrowWriter::try_new</span>(<span class="ident">file</span>, <span class="ident">batch</span>.<span class="ident">schema</span>(), <span class="prelude-val">Some</span>(<span class="ident">props</span>))<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">options</span> <span class="op">=</span> <span class="ident">WriteOptions</span> {
+      <span class="ident">write_statistics</span>: <span class="bool-val">true</span>,
+      <span class="ident">version</span>: <span class="ident">Version::V2</span>,
+      <span class="ident">compression</span>: <span class="ident">ParquetCompression::Zstd</span>(<span class="prelude-val">None</span>)
+    };
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">writer</span> <span class="op">=</span> <span class="ident">FileWriter::try_new</span>(<span class="ident">file</span>, <span class="self">self</span>.<span class="ident">schema</span>(<span class="ident">id_col</span>, <span class="ident">key_col</span>), <span class="ident">options</span>)<span class="question-mark">?</span>;
 
-    <span class="ident">w</span>.<span class="ident">write</span>(<span class="kw-2">&amp;</span><span class="ident">batch</span>)<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">md</span> <span class="op">=</span> <span class="ident">w</span>.<span class="ident">close</span>()<span class="question-mark">?</span>;
+    <span class="kw">for</span> <span class="ident">chunk</span> <span class="kw">in</span> <span class="ident">df</span>.<span class="ident">iter_chunks</span>() {
+      <span class="ident">writer</span>.<span class="ident">write_object</span>(<span class="ident">chunk</span>)<span class="question-mark">?</span>;
+    }
 
-    <span class="prelude-val">Ok</span>(<span class="ident">md</span>.<span class="ident">num_rows</span> <span class="kw">as</span> <span class="ident">usize</span>)
+    <span class="comment">// FIXME use write_object</span>
+    <span class="ident">writer</span>.<span class="ident">end</span>(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(<span class="ident">df</span>.<span class="ident">height</span>())
   }
 
-  <span class="doccomment">/// Create an Arrow [RecordBatch] for this accumulator.</span>
-  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_record_batch</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key_col</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">id_col</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">RecordBatch</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">len</span>();
+  <span class="doccomment">/// Get an Arrow [Schema] for this key collector.</span>
+  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">schema</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id_col</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">key_col</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">Schema</span> {
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fields</span> <span class="op">=</span> <span class="macro">vec!</span>[
       <span class="ident">Field::new</span>(<span class="ident">id_col</span>, <span class="ident">DataType::Int32</span>, <span class="bool-val">false</span>),
       <span class="ident">Field::new</span>(<span class="ident">key_col</span>, <span class="ident">DataType::Utf8</span>, <span class="bool-val">false</span>)
@@ -299,31 +308,26 @@
     <span class="kw">for</span> <span class="ident">l</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">count_labels</span> {
       <span class="ident">fields</span>.<span class="ident">push</span>(<span class="ident">Field::new</span>(<span class="ident">l</span>, <span class="ident">DataType::Int32</span>, <span class="bool-val">false</span>))
     }
-    <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="ident">Schema::new</span>(<span class="ident">fields</span>);
-    <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="ident">Arc::new</span>(<span class="ident">schema</span>);
-
-    <span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">index</span>.<span class="ident">key_vec</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">id_arr</span> <span class="op">=</span> <span class="ident">Int32Builder::new</span>(<span class="self">self</span>.<span class="ident">index</span>.<span class="ident">len</span>());
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">key_arr</span> <span class="op">=</span> <span class="ident">StringBuilder::new</span>(<span class="self">self</span>.<span class="ident">index</span>.<span class="ident">len</span>());
-    <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">keys</span>.<span class="ident">len</span>() {
-      <span class="ident">id_arr</span>.<span class="ident">append_value</span>((<span class="ident">i</span> <span class="op">+</span> <span class="number">1</span>) <span class="kw">as</span> <span class="ident">i32</span>)<span class="question-mark">?</span>;
-      <span class="ident">key_arr</span>.<span class="ident">append_value</span>(<span class="ident">keys</span>[<span class="ident">i</span>])<span class="question-mark">?</span>;
+    <span class="ident">Schema</span> {
+      <span class="ident">fields</span>,
+      <span class="ident">metadata</span>: <span class="ident">Default::default</span>()
     }
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cols</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ArrayRef</span><span class="op">&gt;</span> <span class="op">=</span> <span class="macro">vec!</span>[
-      <span class="ident">Arc::new</span>(<span class="ident">id_arr</span>.<span class="ident">finish</span>()),
-      <span class="ident">Arc::new</span>(<span class="ident">key_arr</span>.<span class="ident">finish</span>())
-    ];
+  }
 
-    <span class="kw">for</span> <span class="ident">cts</span> <span class="kw">in</span> <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">counts</span> {
-      <span class="ident">cts</span>.<span class="ident">resize</span>(<span class="ident">len</span>, <span class="number">0</span>);
-      <span class="kw">let</span> <span class="ident">c_arr</span> <span class="op">=</span> <span class="ident">Int32Array::from_iter_values</span>(<span class="ident">cts</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">i</span><span class="op">|</span> <span class="kw-2">*</span><span class="ident">i</span>));
-      <span class="ident">cols</span>.<span class="ident">push</span>(<span class="ident">Arc::new</span>(<span class="ident">c_arr</span>));
+  <span class="doccomment">/// Create an Polars [DataFrame] for this accumulator&#39;s data.</span>
+  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_data_frame</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">id_col</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">key_col</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">len</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">index</span>.<span class="ident">data_frame</span>(<span class="ident">id_col</span>, <span class="ident">key_col</span>)<span class="question-mark">?</span>;
+
+    <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="self">self</span>.<span class="ident">counts</span>.<span class="ident">len</span>() {
+      <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">count_labels</span>[<span class="ident">i</span>].<span class="ident">as_str</span>();
+      <span class="kw">let</span> <span class="ident">counts</span> <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">counts</span>[<span class="ident">i</span>];
+      <span class="ident">counts</span>.<span class="ident">resize</span>(<span class="ident">len</span>, <span class="number">0</span>);
+      <span class="kw">let</span> <span class="ident">col</span> <span class="op">=</span> <span class="ident">Int32Chunked::new</span>(<span class="ident">name</span>, <span class="ident">counts</span>);
+      <span class="ident">df</span>.<span class="ident">with_column</span>(<span class="ident">col</span>)<span class="question-mark">?</span>;
     }
 
-
-    <span class="kw">let</span> <span class="ident">batch</span> <span class="op">=</span> <span class="ident">RecordBatch::try_new</span>(<span class="ident">schema</span>, <span class="ident">cols</span>)<span class="question-mark">?</span>;
-
-    <span class="prelude-val">Ok</span>(<span class="ident">batch</span>)
+    <span class="prelude-val">Ok</span>(<span class="ident">df</span>)
   }
 }
 

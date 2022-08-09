@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["LineCol","Line and column within a string"]]});

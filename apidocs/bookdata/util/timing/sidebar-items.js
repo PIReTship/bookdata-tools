@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["LastWrite",""]],"fn":[["bytes_format","Helper to format counts in binary."],["decimal_format","Helper to format counts in decimal."]],"struct":[["ProgressIter","Struct wrapping an iterator to report progress."],["TimedRead","Report progress on reading data."],["Timer","A timer for monitoring task completion."],["TimerConfig","Build and configure a [Timer] or a related structure."]]});
+initSidebarItems({"struct":[["Timer","A timer for monitoring task completion."]]});

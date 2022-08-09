@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Color","The 8 standard colors."]],"struct":[["ColoredLevelConfig","Configuration specifying colors a log level can be colored as."],["WithFgColor","Opaque structure which represents some text data and a color to display it with."]]});

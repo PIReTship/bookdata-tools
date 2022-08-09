@@ -16,6 +16,9 @@ VIAF also does not keep old copies of the dump file.  You may need to edit
 import this data.
 :::
 
+:::{index} pair: directory; viaf
+:::
+
 Imported data lives under the `viaf` directory.
 
 ## Import Steps
@@ -25,15 +28,11 @@ The import is controlled by the following DVC steps:
 `scan-authors`
 :   Import the VIAF MARC data into {file}`viaf/viaf.parquet`.
 
-`author-names`
-:   Extract author names from the VIAF MARC data, producing `author-names.csv.gz`.  This is an
-    intermediate stage, fed into `index-names` to get usable name records.
-
 `author-genders`
 :   Extract author genders from the VIAF MARC data, producing {file}`author-genders.parquet`.
 
 `index-names`
-:   Normalize and expand author names and map to VIAF record IDs, producing {file}`author-index-names.parquet`.
+:   Normalize and expand author names and map to VIAF record IDs, producing {file}`author-name-index.parquet`.
 
 ## Raw Data
 
@@ -52,7 +51,7 @@ We process the MARC records to produce several derived tables.
 :::{file} viaf/author-name-index.parquet
 
 The author-name index file maps record IDs to author names, as defined in field [700a][].  For each record, it stores each of the
-names extracted by {rust:mod}`bookdata::cleaning::names`.
+names extracted by {rust:mod}`bookdata::cleaning::names`.  This file is also available in `csv.gz` format.
 :::
 
 :::{file} viaf/author-genders.parquet

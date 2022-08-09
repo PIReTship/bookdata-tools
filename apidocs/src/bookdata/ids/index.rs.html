@@ -317,32 +317,20 @@
 <span id="312">312</span>
 <span id="313">313</span>
 <span id="314">314</span>
-<span id="315">315</span>
-<span id="316">316</span>
-<span id="317">317</span>
-<span id="318">318</span>
-<span id="319">319</span>
-<span id="320">320</span>
-<span id="321">321</span>
-<span id="322">322</span>
-<span id="323">323</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Data structure for mapping string keys to numeric identifiers.</span>
 <span class="kw">use</span> <span class="ident">std::path</span>::{<span class="ident">Path</span>};
-<span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
+<span class="kw">use</span> <span class="ident">std::fs::File</span>;
 <span class="kw">use</span> <span class="ident">std::hash::Hash</span>;
 <span class="kw">use</span> <span class="ident">std::borrow::Borrow</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
+<span class="kw">use</span> <span class="ident">arrow2::io::parquet::read::read_metadata</span>;
 <span class="kw">use</span> <span class="ident">hashbrown::hash_map</span>::{<span class="ident">HashMap</span>, <span class="ident">Keys</span>};
 
 <span class="kw">use</span> <span class="ident">serde::de::DeserializeOwned</span>;
 <span class="kw">use</span> <span class="ident">log</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">anyhow::Result</span>;
 <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
-<span class="kw">use</span> <span class="ident">parquet::record::reader::RowIter</span>;
-<span class="kw">use</span> <span class="ident">parquet::record::RowAccessor</span>;
-<span class="kw">use</span> <span class="ident">parquet::basic</span>::{<span class="ident">Type</span> <span class="kw">as</span> <span class="ident">PhysicalType</span>, <span class="ident">LogicalType</span>, <span class="ident">Repetition</span>};
-<span class="kw">use</span> <span class="ident">parquet::schema::types::Type</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::io::ObjectWriter</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::arrow</span>::<span class="kw-2">*</span>;
+<span class="kw">use</span> <span class="ident">polars::prelude</span>::<span class="kw-2">*</span>;
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
 <span class="kw">use</span> <span class="ident">quickcheck</span>::{<span class="ident">Arbitrary</span>,<span class="ident">Gen</span>};
@@ -364,13 +352,6 @@
   <span class="ident">frozen</span>: <span class="ident">bool</span>,
 }
 
-<span class="doccomment">/// Internal struct for ID records.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">ParquetRecordWriter</span>)]</span>
-<span class="kw">struct</span> <span class="ident">IdRec</span> {
-  <span class="ident">id</span>: <span class="ident">i32</span>,
-  <span class="ident">key</span>: <span class="ident">String</span>,
-}
-
 <span class="kw">impl</span> <span class="op">&lt;</span><span class="ident">K</span><span class="op">&gt;</span> <span class="ident">IdIndex</span><span class="op">&lt;</span><span class="ident">K</span><span class="op">&gt;</span> <span class="kw">where</span> <span class="ident">K</span>: <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Hash</span> {
   <span class="doccomment">/// Create a new index.</span>
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="ident">IdIndex</span><span class="op">&lt;</span><span class="ident">K</span><span class="op">&gt;</span> {
@@ -381,6 +362,7 @@
   }
 
   <span class="doccomment">/// Freeze the index so no new items can be added.</span>
+  <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">freeze</span>(<span class="self">self</span>) -&gt; <span class="ident">IdIndex</span><span class="op">&lt;</span><span class="ident">K</span><span class="op">&gt;</span> {
     <span class="ident">IdIndex</span> { <span class="ident">map</span>: <span class="self">self</span>.<span class="ident">map</span>, <span class="ident">frozen</span>: <span class="bool-val">true</span> }
   }
@@ -427,9 +409,11 @@
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Keys</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">K</span>, <span class="ident">Id</span><span class="op">&gt;</span> {
     <span class="self">self</span>.<span class="ident">map</span>.<span class="ident">keys</span>()
   }
+}
 
+<span class="kw">impl</span> <span class="ident">IdIndex</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> {
   <span class="doccomment">/// Get the keys in order.</span>
-  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">key_vec</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">K</span><span class="op">&gt;</span> {
+  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">key_vec</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">vec</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="self">self</span>.<span class="ident">len</span>());
     <span class="ident">vec</span>.<span class="ident">resize</span>(<span class="self">self</span>.<span class="ident">len</span>(), <span class="prelude-val">None</span>);
     <span class="kw">for</span> (<span class="ident">k</span>, <span class="ident">n</span>) <span class="kw">in</span> <span class="self">self</span>.<span class="ident">map</span>.<span class="ident">iter</span>() {
@@ -438,12 +422,21 @@
       <span class="ident">vec</span>[<span class="ident">i</span>] <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">k</span>);
     }
 
-    <span class="kw">let</span> <span class="ident">vec</span> <span class="op">=</span> <span class="ident">vec</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">ro</span><span class="op">|</span> <span class="ident">ro</span>.<span class="ident">unwrap</span>()).<span class="ident">collect</span>();
+    <span class="kw">let</span> <span class="ident">vec</span> <span class="op">=</span> <span class="ident">vec</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">ro</span><span class="op">|</span> <span class="ident">ro</span>.<span class="ident">unwrap</span>().<span class="ident">as_str</span>()).<span class="ident">collect</span>();
     <span class="ident">vec</span>
   }
-}
 
-<span class="kw">impl</span> <span class="ident">IdIndex</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> {
+  <span class="doccomment">/// Conver this ID index into a [DataFrame], with columns for ID and key.</span>
+  <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">data_frame</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id_col</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">key_col</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">DataFrame</span>, <span class="ident">PolarsError</span><span class="op">&gt;</span> {
+    <span class="macro">debug!</span>(<span class="string">&quot;preparing data frame for index&quot;</span>);
+    <span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">map</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">i32</span>;
+    <span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">key_vec</span>();
+    <span class="kw">let</span> <span class="ident">ids</span> <span class="op">=</span> <span class="ident">Int32Chunked::new</span>(<span class="ident">id_col</span>, <span class="number">1</span>..(<span class="ident">n</span> <span class="op">+</span> <span class="number">1</span>));
+    <span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">Utf8Chunked::new</span>(<span class="ident">key_col</span>, <span class="ident">keys</span>);
+
+    <span class="ident">DataFrame::new</span>(<span class="macro">vec!</span>[<span class="ident">ids</span>.<span class="ident">into_series</span>(), <span class="ident">keys</span>.<span class="ident">into_series</span>()])
+  }
+
   <span class="doccomment">/// Load from a Parquet file, with a standard configuration.</span>
   <span class="doccomment">///</span>
   <span class="doccomment">/// This assumes the Parquet file has the following columns:</span>
@@ -462,34 +455,21 @@
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">load</span><span class="op">&lt;</span><span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="ident">path</span>: <span class="ident">P</span>, <span class="ident">id_col</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">key_col</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">IdIndex</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">path_str</span> <span class="op">=</span> <span class="ident">path</span>.<span class="ident">as_ref</span>().<span class="ident">to_string_lossy</span>();
     <span class="macro">info!</span>(<span class="string">&quot;reading index from file {}&quot;</span>, <span class="ident">path_str</span>);
-    <span class="kw">let</span> <span class="ident">read</span> <span class="op">=</span> <span class="ident">open_parquet_file</span>(<span class="ident">path</span>.<span class="ident">as_ref</span>())<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">file</span> <span class="op">=</span> <span class="ident">File::open</span>(<span class="ident">path</span>.<span class="ident">as_ref</span>())<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">frame</span> <span class="op">=</span> <span class="ident">ParquetReader::new</span>(<span class="ident">file</span>).<span class="ident">finish</span>()<span class="question-mark">?</span>;
+    <span class="macro">debug!</span>(<span class="string">&quot;file schema: {:?}&quot;</span>, <span class="ident">frame</span>.<span class="ident">schema</span>());
 
-    <span class="kw">let</span> <span class="ident">file_schema</span> <span class="op">=</span> <span class="ident">read</span>.<span class="ident">metadata</span>().<span class="ident">file_metadata</span>().<span class="ident">schema</span>();
-    <span class="macro">debug!</span>(<span class="string">&quot;file schema: {:?}&quot;</span>, <span class="ident">file_schema</span>);
+    <span class="kw">let</span> <span class="ident">ic</span> <span class="op">=</span> <span class="ident">frame</span>.<span class="ident">column</span>(<span class="ident">id_col</span>)<span class="question-mark">?</span>.<span class="ident">i32</span>()<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">kc</span> <span class="op">=</span> <span class="ident">frame</span>.<span class="ident">column</span>(<span class="ident">key_col</span>)<span class="question-mark">?</span>.<span class="ident">utf8</span>()<span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">id_type</span> <span class="op">=</span> <span class="ident">LogicalType::Integer</span> { <span class="ident">bit_width</span>: <span class="number">32</span>, <span class="ident">is_signed</span>: <span class="bool-val">true</span> };
-    <span class="kw">let</span> <span class="ident">key_type</span> <span class="op">=</span> <span class="ident">LogicalType::String</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">tgt_fields</span> <span class="op">=</span> <span class="macro">vec!</span>[
-      <span class="ident">Arc::new</span>(<span class="ident">Type::primitive_type_builder</span>(<span class="ident">id_col</span>, <span class="ident">PhysicalType::INT32</span>)
-        .<span class="ident">with_logical_type</span>(<span class="prelude-val">Some</span>(<span class="ident">id_type</span>))
-        .<span class="ident">with_repetition</span>(<span class="ident">Repetition::REQUIRED</span>)
-        .<span class="ident">build</span>()<span class="question-mark">?</span>),
-      <span class="ident">Arc::new</span>(<span class="ident">Type::primitive_type_builder</span>(<span class="ident">key_col</span>, <span class="ident">PhysicalType::BYTE_ARRAY</span>)
-        .<span class="ident">with_logical_type</span>(<span class="prelude-val">Some</span>(<span class="ident">key_type</span>))
-        .<span class="ident">with_repetition</span>(<span class="ident">Repetition::REQUIRED</span>)
-        .<span class="ident">build</span>()<span class="question-mark">?</span>),
-    ];
-    <span class="kw">let</span> <span class="ident">tgt_schema</span> <span class="op">=</span> <span class="ident">Type::group_type_builder</span>(<span class="ident">file_schema</span>.<span class="ident">name</span>()).<span class="ident">with_fields</span>(<span class="kw-2">&amp;mut</span> <span class="ident">tgt_fields</span>).<span class="ident">build</span>()<span class="question-mark">?</span>;
-    <span class="macro">debug!</span>(<span class="string">&quot;target schema: {:?}&quot;</span>, <span class="ident">tgt_schema</span>);
-
-    <span class="kw">let</span> <span class="ident">read</span> <span class="op">=</span> <span class="ident">RowIter::from_file</span>(<span class="prelude-val">Some</span>(<span class="ident">tgt_schema</span>), <span class="kw-2">&amp;</span><span class="ident">read</span>)<span class="question-mark">?</span>;
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">map</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
 
     <span class="macro">debug!</span>(<span class="string">&quot;reading file contents&quot;</span>);
-    <span class="kw">for</span> <span class="ident">row</span> <span class="kw">in</span> <span class="ident">read</span> {
-      <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">row</span>.<span class="ident">get_int</span>(<span class="number">0</span>)<span class="question-mark">?</span>;
-      <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="ident">row</span>.<span class="ident">get_string</span>(<span class="number">1</span>)<span class="question-mark">?</span>;
-      <span class="ident">map</span>.<span class="ident">insert</span>(<span class="ident">key</span>.<span class="ident">clone</span>(), <span class="ident">id</span>);
+    <span class="kw">let</span> <span class="ident">iter</span> <span class="op">=</span> <span class="ident">ic</span>.<span class="ident">into_iter</span>().<span class="ident">zip</span>(<span class="ident">kc</span>.<span class="ident">into_iter</span>());
+    <span class="kw">for</span> <span class="ident">pair</span> <span class="kw">in</span> <span class="ident">iter</span> {
+      <span class="kw">if</span> <span class="kw">let</span> (<span class="prelude-val">Some</span>(<span class="ident">id</span>), <span class="prelude-val">Some</span>(<span class="ident">key</span>)) <span class="op">=</span> <span class="ident">pair</span> {
+        <span class="ident">map</span>.<span class="ident">insert</span>(<span class="ident">key</span>.<span class="ident">to_string</span>(), <span class="ident">id</span>);
+      }
     }
 
     <span class="macro">info!</span>(<span class="string">&quot;read {} keys from {}&quot;</span>, <span class="ident">map</span>.<span class="ident">len</span>(), <span class="ident">path_str</span>);
@@ -503,6 +483,7 @@
   <span class="doccomment">///</span>
   <span class="doccomment">/// This loads an index from a CSV file.  It assumes the first column is the ID, and the</span>
   <span class="doccomment">/// second column is the key.</span>
+  <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">load_csv</span><span class="op">&lt;</span><span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span>, <span class="ident">K</span>: <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Hash</span> <span class="op">+</span> <span class="ident">DeserializeOwned</span><span class="op">&gt;</span>(<span class="ident">path</span>: <span class="ident">P</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">IdIndex</span><span class="op">&lt;</span><span class="ident">K</span><span class="op">&gt;</span><span class="op">&gt;</span> {
     <span class="macro">info!</span>(<span class="string">&quot;reading ID index from from {:?}&quot;</span>, <span class="ident">path</span>.<span class="ident">as_ref</span>());
     <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">csv::Reader::from_path</span>(<span class="ident">path</span>)<span class="question-mark">?</span>;
@@ -528,19 +509,14 @@
 
   <span class="doccomment">/// Save to a Parquet file with the standard configuration.</span>
   <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">save</span><span class="op">&lt;</span><span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">path</span>: <span class="ident">P</span>, <span class="ident">id_col</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">key_col</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">wb</span> <span class="op">=</span> <span class="ident">TableWriterBuilder::new</span>()<span class="question-mark">?</span>;
-    <span class="ident">wb</span> <span class="op">=</span> <span class="ident">wb</span>.<span class="ident">rename</span>(<span class="string">&quot;id&quot;</span>, <span class="ident">id_col</span>);
-    <span class="ident">wb</span> <span class="op">=</span> <span class="ident">wb</span>.<span class="ident">rename</span>(<span class="string">&quot;key&quot;</span>, <span class="ident">key_col</span>);
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">writer</span> <span class="op">=</span> <span class="ident">wb</span>.<span class="ident">open</span>(<span class="ident">path</span>)<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">frame</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">data_frame</span>(<span class="ident">id_col</span>, <span class="ident">key_col</span>)<span class="question-mark">?</span>;
 
-    <span class="kw">for</span> (<span class="ident">k</span>, <span class="ident">v</span>) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">map</span> {
-      <span class="ident">writer</span>.<span class="ident">write_object</span>(<span class="ident">IdRec</span> {
-        <span class="ident">id</span>: <span class="kw-2">*</span><span class="ident">v</span>,
-        <span class="ident">key</span>: <span class="ident">k</span>.<span class="ident">clone</span>()
-      })<span class="question-mark">?</span>;
-    }
-
-    <span class="ident">writer</span>.<span class="ident">finish</span>()<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="ident">path</span>.<span class="ident">as_ref</span>();
+    <span class="macro">info!</span>(<span class="string">&quot;saving index to {:?}&quot;</span>, <span class="ident">path</span>);
+    <span class="kw">let</span> <span class="ident">file</span> <span class="op">=</span> <span class="ident">File::create</span>(<span class="ident">path</span>)<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">writer</span> <span class="op">=</span> <span class="ident">ParquetWriter::new</span>(<span class="ident">file</span>)
+      .<span class="ident">with_compression</span>(<span class="ident">ParquetCompression::Zstd</span>(<span class="prelude-val">None</span>));
+    <span class="ident">writer</span>.<span class="ident">finish</span>(<span class="kw-2">&amp;mut</span> <span class="ident">frame</span>)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
   }
@@ -602,7 +578,8 @@
 }
 
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
+<span class="attribute">#[<span class="ident">test_log::test</span>]</span>
 <span class="kw">fn</span> <span class="ident">test_index_save</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
   <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">index</span>: <span class="ident">IdIndex</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">IdIndex::new</span>();
   <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">gen</span> <span class="op">=</span> <span class="ident">Gen::new</span>(<span class="number">100</span>);
@@ -619,6 +596,11 @@
   <span class="kw">let</span> <span class="ident">dir</span> <span class="op">=</span> <span class="ident">tempdir</span>()<span class="question-mark">?</span>;
   <span class="kw">let</span> <span class="ident">pq</span> <span class="op">=</span> <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;index.parquet&quot;</span>);
   <span class="ident">index</span>.<span class="ident">save_standard</span>(<span class="kw-2">&amp;</span><span class="ident">pq</span>).<span class="ident">expect</span>(<span class="string">&quot;save error&quot;</span>);
+
+  <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pqf</span> <span class="op">=</span> <span class="ident">File::open</span>(<span class="kw-2">&amp;</span><span class="ident">pq</span>).<span class="ident">expect</span>(<span class="string">&quot;open error&quot;</span>);
+  <span class="kw">let</span> <span class="ident">meta</span> <span class="op">=</span> <span class="ident">read_metadata</span>(<span class="kw-2">&amp;mut</span> <span class="ident">pqf</span>).<span class="ident">expect</span>(<span class="string">&quot;meta error&quot;</span>);
+  <span class="macro">println!</span>(<span class="string">&quot;file metadata: {:?}&quot;</span>, <span class="ident">meta</span>);
+  <span class="ident">std::mem::drop</span>(<span class="ident">pqf</span>);
 
   <span class="kw">let</span> <span class="ident">i2</span> <span class="op">=</span> <span class="ident">IdIndex::load_standard</span>(<span class="kw-2">&amp;</span><span class="ident">pq</span>).<span class="ident">expect</span>(<span class="string">&quot;load error&quot;</span>);
   <span class="macro">assert_eq!</span>(<span class="ident">i2</span>.<span class="ident">len</span>(), <span class="ident">index</span>.<span class="ident">len</span>());

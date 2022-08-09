@@ -177,16 +177,32 @@
 <span id="172">172</span>
 <span id="173">173</span>
 <span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Book clustering command.</span>
 <span class="kw">use</span> <span class="ident">std::fs::File</span>;
+<span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
+<span class="kw">use</span> <span class="ident">std::thread::spawn</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::arrow</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::graph</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ids::codes</span>::{<span class="ident">NS_ISBN</span>, <span class="ident">ns_of_book_code</span>};
-
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::AsyncCommand</span>;
-<span class="kw">use</span> <span class="ident">async_trait::async_trait</span>;
 
 <span class="kw">use</span> <span class="ident">serde::Serialize</span>;
 <span class="kw">use</span> <span class="ident">petgraph::algo::kosaraju_scc</span>;
@@ -195,16 +211,18 @@
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">StructOpt</span>, <span class="ident">Debug</span>)]</span>
 <span class="attribute">#[<span class="ident">structopt</span>(<span class="ident">name</span><span class="op">=</span><span class="string">&quot;cluster-books&quot;</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ClusterBooks</span> {
+  <span class="attribute">#[<span class="ident">structopt</span>(<span class="ident">long</span><span class="op">=</span><span class="string">&quot;save-graph&quot;</span>, <span class="ident">parse</span>(<span class="ident">from_os_str</span>))]</span>
+  <span class="ident">save_graph</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span>,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">ParquetRecordWriter</span>, <span class="ident">Debug</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">ArrowField</span>, <span class="ident">Debug</span>)]</span>
 <span class="kw">struct</span> <span class="ident">ISBNClusterRec</span> {
   <span class="ident">isbn</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
   <span class="ident">isbn_id</span>: <span class="ident">i32</span>,
   <span class="ident">cluster</span>: <span class="ident">i32</span>
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">ParquetRecordWriter</span>, <span class="ident">Debug</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">ArrowField</span>, <span class="ident">Debug</span>)]</span>
 <span class="kw">struct</span> <span class="ident">ClusterCode</span> {
   <span class="ident">book_code</span>: <span class="ident">i32</span>,
   <span class="ident">cluster</span>: <span class="ident">i32</span>,
@@ -212,13 +230,13 @@
   <span class="ident">label</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">ParquetRecordWriter</span>, <span class="ident">Debug</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">ArrowField</span>, <span class="ident">Debug</span>)]</span>
 <span class="kw">struct</span> <span class="ident">GraphEdge</span> {
   <span class="ident">src</span>: <span class="ident">i32</span>,
   <span class="ident">dst</span>: <span class="ident">i32</span>
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">ParquetRecordWriter</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">ArrowField</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>)]</span>
 <span class="kw">struct</span> <span class="ident">ClusterStat</span> {
   <span class="ident">cluster</span>: <span class="ident">i32</span>,
   <span class="ident">n_nodes</span>: <span class="ident">u32</span>,
@@ -260,17 +278,16 @@
   }
 }
 
-<span class="attribute">#[<span class="ident">async_trait</span>]</span>
-<span class="kw">impl</span> <span class="ident">AsyncCommand</span> <span class="kw">for</span> <span class="ident">ClusterBooks</span> {
-  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">exec_future</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">graph</span> <span class="op">=</span> <span class="ident">construct_graph</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">impl</span> <span class="ident">Command</span> <span class="kw">for</span> <span class="ident">ClusterBooks</span> {
+  <span class="kw">fn</span> <span class="ident">exec</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">graph</span> <span class="op">=</span> <span class="ident">construct_graph</span>()<span class="question-mark">?</span>;
 
     <span class="macro">info!</span>(<span class="string">&quot;computing connected components&quot;</span>);
     <span class="kw">let</span> <span class="ident">clusters</span> <span class="op">=</span> <span class="ident">kosaraju_scc</span>(<span class="kw-2">&amp;</span><span class="ident">graph</span>);
 
     <span class="macro">info!</span>(<span class="string">&quot;computed {} clusters&quot;</span>, <span class="ident">clusters</span>.<span class="ident">len</span>());
 
-    <span class="macro">info!</span>(<span class="string">&quot;adding cluster notations&quot;</span>);
+    <span class="macro">info!</span>(<span class="string">&quot;adding cluster annotations&quot;</span>);
     <span class="kw">for</span> <span class="ident">ci</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">clusters</span>.<span class="ident">len</span>() {
       <span class="kw">let</span> <span class="ident">verts</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">clusters</span>[<span class="ident">ci</span>];
       <span class="kw">let</span> <span class="ident">vids</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">verts</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> {
@@ -283,15 +300,26 @@
       }
     }
 
-    <span class="macro">info!</span>(<span class="string">&quot;saving graph&quot;</span>);
-    <span class="ident">save_graph</span>(<span class="kw-2">&amp;</span><span class="ident">graph</span>, <span class="string">&quot;book-links/book-graph.mp.zst&quot;</span>)<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">graph</span> <span class="op">=</span> <span class="ident">Arc::new</span>(<span class="ident">graph</span>);
+    <span class="kw">let</span> <span class="ident">sthread</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">gf</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">save_graph</span> {
+      <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="ident">gf</span>.<span class="ident">clone</span>();
+      <span class="kw">let</span> <span class="ident">g2</span> <span class="op">=</span> <span class="ident">graph</span>.<span class="ident">clone</span>();
+      <span class="prelude-val">Some</span>(<span class="ident">spawn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
+        <span class="macro">info!</span>(<span class="string">&quot;saving graph to {:?} (in background)&quot;</span>, <span class="ident">path</span>);
+        <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">save_graph</span>(<span class="kw-2">&amp;</span><span class="ident">g2</span>, <span class="kw-2">&amp;</span><span class="ident">path</span>);
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">res</span> {
+          <span class="macro">error!</span>(<span class="string">&quot;error saving graph: {}&quot;</span>, <span class="ident">e</span>);
+        }
+        <span class="ident">res</span>
+      }))
+    } <span class="kw">else</span> {
+      <span class="prelude-val">None</span>
+    };
 
     <span class="macro">info!</span>(<span class="string">&quot;preparing to write graph results&quot;</span>);
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ic_w</span> <span class="op">=</span> <span class="ident">TableWriter::open</span>(<span class="string">&quot;book-links/isbn-clusters.parquet&quot;</span>)<span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">n_wb</span> <span class="op">=</span> <span class="ident">TableWriterBuilder::new</span>()<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">n_w</span> <span class="op">=</span> <span class="ident">n_wb</span>.<span class="ident">open</span>(<span class="string">&quot;book-links/cluster-graph-nodes.parquet&quot;</span>)<span class="question-mark">?</span>;
-
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">n_w</span> <span class="op">=</span> <span class="ident">TableWriter::open</span>(<span class="string">&quot;book-links/cluster-graph-nodes.parquet&quot;</span>)<span class="question-mark">?</span>;
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cs_w</span> <span class="op">=</span> <span class="ident">TableWriter::open</span>(<span class="string">&quot;book-links/cluster-stats.parquet&quot;</span>)<span class="question-mark">?</span>;
 
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">m_size</span> <span class="op">=</span> <span class="number">0</span>;
@@ -347,6 +375,12 @@
     };
     <span class="kw">let</span> <span class="ident">statf</span> <span class="op">=</span> <span class="ident">File::create</span>(<span class="string">&quot;book-links/cluster-metrics.json&quot;</span>)<span class="question-mark">?</span>;
     <span class="ident">serde_json::to_writer</span>(<span class="ident">statf</span>, <span class="kw-2">&amp;</span><span class="ident">stats</span>)<span class="question-mark">?</span>;
+
+    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">h</span>) <span class="op">=</span> <span class="ident">sthread</span> {
+      <span class="macro">debug!</span>(<span class="string">&quot;waiting on background thread&quot;</span>);
+      <span class="kw">let</span> <span class="ident">br</span> <span class="op">=</span> <span class="ident">h</span>.<span class="ident">join</span>().<span class="ident">expect</span>(<span class="string">&quot;thread join failed&quot;</span>);
+      <span class="ident">br</span><span class="question-mark">?</span>;
+    }
 
     <span class="prelude-val">Ok</span>(())
   }

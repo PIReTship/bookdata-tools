@@ -155,28 +155,20 @@
 <span id="150">150</span>
 <span id="151">151</span>
 <span id="152">152</span>
-<span id="153">153</span>
-<span id="154">154</span>
-<span id="155">155</span>
-<span id="156">156</span>
-<span id="157">157</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Extract author information for book clusters.</span>
-<span class="kw">use</span> <span class="ident">std::path</span>::{<span class="ident">Path</span>, <span class="ident">PathBuf</span>};
-<span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
+<span class="kw">use</span> <span class="ident">std::path</span>::{<span class="ident">PathBuf</span>};
+<span class="kw">use</span> <span class="ident">std::fs::File</span>;
 
+<span class="kw">use</span> <span class="ident">arrow2::io::parquet::write</span>::{<span class="ident">FileWriter</span>, <span class="ident">WriteOptions</span>};
+<span class="kw">use</span> <span class="ident">parquet2::write::Version</span>;
 <span class="kw">use</span> <span class="ident">structopt::StructOpt</span>;
 <span class="kw">use</span> <span class="ident">parse_display</span>::{<span class="ident">Display</span>, <span class="ident">FromStr</span>};
-<span class="kw">use</span> <span class="ident">futures</span>::{<span class="ident">StreamExt</span>};
 
-<span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>};
-
-<span class="kw">use</span> <span class="ident">datafusion::prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">use</span> <span class="ident">polars::prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::io::object::ThreadObjectWriter</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::arrow</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::arrow::fusion</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::arrow::row_de::RecordBatchDeserializer</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::cli::AsyncCommand</span>;
-<span class="kw">use</span> <span class="ident">async_trait::async_trait</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::arrow::dfext</span>::<span class="kw-2">*</span>;
+<span class="kw">use</span> <span class="ident">anyhow::Result</span>;
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Display</span>, <span class="ident">FromStr</span>, <span class="ident">Debug</span>)]</span>
 <span class="attribute">#[<span class="ident">display</span>(<span class="ident">style</span><span class="op">=</span><span class="string">&quot;lowercase&quot;</span>)]</span>
@@ -202,117 +194,115 @@
   <span class="ident">sources</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Source</span><span class="op">&gt;</span>
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">Hash</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Clone</span>, <span class="ident">ParquetRecordWriter</span>, <span class="ident">Default</span>)]</span>
-<span class="kw">struct</span> <span class="ident">ClusterAuthor</span> {
-  <span class="ident">cluster</span>: <span class="ident">i32</span>,
-  <span class="ident">author_name</span>: <span class="ident">String</span>
-}
-
-<span class="doccomment">/// Write out author records to file, without duplicates.</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">write_authors_dedup</span><span class="op">&lt;</span><span class="ident">P</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="ident">df</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span>, <span class="ident">path</span>: <span class="ident">P</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-  <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">writer</span> <span class="op">=</span> <span class="ident">TableWriter::open</span>(<span class="ident">path</span>)<span class="question-mark">?</span>;
-
-  <span class="macro">info!</span>(<span class="string">&quot;scanning author batches&quot;</span>);
-  <span class="kw">let</span> <span class="ident">stream</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">execute_stream</span>().<span class="kw">await</span><span class="question-mark">?</span>;
-  <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">last</span> <span class="op">=</span> <span class="ident">ClusterAuthor::default</span>();
-  <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rec_stream</span> <span class="op">=</span> <span class="ident">RecordBatchDeserializer::for_stream</span>(<span class="ident">stream</span>);
-  <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">row</span>) <span class="op">=</span> <span class="ident">rec_stream</span>.<span class="ident">next</span>().<span class="kw">await</span> {
-    <span class="kw">let</span> <span class="ident">row</span>: <span class="ident">ClusterAuthor</span> <span class="op">=</span> <span class="ident">row</span><span class="question-mark">?</span>;
-    <span class="macro">debug!</span>(<span class="string">&quot;received batch&quot;</span>);
-    <span class="kw">if</span> <span class="ident">row</span> <span class="op">!</span><span class="op">=</span> <span class="ident">last</span> {
-      <span class="ident">writer</span>.<span class="ident">write_object</span>(<span class="ident">row</span>.<span class="ident">clone</span>())<span class="question-mark">?</span>;
-      <span class="ident">last</span> <span class="op">=</span> <span class="ident">row</span>;
-    }
-  }
-
-  <span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="ident">writer</span>.<span class="ident">finish</span>()<span class="question-mark">?</span>;
-  <span class="macro">info!</span>(<span class="string">&quot;wrote {} cluster-author links&quot;</span>, <span class="ident">n</span>);
-
-  <span class="prelude-val">Ok</span>(())
-}
-
-<span class="doccomment">/// Scan the OpenLibrary data for first authors</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">scan_openlib</span>(<span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">SessionContext</span>, <span class="ident">first_only</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+<span class="doccomment">/// Scan the OpenLibrary data for authors.</span>
+<span class="kw">fn</span> <span class="ident">scan_openlib</span>(<span class="ident">first_only</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">LazyFrame</span><span class="op">&gt;</span> {
   <span class="macro">info!</span>(<span class="string">&quot;scanning OpenLibrary author data&quot;</span>);
   <span class="macro">info!</span>(<span class="string">&quot;reading ISBN clusters&quot;</span>);
-  <span class="kw">let</span> <span class="ident">icl</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">read_parquet</span>(<span class="string">&quot;book-links/isbn-clusters.parquet&quot;</span>, <span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
-  <span class="kw">let</span> <span class="ident">icl</span> <span class="op">=</span> <span class="ident">icl</span>.<span class="ident">select_columns</span>(<span class="kw-2">&amp;</span>[<span class="string">&quot;isbn_id&quot;</span>, <span class="string">&quot;cluster&quot;</span>])<span class="question-mark">?</span>;
+  <span class="kw">let</span> <span class="ident">icl</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;book-links/isbn-clusters.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">default</span>())<span class="question-mark">?</span>;
+  <span class="kw">let</span> <span class="ident">icl</span> <span class="op">=</span> <span class="ident">icl</span>.<span class="ident">select</span>(<span class="kw-2">&amp;</span>[<span class="ident">col</span>(<span class="string">&quot;isbn_id&quot;</span>), <span class="ident">col</span>(<span class="string">&quot;cluster&quot;</span>)]);
   <span class="macro">info!</span>(<span class="string">&quot;reading edition IDs&quot;</span>);
-  <span class="kw">let</span> <span class="ident">edl</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">read_parquet</span>(<span class="string">&quot;openlibrary/edition-isbn-ids.parquet&quot;</span>, <span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
-  <span class="kw">let</span> <span class="ident">edl</span> <span class="op">=</span> <span class="ident">edl</span>.<span class="ident">filter</span>(<span class="ident">col</span>(<span class="string">&quot;isbn_id&quot;</span>).<span class="ident">is_not_null</span>())<span class="question-mark">?</span>;
+  <span class="kw">let</span> <span class="ident">edl</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;openlibrary/edition-isbn-ids.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">default</span>())<span class="question-mark">?</span>;
+  <span class="kw">let</span> <span class="ident">edl</span> <span class="op">=</span> <span class="ident">edl</span>.<span class="ident">filter</span>(<span class="ident">col</span>(<span class="string">&quot;isbn_id&quot;</span>).<span class="ident">is_not_null</span>());
   <span class="macro">info!</span>(<span class="string">&quot;reading edition authors&quot;</span>);
-  <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">eau</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">read_parquet</span>(<span class="string">&quot;openlibrary/edition-authors.parquet&quot;</span>, <span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
+  <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">eau</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;openlibrary/edition-authors.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">default</span>())<span class="question-mark">?</span>;
   <span class="kw">if</span> <span class="ident">first_only</span> {
-    <span class="ident">eau</span> <span class="op">=</span> <span class="ident">eau</span>.<span class="ident">filter</span>(<span class="ident">col</span>(<span class="string">&quot;pos&quot;</span>).<span class="ident">eq</span>(<span class="ident">lit</span>(<span class="number">0</span>)))<span class="question-mark">?</span>;
+    <span class="ident">eau</span> <span class="op">=</span> <span class="ident">eau</span>.<span class="ident">filter</span>(<span class="ident">col</span>(<span class="string">&quot;pos&quot;</span>).<span class="ident">eq</span>(<span class="number">0i16</span>));
   }
+
   <span class="macro">info!</span>(<span class="string">&quot;reading author names&quot;</span>);
-  <span class="kw">let</span> <span class="ident">auth</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">read_parquet</span>(<span class="string">&quot;openlibrary/author-names.parquet&quot;</span>, <span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
-  <span class="kw">let</span> <span class="ident">linked</span> <span class="op">=</span> <span class="ident">icl</span>.<span class="ident">join</span>(<span class="ident">edl</span>, <span class="ident">JoinType::Inner</span>, <span class="kw-2">&amp;</span>[<span class="string">&quot;isbn_id&quot;</span>], <span class="kw-2">&amp;</span>[<span class="string">&quot;isbn_id&quot;</span>])<span class="question-mark">?</span>;
-  <span class="kw">let</span> <span class="ident">linked</span> <span class="op">=</span> <span class="ident">linked</span>.<span class="ident">join</span>(<span class="ident">eau</span>, <span class="ident">JoinType::Inner</span>, <span class="kw-2">&amp;</span>[<span class="string">&quot;edition&quot;</span>], <span class="kw-2">&amp;</span>[<span class="string">&quot;edition&quot;</span>])<span class="question-mark">?</span>;
-  <span class="kw">let</span> <span class="ident">linked</span> <span class="op">=</span> <span class="ident">linked</span>.<span class="ident">join</span>(<span class="ident">auth</span>, <span class="ident">JoinType::Inner</span>, <span class="kw-2">&amp;</span>[<span class="string">&quot;author&quot;</span>], <span class="kw-2">&amp;</span>[<span class="string">&quot;id&quot;</span>])<span class="question-mark">?</span>;
+  <span class="kw">let</span> <span class="ident">auth</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;openlibrary/author-names.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">default</span>())<span class="question-mark">?</span>;
+  <span class="kw">let</span> <span class="ident">linked</span> <span class="op">=</span> <span class="ident">icl</span>.<span class="ident">join</span>(<span class="ident">edl</span>, [<span class="ident">col</span>(<span class="string">&quot;isbn_id&quot;</span>)], [<span class="ident">col</span>(<span class="string">&quot;isbn_id&quot;</span>)], <span class="ident">JoinType::Inner</span>);
+  <span class="kw">let</span> <span class="ident">linked</span> <span class="op">=</span> <span class="ident">linked</span>.<span class="ident">join</span>(<span class="ident">eau</span>, [<span class="ident">col</span>(<span class="string">&quot;edition&quot;</span>)], [<span class="ident">col</span>(<span class="string">&quot;edition&quot;</span>)], <span class="ident">JoinType::Inner</span>);
+  <span class="kw">let</span> <span class="ident">linked</span> <span class="op">=</span> <span class="ident">linked</span>.<span class="ident">join</span>(<span class="ident">auth</span>, [<span class="ident">col</span>(<span class="string">&quot;author&quot;</span>)], [<span class="ident">col</span>(<span class="string">&quot;id&quot;</span>)], <span class="ident">JoinType::Inner</span>);
   <span class="kw">let</span> <span class="ident">authors</span> <span class="op">=</span> <span class="ident">linked</span>.<span class="ident">select</span>(<span class="macro">vec!</span>[
     <span class="ident">col</span>(<span class="string">&quot;cluster&quot;</span>),
-    <span class="ident">udf_clean_name</span>(<span class="ident">col</span>(<span class="string">&quot;name&quot;</span>)).<span class="ident">alias</span>(<span class="string">&quot;author_name&quot;</span>)
-  ])<span class="question-mark">?</span>;
+    <span class="ident">col</span>(<span class="string">&quot;name&quot;</span>).<span class="ident">alias</span>(<span class="string">&quot;author_name&quot;</span>).<span class="ident">map</span>(<span class="ident">udf_clean_name</span>, <span class="ident">GetOutput::from_type</span>(<span class="ident">DataType::Utf8</span>)),
+  ]);
+
   <span class="prelude-val">Ok</span>(<span class="ident">authors</span>)
 }
 
 <span class="doccomment">/// Scan the Library of Congress data for first authors.</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">scan_loc</span>(<span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">SessionContext</span>, <span class="ident">first_only</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">scan_loc</span>(<span class="ident">first_only</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">LazyFrame</span><span class="op">&gt;</span> {
   <span class="kw">if</span> <span class="op">!</span><span class="ident">first_only</span> {
     <span class="macro">error!</span>(<span class="string">&quot;only first-author extraction is currently supported&quot;</span>);
     <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;cannot extract multiple authors&quot;</span>));
   }
 
   <span class="macro">info!</span>(<span class="string">&quot;reading ISBN clusters&quot;</span>);
-  <span class="kw">let</span> <span class="ident">icl</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">read_parquet</span>(<span class="string">&quot;book-links/isbn-clusters.parquet&quot;</span>, <span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
-  <span class="kw">let</span> <span class="ident">icl</span> <span class="op">=</span> <span class="ident">icl</span>.<span class="ident">select_columns</span>(<span class="kw-2">&amp;</span>[<span class="string">&quot;isbn_id&quot;</span>, <span class="string">&quot;cluster&quot;</span>])<span class="question-mark">?</span>;
+  <span class="kw">let</span> <span class="ident">icl</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;book-links/isbn-clusters.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">default</span>())<span class="question-mark">?</span>;
+  <span class="kw">let</span> <span class="ident">icl</span> <span class="op">=</span> <span class="ident">icl</span>.<span class="ident">select</span>([<span class="ident">col</span>(<span class="string">&quot;isbn_id&quot;</span>), <span class="ident">col</span>(<span class="string">&quot;cluster&quot;</span>)]);
 
   <span class="macro">info!</span>(<span class="string">&quot;reading book records&quot;</span>);
-  <span class="kw">let</span> <span class="ident">books</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">read_parquet</span>(<span class="string">&quot;loc-mds/book-isbn-ids.parquet&quot;</span>, <span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
+  <span class="kw">let</span> <span class="ident">books</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;loc-mds/book-isbn-ids.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">default</span>())<span class="question-mark">?</span>;
 
   <span class="macro">info!</span>(<span class="string">&quot;reading book authors&quot;</span>);
-  <span class="kw">let</span> <span class="ident">authors</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">read_parquet</span>(<span class="string">&quot;loc-mds/book-authors.parquet&quot;</span>, <span class="ident">default</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
-  <span class="kw">let</span> <span class="ident">authors</span> <span class="op">=</span> <span class="ident">authors</span>.<span class="ident">filter</span>(<span class="ident">col</span>(<span class="string">&quot;author_name&quot;</span>).<span class="ident">is_not_null</span>())<span class="question-mark">?</span>;
+  <span class="kw">let</span> <span class="ident">authors</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;loc-mds/book-authors.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">default</span>())<span class="question-mark">?</span>;
+  <span class="kw">let</span> <span class="ident">authors</span> <span class="op">=</span> <span class="ident">authors</span>.<span class="ident">filter</span>(<span class="ident">col</span>(<span class="string">&quot;author_name&quot;</span>).<span class="ident">is_not_null</span>());
 
-  <span class="kw">let</span> <span class="ident">linked</span> <span class="op">=</span> <span class="ident">icl</span>.<span class="ident">join</span>(<span class="ident">books</span>, <span class="ident">JoinType::Inner</span>, <span class="kw-2">&amp;</span>[<span class="string">&quot;isbn_id&quot;</span>], <span class="kw-2">&amp;</span>[<span class="string">&quot;isbn_id&quot;</span>])<span class="question-mark">?</span>;
-  <span class="kw">let</span> <span class="ident">linked</span> <span class="op">=</span> <span class="ident">linked</span>.<span class="ident">join</span>(<span class="ident">authors</span>, <span class="ident">JoinType::Inner</span>, <span class="kw-2">&amp;</span>[<span class="string">&quot;rec_id&quot;</span>], <span class="kw-2">&amp;</span>[<span class="string">&quot;rec_id&quot;</span>])<span class="question-mark">?</span>;
+  <span class="kw">let</span> <span class="ident">linked</span> <span class="op">=</span> <span class="ident">icl</span>.<span class="ident">join</span>(<span class="ident">books</span>, [<span class="ident">col</span>(<span class="string">&quot;isbn_id&quot;</span>)], [<span class="ident">col</span>(<span class="string">&quot;isbn_id&quot;</span>)], <span class="ident">JoinType::Inner</span>);
+  <span class="kw">let</span> <span class="ident">linked</span> <span class="op">=</span> <span class="ident">linked</span>.<span class="ident">join</span>(<span class="ident">authors</span>, [<span class="ident">col</span>(<span class="string">&quot;rec_id&quot;</span>)], [<span class="ident">col</span>(<span class="string">&quot;rec_id&quot;</span>)], <span class="ident">JoinType::Inner</span>);
   <span class="kw">let</span> <span class="ident">authors</span> <span class="op">=</span> <span class="ident">linked</span>.<span class="ident">select</span>(<span class="macro">vec!</span>[
     <span class="ident">col</span>(<span class="string">&quot;cluster&quot;</span>),
-    <span class="ident">udf_clean_name</span>(<span class="ident">col</span>(<span class="string">&quot;author_name&quot;</span>)).<span class="ident">alias</span>(<span class="string">&quot;author_name&quot;</span>)
-  ])<span class="question-mark">?</span>;
-
-  <span class="comment">// we shouldn&#39;t have null author names, but the data thinks we do. fix.</span>
-  <span class="kw">let</span> <span class="ident">authors</span> <span class="op">=</span> <span class="ident">authors</span>.<span class="ident">filter</span>(<span class="ident">col</span>(<span class="string">&quot;author_name&quot;</span>).<span class="ident">is_not_null</span>())<span class="question-mark">?</span>;
+    <span class="ident">col</span>(<span class="string">&quot;author_name&quot;</span>).<span class="ident">map</span>(<span class="ident">udf_clean_name</span>, <span class="ident">GetOutput::from_type</span>(<span class="ident">DataType::Utf8</span>)),
+  ]);
 
   <span class="prelude-val">Ok</span>(<span class="ident">authors</span>)
 }
 
-<span class="attribute">#[<span class="ident">async_trait</span>]</span>
-<span class="kw">impl</span> <span class="ident">AsyncCommand</span> <span class="kw">for</span> <span class="ident">ClusterAuthors</span> {
-  <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">exec_future</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ctx</span> <span class="op">=</span> <span class="ident">SessionContext::new</span>();
-
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">authors</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="prelude-val">None</span>;
+<span class="kw">impl</span> <span class="ident">Command</span> <span class="kw">for</span> <span class="ident">ClusterAuthors</span> {
+  <span class="kw">fn</span> <span class="ident">exec</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">authors</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">LazyFrame</span><span class="op">&gt;</span> <span class="op">=</span> <span class="prelude-val">None</span>;
     <span class="kw">for</span> <span class="ident">source</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">sources</span> {
       <span class="kw">let</span> <span class="ident">astr</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">source</span> {
-        <span class="ident">Source::OpenLib</span> =&gt; <span class="ident">scan_openlib</span>(<span class="kw-2">&amp;mut</span> <span class="ident">ctx</span>, <span class="self">self</span>.<span class="ident">first_author</span>).<span class="kw">await</span><span class="question-mark">?</span>,
-        <span class="ident">Source::LOC</span> =&gt; <span class="ident">scan_loc</span>(<span class="kw-2">&amp;mut</span> <span class="ident">ctx</span>, <span class="self">self</span>.<span class="ident">first_author</span>).<span class="kw">await</span><span class="question-mark">?</span>,
+        <span class="ident">Source::OpenLib</span> =&gt; <span class="ident">scan_openlib</span>(<span class="self">self</span>.<span class="ident">first_author</span>)<span class="question-mark">?</span>,
+        <span class="ident">Source::LOC</span> =&gt; <span class="ident">scan_loc</span>(<span class="self">self</span>.<span class="ident">first_author</span>)<span class="question-mark">?</span>,
       };
       <span class="macro">debug!</span>(<span class="string">&quot;author source {} has schema {:?}&quot;</span>, <span class="ident">source</span>, <span class="ident">astr</span>.<span class="ident">schema</span>());
       <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">adf</span>) <span class="op">=</span> <span class="ident">authors</span> {
-        <span class="ident">authors</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">adf</span>.<span class="ident">union</span>(<span class="ident">astr</span>)<span class="question-mark">?</span>);
+        <span class="ident">authors</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">concat</span>([<span class="ident">adf</span>, <span class="ident">astr</span>], <span class="bool-val">false</span>)<span class="question-mark">?</span>);
       } <span class="kw">else</span> {
         <span class="ident">authors</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">astr</span>);
       }
     }
     <span class="kw">let</span> <span class="ident">authors</span> <span class="op">=</span> <span class="ident">authors</span>.<span class="ident">ok_or</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;no sources specified&quot;</span>))<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">authors</span> <span class="op">=</span> <span class="ident">authors</span>.<span class="ident">sort</span>(<span class="macro">vec!</span>[
-      <span class="ident">col</span>(<span class="string">&quot;cluster&quot;</span>).<span class="ident">sort</span>(<span class="bool-val">true</span>, <span class="bool-val">true</span>),
-      <span class="ident">col</span>(<span class="string">&quot;author_name&quot;</span>).<span class="ident">sort</span>(<span class="bool-val">true</span>, <span class="bool-val">true</span>)
-    ])<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">authors</span> <span class="op">=</span> <span class="ident">authors</span>.<span class="ident">filter</span>(
+      <span class="ident">col</span>(<span class="string">&quot;author_name&quot;</span>).<span class="ident">is_not_null</span>()
+      .<span class="ident">and</span>(<span class="ident">col</span>(<span class="string">&quot;author_name&quot;</span>).<span class="ident">neq</span>(<span class="string">&quot;&quot;</span>.<span class="ident">lit</span>()))
+    );
 
-    <span class="ident">write_authors_dedup</span>(<span class="ident">authors</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">output</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">authors</span> <span class="op">=</span> <span class="ident">authors</span>.<span class="ident">unique</span>(<span class="prelude-val">None</span>, <span class="ident">UniqueKeepStrategy::First</span>);
+
+    <span class="macro">debug!</span>(<span class="string">&quot;plan: {}&quot;</span>, <span class="ident">authors</span>.<span class="ident">describe_plan</span>());
+
+    <span class="macro">info!</span>(<span class="string">&quot;collecting results&quot;</span>);
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">authors</span> <span class="op">=</span> <span class="ident">authors</span>.<span class="ident">collect</span>()<span class="question-mark">?</span>;
+    <span class="macro">info!</span>(<span class="string">&quot;found {} cluster-author links&quot;</span>, <span class="ident">authors</span>.<span class="ident">height</span>());
+
+    <span class="macro">debug!</span>(<span class="string">&quot;rechunking author table&quot;</span>);
+    <span class="ident">authors</span>.<span class="ident">rechunk</span>();
+
+    <span class="macro">info!</span>(<span class="string">&quot;saving to {:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">output</span>);
+    <span class="comment">// clean up nullability</span>
+    <span class="comment">// we do the writing ourself because we have no nulls, but polars doesn&#39;t deal with that</span>
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">schema</span> <span class="op">=</span> <span class="ident">authors</span>.<span class="ident">schema</span>().<span class="ident">to_arrow</span>();
+    <span class="ident">schema</span>.<span class="ident">fields</span>[<span class="number">0</span>].<span class="ident">is_nullable</span> <span class="op">=</span> <span class="bool-val">false</span>;
+    <span class="ident">schema</span>.<span class="ident">fields</span>[<span class="number">1</span>].<span class="ident">is_nullable</span> <span class="op">=</span> <span class="bool-val">false</span>;
+    <span class="macro">debug!</span>(<span class="string">&quot;schema: {:?}&quot;</span>, <span class="ident">schema</span>);
+
+    <span class="kw">let</span> <span class="ident">writer</span> <span class="op">=</span> <span class="ident">File::create</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">output</span>)<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">writer</span> <span class="op">=</span> <span class="ident">FileWriter::try_new</span>(<span class="ident">writer</span>, <span class="ident">schema</span>, <span class="ident">WriteOptions</span> {
+      <span class="ident">compression</span>: <span class="ident">ParquetCompression::Zstd</span>(<span class="prelude-val">None</span>),
+      <span class="ident">version</span>: <span class="ident">Version::V2</span>,
+      <span class="ident">write_statistics</span>: <span class="bool-val">false</span>,
+    })<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">writer</span> <span class="op">=</span> <span class="ident">ThreadObjectWriter::new</span>(<span class="ident">writer</span>);
+    <span class="kw">for</span> <span class="ident">chunk</span> <span class="kw">in</span> <span class="ident">authors</span>.<span class="ident">iter_chunks</span>() {
+      <span class="ident">writer</span>.<span class="ident">write_object</span>(<span class="ident">chunk</span>)<span class="question-mark">?</span>;
+    }
+    <span class="ident">writer</span>.<span class="ident">finish</span>()<span class="question-mark">?</span>;
+
+    <span class="macro">info!</span>(<span class="string">&quot;output file is {}&quot;</span>, <span class="ident">friendly::bytes</span>(<span class="ident">file_size</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">output</span>)<span class="question-mark">?</span>));
 
     <span class="prelude-val">Ok</span>(())
   }
