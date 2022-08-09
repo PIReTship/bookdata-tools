@@ -23,10 +23,11 @@ use anyhow::Result;
 use enum_dispatch::enum_dispatch;
 use cpu_time::ProcessTime;
 use rayon::ThreadPoolBuilder;
+use happylog::LogOpts;
 
 #[cfg(unix)]
 use crate::util::process;
-use crate::util::{logging::*, Timer};
+use crate::util::Timer;
 
 /// Macro to generate wrappers for subcommand enums.
 ///
@@ -104,7 +105,7 @@ pub enum ClusterCommand {
 #[structopt(name="bookdata")]
 pub struct CLI {
   #[structopt(flatten)]
-  logging: LogOptions,
+  logging: LogOpts,
 
   #[structopt(subcommand)]
   command: BDCommand,
@@ -112,7 +113,7 @@ pub struct CLI {
 
 impl CLI {
   pub fn exec(self) -> Result<()> {
-    self.logging.setup()?;
+    self.logging.init()?;
 
     let npar = std::cmp::min(num_cpus::get(), num_cpus::get_physical());
     debug!("setting up Rayon pool with {} threads", npar);

@@ -10,7 +10,7 @@ use anyhow::{Result};
 use crate::io::{ObjectWriter, file_size};
 use crate::util::Timer;
 use crate::arrow::*;
-use crate::util::logging::{item_progress, set_progress};
+use crate::util::logging::item_progress;
 use super::{Interaction, Dedup, Key};
 
 /// Record for a single output action.
@@ -134,7 +134,6 @@ impl <R> ActionDedup<R> where R: FromActionSet + ArrowSerialize + Send + Sync + 
     let timer = Timer::new();
     let n = self.table.len() as u64;
     let pb = item_progress(n, "writing actions");
-    let _lg = set_progress(pb.clone());
 
     // we're going to consume the hashtable.
     let table = take(&mut self.table);
@@ -144,7 +143,6 @@ impl <R> ActionDedup<R> where R: FromActionSet + ArrowSerialize + Send + Sync + 
     }
 
     let rv = writer.finish()?;
-    drop(_lg);
 
     info!("wrote {} actions in {}, file is {}",
           friendly::scalar(n),

@@ -30,8 +30,7 @@ impl Command for ScanRatings {
 
     let src = File::open(&self.infile)?;
     let pb = data_progress(src.metadata()?.len());
-    pb.set_prefix(self.infile.to_string_lossy().to_string());
-    let _lg = set_progress(pb.clone());
+    pb.set_prefix("ratings");
     let src = pb.wrap_read(src);
     let src = csv::ReaderBuilder::new().has_headers(false).from_reader(src);
     let src = src.into_deserialize();

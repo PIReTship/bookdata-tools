@@ -10,7 +10,7 @@ use anyhow::{Result, anyhow};
 use crate::io::{ObjectWriter, file_size};
 use crate::util::Timer;
 use crate::arrow::*;
-use crate::util::logging::{item_progress, set_progress};
+use crate::util::logging::item_progress;
 use super::{Interaction, Dedup, Key};
 
 /// Record for a single output rating.
@@ -158,7 +158,6 @@ impl <R> RatingDedup<R> where R: FromRatingSet + ArrowSerialize + Send + Sync + 
     let n = self.table.len() as u64;
     let timer = Timer::new();
     let pb = item_progress(n, "writing ratings");
-    let _lg = set_progress(pb.clone());
 
     // we're going to consume the hashtable.
     let table = take(&mut self.table);
@@ -168,7 +167,7 @@ impl <R> RatingDedup<R> where R: FromRatingSet + ArrowSerialize + Send + Sync + 
     }
 
     let rv = writer.finish()?;
-    drop(_lg);
+    pb.finish_and_clear();
 
     info!("wrote {} ratings in {}, file is {}",
           friendly::scalar(n),

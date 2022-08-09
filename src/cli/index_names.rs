@@ -18,7 +18,7 @@ use crate::arrow::*;
 use crate::io::background::ThreadWrite;
 use crate::io::object::ThreadObjectWriter;
 use crate::cleaning::names::*;
-use crate::util::logging::{set_progress, item_progress};
+use crate::util::logging::item_progress;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name="index-names")]
@@ -48,7 +48,6 @@ fn scan_authority_names(path: &Path, send: SyncSender<(String, u32)>) -> Result<
   Ok(spawn(move || {
     let scanner = scanner;
     let pb = item_progress(scanner.remaining() as u64, "fields");
-    let _lg = set_progress(pb.clone());
     let mut n = 0;
     for rec in pb.wrap_iter(scanner) {
       let rec: FieldRecord = rec?;
@@ -98,7 +97,6 @@ fn write_index(index: NameIndex, path: &Path) -> Result<()> {
   let mut csvout = ThreadObjectWriter::new(csvw);
 
   let pb = item_progress(names.len(), "names");
-  let _lg = set_progress(pb.clone());
 
   for name in pb.wrap_iter(names.into_iter()) {
     let mut ids: Vec<u32> = index.get(name).unwrap().iter().map(|i| *i).collect();

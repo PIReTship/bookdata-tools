@@ -34,7 +34,6 @@ fn viaf_load_names() -> Result<HashMap<u32, Vec<String>>> {
   let iter = scan_parquet_file("viaf/author-name-index.parquet")?;
 
   let pb = item_progress(iter.remaining() as u64, "authors");
-  let _lg = set_progress(pb.clone());
   let iter = pb.wrap_iter(iter);
   let timer = Timer::new();
 
@@ -57,7 +56,6 @@ fn viaf_load_genders() -> Result<HashMap<u32, HashSet<Gender>>> {
   let iter = scan_parquet_file("viaf/author-genders.parquet")?;
 
   let pb = item_progress(iter.remaining(), "authors");
-  let _lg = set_progress(pb.clone());
   let iter = pb.wrap_iter(iter);
 
   for row in iter {
@@ -81,7 +79,6 @@ pub fn viaf_author_table() -> Result<AuthorTable> {
 
   info!("merging gender records");
   let pb = item_progress(rec_names.len() as u64, "clusters");
-  let _lg = set_progress(pb.clone());
   let timer = Timer::new();
   for (rec_id, names) in pb.wrap_iter(rec_names.into_iter()) {
     let genders = rec_genders.get(&rec_id).unwrap_or(&empty);
