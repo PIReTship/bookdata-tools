@@ -56,7 +56,7 @@ peg::parser! {
       / mc:[c if NONSPACING_MARK.contains(c)] { mc }
 
     // some ISBNs have some random junk in the middle, match allowed junk
-    rule inner_junk() = ['a'..='a' | 'A'..='Z']+ / [' ' | '+']
+    rule inner_junk() = ['a'..='z' | 'A'..='Z']+ / [' ' | '+']
 
     rule isbn_text() -> String
       = s:$(digit_char()*<8,> ['X' | 'x']?) { clean_isbn_chars(s) }
@@ -732,5 +732,19 @@ fn test_parse_two_isbns_real() {
       assert_eq!(trail, "");
     },
     x => panic!("bad parse: {:?}", x)
+  }
+}
+
+#[test]
+pub fn test_parse_isbn_junk_colon() {
+  let src = "95l3512401 :";
+  let isbn = "953512401";
+  let defs = ParserDefs::new();
+  let isbns = defs.parse(src);
+  if let ParseResult::Valid(isbns, tail) = isbns {
+    assert_eq!(isbns.len(), 1);
+    assert_eq!(&isbns[0].text, isbn);
+  } else {
+    panic!("failed to parse {}: {:?}", src, isbns);
   }
 }
