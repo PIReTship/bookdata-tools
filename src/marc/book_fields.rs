@@ -4,7 +4,7 @@ use serde::Serialize;
 use crate::cleaning::names::clean_name;
 use crate::prelude::*;
 use crate::arrow::*;
-use crate::cleaning::isbns::{ParserDefs, ParseResult};
+use crate::cleaning::isbns::{ParseResult, parse_isbn_string};
 use crate::marc::MARCRecord;
 use crate::marc::flat_fields::FieldOutput;
 
@@ -37,7 +37,6 @@ struct AuthRec {
 /// Output that writes books to set of Parquet files.
 pub struct BookOutput {
   n_books: u32,
-  parser: ParserDefs,
   prefix: String,
   fields: FieldOutput,
   ids: TableWriter<BookIds>,
@@ -66,7 +65,6 @@ impl BookOutput {
 
     Ok(BookOutput {
       n_books: 0,
-      parser: ParserDefs::new(),
       prefix: prefix.to_string(),
       fields, ids, isbns, authors,
     })
@@ -97,7 +95,7 @@ impl ObjectWriter<MARCRecord> for BookOutput {
       if df.tag == 20 {
         for sf in &df.subfields {
           if sf.code == 'a' {
-            match self.parser.parse(&sf.content) {
+            match parse_isbn_string(&sf.content) {
               ParseResult::Valid(isbns, _) => {
                 for isbn in isbns {
                   if isbn.tags.len() > 0 {
