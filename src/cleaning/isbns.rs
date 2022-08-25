@@ -11,6 +11,8 @@
 //! The multi-ISBN parser exposed through [ParserDefs] supports cleaning these ISBN strings.
 use regex::{Regex, RegexSet, Match, Captures};
 
+use crate::util::unicode::NONSPACING_MARK;
+
 /// Single ISBN parsed from a string.
 #[derive(Debug, PartialEq)]
 pub struct ISBN {
@@ -27,6 +29,48 @@ pub enum ParseResult {
   Ignored(String),
   /// An unparsable string
   Unmatched(String)
+}
+
+peg::parser! {
+  grammar isbn_parser() for str {
+    rule space() = quiet!{[' ' | '\n' | '\r' | '\t']}
+
+    rule lead() =
+      [';' | '.']? space()* prefix()?
+    rule prefix()
+      = ['a'..='z'] space()+
+      / "(" ['0'..='9']+ ")" space()+
+      / "*"
+      / "ISBN" space()+
+
+    rule single_tag() -> String = s:$([^ ':' | ')' | ']']+) { s.trim().to_string() }
+
+    rule tags() -> Vec<String>
+      = space()* ['[' | '('] tags:(single_tag() ** ":") [']' | ')'] { tags }
+
+    rule tail_skip() = space()* [';' | ':' | '/' | '.']?
+
+    // digits, hyphens, and misc. marks are allowed (will clean later)
+    rule digit_char() -> char
+      = mc:['0'..='9' | '-'] { mc }
+      / mc:[c if NONSPACING_MARK.contains(c)] { mc }
+
+    // some ISBNs have some random junk in the middle, match allowed junk
+    rule inner_junk() = ['a'..='a' | 'A'..='Z']+ / [' ' | '+']
+
+    rule isbn_text() -> String
+      = s:$(digit_char()*<8,> ['X' | 'x']?) { clean_isbn_chars(s) }
+      / s:$(['0'..='9']*<1,5> inner_junk() ['0'..='9' | '-']*<4,>) { clean_isbn_chars(s) }
+
+    rule isbn() -> ISBN
+      = lead() i:isbn_text() tags:tags()* { ISBN {
+        text: i,
+        tags: tags.into_iter().flatten().collect()
+    }}
+
+    pub rule parse_isbns() -> (Vec<ISBN>, String)
+      = v:(isbn() ** tail_skip()) tail_skip() t:$([_]*) { (v, t.into()) }
+  }
 }
 
 /// Crude ISBN cleanup.
@@ -122,8 +166,21 @@ impl ParserDefs {
 
   /// Parse an ISBN string.
   pub fn parse(&self, s: &str) -> ParseResult {
-    let mut parser = self.create_parser(s);
-    parser.read_all()
+    // let mut parser = self.create_parser(s);
+    // parser.read_all()
+    if let Ok((isbns, tail)) = isbn_parser::parse_isbns(s) {
+      if isbns.is_empty() {
+        if self.unmatch_ignore.is_match(s) {
+          ParseResult::Ignored(s.to_owned())
+        } else {
+          ParseResult::Unmatched(s.to_owned())
+        }
+      } else {
+        ParseResult::Valid(isbns, tail)
+      }
+    } else {
+      ParseResult::Unmatched(s.to_owned())
+    }
   }
 }
 
