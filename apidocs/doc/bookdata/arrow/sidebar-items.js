@@ -1,0 +1,1 @@
+initSidebarItems({"derive":[["ArrowField","Derive macro for the Array trait."]],"mod":[["dfext","Book data extensions to Polars."],["reader","Support for streaming objects from a Parquet file."],["writer",""]],"trait":[["ArrowSerialize","Trait that is implemented by all types that are serializable to Arrow."]]});

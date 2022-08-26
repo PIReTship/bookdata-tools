@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["check_length",""]],"struct":[["FieldStruct",""],["InfoStruct",""],["PQInfo","Extract basic information from a Parquet file."]]});
