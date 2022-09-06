@@ -1,1 +1,0 @@
-initSidebarItems({"enum":[["Scale","A scale"]],"struct":[["Binary","A binary scale."],["Decimal","A decimal scale."]],"trait":[["Prefix","Trait for an individual prefix."],["PrefixFamily","Trait for a collection of (related) prefixes."]]});

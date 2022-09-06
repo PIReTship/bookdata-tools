@@ -1,1 +1,0 @@
-initSidebarItems({"constant":[["NULL",""]],"enum":[["Context",""],["LiteralValue",""],["LogicalPlan",""]],"fn":[["lit","Create a Literal Expression from `L`"]],"struct":[["Null","The literal Null"]],"trait":[["AnonymousScan",""],["Literal",""]]});

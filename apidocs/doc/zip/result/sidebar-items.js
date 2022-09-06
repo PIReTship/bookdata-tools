@@ -1,1 +1,0 @@
-initSidebarItems({"enum":[["ZipError","Error type for Zip"]],"struct":[["InvalidPassword","The given password is wrong"]],"type":[["ZipResult","Generic result type with ZipError as its error variant"]]});

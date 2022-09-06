@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["Cursor","A fixed-size cursor for initializing [`MaybeUninit`] arrays"]]});

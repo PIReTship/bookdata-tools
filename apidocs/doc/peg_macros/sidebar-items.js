@@ -1,1 +1,0 @@
-initSidebarItems({"macro":[["parser","The main macro for creating a PEG parser."]]});

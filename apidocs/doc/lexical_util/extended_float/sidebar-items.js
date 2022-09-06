@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["ExtendedFloat","Extended precision floating-point type."]]});

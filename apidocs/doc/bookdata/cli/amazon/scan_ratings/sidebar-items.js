@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["ScanRatings","Scan an Amazon rating CSV file into Parquet."]]});

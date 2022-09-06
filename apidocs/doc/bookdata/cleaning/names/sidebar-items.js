@@ -1,1 +1,0 @@
-initSidebarItems({"fn":[["clean_name","Clean up a name from unnecessary special characters."],["name_variants","Extract all variants from a name."],["preclean","Pre-clean a string without copying."]],"mod":[["parse","Extract and normalize author names."],["types",""]]});

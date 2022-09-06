@@ -1,1 +1,0 @@
-initSidebarItems({"enum":[["Count","Enum of a count statistics"]],"fn":[["deserialize","Deserializes the statistics in the column chunks from all `row_groups` into [`Statistics`] associated from `field`’s name."]],"struct":[["ParquetStatistics","Arrow-deserialized parquet Statistics of a file"],["Statistics","Arrow-deserialized parquet Statistics of a file"]]});
