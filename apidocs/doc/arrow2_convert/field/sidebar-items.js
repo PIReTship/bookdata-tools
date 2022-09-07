@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["FixedSizeBinary",""],["FixedSizeVec",""],["LargeBinary",""],["LargeString",""],["LargeVec",""]],"trait":[["ArrowField","Trait implemented by all types that can be used as an Arrow field."]]});

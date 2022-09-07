@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["ewm_std",""],["ewm_var",""],["ewma",""],["ewma_inf_hist_no_nulls",""],["ewma_inf_hists","Arguments"],["ewma_no_nulls",""],["set_first_none_null",""]],"struct":[["EWMOptions",""]]});

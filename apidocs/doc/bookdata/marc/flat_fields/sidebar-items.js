@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["FieldOutput","Output for writing flat MARC fields to Parquet."],["FieldRecord","Flat MARC field record."],["FieldRecordArray",""],["FieldRecordArrayIterator",""],["MutableFieldRecordArray","A mutable [`arrow2::StructArray`] for elements of FieldRecord which is logically equivalent to a Vec"]]});

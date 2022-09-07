@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["perfect_sort","This is a perfect sort particularly useful for an argsort of an argsort The second argsort sorts indices from `0` to `len` so can be just assigned to the new index location."]]});

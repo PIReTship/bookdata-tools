@@ -1,0 +1,342 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Polars: DataFrames in Rust"><meta name="keywords" content="rust, rustlang, rust-lang, polars"><title>polars - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../dark.css" disabled><link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../storage.js"></script><script src="../crates.js"></script><script defer src="../main.js"></script>
+    <noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../favicon.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../polars/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div>
+        </a><h2 class="location"></h2>
+    </nav>
+    <nav class="sidebar"><a class="sidebar-logo" href="../polars/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div>
+        </a><h2 class="location"><a href="#">Crate polars</a></h2><div class="sidebar-elems"><div class="block"><ul><li class="version">Version 0.22.8</li><li><a id="all-types" href="all.html">All Items</a></li></div></ul><section><div class="block"><ul><li><a href="#modules">Modules</a></li><li><a href="#macros">Macros</a></li><li><a href="#functions">Functions</a></li></ul></div></section><div id="sidebar-vars" data-name="polars" data-ty="mod" data-relpath=""></div><script defer src="sidebar-items.js"></script></div></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../polars/index.html"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="main-heading">
+    <h1 class="fqn"><span class="in-band">Crate <a class="mod" href="#">polars</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../clipboard.svg" width="19" height="18" alt="Copy item path"></button></span></h1><span class="out-of-band"><a class="srclink" href="../src/polars/lib.rs.html#1-329">source</a> · <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="polars-dataframes-in-rust"><a href="#polars-dataframes-in-rust">Polars: <em><small>DataFrames in Rust</small></em></a></h2>
+<p>Polars is a DataFrame library for Rust. It is based on <a href="https://arrow.apache.org/">Apache Arrow</a>’s memory model.
+Apache arrow provides very cache efficient columnar data structures and is becoming the defacto
+standard for columnar data.</p>
+<h3 id="quickstart"><a href="#quickstart">Quickstart</a></h3>
+<p>We recommend to build your queries directly with polars-lazy. This allows you to combine
+expression into powerful aggregations and column selections. All expressions are evaluated
+in parallel and your queries are optimized just in time.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let</span> <span class="ident">lf1</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;myfile_1.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">Default::default</span>())<span class="question-mark">?</span>
+    .<span class="ident">groupby</span>([<span class="ident">col</span>(<span class="string">&quot;ham&quot;</span>)])
+    .<span class="ident">agg</span>([
+        <span class="comment">// expressions can be combined into powerful aggregations</span>
+        <span class="ident">col</span>(<span class="string">&quot;foo&quot;</span>)
+            .<span class="ident">sort_by</span>([<span class="ident">col</span>(<span class="string">&quot;ham&quot;</span>).<span class="ident">rank</span>(<span class="ident">Default::default</span>())], [<span class="bool-val">false</span>])
+            .<span class="ident">last</span>()
+            .<span class="ident">alias</span>(<span class="string">&quot;last_foo_ranked_by_ham&quot;</span>),
+        <span class="comment">// every expression runs in parallel</span>
+        <span class="ident">col</span>(<span class="string">&quot;foo&quot;</span>).<span class="ident">cummin</span>(<span class="bool-val">false</span>).<span class="ident">alias</span>(<span class="string">&quot;cumulative_min_per_group&quot;</span>),
+        <span class="comment">// every expression runs in parallel</span>
+        <span class="ident">col</span>(<span class="string">&quot;foo&quot;</span>).<span class="ident">reverse</span>().<span class="ident">list</span>().<span class="ident">alias</span>(<span class="string">&quot;reverse_group&quot;</span>),
+    ]);
+
+<span class="kw">let</span> <span class="ident">lf2</span> <span class="op">=</span> <span class="ident">LazyFrame::scan_parquet</span>(<span class="string">&quot;myfile_2.parquet&quot;</span>.<span class="ident">into</span>(), <span class="ident">Default::default</span>())<span class="question-mark">?</span>
+    .<span class="ident">select</span>([<span class="ident">col</span>(<span class="string">&quot;ham&quot;</span>), <span class="ident">col</span>(<span class="string">&quot;spam&quot;</span>)]);
+
+<span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">lf1</span>
+    .<span class="ident">join</span>(<span class="ident">lf2</span>, [<span class="ident">col</span>(<span class="string">&quot;reverse_group&quot;</span>)], [<span class="ident">col</span>(<span class="string">&quot;foo&quot;</span>)], <span class="ident">JoinType::Left</span>)
+    <span class="comment">// now we finally materialize the result.</span>
+    .<span class="ident">collect</span>()<span class="question-mark">?</span>;</code></pre></div>
+<p>This means that Polars data structures can be shared zero copy with processes in many different
+languages.</p>
+<h3 id="tree-of-contents"><a href="#tree-of-contents">Tree Of Contents</a></h3>
+<ul>
+<li><a href="#cookbooks">Cookbooks</a></li>
+<li><a href="#data-structures">Data structures</a>
+<ul>
+<li><a href="#dataframe">DataFrame</a></li>
+<li><a href="#series">Series</a></li>
+<li><a href="#chunkedarray">ChunkedArray</a></li>
+</ul>
+</li>
+<li><a href="#simd">SIMD</a></li>
+<li><a href="#api">API</a></li>
+<li><a href="#expressions">Expressions</a></li>
+<li><a href="#compile-times">Compile times</a></li>
+<li><a href="#performance-and-string-data">Performance</a>
+<ul>
+<li><a href="#custom-allocator">Custom allocator</a></li>
+</ul>
+</li>
+<li><a href="#config-with-env-vars">Config</a></li>
+<li><a href="#compile-for-wasm">WASM target</a></li>
+</ul>
+<h3 id="cookbooks"><a href="#cookbooks">Cookbooks</a></h3>
+<p>See examples in the cookbooks:</p>
+<ul>
+<li><a href="docs/eager/index.html">Eager</a></li>
+<li><a href="docs/lazy/index.html">Lazy</a></li>
+</ul>
+<h3 id="data-structures"><a href="#data-structures">Data Structures</a></h3>
+<p>The base data structures provided by polars are <code>DataFrame</code>, <code>Series</code>, and <code>ChunkedArray&lt;T&gt;</code>.
+We will provide a short, top-down view of these data structures.</p>
+<h4 id="dataframe"><a href="#dataframe">DataFrame</a></h4>
+<p>A <code>DataFrame</code> is a 2 dimensional data structure that is backed by a <code>Series</code>, and it could be
+seen as an abstraction on <code>Vec&lt;Series&gt;</code>. Operations that can be executed on <code>DataFrame</code>s are very
+similar to what is done in a <code>SQL</code> like query. You can <code>GROUP</code>, <code>JOIN</code>, <code>PIVOT</code> etc.</p>
+<h4 id="series"><a href="#series">Series</a></h4>
+<p><code>Series</code> are the type agnostic columnar data representation of Polars. They provide many
+operations out of the box, many via the <a href="series/struct.Series.html">Series struct</a> and
+<a href="series/trait.SeriesTrait.html">SeriesTrait trait</a>. Whether or not an operation is provided
+by a <code>Series</code> is determined by the operation. If the operation can be done without knowing the
+underlying columnar type, this operation probably is provided by the <code>Series</code>. If not, you must
+downcast to the typed data structure that is wrapped by the <code>Series</code>. That is the <code>ChunkedArray&lt;T&gt;</code>.</p>
+<h4 id="chunkedarray"><a href="#chunkedarray">ChunkedArray</a></h4>
+<p><code>ChunkedArray&lt;T&gt;</code> are wrappers around an arrow array, that can contain multiples chunks, e.g.
+<code>Vec&lt;dyn ArrowArray&gt;</code>. These are the root data structures of Polars, and implement many operations.
+Most operations are implemented by traits defined in <a href="chunked_array/ops/index.html">chunked_array::ops</a>,
+or on the <a href="chunked_array/struct.ChunkedArray.html">ChunkedArray struct</a>.</p>
+<h3 id="simd"><a href="#simd">SIMD</a></h3>
+<p>Polars / Arrow uses packed_simd to speed up kernels with SIMD operations. SIMD is an optional
+<code>feature = &quot;simd&quot;</code>, and requires a nightly compiler. If you don’t need SIMD, <strong>Polars runs on stable!</strong></p>
+<h3 id="api"><a href="#api">API</a></h3>
+<p>Polars supports an eager and a lazy API. The eager API directly yields results, but is overall
+more verbose and less capable of building elegant composite queries. We recommend to use the Lazy API
+whenever you can.</p>
+<h3 id="expressions"><a href="#expressions">Expressions</a></h3>
+<p>Polars has a powerful concept called expressions.
+Polars expressions can be used in various contexts and are a functional mapping of
+<code>Fn(Series) -&gt; Series</code>, meaning that they have Series as input and Series as output.
+By looking at this functional definition, we can see that the output of an <code>Expr</code> also can serve
+as the input of an <code>Expr</code>.</p>
+<p>That may sound a bit strange, so lets give an example. The following is an expression:</p>
+<p><code>col(&quot;foo&quot;).sort().head(2)</code></p>
+<p>The snippet above says select column <code>&quot;foo&quot;</code> then sort this column and then take first 2 values
+of the sorted output.
+The power of expressions is that every expression produces a new expression and that they can
+be piped together.
+You can run an expression by passing them on one of polars execution contexts.
+Here we run two expressions in the <strong>select</strong> context:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>  <span class="ident">df</span>.<span class="ident">lazy</span>()
+   .<span class="ident">select</span>([
+       <span class="ident">col</span>(<span class="string">&quot;foo&quot;</span>).<span class="ident">sort</span>(<span class="ident">Default::default</span>()).<span class="ident">head</span>(<span class="prelude-val">None</span>),
+       <span class="ident">col</span>(<span class="string">&quot;bar&quot;</span>).<span class="ident">filter</span>(<span class="ident">col</span>(<span class="string">&quot;foo&quot;</span>).<span class="ident">eq</span>(<span class="ident">lit</span>(<span class="number">1</span>))).<span class="ident">sum</span>(),
+   ])
+   .<span class="ident">collect</span>()<span class="question-mark">?</span>;</code></pre></div>
+<p>All expressions are ran in parallel, meaning that separate polars expressions are embarrassingly parallel.
+(Note that within an expression there may be more parallelization going on).</p>
+<p>Understanding polars expressions is most important when starting with the polars library. Read more
+about them in the <a href="https://pola-rs.github.io/polars-book/user-guide/dsl/intro.html">User Guide</a>.
+Though the examples given there are in python. The expressions API is almost identical and the
+the read should certainly be valuable to rust users as well.</p>
+<h4 id="eager"><a href="#eager">Eager</a></h4>
+<p>Read more in the pages of the following data structures /traits.</p>
+<ul>
+<li><a href="frame/struct.DataFrame.html">DataFrame struct</a></li>
+<li><a href="series/struct.Series.html">Series struct</a></li>
+<li><a href="series/trait.SeriesTrait.html">Series trait</a></li>
+<li><a href="chunked_array/struct.ChunkedArray.html">ChunkedArray struct</a></li>
+<li><a href="chunked_array/ops/index.html">ChunkedArray operations traits</a></li>
+</ul>
+<h4 id="lazy"><a href="#lazy">Lazy</a></h4>
+<p>Unlock full potential with lazy computation. This allows query optimizations and provides Polars
+the full query context so that the fastest algorithm can be chosen.</p>
+<p><strong><a href="../polars_lazy/index.html">Read more in the lazy module.</a></strong></p>
+<h3 id="compile-times"><a href="#compile-times">Compile times</a></h3>
+<p>A DataFrame library typically consists of</p>
+<ul>
+<li>Tons of features</li>
+<li>A lot of datatypes</li>
+</ul>
+<p>Both of these really put strain on compile times. To keep Polars lean, we make both <strong>opt-in</strong>,
+meaning that you only pay the compilation cost, if you need it.</p>
+<h3 id="compile-times-and-opt-in-features"><a href="#compile-times-and-opt-in-features">Compile times and opt-in features</a></h3>
+<p>The opt-in features are (not including dtype features):</p>
+<ul>
+<li>
+<p><code>performant</code> - Longer compile times more fast paths.</p>
+</li>
+<li>
+<p><code>lazy</code> - Lazy API</p>
+<ul>
+<li><code>lazy_regex</code> - Use regexes in <a href="prelude/fn.col.html">column selection</a></li>
+<li><code>dot_diagram</code> - Create dot diagrams from lazy logical plans.</li>
+</ul>
+</li>
+<li>
+<p><code>random</code> - Generate arrays with randomly sampled values</p>
+</li>
+<li>
+<p><code>ndarray</code>- Convert from <code>DataFrame</code> to <code>ndarray</code></p>
+</li>
+<li>
+<p><code>temporal</code> - Conversions between <a href="https://docs.rs/chrono/">Chrono</a> and Polars for temporal data types</p>
+</li>
+<li>
+<p><code>timezones</code> - Activate timezone support.</p>
+</li>
+<li>
+<p><code>strings</code> - Extra string utilities for <code>Utf8Chunked</code></p>
+<ul>
+<li><code>string_justify</code> - <code>zfill</code>, <code>ljust</code>, <code>rjust</code></li>
+</ul>
+</li>
+<li>
+<p><code>object</code> - Support for generic ChunkedArrays called <code>ObjectChunked&lt;T&gt;</code> (generic over <code>T</code>).
+These are downcastable from Series through the <a href="https://doc.rust-lang.org/std/any/index.html">Any</a> trait.</p>
+</li>
+<li>
+<p>Performance related:</p>
+<ul>
+<li><code>simd</code> - SIMD operations <em>(nightly only)</em></li>
+<li><code>performant</code> - more fast paths, slower compile times.</li>
+<li><code>bigidx</code> - Activate this feature if you expect &gt;&gt; 2^32 rows. This has not been needed by anyone.
+This allows polars to scale up way beyond that by using <code>u64</code> as an index.
+Polars will be a bit slower with this feature activated as many data structures
+are less cache efficient.</li>
+</ul>
+</li>
+<li>
+<p>IO related:</p>
+<ul>
+<li><code>serde</code> - Support for <a href="https://crates.io/crates/serde">serde</a> serialization and deserialization.
+Can be used for JSON and more serde supported serialization formats.</li>
+<li><code>serde-lazy</code> - Support for <a href="https://crates.io/crates/serde">serde</a> serialization and deserialization.
+Can be used for JSON and more serde supported serialization formats.</li>
+<li><code>parquet</code> - Read Apache Parquet format</li>
+<li><code>json</code> - JSON serialization</li>
+<li><code>ipc</code> - Arrow’s IPC format serialization</li>
+<li><code>decompress</code> - Automatically infer compression of csv-files and decompress them.
+Supported compressions:
+* zip
+* gzip</li>
+</ul>
+</li>
+<li>
+<p><code>DataFrame</code> operations:</p>
+<ul>
+<li><code>dynamic_groupby</code> - Groupby based on a time window instead of predefined keys.
+Also activates rolling window group by operations.</li>
+<li><code>sort_multiple</code> - Allow sorting a <code>DataFrame</code> on multiple columns</li>
+<li><code>rows</code> - Create <code>DataFrame</code> from rows and extract rows from <code>DataFrames</code>.
+And activates <code>pivot</code> and <code>transpose</code> operations</li>
+<li><code>asof_join</code> - Join ASOF, to join on nearest keys instead of exact equality match.</li>
+<li><code>cross_join</code> - Create the cartesian product of two DataFrames.</li>
+<li><code>semi_anti_join</code> - SEMI and ANTI joins.</li>
+<li><code>groupby_list</code> - Allow groupby operation on keys of type List.</li>
+<li><code>row_hash</code> - Utility to hash DataFrame rows to UInt64Chunked</li>
+<li><code>diagonal_concat</code> - Concat diagonally thereby combining different schemas.</li>
+<li><code>horizontal_concat</code> - Concat horizontally and extend with null values if lengths don’t match</li>
+<li><code>dataframe_arithmetic</code> - Arithmetic on (Dataframe and DataFrames) and (DataFrame on Series)</li>
+<li><code>partition_by</code> - Split into multiple DataFrames partitioned by groups.</li>
+</ul>
+</li>
+<li>
+<p><code>Series</code> operations:</p>
+<ul>
+<li><code>is_in</code> - <a href="crate::chunked_array::ops::IsIn">Check for membership in <code>Series</code></a></li>
+<li><code>zip_with</code> - <a href="chunked_array/ops/trait.ChunkZip.html">Zip two Series/ ChunkedArrays</a></li>
+<li><code>round_series</code> - round underlying float types of <code>Series</code>.</li>
+<li><code>repeat_by</code> - [Repeat element in an Array N times, where N is given by another array.</li>
+<li><code>is_first</code> - Check if element is first unique value.</li>
+<li><code>is_last</code> - Check if element is last unique value.</li>
+<li><code>checked_arithmetic</code> - checked arithmetic/ returning <code>None</code> on invalid operations.</li>
+<li><code>dot_product</code> - Dot/inner product on Series and Expressions.</li>
+<li><code>concat_str</code> - Concat string data in linear time.</li>
+<li><code>reinterpret</code> - Utility to reinterpret bits to signed/unsigned</li>
+<li><code>take_opt_iter</code> - Take from a Series with <code>Iterator&lt;Item=Option&lt;usize&gt;&gt;</code></li>
+<li><code>mode</code> - <a href="crate::chunked_array::ops::ChunkUnique::mode">Return the most occurring value(s)</a></li>
+<li><code>cum_agg</code> - cumsum, cummin, cummax aggregation.</li>
+<li><code>rolling_window</code> - rolling window functions, like rolling_mean</li>
+<li><code>interpolate</code> <a href="crate::chunked_array::ops::Interpolate">interpolate None values</a></li>
+<li><code>extract_jsonpath</code> - <a href="https://goessner.net/articles/JsonPath/">Run jsonpath queries on Utf8Chunked</a></li>
+<li><code>list</code> - List utils.</li>
+<li><code>rank</code> - Ranking algorithms.</li>
+<li><code>moment</code> - kurtosis and skew statistics</li>
+<li><code>ewma</code> - Exponential moving average windows</li>
+<li><code>abs</code> - Get absolute values of Series</li>
+<li><code>arange</code> - Range operation on Series</li>
+<li><code>product</code> - Compute the product of a Series.</li>
+<li><code>diff</code> - <code>diff</code> operation.</li>
+<li><code>pct_change</code> - Compute change percentages.</li>
+<li><code>unique_counts</code> - Count unique values in expressions.</li>
+<li><code>log</code> - Logarithms for <code>Series</code>.</li>
+<li><code>list_to_struct</code> - Convert <code>List</code> to <code>Struct</code> dtypes.</li>
+<li><code>list_eval</code> - Apply expressions over list elements.</li>
+<li><code>cumulative_eval</code> - Apply expressions over cumulatively increasing windows.</li>
+</ul>
+</li>
+<li>
+<p><code>DataFrame</code> pretty printing</p>
+<ul>
+<li><code>fmt</code> - Activate DataFrame formatting</li>
+</ul>
+</li>
+</ul>
+<h3 id="compile-times-and-opt-in-data-types"><a href="#compile-times-and-opt-in-data-types">Compile times and opt-in data types</a></h3>
+<p>As mentioned above, Polars <code>Series</code> are wrappers around
+<code>ChunkedArray&lt;T&gt;</code> without the generic parameter <code>T</code>.
+To get rid of the generic parameter, all the possible value of <code>T</code> are compiled
+for <code>Series</code>. This gets more expensive the more types you want for a <code>Series</code>. In order to reduce
+the compile times, we have decided to default to a minimal set of types and make more <code>Series</code> types
+opt-in.</p>
+<p>Note that if you get strange compile time errors, you probably need to opt-in for that <code>Series</code> dtype.
+The opt-in dtypes are:</p>
+<div><table><thead><tr><th>data type</th><th>feature flag</th></tr></thead><tbody>
+<tr><td>Date</td><td>dtype-date</td></tr>
+<tr><td>Datetime</td><td>dtype-datetime</td></tr>
+<tr><td>Time</td><td>dtype-time</td></tr>
+<tr><td>Duration</td><td>dtype-duration</td></tr>
+<tr><td>Int8</td><td>dtype-i8</td></tr>
+<tr><td>Int16</td><td>dtype-i16</td></tr>
+<tr><td>UInt8</td><td>dtype-u8</td></tr>
+<tr><td>UInt16</td><td>dtype-u16</td></tr>
+<tr><td>Categorical</td><td>dtype-categorical</td></tr>
+<tr><td>Struct</td><td>dtype-struct</td></tr>
+</tbody></table>
+</div>
+<p>Or you can choose on of the preconfigured pre-sets.</p>
+<ul>
+<li><code>dtype-full</code> - all opt-in dtypes.</li>
+<li><code>dtype-slim</code> - slim preset of opt-in dtypes.</li>
+</ul>
+<h3 id="performance-and-string-data"><a href="#performance-and-string-data">Performance and string data</a></h3>
+<p>Large string data can really slow down your queries.
+Read more in the <a href="docs/performance/index.html">performance section</a></p>
+<h4 id="custom-allocator"><a href="#custom-allocator">Custom allocator</a></h4>
+<p>A DataFrame library naturally does a lot of heap allocations. It is recommended to use a custom
+allocator.
+<a href="https://crates.io/crates/mimalloc">Mimalloc</a> and
+<a href="https://crates.io/crates/jemallocator">JeMalloc</a> for instance, show a significant
+performance gain in runtime as well as memory usage.</p>
+<h5 id="usage"><a href="#usage">Usage</a></h5>
+<div class='information'><div class='tooltip ignore'>ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered ignore"><code><span class="kw">use</span> <span class="ident">mimalloc::MiMalloc</span>;
+
+<span class="attribute">#[<span class="ident">global_allocator</span>]</span>
+<span class="kw">static</span> <span class="ident">GLOBAL</span>: <span class="ident">MiMalloc</span> <span class="op">=</span> <span class="ident">MiMalloc</span>;</code></pre></div>
+<h5 id="cargotoml"><a href="#cargotoml">Cargo.toml</a></h5>
+<div class='information'><div class='tooltip ignore'>ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered ignore"><code>[<span class="ident">dependencies</span>]
+<span class="ident">mimalloc</span> <span class="op">=</span> { <span class="ident">version</span> <span class="op">=</span> <span class="string">&quot;*&quot;</span>, <span class="ident">default</span><span class="op">-</span><span class="ident">features</span> <span class="op">=</span> <span class="bool-val">false</span> }</code></pre></div>
+<h3 id="config-with-env-vars"><a href="#config-with-env-vars">Config with ENV vars</a></h3>
+<ul>
+<li><code>POLARS_FMT_NO_UTF8</code> -&gt; use ascii tables in favor of utf8.</li>
+<li><code>POLARS_FMT_MAX_COLS</code> -&gt; maximum number of columns shown when formatting DataFrames.</li>
+<li><code>POLARS_FMT_MAX_ROWS</code> -&gt; maximum number of rows shown when formatting DataFrames.</li>
+<li><code>POLARS_TABLE_WIDTH</code> -&gt; width of the tables used during DataFrame formatting.</li>
+<li><code>POLARS_MAX_THREADS</code> -&gt; maximum number of threads used to initialize thread pool (on startup).</li>
+<li><code>POLARS_VERBOSE</code> -&gt; print logging info to stderr</li>
+<li><code>POLARS_NO_PARTITION</code> -&gt; Polars may choose to partition the groupby operation, based on data
+cardinality. Setting this env var will turn partitioned groupby’s off</li>
+<li><code>POLARS_PARTITION_SAMPLE_FRAC</code> -&gt; how large chunk of the dataset to sample to determine cardinality,
+defaults to <code>0.001</code></li>
+<li><code>POLARS_PARTITION_UNIQUE_COUNT</code> -&gt; at which (estimated) key count a partitioned groupby should run.
+defaults to <code>1000</code>, any higher cardinality will run default groupby.</li>
+<li><code>POLARS_FORCE_PARTITION</code> -&gt; Force partitioned groupby if the keys and aggregations allow it.</li>
+<li><code>POLARS_ALLOW_EXTENSION</code> -&gt; allows for <code>[ObjectChunked&lt;T&gt;]</code> to be used in arrow, opening up possibilities like using
+<code>T</code> in complex lazy expressions. However this does require <code>unsafe</code> code allow this.</li>
+<li><code>POLARS_NO_PARQUET_STATISTICS</code> -&gt; if set, statistics in parquet files are ignored.</li>
+</ul>
+<h3 id="user-guide"><a href="#user-guide">User Guide</a></h3>
+<p>If you want to read more, <a href="https://pola-rs.github.io/polars-book/">check the User Guide</a>.</p>
+</div></details><h2 id="reexports" class="small-section-header"><a href="#reexports">Re-exports</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left import-item"><code>pub use <a class="mod" href="../polars_time/index.html" title="mod polars_time">polars_time</a> as time;</code></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left import-item"><code>pub use <a class="mod" href="../polars_io/index.html" title="mod polars_io">polars_io</a> as io;</code></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left import-item"><code>pub use <a class="mod" href="../polars_lazy/index.html" title="mod polars_lazy">polars_lazy</a> as lazy;</code></div><div class="item-right docblock-short"></div></div></div><h2 id="modules" class="small-section-header"><a href="#modules">Modules</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="mod" href="chunked_array/index.html" title="polars::chunked_array mod">chunked_array</a></div><div class="item-right docblock-short"><p>The typed heart of every Series column.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="datatypes/index.html" title="polars::datatypes mod">datatypes</a></div><div class="item-right docblock-short"><p>Data types supported by Polars.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="doc/index.html" title="polars::doc mod">doc</a></div><div class="item-right docblock-short"><p>Other documentation</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="docs/index.html" title="polars::docs mod">docs</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="error/index.html" title="polars::error mod">error</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="export/index.html" title="polars::export mod">export</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="frame/index.html" title="polars::frame mod">frame</a></div><div class="item-right docblock-short"><p>DataFrame module.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="functions/index.html" title="polars::functions mod">functions</a></div><div class="item-right docblock-short"><p>Functions</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="prelude/index.html" title="polars::prelude mod">prelude</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="series/index.html" title="polars::series mod">series</a></div><div class="item-right docblock-short"><p>Type agnostic columnar data structure.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="testing/index.html" title="polars::testing mod">testing</a></div><div class="item-right docblock-short"><p>Testing utilities.</p>
+</div></div></div><h2 id="macros" class="small-section-header"><a href="#macros">Macros</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="macro" href="macro.apply_method_all_arrow_series.html" title="polars::apply_method_all_arrow_series macro">apply_method_all_arrow_series</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="macro" href="macro.df.html" title="polars::df macro">df</a></div><div class="item-right docblock-short"></div></div></div><h2 id="functions" class="small-section-header"><a href="#functions">Functions</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.toggle_string_cache.html" title="polars::toggle_string_cache fn">toggle_string_cache</a></div><div class="item-right docblock-short"><p>Use a global string cache for the Categorical Types.</p>
+</div></div></div></section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="polars" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0 (fe5b13d68 2022-05-18)" ></div>
+</body></html>

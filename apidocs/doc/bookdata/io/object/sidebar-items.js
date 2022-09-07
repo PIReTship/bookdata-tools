@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["MapWriter","Writer that applies a transform to an underlying writer."],["ThreadObjectWriter","Write objects in a background thread."]],"trait":[["ObjectWriter","Trait for writing objects to some kind of sink."]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["BATCH_SIZE",""]],"fn":[["vec_to_chunk","Convert a vector of records to a chunk."]],"struct":[["TableWriter","Parquet table writer."]]});

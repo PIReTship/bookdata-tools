@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["ScanMARC","Scan MARC records and extract basic information."]]});
