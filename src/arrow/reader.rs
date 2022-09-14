@@ -1,7 +1,6 @@
 //! Support for streaming objects from a Parquet file.
 use std::path::Path;
 use std::fs::File;
-use std::sync::Arc;
 use std::thread::spawn;
 use std::mem::drop;
 use std::sync::mpsc::{Receiver, sync_channel};
@@ -28,7 +27,7 @@ impl <R> RecordIter<R> where R: ArrowDeserialize + Send + Sync + 'static, for <'
   }
 }
 
-fn decode_chunk<R, E>(chunk: Result<Chunk<Arc<dyn Array>>, E>) -> Result<Vec<R>>
+fn decode_chunk<R, E>(chunk: Result<Chunk<Box<dyn Array>>, E>) -> Result<Vec<R>>
 where
   R: ArrowDeserialize<Type=R> + Send + Sync + 'static,
   for <'a> &'a R::ArrayType: IntoIterator<Item=Option<R>>,

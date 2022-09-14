@@ -6,7 +6,7 @@ use std::mem;
 use std::sync::mpsc::{sync_channel, SyncSender, Receiver};
 use std::thread::{spawn, JoinHandle};
 
-use arrow2::array::{MutablePrimitiveArray, MutableUtf8Array};
+use arrow2::array::{MutablePrimitiveArray, MutableUtf8Array, MutableArray};
 use arrow2::chunk::Chunk;
 use arrow2::datatypes::{Schema, DataType, Field};
 use arrow2::io::parquet::write::{FileWriter, WriteOptions, Version, CompressionOptions};
@@ -182,7 +182,7 @@ fn write_cols<W: Write>(writer: &mut FileWriter<W>, rec_ids: &mut Vec<u32>, valu
   // turn record ids into a column - take ownership and swap out with new blank vector
   let mut rid_owned = Vec::with_capacity(BATCH_SIZE);
   mem::swap(&mut rid_owned, rec_ids);
-  let rec_col = MutablePrimitiveArray::from_vec(rid_owned);
+  let mut rec_col = MutablePrimitiveArray::from_vec(rid_owned);
 
   // create a value column
   let mut val_col = MutableUtf8Array::<i32>::with_capacity(values.len());
@@ -190,8 +190,8 @@ fn write_cols<W: Write>(writer: &mut FileWriter<W>, rec_ids: &mut Vec<u32>, valu
   values.clear();
 
   // make a chunk
-  let rec_col = rec_col.into_arc();
-  let val_col = val_col.into_arc();
+  let rec_col = rec_col.as_box();
+  let val_col = val_col.as_box();
   let chunk = Chunk::new(vec![rec_col, val_col]);
 
   // and write

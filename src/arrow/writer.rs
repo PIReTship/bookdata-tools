@@ -3,7 +3,6 @@ use std::path::{Path, PathBuf};
 use std::fs::{OpenOptions};
 use std::mem::{replace};
 use std::marker::PhantomData;
-use std::sync::Arc;
 
 use log::*;
 use anyhow::{Result, anyhow};
@@ -122,7 +121,7 @@ impl <R> ObjectWriter<R> for TableWriter<R> where R: ArrowSerialize + Send + Syn
 // }
 
 /// Convert a vector of records to a chunk.
-pub fn vec_to_chunk<R>(vec: Vec<R>) -> Result<Chunk<Arc<dyn Array>>>
+pub fn vec_to_chunk<R>(vec: Vec<R>) -> Result<Chunk<Box<dyn Array>>>
 where R: ArrowSerialize, R::MutableArrayType: TryExtend<Option<R>>
 {
   let mut array = R::new_array();
@@ -141,8 +140,8 @@ where R: ArrowSerialize, R::MutableArrayType: TryExtend<Option<R>>
   Ok(chunk)
 }
 
-impl <W> ObjectWriter<Chunk<Arc<dyn Array + 'static>>> for FileWriter<W> where W: Write {
-  fn write_object(&mut self, chunk: Chunk<Arc<dyn Array + 'static>>) -> Result<()> {
+impl <W> ObjectWriter<Chunk<Box<dyn Array + 'static>>> for FileWriter<W> where W: Write {
+  fn write_object(&mut self, chunk: Chunk<Box<dyn Array + 'static>>) -> Result<()> {
     let schema = self.schema();
     let encodings: Vec<_> = schema.fields.iter().map(|f| transverse(&f.data_type, |_| Encoding::Plain)).collect();
     let options = self.options();
