@@ -97,10 +97,7 @@ pub enum ClusterCommand {
 
 /// Entry point for the Book Data Tools.
 ///
-/// This program runs the various book data tools, exposed as subcommands.  The top-level
-/// command handles setting up logging.  Logging can be configured in detail with the
-/// environment variable `BOOKDATA_LOG`, using the `env_logger` crate; the command
-/// line options provide shortcuts but are overridden by the environment variable.
+/// This program runs the various book data tools, exposed as subcommands.
 #[derive(StructOpt, Debug)]
 #[structopt(name="bookdata")]
 pub struct CLI {
