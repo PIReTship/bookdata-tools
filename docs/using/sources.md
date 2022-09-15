@@ -12,7 +12,8 @@ need to download yourself and save in the `data` directory.  The data sources ar
 -   [Virtual Internet Authority File](http://viaf.org/viaf/data/) MARC 21 XML data (auto-downloaded; download is very slow).  They do
     not keep old files around, so you may need to update the URL to fetch; see the [VIAF page](../data/viaf.md).
 -   [OpenLibrary Dump](https://openlibrary.org/developers/dumps) (auto-downloaded).
--   [Amazon Ratings](http://jmcauley.ucsd.edu/data/amazon/) 'ratings only' data for _Books_ (**not** auto-downloaded — save CSV file in `data/az2014`).  **If you use this data, cite the paper on that site.**
+-   [Amazon Ratings (2014)](http://jmcauley.ucsd.edu/data/amazon/) 'ratings only' data for _Books_ (**not** auto-downloaded — save CSV file in `data/az2014`).  **If you use this data, cite the paper on that site.**
+-   [Amazon Ratings (2018)](https://nijianmo.github.io/amazon/index.html) 'ratings only' data for _Books_ (**not** auto-downloaded — save CSV file in `data/az2014`).  **If you use this data, cite the paper on that site.**
 -   [BookCrossing](http://www2.informatik.uni-freiburg.de/~cziegler/BX/) (auto-downloaded). **If you use this data, cite the paper on that site.**
 -   GoodReads data from [UCSD Book Graph](https://sites.google.com/eng.ucsd.edu/ucsdbookgraph/home) — the GoodReads books, works, authors, series, and *full interaction* files (**not** auto-downloaded - save GZip'd JSON files in `data/goodreads`).  **If you use this data, cite the paper on that site.**
 
