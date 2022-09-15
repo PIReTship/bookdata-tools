@@ -33,6 +33,8 @@ enum GRScan {
   Works(ScanInput),
   /// Scan GoodReads books.
   Books(ScanInput),
+  /// Scan GoodReads genres.
+  Genres(ScanInput),
   /// Scan GoodReads interactions.
   Interactions(ScanInput),
 }
@@ -72,7 +74,11 @@ impl Command for Goodreads {
       GRCmd::Scan { data: GRScan::Books(opts) } => {
         info!("scanning GoodReads books");
         scan_gr(&opts.infile, book::BookWriter::open()?)?;
-      }
+      },
+      GRCmd::Scan { data: GRScan::Genres(opts) } => {
+        info!("scanning GoodReads book genres");
+        scan_gr(&opts.infile, genres::BookGenreWriter::open()?)?;
+      },
       GRCmd::Scan { data: GRScan::Interactions(opts) } => {
         info!("scanning GoodReads interactions");
         scan_gr(&opts.infile, interaction::IntWriter::open()?)?;
