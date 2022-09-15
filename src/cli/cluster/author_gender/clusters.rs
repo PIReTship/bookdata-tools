@@ -3,6 +3,7 @@ use std::convert::identity;
 use std::path::Path;
 use std::collections::{HashMap, HashSet};
 
+#[allow(unused_imports)]
 use arrow2_convert::field::LargeString;
 use polars::prelude::*;
 use crate::prelude::*;
