@@ -1,0 +1,31 @@
+stages:
+  scan-ratings:
+    cmd: python ../run.py --rust amazon scan-ratings -o ratings.parquet ../data/az2018/Books.csv
+    deps:
+    - ../src/amazon.rs
+    - ../src/cli/amazon/
+    - ../data/az2018/Books.csv
+    outs:
+    - ratings.parquet
+
+  cluster-ratings:
+    cmd: python ../run.py ../az2014/az-cluster-ratings.py
+    deps:
+    - ../az2014/az-cluster-ratings.py
+    - ratings.parquet
+    - ../book-links/all-isbns.parquet
+    - ../book-links/isbn-clusters.parquet
+    outs:
+    - az-cluster-ratings.parquet
+
+  schema:
+    foreach:
+    - ratings
+    - az-cluster-ratings
+    do:
+      cmd: python ../run.py --rust pq-info -o ${item}.json ${item}.parquet
+      deps:
+      - ${item}.parquet
+      outs:
+      - ${item}.json:
+          cache: false
