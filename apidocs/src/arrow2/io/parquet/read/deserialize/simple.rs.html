@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.12.0/src/io/parquet/read/deserialize/simple.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>simple.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../../storage.js"></script><script src="../../../../../../crates.js"></script><script defer src="../../../../../../main.js"></script><script defer src="../../../../../../source-script.js"></script><script defer src="../../../../../../source-files.js"></script>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.13.1/src/io/parquet/read/deserialize/simple.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>simple.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../../storage.js"></script><script src="../../../../../../crates.js"></script><script defer src="../../../../../../main.js"></script><script defer src="../../../../../../source-script.js"></script><script defer src="../../../../../../source-files.js"></script>
     <noscript><link rel="stylesheet" href="../../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../../arrow2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../../rust-logo.svg" alt="logo"></div>
         </a><h2 class="location"></h2>
     </nav>
@@ -522,9 +522,41 @@
 <span id="517">517</span>
 <span id="518">518</span>
 <span id="519">519</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
-
-<span class="kw">use</span> <span class="ident">parquet2</span>::{
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
+<span id="532">532</span>
+<span id="533">533</span>
+<span id="534">534</span>
+<span id="535">535</span>
+<span id="536">536</span>
+<span id="537">537</span>
+<span id="538">538</span>
+<span id="539">539</span>
+<span id="540">540</span>
+<span id="541">541</span>
+<span id="542">542</span>
+<span id="543">543</span>
+<span id="544">544</span>
+<span id="545">545</span>
+<span id="546">546</span>
+<span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">parquet2</span>::{
     <span class="ident">schema::types</span>::{
         <span class="ident">PhysicalType</span>, <span class="ident">PrimitiveLogicalType</span>, <span class="ident">PrimitiveType</span>, <span class="ident">TimeUnit</span> <span class="kw">as</span> <span class="ident">ParquetTimeUnit</span>,
     },
@@ -535,7 +567,7 @@
     <span class="ident">array</span>::{<span class="ident">Array</span>, <span class="ident">BinaryArray</span>, <span class="ident">DictionaryKey</span>, <span class="ident">MutablePrimitiveArray</span>, <span class="ident">PrimitiveArray</span>, <span class="ident">Utf8Array</span>},
     <span class="ident">datatypes</span>::{<span class="ident">DataType</span>, <span class="ident">IntervalUnit</span>, <span class="ident">TimeUnit</span>},
     <span class="ident">error</span>::{<span class="ident">Error</span>, <span class="prelude-ty">Result</span>},
-    <span class="ident">types::NativeType</span>,
+    <span class="ident">types</span>::{<span class="ident">days_ms</span>, <span class="ident">NativeType</span>},
 };
 
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::<span class="kw">super</span></span>::{<span class="ident">ArrayIter</span>, <span class="ident">DataPages</span>};
@@ -549,10 +581,10 @@
 <span class="attribute">#[<span class="ident">inline</span>]</span>
 <span class="kw">fn</span> <span class="ident">dyn_iter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">A</span>, <span class="ident">I</span><span class="op">&gt;</span>(<span class="ident">iter</span>: <span class="ident">I</span>) -&gt; <span class="ident">ArrayIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Array</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+    <span class="ident">A</span>: <span class="ident">Array</span>,
     <span class="ident">I</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="lifetime">&#39;a</span>,
 {
-    <span class="ident">Box::new</span>(<span class="ident">iter</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">Arc::new</span>(<span class="ident">x</span>) <span class="kw">as</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Array</span><span class="op">&gt;</span>)))
+    <span class="ident">Box::new</span>(<span class="ident">iter</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">Box::new</span>(<span class="ident">x</span>) <span class="kw">as</span> <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Array</span><span class="op">&gt;</span>)))
 }
 
 <span class="doccomment">/// Converts an iterator of [MutablePrimitiveArray] into an iterator of [PrimitiveArray]</span>
@@ -581,12 +613,13 @@
 }
 
 <span class="doccomment">/// An iterator adapter that maps an iterator of DataPages into an iterator of Arrays</span>
-<span class="doccomment">/// of [`DataType`] `data_type` and `chunk_size`.</span>
+<span class="doccomment">/// of [`DataType`] `data_type` and length `chunk_size`.</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">page_iter_to_arrays</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span>: <span class="lifetime">&#39;a</span> <span class="op">+</span> <span class="ident">DataPages</span><span class="op">&gt;</span>(
     <span class="ident">pages</span>: <span class="ident">I</span>,
     <span class="ident">type_</span>: <span class="kw-2">&amp;</span><span class="ident">PrimitiveType</span>,
     <span class="ident">data_type</span>: <span class="ident">DataType</span>,
-    <span class="ident">chunk_size</span>: <span class="ident">usize</span>,
+    <span class="ident">chunk_size</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
+    <span class="ident">num_rows</span>: <span class="ident">usize</span>,
 ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ArrayIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span> {
     <span class="kw">use</span> <span class="ident">DataType</span>::<span class="kw-2">*</span>;
 
@@ -594,41 +627,66 @@
     <span class="kw">let</span> <span class="ident">logical_type</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">type_</span>.<span class="ident">logical_type</span>;
 
     <span class="prelude-val">Ok</span>(<span class="kw">match</span> <span class="ident">data_type</span>.<span class="ident">to_logical_type</span>() {
-        <span class="ident">Null</span> =&gt; <span class="ident">null::iter_to_arrays</span>(<span class="ident">pages</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>),
-        <span class="ident">Boolean</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">boolean::Iter::new</span>(<span class="ident">pages</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>)),
+        <span class="ident">Null</span> =&gt; <span class="ident">null::iter_to_arrays</span>(<span class="ident">pages</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>, <span class="ident">num_rows</span>),
+        <span class="ident">Boolean</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">boolean::Iter::new</span>(<span class="ident">pages</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>, <span class="ident">num_rows</span>)),
         <span class="ident">UInt8</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">primitive::Iter::new</span>(
             <span class="ident">pages</span>,
             <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
             <span class="ident">chunk_size</span>,
             <span class="op">|</span><span class="ident">x</span>: <span class="ident">i32</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">u8</span>,
         ))),
         <span class="ident">UInt16</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">primitive::Iter::new</span>(
             <span class="ident">pages</span>,
             <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
             <span class="ident">chunk_size</span>,
             <span class="op">|</span><span class="ident">x</span>: <span class="ident">i32</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">u16</span>,
         ))),
-        <span class="ident">UInt32</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">primitive::Iter::new</span>(
-            <span class="ident">pages</span>,
-            <span class="ident">data_type</span>,
-            <span class="ident">chunk_size</span>,
-            <span class="op">|</span><span class="ident">x</span>: <span class="ident">i32</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">u32</span>,
-        ))),
+        <span class="ident">UInt32</span> =&gt; <span class="kw">match</span> <span class="ident">physical_type</span> {
+            <span class="ident">PhysicalType::Int32</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">primitive::Iter::new</span>(
+                <span class="ident">pages</span>,
+                <span class="ident">data_type</span>,
+                <span class="ident">num_rows</span>,
+                <span class="ident">chunk_size</span>,
+                <span class="op">|</span><span class="ident">x</span>: <span class="ident">i32</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">u32</span>,
+            ))),
+            <span class="comment">// some implementations of parquet write arrow&#39;s u32 into i64.</span>
+            <span class="ident">PhysicalType::Int64</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">primitive::Iter::new</span>(
+                <span class="ident">pages</span>,
+                <span class="ident">data_type</span>,
+                <span class="ident">num_rows</span>,
+                <span class="ident">chunk_size</span>,
+                <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">u32</span>,
+            ))),
+            <span class="ident">other</span> =&gt; {
+                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::NotYetImplemented</span>(<span class="macro">format!</span>(
+                    <span class="string">&quot;Reading uin32 from {:?}-encoded parquet still not implemented&quot;</span>,
+                    <span class="ident">other</span>
+                )))
+            }
+        },
         <span class="ident">Int8</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">primitive::Iter::new</span>(
             <span class="ident">pages</span>,
             <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
             <span class="ident">chunk_size</span>,
             <span class="op">|</span><span class="ident">x</span>: <span class="ident">i32</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">i8</span>,
         ))),
         <span class="ident">Int16</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">primitive::Iter::new</span>(
             <span class="ident">pages</span>,
             <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
             <span class="ident">chunk_size</span>,
             <span class="op">|</span><span class="ident">x</span>: <span class="ident">i32</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">i16</span>,
         ))),
-        <span class="ident">Int32</span> <span class="op">|</span> <span class="ident">Date32</span> <span class="op">|</span> <span class="ident">Time32</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Interval</span>(<span class="ident">IntervalUnit::YearMonth</span>) =&gt; <span class="ident">dyn_iter</span>(<span class="ident">iden</span>(
-            <span class="ident">primitive::Iter::new</span>(<span class="ident">pages</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>, <span class="op">|</span><span class="ident">x</span>: <span class="ident">i32</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">i32</span>),
-        )),
+        <span class="ident">Int32</span> <span class="op">|</span> <span class="ident">Date32</span> <span class="op">|</span> <span class="ident">Time32</span>(<span class="kw">_</span>) =&gt; <span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">primitive::Iter::new</span>(
+            <span class="ident">pages</span>,
+            <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
+            <span class="ident">chunk_size</span>,
+            <span class="op">|</span><span class="ident">x</span>: <span class="ident">i32</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">i32</span>,
+        ))),
 
         <span class="ident">Timestamp</span>(<span class="ident">time_unit</span>, <span class="kw">_</span>) =&gt; {
             <span class="kw">let</span> <span class="ident">time_unit</span> <span class="op">=</span> <span class="kw-2">*</span><span class="ident">time_unit</span>;
@@ -637,59 +695,112 @@
                 <span class="ident">physical_type</span>,
                 <span class="ident">logical_type</span>,
                 <span class="ident">data_type</span>,
+                <span class="ident">num_rows</span>,
                 <span class="ident">chunk_size</span>,
                 <span class="ident">time_unit</span>,
             );
         }
 
-        <span class="ident">FixedSizeBinary</span>(<span class="kw">_</span>) =&gt; <span class="ident">dyn_iter</span>(<span class="ident">fixed_size_binary::Iter::new</span>(<span class="ident">pages</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>)),
+        <span class="ident">FixedSizeBinary</span>(<span class="kw">_</span>) =&gt; <span class="ident">dyn_iter</span>(<span class="ident">fixed_size_binary::Iter::new</span>(
+            <span class="ident">pages</span>, <span class="ident">data_type</span>, <span class="ident">num_rows</span>, <span class="ident">chunk_size</span>,
+        )),
+
+        <span class="ident">Interval</span>(<span class="ident">IntervalUnit::YearMonth</span>) =&gt; {
+            <span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="number">12</span>;
+            <span class="kw">let</span> <span class="ident">pages</span> <span class="op">=</span> <span class="ident">fixed_size_binary::Iter::new</span>(
+                <span class="ident">pages</span>,
+                <span class="ident">DataType::FixedSizeBinary</span>(<span class="ident">n</span>),
+                <span class="ident">num_rows</span>,
+                <span class="ident">chunk_size</span>,
+            );
+
+            <span class="kw">let</span> <span class="ident">pages</span> <span class="op">=</span> <span class="ident">pages</span>.<span class="ident">map</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">maybe_array</span><span class="op">|</span> {
+                <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">maybe_array</span><span class="question-mark">?</span>;
+                <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">array</span>
+                    .<span class="ident">values</span>()
+                    .<span class="ident">chunks_exact</span>(<span class="ident">n</span>)
+                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">value</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]<span class="op">|</span> <span class="ident">i32::from_le_bytes</span>(<span class="ident">value</span>[..<span class="number">4</span>].<span class="ident">try_into</span>().<span class="ident">unwrap</span>()))
+                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+                <span class="kw">let</span> <span class="ident">validity</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">validity</span>().<span class="ident">cloned</span>();
+
+                <span class="ident">PrimitiveArray</span>::<span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span><span class="ident">::try_new</span>(<span class="ident">data_type</span>.<span class="ident">clone</span>(), <span class="ident">values</span>.<span class="ident">into</span>(), <span class="ident">validity</span>)
+            });
+
+            <span class="kw">let</span> <span class="ident">arrays</span> <span class="op">=</span> <span class="ident">pages</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">boxed</span>()));
+
+            <span class="ident">Box::new</span>(<span class="ident">arrays</span>) <span class="kw">as</span> <span class="kw">_</span>
+        }
+
+        <span class="ident">Interval</span>(<span class="ident">IntervalUnit::DayTime</span>) =&gt; {
+            <span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="number">12</span>;
+            <span class="kw">let</span> <span class="ident">pages</span> <span class="op">=</span> <span class="ident">fixed_size_binary::Iter::new</span>(
+                <span class="ident">pages</span>,
+                <span class="ident">DataType::FixedSizeBinary</span>(<span class="ident">n</span>),
+                <span class="ident">num_rows</span>,
+                <span class="ident">chunk_size</span>,
+            );
+
+            <span class="kw">let</span> <span class="ident">pages</span> <span class="op">=</span> <span class="ident">pages</span>.<span class="ident">map</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">maybe_array</span><span class="op">|</span> {
+                <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">maybe_array</span><span class="question-mark">?</span>;
+                <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">array</span>
+                    .<span class="ident">values</span>()
+                    .<span class="ident">chunks_exact</span>(<span class="ident">n</span>)
+                    .<span class="ident">map</span>(<span class="ident"><span class="kw">super</span>::<span class="kw">super</span>::convert_days_ms</span>)
+                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+                <span class="kw">let</span> <span class="ident">validity</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">validity</span>().<span class="ident">cloned</span>();
+
+                <span class="ident">PrimitiveArray</span>::<span class="op">&lt;</span><span class="ident">days_ms</span><span class="op">&gt;</span><span class="ident">::try_new</span>(<span class="ident">data_type</span>.<span class="ident">clone</span>(), <span class="ident">values</span>.<span class="ident">into</span>(), <span class="ident">validity</span>)
+            });
+
+            <span class="kw">let</span> <span class="ident">arrays</span> <span class="op">=</span> <span class="ident">pages</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">boxed</span>()));
+
+            <span class="ident">Box::new</span>(<span class="ident">arrays</span>) <span class="kw">as</span> <span class="kw">_</span>
+        }
 
         <span class="ident">Decimal</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="kw">match</span> <span class="ident">physical_type</span> {
             <span class="ident">PhysicalType::Int32</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">primitive::Iter::new</span>(
                 <span class="ident">pages</span>,
                 <span class="ident">data_type</span>,
+                <span class="ident">num_rows</span>,
                 <span class="ident">chunk_size</span>,
                 <span class="op">|</span><span class="ident">x</span>: <span class="ident">i32</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">i128</span>,
             ))),
             <span class="ident">PhysicalType::Int64</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">primitive::Iter::new</span>(
                 <span class="ident">pages</span>,
                 <span class="ident">data_type</span>,
+                <span class="ident">num_rows</span>,
                 <span class="ident">chunk_size</span>,
                 <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">i128</span>,
             ))),
-            <span class="kw-2">&amp;</span><span class="ident">PhysicalType::FixedLenByteArray</span>(<span class="ident">n</span>) <span class="kw">if</span> <span class="ident">n</span> <span class="op">&gt;</span> <span class="number">16</span> =&gt; {
+            <span class="ident">PhysicalType::FixedLenByteArray</span>(<span class="ident">n</span>) <span class="kw">if</span> <span class="kw-2">*</span><span class="ident">n</span> <span class="op">&gt;</span> <span class="number">16</span> =&gt; {
                 <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::NotYetImplemented</span>(<span class="macro">format!</span>(
                     <span class="string">&quot;Can&#39;t decode Decimal128 type from Fixed Size Byte Array of len {:?}&quot;</span>,
                     <span class="ident">n</span>
                 )))
             }
-            <span class="kw-2">&amp;</span><span class="ident">PhysicalType::FixedLenByteArray</span>(<span class="ident">n</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="ident">n</span> <span class="kw">as</span> <span class="ident">usize</span>;
+            <span class="ident">PhysicalType::FixedLenByteArray</span>(<span class="ident">n</span>) =&gt; {
+                <span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="kw-2">*</span><span class="ident">n</span>;
 
-                <span class="kw">let</span> <span class="ident">pages</span> <span class="op">=</span>
-                    <span class="ident">fixed_size_binary::Iter::new</span>(<span class="ident">pages</span>, <span class="ident">DataType::FixedSizeBinary</span>(<span class="ident">n</span>), <span class="ident">chunk_size</span>);
+                <span class="kw">let</span> <span class="ident">pages</span> <span class="op">=</span> <span class="ident">fixed_size_binary::Iter::new</span>(
+                    <span class="ident">pages</span>,
+                    <span class="ident">DataType::FixedSizeBinary</span>(<span class="ident">n</span>),
+                    <span class="ident">num_rows</span>,
+                    <span class="ident">chunk_size</span>,
+                );
 
                 <span class="kw">let</span> <span class="ident">pages</span> <span class="op">=</span> <span class="ident">pages</span>.<span class="ident">map</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">maybe_array</span><span class="op">|</span> {
                     <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">maybe_array</span><span class="question-mark">?</span>;
                     <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">array</span>
                         .<span class="ident">values</span>()
                         .<span class="ident">chunks_exact</span>(<span class="ident">n</span>)
-                        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">value</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]<span class="op">|</span> {
-                            <span class="comment">// Copy the fixed-size byte value to the start of a 16 byte stack</span>
-                            <span class="comment">// allocated buffer, then use an arithmetic right shift to fill in</span>
-                            <span class="comment">// MSBs, which accounts for leading 1&#39;s in negative (two&#39;s complement)</span>
-                            <span class="comment">// values.</span>
-                            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bytes</span> <span class="op">=</span> [<span class="number">0u8</span>; <span class="number">16</span>];
-                            <span class="ident">bytes</span>[..<span class="ident">n</span>].<span class="ident">copy_from_slice</span>(<span class="ident">value</span>);
-                            <span class="ident">i128::from_be_bytes</span>(<span class="ident">bytes</span>) <span class="op">&gt;</span><span class="op">&gt;</span> (<span class="number">8</span> <span class="op">*</span> (<span class="number">16</span> <span class="op">-</span> <span class="ident">n</span>))
-                        })
+                        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">value</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]<span class="op">|</span> <span class="ident"><span class="kw">super</span>::<span class="kw">super</span>::convert_i128</span>(<span class="ident">value</span>, <span class="ident">n</span>))
                         .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
                     <span class="kw">let</span> <span class="ident">validity</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">validity</span>().<span class="ident">cloned</span>();
 
                     <span class="ident">PrimitiveArray</span>::<span class="op">&lt;</span><span class="ident">i128</span><span class="op">&gt;</span><span class="ident">::try_new</span>(<span class="ident">data_type</span>.<span class="ident">clone</span>(), <span class="ident">values</span>.<span class="ident">into</span>(), <span class="ident">validity</span>)
                 });
 
-                <span class="kw">let</span> <span class="ident">arrays</span> <span class="op">=</span> <span class="ident">pages</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">arced</span>()));
+                <span class="kw">let</span> <span class="ident">arrays</span> <span class="op">=</span> <span class="ident">pages</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">boxed</span>()));
 
                 <span class="ident">Box::new</span>(<span class="ident">arrays</span>) <span class="kw">as</span> <span class="kw">_</span>
             }
@@ -700,12 +811,14 @@
         <span class="ident">Int64</span> <span class="op">|</span> <span class="ident">Date64</span> <span class="op">|</span> <span class="ident">Time64</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Duration</span>(<span class="kw">_</span>) =&gt; <span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">primitive::Iter::new</span>(
             <span class="ident">pages</span>,
             <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
             <span class="ident">chunk_size</span>,
             <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">i64</span>,
         ))),
         <span class="ident">UInt64</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">primitive::Iter::new</span>(
             <span class="ident">pages</span>,
             <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
             <span class="ident">chunk_size</span>,
             <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">u64</span>,
         ))),
@@ -713,32 +826,34 @@
         <span class="ident">Float32</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">primitive::Iter::new</span>(
             <span class="ident">pages</span>,
             <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
             <span class="ident">chunk_size</span>,
             <span class="op">|</span><span class="ident">x</span>: <span class="ident">f32</span><span class="op">|</span> <span class="ident">x</span>,
         ))),
         <span class="ident">Float64</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">primitive::Iter::new</span>(
             <span class="ident">pages</span>,
             <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
             <span class="ident">chunk_size</span>,
             <span class="op">|</span><span class="ident">x</span>: <span class="ident">f64</span><span class="op">|</span> <span class="ident">x</span>,
         ))),
 
         <span class="ident">Binary</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">binary::Iter</span>::<span class="op">&lt;</span><span class="ident">i32</span>, <span class="ident">BinaryArray</span><span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-            <span class="ident">pages</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>,
+            <span class="ident">pages</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>, <span class="ident">num_rows</span>,
         )),
         <span class="ident">LargeBinary</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">binary::Iter</span>::<span class="op">&lt;</span><span class="ident">i64</span>, <span class="ident">BinaryArray</span><span class="op">&lt;</span><span class="ident">i64</span><span class="op">&gt;</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-            <span class="ident">pages</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>,
+            <span class="ident">pages</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>, <span class="ident">num_rows</span>,
         )),
         <span class="ident">Utf8</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">binary::Iter</span>::<span class="op">&lt;</span><span class="ident">i32</span>, <span class="ident">Utf8Array</span><span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-            <span class="ident">pages</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>,
+            <span class="ident">pages</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>, <span class="ident">num_rows</span>,
         )),
         <span class="ident">LargeUtf8</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">binary::Iter</span>::<span class="op">&lt;</span><span class="ident">i64</span>, <span class="ident">Utf8Array</span><span class="op">&lt;</span><span class="ident">i64</span><span class="op">&gt;</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-            <span class="ident">pages</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>,
+            <span class="ident">pages</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>, <span class="ident">num_rows</span>,
         )),
 
         <span class="ident">Dictionary</span>(<span class="ident">key_type</span>, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
             <span class="kw">return</span> <span class="macro">match_integer_type!</span>(<span class="ident">key_type</span>, <span class="op">|</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">K</span><span class="op">|</span> {
-                <span class="ident">dict_read</span>::<span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">K</span>, <span class="kw">_</span><span class="op">&gt;</span>(<span class="ident">pages</span>, <span class="ident">physical_type</span>, <span class="ident">logical_type</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>)
+                <span class="ident">dict_read</span>::<span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">K</span>, <span class="kw">_</span><span class="op">&gt;</span>(<span class="ident">pages</span>, <span class="ident">physical_type</span>, <span class="ident">logical_type</span>, <span class="ident">data_type</span>, <span class="ident">num_rows</span>, <span class="ident">chunk_size</span>)
             })
         }
 
@@ -751,63 +866,73 @@
     })
 }
 
+<span class="doccomment">/// Unify the timestamp unit from parquet TimeUnit into arrow&#39;s TimeUnit</span>
+<span class="doccomment">/// Returns (a int64 factor, is_multiplier)</span>
+<span class="kw">fn</span> <span class="ident">unifiy_timestmap_unit</span>(
+    <span class="ident">logical_type</span>: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">PrimitiveLogicalType</span><span class="op">&gt;</span>,
+    <span class="ident">time_unit</span>: <span class="ident">TimeUnit</span>,
+) -&gt; (<span class="ident">i64</span>, <span class="ident">bool</span>) {
+    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">PrimitiveLogicalType::Timestamp</span> { <span class="ident">unit</span>, .. }) <span class="op">=</span> <span class="ident">logical_type</span> {
+        <span class="kw">match</span> (<span class="kw-2">*</span><span class="ident">unit</span>, <span class="ident">time_unit</span>) {
+            (<span class="ident">ParquetTimeUnit::Milliseconds</span>, <span class="ident">TimeUnit::Millisecond</span>)
+            <span class="op">|</span> (<span class="ident">ParquetTimeUnit::Microseconds</span>, <span class="ident">TimeUnit::Microsecond</span>)
+            <span class="op">|</span> (<span class="ident">ParquetTimeUnit::Nanoseconds</span>, <span class="ident">TimeUnit::Nanosecond</span>) =&gt; (<span class="number">1</span>, <span class="bool-val">true</span>),
+
+            (<span class="ident">ParquetTimeUnit::Milliseconds</span>, <span class="ident">TimeUnit::Second</span>)
+            <span class="op">|</span> (<span class="ident">ParquetTimeUnit::Microseconds</span>, <span class="ident">TimeUnit::Millisecond</span>)
+            <span class="op">|</span> (<span class="ident">ParquetTimeUnit::Nanoseconds</span>, <span class="ident">TimeUnit::Microsecond</span>) =&gt; (<span class="number">1000</span>, <span class="bool-val">false</span>),
+
+            (<span class="ident">ParquetTimeUnit::Microseconds</span>, <span class="ident">TimeUnit::Second</span>)
+            <span class="op">|</span> (<span class="ident">ParquetTimeUnit::Nanoseconds</span>, <span class="ident">TimeUnit::Millisecond</span>) =&gt; (<span class="number">1_000_000</span>, <span class="bool-val">false</span>),
+
+            (<span class="ident">ParquetTimeUnit::Nanoseconds</span>, <span class="ident">TimeUnit::Second</span>) =&gt; (<span class="number">1_000_000_000</span>, <span class="bool-val">false</span>),
+
+            (<span class="ident">ParquetTimeUnit::Milliseconds</span>, <span class="ident">TimeUnit::Microsecond</span>)
+            <span class="op">|</span> (<span class="ident">ParquetTimeUnit::Microseconds</span>, <span class="ident">TimeUnit::Nanosecond</span>) =&gt; (<span class="number">1_000</span>, <span class="bool-val">true</span>),
+
+            (<span class="ident">ParquetTimeUnit::Milliseconds</span>, <span class="ident">TimeUnit::Nanosecond</span>) =&gt; (<span class="number">1_000_000</span>, <span class="bool-val">true</span>),
+        }
+    } <span class="kw">else</span> {
+        (<span class="number">1</span>, <span class="bool-val">true</span>)
+    }
+}
+
 <span class="kw">fn</span> <span class="ident">timestamp</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span>: <span class="lifetime">&#39;a</span> <span class="op">+</span> <span class="ident">DataPages</span><span class="op">&gt;</span>(
     <span class="ident">pages</span>: <span class="ident">I</span>,
     <span class="ident">physical_type</span>: <span class="kw-2">&amp;</span><span class="ident">PhysicalType</span>,
     <span class="ident">logical_type</span>: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">PrimitiveLogicalType</span><span class="op">&gt;</span>,
     <span class="ident">data_type</span>: <span class="ident">DataType</span>,
-    <span class="ident">chunk_size</span>: <span class="ident">usize</span>,
+    <span class="ident">num_rows</span>: <span class="ident">usize</span>,
+    <span class="ident">chunk_size</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
     <span class="ident">time_unit</span>: <span class="ident">TimeUnit</span>,
 ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ArrayIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span> {
     <span class="kw">if</span> <span class="ident">physical_type</span> <span class="op">==</span> <span class="kw-2">&amp;</span><span class="ident">PhysicalType::Int96</span> {
-        <span class="kw">if</span> <span class="ident">time_unit</span> <span class="op">==</span> <span class="ident">TimeUnit::Nanosecond</span> {
-            <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">primitive::Iter::new</span>(
-                <span class="ident">pages</span>,
-                <span class="ident">data_type</span>,
-                <span class="ident">chunk_size</span>,
-                <span class="ident">int96_to_i64_ns</span>,
-            ))));
-        } <span class="kw">else</span> {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::nyi</span>(<span class="string">&quot;Can&#39;t decode int96 to timestamp other than ns&quot;</span>));
-        }
+        <span class="kw">let</span> <span class="ident">iter</span> <span class="op">=</span> <span class="ident">primitive::Iter::new</span>(<span class="ident">pages</span>, <span class="ident">data_type</span>, <span class="ident">num_rows</span>, <span class="ident">chunk_size</span>, <span class="ident">int96_to_i64_ns</span>);
+        <span class="kw">let</span> <span class="ident">logical_type</span> <span class="op">=</span> <span class="ident">PrimitiveLogicalType::Timestamp</span> {
+            <span class="ident">unit</span>: <span class="ident">ParquetTimeUnit::Nanoseconds</span>,
+            <span class="ident">is_adjusted_to_utc</span>: <span class="bool-val">false</span>,
+        };
+        <span class="kw">let</span> (<span class="ident">factor</span>, <span class="ident">is_multiplier</span>) <span class="op">=</span> <span class="ident">unifiy_timestmap_unit</span>(<span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(<span class="ident">logical_type</span>), <span class="ident">time_unit</span>);
+        <span class="kw">return</span> <span class="kw">match</span> (<span class="ident">factor</span>, <span class="ident">is_multiplier</span>) {
+            (<span class="number">1</span>, <span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">iter</span>))),
+            (<span class="ident">a</span>, <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">dyn_iter</span>(<span class="ident">op</span>(<span class="ident">iter</span>, <span class="kw">move</span> <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">*</span> <span class="ident">a</span>))),
+            (<span class="ident">a</span>, <span class="bool-val">false</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">dyn_iter</span>(<span class="ident">op</span>(<span class="ident">iter</span>, <span class="kw">move</span> <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">/</span> <span class="ident">a</span>))),
+        };
     };
+
     <span class="kw">if</span> <span class="ident">physical_type</span> <span class="op">!</span><span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">PhysicalType::Int64</span> {
         <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::nyi</span>(
             <span class="string">&quot;Can&#39;t decode a timestamp from a non-int64 parquet type&quot;</span>,
         ));
     }
 
-    <span class="kw">let</span> <span class="ident">iter</span> <span class="op">=</span> <span class="ident">primitive::Iter::new</span>(<span class="ident">pages</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>, <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span>);
-
-    <span class="kw">let</span> <span class="ident">unit</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">PrimitiveLogicalType::Timestamp</span> { <span class="ident">unit</span>, .. }) <span class="op">=</span> <span class="ident">logical_type</span> {
-        <span class="ident">unit</span>
-    } <span class="kw">else</span> {
-        <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">iter</span>)));
-    };
-
-    <span class="prelude-val">Ok</span>(<span class="kw">match</span> (<span class="ident">unit</span>, <span class="ident">time_unit</span>) {
-        (<span class="ident">ParquetTimeUnit::Milliseconds</span>, <span class="ident">TimeUnit::Second</span>) =&gt; <span class="ident">dyn_iter</span>(<span class="ident">op</span>(<span class="ident">iter</span>, <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">/</span> <span class="number">1_000</span>)),
-        (<span class="ident">ParquetTimeUnit::Microseconds</span>, <span class="ident">TimeUnit::Second</span>) =&gt; <span class="ident">dyn_iter</span>(<span class="ident">op</span>(<span class="ident">iter</span>, <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">/</span> <span class="number">1_000_000</span>)),
-        (<span class="ident">ParquetTimeUnit::Nanoseconds</span>, <span class="ident">TimeUnit::Second</span>) =&gt; {
-            <span class="ident">dyn_iter</span>(<span class="ident">op</span>(<span class="ident">iter</span>, <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">/</span> <span class="number">1_000_000_000</span>))
-        }
-
-        (<span class="ident">ParquetTimeUnit::Milliseconds</span>, <span class="ident">TimeUnit::Millisecond</span>) =&gt; <span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">iter</span>)),
-        (<span class="ident">ParquetTimeUnit::Microseconds</span>, <span class="ident">TimeUnit::Millisecond</span>) =&gt; <span class="ident">dyn_iter</span>(<span class="ident">op</span>(<span class="ident">iter</span>, <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">/</span> <span class="number">1_000</span>)),
-        (<span class="ident">ParquetTimeUnit::Nanoseconds</span>, <span class="ident">TimeUnit::Millisecond</span>) =&gt; {
-            <span class="ident">dyn_iter</span>(<span class="ident">op</span>(<span class="ident">iter</span>, <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">/</span> <span class="number">1_000_000</span>))
-        }
-
-        (<span class="ident">ParquetTimeUnit::Milliseconds</span>, <span class="ident">TimeUnit::Microsecond</span>) =&gt; <span class="ident">dyn_iter</span>(<span class="ident">op</span>(<span class="ident">iter</span>, <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">*</span> <span class="number">1_000</span>)),
-        (<span class="ident">ParquetTimeUnit::Microseconds</span>, <span class="ident">TimeUnit::Microsecond</span>) =&gt; <span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">iter</span>)),
-        (<span class="ident">ParquetTimeUnit::Nanoseconds</span>, <span class="ident">TimeUnit::Microsecond</span>) =&gt; <span class="ident">dyn_iter</span>(<span class="ident">op</span>(<span class="ident">iter</span>, <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">/</span> <span class="number">1_000</span>)),
-
-        (<span class="ident">ParquetTimeUnit::Milliseconds</span>, <span class="ident">TimeUnit::Nanosecond</span>) =&gt; {
-            <span class="ident">dyn_iter</span>(<span class="ident">op</span>(<span class="ident">iter</span>, <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">*</span> <span class="number">1_000_000</span>))
-        }
-        (<span class="ident">ParquetTimeUnit::Microseconds</span>, <span class="ident">TimeUnit::Nanosecond</span>) =&gt; <span class="ident">dyn_iter</span>(<span class="ident">op</span>(<span class="ident">iter</span>, <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">*</span> <span class="number">1_000</span>)),
-        (<span class="ident">ParquetTimeUnit::Nanoseconds</span>, <span class="ident">TimeUnit::Nanosecond</span>) =&gt; <span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">iter</span>)),
-    })
+    <span class="kw">let</span> <span class="ident">iter</span> <span class="op">=</span> <span class="ident">primitive::Iter::new</span>(<span class="ident">pages</span>, <span class="ident">data_type</span>, <span class="ident">num_rows</span>, <span class="ident">chunk_size</span>, <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span>);
+    <span class="kw">let</span> (<span class="ident">factor</span>, <span class="ident">is_multiplier</span>) <span class="op">=</span> <span class="ident">unifiy_timestmap_unit</span>(<span class="ident">logical_type</span>, <span class="ident">time_unit</span>);
+    <span class="kw">match</span> (<span class="ident">factor</span>, <span class="ident">is_multiplier</span>) {
+        (<span class="number">1</span>, <span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">dyn_iter</span>(<span class="ident">iden</span>(<span class="ident">iter</span>))),
+        (<span class="ident">a</span>, <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">dyn_iter</span>(<span class="ident">op</span>(<span class="ident">iter</span>, <span class="kw">move</span> <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">*</span> <span class="ident">a</span>))),
+        (<span class="ident">a</span>, <span class="bool-val">false</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">dyn_iter</span>(<span class="ident">op</span>(<span class="ident">iter</span>, <span class="kw">move</span> <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="op">/</span> <span class="ident">a</span>))),
+    }
 }
 
 <span class="kw">fn</span> <span class="ident">timestamp_dict</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">K</span>: <span class="ident">DictionaryKey</span>, <span class="ident">I</span>: <span class="lifetime">&#39;a</span> <span class="op">+</span> <span class="ident">DataPages</span><span class="op">&gt;</span>(
@@ -815,134 +940,51 @@
     <span class="ident">physical_type</span>: <span class="kw-2">&amp;</span><span class="ident">PhysicalType</span>,
     <span class="ident">logical_type</span>: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">PrimitiveLogicalType</span><span class="op">&gt;</span>,
     <span class="ident">data_type</span>: <span class="ident">DataType</span>,
-    <span class="ident">chunk_size</span>: <span class="ident">usize</span>,
+    <span class="ident">num_rows</span>: <span class="ident">usize</span>,
+    <span class="ident">chunk_size</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
     <span class="ident">time_unit</span>: <span class="ident">TimeUnit</span>,
 ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ArrayIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span> {
     <span class="kw">if</span> <span class="ident">physical_type</span> <span class="op">==</span> <span class="kw-2">&amp;</span><span class="ident">PhysicalType::Int96</span> {
-        <span class="kw">if</span> <span class="ident">time_unit</span> <span class="op">==</span> <span class="ident">TimeUnit::Nanosecond</span> {
-            <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
+        <span class="kw">let</span> <span class="ident">logical_type</span> <span class="op">=</span> <span class="ident">PrimitiveLogicalType::Timestamp</span> {
+            <span class="ident">unit</span>: <span class="ident">ParquetTimeUnit::Nanoseconds</span>,
+            <span class="ident">is_adjusted_to_utc</span>: <span class="bool-val">false</span>,
+        };
+        <span class="kw">let</span> (<span class="ident">factor</span>, <span class="ident">is_multiplier</span>) <span class="op">=</span> <span class="ident">unifiy_timestmap_unit</span>(<span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(<span class="ident">logical_type</span>), <span class="ident">time_unit</span>);
+        <span class="kw">return</span> <span class="kw">match</span> (<span class="ident">factor</span>, <span class="ident">is_multiplier</span>) {
+            (<span class="ident">a</span>, <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
                 <span class="ident">pages</span>,
                 <span class="ident">DataType::Timestamp</span>(<span class="ident">TimeUnit::Nanosecond</span>, <span class="prelude-val">None</span>),
+                <span class="ident">num_rows</span>,
                 <span class="ident">chunk_size</span>,
-                <span class="ident">int96_to_i64_ns</span>,
-            )));
-        } <span class="kw">else</span> {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::nyi</span>(<span class="string">&quot;Can&#39;t decode int96 to timestamp other than ns&quot;</span>));
-        }
+                <span class="kw">move</span> <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">int96_to_i64_ns</span>(<span class="ident">x</span>) <span class="op">*</span> <span class="ident">a</span>,
+            ))),
+            (<span class="ident">a</span>, <span class="bool-val">false</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
+                <span class="ident">pages</span>,
+                <span class="ident">DataType::Timestamp</span>(<span class="ident">TimeUnit::Nanosecond</span>, <span class="prelude-val">None</span>),
+                <span class="ident">num_rows</span>,
+                <span class="ident">chunk_size</span>,
+                <span class="kw">move</span> <span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">int96_to_i64_ns</span>(<span class="ident">x</span>) <span class="op">/</span> <span class="ident">a</span>,
+            ))),
+        };
     };
 
-    <span class="kw">let</span> <span class="ident">unit</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">PrimitiveLogicalType::Timestamp</span> { <span class="ident">unit</span>, .. }) <span class="op">=</span> <span class="ident">logical_type</span> {
-        <span class="ident">unit</span>
-    } <span class="kw">else</span> {
-        <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
+    <span class="kw">let</span> (<span class="ident">factor</span>, <span class="ident">is_multiplier</span>) <span class="op">=</span> <span class="ident">unifiy_timestmap_unit</span>(<span class="ident">logical_type</span>, <span class="ident">time_unit</span>);
+    <span class="kw">match</span> (<span class="ident">factor</span>, <span class="ident">is_multiplier</span>) {
+        (<span class="ident">a</span>, <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
             <span class="ident">pages</span>,
             <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
             <span class="ident">chunk_size</span>,
-            <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span>,
-        )));
-    };
-
-    <span class="prelude-val">Ok</span>(<span class="kw">match</span> (<span class="ident">unit</span>, <span class="ident">time_unit</span>) {
-        (<span class="ident">ParquetTimeUnit::Milliseconds</span>, <span class="ident">TimeUnit::Second</span>) =&gt; {
-            <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-                <span class="ident">pages</span>,
-                <span class="ident">data_type</span>,
-                <span class="ident">chunk_size</span>,
-                <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span> <span class="op">/</span> <span class="number">1_000</span>,
-            ))
-        }
-        (<span class="ident">ParquetTimeUnit::Microseconds</span>, <span class="ident">TimeUnit::Second</span>) =&gt; {
-            <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-                <span class="ident">pages</span>,
-                <span class="ident">data_type</span>,
-                <span class="ident">chunk_size</span>,
-                <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span> <span class="op">/</span> <span class="number">1_000_000</span>,
-            ))
-        }
-        (<span class="ident">ParquetTimeUnit::Nanoseconds</span>, <span class="ident">TimeUnit::Second</span>) =&gt; {
-            <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-                <span class="ident">pages</span>,
-                <span class="ident">data_type</span>,
-                <span class="ident">chunk_size</span>,
-                <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span> <span class="op">/</span> <span class="number">1_000_000_000</span>,
-            ))
-        }
-
-        (<span class="ident">ParquetTimeUnit::Milliseconds</span>, <span class="ident">TimeUnit::Millisecond</span>) =&gt; {
-            <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-                <span class="ident">pages</span>,
-                <span class="ident">data_type</span>,
-                <span class="ident">chunk_size</span>,
-                <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span>,
-            ))
-        }
-        (<span class="ident">ParquetTimeUnit::Microseconds</span>, <span class="ident">TimeUnit::Millisecond</span>) =&gt; {
-            <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-                <span class="ident">pages</span>,
-                <span class="ident">data_type</span>,
-                <span class="ident">chunk_size</span>,
-                <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span> <span class="op">/</span> <span class="number">1_000</span>,
-            ))
-        }
-        (<span class="ident">ParquetTimeUnit::Nanoseconds</span>, <span class="ident">TimeUnit::Millisecond</span>) =&gt; {
-            <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-                <span class="ident">pages</span>,
-                <span class="ident">data_type</span>,
-                <span class="ident">chunk_size</span>,
-                <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span> <span class="op">/</span> <span class="number">1_000_000</span>,
-            ))
-        }
-
-        (<span class="ident">ParquetTimeUnit::Milliseconds</span>, <span class="ident">TimeUnit::Microsecond</span>) =&gt; {
-            <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-                <span class="ident">pages</span>,
-                <span class="ident">data_type</span>,
-                <span class="ident">chunk_size</span>,
-                <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span> <span class="op">*</span> <span class="number">1_000</span>,
-            ))
-        }
-        (<span class="ident">ParquetTimeUnit::Microseconds</span>, <span class="ident">TimeUnit::Microsecond</span>) =&gt; {
-            <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-                <span class="ident">pages</span>,
-                <span class="ident">data_type</span>,
-                <span class="ident">chunk_size</span>,
-                <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span>,
-            ))
-        }
-        (<span class="ident">ParquetTimeUnit::Nanoseconds</span>, <span class="ident">TimeUnit::Microsecond</span>) =&gt; {
-            <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-                <span class="ident">pages</span>,
-                <span class="ident">data_type</span>,
-                <span class="ident">chunk_size</span>,
-                <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span> <span class="op">/</span> <span class="number">1_000</span>,
-            ))
-        }
-
-        (<span class="ident">ParquetTimeUnit::Milliseconds</span>, <span class="ident">TimeUnit::Nanosecond</span>) =&gt; {
-            <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-                <span class="ident">pages</span>,
-                <span class="ident">data_type</span>,
-                <span class="ident">chunk_size</span>,
-                <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span> <span class="op">*</span> <span class="number">1_000_000</span>,
-            ))
-        }
-        (<span class="ident">ParquetTimeUnit::Microseconds</span>, <span class="ident">TimeUnit::Nanosecond</span>) =&gt; {
-            <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-                <span class="ident">pages</span>,
-                <span class="ident">data_type</span>,
-                <span class="ident">chunk_size</span>,
-                <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span> <span class="op">*</span> <span class="number">1_000</span>,
-            ))
-        }
-        (<span class="ident">ParquetTimeUnit::Nanoseconds</span>, <span class="ident">TimeUnit::Nanosecond</span>) =&gt; {
-            <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-                <span class="ident">pages</span>,
-                <span class="ident">data_type</span>,
-                <span class="ident">chunk_size</span>,
-                <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span>,
-            ))
-        }
-    })
+            <span class="kw">move</span> <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span> <span class="op">*</span> <span class="ident">a</span>,
+        ))),
+        (<span class="ident">a</span>, <span class="bool-val">false</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
+            <span class="ident">pages</span>,
+            <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
+            <span class="ident">chunk_size</span>,
+            <span class="kw">move</span> <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span> <span class="op">/</span> <span class="ident">a</span>,
+        ))),
+    }
 }
 
 <span class="kw">fn</span> <span class="ident">dict_read</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">K</span>: <span class="ident">DictionaryKey</span>, <span class="ident">I</span>: <span class="lifetime">&#39;a</span> <span class="op">+</span> <span class="ident">DataPages</span><span class="op">&gt;</span>(
@@ -950,7 +992,8 @@
     <span class="ident">physical_type</span>: <span class="kw-2">&amp;</span><span class="ident">PhysicalType</span>,
     <span class="ident">logical_type</span>: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">PrimitiveLogicalType</span><span class="op">&gt;</span>,
     <span class="ident">data_type</span>: <span class="ident">DataType</span>,
-    <span class="ident">chunk_size</span>: <span class="ident">usize</span>,
+    <span class="ident">num_rows</span>: <span class="ident">usize</span>,
+    <span class="ident">chunk_size</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
 ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ArrayIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span> {
     <span class="kw">use</span> <span class="ident">DataType</span>::<span class="kw-2">*</span>;
     <span class="kw">let</span> <span class="ident">values_data_type</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Dictionary</span>(<span class="kw">_</span>, <span class="ident">v</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">data_type</span> {
@@ -963,38 +1006,54 @@
         <span class="ident">UInt8</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
             <span class="ident">iter</span>,
             <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
             <span class="ident">chunk_size</span>,
             <span class="op">|</span><span class="ident">x</span>: <span class="ident">i32</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">u8</span>,
         )),
         <span class="ident">UInt16</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
             <span class="ident">iter</span>,
             <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
             <span class="ident">chunk_size</span>,
             <span class="op">|</span><span class="ident">x</span>: <span class="ident">i32</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">u16</span>,
         )),
         <span class="ident">UInt32</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
             <span class="ident">iter</span>,
             <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
             <span class="ident">chunk_size</span>,
             <span class="op">|</span><span class="ident">x</span>: <span class="ident">i32</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">u32</span>,
+        )),
+        <span class="ident">UInt64</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
+            <span class="ident">iter</span>,
+            <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
+            <span class="ident">chunk_size</span>,
+            <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">u64</span>,
         )),
         <span class="ident">Int8</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
             <span class="ident">iter</span>,
             <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
             <span class="ident">chunk_size</span>,
             <span class="op">|</span><span class="ident">x</span>: <span class="ident">i32</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">i8</span>,
         )),
         <span class="ident">Int16</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
             <span class="ident">iter</span>,
             <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
             <span class="ident">chunk_size</span>,
             <span class="op">|</span><span class="ident">x</span>: <span class="ident">i32</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">i16</span>,
         )),
-        <span class="ident">Int32</span> <span class="op">|</span> <span class="ident">Date32</span> <span class="op">|</span> <span class="ident">Time32</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Interval</span>(<span class="ident">IntervalUnit::YearMonth</span>) =&gt; <span class="ident">dyn_iter</span>(
-            <span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(<span class="ident">iter</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>, <span class="op">|</span><span class="ident">x</span>: <span class="ident">i32</span><span class="op">|</span> {
-                <span class="ident">x</span> <span class="kw">as</span> <span class="ident">i32</span>
-            }),
-        ),
+        <span class="ident">Int32</span> <span class="op">|</span> <span class="ident">Date32</span> <span class="op">|</span> <span class="ident">Time32</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Interval</span>(<span class="ident">IntervalUnit::YearMonth</span>) =&gt; {
+            <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
+                <span class="ident">iter</span>,
+                <span class="ident">data_type</span>,
+                <span class="ident">num_rows</span>,
+                <span class="ident">chunk_size</span>,
+                <span class="op">|</span><span class="ident">x</span>: <span class="ident">i32</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">i32</span>,
+            ))
+        }
 
         <span class="ident">Timestamp</span>(<span class="ident">time_unit</span>, <span class="kw">_</span>) =&gt; {
             <span class="kw">let</span> <span class="ident">time_unit</span> <span class="op">=</span> <span class="kw-2">*</span><span class="ident">time_unit</span>;
@@ -1003,35 +1062,44 @@
                 <span class="ident">physical_type</span>,
                 <span class="ident">logical_type</span>,
                 <span class="ident">data_type</span>,
+                <span class="ident">num_rows</span>,
                 <span class="ident">chunk_size</span>,
                 <span class="ident">time_unit</span>,
             );
         }
 
-        <span class="ident">Int64</span> <span class="op">|</span> <span class="ident">Date64</span> <span class="op">|</span> <span class="ident">Time64</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Duration</span>(<span class="kw">_</span>) =&gt; <span class="ident">dyn_iter</span>(
-            <span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(<span class="ident">iter</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>, <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span>),
-        ),
+        <span class="ident">Int64</span> <span class="op">|</span> <span class="ident">Date64</span> <span class="op">|</span> <span class="ident">Time64</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Duration</span>(<span class="kw">_</span>) =&gt; {
+            <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
+                <span class="ident">iter</span>,
+                <span class="ident">data_type</span>,
+                <span class="ident">num_rows</span>,
+                <span class="ident">chunk_size</span>,
+                <span class="op">|</span><span class="ident">x</span>: <span class="ident">i64</span><span class="op">|</span> <span class="ident">x</span>,
+            ))
+        }
         <span class="ident">Float32</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
             <span class="ident">iter</span>,
             <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
             <span class="ident">chunk_size</span>,
             <span class="op">|</span><span class="ident">x</span>: <span class="ident">f32</span><span class="op">|</span> <span class="ident">x</span>,
         )),
         <span class="ident">Float64</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">primitive::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
             <span class="ident">iter</span>,
             <span class="ident">data_type</span>,
+            <span class="ident">num_rows</span>,
             <span class="ident">chunk_size</span>,
             <span class="op">|</span><span class="ident">x</span>: <span class="ident">f64</span><span class="op">|</span> <span class="ident">x</span>,
         )),
 
         <span class="ident">Utf8</span> <span class="op">|</span> <span class="ident">Binary</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">binary::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">i32</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-            <span class="ident">iter</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>,
+            <span class="ident">iter</span>, <span class="ident">data_type</span>, <span class="ident">num_rows</span>, <span class="ident">chunk_size</span>,
         )),
         <span class="ident">LargeUtf8</span> <span class="op">|</span> <span class="ident">LargeBinary</span> =&gt; <span class="ident">dyn_iter</span>(<span class="ident">binary::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">i64</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-            <span class="ident">iter</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>,
+            <span class="ident">iter</span>, <span class="ident">data_type</span>, <span class="ident">num_rows</span>, <span class="ident">chunk_size</span>,
         )),
         <span class="ident">FixedSizeBinary</span>(<span class="kw">_</span>) =&gt; <span class="ident">dyn_iter</span>(<span class="ident">fixed_size_binary::DictIter</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="ident">::new</span>(
-            <span class="ident">iter</span>, <span class="ident">data_type</span>, <span class="ident">chunk_size</span>,
+            <span class="ident">iter</span>, <span class="ident">data_type</span>, <span class="ident">num_rows</span>, <span class="ident">chunk_size</span>,
         )),
         <span class="ident">other</span> =&gt; {
             <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::nyi</span>(<span class="macro">format!</span>(

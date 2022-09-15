@@ -1,1 +1,1 @@
-initSidebarItems({"trait":[["AsList",""],["AsUtf8",""],["DataFrameOps",""],["IntoSeriesOps",""],["SeriesOps",""],["SeriesSealed",""]]});
+initSidebarItems({"trait":[["AsList",""],["AsUtf8",""],["ChunkedSet",""],["DataFrameOps",""],["IntoSeriesOps",""],["SeriesMethods",""],["SeriesOps",""],["SeriesSealed",""]]});

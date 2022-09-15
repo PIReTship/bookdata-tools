@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.12.0/src/io/parquet/read/deserialize/boolean/nested.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>nested.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../../../storage.js"></script><script src="../../../../../../../crates.js"></script><script defer src="../../../../../../../main.js"></script><script defer src="../../../../../../../source-script.js"></script><script defer src="../../../../../../../source-files.js"></script>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.13.1/src/io/parquet/read/deserialize/boolean/nested.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>nested.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../../../storage.js"></script><script src="../../../../../../../crates.js"></script><script defer src="../../../../../../../main.js"></script><script defer src="../../../../../../../source-script.js"></script><script defer src="../../../../../../../source-files.js"></script>
     <noscript><link rel="stylesheet" href="../../../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../../../arrow2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../../../rust-logo.svg" alt="logo"></div>
         </a><h2 class="location"></h2>
     </nav>
@@ -152,21 +152,13 @@
 <span id="147">147</span>
 <span id="148">148</span>
 <span id="149">149</span>
-<span id="150">150</span>
-<span id="151">151</span>
-<span id="152">152</span>
-<span id="153">153</span>
-<span id="154">154</span>
-<span id="155">155</span>
-<span id="156">156</span>
-<span id="157">157</span>
-<span id="158">158</span>
-<span id="159">159</span>
-<span id="160">160</span>
-<span id="161">161</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::collections::VecDeque</span>;
 
-<span class="kw">use</span> <span class="ident">parquet2</span>::{<span class="ident">encoding::Encoding</span>, <span class="ident">page::DataPage</span>, <span class="ident">schema::Repetition</span>};
+<span class="kw">use</span> <span class="ident">parquet2</span>::{
+    <span class="ident">encoding::Encoding</span>,
+    <span class="ident">page</span>::{<span class="ident">split_buffer</span>, <span class="ident">DataPage</span>},
+    <span class="ident">schema::Repetition</span>,
+};
 
 <span class="kw">use</span> <span class="kw">crate</span>::{
     <span class="ident">array::BooleanArray</span>,
@@ -177,42 +169,22 @@
 
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::<span class="kw">super</span>::nested_utils</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::<span class="kw">super</span>::utils</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::<span class="kw">super</span>::utils</span>::{<span class="ident">Decoder</span>, <span class="ident">MaybeNext</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::<span class="kw">super</span>::utils::MaybeNext</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::<span class="kw">super</span>::DataPages</span>;
-
-<span class="comment">// The state of a required DataPage with a boolean physical type</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">struct</span> <span class="ident">Required</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="ident">values</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>],
-    <span class="comment">// invariant: offset &lt;= length;</span>
-    <span class="ident">offset</span>: <span class="ident">usize</span>,
-    <span class="ident">length</span>: <span class="ident">usize</span>,
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Required</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">page</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">DataPage</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> (<span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">values</span>) <span class="op">=</span> <span class="ident">utils::split_buffer</span>(<span class="ident">page</span>);
-        <span class="self">Self</span> {
-            <span class="ident">values</span>,
-            <span class="ident">offset</span>: <span class="number">0</span>,
-            <span class="ident">length</span>: <span class="ident">page</span>.<span class="ident">num_values</span>(),
-        }
-    }
-}
 
 <span class="comment">// The state of a `DataPage` of `Boolean` parquet boolean type</span>
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::large_enum_variant</span>)]</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">enum</span> <span class="ident">State</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="ident">Optional</span>(<span class="ident">Optional</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>, <span class="ident">BitmapIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>),
-    <span class="ident">Required</span>(<span class="ident">Required</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>),
+    <span class="ident">Optional</span>(<span class="ident">BitmapIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>),
+    <span class="ident">Required</span>(<span class="ident">BitmapIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>),
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">State</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
         <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">State::Optional</span>(<span class="ident">optional</span>, <span class="kw">_</span>) =&gt; <span class="ident">optional</span>.<span class="ident">len</span>(),
-            <span class="ident">State::Required</span>(<span class="ident">page</span>) =&gt; <span class="ident">page</span>.<span class="ident">length</span> <span class="op">-</span> <span class="ident">page</span>.<span class="ident">offset</span>,
+            <span class="ident">State::Optional</span>(<span class="ident">iter</span>) =&gt; <span class="ident">iter</span>.<span class="ident">size_hint</span>().<span class="number">0</span>,
+            <span class="ident">State::Required</span>(<span class="ident">iter</span>) =&gt; <span class="ident">iter</span>.<span class="ident">size_hint</span>().<span class="number">0</span>,
         }
     }
 }
@@ -226,7 +198,7 @@
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>)]</span>
 <span class="kw">struct</span> <span class="ident">BooleanDecoder</span> {}
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Decoder</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">BooleanDecoder</span> {
+<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">NestedDecoder</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">BooleanDecoder</span> {
     <span class="kw">type</span> <span class="ident">State</span> <span class="op">=</span> <span class="ident">State</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>;
     <span class="kw">type</span> <span class="ident">DecodedState</span> <span class="op">=</span> (<span class="ident">MutableBitmap</span>, <span class="ident">MutableBitmap</span>);
 
@@ -237,12 +209,17 @@
 
         <span class="kw">match</span> (<span class="ident">page</span>.<span class="ident">encoding</span>(), <span class="ident">is_optional</span>, <span class="ident">is_filtered</span>) {
             (<span class="ident">Encoding::Plain</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; {
-                <span class="kw">let</span> (<span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">values</span>) <span class="op">=</span> <span class="ident">utils::split_buffer</span>(<span class="ident">page</span>);
+                <span class="kw">let</span> (<span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">values</span>) <span class="op">=</span> <span class="ident">split_buffer</span>(<span class="ident">page</span>)<span class="question-mark">?</span>;
                 <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">BitmapIter::new</span>(<span class="ident">values</span>, <span class="number">0</span>, <span class="ident">values</span>.<span class="ident">len</span>() <span class="op">*</span> <span class="number">8</span>);
 
-                <span class="prelude-val">Ok</span>(<span class="ident">State::Optional</span>(<span class="ident">Optional::new</span>(<span class="ident">page</span>), <span class="ident">values</span>))
+                <span class="prelude-val">Ok</span>(<span class="ident">State::Optional</span>(<span class="ident">values</span>))
             }
-            (<span class="ident">Encoding::Plain</span>, <span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">State::Required</span>(<span class="ident">Required::new</span>(<span class="ident">page</span>))),
+            (<span class="ident">Encoding::Plain</span>, <span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; {
+                <span class="kw">let</span> (<span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">values</span>) <span class="op">=</span> <span class="ident">split_buffer</span>(<span class="ident">page</span>)<span class="question-mark">?</span>;
+                <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">BitmapIter::new</span>(<span class="ident">values</span>, <span class="number">0</span>, <span class="ident">values</span>.<span class="ident">len</span>() <span class="op">*</span> <span class="number">8</span>);
+
+                <span class="prelude-val">Ok</span>(<span class="ident">State::Required</span>(<span class="ident">values</span>))
+            }
             <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">utils::not_implemented</span>(<span class="ident">page</span>)),
         }
     }
@@ -254,46 +231,45 @@
         )
     }
 
-    <span class="kw">fn</span> <span class="ident">extend_from_state</span>(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">state</span>: <span class="kw-2">&amp;mut</span> <span class="ident">State</span>,
-        <span class="ident">decoded</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::DecodedState</span>,
-        <span class="ident">additional</span>: <span class="ident">usize</span>,
-    ) {
+    <span class="kw">fn</span> <span class="ident">push_valid</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">state</span>: <span class="kw-2">&amp;mut</span> <span class="ident">State</span>, <span class="ident">decoded</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::DecodedState</span>) {
         <span class="kw">let</span> (<span class="ident">values</span>, <span class="ident">validity</span>) <span class="op">=</span> <span class="ident">decoded</span>;
         <span class="kw">match</span> <span class="ident">state</span> {
-            <span class="ident">State::Optional</span>(<span class="ident">page_validity</span>, <span class="ident">page_values</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">items</span> <span class="op">=</span> <span class="ident">page_validity</span>.<span class="ident">by_ref</span>().<span class="ident">take</span>(<span class="ident">additional</span>);
-                <span class="kw">let</span> <span class="ident">items</span> <span class="op">=</span> <span class="ident">Zip::new</span>(<span class="ident">items</span>, <span class="ident">page_values</span>.<span class="ident">by_ref</span>());
-
-                <span class="ident">read_optional_values</span>(<span class="ident">items</span>, <span class="ident">values</span>, <span class="ident">validity</span>)
+            <span class="ident">State::Optional</span>(<span class="ident">page_values</span>) =&gt; {
+                <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">page_values</span>.<span class="ident">next</span>().<span class="ident">unwrap_or_default</span>();
+                <span class="ident">values</span>.<span class="ident">push</span>(<span class="ident">value</span>);
+                <span class="ident">validity</span>.<span class="ident">push</span>(<span class="bool-val">true</span>);
             }
-            <span class="ident">State::Required</span>(<span class="ident">page</span>) =&gt; {
-                <span class="ident">values</span>.<span class="ident">extend_from_slice</span>(<span class="ident">page</span>.<span class="ident">values</span>, <span class="ident">page</span>.<span class="ident">offset</span>, <span class="ident">additional</span>);
-                <span class="ident">page</span>.<span class="ident">offset</span> <span class="op">+</span><span class="op">=</span> <span class="ident">additional</span>;
+            <span class="ident">State::Required</span>(<span class="ident">page_values</span>) =&gt; {
+                <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">page_values</span>.<span class="ident">next</span>().<span class="ident">unwrap_or_default</span>();
+                <span class="ident">values</span>.<span class="ident">push</span>(<span class="ident">value</span>);
             }
         }
+    }
+
+    <span class="kw">fn</span> <span class="ident">push_null</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">decoded</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::DecodedState</span>) {
+        <span class="kw">let</span> (<span class="ident">values</span>, <span class="ident">validity</span>) <span class="op">=</span> <span class="ident">decoded</span>;
+        <span class="ident">values</span>.<span class="ident">push</span>(<span class="bool-val">false</span>);
+        <span class="ident">validity</span>.<span class="ident">push</span>(<span class="bool-val">false</span>);
     }
 }
 
 <span class="doccomment">/// An iterator adapter over [`DataPages`] assumed to be encoded as boolean arrays</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ArrayIterator</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="ident">DataPages</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">NestedIter</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="ident">DataPages</span><span class="op">&gt;</span> {
     <span class="ident">iter</span>: <span class="ident">I</span>,
     <span class="ident">init</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">InitNested</span><span class="op">&gt;</span>,
-    <span class="comment">// invariant: items.len() == nested.len()</span>
-    <span class="ident">items</span>: <span class="ident">VecDeque</span><span class="op">&lt;</span>(<span class="ident">MutableBitmap</span>, <span class="ident">MutableBitmap</span>)<span class="op">&gt;</span>,
-    <span class="ident">nested</span>: <span class="ident">VecDeque</span><span class="op">&lt;</span><span class="ident">NestedState</span><span class="op">&gt;</span>,
-    <span class="ident">chunk_size</span>: <span class="ident">usize</span>,
+    <span class="ident">items</span>: <span class="ident">VecDeque</span><span class="op">&lt;</span>(<span class="ident">NestedState</span>, (<span class="ident">MutableBitmap</span>, <span class="ident">MutableBitmap</span>))<span class="op">&gt;</span>,
+    <span class="ident">remaining</span>: <span class="ident">usize</span>,
+    <span class="ident">chunk_size</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="ident">DataPages</span><span class="op">&gt;</span> <span class="ident">ArrayIterator</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">iter</span>: <span class="ident">I</span>, <span class="ident">init</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">InitNested</span><span class="op">&gt;</span>, <span class="ident">chunk_size</span>: <span class="ident">usize</span>) -&gt; <span class="self">Self</span> {
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="ident">DataPages</span><span class="op">&gt;</span> <span class="ident">NestedIter</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">iter</span>: <span class="ident">I</span>, <span class="ident">init</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">InitNested</span><span class="op">&gt;</span>, <span class="ident">num_rows</span>: <span class="ident">usize</span>, <span class="ident">chunk_size</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">iter</span>,
             <span class="ident">init</span>,
             <span class="ident">items</span>: <span class="ident">VecDeque::new</span>(),
-            <span class="ident">nested</span>: <span class="ident">VecDeque::new</span>(),
+            <span class="ident">remaining</span>: <span class="ident">num_rows</span>,
             <span class="ident">chunk_size</span>,
         }
     }
@@ -303,14 +279,14 @@
     <span class="ident">BooleanArray::new</span>(<span class="ident">data_type</span>.<span class="ident">clone</span>(), <span class="ident">values</span>.<span class="ident">into</span>(), <span class="ident">validity</span>.<span class="ident">into</span>())
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="ident">DataPages</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">ArrayIterator</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> {
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="ident">DataPages</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">NestedIter</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> {
     <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">NestedState</span>, <span class="ident">BooleanArray</span>)<span class="op">&gt;</span>;
 
     <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">maybe_state</span> <span class="op">=</span> <span class="ident">next</span>(
             <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">iter</span>,
             <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">items</span>,
-            <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">nested</span>,
+            <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">remaining</span>,
             <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">init</span>,
             <span class="self">self</span>.<span class="ident">chunk_size</span>,
             <span class="kw-2">&amp;</span><span class="ident">BooleanDecoder::default</span>(),

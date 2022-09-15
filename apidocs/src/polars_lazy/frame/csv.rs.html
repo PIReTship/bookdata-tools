@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.22.7/src/frame/csv.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>csv.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.23.2/src/frame/csv.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>csv.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
     <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
         </a><h2 class="location"></h2>
     </nav>
@@ -288,11 +288,22 @@
 <span id="283">283</span>
 <span id="284">284</span>
 <span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">polars_core::prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">use</span> <span class="ident">polars_io::csv::utils::get_reader_bytes</span>;
+<span class="kw">use</span> <span class="ident">polars_io::csv::utils::infer_file_schema</span>;
 <span class="kw">use</span> <span class="ident">polars_io::csv</span>::{<span class="ident">CsvEncoding</span>, <span class="ident">NullValues</span>};
-<span class="kw">use</span> <span class="ident">polars_io::csv_core::utils::get_reader_bytes</span>;
-<span class="kw">use</span> <span class="ident">polars_io::csv_core::utils::infer_file_schema</span>;
 <span class="kw">use</span> <span class="ident">polars_io::RowCount</span>;
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>)]</span>
@@ -310,6 +321,7 @@
     <span class="ident">low_memory</span>: <span class="ident">bool</span>,
     <span class="ident">comment_char</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
     <span class="ident">quote_char</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
+    <span class="ident">eol_char</span>: <span class="ident">u8</span>,
     <span class="ident">null_values</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">NullValues</span><span class="op">&gt;</span>,
     <span class="ident">infer_schema_length</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
     <span class="ident">rechunk</span>: <span class="ident">bool</span>,
@@ -335,6 +347,7 @@
             <span class="ident">low_memory</span>: <span class="bool-val">false</span>,
             <span class="ident">comment_char</span>: <span class="prelude-val">None</span>,
             <span class="ident">quote_char</span>: <span class="prelude-val">Some</span>(<span class="string">b&#39;&quot;&#39;</span>),
+            <span class="ident">eol_char</span>: <span class="string">b&#39;\n&#39;</span>,
             <span class="ident">null_values</span>: <span class="prelude-val">None</span>,
             <span class="ident">infer_schema_length</span>: <span class="prelude-val">Some</span>(<span class="number">100</span>),
             <span class="ident">rechunk</span>: <span class="bool-val">true</span>,
@@ -433,6 +446,13 @@
         <span class="self">self</span>
     }
 
+    <span class="doccomment">/// Set the `char` used as end of line. The default is `b&#39;\n&#39;`.</span>
+    <span class="attribute">#[<span class="ident">must_use</span>]</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_end_of_line_char</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">eol_char</span>: <span class="ident">u8</span>) -&gt; <span class="self">Self</span> {
+        <span class="self">self</span>.<span class="ident">eol_char</span> <span class="op">=</span> <span class="ident">eol_char</span>;
+        <span class="self">self</span>
+    }
+
     <span class="doccomment">/// Set values that will be interpreted as missing/ null.</span>
     <span class="attribute">#[<span class="ident">must_use</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_null_values</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">null_values</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">NullValues</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
@@ -496,6 +516,7 @@
             <span class="kw-2">&amp;mut</span> <span class="ident">skip_rows</span>,
             <span class="self">self</span>.<span class="ident">comment_char</span>,
             <span class="self">self</span>.<span class="ident">quote_char</span>,
+            <span class="self">self</span>.<span class="ident">eol_char</span>,
             <span class="prelude-val">None</span>,
             <span class="self">self</span>.<span class="ident">parse_dates</span>,
         )<span class="question-mark">?</span>;
@@ -525,6 +546,7 @@
             <span class="self">self</span>.<span class="ident">low_memory</span>,
             <span class="self">self</span>.<span class="ident">comment_char</span>,
             <span class="self">self</span>.<span class="ident">quote_char</span>,
+            <span class="self">self</span>.<span class="ident">eol_char</span>,
             <span class="self">self</span>.<span class="ident">null_values</span>,
             <span class="self">self</span>.<span class="ident">infer_schema_length</span>,
             <span class="self">self</span>.<span class="ident">rechunk</span>,
@@ -535,7 +557,7 @@
         )<span class="question-mark">?</span>
         .<span class="ident">build</span>()
         .<span class="ident">into</span>();
-        <span class="ident">lf</span>.<span class="ident">opt_state</span>.<span class="ident">agg_scan_projection</span> <span class="op">=</span> <span class="bool-val">true</span>;
+        <span class="ident">lf</span>.<span class="ident">opt_state</span>.<span class="ident">file_caching</span> <span class="op">=</span> <span class="bool-val">true</span>;
         <span class="prelude-val">Ok</span>(<span class="ident">lf</span>)
     }
 

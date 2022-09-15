@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.22.7/src/chunked_array/ops/explode.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>explode.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script src="../../../../crates.js"></script><script defer src="../../../../main.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.23.2/src/chunked_array/ops/explode.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>explode.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script src="../../../../crates.js"></script><script defer src="../../../../main.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script>
     <noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
         </a><h2 class="location"></h2>
     </nav>
@@ -510,7 +510,172 @@
 <span id="505">505</span>
 <span id="506">506</span>
 <span id="507">507</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
+<span id="532">532</span>
+<span id="533">533</span>
+<span id="534">534</span>
+<span id="535">535</span>
+<span id="536">536</span>
+<span id="537">537</span>
+<span id="538">538</span>
+<span id="539">539</span>
+<span id="540">540</span>
+<span id="541">541</span>
+<span id="542">542</span>
+<span id="543">543</span>
+<span id="544">544</span>
+<span id="545">545</span>
+<span id="546">546</span>
+<span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
+<span id="567">567</span>
+<span id="568">568</span>
+<span id="569">569</span>
+<span id="570">570</span>
+<span id="571">571</span>
+<span id="572">572</span>
+<span id="573">573</span>
+<span id="574">574</span>
+<span id="575">575</span>
+<span id="576">576</span>
+<span id="577">577</span>
+<span id="578">578</span>
+<span id="579">579</span>
+<span id="580">580</span>
+<span id="581">581</span>
+<span id="582">582</span>
+<span id="583">583</span>
+<span id="584">584</span>
+<span id="585">585</span>
+<span id="586">586</span>
+<span id="587">587</span>
+<span id="588">588</span>
+<span id="589">589</span>
+<span id="590">590</span>
+<span id="591">591</span>
+<span id="592">592</span>
+<span id="593">593</span>
+<span id="594">594</span>
+<span id="595">595</span>
+<span id="596">596</span>
+<span id="597">597</span>
+<span id="598">598</span>
+<span id="599">599</span>
+<span id="600">600</span>
+<span id="601">601</span>
+<span id="602">602</span>
+<span id="603">603</span>
+<span id="604">604</span>
+<span id="605">605</span>
+<span id="606">606</span>
+<span id="607">607</span>
+<span id="608">608</span>
+<span id="609">609</span>
+<span id="610">610</span>
+<span id="611">611</span>
+<span id="612">612</span>
+<span id="613">613</span>
+<span id="614">614</span>
+<span id="615">615</span>
+<span id="616">616</span>
+<span id="617">617</span>
+<span id="618">618</span>
+<span id="619">619</span>
+<span id="620">620</span>
+<span id="621">621</span>
+<span id="622">622</span>
+<span id="623">623</span>
+<span id="624">624</span>
+<span id="625">625</span>
+<span id="626">626</span>
+<span id="627">627</span>
+<span id="628">628</span>
+<span id="629">629</span>
+<span id="630">630</span>
+<span id="631">631</span>
+<span id="632">632</span>
+<span id="633">633</span>
+<span id="634">634</span>
+<span id="635">635</span>
+<span id="636">636</span>
+<span id="637">637</span>
+<span id="638">638</span>
+<span id="639">639</span>
+<span id="640">640</span>
+<span id="641">641</span>
+<span id="642">642</span>
+<span id="643">643</span>
+<span id="644">644</span>
+<span id="645">645</span>
+<span id="646">646</span>
+<span id="647">647</span>
+<span id="648">648</span>
+<span id="649">649</span>
+<span id="650">650</span>
+<span id="651">651</span>
+<span id="652">652</span>
+<span id="653">653</span>
+<span id="654">654</span>
+<span id="655">655</span>
+<span id="656">656</span>
+<span id="657">657</span>
+<span id="658">658</span>
+<span id="659">659</span>
+<span id="660">660</span>
+<span id="661">661</span>
+<span id="662">662</span>
+<span id="663">663</span>
+<span id="664">664</span>
+<span id="665">665</span>
+<span id="666">666</span>
+<span id="667">667</span>
+<span id="668">668</span>
+<span id="669">669</span>
+<span id="670">670</span>
+<span id="671">671</span>
+</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::chunked_array::builder::AnonymousOwnedListBuilder</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">arrow::bitmap::Bitmap</span>;
 <span class="kw">use</span> <span class="ident">arrow</span>::{<span class="ident">array</span>::<span class="kw-2">*</span>, <span class="ident">bitmap::MutableBitmap</span>, <span class="ident">buffer::Buffer</span>};
 <span class="kw">use</span> <span class="ident">polars_arrow::array::PolarsArray</span>;
@@ -528,10 +693,11 @@
     <span class="ident">validity_values</span>: <span class="kw-2">&amp;</span><span class="ident">Bitmap</span>,
     <span class="ident">nulls</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
     <span class="ident">empty_row_idx</span>: <span class="kw-2">&amp;</span>[<span class="ident">usize</span>],
+    <span class="ident">base_offset</span>: <span class="ident">usize</span>,
 ) {
     <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="ident">start</span>..<span class="ident">last</span> {
         <span class="kw">if</span> <span class="op">!</span><span class="ident">validity_values</span>.<span class="ident">get_bit_unchecked</span>(<span class="ident">i</span>) {
-            <span class="ident">nulls</span>.<span class="ident">push</span>(<span class="ident">i</span> <span class="op">+</span> <span class="ident">empty_row_idx</span>.<span class="ident">len</span>());
+            <span class="ident">nulls</span>.<span class="ident">push</span>(<span class="ident">i</span> <span class="op">+</span> <span class="ident">empty_row_idx</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="ident">base_offset</span>);
         }
     }
 }
@@ -543,14 +709,18 @@
     <span class="kw">fn</span> <span class="ident">explode_by_offsets</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">offsets</span>: <span class="kw-2">&amp;</span>[<span class="ident">i64</span>]) -&gt; <span class="ident">Series</span> {
         <span class="macro">debug_assert_eq!</span>(<span class="self">self</span>.<span class="ident">chunks</span>.<span class="ident">len</span>(), <span class="number">1</span>);
         <span class="kw">let</span> <span class="ident">arr</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">downcast_iter</span>().<span class="ident">next</span>().<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">arr</span>.<span class="ident">values</span>();
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_values</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(((<span class="ident">values</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">f32</span>) <span class="op">*</span> <span class="number">1.5</span>) <span class="kw">as</span> <span class="ident">usize</span>);
+        <span class="comment">// make sure that we don&#39;t look beyond the sliced array</span>
+        <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">arr</span>.<span class="ident">values</span>().<span class="ident">as_slice</span>()[..<span class="ident">offsets</span>[<span class="ident">offsets</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>] <span class="kw">as</span> <span class="ident">usize</span>];
+
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">empty_row_idx</span> <span class="op">=</span> <span class="macro">vec!</span>[];
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">nulls</span> <span class="op">=</span> <span class="macro">vec!</span>[];
 
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">start</span> <span class="op">=</span> <span class="ident">offsets</span>[<span class="number">0</span>] <span class="kw">as</span> <span class="ident">usize</span>;
+        <span class="kw">let</span> <span class="ident">base_offset</span> <span class="op">=</span> <span class="ident">start</span>;
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">last</span> <span class="op">=</span> <span class="ident">start</span>;
+
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_values</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">offsets</span>[<span class="ident">offsets</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>] <span class="kw">as</span> <span class="ident">usize</span> <span class="op">-</span> <span class="ident">start</span> <span class="op">+</span> <span class="number">1</span>);
 
         <span class="comment">// we check all the offsets and in the case a consecutive offset is the same,</span>
         <span class="comment">// e.g. 0, 1, 4, 4, 6</span>
@@ -562,7 +732,7 @@
 
         <span class="comment">// in the case that the value array has got null values, we need to check every validity</span>
         <span class="comment">// value and collect the indices.</span>
-        <span class="comment">// because the length of the array is not known, we first collect the null indexes, offsetted</span>
+        <span class="comment">// because the length of the array is not known, we first collect the null indexes, offset</span>
         <span class="comment">// with the insertion of empty rows (as None) and later create a validity bitmap</span>
         <span class="kw">if</span> <span class="ident">arr</span>.<span class="ident">has_validity</span>() {
             <span class="kw">let</span> <span class="ident">validity_values</span> <span class="op">=</span> <span class="ident">arr</span>.<span class="ident">validity</span>().<span class="ident">unwrap</span>();
@@ -571,15 +741,29 @@
                 <span class="kw">let</span> <span class="ident">o</span> <span class="op">=</span> <span class="ident">o</span> <span class="kw">as</span> <span class="ident">usize</span>;
                 <span class="kw">if</span> <span class="ident">o</span> <span class="op">==</span> <span class="ident">last</span> {
                     <span class="kw">if</span> <span class="ident">start</span> <span class="op">!</span><span class="op">=</span> <span class="ident">last</span> {
+                        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">debug_assertions</span>)]</span>
                         <span class="ident">new_values</span>.<span class="ident">extend_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">values</span>[<span class="ident">start</span>..<span class="ident">last</span>]);
+
+                        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">debug_assertions</span>))]</span>
+                        <span class="kw">unsafe</span> {
+                            <span class="ident">new_values</span>.<span class="ident">extend_from_slice</span>(<span class="ident">values</span>.<span class="ident">get_unchecked</span>(<span class="ident">start</span>..<span class="ident">last</span>))
+                        };
+
                         <span class="comment">// Safety:</span>
                         <span class="comment">// we are in bounds</span>
                         <span class="kw">unsafe</span> {
-                            <span class="ident">unset_nulls</span>(<span class="ident">start</span>, <span class="ident">last</span>, <span class="ident">validity_values</span>, <span class="kw-2">&amp;mut</span> <span class="ident">nulls</span>, <span class="kw-2">&amp;</span><span class="ident">empty_row_idx</span>)
+                            <span class="ident">unset_nulls</span>(
+                                <span class="ident">start</span>,
+                                <span class="ident">last</span>,
+                                <span class="ident">validity_values</span>,
+                                <span class="kw-2">&amp;mut</span> <span class="ident">nulls</span>,
+                                <span class="kw-2">&amp;</span><span class="ident">empty_row_idx</span>,
+                                <span class="ident">base_offset</span>,
+                            )
                         }
                     }
 
-                    <span class="ident">empty_row_idx</span>.<span class="ident">push</span>(<span class="ident">o</span> <span class="op">+</span> <span class="ident">empty_row_idx</span>.<span class="ident">len</span>());
+                    <span class="ident">empty_row_idx</span>.<span class="ident">push</span>(<span class="ident">o</span> <span class="op">+</span> <span class="ident">empty_row_idx</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="ident">base_offset</span>);
                     <span class="ident">new_values</span>.<span class="ident">push</span>(<span class="ident">T::Native::default</span>());
                     <span class="ident">start</span> <span class="op">=</span> <span class="ident">o</span>;
                 }
@@ -589,16 +773,31 @@
             <span class="comment">// final null check</span>
             <span class="comment">// Safety:</span>
             <span class="comment">// we are in bounds</span>
-            <span class="kw">unsafe</span> { <span class="ident">unset_nulls</span>(<span class="ident">start</span>, <span class="ident">last</span>, <span class="ident">validity_values</span>, <span class="kw-2">&amp;mut</span> <span class="ident">nulls</span>, <span class="kw-2">&amp;</span><span class="ident">empty_row_idx</span>) }
+            <span class="kw">unsafe</span> {
+                <span class="ident">unset_nulls</span>(
+                    <span class="ident">start</span>,
+                    <span class="ident">last</span>,
+                    <span class="ident">validity_values</span>,
+                    <span class="kw-2">&amp;mut</span> <span class="ident">nulls</span>,
+                    <span class="kw-2">&amp;</span><span class="ident">empty_row_idx</span>,
+                    <span class="ident">base_offset</span>,
+                )
+            }
         } <span class="kw">else</span> {
             <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">o</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">offsets</span>[<span class="number">1</span>..] {
                 <span class="kw">let</span> <span class="ident">o</span> <span class="op">=</span> <span class="ident">o</span> <span class="kw">as</span> <span class="ident">usize</span>;
                 <span class="kw">if</span> <span class="ident">o</span> <span class="op">==</span> <span class="ident">last</span> {
                     <span class="kw">if</span> <span class="ident">start</span> <span class="op">!</span><span class="op">=</span> <span class="ident">last</span> {
-                        <span class="ident">new_values</span>.<span class="ident">extend_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">values</span>[<span class="ident">start</span>..<span class="ident">last</span>])
+                        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">debug_assertions</span>)]</span>
+                        <span class="ident">new_values</span>.<span class="ident">extend_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">values</span>[<span class="ident">start</span>..<span class="ident">last</span>]);
+
+                        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">debug_assertions</span>))]</span>
+                        <span class="kw">unsafe</span> {
+                            <span class="ident">new_values</span>.<span class="ident">extend_from_slice</span>(<span class="ident">values</span>.<span class="ident">get_unchecked</span>(<span class="ident">start</span>..<span class="ident">last</span>))
+                        };
                     }
 
-                    <span class="ident">empty_row_idx</span>.<span class="ident">push</span>(<span class="ident">o</span> <span class="op">+</span> <span class="ident">empty_row_idx</span>.<span class="ident">len</span>());
+                    <span class="ident">empty_row_idx</span>.<span class="ident">push</span>(<span class="ident">o</span> <span class="op">+</span> <span class="ident">empty_row_idx</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="ident">base_offset</span>);
                     <span class="ident">new_values</span>.<span class="ident">push</span>(<span class="ident">T::Native::default</span>());
                     <span class="ident">start</span> <span class="op">=</span> <span class="ident">o</span>;
                 }
@@ -606,6 +805,7 @@
             }
         }
 
+        <span class="comment">// add remaining values</span>
         <span class="ident">new_values</span>.<span class="ident">extend_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">values</span>[<span class="ident">start</span>..]);
 
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">validity</span> <span class="op">=</span> <span class="ident">MutableBitmap::with_capacity</span>(<span class="ident">new_values</span>.<span class="ident">len</span>());
@@ -623,7 +823,7 @@
             <span class="ident">new_values</span>.<span class="ident">into</span>(),
             <span class="prelude-val">Some</span>(<span class="ident">validity</span>.<span class="ident">into</span>()),
         );
-        <span class="ident">Series::try_from</span>((<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">Arc::new</span>(<span class="ident">arr</span>) <span class="kw">as</span> <span class="ident">ArrayRef</span>)).<span class="ident">unwrap</span>()
+        <span class="ident">Series::try_from</span>((<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">Box::new</span>(<span class="ident">arr</span>) <span class="kw">as</span> <span class="ident">ArrayRef</span>)).<span class="ident">unwrap</span>()
     }
 }
 
@@ -653,9 +853,13 @@
             <span class="kw">if</span> <span class="ident">o</span> <span class="op">==</span> <span class="ident">last</span> {
                 <span class="kw">if</span> <span class="ident">start</span> <span class="op">!</span><span class="op">=</span> <span class="ident">last</span> {
                     <span class="kw">let</span> <span class="ident">vals</span> <span class="op">=</span> <span class="ident">arr</span>.<span class="ident">slice</span>(<span class="ident">start</span>, <span class="ident">last</span> <span class="op">-</span> <span class="ident">start</span>);
-                    <span class="kw">let</span> <span class="ident">vals_ref</span> <span class="op">=</span> <span class="ident">vals</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">BooleanArray</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-                    <span class="kw">for</span> <span class="ident">val</span> <span class="kw">in</span> <span class="ident">vals_ref</span> {
-                        <span class="ident">builder</span>.<span class="ident">append_option</span>(<span class="ident">val</span>)
+
+                    <span class="kw">if</span> <span class="ident">vals</span>.<span class="ident">null_count</span>() <span class="op">==</span> <span class="number">0</span> {
+                        <span class="ident">builder</span>
+                            .<span class="ident">array_builder</span>
+                            .<span class="ident">extend_trusted_len_values</span>(<span class="ident">vals</span>.<span class="ident">values_iter</span>())
+                    } <span class="kw">else</span> {
+                        <span class="ident">builder</span>.<span class="ident">array_builder</span>.<span class="ident">extend_trusted_len</span>(<span class="ident">vals</span>.<span class="ident">into_iter</span>());
                     }
                 }
                 <span class="ident">builder</span>.<span class="ident">append_null</span>();
@@ -664,16 +868,48 @@
             <span class="ident">last</span> <span class="op">=</span> <span class="ident">o</span>;
         }
         <span class="kw">let</span> <span class="ident">vals</span> <span class="op">=</span> <span class="ident">arr</span>.<span class="ident">slice</span>(<span class="ident">start</span>, <span class="ident">last</span> <span class="op">-</span> <span class="ident">start</span>);
-        <span class="kw">let</span> <span class="ident">vals_ref</span> <span class="op">=</span> <span class="ident">vals</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">BooleanArray</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-        <span class="kw">for</span> <span class="ident">val</span> <span class="kw">in</span> <span class="ident">vals_ref</span> {
-            <span class="ident">builder</span>.<span class="ident">append_option</span>(<span class="ident">val</span>)
+        <span class="kw">if</span> <span class="ident">vals</span>.<span class="ident">null_count</span>() <span class="op">==</span> <span class="number">0</span> {
+            <span class="ident">builder</span>
+                .<span class="ident">array_builder</span>
+                .<span class="ident">extend_trusted_len_values</span>(<span class="ident">vals</span>.<span class="ident">values_iter</span>())
+        } <span class="kw">else</span> {
+            <span class="ident">builder</span>.<span class="ident">array_builder</span>.<span class="ident">extend_trusted_len</span>(<span class="ident">vals</span>.<span class="ident">into_iter</span>());
         }
         <span class="ident">builder</span>.<span class="ident">finish</span>().<span class="ident">into</span>()
     }
 }
 <span class="kw">impl</span> <span class="ident">ExplodeByOffsets</span> <span class="kw">for</span> <span class="ident">ListChunked</span> {
-    <span class="kw">fn</span> <span class="ident">explode_by_offsets</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">_offsets</span>: <span class="kw-2">&amp;</span>[<span class="ident">i64</span>]) -&gt; <span class="ident">Series</span> {
-        <span class="macro">panic!</span>(<span class="string">&quot;cannot explode List of Lists&quot;</span>)
+    <span class="kw">fn</span> <span class="ident">explode_by_offsets</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">offsets</span>: <span class="kw-2">&amp;</span>[<span class="ident">i64</span>]) -&gt; <span class="ident">Series</span> {
+        <span class="macro">debug_assert_eq!</span>(<span class="self">self</span>.<span class="ident">chunks</span>.<span class="ident">len</span>(), <span class="number">1</span>);
+        <span class="kw">let</span> <span class="ident">arr</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">downcast_iter</span>().<span class="ident">next</span>().<span class="ident">unwrap</span>();
+
+        <span class="kw">let</span> <span class="ident">cap</span> <span class="op">=</span> ((<span class="ident">arr</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">f32</span>) <span class="op">*</span> <span class="number">1.5</span>) <span class="kw">as</span> <span class="ident">usize</span>;
+        <span class="kw">let</span> <span class="ident">inner_type</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner_dtype</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">AnonymousOwnedListBuilder::new</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">cap</span>, <span class="prelude-val">Some</span>(<span class="ident">inner_type</span>));
+
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">start</span> <span class="op">=</span> <span class="ident">offsets</span>[<span class="number">0</span>] <span class="kw">as</span> <span class="ident">usize</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">last</span> <span class="op">=</span> <span class="ident">start</span>;
+        <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">o</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">offsets</span>[<span class="number">1</span>..] {
+            <span class="kw">let</span> <span class="ident">o</span> <span class="op">=</span> <span class="ident">o</span> <span class="kw">as</span> <span class="ident">usize</span>;
+            <span class="kw">if</span> <span class="ident">o</span> <span class="op">==</span> <span class="ident">last</span> {
+                <span class="kw">if</span> <span class="ident">start</span> <span class="op">!</span><span class="op">=</span> <span class="ident">last</span> {
+                    <span class="kw">let</span> <span class="ident">vals</span> <span class="op">=</span> <span class="ident">arr</span>.<span class="ident">slice</span>(<span class="ident">start</span>, <span class="ident">last</span> <span class="op">-</span> <span class="ident">start</span>);
+                    <span class="kw">let</span> <span class="ident">ca</span> <span class="op">=</span> <span class="ident">ListChunked::from_chunks</span>(<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="ident">Box::new</span>(<span class="ident">vals</span>)]);
+                    <span class="kw">for</span> <span class="ident">s</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">ca</span> {
+                        <span class="ident">builder</span>.<span class="ident">append_opt_series</span>(<span class="ident">s</span>.<span class="ident">as_ref</span>())
+                    }
+                }
+                <span class="ident">builder</span>.<span class="ident">append_null</span>();
+                <span class="ident">start</span> <span class="op">=</span> <span class="ident">o</span>;
+            }
+            <span class="ident">last</span> <span class="op">=</span> <span class="ident">o</span>;
+        }
+        <span class="kw">let</span> <span class="ident">vals</span> <span class="op">=</span> <span class="ident">arr</span>.<span class="ident">slice</span>(<span class="ident">start</span>, <span class="ident">last</span> <span class="op">-</span> <span class="ident">start</span>);
+        <span class="kw">let</span> <span class="ident">ca</span> <span class="op">=</span> <span class="ident">ListChunked::from_chunks</span>(<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="ident">Box::new</span>(<span class="ident">vals</span>)]);
+        <span class="kw">for</span> <span class="ident">s</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">ca</span> {
+            <span class="ident">builder</span>.<span class="ident">append_opt_series</span>(<span class="ident">s</span>.<span class="ident">as_ref</span>())
+        }
+        <span class="ident">builder</span>.<span class="ident">finish</span>().<span class="ident">into</span>()
     }
 }
 <span class="kw">impl</span> <span class="ident">ExplodeByOffsets</span> <span class="kw">for</span> <span class="ident">Utf8Chunked</span> {
@@ -692,9 +928,12 @@
             <span class="kw">if</span> <span class="ident">o</span> <span class="op">==</span> <span class="ident">last</span> {
                 <span class="kw">if</span> <span class="ident">start</span> <span class="op">!</span><span class="op">=</span> <span class="ident">last</span> {
                     <span class="kw">let</span> <span class="ident">vals</span> <span class="op">=</span> <span class="ident">arr</span>.<span class="ident">slice</span>(<span class="ident">start</span>, <span class="ident">last</span> <span class="op">-</span> <span class="ident">start</span>);
-                    <span class="kw">let</span> <span class="ident">vals_ref</span> <span class="op">=</span> <span class="ident">vals</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">LargeStringArray</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-                    <span class="kw">for</span> <span class="ident">val</span> <span class="kw">in</span> <span class="ident">vals_ref</span> {
-                        <span class="ident">builder</span>.<span class="ident">append_option</span>(<span class="ident">val</span>)
+                    <span class="kw">if</span> <span class="ident">vals</span>.<span class="ident">null_count</span>() <span class="op">==</span> <span class="number">0</span> {
+                        <span class="ident">builder</span>
+                            .<span class="ident">builder</span>
+                            .<span class="ident">extend_trusted_len_values</span>(<span class="ident">vals</span>.<span class="ident">values_iter</span>())
+                    } <span class="kw">else</span> {
+                        <span class="ident">builder</span>.<span class="ident">builder</span>.<span class="ident">extend_trusted_len</span>(<span class="ident">vals</span>.<span class="ident">into_iter</span>());
                     }
                 }
                 <span class="ident">builder</span>.<span class="ident">append_null</span>();
@@ -703,9 +942,12 @@
             <span class="ident">last</span> <span class="op">=</span> <span class="ident">o</span>;
         }
         <span class="kw">let</span> <span class="ident">vals</span> <span class="op">=</span> <span class="ident">arr</span>.<span class="ident">slice</span>(<span class="ident">start</span>, <span class="ident">last</span> <span class="op">-</span> <span class="ident">start</span>);
-        <span class="kw">let</span> <span class="ident">vals_ref</span> <span class="op">=</span> <span class="ident">vals</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">LargeStringArray</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-        <span class="kw">for</span> <span class="ident">val</span> <span class="kw">in</span> <span class="ident">vals_ref</span> {
-            <span class="ident">builder</span>.<span class="ident">append_option</span>(<span class="ident">val</span>)
+        <span class="kw">if</span> <span class="ident">vals</span>.<span class="ident">null_count</span>() <span class="op">==</span> <span class="number">0</span> {
+            <span class="ident">builder</span>
+                .<span class="ident">builder</span>
+                .<span class="ident">extend_trusted_len_values</span>(<span class="ident">vals</span>.<span class="ident">values_iter</span>())
+        } <span class="kw">else</span> {
+            <span class="ident">builder</span>.<span class="ident">builder</span>.<span class="ident">extend_trusted_len</span>(<span class="ident">vals</span>.<span class="ident">into_iter</span>());
         }
         <span class="ident">builder</span>.<span class="ident">finish</span>().<span class="ident">into</span>()
     }
@@ -718,25 +960,40 @@
     }
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">capacity</span>);
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">count</span> <span class="op">=</span> <span class="number">0</span>;
+    <span class="comment">// `value_count` counts the taken values from the list values</span>
+    <span class="comment">// and are the same unit as `offsets`</span>
+    <span class="comment">// we also add the start offset as a list can be sliced</span>
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">value_count</span> <span class="op">=</span> <span class="ident">offsets</span>[<span class="number">0</span>];
+    <span class="comment">// `empty_count` counts the duplicates taken because of empty list</span>
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">empty_count</span> <span class="op">=</span> <span class="number">0usize</span>;
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">last_idx</span> <span class="op">=</span> <span class="number">0</span>;
+
     <span class="kw">for</span> <span class="ident">offset</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">offsets</span>[<span class="number">1</span>..] {
-        <span class="kw">while</span> <span class="ident">count</span> <span class="op">&lt;</span> <span class="kw-2">*</span><span class="ident">offset</span> {
-            <span class="ident">count</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+        <span class="comment">// this get all the elements up till offsets</span>
+        <span class="kw">while</span> <span class="ident">value_count</span> <span class="op">&lt;</span> <span class="kw-2">*</span><span class="ident">offset</span> {
+            <span class="ident">value_count</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
             <span class="ident">idx</span>.<span class="ident">push</span>(<span class="ident">last_idx</span>)
         }
+
+        <span class="comment">// then we compute the previous offsets</span>
         <span class="comment">// Safety:</span>
         <span class="comment">// we started iterating from 1, so there is always a previous offset</span>
         <span class="comment">// we take the pointer to the previous element and deref that to get</span>
         <span class="comment">// the previous offset</span>
-        <span class="kw">unsafe</span> {
-            <span class="kw">let</span> <span class="ident">previous_offset</span> <span class="op">=</span> <span class="kw-2">*</span>(<span class="ident">offset</span> <span class="kw">as</span> <span class="kw-2">*const</span> <span class="ident">i64</span>).<span class="ident">offset</span>(<span class="op">-</span><span class="number">1</span>);
-            <span class="kw">if</span> <span class="ident">previous_offset</span> <span class="op">!</span><span class="op">=</span> <span class="kw-2">*</span><span class="ident">offset</span> {
-                <span class="ident">last_idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-            }
+        <span class="kw">let</span> <span class="ident">previous_offset</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="kw-2">*</span>(<span class="ident">offset</span> <span class="kw">as</span> <span class="kw-2">*const</span> <span class="ident">i64</span>).<span class="ident">offset</span>(<span class="op">-</span><span class="number">1</span>) };
+
+        <span class="comment">// if the previous offset is equal to the current offset we have an empty</span>
+        <span class="comment">// list and we duplicate previous index</span>
+        <span class="kw">if</span> <span class="ident">previous_offset</span> <span class="op">==</span> <span class="kw-2">*</span><span class="ident">offset</span> {
+            <span class="ident">empty_count</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+            <span class="ident">idx</span>.<span class="ident">push</span>(<span class="ident">last_idx</span>);
         }
+
+        <span class="ident">last_idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
     }
-    <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..(<span class="ident">capacity</span> <span class="op">-</span> <span class="ident">count</span> <span class="kw">as</span> <span class="ident">usize</span>) {
+
+    <span class="comment">// take the remaining values</span>
+    <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..(<span class="ident">capacity</span> <span class="op">-</span> (<span class="ident">value_count</span> <span class="op">-</span> <span class="ident">offsets</span>[<span class="number">0</span>]) <span class="kw">as</span> <span class="ident">usize</span> <span class="op">-</span> <span class="ident">empty_count</span>) {
         <span class="ident">idx</span>.<span class="ident">push</span>(<span class="ident">last_idx</span>);
     }
     <span class="ident">idx</span>
@@ -764,12 +1021,19 @@
             ));
         }
 
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">offsets</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">let</span> <span class="ident">offset</span> <span class="op">=</span> <span class="ident">offsets</span>[<span class="number">0</span>];
-            <span class="ident">values</span> <span class="op">=</span> <span class="ident">Arc::from</span>(<span class="ident">values</span>.<span class="ident">slice</span>(<span class="ident">offset</span> <span class="kw">as</span> <span class="ident">usize</span>, <span class="ident">offsets</span>[<span class="ident">offsets</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>] <span class="kw">as</span> <span class="ident">usize</span>));
-        }
-
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">s</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">ca</span>.<span class="ident">can_fast_explode</span>() {
+            <span class="comment">// ensure that the value array is sliced</span>
+            <span class="comment">// as a list only slices its offsets on a slice operation</span>
+
+            <span class="comment">// we only do this in fast-explode as for the other</span>
+            <span class="comment">// branch the offsets must coincide with the values.</span>
+            <span class="kw">if</span> <span class="op">!</span><span class="ident">offsets</span>.<span class="ident">is_empty</span>() {
+                <span class="kw">let</span> <span class="ident">start</span> <span class="op">=</span> <span class="ident">offsets</span>[<span class="number">0</span>] <span class="kw">as</span> <span class="ident">usize</span>;
+                <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">offsets</span>[<span class="ident">offsets</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>] <span class="kw">as</span> <span class="ident">usize</span> <span class="op">-</span> <span class="ident">start</span>;
+                <span class="comment">// safety:</span>
+                <span class="comment">// we are in bounds</span>
+                <span class="ident">values</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">values</span>.<span class="ident">slice_unchecked</span>(<span class="ident">start</span>, <span class="ident">len</span>) };
+            }
             <span class="ident">Series::try_from</span>((<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">values</span>)).<span class="ident">unwrap</span>()
         } <span class="kw">else</span> {
             <span class="comment">// during tests</span>
@@ -784,7 +1048,7 @@
                     }
                     <span class="ident">last</span> <span class="op">=</span> <span class="ident">o</span>;
                 }
-                <span class="kw">if</span> <span class="op">!</span><span class="ident">has_empty</span> {
+                <span class="kw">if</span> <span class="op">!</span><span class="ident">has_empty</span> <span class="op">&amp;&amp;</span> <span class="ident">offsets</span>[<span class="number">0</span>] <span class="op">==</span> <span class="number">0</span> {
                     <span class="macro">panic!</span>(<span class="string">&quot;could have fast exploded&quot;</span>)
                 }
             }
@@ -798,7 +1062,12 @@
             <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-categorical&quot;</span>)]</span>
             <span class="ident">DataType::Categorical</span>(<span class="ident">rev_map</span>) =&gt; {
                 <span class="kw">let</span> <span class="ident">cats</span> <span class="op">=</span> <span class="ident">s</span>.<span class="ident">u32</span>().<span class="ident">unwrap</span>().<span class="ident">clone</span>();
-                <span class="ident">s</span> <span class="op">=</span> <span class="ident">CategoricalChunked::from_cats_and_rev_map</span>(<span class="ident">cats</span>, <span class="ident">rev_map</span>.<span class="ident">unwrap</span>()).<span class="ident">into_series</span>();
+                <span class="comment">// safety:</span>
+                <span class="comment">// rev_map is from same array, so we are still in bounds</span>
+                <span class="ident">s</span> <span class="op">=</span> <span class="kw">unsafe</span> {
+                    <span class="ident">CategoricalChunked::from_cats_and_rev_map_unchecked</span>(<span class="ident">cats</span>, <span class="ident">rev_map</span>.<span class="ident">unwrap</span>())
+                        .<span class="ident">into_series</span>()
+                };
             }
             <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-date&quot;</span>)]</span>
             <span class="ident">DataType::Date</span> =&gt; <span class="ident">s</span> <span class="op">=</span> <span class="ident">s</span>.<span class="ident">into_date</span>(),
@@ -825,50 +1094,102 @@
             .<span class="ident">downcast_iter</span>()
             .<span class="ident">next</span>()
             .<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">PolarsError::NoData</span>(<span class="string">&quot;cannot explode empty str&quot;</span>.<span class="ident">into</span>()))<span class="question-mark">?</span>;
+
         <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">values</span>();
         <span class="kw">let</span> <span class="ident">old_offsets</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">offsets</span>().<span class="ident">clone</span>();
 
-        <span class="comment">// Because the strings are u8 stored but really are utf8 data we need to traverse the utf8 to</span>
-        <span class="comment">// get the chars indexes</span>
-        <span class="comment">// Utf8Array guarantees that this holds.</span>
-        <span class="kw">let</span> <span class="ident">str_data</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">std::str::from_utf8_unchecked</span>(<span class="ident">values</span>) };
+        <span class="kw">let</span> (<span class="ident">new_offsets</span>, <span class="ident">validity</span>) <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">validity</span>) <span class="op">=</span> <span class="ident">array</span>.<span class="ident">validity</span>() {
+            <span class="comment">// capacity estimate</span>
+            <span class="kw">let</span> <span class="ident">capacity</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_values_size</span>() <span class="op">+</span> <span class="ident">validity</span>.<span class="ident">unset_bits</span>();
 
-        <span class="comment">// iterator over index and chars, we take only the index</span>
-        <span class="kw">let</span> <span class="ident">chars</span> <span class="op">=</span> <span class="ident">str_data</span>
-            .<span class="ident">char_indices</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> <span class="ident">t</span>.<span class="number">0</span> <span class="kw">as</span> <span class="ident">i64</span>)
-            .<span class="ident">chain</span>(<span class="ident">std::iter::once</span>(<span class="ident">str_data</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">i64</span>));
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_offsets</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">capacity</span> <span class="op">+</span> <span class="number">1</span>);
+            <span class="ident">new_offsets</span>.<span class="ident">push</span>(<span class="number">0i64</span>);
 
-        <span class="kw">let</span> <span class="ident">offsets</span> <span class="op">=</span> <span class="ident">Buffer::from_iter</span>(<span class="ident">chars</span>);
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bitmap</span> <span class="op">=</span> <span class="ident">MutableBitmap::with_capacity</span>(<span class="ident">capacity</span>);
+            <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">values</span>.<span class="ident">as_slice</span>();
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">old_offset</span> <span class="op">=</span> <span class="number">0i64</span>;
+            <span class="kw">for</span> (<span class="kw-2">&amp;</span><span class="ident">offset</span>, <span class="ident">valid</span>) <span class="kw">in</span> <span class="ident">old_offsets</span>[<span class="number">1</span>..].<span class="ident">iter</span>().<span class="ident">zip</span>(<span class="ident">validity</span>) {
+                <span class="comment">// safety:</span>
+                <span class="comment">// new_offsets already has a single value, so -1 is always in bounds</span>
+                <span class="kw">let</span> <span class="ident">latest_offset</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="kw-2">*</span><span class="ident">new_offsets</span>.<span class="ident">get_unchecked</span>(<span class="ident">new_offsets</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>) };
 
-        <span class="comment">// the old bitmap doesn&#39;t fit on the exploded array, so we need to create a new one.</span>
-        <span class="kw">let</span> <span class="ident">validity</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">validity</span>) <span class="op">=</span> <span class="ident">array</span>.<span class="ident">validity</span>() {
-            <span class="kw">let</span> <span class="ident">capacity</span> <span class="op">=</span> <span class="ident">offsets</span>.<span class="ident">len</span>();
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bitmap</span> <span class="op">=</span> <span class="ident">MutableBitmap::with_capacity</span>(<span class="ident">offsets</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>);
+                <span class="kw">if</span> <span class="ident">valid</span> {
+                    <span class="macro">debug_assert!</span>(<span class="ident">old_offset</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">values</span>.<span class="ident">len</span>());
+                    <span class="macro">debug_assert!</span>(<span class="ident">offset</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">values</span>.<span class="ident">len</span>());
+                    <span class="kw">let</span> <span class="ident">val</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">values</span>.<span class="ident">get_unchecked</span>(<span class="ident">old_offset</span> <span class="kw">as</span> <span class="ident">usize</span>..<span class="ident">offset</span> <span class="kw">as</span> <span class="ident">usize</span>) };
 
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">count</span> <span class="op">=</span> <span class="number">0</span>;
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">last_idx</span> <span class="op">=</span> <span class="number">0</span>;
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">last_valid</span> <span class="op">=</span> <span class="ident">validity</span>.<span class="ident">get_bit</span>(<span class="ident">last_idx</span>);
-            <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">offset</span> <span class="kw">in</span> <span class="ident">offsets</span>.<span class="ident">iter</span>().<span class="ident">skip</span>(<span class="number">1</span>) {
-                <span class="kw">while</span> <span class="ident">count</span> <span class="op">&lt;</span> <span class="ident">offset</span> {
-                    <span class="ident">count</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-                    <span class="ident">bitmap</span>.<span class="ident">push</span>(<span class="ident">last_valid</span>);
+                    <span class="comment">// take the string value and find the char offsets</span>
+                    <span class="comment">// create a new offset value for each char boundary</span>
+                    <span class="comment">// safety:</span>
+                    <span class="comment">// we know we have string data.</span>
+                    <span class="kw">let</span> <span class="ident">str_val</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">std::str::from_utf8_unchecked</span>(<span class="ident">val</span>) };
+
+                    <span class="kw">let</span> <span class="ident">char_offsets</span> <span class="op">=</span> <span class="ident">str_val</span>
+                        .<span class="ident">char_indices</span>()
+                        .<span class="ident">skip</span>(<span class="number">1</span>)
+                        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> <span class="ident">t</span>.<span class="number">0</span> <span class="kw">as</span> <span class="ident">i64</span> <span class="op">+</span> <span class="ident">latest_offset</span>);
+
+                    <span class="comment">// extend the chars</span>
+                    <span class="comment">// also keep track of the amount of offsets added</span>
+                    <span class="comment">// as we must update the validity bitmap</span>
+                    <span class="kw">let</span> <span class="ident">len_before</span> <span class="op">=</span> <span class="ident">new_offsets</span>.<span class="ident">len</span>();
+                    <span class="ident">new_offsets</span>.<span class="ident">extend</span>(<span class="ident">char_offsets</span>);
+                    <span class="ident">new_offsets</span>.<span class="ident">push</span>(<span class="ident">latest_offset</span> <span class="op">+</span> <span class="ident">str_val</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">i64</span>);
+                    <span class="ident">bitmap</span>.<span class="ident">extend_constant</span>(<span class="ident">new_offsets</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="ident">len_before</span>, <span class="bool-val">true</span>);
+                } <span class="kw">else</span> {
+                    <span class="comment">// no data, just add old offset and set null bit</span>
+                    <span class="ident">new_offsets</span>.<span class="ident">push</span>(<span class="ident">latest_offset</span>);
+                    <span class="ident">bitmap</span>.<span class="ident">push</span>(<span class="bool-val">false</span>)
                 }
-                <span class="ident">last_idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-                <span class="ident">last_valid</span> <span class="op">=</span> <span class="ident">validity</span>.<span class="ident">get_bit</span>(<span class="ident">last_idx</span>);
+                <span class="ident">old_offset</span> <span class="op">=</span> <span class="ident">offset</span>;
             }
-            <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..(<span class="ident">capacity</span> <span class="op">-</span> <span class="ident">count</span> <span class="kw">as</span> <span class="ident">usize</span>) {
-                <span class="ident">bitmap</span>.<span class="ident">push</span>(<span class="ident">last_valid</span>);
-            }
-            <span class="ident">bitmap</span>.<span class="ident">into</span>()
+
+            (<span class="ident">new_offsets</span>.<span class="ident">into</span>(), <span class="ident">bitmap</span>.<span class="ident">into</span>())
         } <span class="kw">else</span> {
-            <span class="prelude-val">None</span>
-        };
-        <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="kw">unsafe</span> {
-            <span class="ident">Utf8Array</span>::<span class="op">&lt;</span><span class="ident">i64</span><span class="op">&gt;</span><span class="ident">::from_data_unchecked_default</span>(<span class="ident">offsets</span>, <span class="ident">values</span>.<span class="ident">clone</span>(), <span class="ident">validity</span>)
+            <span class="comment">// fast(er) explode</span>
+
+            <span class="comment">// we cannot naively explode, because there might be empty strings.</span>
+
+            <span class="comment">// capacity estimate</span>
+            <span class="kw">let</span> <span class="ident">capacity</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_values_size</span>();
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_offsets</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">capacity</span> <span class="op">+</span> <span class="number">1</span>);
+            <span class="ident">new_offsets</span>.<span class="ident">push</span>(<span class="number">0i64</span>);
+
+            <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">values</span>.<span class="ident">as_slice</span>();
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">old_offset</span> <span class="op">=</span> <span class="number">0i64</span>;
+            <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">offset</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">old_offsets</span>[<span class="number">1</span>..] {
+                <span class="comment">// safety:</span>
+                <span class="comment">// new_offsets already has a single value, so -1 is always in bounds</span>
+                <span class="kw">let</span> <span class="ident">latest_offset</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="kw-2">*</span><span class="ident">new_offsets</span>.<span class="ident">get_unchecked</span>(<span class="ident">new_offsets</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>) };
+                <span class="macro">debug_assert!</span>(<span class="ident">old_offset</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">values</span>.<span class="ident">len</span>());
+                <span class="macro">debug_assert!</span>(<span class="ident">offset</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">values</span>.<span class="ident">len</span>());
+                <span class="kw">let</span> <span class="ident">val</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">values</span>.<span class="ident">get_unchecked</span>(<span class="ident">old_offset</span> <span class="kw">as</span> <span class="ident">usize</span>..<span class="ident">offset</span> <span class="kw">as</span> <span class="ident">usize</span>) };
+
+                <span class="comment">// take the string value and find the char offsets</span>
+                <span class="comment">// create a new offset value for each char boundary</span>
+                <span class="comment">// safety:</span>
+                <span class="comment">// we know we have string data.</span>
+                <span class="kw">let</span> <span class="ident">str_val</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">std::str::from_utf8_unchecked</span>(<span class="ident">val</span>) };
+
+                <span class="kw">let</span> <span class="ident">char_offsets</span> <span class="op">=</span> <span class="ident">str_val</span>
+                    .<span class="ident">char_indices</span>()
+                    .<span class="ident">skip</span>(<span class="number">1</span>)
+                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> <span class="ident">t</span>.<span class="number">0</span> <span class="kw">as</span> <span class="ident">i64</span> <span class="op">+</span> <span class="ident">latest_offset</span>);
+
+                <span class="comment">// extend the chars</span>
+                <span class="ident">new_offsets</span>.<span class="ident">extend</span>(<span class="ident">char_offsets</span>);
+                <span class="ident">new_offsets</span>.<span class="ident">push</span>(<span class="ident">latest_offset</span> <span class="op">+</span> <span class="ident">str_val</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">i64</span>);
+                <span class="ident">old_offset</span> <span class="op">=</span> <span class="ident">offset</span>;
+            }
+
+            (<span class="ident">new_offsets</span>.<span class="ident">into</span>(), <span class="prelude-val">None</span>)
         };
 
-        <span class="kw">let</span> <span class="ident">new_arr</span> <span class="op">=</span> <span class="ident">Arc::new</span>(<span class="ident">array</span>) <span class="kw">as</span> <span class="ident">ArrayRef</span>;
+        <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="kw">unsafe</span> {
+            <span class="ident">Utf8Array</span>::<span class="op">&lt;</span><span class="ident">i64</span><span class="op">&gt;</span><span class="ident">::from_data_unchecked_default</span>(<span class="ident">new_offsets</span>, <span class="ident">values</span>.<span class="ident">clone</span>(), <span class="ident">validity</span>)
+        };
+
+        <span class="kw">let</span> <span class="ident">new_arr</span> <span class="op">=</span> <span class="ident">Box::new</span>(<span class="ident">array</span>) <span class="kw">as</span> <span class="ident">ArrayRef</span>;
 
         <span class="kw">let</span> <span class="ident">s</span> <span class="op">=</span> <span class="ident">Series::try_from</span>((<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">new_arr</span>)).<span class="ident">unwrap</span>();
         <span class="prelude-val">Ok</span>((<span class="ident">s</span>, <span class="ident">old_offsets</span>))
@@ -1015,6 +1336,13 @@
         );
 
         <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_row_offsets</span>() {
+        <span class="kw">let</span> <span class="ident">offsets</span> <span class="op">=</span> <span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">4</span>];
+        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">offsets_to_indexes</span>(<span class="ident">offsets</span>, <span class="number">6</span>);
+        <span class="macro">assert_eq!</span>(<span class="ident">out</span>, <span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>]);
     }
 }
 </code></pre></div>

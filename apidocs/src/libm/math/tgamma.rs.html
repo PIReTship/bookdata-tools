@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/libm-0.2.2/src/math/tgamma.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>tgamma.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/libm-0.2.5/src/math/tgamma.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>tgamma.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
     <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../libm/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
         </a><h2 class="location"></h2>
     </nav>
@@ -210,6 +210,7 @@
 <span id="205">205</span>
 <span id="206">206</span>
 <span id="207">207</span>
+<span id="208">208</span>
 </pre><pre class="rust"><code><span class="comment">/*
 &quot;A Precision Approximation of the Gamma Function&quot; - Cornelius Lanczos (1964)
 &quot;Lanczos Implementation of the Gamma Function&quot; - Paul Godfrey (2001)
@@ -250,7 +251,7 @@ most ideas and constants are from boost and python
 
     <span class="comment">/* reduce x into [-.25,.25] */</span>
     <span class="ident">n</span> <span class="op">=</span> (<span class="number">4.0</span> <span class="op">*</span> <span class="ident">x</span>) <span class="kw">as</span> <span class="ident">isize</span>;
-    <span class="ident">n</span> <span class="op">=</span> (<span class="ident">n</span> <span class="op">+</span> <span class="number">1</span>) <span class="op">/</span> <span class="number">2</span>;
+    <span class="ident">n</span> <span class="op">=</span> <span class="macro">div!</span>(<span class="ident">n</span> <span class="op">+</span> <span class="number">1</span>, <span class="number">2</span>);
     <span class="ident">x</span> <span class="op">-</span><span class="op">=</span> (<span class="ident">n</span> <span class="kw">as</span> <span class="ident">f64</span>) <span class="op">*</span> <span class="number">0.5</span>;
 
     <span class="ident">x</span> <span class="kw-2">*</span><span class="op">=</span> <span class="ident">PI</span>;
@@ -330,18 +331,19 @@ most ideas and constants are from boost and python
     <span class="comment">/* to avoid overflow handle large x differently */</span>
     <span class="kw">if</span> <span class="ident">x</span> <span class="op">&lt;</span> <span class="number">8.0</span> {
         <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> (<span class="number">0</span>..<span class="op">=</span><span class="ident">N</span>).<span class="ident">rev</span>() {
-            <span class="ident">num</span> <span class="op">=</span> <span class="ident">num</span> <span class="op">*</span> <span class="ident">x</span> <span class="op">+</span> <span class="ident">SNUM</span>[<span class="ident">i</span>];
-            <span class="ident">den</span> <span class="op">=</span> <span class="ident">den</span> <span class="op">*</span> <span class="ident">x</span> <span class="op">+</span> <span class="ident">SDEN</span>[<span class="ident">i</span>];
+            <span class="ident">num</span> <span class="op">=</span> <span class="ident">num</span> <span class="op">*</span> <span class="ident">x</span> <span class="op">+</span> <span class="macro">i!</span>(<span class="ident">SNUM</span>, <span class="ident">i</span>);
+            <span class="ident">den</span> <span class="op">=</span> <span class="ident">den</span> <span class="op">*</span> <span class="ident">x</span> <span class="op">+</span> <span class="macro">i!</span>(<span class="ident">SDEN</span>, <span class="ident">i</span>);
         }
     } <span class="kw">else</span> {
         <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="op">=</span><span class="ident">N</span> {
-            <span class="ident">num</span> <span class="op">=</span> <span class="ident">num</span> <span class="op">/</span> <span class="ident">x</span> <span class="op">+</span> <span class="ident">SNUM</span>[<span class="ident">i</span>];
-            <span class="ident">den</span> <span class="op">=</span> <span class="ident">den</span> <span class="op">/</span> <span class="ident">x</span> <span class="op">+</span> <span class="ident">SDEN</span>[<span class="ident">i</span>];
+            <span class="ident">num</span> <span class="op">=</span> <span class="ident">num</span> <span class="op">/</span> <span class="ident">x</span> <span class="op">+</span> <span class="macro">i!</span>(<span class="ident">SNUM</span>, <span class="ident">i</span>);
+            <span class="ident">den</span> <span class="op">=</span> <span class="ident">den</span> <span class="op">/</span> <span class="ident">x</span> <span class="op">+</span> <span class="macro">i!</span>(<span class="ident">SDEN</span>, <span class="ident">i</span>);
         }
     }
     <span class="kw">return</span> <span class="ident">num</span> <span class="op">/</span> <span class="ident">den</span>;
 }
 
+<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">all</span>(<span class="ident">test</span>, <span class="ident">assert_no_panic</span>), <span class="ident">no_panic::no_panic</span>)]</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">tgamma</span>(<span class="kw-2">mut</span> <span class="ident">x</span>: <span class="ident">f64</span>) -&gt; <span class="ident">f64</span> {
     <span class="kw">let</span> <span class="ident">u</span>: <span class="ident">u64</span> <span class="op">=</span> <span class="ident">x</span>.<span class="ident">to_bits</span>();
     <span class="kw">let</span> <span class="ident">absx</span>: <span class="ident">f64</span>;
@@ -369,7 +371,7 @@ most ideas and constants are from boost and python
             <span class="kw">return</span> <span class="number">0.0</span> <span class="op">/</span> <span class="number">0.0</span>;
         }
         <span class="kw">if</span> <span class="ident">x</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">FACT</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">f64</span> {
-            <span class="kw">return</span> <span class="ident">FACT</span>[(<span class="ident">x</span> <span class="kw">as</span> <span class="ident">usize</span>) <span class="op">-</span> <span class="number">1</span>];
+            <span class="kw">return</span> <span class="macro">i!</span>(<span class="ident">FACT</span>, (<span class="ident">x</span> <span class="kw">as</span> <span class="ident">usize</span>) <span class="op">-</span> <span class="number">1</span>);
         }
     }
 

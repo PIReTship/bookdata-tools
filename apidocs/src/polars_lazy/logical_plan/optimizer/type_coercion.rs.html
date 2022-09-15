@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.22.7/src/logical_plan/optimizer/type_coercion.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>type_coercion.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script src="../../../../crates.js"></script><script defer src="../../../../main.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.23.2/src/logical_plan/optimizer/type_coercion.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>type_coercion.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script src="../../../../crates.js"></script><script defer src="../../../../main.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script>
     <noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
         </a><h2 class="location"></h2>
     </nav>
@@ -408,9 +408,100 @@
 <span id="403">403</span>
 <span id="404">404</span>
 <span id="405">405</span>
+<span id="406">406</span>
+<span id="407">407</span>
+<span id="408">408</span>
+<span id="409">409</span>
+<span id="410">410</span>
+<span id="411">411</span>
+<span id="412">412</span>
+<span id="413">413</span>
+<span id="414">414</span>
+<span id="415">415</span>
+<span id="416">416</span>
+<span id="417">417</span>
+<span id="418">418</span>
+<span id="419">419</span>
+<span id="420">420</span>
+<span id="421">421</span>
+<span id="422">422</span>
+<span id="423">423</span>
+<span id="424">424</span>
+<span id="425">425</span>
+<span id="426">426</span>
+<span id="427">427</span>
+<span id="428">428</span>
+<span id="429">429</span>
+<span id="430">430</span>
+<span id="431">431</span>
+<span id="432">432</span>
+<span id="433">433</span>
+<span id="434">434</span>
+<span id="435">435</span>
+<span id="436">436</span>
+<span id="437">437</span>
+<span id="438">438</span>
+<span id="439">439</span>
+<span id="440">440</span>
+<span id="441">441</span>
+<span id="442">442</span>
+<span id="443">443</span>
+<span id="444">444</span>
+<span id="445">445</span>
+<span id="446">446</span>
+<span id="447">447</span>
+<span id="448">448</span>
+<span id="449">449</span>
+<span id="450">450</span>
+<span id="451">451</span>
+<span id="452">452</span>
+<span id="453">453</span>
+<span id="454">454</span>
+<span id="455">455</span>
+<span id="456">456</span>
+<span id="457">457</span>
+<span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
+<span id="464">464</span>
+<span id="465">465</span>
+<span id="466">466</span>
+<span id="467">467</span>
+<span id="468">468</span>
+<span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
+<span id="478">478</span>
+<span id="479">479</span>
+<span id="480">480</span>
+<span id="481">481</span>
+<span id="482">482</span>
+<span id="483">483</span>
+<span id="484">484</span>
+<span id="485">485</span>
+<span id="486">486</span>
+<span id="487">487</span>
+<span id="488">488</span>
+<span id="489">489</span>
+<span id="490">490</span>
+<span id="491">491</span>
+<span id="492">492</span>
+<span id="493">493</span>
+<span id="494">494</span>
+<span id="495">495</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dsl::function_expr::FunctionExpr</span>;
 <span class="kw">use</span> <span class="ident">polars_core::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">polars_core::utils::get_supertype</span>;
+<span class="kw">use</span> <span class="ident">std::borrow::Cow</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::logical_plan::optimizer::stack_opt::OptimizationRule</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::logical_plan::Context</span>;
@@ -505,6 +596,32 @@
     <span class="ident">inputs</span>
 }
 
+<span class="kw">fn</span> <span class="ident">get_schema</span>(<span class="ident">lp_arena</span>: <span class="kw-2">&amp;</span><span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>, <span class="ident">lp_node</span>: <span class="ident">Node</span>) -&gt; <span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">SchemaRef</span><span class="op">&gt;</span> {
+    <span class="kw">match</span> <span class="ident">get_input</span>(<span class="ident">lp_arena</span>, <span class="ident">lp_node</span>) {
+        [<span class="prelude-val">Some</span>(<span class="ident">input</span>), <span class="kw">_</span>] =&gt; <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">input</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>),
+        <span class="comment">// files don&#39;t have an input, so we must take their schema</span>
+        [<span class="prelude-val">None</span>, <span class="kw">_</span>] =&gt; <span class="ident">Cow::Borrowed</span>(<span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">lp_node</span>).<span class="ident">scan_schema</span>()),
+    }
+}
+
+<span class="kw">fn</span> <span class="ident">get_aexpr_and_type</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
+    <span class="ident">expr_arena</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
+    <span class="ident">e</span>: <span class="ident">Node</span>,
+    <span class="ident">input_schema</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>,
+) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">AExpr</span>, <span class="ident">DataType</span>)<span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">ae</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="ident">e</span>);
+    <span class="prelude-val">Some</span>((
+        <span class="ident">ae</span>,
+        <span class="ident">ae</span>.<span class="ident">get_type</span>(<span class="ident">input_schema</span>, <span class="ident">Context::Default</span>, <span class="ident">expr_arena</span>)
+            .<span class="ident">ok</span>()<span class="question-mark">?</span>,
+    ))
+}
+
+<span class="kw">fn</span> <span class="ident">print_date_str_comparison_warning</span>() {
+    <span class="macro">eprintln!</span>(<span class="string">&quot;Warning: Comparing date/datetime/time column to string value, this will lead to string comparison and is unlikely what you want.\n\
+    If this is intended, consider using an explicit cast to silence this warning.&quot;</span>)
+}
+
 <span class="kw">impl</span> <span class="ident">OptimizationRule</span> <span class="kw">for</span> <span class="ident">TypeCoercionRule</span> {
     <span class="kw">fn</span> <span class="ident">optimize_expr</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -520,55 +637,50 @@
                 <span class="ident">falsy</span>: <span class="ident">falsy_node</span>,
                 <span class="ident">predicate</span>,
             } =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">input</span>) <span class="op">=</span> <span class="ident">get_input</span>(<span class="ident">lp_arena</span>, <span class="ident">lp_node</span>)[<span class="number">0</span>] {
-                    <span class="kw">let</span> <span class="ident">input_schema</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">input</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
-                    <span class="kw">let</span> <span class="ident">truthy</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="ident">truthy_node</span>);
-                    <span class="kw">let</span> <span class="ident">falsy</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="ident">falsy_node</span>);
-                    <span class="kw">let</span> <span class="ident">type_true</span> <span class="op">=</span> <span class="ident">truthy</span>
-                        .<span class="ident">get_type</span>(<span class="ident">input_schema</span>, <span class="ident">Context::Default</span>, <span class="ident">expr_arena</span>)
-                        .<span class="ident">expect</span>(<span class="string">&quot;could not dtype&quot;</span>);
-                    <span class="kw">let</span> <span class="ident">type_false</span> <span class="op">=</span> <span class="ident">falsy</span>
-                        .<span class="ident">get_type</span>(<span class="ident">input_schema</span>, <span class="ident">Context::Default</span>, <span class="ident">expr_arena</span>)
-                        .<span class="ident">expect</span>(<span class="string">&quot;could not dtype&quot;</span>);
+                <span class="kw">let</span> <span class="ident">input_schema</span> <span class="op">=</span> <span class="ident">get_schema</span>(<span class="ident">lp_arena</span>, <span class="ident">lp_node</span>);
+                <span class="kw">let</span> (<span class="ident">truthy</span>, <span class="ident">type_true</span>) <span class="op">=</span>
+                    <span class="ident">get_aexpr_and_type</span>(<span class="ident">expr_arena</span>, <span class="ident">truthy_node</span>, <span class="kw-2">&amp;</span><span class="ident">input_schema</span>)<span class="question-mark">?</span>;
+                <span class="kw">let</span> (<span class="ident">falsy</span>, <span class="ident">type_false</span>) <span class="op">=</span>
+                    <span class="ident">get_aexpr_and_type</span>(<span class="ident">expr_arena</span>, <span class="ident">falsy_node</span>, <span class="kw-2">&amp;</span><span class="ident">input_schema</span>)<span class="question-mark">?</span>;
 
-                    <span class="kw">if</span> <span class="ident">type_true</span> <span class="op">==</span> <span class="ident">type_false</span> {
-                        <span class="prelude-val">None</span>
-                    } <span class="kw">else</span> {
-                        <span class="kw">let</span> <span class="ident">st</span> <span class="op">=</span> <span class="ident">get_supertype</span>(<span class="kw-2">&amp;</span><span class="ident">type_true</span>, <span class="kw-2">&amp;</span><span class="ident">type_false</span>).<span class="ident">expect</span>(<span class="string">&quot;supertype&quot;</span>);
-                        <span class="kw">let</span> <span class="ident">st</span> <span class="op">=</span> <span class="ident">modify_supertype</span>(<span class="ident">st</span>, <span class="ident">truthy</span>, <span class="ident">falsy</span>, <span class="kw-2">&amp;</span><span class="ident">type_true</span>, <span class="kw-2">&amp;</span><span class="ident">type_false</span>);
-
-                        <span class="comment">// only cast if the type is not already the super type.</span>
-                        <span class="comment">// this can prevent an expensive flattening and subsequent aggregation</span>
-                        <span class="comment">// in a groupby context. To be able to cast the groups need to be</span>
-                        <span class="comment">// flattened</span>
-                        <span class="kw">let</span> <span class="ident">new_node_truthy</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">type_true</span> <span class="op">!</span><span class="op">=</span> <span class="ident">st</span> {
-                            <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Cast</span> {
-                                <span class="ident">expr</span>: <span class="ident">truthy_node</span>,
-                                <span class="ident">data_type</span>: <span class="ident">st</span>.<span class="ident">clone</span>(),
-                                <span class="ident">strict</span>: <span class="bool-val">false</span>,
-                            })
-                        } <span class="kw">else</span> {
-                            <span class="ident">truthy_node</span>
-                        };
-
-                        <span class="kw">let</span> <span class="ident">new_node_falsy</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">type_false</span> <span class="op">!</span><span class="op">=</span> <span class="ident">st</span> {
-                            <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Cast</span> {
-                                <span class="ident">expr</span>: <span class="ident">falsy_node</span>,
-                                <span class="ident">data_type</span>: <span class="ident">st</span>,
-                                <span class="ident">strict</span>: <span class="bool-val">false</span>,
-                            })
-                        } <span class="kw">else</span> {
-                            <span class="ident">falsy_node</span>
-                        };
-
-                        <span class="prelude-val">Some</span>(<span class="ident">AExpr::Ternary</span> {
-                            <span class="ident">truthy</span>: <span class="ident">new_node_truthy</span>,
-                            <span class="ident">falsy</span>: <span class="ident">new_node_falsy</span>,
-                            <span class="ident">predicate</span>,
-                        })
-                    }
-                } <span class="kw">else</span> {
+                <span class="kw">if</span> <span class="ident">type_true</span> <span class="op">==</span> <span class="ident">type_false</span> <span class="op">|</span><span class="op">|</span>
+                    <span class="comment">// data type unknown still has to be set</span>
+                    <span class="macro">matches!</span>(<span class="kw-2">&amp;</span><span class="ident">type_true</span>, <span class="ident">DataType::Unknown</span>) <span class="op">|</span><span class="op">|</span> <span class="macro">matches!</span>(<span class="kw-2">&amp;</span><span class="ident">type_false</span>, <span class="ident">DataType::Unknown</span>)
+                {
                     <span class="prelude-val">None</span>
+                } <span class="kw">else</span> {
+                    <span class="kw">let</span> <span class="ident">st</span> <span class="op">=</span> <span class="ident">get_supertype</span>(<span class="kw-2">&amp;</span><span class="ident">type_true</span>, <span class="kw-2">&amp;</span><span class="ident">type_false</span>).<span class="ident">expect</span>(<span class="string">&quot;supertype&quot;</span>);
+                    <span class="kw">let</span> <span class="ident">st</span> <span class="op">=</span> <span class="ident">modify_supertype</span>(<span class="ident">st</span>, <span class="ident">truthy</span>, <span class="ident">falsy</span>, <span class="kw-2">&amp;</span><span class="ident">type_true</span>, <span class="kw-2">&amp;</span><span class="ident">type_false</span>);
+
+                    <span class="comment">// only cast if the type is not already the super type.</span>
+                    <span class="comment">// this can prevent an expensive flattening and subsequent aggregation</span>
+                    <span class="comment">// in a groupby context. To be able to cast the groups need to be</span>
+                    <span class="comment">// flattened</span>
+                    <span class="kw">let</span> <span class="ident">new_node_truthy</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">type_true</span> <span class="op">!</span><span class="op">=</span> <span class="ident">st</span> {
+                        <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Cast</span> {
+                            <span class="ident">expr</span>: <span class="ident">truthy_node</span>,
+                            <span class="ident">data_type</span>: <span class="ident">st</span>.<span class="ident">clone</span>(),
+                            <span class="ident">strict</span>: <span class="bool-val">false</span>,
+                        })
+                    } <span class="kw">else</span> {
+                        <span class="ident">truthy_node</span>
+                    };
+
+                    <span class="kw">let</span> <span class="ident">new_node_falsy</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">type_false</span> <span class="op">!</span><span class="op">=</span> <span class="ident">st</span> {
+                        <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Cast</span> {
+                            <span class="ident">expr</span>: <span class="ident">falsy_node</span>,
+                            <span class="ident">data_type</span>: <span class="ident">st</span>,
+                            <span class="ident">strict</span>: <span class="bool-val">false</span>,
+                        })
+                    } <span class="kw">else</span> {
+                        <span class="ident">falsy_node</span>
+                    };
+
+                    <span class="prelude-val">Some</span>(<span class="ident">AExpr::Ternary</span> {
+                        <span class="ident">truthy</span>: <span class="ident">new_node_truthy</span>,
+                        <span class="ident">falsy</span>: <span class="ident">new_node_falsy</span>,
+                        <span class="ident">predicate</span>,
+                    })
                 }
             }
             <span class="ident">AExpr::BinaryExpr</span> {
@@ -576,166 +688,171 @@
                 <span class="ident">op</span>,
                 <span class="ident">right</span>: <span class="ident">node_right</span>,
             } =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">input</span>) <span class="op">=</span> <span class="ident">get_input</span>(<span class="ident">lp_arena</span>, <span class="ident">lp_node</span>)[<span class="number">0</span>] {
-                    <span class="kw">let</span> <span class="ident">input_schema</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">input</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
+                <span class="kw">let</span> <span class="ident">input_schema</span> <span class="op">=</span> <span class="ident">get_schema</span>(<span class="ident">lp_arena</span>, <span class="ident">lp_node</span>);
+                <span class="kw">let</span> (<span class="ident">left</span>, <span class="ident">type_left</span>) <span class="op">=</span> <span class="ident">get_aexpr_and_type</span>(<span class="ident">expr_arena</span>, <span class="ident">node_left</span>, <span class="kw-2">&amp;</span><span class="ident">input_schema</span>)<span class="question-mark">?</span>;
+                <span class="kw">let</span> (<span class="ident">right</span>, <span class="ident">type_right</span>) <span class="op">=</span>
+                    <span class="ident">get_aexpr_and_type</span>(<span class="ident">expr_arena</span>, <span class="ident">node_right</span>, <span class="kw-2">&amp;</span><span class="ident">input_schema</span>)<span class="question-mark">?</span>;
 
-                    <span class="kw">let</span> <span class="ident">left</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="ident">node_left</span>);
-                    <span class="kw">let</span> <span class="ident">right</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="ident">node_right</span>);
-
-                    <span class="kw">let</span> <span class="ident">type_left</span> <span class="op">=</span> <span class="ident">left</span>
-                        .<span class="ident">get_type</span>(<span class="ident">input_schema</span>, <span class="ident">Context::Default</span>, <span class="ident">expr_arena</span>)
-                        .<span class="ident">ok</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="ident">type_right</span> <span class="op">=</span> <span class="ident">right</span>
-                        .<span class="ident">get_type</span>(<span class="ident">input_schema</span>, <span class="ident">Context::Default</span>, <span class="ident">expr_arena</span>)
-                        .<span class="ident">ok</span>()<span class="question-mark">?</span>;
-
-                    <span class="comment">// don&#39;t coerce string with number comparisons. They must error</span>
-                    <span class="kw">match</span> (<span class="kw-2">&amp;</span><span class="ident">type_left</span>, <span class="kw-2">&amp;</span><span class="ident">type_right</span>, <span class="ident">op</span>) {
-                        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-categorical&quot;</span>))]</span>
-                        (<span class="ident">DataType::Utf8</span>, <span class="ident">dt</span>, <span class="ident">op</span>) <span class="op">|</span> (<span class="ident">dt</span>, <span class="ident">DataType::Utf8</span>, <span class="ident">op</span>)
-                            <span class="kw">if</span> <span class="ident">op</span>.<span class="ident">is_comparison</span>() <span class="op">&amp;&amp;</span> <span class="ident">dt</span>.<span class="ident">is_numeric</span>() =&gt;
-                        {
-                            <span class="kw">return</span> <span class="prelude-val">None</span>
-                        }
-                        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-categorical&quot;</span>)]</span>
-                        (<span class="ident">DataType::Utf8</span> <span class="op">|</span> <span class="ident">DataType::Categorical</span>(<span class="kw">_</span>), <span class="ident">dt</span>, <span class="ident">op</span>)
-                        <span class="op">|</span> (<span class="ident">dt</span>, <span class="ident">DataType::Utf8</span> <span class="op">|</span> <span class="ident">DataType::Categorical</span>(<span class="kw">_</span>), <span class="ident">op</span>)
-                            <span class="kw">if</span> <span class="ident">op</span>.<span class="ident">is_comparison</span>() <span class="op">&amp;&amp;</span> <span class="ident">dt</span>.<span class="ident">is_numeric</span>() =&gt;
-                        {
-                            <span class="kw">return</span> <span class="prelude-val">None</span>
-                        }
-                        <span class="kw">_</span> =&gt; {}
+                <span class="comment">// don&#39;t coerce string with number comparisons. They must error</span>
+                <span class="kw">match</span> (<span class="kw-2">&amp;</span><span class="ident">type_left</span>, <span class="kw-2">&amp;</span><span class="ident">type_right</span>, <span class="ident">op</span>) {
+                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-categorical&quot;</span>))]</span>
+                    (<span class="ident">DataType::Utf8</span>, <span class="ident">dt</span>, <span class="ident">op</span>) <span class="op">|</span> (<span class="ident">dt</span>, <span class="ident">DataType::Utf8</span>, <span class="ident">op</span>)
+                        <span class="kw">if</span> <span class="ident">op</span>.<span class="ident">is_comparison</span>() <span class="op">&amp;&amp;</span> <span class="ident">dt</span>.<span class="ident">is_numeric</span>() =&gt;
+                    {
+                        <span class="kw">return</span> <span class="prelude-val">None</span>
                     }
+                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-categorical&quot;</span>)]</span>
+                    (<span class="ident">DataType::Utf8</span> <span class="op">|</span> <span class="ident">DataType::Categorical</span>(<span class="kw">_</span>), <span class="ident">dt</span>, <span class="ident">op</span>)
+                    <span class="op">|</span> (<span class="ident">dt</span>, <span class="ident">DataType::Utf8</span> <span class="op">|</span> <span class="ident">DataType::Categorical</span>(<span class="kw">_</span>), <span class="ident">op</span>)
+                        <span class="kw">if</span> <span class="ident">op</span>.<span class="ident">is_comparison</span>() <span class="op">&amp;&amp;</span> <span class="ident">dt</span>.<span class="ident">is_numeric</span>() =&gt;
+                    {
+                        <span class="kw">return</span> <span class="prelude-val">None</span>
+                    }
+                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-date&quot;</span>)]</span>
+                    (<span class="ident">DataType::Date</span>, <span class="ident">DataType::Utf8</span>, <span class="ident">op</span>) <span class="kw">if</span> <span class="ident">op</span>.<span class="ident">is_comparison</span>() =&gt; {
+                        <span class="ident">print_date_str_comparison_warning</span>()
+                    }
+                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-datetime&quot;</span>)]</span>
+                    (<span class="ident">DataType::Datetime</span>(<span class="kw">_</span>, <span class="kw">_</span>), <span class="ident">DataType::Utf8</span>, <span class="ident">op</span>) <span class="kw">if</span> <span class="ident">op</span>.<span class="ident">is_comparison</span>() =&gt; {
+                        <span class="ident">print_date_str_comparison_warning</span>()
+                    }
+                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-time&quot;</span>)]</span>
+                    (<span class="ident">DataType::Time</span>, <span class="ident">DataType::Utf8</span>, <span class="ident">op</span>) <span class="kw">if</span> <span class="ident">op</span>.<span class="ident">is_comparison</span>() =&gt; {
+                        <span class="ident">print_date_str_comparison_warning</span>()
+                    }
+                    <span class="comment">// structs can be arbitrarily nested, leave the complexity to the caller for now.</span>
+                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-struct&quot;</span>)]</span>
+                    (<span class="ident">DataType::Struct</span>(<span class="kw">_</span>), <span class="ident">DataType::Struct</span>(<span class="kw">_</span>), <span class="ident">_op</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">None</span>,
+                    <span class="kw">_</span> =&gt; {}
+                }
+
+                <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_mut</span>, <span class="ident">unused_assignments</span>)]</span>
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">compare_cat_to_string</span> <span class="op">=</span> <span class="bool-val">false</span>;
+                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-categorical&quot;</span>)]</span>
+                {
+                    <span class="ident">compare_cat_to_string</span> <span class="op">=</span> <span class="macro">matches!</span>(
+                        <span class="ident">op</span>,
+                        <span class="ident">Operator::Eq</span>
+                            <span class="op">|</span> <span class="ident">Operator::NotEq</span>
+                            <span class="op">|</span> <span class="ident">Operator::Gt</span>
+                            <span class="op">|</span> <span class="ident">Operator::Lt</span>
+                            <span class="op">|</span> <span class="ident">Operator::GtEq</span>
+                            <span class="op">|</span> <span class="ident">Operator::LtEq</span>
+                    ) <span class="op">&amp;&amp;</span> (<span class="macro">matches!</span>(<span class="ident">type_left</span>, <span class="ident">DataType::Categorical</span>(<span class="kw">_</span>))
+                        <span class="op">&amp;&amp;</span> <span class="ident">type_right</span> <span class="op">==</span> <span class="ident">DataType::Utf8</span>)
+                        <span class="op">|</span><span class="op">|</span> (<span class="ident">type_left</span> <span class="op">==</span> <span class="ident">DataType::Utf8</span>
+                            <span class="op">&amp;&amp;</span> <span class="macro">matches!</span>(<span class="ident">type_right</span>, <span class="ident">DataType::Categorical</span>(<span class="kw">_</span>)));
+                }
+
+                <span class="kw">let</span> <span class="ident">datetime_arithmetic</span> <span class="op">=</span> <span class="macro">matches!</span>(<span class="ident">op</span>, <span class="ident">Operator::Minus</span> <span class="op">|</span> <span class="ident">Operator::Plus</span>)
+                    <span class="op">&amp;&amp;</span> <span class="macro">matches!</span>(
+                        (<span class="kw-2">&amp;</span><span class="ident">type_left</span>, <span class="kw-2">&amp;</span><span class="ident">type_right</span>),
+                        (<span class="ident">DataType::Datetime</span>(<span class="kw">_</span>, <span class="kw">_</span>), <span class="ident">DataType::Duration</span>(<span class="kw">_</span>))
+                            <span class="op">|</span> (<span class="ident">DataType::Duration</span>(<span class="kw">_</span>), <span class="ident">DataType::Datetime</span>(<span class="kw">_</span>, <span class="kw">_</span>))
+                            <span class="op">|</span> (<span class="ident">DataType::Date</span>, <span class="ident">DataType::Duration</span>(<span class="kw">_</span>))
+                            <span class="op">|</span> (<span class="ident">DataType::Duration</span>(<span class="kw">_</span>), <span class="ident">DataType::Date</span>)
+                    );
+
+                <span class="kw">let</span> <span class="ident">list_arithmetic</span> <span class="op">=</span> <span class="ident">op</span>.<span class="ident">is_arithmetic</span>()
+                    <span class="op">&amp;&amp;</span> <span class="macro">matches!</span>(
+                        (<span class="kw-2">&amp;</span><span class="ident">type_left</span>, <span class="kw-2">&amp;</span><span class="ident">type_right</span>),
+                        (<span class="ident">DataType::List</span>(<span class="kw">_</span>), <span class="kw">_</span>) <span class="op">|</span> (<span class="kw">_</span>, <span class="ident">DataType::List</span>(<span class="kw">_</span>))
+                    );
+
+                <span class="comment">// Special path for list arithmetic</span>
+                <span class="kw">if</span> <span class="ident">list_arithmetic</span> {
+                    <span class="kw">match</span> (<span class="kw-2">&amp;</span><span class="ident">type_left</span>, <span class="kw-2">&amp;</span><span class="ident">type_right</span>) {
+                        (<span class="ident">DataType::List</span>(<span class="ident">inner</span>), <span class="kw">_</span>) =&gt; {
+                            <span class="kw">return</span> <span class="kw">if</span> <span class="ident">type_right</span> <span class="op">!</span><span class="op">=</span> <span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">inner</span> {
+                                <span class="kw">let</span> <span class="ident">new_node_right</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Cast</span> {
+                                    <span class="ident">expr</span>: <span class="ident">node_right</span>,
+                                    <span class="ident">data_type</span>: <span class="kw-2">*</span><span class="ident">inner</span>.<span class="ident">clone</span>(),
+                                    <span class="ident">strict</span>: <span class="bool-val">false</span>,
+                                });
+
+                                <span class="prelude-val">Some</span>(<span class="ident">AExpr::BinaryExpr</span> {
+                                    <span class="ident">left</span>: <span class="ident">node_left</span>,
+                                    <span class="ident">op</span>,
+                                    <span class="ident">right</span>: <span class="ident">new_node_right</span>,
+                                })
+                            } <span class="kw">else</span> {
+                                <span class="prelude-val">None</span>
+                            };
+                        }
+                        (<span class="kw">_</span>, <span class="ident">DataType::List</span>(<span class="ident">inner</span>)) =&gt; {
+                            <span class="kw">return</span> <span class="kw">if</span> <span class="ident">type_left</span> <span class="op">!</span><span class="op">=</span> <span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">inner</span> {
+                                <span class="kw">let</span> <span class="ident">new_node_left</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Cast</span> {
+                                    <span class="ident">expr</span>: <span class="ident">node_left</span>,
+                                    <span class="ident">data_type</span>: <span class="kw-2">*</span><span class="ident">inner</span>.<span class="ident">clone</span>(),
+                                    <span class="ident">strict</span>: <span class="bool-val">false</span>,
+                                });
+
+                                <span class="prelude-val">Some</span>(<span class="ident">AExpr::BinaryExpr</span> {
+                                    <span class="ident">left</span>: <span class="ident">new_node_left</span>,
+                                    <span class="ident">op</span>,
+                                    <span class="ident">right</span>: <span class="ident">node_right</span>,
+                                })
+                            } <span class="kw">else</span> {
+                                <span class="prelude-val">None</span>
+                            };
+                        }
+                        <span class="kw">_</span> =&gt; <span class="macro">unreachable!</span>(),
+                    }
+                }
+
+                <span class="kw">if</span> <span class="ident">type_left</span> <span class="op">==</span> <span class="ident">type_right</span> <span class="op">|</span><span class="op">|</span> <span class="ident">compare_cat_to_string</span> <span class="op">|</span><span class="op">|</span> <span class="ident">datetime_arithmetic</span>  <span class="op">|</span><span class="op">|</span>
+                    <span class="comment">// data type unknown still has to be set</span>
+                    <span class="macro">matches!</span>(<span class="kw-2">&amp;</span><span class="ident">type_left</span>, <span class="ident">DataType::Unknown</span>) <span class="op">|</span><span class="op">|</span> <span class="macro">matches!</span>(<span class="kw-2">&amp;</span><span class="ident">type_right</span>, <span class="ident">DataType::Unknown</span>)
+                {
+                    <span class="prelude-val">None</span>
+                } <span class="kw">else</span> {
+                    <span class="kw">let</span> <span class="ident">st</span> <span class="op">=</span> <span class="ident">get_supertype</span>(<span class="kw-2">&amp;</span><span class="ident">type_left</span>, <span class="kw-2">&amp;</span><span class="ident">type_right</span>)
+                        .<span class="ident">expect</span>(<span class="string">&quot;could not find supertype of binary expr&quot;</span>);
+                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">st</span> <span class="op">=</span> <span class="ident">modify_supertype</span>(<span class="ident">st</span>, <span class="ident">left</span>, <span class="ident">right</span>, <span class="kw-2">&amp;</span><span class="ident">type_left</span>, <span class="kw-2">&amp;</span><span class="ident">type_right</span>);
 
                     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_mut</span>, <span class="ident">unused_assignments</span>)]</span>
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">compare_cat_to_string</span> <span class="op">=</span> <span class="bool-val">false</span>;
+                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cat_str_arithmetic</span> <span class="op">=</span> <span class="bool-val">false</span>;
+
                     <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-categorical&quot;</span>)]</span>
                     {
-                        <span class="ident">compare_cat_to_string</span> <span class="op">=</span>
-                            <span class="macro">matches!</span>(
-                                <span class="ident">op</span>,
-                                <span class="ident">Operator::Eq</span>
-                                    <span class="op">|</span> <span class="ident">Operator::NotEq</span>
-                                    <span class="op">|</span> <span class="ident">Operator::Gt</span>
-                                    <span class="op">|</span> <span class="ident">Operator::Lt</span>
-                                    <span class="op">|</span> <span class="ident">Operator::GtEq</span>
-                                    <span class="op">|</span> <span class="ident">Operator::LtEq</span>
-                            ) <span class="op">&amp;&amp;</span> (<span class="macro">matches!</span>(<span class="ident">type_left</span>, <span class="ident">DataType::Categorical</span>(<span class="kw">_</span>))
-                                <span class="op">&amp;&amp;</span> <span class="ident">type_right</span> <span class="op">==</span> <span class="ident">DataType::Utf8</span>)
-                                <span class="op">|</span><span class="op">|</span> (<span class="ident">type_left</span> <span class="op">==</span> <span class="ident">DataType::Utf8</span>
-                                    <span class="op">&amp;&amp;</span> <span class="macro">matches!</span>(<span class="ident">type_right</span>, <span class="ident">DataType::Categorical</span>(<span class="kw">_</span>)));
+                        <span class="ident">cat_str_arithmetic</span> <span class="op">=</span> (<span class="macro">matches!</span>(<span class="ident">type_left</span>, <span class="ident">DataType::Categorical</span>(<span class="kw">_</span>))
+                            <span class="op">&amp;&amp;</span> <span class="ident">type_right</span> <span class="op">==</span> <span class="ident">DataType::Utf8</span>)
+                            <span class="op">|</span><span class="op">|</span> (<span class="ident">type_left</span> <span class="op">==</span> <span class="ident">DataType::Utf8</span>
+                                <span class="op">&amp;&amp;</span> <span class="macro">matches!</span>(<span class="ident">type_right</span>, <span class="ident">DataType::Categorical</span>(<span class="kw">_</span>)));
                     }
 
-                    <span class="kw">let</span> <span class="ident">datetime_arithmetic</span> <span class="op">=</span> <span class="macro">matches!</span>(<span class="ident">op</span>, <span class="ident">Operator::Minus</span> <span class="op">|</span> <span class="ident">Operator::Plus</span>)
-                        <span class="op">&amp;&amp;</span> <span class="macro">matches!</span>(
-                            (<span class="kw-2">&amp;</span><span class="ident">type_left</span>, <span class="kw-2">&amp;</span><span class="ident">type_right</span>),
-                            (<span class="ident">DataType::Datetime</span>(<span class="kw">_</span>, <span class="kw">_</span>), <span class="ident">DataType::Duration</span>(<span class="kw">_</span>))
-                                <span class="op">|</span> (<span class="ident">DataType::Duration</span>(<span class="kw">_</span>), <span class="ident">DataType::Datetime</span>(<span class="kw">_</span>, <span class="kw">_</span>))
-                                <span class="op">|</span> (<span class="ident">DataType::Date</span>, <span class="ident">DataType::Duration</span>(<span class="kw">_</span>))
-                                <span class="op">|</span> (<span class="ident">DataType::Duration</span>(<span class="kw">_</span>), <span class="ident">DataType::Date</span>)
-                        );
-
-                    <span class="kw">let</span> <span class="ident">list_arithmetic</span> <span class="op">=</span> <span class="ident">op</span>.<span class="ident">is_arithmetic</span>()
-                        <span class="op">&amp;&amp;</span> <span class="macro">matches!</span>(
-                            (<span class="kw-2">&amp;</span><span class="ident">type_left</span>, <span class="kw-2">&amp;</span><span class="ident">type_right</span>),
-                            (<span class="ident">DataType::List</span>(<span class="kw">_</span>), <span class="kw">_</span>) <span class="op">|</span> (<span class="kw">_</span>, <span class="ident">DataType::List</span>(<span class="kw">_</span>))
-                        );
-
-                    <span class="comment">// Special path for list arithmetic</span>
-                    <span class="kw">if</span> <span class="ident">list_arithmetic</span> {
-                        <span class="kw">match</span> (<span class="kw-2">&amp;</span><span class="ident">type_left</span>, <span class="kw-2">&amp;</span><span class="ident">type_right</span>) {
-                            (<span class="ident">DataType::List</span>(<span class="ident">inner</span>), <span class="kw">_</span>) =&gt; {
-                                <span class="kw">return</span> <span class="kw">if</span> <span class="ident">type_right</span> <span class="op">!</span><span class="op">=</span> <span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">inner</span> {
-                                    <span class="kw">let</span> <span class="ident">new_node_right</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Cast</span> {
-                                        <span class="ident">expr</span>: <span class="ident">node_right</span>,
-                                        <span class="ident">data_type</span>: <span class="kw-2">*</span><span class="ident">inner</span>.<span class="ident">clone</span>(),
-                                        <span class="ident">strict</span>: <span class="bool-val">false</span>,
-                                    });
-
-                                    <span class="prelude-val">Some</span>(<span class="ident">AExpr::BinaryExpr</span> {
-                                        <span class="ident">left</span>: <span class="ident">node_left</span>,
-                                        <span class="ident">op</span>,
-                                        <span class="ident">right</span>: <span class="ident">new_node_right</span>,
-                                    })
-                                } <span class="kw">else</span> {
-                                    <span class="prelude-val">None</span>
-                                };
-                            }
-                            (<span class="kw">_</span>, <span class="ident">DataType::List</span>(<span class="ident">inner</span>)) =&gt; {
-                                <span class="kw">return</span> <span class="kw">if</span> <span class="ident">type_left</span> <span class="op">!</span><span class="op">=</span> <span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">inner</span> {
-                                    <span class="kw">let</span> <span class="ident">new_node_left</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Cast</span> {
-                                        <span class="ident">expr</span>: <span class="ident">node_left</span>,
-                                        <span class="ident">data_type</span>: <span class="kw-2">*</span><span class="ident">inner</span>.<span class="ident">clone</span>(),
-                                        <span class="ident">strict</span>: <span class="bool-val">false</span>,
-                                    });
-
-                                    <span class="prelude-val">Some</span>(<span class="ident">AExpr::BinaryExpr</span> {
-                                        <span class="ident">left</span>: <span class="ident">new_node_left</span>,
-                                        <span class="ident">op</span>,
-                                        <span class="ident">right</span>: <span class="ident">node_right</span>,
-                                    })
-                                } <span class="kw">else</span> {
-                                    <span class="prelude-val">None</span>
-                                };
-                            }
-                            <span class="kw">_</span> =&gt; <span class="macro">unreachable!</span>(),
-                        }
+                    <span class="kw">if</span> <span class="ident">cat_str_arithmetic</span> {
+                        <span class="ident">st</span> <span class="op">=</span> <span class="ident">DataType::Utf8</span>
                     }
 
-                    <span class="kw">if</span> <span class="ident">type_left</span> <span class="op">==</span> <span class="ident">type_right</span> <span class="op">|</span><span class="op">|</span> <span class="ident">compare_cat_to_string</span> <span class="op">|</span><span class="op">|</span> <span class="ident">datetime_arithmetic</span> {
-                        <span class="prelude-val">None</span>
-                    } <span class="kw">else</span> {
-                        <span class="kw">let</span> <span class="ident">st</span> <span class="op">=</span> <span class="ident">get_supertype</span>(<span class="kw-2">&amp;</span><span class="ident">type_left</span>, <span class="kw-2">&amp;</span><span class="ident">type_right</span>)
-                            .<span class="ident">expect</span>(<span class="string">&quot;could not find supertype of binary expr&quot;</span>);
-
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">st</span> <span class="op">=</span> <span class="ident">modify_supertype</span>(<span class="ident">st</span>, <span class="ident">left</span>, <span class="ident">right</span>, <span class="kw-2">&amp;</span><span class="ident">type_left</span>, <span class="kw-2">&amp;</span><span class="ident">type_right</span>);
-
-                        <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_mut</span>, <span class="ident">unused_assignments</span>)]</span>
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cat_str_arithmetic</span> <span class="op">=</span> <span class="bool-val">false</span>;
-
-                        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-categorical&quot;</span>)]</span>
-                        {
-                            <span class="ident">cat_str_arithmetic</span> <span class="op">=</span> (<span class="macro">matches!</span>(<span class="ident">type_left</span>, <span class="ident">DataType::Categorical</span>(<span class="kw">_</span>))
-                                <span class="op">&amp;&amp;</span> <span class="ident">type_right</span> <span class="op">==</span> <span class="ident">DataType::Utf8</span>)
-                                <span class="op">|</span><span class="op">|</span> (<span class="ident">type_left</span> <span class="op">==</span> <span class="ident">DataType::Utf8</span>
-                                    <span class="op">&amp;&amp;</span> <span class="macro">matches!</span>(<span class="ident">type_right</span>, <span class="ident">DataType::Categorical</span>(<span class="kw">_</span>)));
-                        }
-
-                        <span class="kw">if</span> <span class="ident">cat_str_arithmetic</span> {
-                            <span class="ident">st</span> <span class="op">=</span> <span class="ident">DataType::Utf8</span>
-                        }
-
-                        <span class="comment">// only cast if the type is not already the super type.</span>
-                        <span class="comment">// this can prevent an expensive flattening and subsequent aggregation</span>
-                        <span class="comment">// in a groupby context. To be able to cast the groups need to be</span>
-                        <span class="comment">// flattened</span>
-                        <span class="kw">let</span> <span class="ident">new_node_left</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">type_left</span> <span class="op">!</span><span class="op">=</span> <span class="ident">st</span> {
-                            <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Cast</span> {
-                                <span class="ident">expr</span>: <span class="ident">node_left</span>,
-                                <span class="ident">data_type</span>: <span class="ident">st</span>.<span class="ident">clone</span>(),
-                                <span class="ident">strict</span>: <span class="bool-val">false</span>,
-                            })
-                        } <span class="kw">else</span> {
-                            <span class="ident">node_left</span>
-                        };
-                        <span class="kw">let</span> <span class="ident">new_node_right</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">type_right</span> <span class="op">!</span><span class="op">=</span> <span class="ident">st</span> {
-                            <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Cast</span> {
-                                <span class="ident">expr</span>: <span class="ident">node_right</span>,
-                                <span class="ident">data_type</span>: <span class="ident">st</span>,
-                                <span class="ident">strict</span>: <span class="bool-val">false</span>,
-                            })
-                        } <span class="kw">else</span> {
-                            <span class="ident">node_right</span>
-                        };
-
-                        <span class="prelude-val">Some</span>(<span class="ident">AExpr::BinaryExpr</span> {
-                            <span class="ident">left</span>: <span class="ident">new_node_left</span>,
-                            <span class="ident">op</span>,
-                            <span class="ident">right</span>: <span class="ident">new_node_right</span>,
+                    <span class="comment">// only cast if the type is not already the super type.</span>
+                    <span class="comment">// this can prevent an expensive flattening and subsequent aggregation</span>
+                    <span class="comment">// in a groupby context. To be able to cast the groups need to be</span>
+                    <span class="comment">// flattened</span>
+                    <span class="kw">let</span> <span class="ident">new_node_left</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">type_left</span> <span class="op">!</span><span class="op">=</span> <span class="ident">st</span> {
+                        <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Cast</span> {
+                            <span class="ident">expr</span>: <span class="ident">node_left</span>,
+                            <span class="ident">data_type</span>: <span class="ident">st</span>.<span class="ident">clone</span>(),
+                            <span class="ident">strict</span>: <span class="bool-val">false</span>,
                         })
-                    }
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">None</span>
+                    } <span class="kw">else</span> {
+                        <span class="ident">node_left</span>
+                    };
+                    <span class="kw">let</span> <span class="ident">new_node_right</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">type_right</span> <span class="op">!</span><span class="op">=</span> <span class="ident">st</span> {
+                        <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Cast</span> {
+                            <span class="ident">expr</span>: <span class="ident">node_right</span>,
+                            <span class="ident">data_type</span>: <span class="ident">st</span>,
+                            <span class="ident">strict</span>: <span class="bool-val">false</span>,
+                        })
+                    } <span class="kw">else</span> {
+                        <span class="ident">node_right</span>
+                    };
+
+                    <span class="prelude-val">Some</span>(<span class="ident">AExpr::BinaryExpr</span> {
+                        <span class="ident">left</span>: <span class="ident">new_node_left</span>,
+                        <span class="ident">op</span>,
+                        <span class="ident">right</span>: <span class="ident">new_node_right</span>,
+                    })
                 }
             }
             <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;is_in&quot;</span>)]</span>
@@ -744,47 +861,109 @@
                 <span class="kw-2">ref</span> <span class="ident">input</span>,
                 <span class="ident">options</span>,
             } =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">input_node</span>) <span class="op">=</span> <span class="ident">get_input</span>(<span class="ident">lp_arena</span>, <span class="ident">lp_node</span>)[<span class="number">0</span>] {
-                    <span class="kw">let</span> <span class="ident">input_schema</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">input_node</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
-                    <span class="kw">let</span> <span class="ident">left_node</span> <span class="op">=</span> <span class="ident">input</span>[<span class="number">0</span>];
-                    <span class="kw">let</span> <span class="ident">other_node</span> <span class="op">=</span> <span class="ident">input</span>[<span class="number">1</span>];
-                    <span class="kw">let</span> <span class="ident">left</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="ident">left_node</span>);
-                    <span class="kw">let</span> <span class="ident">other</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="ident">other_node</span>);
+                <span class="kw">let</span> <span class="ident">input_schema</span> <span class="op">=</span> <span class="ident">get_schema</span>(<span class="ident">lp_arena</span>, <span class="ident">lp_node</span>);
+                <span class="kw">let</span> <span class="ident">other_node</span> <span class="op">=</span> <span class="ident">input</span>[<span class="number">1</span>];
+                <span class="kw">let</span> (<span class="kw">_</span>, <span class="ident">type_left</span>) <span class="op">=</span> <span class="ident">get_aexpr_and_type</span>(<span class="ident">expr_arena</span>, <span class="ident">input</span>[<span class="number">0</span>], <span class="kw-2">&amp;</span><span class="ident">input_schema</span>)<span class="question-mark">?</span>;
+                <span class="kw">let</span> (<span class="kw">_</span>, <span class="ident">type_other</span>) <span class="op">=</span> <span class="ident">get_aexpr_and_type</span>(<span class="ident">expr_arena</span>, <span class="ident">other_node</span>, <span class="kw-2">&amp;</span><span class="ident">input_schema</span>)<span class="question-mark">?</span>;
 
-                    <span class="kw">let</span> <span class="ident">type_left</span> <span class="op">=</span> <span class="ident">left</span>
-                        .<span class="ident">get_type</span>(<span class="ident">input_schema</span>, <span class="ident">Context::Default</span>, <span class="ident">expr_arena</span>)
-                        .<span class="ident">ok</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="ident">type_other</span> <span class="op">=</span> <span class="ident">other</span>
-                        .<span class="ident">get_type</span>(<span class="ident">input_schema</span>, <span class="ident">Context::Default</span>, <span class="ident">expr_arena</span>)
-                        .<span class="ident">ok</span>()<span class="question-mark">?</span>;
+                <span class="kw">match</span> (<span class="kw-2">&amp;</span><span class="ident">type_left</span>, <span class="ident">type_other</span>) {
+                    <span class="comment">// cast both local and global string cache</span>
+                    <span class="comment">// note that there might not yet be a rev</span>
+                    (<span class="ident">DataType::Categorical</span>(<span class="kw">_</span>), <span class="ident">DataType::Utf8</span>) =&gt; {
+                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">clone</span>();
 
-                    <span class="kw">match</span> (<span class="kw-2">&amp;</span><span class="ident">type_left</span>, <span class="ident">type_other</span>) {
-                        (<span class="ident">DataType::Categorical</span>(<span class="prelude-val">Some</span>(<span class="ident">rev_map</span>)), <span class="ident">DataType::Utf8</span>)
-                            <span class="kw">if</span> <span class="ident">rev_map</span>.<span class="ident">is_global</span>() =&gt;
-                        {
-                            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">clone</span>();
+                        <span class="kw">let</span> <span class="ident">casted_expr</span> <span class="op">=</span> <span class="ident">AExpr::Cast</span> {
+                            <span class="ident">expr</span>: <span class="ident">other_node</span>,
+                            <span class="ident">data_type</span>: <span class="ident">DataType::Categorical</span>(<span class="prelude-val">None</span>),
+                            <span class="comment">// does not matter</span>
+                            <span class="ident">strict</span>: <span class="bool-val">false</span>,
+                        };
+                        <span class="kw">let</span> <span class="ident">other_input</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">casted_expr</span>);
+                        <span class="ident">input</span>[<span class="number">1</span>] <span class="op">=</span> <span class="ident">other_input</span>;
 
-                            <span class="kw">let</span> <span class="ident">casted_expr</span> <span class="op">=</span> <span class="ident">AExpr::Cast</span> {
-                                <span class="ident">expr</span>: <span class="ident">other_node</span>,
-                                <span class="ident">data_type</span>: <span class="ident">DataType::Categorical</span>(<span class="prelude-val">None</span>),
-                                <span class="comment">// does not matter</span>
-                                <span class="ident">strict</span>: <span class="bool-val">false</span>,
-                            };
-                            <span class="kw">let</span> <span class="ident">other_input</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">casted_expr</span>);
-                            <span class="ident">input</span>[<span class="number">1</span>] <span class="op">=</span> <span class="ident">other_input</span>;
-
-                            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Function</span> {
-                                <span class="ident">function</span>: <span class="ident">FunctionExpr::IsIn</span>,
-                                <span class="ident">input</span>,
-                                <span class="ident">options</span>,
-                            })
-                        }
-                        <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
+                        <span class="prelude-val">Some</span>(<span class="ident">AExpr::Function</span> {
+                            <span class="ident">function</span>: <span class="ident">FunctionExpr::IsIn</span>,
+                            <span class="ident">input</span>,
+                            <span class="ident">options</span>,
+                        })
                     }
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">None</span>
+                    <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
                 }
             }
+            <span class="ident">AExpr::Function</span> {
+                <span class="comment">// only for `DataType::Unknown` as it still has to be set.</span>
+                <span class="ident">function</span>:
+                    <span class="ident">FunctionExpr::FillNull</span> {
+                        <span class="ident">super_type</span>: <span class="ident">DataType::Unknown</span>,
+                    },
+                <span class="kw-2">ref</span> <span class="ident">input</span>,
+                <span class="ident">options</span>,
+            } =&gt; {
+                <span class="kw">let</span> <span class="ident">input_schema</span> <span class="op">=</span> <span class="ident">get_schema</span>(<span class="ident">lp_arena</span>, <span class="ident">lp_node</span>);
+                <span class="kw">let</span> <span class="ident">other_node</span> <span class="op">=</span> <span class="ident">input</span>[<span class="number">1</span>];
+                <span class="kw">let</span> (<span class="ident">left</span>, <span class="ident">type_left</span>) <span class="op">=</span> <span class="ident">get_aexpr_and_type</span>(<span class="ident">expr_arena</span>, <span class="ident">input</span>[<span class="number">0</span>], <span class="kw-2">&amp;</span><span class="ident">input_schema</span>)<span class="question-mark">?</span>;
+                <span class="kw">let</span> (<span class="ident">fill_value</span>, <span class="ident">type_fill_value</span>) <span class="op">=</span>
+                    <span class="ident">get_aexpr_and_type</span>(<span class="ident">expr_arena</span>, <span class="ident">other_node</span>, <span class="kw-2">&amp;</span><span class="ident">input_schema</span>)<span class="question-mark">?</span>;
+                <span class="kw">let</span> <span class="ident">super_type</span> <span class="op">=</span> <span class="ident">get_supertype</span>(<span class="kw-2">&amp;</span><span class="ident">type_left</span>, <span class="kw-2">&amp;</span><span class="ident">type_fill_value</span>).<span class="ident">ok</span>()<span class="question-mark">?</span>;
+                <span class="kw">let</span> <span class="ident">super_type</span> <span class="op">=</span>
+                    <span class="ident">modify_supertype</span>(<span class="ident">super_type</span>, <span class="ident">left</span>, <span class="ident">fill_value</span>, <span class="kw-2">&amp;</span><span class="ident">type_left</span>, <span class="kw-2">&amp;</span><span class="ident">type_fill_value</span>);
+                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Function</span> {
+                    <span class="ident">function</span>: <span class="ident">FunctionExpr::FillNull</span> { <span class="ident">super_type</span> },
+                    <span class="ident">input</span>: <span class="ident">input</span>.<span class="ident">clone</span>(),
+                    <span class="ident">options</span>,
+                })
+            }
+            <span class="ident">AExpr::Function</span> {
+                <span class="comment">// only for `DataType::Unknown` as it still has to be set.</span>
+                <span class="ident">function</span>: <span class="ident">FunctionExpr::ShiftAndFill</span> { <span class="ident">periods</span> },
+                <span class="kw-2">ref</span> <span class="ident">input</span>,
+                <span class="ident">options</span>,
+            } =&gt; {
+                <span class="kw">let</span> <span class="ident">input_schema</span> <span class="op">=</span> <span class="ident">get_schema</span>(<span class="ident">lp_arena</span>, <span class="ident">lp_node</span>);
+                <span class="kw">let</span> <span class="ident">self_node</span> <span class="op">=</span> <span class="ident">input</span>[<span class="number">0</span>];
+                <span class="kw">let</span> <span class="ident">other_node</span> <span class="op">=</span> <span class="ident">input</span>[<span class="number">1</span>];
+                <span class="kw">let</span> (<span class="ident">left</span>, <span class="ident">type_self</span>) <span class="op">=</span> <span class="ident">get_aexpr_and_type</span>(<span class="ident">expr_arena</span>, <span class="ident">self_node</span>, <span class="kw-2">&amp;</span><span class="ident">input_schema</span>)<span class="question-mark">?</span>;
+                <span class="kw">let</span> (<span class="ident">fill_value</span>, <span class="ident">type_other</span>) <span class="op">=</span>
+                    <span class="ident">get_aexpr_and_type</span>(<span class="ident">expr_arena</span>, <span class="ident">other_node</span>, <span class="kw-2">&amp;</span><span class="ident">input_schema</span>)<span class="question-mark">?</span>;
+
+                <span class="kw">if</span> <span class="ident">type_self</span> <span class="op">==</span> <span class="ident">type_other</span> {
+                    <span class="kw">return</span> <span class="prelude-val">None</span>;
+                }
+
+                <span class="kw">let</span> <span class="ident">super_type</span> <span class="op">=</span> <span class="ident">get_supertype</span>(<span class="kw-2">&amp;</span><span class="ident">type_self</span>, <span class="kw-2">&amp;</span><span class="ident">type_other</span>).<span class="ident">ok</span>()<span class="question-mark">?</span>;
+                <span class="kw">let</span> <span class="ident">super_type</span> <span class="op">=</span>
+                    <span class="ident">modify_supertype</span>(<span class="ident">super_type</span>, <span class="ident">left</span>, <span class="ident">fill_value</span>, <span class="kw-2">&amp;</span><span class="ident">type_self</span>, <span class="kw-2">&amp;</span><span class="ident">type_other</span>);
+
+                <span class="comment">// only cast if the type is not already the super type.</span>
+                <span class="comment">// this can prevent an expensive flattening and subsequent aggregation</span>
+                <span class="comment">// in a groupby context. To be able to cast the groups need to be</span>
+                <span class="comment">// flattened</span>
+                <span class="kw">let</span> <span class="ident">new_node_self</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">type_self</span> <span class="op">!</span><span class="op">=</span> <span class="ident">super_type</span> {
+                    <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Cast</span> {
+                        <span class="ident">expr</span>: <span class="ident">self_node</span>,
+                        <span class="ident">data_type</span>: <span class="ident">super_type</span>.<span class="ident">clone</span>(),
+                        <span class="ident">strict</span>: <span class="bool-val">false</span>,
+                    })
+                } <span class="kw">else</span> {
+                    <span class="ident">self_node</span>
+                };
+                <span class="kw">let</span> <span class="ident">new_node_other</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">type_other</span> <span class="op">!</span><span class="op">=</span> <span class="ident">super_type</span> {
+                    <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Cast</span> {
+                        <span class="ident">expr</span>: <span class="ident">other_node</span>,
+                        <span class="ident">data_type</span>: <span class="ident">super_type</span>,
+                        <span class="ident">strict</span>: <span class="bool-val">false</span>,
+                    })
+                } <span class="kw">else</span> {
+                    <span class="ident">other_node</span>
+                };
+
+                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Function</span> {
+                    <span class="ident">function</span>: <span class="ident">FunctionExpr::ShiftAndFill</span> { <span class="ident">periods</span> },
+                    <span class="ident">input</span>: <span class="macro">vec!</span>[<span class="ident">new_node_self</span>, <span class="ident">new_node_other</span>],
+                    <span class="ident">options</span>,
+                })
+            }
+
             <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
         }
     }
@@ -798,6 +977,7 @@
     <span class="kw">use</span> <span class="ident">polars_core::prelude</span>::<span class="kw-2">*</span>;
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-categorical&quot;</span>)]</span>
     <span class="kw">fn</span> <span class="ident">test_categorical_utf8</span>() {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rules</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">OptimizationRule</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="macro">vec!</span>[<span class="ident">Box::new</span>(<span class="ident">TypeCoercionRule</span> {})];
         <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="ident">Schema::from</span>(<span class="macro">vec!</span>[<span class="ident">Field::new</span>(<span class="string">&quot;fruits&quot;</span>, <span class="ident">DataType::Categorical</span>(<span class="prelude-val">None</span>))]);

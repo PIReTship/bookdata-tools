@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2_convert-0.2.0/src/field.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>field.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><script defer src="../../main.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2_convert-0.3.0/src/field.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>field.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><script defer src="../../main.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script>
     <noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../arrow2_convert/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
         </a><h2 class="location"></h2>
     </nav>
@@ -254,13 +254,35 @@
 <span id="249">249</span>
 <span id="250">250</span>
 <span id="251">251</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">arrow2::datatypes</span>::{<span class="ident">DataType</span>, <span class="ident">Field</span>};
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Implementation and traits for mapping rust types to Arrow types</span>
+
+<span class="kw">use</span> <span class="ident">arrow2::datatypes</span>::{<span class="ident">DataType</span>, <span class="ident">Field</span>};
 <span class="kw">use</span> <span class="ident">chrono</span>::{<span class="ident">NaiveDate</span>, <span class="ident">NaiveDateTime</span>};
 
 <span class="doccomment">/// Trait implemented by all types that can be used as an Arrow field.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// Implementations are provided for types already supported by the arrow2 crate:</span>
-<span class="doccomment">/// - numeric types: [`u8`], [`u16`], [`u32`], [`u64`], [`i8`], [`i16`], [`i32`], [`i64`], [`f32`], [`f64`]</span>
+<span class="doccomment">/// - numeric types: [`u8`], [`u16`], [`u32`], [`u64`], [`i8`], [`i16`], [`i32`], [`i128`], [`i64`], [`f32`], [`f64`],</span>
 <span class="doccomment">/// - other types: [`bool`], [`String`]</span>
 <span class="doccomment">/// - temporal types: [`chrono::NaiveDate`], [`chrono::NaiveDateTime`]</span>
 <span class="doccomment">///</span>
@@ -363,6 +385,18 @@
 <span class="macro">impl_numeric_type_full!</span>(<span class="ident">f32</span>, <span class="ident">Float32</span>);
 <span class="macro">impl_numeric_type_full!</span>(<span class="ident">f64</span>, <span class="ident">Float64</span>);
 
+<span class="doccomment">/// Maps a rust i128 to an Arrow Decimal where precision and scale are required.</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">I128</span><span class="op">&lt;</span><span class="kw">const</span> <span class="ident">PRECISION</span>: <span class="ident">usize</span>, <span class="kw">const</span> <span class="ident">SCALE</span>: <span class="ident">usize</span><span class="op">&gt;</span> {}
+
+<span class="kw">impl</span><span class="op">&lt;</span><span class="kw">const</span> <span class="ident">PRECISION</span>: <span class="ident">usize</span>, <span class="kw">const</span> <span class="ident">SCALE</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">ArrowField</span> <span class="kw">for</span> <span class="ident">I128</span><span class="op">&lt;</span><span class="ident">PRECISION</span>, <span class="ident">SCALE</span><span class="op">&gt;</span> {
+    <span class="kw">type</span> <span class="ident">Type</span> <span class="op">=</span> <span class="ident">i128</span>;
+
+    <span class="attribute">#[<span class="ident">inline</span>]</span>
+    <span class="kw">fn</span> <span class="ident">data_type</span>() -&gt; <span class="ident">arrow2::datatypes::DataType</span> {
+        <span class="ident">arrow2::datatypes::DataType::Decimal</span>(<span class="ident">PRECISION</span>, <span class="ident">SCALE</span>)
+    }
+}
+
 <span class="kw">impl</span> <span class="ident">ArrowField</span> <span class="kw">for</span> <span class="ident">String</span> {
     <span class="kw">type</span> <span class="ident">Type</span> <span class="op">=</span> <span class="ident">String</span>;
 
@@ -372,6 +406,7 @@
     }
 }
 
+<span class="doccomment">/// Represents the `LargeUtf8` Arrow type</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">LargeString</span> {}
 
 <span class="kw">impl</span> <span class="ident">ArrowField</span> <span class="kw">for</span> <span class="ident">LargeString</span> {
@@ -419,6 +454,7 @@
     }
 }
 
+<span class="doccomment">/// Represents the `LargeString` Arrow type.</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">LargeBinary</span> {}
 
 <span class="kw">impl</span> <span class="ident">ArrowField</span> <span class="kw">for</span> <span class="ident">LargeBinary</span> {
@@ -430,6 +466,7 @@
     }
 }
 
+<span class="doccomment">/// Represents the `FixedSizeBinary` Arrow type.</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FixedSizeBinary</span><span class="op">&lt;</span><span class="kw">const</span> <span class="ident">SIZE</span>: <span class="ident">usize</span><span class="op">&gt;</span> {}
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="kw">const</span> <span class="ident">SIZE</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">ArrowField</span> <span class="kw">for</span> <span class="ident">FixedSizeBinary</span><span class="op">&lt;</span><span class="ident">SIZE</span><span class="op">&gt;</span> {
@@ -454,6 +491,7 @@
     }
 }
 
+<span class="doccomment">/// Represents the `LargeList` Arrow type.</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">LargeVec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="ident">d</span>: <span class="ident">std::marker::PhantomData</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
 }
@@ -470,6 +508,7 @@
     }
 }
 
+<span class="doccomment">/// Represents the `FixedSizeList` Arrow type.</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FixedSizeVec</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="kw">const</span> <span class="ident">SIZE</span>: <span class="ident">usize</span><span class="op">&gt;</span> {
     <span class="ident">d</span>: <span class="ident">std::marker::PhantomData</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
 }
@@ -494,6 +533,7 @@
 <span class="macro">arrow_enable_vec_for_type!</span>(<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>);
 <span class="macro">arrow_enable_vec_for_type!</span>(<span class="ident">LargeBinary</span>);
 <span class="kw">impl</span><span class="op">&lt;</span><span class="kw">const</span> <span class="ident">SIZE</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">ArrowEnableVecForType</span> <span class="kw">for</span> <span class="ident">FixedSizeBinary</span><span class="op">&lt;</span><span class="ident">SIZE</span><span class="op">&gt;</span> {}
+<span class="kw">impl</span><span class="op">&lt;</span><span class="kw">const</span> <span class="ident">PRECISION</span>: <span class="ident">usize</span>, <span class="kw">const</span> <span class="ident">SCALE</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">ArrowEnableVecForType</span> <span class="kw">for</span> <span class="ident">I128</span><span class="op">&lt;</span><span class="ident">PRECISION</span>, <span class="ident">SCALE</span><span class="op">&gt;</span> {}
 
 <span class="comment">// Blanket implementation for Vec&lt;Option&lt;T&gt;&gt; if vectors are enabled for T</span>
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">ArrowEnableVecForType</span> <span class="kw">for</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">where</span> <span class="ident">T</span>: <span class="ident">ArrowField</span> <span class="op">+</span> <span class="ident">ArrowEnableVecForType</span> {}

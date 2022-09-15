@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.22.7/src/logical_plan/optimizer/predicate_pushdown/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script src="../../../../../crates.js"></script><script defer src="../../../../../main.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.23.2/src/logical_plan/optimizer/predicate_pushdown/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script src="../../../../../crates.js"></script><script defer src="../../../../../main.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script>
     <noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div>
         </a><h2 class="location"></h2>
     </nav>
@@ -542,6 +542,27 @@
 <span id="537">537</span>
 <span id="538">538</span>
 <span id="539">539</span>
+<span id="540">540</span>
+<span id="541">541</span>
+<span id="542">542</span>
+<span id="543">543</span>
+<span id="544">544</span>
+<span id="545">545</span>
+<span id="546">546</span>
+<span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
 </pre><pre class="rust"><code><span class="kw">mod</span> <span class="ident">utils</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::logical_plan</span>::{<span class="ident">optimizer</span>, <span class="ident">Context</span>};
@@ -628,10 +649,11 @@
                     <span class="comment">// first we check if we are able to push down the predicate passed this node</span>
                     <span class="comment">// it could be that this node just added the column where we base the predicate on</span>
                     <span class="kw">let</span> <span class="ident">input_schema</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">node</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pushdown_predicates</span> <span class="op">=</span> <span class="ident">optimizer::init_hashmap</span>();
+                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pushdown_predicates</span> <span class="op">=</span>
+                        <span class="ident">optimizer::init_hashmap</span>(<span class="prelude-val">Some</span>(<span class="ident">acc_predicates</span>.<span class="ident">len</span>()));
                     <span class="kw">for</span> (<span class="ident">name</span>, <span class="kw-2">&amp;</span><span class="ident">predicate</span>) <span class="kw">in</span> <span class="ident">acc_predicates</span>.<span class="ident">iter</span>() {
                         <span class="comment">// we can pushdown the predicate</span>
-                        <span class="kw">if</span> <span class="ident">check_input_node</span>(<span class="ident">predicate</span>, <span class="ident">input_schema</span>, <span class="ident">expr_arena</span>) {
+                        <span class="kw">if</span> <span class="ident">check_input_node</span>(<span class="ident">predicate</span>, <span class="kw-2">&amp;</span><span class="ident">input_schema</span>, <span class="ident">expr_arena</span>) {
                             <span class="ident">insert_and_combine_predicate</span>(
                                 <span class="kw-2">&amp;mut</span> <span class="ident">pushdown_predicates</span>,
                                 <span class="ident">name</span>.<span class="ident">clone</span>(),
@@ -672,7 +694,12 @@
             .<span class="ident">iter</span>()
             .<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">node</span><span class="op">|</span> {
                 <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">node</span>);
-                <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">push_down</span>(<span class="ident">alp</span>, <span class="ident">init_hashmap</span>(), <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)<span class="question-mark">?</span>;
+                <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">push_down</span>(
+                    <span class="ident">alp</span>,
+                    <span class="ident">init_hashmap</span>(<span class="prelude-val">Some</span>(<span class="ident">acc_predicates</span>.<span class="ident">len</span>())),
+                    <span class="ident">lp_arena</span>,
+                    <span class="ident">expr_arena</span>,
+                )<span class="question-mark">?</span>;
                 <span class="ident">lp_arena</span>.<span class="ident">replace</span>(<span class="ident">node</span>, <span class="ident">alp</span>);
                 <span class="prelude-val">Ok</span>(<span class="ident">node</span>)
             })
@@ -773,10 +800,10 @@
                 <span class="comment">// projection from a wildcard may be dropped if the schema changes due to the optimization</span>
                 <span class="kw">let</span> <span class="ident">expr</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">expr</span>
                     .<span class="ident">into_iter</span>()
-                    .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">check_input_node</span>(<span class="kw-2">*</span><span class="ident">e</span>, <span class="ident">schema</span>, <span class="ident">expr_arena</span>))
+                    .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">check_input_node</span>(<span class="kw-2">*</span><span class="ident">e</span>, <span class="kw-2">&amp;</span><span class="ident">schema</span>, <span class="ident">expr_arena</span>))
                     .<span class="ident">collect</span>();
 
-                <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="ident">aexprs_to_schema</span>(<span class="kw-2">&amp;</span><span class="ident">expr</span>, <span class="ident">schema</span>, <span class="ident">Context::Default</span>, <span class="ident">expr_arena</span>);
+                <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="ident">aexprs_to_schema</span>(<span class="kw-2">&amp;</span><span class="ident">expr</span>, <span class="kw-2">&amp;</span><span class="ident">schema</span>, <span class="ident">Context::Default</span>, <span class="ident">expr_arena</span>);
                 <span class="prelude-val">Ok</span>(<span class="ident">ALogicalPlan::LocalProjection</span> {
                     <span class="ident">expr</span>,
                     <span class="ident">input</span>,
@@ -930,8 +957,8 @@
                 <span class="kw">let</span> <span class="ident">schema_left</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">input_left</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
                 <span class="kw">let</span> <span class="ident">schema_right</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">input_right</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pushdown_left</span> <span class="op">=</span> <span class="ident">optimizer::init_hashmap</span>();
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pushdown_right</span> <span class="op">=</span> <span class="ident">optimizer::init_hashmap</span>();
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pushdown_left</span> <span class="op">=</span> <span class="ident">optimizer::init_hashmap</span>(<span class="prelude-val">Some</span>(<span class="ident">acc_predicates</span>.<span class="ident">len</span>()));
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pushdown_right</span> <span class="op">=</span> <span class="ident">optimizer::init_hashmap</span>(<span class="prelude-val">Some</span>(<span class="ident">acc_predicates</span>.<span class="ident">len</span>()));
                 <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">local_predicates</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">acc_predicates</span>.<span class="ident">len</span>());
 
                 <span class="kw">for</span> (<span class="kw">_</span>, <span class="ident">predicate</span>) <span class="kw">in</span> <span class="ident">acc_predicates</span> {
@@ -940,7 +967,10 @@
                         <span class="op">|</span><span class="ident">e</span>: <span class="kw-2">&amp;</span><span class="ident">AExpr</span><span class="op">|</span> <span class="macro">matches!</span>(<span class="ident">e</span>, <span class="ident">AExpr::IsUnique</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">AExpr::Duplicated</span>(<span class="kw">_</span>));
 
                     <span class="kw">let</span> <span class="ident">checks_nulls</span> <span class="op">=</span>
-                        <span class="op">|</span><span class="ident">e</span>: <span class="kw-2">&amp;</span><span class="ident">AExpr</span><span class="op">|</span> <span class="macro">matches!</span>(<span class="ident">e</span>, <span class="ident">AExpr::IsNull</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">AExpr::IsNotNull</span>(<span class="kw">_</span>));
+                        <span class="op">|</span><span class="ident">e</span>: <span class="kw-2">&amp;</span><span class="ident">AExpr</span><span class="op">|</span> <span class="macro">matches!</span>(<span class="ident">e</span>, <span class="ident">AExpr::IsNull</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">AExpr::IsNotNull</span>(<span class="kw">_</span>)) <span class="op">|</span><span class="op">|</span>
+                            <span class="comment">// any operation that checks for equality or ordering can be wrong because</span>
+                            <span class="comment">// the join can produce null values</span>
+                            <span class="macro">matches!</span>(<span class="ident">e</span>, <span class="ident">AExpr::BinaryExpr</span> {<span class="ident">op</span>, ..} <span class="kw">if</span> <span class="op">!</span><span class="macro">matches!</span>(<span class="ident">op</span>, <span class="ident">Operator::NotEq</span>));
                     <span class="kw">if</span> <span class="ident">has_aexpr</span>(<span class="ident">predicate</span>, <span class="ident">expr_arena</span>, <span class="ident">matches</span>)
                         <span class="comment">// join might create null values.</span>
                         <span class="op">|</span><span class="op">|</span> <span class="ident">has_aexpr</span>(<span class="ident">predicate</span>, <span class="ident">expr_arena</span>, <span class="ident">checks_nulls</span>)
@@ -957,8 +987,8 @@
                     <span class="comment">// be influenced by join</span>
                     <span class="kw">if</span> <span class="op">!</span><span class="ident">predicate_is_pushdown_boundary</span>(<span class="ident">predicate</span>, <span class="ident">expr_arena</span>) {
                         <span class="comment">// no else if. predicate can be in both tables.</span>
-                        <span class="kw">if</span> <span class="ident">check_input_node</span>(<span class="ident">predicate</span>, <span class="ident">schema_left</span>, <span class="ident">expr_arena</span>) {
-                            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">get_insertion_name</span>(<span class="ident">expr_arena</span>, <span class="ident">predicate</span>, <span class="ident">schema_left</span>);
+                        <span class="kw">if</span> <span class="ident">check_input_node</span>(<span class="ident">predicate</span>, <span class="kw-2">&amp;</span><span class="ident">schema_left</span>, <span class="ident">expr_arena</span>) {
+                            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">get_insertion_name</span>(<span class="ident">expr_arena</span>, <span class="ident">predicate</span>, <span class="kw-2">&amp;</span><span class="ident">schema_left</span>);
                             <span class="ident">insert_and_combine_predicate</span>(
                                 <span class="kw-2">&amp;mut</span> <span class="ident">pushdown_left</span>,
                                 <span class="ident">name</span>,
@@ -968,8 +998,8 @@
                             <span class="ident">filter_left</span> <span class="op">=</span> <span class="bool-val">true</span>;
                         }
 
-                        <span class="kw">if</span> <span class="ident">check_input_node</span>(<span class="ident">predicate</span>, <span class="ident">schema_right</span>, <span class="ident">expr_arena</span>)  {
-                            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">get_insertion_name</span>(<span class="ident">expr_arena</span>, <span class="ident">predicate</span>, <span class="ident">schema_right</span>);
+                        <span class="kw">if</span> <span class="ident">check_input_node</span>(<span class="ident">predicate</span>, <span class="kw-2">&amp;</span><span class="ident">schema_right</span>, <span class="ident">expr_arena</span>)  {
+                            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">get_insertion_name</span>(<span class="ident">expr_arena</span>, <span class="ident">predicate</span>, <span class="kw-2">&amp;</span><span class="ident">schema_right</span>);
                             <span class="ident">insert_and_combine_predicate</span>(
                                 <span class="kw-2">&amp;mut</span> <span class="ident">pushdown_right</span>,
                                 <span class="ident">name</span>,
@@ -1022,8 +1052,23 @@
                     <span class="self">self</span>.<span class="ident">no_pushdown_restart_opt</span>(<span class="ident">lp</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)
                 }
             }
+            <span class="ident">lp</span> @ <span class="ident">Union</span> {..} =&gt; {
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">local_predicates</span> <span class="op">=</span> <span class="macro">vec!</span>[];
+
+                <span class="comment">// a count is influenced by a Union/Vstack</span>
+                <span class="ident">acc_predicates</span>.<span class="ident">retain</span>(<span class="op">|</span><span class="kw">_</span>, <span class="ident">predicate</span><span class="op">|</span> {
+                    <span class="kw">if</span> <span class="ident">has_aexpr</span>(<span class="kw-2">*</span><span class="ident">predicate</span>, <span class="ident">expr_arena</span>, <span class="op">|</span><span class="ident">ae</span><span class="op">|</span> <span class="macro">matches!</span>(<span class="ident">ae</span>, <span class="ident">AExpr::Count</span>)) {
+                        <span class="ident">local_predicates</span>.<span class="ident">push</span>(<span class="kw-2">*</span><span class="ident">predicate</span>);
+                        <span class="bool-val">false</span>
+                    } <span class="kw">else</span> {
+                        <span class="bool-val">true</span>
+                    }
+                });
+                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">pushdown_and_continue</span>(<span class="ident">lp</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">optional_apply_predicate</span>(<span class="ident">lp</span>, <span class="ident">local_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>))
+            }
             <span class="comment">// Pushed down passed these nodes</span>
-            <span class="ident">lp</span> @ <span class="ident">Cache</span> { .. } <span class="op">|</span> <span class="ident">lp</span> @ <span class="ident">Union</span> { .. } <span class="op">|</span> <span class="ident">lp</span> @ <span class="ident">Sort</span> { .. } =&gt; {
+            <span class="ident">lp</span> @ <span class="ident">Cache</span> { .. } <span class="op">|</span>  <span class="ident">lp</span> @ <span class="ident">Sort</span> { .. } =&gt; {
                 <span class="self">self</span>.<span class="ident">pushdown_and_continue</span>(<span class="ident">lp</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>, <span class="bool-val">false</span>)
             }
             <span class="ident">lp</span> @ <span class="ident">HStack</span> {..} <span class="op">|</span> <span class="ident">lp</span> @ <span class="ident">Projection</span> {..} =&gt; {
@@ -1051,7 +1096,7 @@
         <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
         <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">acc_predicates</span> <span class="op">=</span> <span class="ident">PlHashMap::with_capacity</span>(<span class="number">32</span>);
+        <span class="kw">let</span> <span class="ident">acc_predicates</span> <span class="op">=</span> <span class="ident">PlHashMap::new</span>();
         <span class="self">self</span>.<span class="ident">push_down</span>(<span class="ident">logical_plan</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)
     }
 }
@@ -1075,10 +1120,7 @@
         );
         <span class="kw">let</span> <span class="ident">root</span> <span class="op">=</span> <span class="kw-2">*</span><span class="ident">acc_predicates</span>.<span class="ident">get</span>(<span class="string">&quot;foo&quot;</span>).<span class="ident">unwrap</span>();
         <span class="kw">let</span> <span class="ident">expr</span> <span class="op">=</span> <span class="ident">node_to_expr</span>(<span class="ident">root</span>, <span class="kw-2">&amp;</span><span class="ident">expr_arena</span>);
-        <span class="macro">assert_eq!</span>(
-            <span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">expr</span>),
-            <span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">predicate_expr</span>.<span class="ident">and</span>(<span class="ident">lit</span>(<span class="bool-val">true</span>)))
-        );
+        <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">expr</span>), <span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">predicate_expr</span>));
     }
 }
 </code></pre></div>

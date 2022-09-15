@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.22.7/src/frame/groupby/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script src="../../../../crates.js"></script><script defer src="../../../../main.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.23.2/src/frame/groupby/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script src="../../../../crates.js"></script><script defer src="../../../../main.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script>
     <noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
         </a><h2 class="location"></h2>
     </nav>
@@ -1301,6 +1301,19 @@
 <span id="1296">1296</span>
 <span id="1297">1297</span>
 <span id="1298">1298</span>
+<span id="1299">1299</span>
+<span id="1300">1300</span>
+<span id="1301">1301</span>
+<span id="1302">1302</span>
+<span id="1303">1303</span>
+<span id="1304">1304</span>
+<span id="1305">1305</span>
+<span id="1306">1306</span>
+<span id="1307">1307</span>
+<span id="1308">1308</span>
+<span id="1309">1309</span>
+<span id="1310">1310</span>
+<span id="1311">1311</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="self">self</span>::hashing</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;groupby_list&quot;</span>)]</span>
@@ -1329,6 +1342,30 @@
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">into_groups</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">polars_arrow::array::ValueSize</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">proxy</span>::<span class="kw-2">*</span>;
+
+<span class="comment">// This will remove the sorted flag on signed integers</span>
+<span class="kw">fn</span> <span class="ident">prepare_dataframe_unsorted</span>(<span class="ident">by</span>: <span class="kw-2">&amp;</span>[<span class="ident">Series</span>]) -&gt; <span class="ident">DataFrame</span> {
+    <span class="ident">DataFrame::new_no_checks</span>(
+        <span class="ident">by</span>.<span class="ident">iter</span>()
+            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="kw">match</span> <span class="ident">s</span>.<span class="ident">dtype</span>() {
+                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-categorical&quot;</span>)]</span>
+                <span class="ident">DataType::Categorical</span>(<span class="kw">_</span>) =&gt; <span class="ident">s</span>.<span class="ident">cast</span>(<span class="kw-2">&amp;</span><span class="ident">DataType::UInt32</span>).<span class="ident">unwrap</span>(),
+                <span class="kw">_</span> =&gt; {
+                    <span class="kw">if</span> <span class="ident">s</span>.<span class="ident">dtype</span>().<span class="ident">to_physical</span>().<span class="ident">is_numeric</span>() {
+                        <span class="kw">let</span> <span class="ident">s</span> <span class="op">=</span> <span class="ident">s</span>.<span class="ident">to_physical_repr</span>();
+                        <span class="kw">if</span> <span class="ident">s</span>.<span class="ident">bit_repr_is_large</span>() {
+                            <span class="ident">s</span>.<span class="ident">bit_repr_large</span>().<span class="ident">into_series</span>()
+                        } <span class="kw">else</span> {
+                            <span class="ident">s</span>.<span class="ident">bit_repr_small</span>().<span class="ident">into_series</span>()
+                        }
+                    } <span class="kw">else</span> {
+                        <span class="ident">s</span>.<span class="ident">clone</span>()
+                    }
+                }
+            })
+            .<span class="ident">collect</span>(),
+    )
+}
 
 <span class="kw">impl</span> <span class="ident">DataFrame</span> {
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">groupby_with_series</span>(
@@ -1384,29 +1421,6 @@
             ));
         };
 
-        <span class="kw">use</span> <span class="ident">DataType</span>::<span class="kw-2">*</span>;
-        <span class="comment">// make sure that categorical and small integers are used as uint32 in value type</span>
-        <span class="kw">let</span> <span class="ident">keys_df</span> <span class="op">=</span> <span class="ident">DataFrame::new_no_checks</span>(
-            <span class="ident">by</span>.<span class="ident">iter</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="kw">match</span> <span class="ident">s</span>.<span class="ident">dtype</span>() {
-                    <span class="ident">Int8</span> <span class="op">|</span> <span class="ident">UInt8</span> <span class="op">|</span> <span class="ident">Int16</span> <span class="op">|</span> <span class="ident">UInt16</span> =&gt; <span class="ident">s</span>.<span class="ident">cast</span>(<span class="kw-2">&amp;</span><span class="ident">DataType::UInt32</span>).<span class="ident">unwrap</span>(),
-                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-categorical&quot;</span>)]</span>
-                    <span class="ident">Categorical</span>(<span class="kw">_</span>) =&gt; <span class="ident">s</span>.<span class="ident">cast</span>(<span class="kw-2">&amp;</span><span class="ident">DataType::UInt32</span>).<span class="ident">unwrap</span>(),
-                    <span class="ident">Float32</span> =&gt; <span class="ident">s</span>.<span class="ident">bit_repr_small</span>().<span class="ident">into_series</span>(),
-                    <span class="comment">// otherwise we use the vec hash for float</span>
-                    <span class="ident">Float64</span> =&gt; <span class="ident">s</span>.<span class="ident">bit_repr_large</span>().<span class="ident">into_series</span>(),
-                    <span class="kw">_</span> =&gt; {
-                        <span class="comment">// is date like</span>
-                        <span class="kw">if</span> <span class="op">!</span><span class="ident">s</span>.<span class="ident">dtype</span>().<span class="ident">is_numeric</span>() <span class="op">&amp;&amp;</span> <span class="ident">s</span>.<span class="ident">is_numeric_physical</span>() {
-                            <span class="ident">s</span>.<span class="ident">to_physical_repr</span>().<span class="ident">into_owned</span>()
-                        } <span class="kw">else</span> {
-                            <span class="ident">s</span>.<span class="ident">clone</span>()
-                        }
-                    }
-                })
-                .<span class="ident">collect</span>(),
-        );
-
         <span class="kw">let</span> <span class="ident">n_partitions</span> <span class="op">=</span> <span class="ident">set_partition_size</span>();
 
         <span class="kw">let</span> <span class="ident">groups</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">by</span>.<span class="ident">len</span>() {
@@ -1417,6 +1431,8 @@
             <span class="number">2</span> =&gt; {
                 <span class="comment">// multiple keys is always multi-threaded</span>
                 <span class="comment">// reduce code paths</span>
+                <span class="kw">let</span> <span class="ident">keys_df</span> <span class="op">=</span> <span class="ident">prepare_dataframe_unsorted</span>(<span class="kw-2">&amp;</span><span class="ident">by</span>);
+
                 <span class="kw">let</span> <span class="ident">s0</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">keys_df</span>.<span class="ident">get_columns</span>()[<span class="number">0</span>];
                 <span class="kw">let</span> <span class="ident">s1</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">keys_df</span>.<span class="ident">get_columns</span>()[<span class="number">1</span>];
 
@@ -1462,7 +1478,10 @@
                     <span class="ident">groupby_threaded_multiple_keys_flat</span>(<span class="ident">keys_df</span>, <span class="ident">n_partitions</span>, <span class="ident">sorted</span>)
                 }
             }
-            <span class="kw">_</span> =&gt; <span class="ident">groupby_threaded_multiple_keys_flat</span>(<span class="ident">keys_df</span>, <span class="ident">n_partitions</span>, <span class="ident">sorted</span>),
+            <span class="kw">_</span> =&gt; {
+                <span class="kw">let</span> <span class="ident">keys_df</span> <span class="op">=</span> <span class="ident">prepare_dataframe_unsorted</span>(<span class="kw-2">&amp;</span><span class="ident">by</span>);
+                <span class="ident">groupby_threaded_multiple_keys_flat</span>(<span class="ident">keys_df</span>, <span class="ident">n_partitions</span>, <span class="ident">sorted</span>)
+            }
         };
         <span class="prelude-val">Ok</span>(<span class="ident">GroupBy::new</span>(<span class="self">self</span>, <span class="ident">by</span>, <span class="ident">groups</span>, <span class="prelude-val">None</span>))
     }
@@ -1635,7 +1654,11 @@
                             <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">iter</span> <span class="op">=</span> <span class="ident">groups</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">first</span>, <span class="ident">_idx</span>)<span class="op">|</span> <span class="ident">first</span> <span class="kw">as</span> <span class="ident">usize</span>);
                             <span class="comment">// Safety:</span>
                             <span class="comment">// groups are always in bounds</span>
-                            <span class="kw">unsafe</span> { <span class="ident">s</span>.<span class="ident">take_iter_unchecked</span>(<span class="kw-2">&amp;mut</span> <span class="ident">iter</span>) }
+                            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">s</span>.<span class="ident">take_iter_unchecked</span>(<span class="kw-2">&amp;mut</span> <span class="ident">iter</span>) };
+                            <span class="kw">if</span> <span class="ident">groups</span>.<span class="ident">sorted</span> {
+                                <span class="ident">out</span>.<span class="ident">set_sorted</span>(<span class="ident">s</span>.<span class="ident">is_sorted</span>());
+                            };
+                            <span class="ident">out</span>
                         }
                         <span class="ident">GroupsProxy::Slice</span> { <span class="ident">groups</span>, <span class="ident">rolling</span> } =&gt; {
                             <span class="kw">if</span> <span class="kw-2">*</span><span class="ident">rolling</span> <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="ident">groups</span>.<span class="ident">is_empty</span>() {
@@ -1651,7 +1674,10 @@
                             <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">iter</span> <span class="op">=</span> <span class="ident">groups</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span>[<span class="ident">first</span>, <span class="ident">_len</span>]<span class="op">|</span> <span class="ident">first</span> <span class="kw">as</span> <span class="ident">usize</span>);
                             <span class="comment">// Safety:</span>
                             <span class="comment">// groups are always in bounds</span>
-                            <span class="kw">unsafe</span> { <span class="ident">s</span>.<span class="ident">take_iter_unchecked</span>(<span class="kw-2">&amp;mut</span> <span class="ident">iter</span>) }
+                            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">s</span>.<span class="ident">take_iter_unchecked</span>(<span class="kw-2">&amp;mut</span> <span class="ident">iter</span>) };
+                            <span class="comment">// sliced groups are always in order of discovery</span>
+                            <span class="ident">out</span>.<span class="ident">set_sorted</span>(<span class="ident">s</span>.<span class="ident">is_sorted</span>());
+                            <span class="ident">out</span>
                         }
                     }
                 })
@@ -2444,7 +2470,7 @@
         <span class="kw">let</span> <span class="ident">serie</span> <span class="op">=</span> <span class="ident">Series::new</span>(<span class="string">&quot;N&quot;</span>, [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">4</span>].<span class="ident">as_ref</span>());
         <span class="ident">series</span>.<span class="ident">push</span>(<span class="ident">serie</span>);
 
-        <span class="comment">// Creat the dataframe with the computed series.</span>
+        <span class="comment">// Create the dataframe with the computed series.</span>
         <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">DataFrame::new</span>(<span class="ident">series</span>).<span class="ident">unwrap</span>();
 
         <span class="comment">// Compute the aggregated DataFrame by the 13 columns defined in `series_names`.</span>

@@ -1,1 +1,1 @@
-initSidebarItems({"trait":[["IsFloat","Safety"]]});
+initSidebarItems({"trait":[["IsFloat","Safety"]],"type":[["ArrayRef",""]]});

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-io-0.22.7/src/parquet/read.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>read.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-io-0.23.2/src/parquet/read.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>read.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
     <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../polars_io/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
         </a><h2 class="location"></h2>
     </nav>
@@ -144,6 +144,40 @@
 <span id="139">139</span>
 <span id="140">140</span>
 <span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::aggregations::ScanAggregation</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::mmap::MmapBytesReader</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::parquet::read_impl::read_parquet</span>;
@@ -152,8 +186,30 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::RowCount</span>;
 <span class="kw">use</span> <span class="ident">arrow::io::parquet::read</span>;
 <span class="kw">use</span> <span class="ident">polars_core::prelude</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde&quot;</span>)]</span>
+<span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 <span class="kw">use</span> <span class="ident">std::io</span>::{<span class="ident">Read</span>, <span class="ident">Seek</span>};
 <span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
+
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde&quot;</span>, <span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>))]</span>
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ParallelStrategy</span> {
+    <span class="doccomment">/// Don&#39;t parallelize</span>
+    <span class="prelude-val">None</span>,
+    <span class="doccomment">/// Parallelize over the row groups</span>
+    <span class="ident">Columns</span>,
+    <span class="doccomment">/// Parallelize over the columns</span>
+    <span class="ident">RowGroups</span>,
+    <span class="doccomment">/// Automatically determine over which unit to parallelize</span>
+    <span class="doccomment">/// This will choose the most occurring unit.</span>
+    <span class="ident">Auto</span>,
+}
+
+<span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">ParallelStrategy</span> {
+    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
+        <span class="ident">ParallelStrategy::Auto</span>
+    }
+}
 
 <span class="doccomment">/// Read Apache parquet format into a DataFrame.</span>
 <span class="attribute">#[<span class="ident">must_use</span>]</span>
@@ -163,14 +219,15 @@
     <span class="ident">n_rows</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
     <span class="ident">columns</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span>,
     <span class="ident">projection</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">parallel</span>: <span class="ident">bool</span>,
+    <span class="ident">parallel</span>: <span class="ident">ParallelStrategy</span>,
     <span class="ident">row_count</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">RowCount</span><span class="op">&gt;</span>,
+    <span class="ident">low_memory</span>: <span class="ident">bool</span>,
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">MmapBytesReader</span><span class="op">&gt;</span> <span class="ident">ParquetReader</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> {
     <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;lazy&quot;</span>)]</span>
     <span class="comment">// todo! hoist to lazy crate</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">finish_with_scan_ops</span>(
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">_finish_with_scan_ops</span>(
         <span class="kw-2">mut</span> <span class="self">self</span>,
         <span class="ident">predicate</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalIoExpr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
         <span class="ident">aggregate</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">ScanAggregation</span>]<span class="op">&gt;</span>,
@@ -191,6 +248,7 @@
             <span class="ident">aggregate</span>,
             <span class="self">self</span>.<span class="ident">parallel</span>,
             <span class="self">self</span>.<span class="ident">row_count</span>,
+            <span class="self">self</span>.<span class="ident">low_memory</span>,
         )
         .<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">mut</span> <span class="ident">df</span><span class="op">|</span> {
             <span class="kw">if</span> <span class="ident">rechunk</span> {
@@ -200,8 +258,15 @@
         })
     }
 
+    <span class="doccomment">/// Try to reduce memory pressure at the expense of performance. If setting this does not reduce memory</span>
+    <span class="doccomment">/// enough, turn off parallelization.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_low_memory</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">low_memory</span>: <span class="ident">bool</span>) -&gt; <span class="self">Self</span> {
+        <span class="self">self</span>.<span class="ident">low_memory</span> <span class="op">=</span> <span class="ident">low_memory</span>;
+        <span class="self">self</span>
+    }
+
     <span class="doccomment">/// Read the parquet file in parallel (default). The single threaded reader consumes less memory.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_parallel</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">parallel</span>: <span class="ident">bool</span>) -&gt; <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_parallel</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">parallel</span>: <span class="ident">ParallelStrategy</span>) -&gt; <span class="self">Self</span> {
         <span class="self">self</span>.<span class="ident">parallel</span> <span class="op">=</span> <span class="ident">parallel</span>;
         <span class="self">self</span>
     }
@@ -241,6 +306,7 @@
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">MmapBytesReader</span><span class="op">&gt;</span> <span class="ident">SerReader</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ParquetReader</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> {
+    <span class="doccomment">/// Create a new [`ParquetReader`] from an existing `Reader`.</span>
     <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">reader</span>: <span class="ident">R</span>) -&gt; <span class="self">Self</span> {
         <span class="ident">ParquetReader</span> {
             <span class="ident">reader</span>,
@@ -248,8 +314,9 @@
             <span class="ident">n_rows</span>: <span class="prelude-val">None</span>,
             <span class="ident">columns</span>: <span class="prelude-val">None</span>,
             <span class="ident">projection</span>: <span class="prelude-val">None</span>,
-            <span class="ident">parallel</span>: <span class="bool-val">true</span>,
+            <span class="ident">parallel</span>: <span class="ident">Default::default</span>(),
             <span class="ident">row_count</span>: <span class="prelude-val">None</span>,
+            <span class="ident">low_memory</span>: <span class="bool-val">false</span>,
         }
     }
 
@@ -276,6 +343,7 @@
             <span class="prelude-val">None</span>,
             <span class="self">self</span>.<span class="ident">parallel</span>,
             <span class="self">self</span>.<span class="ident">row_count</span>,
+            <span class="self">self</span>.<span class="ident">low_memory</span>,
         )
         .<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">mut</span> <span class="ident">df</span><span class="op">|</span> {
             <span class="kw">if</span> <span class="self">self</span>.<span class="ident">rechunk</span> {

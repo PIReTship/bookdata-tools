@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["RevMapping",""],["RevMappingBuilder",""]],"struct":[["CatIter",""],["CategoricalChunked",""],["CategoricalChunkedBuilder",""]]});
+initSidebarItems({"enum":[["RevMapping",""],["RevMappingBuilder",""]],"mod":[["stringcache",""]],"struct":[["CatIter",""],["CategoricalChunked",""],["CategoricalChunkedBuilder",""],["StrHashLocal",""]]});

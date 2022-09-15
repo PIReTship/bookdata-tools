@@ -1,1 +1,1 @@
-initSidebarItems({"derive":[["ArrowField","Derive macro for the Array trait."]]});
+initSidebarItems({"derive":[["ArrowField","Derive macro for arrow fields"]]});

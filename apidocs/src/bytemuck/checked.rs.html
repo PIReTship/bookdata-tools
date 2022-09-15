@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/checked.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>checked.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><script defer src="../../main.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.12.1/src/checked.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>checked.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><script defer src="../../main.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script>
     <noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../bytemuck/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
         </a><h2 class="location"></h2>
     </nav>
@@ -459,35 +459,74 @@
 <span id="454">454</span>
 <span id="455">455</span>
 <span id="456">456</span>
+<span id="457">457</span>
+<span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
+<span id="464">464</span>
+<span id="465">465</span>
+<span id="466">466</span>
+<span id="467">467</span>
+<span id="468">468</span>
+<span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
+<span id="478">478</span>
+<span id="479">479</span>
+<span id="480">480</span>
+<span id="481">481</span>
+<span id="482">482</span>
+<span id="483">483</span>
+<span id="484">484</span>
+<span id="485">485</span>
+<span id="486">486</span>
+<span id="487">487</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Checked versions of the casting functions exposed in crate root</span>
 <span class="doccomment">//! that support [`CheckedBitPattern`] types.</span>
 
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">internal</span>::{<span class="self">self</span>, <span class="ident">something_went_wrong</span>}, <span class="ident">NoUninit</span>, <span class="ident">AnyBitPattern</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::{
+  <span class="ident">internal</span>::{<span class="self">self</span>, <span class="ident">something_went_wrong</span>},
+  <span class="ident">AnyBitPattern</span>, <span class="ident">NoUninit</span>,
+};
 
-<span class="doccomment">/// A marker trait that allows types that have some invalid bit patterns to be used</span>
-<span class="doccomment">/// in places that otherwise require [`AnyBitPattern`] or [`Pod`] types by performing</span>
-<span class="doccomment">/// a runtime check on a perticular set of bits. This is particularly</span>
-<span class="doccomment">/// useful for types like fieldless (&#39;C-style&#39;) enums, [`char`], bool, and structs containing them.</span>
+<span class="doccomment">/// A marker trait that allows types that have some invalid bit patterns to be</span>
+<span class="doccomment">/// used in places that otherwise require [`AnyBitPattern`] or [`Pod`] types by</span>
+<span class="doccomment">/// performing a runtime check on a perticular set of bits. This is particularly</span>
+<span class="doccomment">/// useful for types like fieldless (&#39;C-style&#39;) enums, [`char`], bool, and</span>
+<span class="doccomment">/// structs containing them.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// To do this, we define a `Bits` type which is a type with equivalent layout</span>
 <span class="doccomment">/// to `Self` other than the invalid bit patterns which disallow `Self` from</span>
-<span class="doccomment">/// being [`AnyBitPattern`]. This `Bits` type must itself implement [`AnyBitPattern`].</span>
-<span class="doccomment">/// Then, we implement a function that checks wheter a certain instance</span>
-<span class="doccomment">/// of the `Bits` is also a valid bit pattern of `Self`. If this check passes, then we</span>
-<span class="doccomment">/// can allow casting from the `Bits` to `Self` (and therefore, any type which</span>
-<span class="doccomment">/// is able to be cast to `Bits` is also able to be cast to `Self`).</span>
+<span class="doccomment">/// being [`AnyBitPattern`]. This `Bits` type must itself implement</span>
+<span class="doccomment">/// [`AnyBitPattern`]. Then, we implement a function that checks wheter a</span>
+<span class="doccomment">/// certain instance of the `Bits` is also a valid bit pattern of `Self`. If</span>
+<span class="doccomment">/// this check passes, then we can allow casting from the `Bits` to `Self` (and</span>
+<span class="doccomment">/// therefore, any type which is able to be cast to `Bits` is also able to be</span>
+<span class="doccomment">/// cast to `Self`).</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// [`AnyBitPattern`] is a subset of [`CheckedBitPattern`], meaning that any `T: AnyBitPattern` is also</span>
-<span class="doccomment">/// [`CheckedBitPattern`]. This means you can also use any [`AnyBitPattern`] type in the checked versions</span>
-<span class="doccomment">/// of casting functions in this module. If it&#39;s possible, prefer implementing [`AnyBitPattern`] for your</span>
-<span class="doccomment">/// type directly instead of [`CheckedBitPattern`] as it gives greater flexibility.</span>
+<span class="doccomment">/// [`AnyBitPattern`] is a subset of [`CheckedBitPattern`], meaning that any `T:</span>
+<span class="doccomment">/// AnyBitPattern` is also [`CheckedBitPattern`]. This means you can also use</span>
+<span class="doccomment">/// any [`AnyBitPattern`] type in the checked versions of casting functions in</span>
+<span class="doccomment">/// this module. If it&#39;s possible, prefer implementing [`AnyBitPattern`] for</span>
+<span class="doccomment">/// your type directly instead of [`CheckedBitPattern`] as it gives greater</span>
+<span class="doccomment">/// flexibility.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # Derive</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// A `#[derive(CheckedBitPattern)]` macro is provided under the `derive` feature flag which will</span>
-<span class="doccomment">/// automatically validate the requirements of this trait and implement the</span>
-<span class="doccomment">/// trait for you for both enums and structs. This is the recommended method for</span>
-<span class="doccomment">/// implementing the trait, however it&#39;s also possible to do manually.</span>
+<span class="doccomment">/// A `#[derive(CheckedBitPattern)]` macro is provided under the `derive`</span>
+<span class="doccomment">/// feature flag which will automatically validate the requirements of this</span>
+<span class="doccomment">/// trait and implement the trait for you for both enums and structs. This is</span>
+<span class="doccomment">/// the recommended method for implementing the trait, however it&#39;s also</span>
+<span class="doccomment">/// possible to do manually.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # Example</span>
 <span class="doccomment">///</span>
@@ -514,7 +553,7 @@
 <span class="doccomment">///         }</span>
 <span class="doccomment">///     }</span>
 <span class="doccomment">/// }</span>
-<span class="doccomment">/// </span>
+<span class="doccomment">///</span>
 <span class="doccomment">/// // It is often useful to also implement `NoUninit` on our `CheckedBitPattern` types.</span>
 <span class="doccomment">/// // This will allow us to do casting of mutable references (and mutable slices).</span>
 <span class="doccomment">/// // It is not always possible to do so, but in this case we have no padding so it is.</span>
@@ -553,7 +592,7 @@
 <span class="doccomment">/// let bytes = bytes_of(&amp;100u32);</span>
 <span class="doccomment">/// let result = checked::try_from_bytes::&lt;MyEnum&gt;(bytes);</span>
 <span class="doccomment">/// assert!(result.is_err());</span>
-<span class="doccomment">/// </span>
+<span class="doccomment">///</span>
 <span class="doccomment">/// // Since we implemented NoUninit, we can also cast mutably from an original type</span>
 <span class="doccomment">/// // that is `NoUninit + AnyBitPattern`:</span>
 <span class="doccomment">/// let mut my_u32 = 2u32;</span>
@@ -568,25 +607,28 @@
 <span class="doccomment">/// # Safety</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// * `Self` *must* have the same layout as the specified `Bits` except for</span>
-<span class="doccomment">/// the possible invalid bit patterns being checked during [`is_valid_bit_pattern`].</span>
+<span class="doccomment">/// the possible invalid bit patterns being checked during</span>
+<span class="doccomment">/// [`is_valid_bit_pattern`].</span>
 <span class="doccomment">///   * This almost certainly means your type must be `#[repr(C)]` or a similar</span>
-<span class="doccomment">///   specified repr, but if you think you know better, you probably don&#39;t. If you</span>
-<span class="doccomment">///   still think you know better, be careful and have fun. And don&#39;t mess it up</span>
-<span class="doccomment">///   (I mean it).</span>
-<span class="doccomment">/// * If [`is_valid_bit_pattern`] returns true, then the bit pattern contained in</span>
-<span class="doccomment">///   `bits` must also be valid for an instance of `Self`.</span>
+<span class="doccomment">///   specified repr, but if you think you know better, you probably don&#39;t. If</span>
+<span class="doccomment">/// you   still think you know better, be careful and have fun. And don&#39;t mess</span>
+<span class="doccomment">/// it up   (I mean it).</span>
+<span class="doccomment">/// * If [`is_valid_bit_pattern`] returns true, then the bit pattern contained</span>
+<span class="doccomment">///   in `bits` must also be valid for an instance of `Self`.</span>
 <span class="doccomment">/// * Probably more, don&#39;t mess it up (I mean it 2.0)</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// [`is_valid_bit_pattern`]: CheckedBitPattern::is_valid_bit_pattern</span>
 <span class="doccomment">/// [`Pod`]: crate::Pod</span>
 <span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">trait</span> <span class="ident">CheckedBitPattern</span>: <span class="ident">Copy</span> {
   <span class="doccomment">/// `Self` *must* have the same layout as the specified `Bits` except for</span>
-  <span class="doccomment">/// the possible invalid bit patterns being checked during [`is_valid_bit_pattern`].</span>
+  <span class="doccomment">/// the possible invalid bit patterns being checked during</span>
+  <span class="doccomment">/// [`is_valid_bit_pattern`].</span>
   <span class="doccomment">///</span>
   <span class="doccomment">/// [`is_valid_bit_pattern`]: CheckedBitPattern::is_valid_bit_pattern</span>
   <span class="kw">type</span> <span class="ident">Bits</span>: <span class="ident">AnyBitPattern</span>;
 
-  <span class="doccomment">/// If this function returns true, then it must be valid to reinterpret `bits` as `&amp;Self`.</span>
+  <span class="doccomment">/// If this function returns true, then it must be valid to reinterpret `bits`</span>
+  <span class="doccomment">/// as `&amp;Self`.</span>
   <span class="kw">fn</span> <span class="ident">is_valid_bit_pattern</span>(<span class="ident">bits</span>: <span class="kw-2">&amp;</span><span class="ident"><span class="self">Self</span>::Bits</span>) -&gt; <span class="ident">bool</span>;
 }
 
@@ -620,15 +662,16 @@
   }
 }
 
-<span class="doccomment">/// The things that can go wrong when casting between [`CheckedBitPattern`] data forms.</span>
+<span class="doccomment">/// The things that can go wrong when casting between [`CheckedBitPattern`] data</span>
+<span class="doccomment">/// forms.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">CheckedCastError</span> {
   <span class="doccomment">/// An error occurred during a true-[`Pod`] cast</span>
   <span class="ident">PodCastError</span>(<span class="ident"><span class="kw">crate</span>::PodCastError</span>),
-  <span class="doccomment">/// When casting to a [`CheckedBitPattern`] type, it is possible that the original</span>
-  <span class="doccomment">/// data contains an invalid bit pattern. If so, the cast will fail and</span>
-  <span class="doccomment">/// this error will be returned. Will never happen on casts between</span>
-  <span class="doccomment">/// [`Pod`] types.</span>
+  <span class="doccomment">/// When casting to a [`CheckedBitPattern`] type, it is possible that the</span>
+  <span class="doccomment">/// original data contains an invalid bit pattern. If so, the cast will</span>
+  <span class="doccomment">/// fail and this error will be returned. Will never happen on casts</span>
+  <span class="doccomment">/// between [`Pod`] types.</span>
   <span class="ident">InvalidBitPattern</span>,
 }
 
@@ -693,7 +736,9 @@
 <span class="doccomment">/// * If the `bytes` length is not equal to `size_of::&lt;T&gt;()`.</span>
 <span class="doccomment">/// * If the slice contains an invalid bit pattern for `T`</span>
 <span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_pod_read_unaligned</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">CheckedBitPattern</span><span class="op">&gt;</span>(<span class="ident">bytes</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">CheckedCastError</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_pod_read_unaligned</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">CheckedBitPattern</span><span class="op">&gt;</span>(
+  <span class="ident">bytes</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>],
+) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">CheckedCastError</span><span class="op">&gt;</span> {
   <span class="kw">let</span> <span class="ident">pod</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">internal::try_pod_read_unaligned</span>(<span class="ident">bytes</span>) }<span class="question-mark">?</span>;
 
   <span class="kw">if</span> <span class="op">&lt;</span><span class="ident">T</span> <span class="kw">as</span> <span class="ident">CheckedBitPattern</span><span class="op">&gt;</span><span class="ident">::is_valid_bit_pattern</span>(<span class="ident">pod</span>) {
@@ -751,7 +796,10 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// As [`checked_cast_ref`], but `mut`.</span>
 <span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_cast_mut</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">NoUninit</span> <span class="op">+</span> <span class="ident">AnyBitPattern</span>, <span class="ident">B</span>: <span class="ident">CheckedBitPattern</span> <span class="op">+</span> <span class="ident">NoUninit</span><span class="op">&gt;</span>(
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_cast_mut</span><span class="op">&lt;</span>
+  <span class="ident">A</span>: <span class="ident">NoUninit</span> <span class="op">+</span> <span class="ident">AnyBitPattern</span>,
+  <span class="ident">B</span>: <span class="ident">CheckedBitPattern</span> <span class="op">+</span> <span class="ident">NoUninit</span>,
+<span class="op">&gt;</span>(
   <span class="ident">a</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>,
 ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="ident">B</span>, <span class="ident">CheckedCastError</span><span class="op">&gt;</span> {
   <span class="kw">let</span> <span class="ident">pod</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">internal::try_cast_mut</span>(<span class="ident">a</span>) }<span class="question-mark">?</span>;
@@ -778,7 +826,8 @@
 <span class="doccomment">///   that&#39;s a failure).</span>
 <span class="doccomment">/// * Similarly, you can&#39;t convert between a [ZST](https://doc.rust-lang.org/nomicon/exotic-sizes.html#zero-sized-types-zsts)</span>
 <span class="doccomment">///   and a non-ZST.</span>
-<span class="doccomment">/// * If any element of the converted slice would contain an invalid bit pattern for `B` this fails.</span>
+<span class="doccomment">/// * If any element of the converted slice would contain an invalid bit pattern</span>
+<span class="doccomment">///   for `B` this fails.</span>
 <span class="attribute">#[<span class="ident">inline</span>]</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_cast_slice</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">NoUninit</span>, <span class="ident">B</span>: <span class="ident">CheckedBitPattern</span><span class="op">&gt;</span>(
   <span class="ident">a</span>: <span class="kw-2">&amp;</span>[<span class="ident">A</span>],
@@ -799,7 +848,10 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// As [`checked_cast_slice`], but `&amp;mut`.</span>
 <span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_cast_slice_mut</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">NoUninit</span> <span class="op">+</span> <span class="ident">AnyBitPattern</span>, <span class="ident">B</span>: <span class="ident">CheckedBitPattern</span> <span class="op">+</span> <span class="ident">NoUninit</span><span class="op">&gt;</span>(
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_cast_slice_mut</span><span class="op">&lt;</span>
+  <span class="ident">A</span>: <span class="ident">NoUninit</span> <span class="op">+</span> <span class="ident">AnyBitPattern</span>,
+  <span class="ident">B</span>: <span class="ident">CheckedBitPattern</span> <span class="op">+</span> <span class="ident">NoUninit</span>,
+<span class="op">&gt;</span>(
   <span class="ident">a</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">A</span>],
 ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> [<span class="ident">B</span>], <span class="ident">CheckedCastError</span><span class="op">&gt;</span> {
   <span class="kw">let</span> <span class="ident">pod</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">internal::try_cast_slice_mut</span>(<span class="ident">a</span>) }<span class="question-mark">?</span>;
@@ -870,7 +922,12 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// This is [`try_cast_mut`] but will panic on error.</span>
 <span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">cast_mut</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">NoUninit</span> <span class="op">+</span> <span class="ident">AnyBitPattern</span>, <span class="ident">B</span>: <span class="ident">NoUninit</span> <span class="op">+</span> <span class="ident">CheckedBitPattern</span><span class="op">&gt;</span>(<span class="ident">a</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">B</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">cast_mut</span><span class="op">&lt;</span>
+  <span class="ident">A</span>: <span class="ident">NoUninit</span> <span class="op">+</span> <span class="ident">AnyBitPattern</span>,
+  <span class="ident">B</span>: <span class="ident">NoUninit</span> <span class="op">+</span> <span class="ident">CheckedBitPattern</span>,
+<span class="op">&gt;</span>(
+  <span class="ident">a</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>,
+) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">B</span> {
   <span class="kw">match</span> <span class="ident">try_cast_mut</span>(<span class="ident">a</span>) {
     <span class="prelude-val">Ok</span>(<span class="ident">t</span>) =&gt; <span class="ident">t</span>,
     <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="ident">something_went_wrong</span>(<span class="string">&quot;cast_mut&quot;</span>, <span class="ident">e</span>),
@@ -909,11 +966,17 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// This is [`try_cast_slice_mut`] but will panic on error.</span>
 <span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">cast_slice_mut</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">NoUninit</span> <span class="op">+</span> <span class="ident">AnyBitPattern</span>, <span class="ident">B</span>: <span class="ident">NoUninit</span> <span class="op">+</span> <span class="ident">CheckedBitPattern</span><span class="op">&gt;</span>(<span class="ident">a</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">A</span>]) -&gt; <span class="kw-2">&amp;mut</span> [<span class="ident">B</span>] {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">cast_slice_mut</span><span class="op">&lt;</span>
+  <span class="ident">A</span>: <span class="ident">NoUninit</span> <span class="op">+</span> <span class="ident">AnyBitPattern</span>,
+  <span class="ident">B</span>: <span class="ident">NoUninit</span> <span class="op">+</span> <span class="ident">CheckedBitPattern</span>,
+<span class="op">&gt;</span>(
+  <span class="ident">a</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">A</span>],
+) -&gt; <span class="kw-2">&amp;mut</span> [<span class="ident">B</span>] {
   <span class="kw">match</span> <span class="ident">try_cast_slice_mut</span>(<span class="ident">a</span>) {
     <span class="prelude-val">Ok</span>(<span class="ident">t</span>) =&gt; <span class="ident">t</span>,
     <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="ident">something_went_wrong</span>(<span class="string">&quot;cast_slice_mut&quot;</span>, <span class="ident">e</span>),
   }
-}</code></pre></div>
+}
+</code></pre></div>
 </section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="bytemuck" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0 (fe5b13d68 2022-05-18)" ></div>
 </body></html>

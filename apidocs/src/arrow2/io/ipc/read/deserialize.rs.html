@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.12.0/src/io/ipc/read/deserialize.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>deserialize.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script src="../../../../../crates.js"></script><script defer src="../../../../../main.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.13.1/src/io/ipc/read/deserialize.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>deserialize.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script src="../../../../../crates.js"></script><script defer src="../../../../../main.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script>
     <noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../arrow2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div>
         </a><h2 class="location"></h2>
     </nav>
@@ -238,11 +238,36 @@
 <span id="233">233</span>
 <span id="234">234</span>
 <span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::collections::VecDeque</span>;
-<span class="kw">use</span> <span class="ident">std</span>::{
-    <span class="ident">io</span>::{<span class="ident">Read</span>, <span class="ident">Seek</span>},
-    <span class="ident">sync::Arc</span>,
-};
+<span class="kw">use</span> <span class="ident">std::io</span>::{<span class="ident">Read</span>, <span class="ident">Seek</span>};
 
 <span class="kw">use</span> <span class="ident">arrow_format::ipc::BodyCompressionRef</span>;
 <span class="kw">use</span> <span class="ident">arrow_format::ipc::MetadataVersion</span>;
@@ -266,13 +291,15 @@
     <span class="ident">block_offset</span>: <span class="ident">u64</span>,
     <span class="ident">is_little_endian</span>: <span class="ident">bool</span>,
     <span class="ident">compression</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">BodyCompressionRef</span><span class="op">&gt;</span>,
+    <span class="ident">limit</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
     <span class="ident">version</span>: <span class="ident">MetadataVersion</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Array</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+    <span class="ident">scratch</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
+) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Array</span><span class="op">&gt;</span><span class="op">&gt;</span> {
     <span class="kw">use</span> <span class="ident">PhysicalType</span>::<span class="kw-2">*</span>;
     <span class="kw">let</span> <span class="ident">data_type</span> <span class="op">=</span> <span class="ident">field</span>.<span class="ident">data_type</span>.<span class="ident">clone</span>();
 
     <span class="kw">match</span> <span class="ident">data_type</span>.<span class="ident">to_physical_type</span>() {
-        <span class="ident">Null</span> =&gt; <span class="ident">read_null</span>(<span class="ident">field_nodes</span>, <span class="ident">data_type</span>).<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">arced</span>()),
+        <span class="ident">Null</span> =&gt; <span class="ident">read_null</span>(<span class="ident">field_nodes</span>, <span class="ident">data_type</span>).<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">boxed</span>()),
         <span class="ident">Boolean</span> =&gt; <span class="ident">read_boolean</span>(
             <span class="ident">field_nodes</span>,
             <span class="ident">data_type</span>,
@@ -281,8 +308,10 @@
             <span class="ident">block_offset</span>,
             <span class="ident">is_little_endian</span>,
             <span class="ident">compression</span>,
+            <span class="ident">limit</span>,
+            <span class="ident">scratch</span>,
         )
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">arced</span>()),
+        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">boxed</span>()),
         <span class="ident">Primitive</span>(<span class="ident">primitive</span>) =&gt; <span class="macro">with_match_primitive_type!</span>(<span class="ident">primitive</span>, <span class="op">|</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">T</span><span class="op">|</span> {
             <span class="ident">read_primitive</span>::<span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">T</span>, <span class="kw">_</span><span class="op">&gt;</span>(
                 <span class="ident">field_nodes</span>,
@@ -292,8 +321,10 @@
                 <span class="ident">block_offset</span>,
                 <span class="ident">is_little_endian</span>,
                 <span class="ident">compression</span>,
+                <span class="ident">limit</span>,
+                <span class="ident">scratch</span>,
             )
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">arced</span>())
+            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">boxed</span>())
         }),
         <span class="ident">Binary</span> =&gt; {
             <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">read_binary</span>::<span class="op">&lt;</span><span class="ident">i32</span>, <span class="kw">_</span><span class="op">&gt;</span>(
@@ -304,8 +335,10 @@
                 <span class="ident">block_offset</span>,
                 <span class="ident">is_little_endian</span>,
                 <span class="ident">compression</span>,
+                <span class="ident">limit</span>,
+                <span class="ident">scratch</span>,
             )<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(<span class="ident">Arc::new</span>(<span class="ident">array</span>))
+            <span class="prelude-val">Ok</span>(<span class="ident">Box::new</span>(<span class="ident">array</span>))
         }
         <span class="ident">LargeBinary</span> =&gt; {
             <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">read_binary</span>::<span class="op">&lt;</span><span class="ident">i64</span>, <span class="kw">_</span><span class="op">&gt;</span>(
@@ -316,8 +349,10 @@
                 <span class="ident">block_offset</span>,
                 <span class="ident">is_little_endian</span>,
                 <span class="ident">compression</span>,
+                <span class="ident">limit</span>,
+                <span class="ident">scratch</span>,
             )<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(<span class="ident">Arc::new</span>(<span class="ident">array</span>))
+            <span class="prelude-val">Ok</span>(<span class="ident">Box::new</span>(<span class="ident">array</span>))
         }
         <span class="ident">FixedSizeBinary</span> =&gt; {
             <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">read_fixed_size_binary</span>(
@@ -328,8 +363,10 @@
                 <span class="ident">block_offset</span>,
                 <span class="ident">is_little_endian</span>,
                 <span class="ident">compression</span>,
+                <span class="ident">limit</span>,
+                <span class="ident">scratch</span>,
             )<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(<span class="ident">Arc::new</span>(<span class="ident">array</span>))
+            <span class="prelude-val">Ok</span>(<span class="ident">Box::new</span>(<span class="ident">array</span>))
         }
         <span class="ident">Utf8</span> =&gt; {
             <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">read_utf8</span>::<span class="op">&lt;</span><span class="ident">i32</span>, <span class="kw">_</span><span class="op">&gt;</span>(
@@ -340,8 +377,10 @@
                 <span class="ident">block_offset</span>,
                 <span class="ident">is_little_endian</span>,
                 <span class="ident">compression</span>,
+                <span class="ident">limit</span>,
+                <span class="ident">scratch</span>,
             )<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(<span class="ident">Arc::new</span>(<span class="ident">array</span>))
+            <span class="prelude-val">Ok</span>(<span class="ident">Box::new</span>(<span class="ident">array</span>))
         }
         <span class="ident">LargeUtf8</span> =&gt; {
             <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">read_utf8</span>::<span class="op">&lt;</span><span class="ident">i64</span>, <span class="kw">_</span><span class="op">&gt;</span>(
@@ -352,8 +391,10 @@
                 <span class="ident">block_offset</span>,
                 <span class="ident">is_little_endian</span>,
                 <span class="ident">compression</span>,
+                <span class="ident">limit</span>,
+                <span class="ident">scratch</span>,
             )<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(<span class="ident">Arc::new</span>(<span class="ident">array</span>))
+            <span class="prelude-val">Ok</span>(<span class="ident">Box::new</span>(<span class="ident">array</span>))
         }
         <span class="ident">List</span> =&gt; <span class="ident">read_list</span>::<span class="op">&lt;</span><span class="ident">i32</span>, <span class="kw">_</span><span class="op">&gt;</span>(
             <span class="ident">field_nodes</span>,
@@ -365,9 +406,11 @@
             <span class="ident">block_offset</span>,
             <span class="ident">is_little_endian</span>,
             <span class="ident">compression</span>,
+            <span class="ident">limit</span>,
             <span class="ident">version</span>,
+            <span class="ident">scratch</span>,
         )
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">arced</span>()),
+        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">boxed</span>()),
         <span class="ident">LargeList</span> =&gt; <span class="ident">read_list</span>::<span class="op">&lt;</span><span class="ident">i64</span>, <span class="kw">_</span><span class="op">&gt;</span>(
             <span class="ident">field_nodes</span>,
             <span class="ident">data_type</span>,
@@ -378,9 +421,11 @@
             <span class="ident">block_offset</span>,
             <span class="ident">is_little_endian</span>,
             <span class="ident">compression</span>,
+            <span class="ident">limit</span>,
             <span class="ident">version</span>,
+            <span class="ident">scratch</span>,
         )
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">arced</span>()),
+        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">boxed</span>()),
         <span class="ident">FixedSizeList</span> =&gt; <span class="ident">read_fixed_size_list</span>(
             <span class="ident">field_nodes</span>,
             <span class="ident">data_type</span>,
@@ -391,9 +436,11 @@
             <span class="ident">block_offset</span>,
             <span class="ident">is_little_endian</span>,
             <span class="ident">compression</span>,
+            <span class="ident">limit</span>,
             <span class="ident">version</span>,
+            <span class="ident">scratch</span>,
         )
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">arced</span>()),
+        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">boxed</span>()),
         <span class="ident">Struct</span> =&gt; <span class="ident">read_struct</span>(
             <span class="ident">field_nodes</span>,
             <span class="ident">data_type</span>,
@@ -404,22 +451,27 @@
             <span class="ident">block_offset</span>,
             <span class="ident">is_little_endian</span>,
             <span class="ident">compression</span>,
+            <span class="ident">limit</span>,
             <span class="ident">version</span>,
+            <span class="ident">scratch</span>,
         )
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">arced</span>()),
+        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">boxed</span>()),
         <span class="ident">Dictionary</span>(<span class="ident">key_type</span>) =&gt; {
             <span class="macro">match_integer_type!</span>(<span class="ident">key_type</span>, <span class="op">|</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">T</span><span class="op">|</span> {
                 <span class="ident">read_dictionary</span>::<span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">T</span>, <span class="kw">_</span><span class="op">&gt;</span>(
                     <span class="ident">field_nodes</span>,
+                    <span class="ident">data_type</span>,
                     <span class="ident">ipc_field</span>.<span class="ident">dictionary_id</span>,
                     <span class="ident">buffers</span>,
                     <span class="ident">reader</span>,
                     <span class="ident">dictionaries</span>,
                     <span class="ident">block_offset</span>,
                     <span class="ident">compression</span>,
+                    <span class="ident">limit</span>,
                     <span class="ident">is_little_endian</span>,
+                    <span class="ident">scratch</span>,
                 )
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">arced</span>())
+                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">boxed</span>())
             })
         }
         <span class="ident">Union</span> =&gt; <span class="ident">read_union</span>(
@@ -432,9 +484,11 @@
             <span class="ident">block_offset</span>,
             <span class="ident">is_little_endian</span>,
             <span class="ident">compression</span>,
+            <span class="ident">limit</span>,
             <span class="ident">version</span>,
+            <span class="ident">scratch</span>,
         )
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">arced</span>()),
+        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">boxed</span>()),
         <span class="ident">Map</span> =&gt; <span class="ident">read_map</span>(
             <span class="ident">field_nodes</span>,
             <span class="ident">data_type</span>,
@@ -445,9 +499,11 @@
             <span class="ident">block_offset</span>,
             <span class="ident">is_little_endian</span>,
             <span class="ident">compression</span>,
+            <span class="ident">limit</span>,
             <span class="ident">version</span>,
+            <span class="ident">scratch</span>,
         )
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">arced</span>()),
+        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">boxed</span>()),
     }
 }
 

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.22.7/src/logical_plan/builder.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>builder.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.23.2/src/logical_plan/builder.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>builder.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
     <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
         </a><h2 class="location"></h2>
     </nav>
@@ -587,6 +587,19 @@
 <span id="582">582</span>
 <span id="583">583</span>
 <span id="584">584</span>
+<span id="585">585</span>
+<span id="586">586</span>
+<span id="587">587</span>
+<span id="588">588</span>
+<span id="589">589</span>
+<span id="590">590</span>
+<span id="591">591</span>
+<span id="592">592</span>
+<span id="593">593</span>
+<span id="594">594</span>
+<span id="595">595</span>
+<span id="596">596</span>
+<span id="597">597</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::logical_plan::projection::rewrite_projections</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils</span>;
@@ -595,9 +608,9 @@
 <span class="kw">use</span> <span class="ident">polars_core::frame::explode::MeltArgs</span>;
 <span class="kw">use</span> <span class="ident">polars_core::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">polars_core::utils::get_supertype</span>;
-<span class="kw">use</span> <span class="ident">polars_io::csv::CsvEncoding</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;csv-file&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident">polars_io::csv_core::utils::infer_file_schema</span>;
+<span class="kw">use</span> <span class="ident">polars_io::csv::utils::infer_file_schema</span>;
+<span class="kw">use</span> <span class="ident">polars_io::csv::CsvEncoding</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ipc&quot;</span>)]</span>
 <span class="kw">use</span> <span class="ident">polars_io::ipc::IpcReader</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>)]</span>
@@ -605,8 +618,8 @@
 <span class="kw">use</span> <span class="ident">polars_io::RowCount</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;csv-file&quot;</span>)]</span>
 <span class="kw">use</span> <span class="ident">polars_io</span>::{
+    <span class="ident">csv::utils</span>::{<span class="ident">get_reader_bytes</span>, <span class="ident">is_compressed</span>},
     <span class="ident">csv::NullValues</span>,
-    <span class="ident">csv_core::utils</span>::{<span class="ident">get_reader_bytes</span>, <span class="ident">is_compressed</span>},
 };
 <span class="kw">use</span> <span class="ident">std::io</span>::{<span class="ident">Read</span>, <span class="ident">Seek</span>, <span class="ident">SeekFrom</span>};
 <span class="kw">use</span> <span class="ident">std::path::PathBuf</span>;
@@ -677,9 +690,10 @@
         <span class="ident">path</span>: <span class="ident">P</span>,
         <span class="ident">n_rows</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
         <span class="ident">cache</span>: <span class="ident">bool</span>,
-        <span class="ident">parallel</span>: <span class="ident">bool</span>,
+        <span class="ident">parallel</span>: <span class="ident">polars_io::parquet::ParallelStrategy</span>,
         <span class="ident">row_count</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">RowCount</span><span class="op">&gt;</span>,
         <span class="ident">rechunk</span>: <span class="ident">bool</span>,
+        <span class="ident">low_memory</span>: <span class="ident">bool</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
         <span class="kw">use</span> <span class="ident">polars_io::SerReader</span> <span class="kw">as</span> <span class="kw">_</span>;
 
@@ -699,6 +713,8 @@
                 <span class="ident">parallel</span>,
                 <span class="ident">row_count</span>,
                 <span class="ident">rechunk</span>,
+                <span class="ident">file_counter</span>: <span class="ident">Default::default</span>(),
+                <span class="ident">low_memory</span>,
             },
         }
         .<span class="ident">into</span>())
@@ -718,7 +734,7 @@
             <span class="ident">schema</span>,
             <span class="ident">predicate</span>: <span class="prelude-val">None</span>,
             <span class="ident">aggregate</span>: <span class="macro">vec!</span>[],
-            <span class="ident">options</span>,
+            <span class="ident">options</span>: <span class="ident">options</span>.<span class="ident">into</span>(),
         }
         .<span class="ident">into</span>())
     }
@@ -738,6 +754,7 @@
         <span class="ident">low_memory</span>: <span class="ident">bool</span>,
         <span class="ident">comment_char</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
         <span class="ident">quote_char</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
+        <span class="ident">eol_char</span>: <span class="ident">u8</span>,
         <span class="ident">null_values</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">NullValues</span><span class="op">&gt;</span>,
         <span class="ident">infer_schema_length</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
         <span class="ident">rechunk</span>: <span class="ident">bool</span>,
@@ -770,6 +787,7 @@
                 <span class="kw-2">&amp;mut</span> <span class="ident">skip_rows</span>,
                 <span class="ident">comment_char</span>,
                 <span class="ident">quote_char</span>,
+                <span class="ident">eol_char</span>,
                 <span class="ident">null_values</span>.<span class="ident">as_ref</span>(),
                 <span class="ident">parse_dates</span>,
             )
@@ -791,11 +809,13 @@
                 <span class="ident">cache</span>,
                 <span class="ident">comment_char</span>,
                 <span class="ident">quote_char</span>,
+                <span class="ident">eol_char</span>,
                 <span class="ident">null_values</span>,
                 <span class="ident">rechunk</span>,
                 <span class="ident">encoding</span>,
                 <span class="ident">row_count</span>,
                 <span class="ident">parse_dates</span>,
+                <span class="ident">file_counter</span>: <span class="ident">Default::default</span>(),
             },
             <span class="ident">predicate</span>: <span class="prelude-val">None</span>,
             <span class="ident">aggregate</span>: <span class="macro">vec!</span>[],
@@ -811,14 +831,14 @@
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">project</span>(<span class="self">self</span>, <span class="ident">exprs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> (<span class="ident">exprs</span>, <span class="ident">schema</span>) <span class="op">=</span>
-            <span class="macro">try_delayed!</span>(<span class="ident">prepare_projection</span>(<span class="ident">exprs</span>, <span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>()), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">into</span>);
+        <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">into</span>);
+        <span class="kw">let</span> (<span class="ident">exprs</span>, <span class="ident">schema</span>) <span class="op">=</span> <span class="macro">try_delayed!</span>(<span class="ident">prepare_projection</span>(<span class="ident">exprs</span>, <span class="kw-2">&amp;</span><span class="ident">schema</span>), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">into</span>);
 
         <span class="kw">if</span> <span class="ident">exprs</span>.<span class="ident">is_empty</span>() {
             <span class="self">self</span>.<span class="ident">map</span>(
                 <span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="prelude-val">Ok</span>(<span class="ident">DataFrame::new_no_checks</span>(<span class="macro">vec!</span>[])),
                 <span class="ident">AllowedOptimizations::default</span>(),
-                <span class="prelude-val">Some</span>(<span class="ident">Arc::new</span>(<span class="ident">Schema::default</span>())),
+                <span class="prelude-val">Some</span>(<span class="ident">Arc::new</span>(<span class="op">|</span><span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span><span class="op">|</span> <span class="prelude-val">Ok</span>(<span class="ident">Arc::new</span>(<span class="ident">Schema::default</span>())))),
                 <span class="string">&quot;EMPTY PROJECTION&quot;</span>,
             )
         } <span class="kw">else</span> {
@@ -832,8 +852,8 @@
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">project_local</span>(<span class="self">self</span>, <span class="ident">exprs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> (<span class="ident">exprs</span>, <span class="ident">schema</span>) <span class="op">=</span>
-            <span class="macro">try_delayed!</span>(<span class="ident">prepare_projection</span>(<span class="ident">exprs</span>, <span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>()), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">into</span>);
+        <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">into</span>);
+        <span class="kw">let</span> (<span class="ident">exprs</span>, <span class="ident">schema</span>) <span class="op">=</span> <span class="macro">try_delayed!</span>(<span class="ident">prepare_projection</span>(<span class="ident">exprs</span>, <span class="kw-2">&amp;</span><span class="ident">schema</span>), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">into</span>);
         <span class="ident">LogicalPlan::LocalProjection</span> {
             <span class="ident">expr</span>: <span class="ident">exprs</span>,
             <span class="ident">input</span>: <span class="ident">Box::new</span>(<span class="self">self</span>.<span class="number">0</span>),
@@ -843,7 +863,7 @@
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">fill_null</span>(<span class="self">self</span>, <span class="ident">fill_value</span>: <span class="ident">Expr</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>();
+        <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">into</span>);
         <span class="kw">let</span> <span class="ident">exprs</span> <span class="op">=</span> <span class="ident">schema</span>
             .<span class="ident">iter_names</span>()
             .<span class="ident">map</span>(<span class="op">|</span><span class="ident">name</span><span class="op">|</span> {
@@ -857,7 +877,7 @@
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">fill_nan</span>(<span class="self">self</span>, <span class="ident">fill_value</span>: <span class="ident">Expr</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>();
+        <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">into</span>);
 
         <span class="kw">let</span> <span class="ident">exprs</span> <span class="op">=</span> <span class="ident">schema</span>
             .<span class="ident">iter</span>()
@@ -873,12 +893,12 @@
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_columns</span>(<span class="self">self</span>, <span class="ident">exprs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
         <span class="comment">// current schema</span>
-        <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>();
+        <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">into</span>);
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_schema</span> <span class="op">=</span> (<span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">schema</span>).<span class="ident">clone</span>();
-        <span class="kw">let</span> (<span class="ident">exprs</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="macro">try_delayed!</span>(<span class="ident">prepare_projection</span>(<span class="ident">exprs</span>, <span class="ident">schema</span>), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">into</span>);
+        <span class="kw">let</span> (<span class="ident">exprs</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="macro">try_delayed!</span>(<span class="ident">prepare_projection</span>(<span class="ident">exprs</span>, <span class="kw-2">&amp;</span><span class="ident">schema</span>), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">into</span>);
 
         <span class="kw">for</span> <span class="ident">e</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">exprs</span> {
-            <span class="kw">let</span> <span class="ident">field</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">to_field</span>(<span class="ident">schema</span>, <span class="ident">Context::Default</span>).<span class="ident">unwrap</span>();
+            <span class="kw">let</span> <span class="ident">field</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">to_field</span>(<span class="kw-2">&amp;</span><span class="ident">schema</span>, <span class="ident">Context::Default</span>).<span class="ident">unwrap</span>();
             <span class="ident">new_schema</span>.<span class="ident">with_column</span>(<span class="ident">field</span>.<span class="ident">name</span>().<span class="ident">to_string</span>(), <span class="ident">field</span>.<span class="ident">data_type</span>().<span class="ident">clone</span>());
         }
 
@@ -897,7 +917,8 @@
             <span class="ident">Expr::Wildcard</span> <span class="op">|</span> <span class="ident">Expr::RenameAlias</span> { .. } <span class="op">|</span> <span class="ident">Expr::Columns</span>(<span class="kw">_</span>) =&gt; <span class="bool-val">true</span>,
             <span class="kw">_</span> =&gt; <span class="bool-val">false</span>,
         }) {
-            <span class="kw">let</span> <span class="ident">rewritten</span> <span class="op">=</span> <span class="ident">rewrite_projections</span>(<span class="macro">vec!</span>[<span class="ident">predicate</span>], <span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>(), <span class="kw-2">&amp;</span>[]);
+            <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">into</span>);
+            <span class="kw">let</span> <span class="ident">rewritten</span> <span class="op">=</span> <span class="ident">rewrite_projections</span>(<span class="macro">vec!</span>[<span class="ident">predicate</span>], <span class="kw-2">&amp;</span><span class="ident">schema</span>, <span class="kw-2">&amp;</span>[]);
             <span class="ident">combine_predicates_expr</span>(<span class="ident">rewritten</span>.<span class="ident">into_iter</span>())
         } <span class="kw">else</span> {
             <span class="ident">predicate</span>
@@ -918,7 +939,8 @@
         <span class="ident">dynamic_options</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">DynamicGroupOptions</span><span class="op">&gt;</span>,
         <span class="ident">rolling_options</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">RollingGroupOptions</span><span class="op">&gt;</span>,
     ) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">current_schema</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>();
+        <span class="kw">let</span> <span class="ident">current_schema</span> <span class="op">=</span> <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">into</span>);
+        <span class="kw">let</span> <span class="ident">current_schema</span> <span class="op">=</span> <span class="ident">current_schema</span>.<span class="ident">as_ref</span>();
         <span class="kw">let</span> <span class="ident">aggs</span> <span class="op">=</span> <span class="ident">rewrite_projections</span>(<span class="ident">aggs</span>.<span class="ident">as_ref</span>().<span class="ident">to_vec</span>(), <span class="ident">current_schema</span>, <span class="ident">keys</span>.<span class="ident">as_ref</span>());
 
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">schema</span> <span class="op">=</span> <span class="macro">try_delayed!</span>(
@@ -984,6 +1006,8 @@
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sort</span>(<span class="self">self</span>, <span class="ident">by_column</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>, <span class="ident">reverse</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span>, <span class="ident">null_last</span>: <span class="ident">bool</span>) -&gt; <span class="self">Self</span> {
+        <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">into</span>);
+        <span class="kw">let</span> <span class="ident">by_column</span> <span class="op">=</span> <span class="ident">rewrite_projections</span>(<span class="ident">by_column</span>, <span class="kw-2">&amp;</span><span class="ident">schema</span>, <span class="kw-2">&amp;</span>[]);
         <span class="ident">LogicalPlan::Sort</span> {
             <span class="ident">input</span>: <span class="ident">Box::new</span>(<span class="self">self</span>.<span class="number">0</span>),
             <span class="ident">by_column</span>,
@@ -997,9 +1021,10 @@
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">explode</span>(<span class="self">self</span>, <span class="ident">columns</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">columns</span> <span class="op">=</span> <span class="ident">rewrite_projections</span>(<span class="ident">columns</span>, <span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>(), <span class="kw-2">&amp;</span>[]);
+        <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">into</span>);
+        <span class="kw">let</span> <span class="ident">columns</span> <span class="op">=</span> <span class="ident">rewrite_projections</span>(<span class="ident">columns</span>, <span class="kw-2">&amp;</span><span class="ident">schema</span>, <span class="kw-2">&amp;</span>[]);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">schema</span> <span class="op">=</span> (<span class="kw-2">*</span><span class="kw-2">*</span><span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>()).<span class="ident">clone</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">schema</span> <span class="op">=</span> (<span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">schema</span>).<span class="ident">clone</span>();
 
         <span class="comment">// columns to string</span>
         <span class="kw">let</span> <span class="ident">columns</span> <span class="op">=</span> <span class="ident">columns</span>
@@ -1026,7 +1051,8 @@
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">melt</span>(<span class="self">self</span>, <span class="ident">args</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">MeltArgs</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="ident">det_melt_schema</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>, <span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>());
+        <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">into</span>);
+        <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="ident">det_melt_schema</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>, <span class="kw-2">&amp;</span><span class="ident">schema</span>);
         <span class="ident">LogicalPlan::Melt</span> {
             <span class="ident">input</span>: <span class="ident">Box::new</span>(<span class="self">self</span>.<span class="number">0</span>),
             <span class="ident">args</span>,
@@ -1059,8 +1085,8 @@
         <span class="ident">right_on</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>,
         <span class="ident">options</span>: <span class="ident">JoinOptions</span>,
     ) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">schema_left</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>();
-        <span class="kw">let</span> <span class="ident">schema_right</span> <span class="op">=</span> <span class="ident">other</span>.<span class="ident">schema</span>();
+        <span class="kw">let</span> <span class="ident">schema_left</span> <span class="op">=</span> <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">schema</span>(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">into</span>);
+        <span class="kw">let</span> <span class="ident">schema_right</span> <span class="op">=</span> <span class="macro">try_delayed!</span>(<span class="ident">other</span>.<span class="ident">schema</span>(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">into</span>);
 
         <span class="comment">// column names of left table</span>
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">names</span>: <span class="ident">PlHashSet</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">PlHashSet::default</span>();
@@ -1104,7 +1130,7 @@
         <span class="self">self</span>,
         <span class="ident">function</span>: <span class="ident">F</span>,
         <span class="ident">optimizations</span>: <span class="ident">AllowedOptimizations</span>,
-        <span class="ident">schema</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">SchemaRef</span><span class="op">&gt;</span>,
+        <span class="ident">schema</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">UdfSchema</span><span class="op">&gt;</span><span class="op">&gt;</span>,
         <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>,
     ) -&gt; <span class="self">Self</span>
     <span class="kw">where</span>

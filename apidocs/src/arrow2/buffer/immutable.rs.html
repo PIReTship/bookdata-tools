@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.12.0/src/buffer/immutable.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>immutable.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.13.1/src/buffer/immutable.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>immutable.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
     <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../arrow2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
         </a><h2 class="location"></h2>
     </nav>
@@ -191,43 +191,47 @@
 <span id="186">186</span>
 <span id="187">187</span>
 <span id="188">188</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">either::Either</span>;
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">iter::FromIterator</span>, <span class="ident">sync::Arc</span>, <span class="ident">usize</span>};
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">iter::FromIterator</span>, <span class="ident">ops::Deref</span>, <span class="ident">sync::Arc</span>, <span class="ident">usize</span>};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types::NativeType</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::Bytes</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::bytes::Bytes</span>;
-
-<span class="doccomment">/// [`Buffer`] is a contiguous memory region that can be shared across thread boundaries.</span>
+<span class="doccomment">/// [`Buffer`] is a contiguous memory region that can be shared across</span>
+<span class="doccomment">/// thread boundaries.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// The easiest way to think about `Buffer&lt;T&gt;` is being equivalent to</span>
+<span class="doccomment">/// The easiest way to think about [`Buffer&lt;T&gt;`] is being equivalent to</span>
 <span class="doccomment">/// a `Arc&lt;Vec&lt;T&gt;&gt;`, with the following differences:</span>
-<span class="doccomment">/// * `T` must be [`NativeType`]</span>
-<span class="doccomment">/// * slicing the buffer is `O(1)`</span>
-<span class="doccomment">/// * it supports external allocated memory (via FFI)</span>
+<span class="doccomment">/// * slicing and cloning is `O(1)`.</span>
+<span class="doccomment">/// * it supports external allocated memory</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// The easiest way to create one is to use its implementation of `From` a `Vec`.</span>
+<span class="doccomment">/// The easiest way to create one is to use its implementation of `From&lt;Vec&lt;T&gt;&gt;`.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # Examples</span>
 <span class="doccomment">/// ```</span>
 <span class="doccomment">/// use arrow2::buffer::Buffer;</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// let buffer: Buffer&lt;u32&gt; = vec![1, 2, 3].into();</span>
+<span class="doccomment">/// let mut buffer: Buffer&lt;u32&gt; = vec![1, 2, 3].into();</span>
 <span class="doccomment">/// assert_eq!(buffer.as_ref(), [1, 2, 3].as_ref());</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// // it supports copy-on-write semantics (i.e. back to a `Vec`)</span>
-<span class="doccomment">/// let vec: Vec&lt;u32&gt; = buffer.into_mut().right().unwrap();</span>
-<span class="doccomment">/// assert_eq!(vec, vec![1, 2, 3]);</span>
+<span class="doccomment">/// let vec: &amp;mut [u32] = buffer.get_mut().unwrap();</span>
+<span class="doccomment">/// assert_eq!(vec, &amp;mut [1, 2, 3]);</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// // cloning and slicing is `O(1)` (data is shared)</span>
-<span class="doccomment">/// let buffer: Buffer&lt;u32&gt; = vec![1, 2, 3].into();</span>
+<span class="doccomment">/// let mut buffer: Buffer&lt;u32&gt; = vec![1, 2, 3].into();</span>
 <span class="doccomment">/// let slice = buffer.clone().slice(1, 1);</span>
 <span class="doccomment">/// assert_eq!(slice.as_ref(), [2].as_ref());</span>
-<span class="doccomment">/// // no longer possible to get a vec since `slice` and `buffer` share data</span>
-<span class="doccomment">/// let same: Buffer&lt;u32&gt; = buffer.into_mut().left().unwrap();</span>
+<span class="doccomment">/// // but cloning forbids getting mut since `slice` and `buffer` now share data</span>
+<span class="doccomment">/// assert_eq!(buffer.get_mut(), None);</span>
 <span class="doccomment">/// ```</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Buffer</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">NativeType</span><span class="op">&gt;</span> {
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>)]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Buffer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="doccomment">/// the internal byte buffer.</span>
     <span class="ident">data</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Bytes</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
 
@@ -239,20 +243,27 @@
     <span class="ident">length</span>: <span class="ident">usize</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">NativeType</span><span class="op">&gt;</span> <span class="ident">std::fmt::Debug</span> <span class="kw">for</span> <span class="ident">Buffer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">PartialEq</span><span class="op">&gt;</span> <span class="ident">PartialEq</span> <span class="kw">for</span> <span class="ident">Buffer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+    <span class="attribute">#[<span class="ident">inline</span>]</span>
+    <span class="kw">fn</span> <span class="ident">eq</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <span class="ident">bool</span> {
+        <span class="self">self</span>.<span class="ident">deref</span>() <span class="op">==</span> <span class="ident">other</span>.<span class="ident">deref</span>()
+    }
+}
+
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">std::fmt::Debug</span><span class="op">&gt;</span> <span class="ident">std::fmt::Debug</span> <span class="kw">for</span> <span class="ident">Buffer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">std::fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">std::fmt::Result</span> {
         <span class="ident">std::fmt::Debug::fmt</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="self">self</span>, <span class="ident">f</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">NativeType</span><span class="op">&gt;</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">Buffer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">Buffer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
         <span class="ident">Vec::new</span>().<span class="ident">into</span>()
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">NativeType</span><span class="op">&gt;</span> <span class="ident">Buffer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Buffer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="doccomment">/// Creates an empty [`Buffer`].</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
@@ -293,7 +304,7 @@
         }
     }
 
-    <span class="doccomment">/// Returns a new [Buffer] that is a slice of this buffer starting at `offset`.</span>
+    <span class="doccomment">/// Returns a new [`Buffer`] that is a slice of this buffer starting at `offset`.</span>
     <span class="doccomment">/// Doing so allows the same memory region to be shared between buffers.</span>
     <span class="doccomment">/// # Panics</span>
     <span class="doccomment">/// Panics iff `offset` is larger than `len`.</span>
@@ -307,7 +318,7 @@
         <span class="kw">unsafe</span> { <span class="self">self</span>.<span class="ident">slice_unchecked</span>(<span class="ident">offset</span>, <span class="ident">length</span>) }
     }
 
-    <span class="doccomment">/// Returns a new [Buffer] that is a slice of this buffer starting at `offset`.</span>
+    <span class="doccomment">/// Returns a new [`Buffer`] that is a slice of this buffer starting at `offset`.</span>
     <span class="doccomment">/// Doing so allows the same memory region to be shared between buffers.</span>
     <span class="doccomment">/// # Safety</span>
     <span class="doccomment">/// The caller must ensure `offset + length &lt;= self.len()`</span>
@@ -320,8 +331,8 @@
 
     <span class="doccomment">/// Returns a pointer to the start of this buffer.</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">as_ptr</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">std::ptr::NonNull</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">data</span>.<span class="ident">ptr</span>()
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">as_ptr</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*const</span> <span class="ident">T</span> {
+        <span class="self">self</span>.<span class="ident">data</span>.<span class="ident">deref</span>().<span class="ident">as_ptr</span>()
     }
 
     <span class="doccomment">/// Returns the offset of this buffer.</span>
@@ -330,29 +341,32 @@
         <span class="self">self</span>.<span class="ident">offset</span>
     }
 
-    <span class="doccomment">/// Converts this [`Buffer`] to [`Vec`], returning itself if the conversion</span>
-    <span class="doccomment">/// is not possible</span>
+    <span class="doccomment">/// Returns a mutable reference to its underlying [`Vec`], if possible.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// This operation returns a [`Vec`] iff this [`Buffer`]:</span>
-    <span class="doccomment">/// * is not an offsetted slice of another [`Buffer`]</span>
+    <span class="doccomment">/// This operation returns [`Some`] iff this [`Buffer`]:</span>
+    <span class="doccomment">/// * has not been sliced with an offset</span>
     <span class="doccomment">/// * has not been cloned (i.e. [`Arc`]`::get_mut` yields [`Some`])</span>
     <span class="doccomment">/// * has not been imported from the c data interface (FFI)</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_mut</span>(<span class="kw-2">mut</span> <span class="self">self</span>) -&gt; <span class="ident">Either</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">offset</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span> {
-            <span class="ident">Either::Left</span>(<span class="self">self</span>)
+            <span class="prelude-val">None</span>
         } <span class="kw">else</span> {
-            <span class="kw">match</span> <span class="ident">Arc::get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">data</span>).<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">b</span><span class="op">|</span> <span class="ident">b</span>.<span class="ident">get_vec</span>()) {
-                <span class="prelude-val">Some</span>(<span class="ident">v</span>) =&gt; {
-                    <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">std::mem::take</span>(<span class="ident">v</span>);
-                    <span class="ident">Either::Right</span>(<span class="ident">data</span>)
-                }
-                <span class="prelude-val">None</span> =&gt; <span class="ident">Either::Left</span>(<span class="self">self</span>),
-            }
+            <span class="ident">Arc::get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">data</span>).<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">b</span><span class="op">|</span> <span class="ident">b</span>.<span class="ident">get_vec</span>())
         }
+    }
+
+    <span class="doccomment">/// Get the strong count of underlying `Arc` data buffer.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">shared_count_strong</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
+        <span class="ident">Arc::strong_count</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">data</span>)
+    }
+
+    <span class="doccomment">/// Get the weak count of underlying `Arc` data buffer.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">shared_count_weak</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
+        <span class="ident">Arc::weak_count</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">data</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">NativeType</span><span class="op">&gt;</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Buffer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Buffer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">p</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
         <span class="kw">let</span> <span class="ident">bytes</span>: <span class="ident">Bytes</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">p</span>.<span class="ident">into</span>();
@@ -364,7 +378,7 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">NativeType</span><span class="op">&gt;</span> <span class="ident">std::ops::Deref</span> <span class="kw">for</span> <span class="ident">Buffer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">std::ops::Deref</span> <span class="kw">for</span> <span class="ident">Buffer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="kw">type</span> <span class="ident">Target</span> <span class="op">=</span> [<span class="ident">T</span>];
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
@@ -373,7 +387,7 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">NativeType</span><span class="op">&gt;</span> <span class="ident">FromIterator</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Buffer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">FromIterator</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Buffer</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">from_iter</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="ident">IntoIterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="ident">iter</span>: <span class="ident">I</span>) -&gt; <span class="self">Self</span> {
         <span class="ident">Vec::from_iter</span>(<span class="ident">iter</span>).<span class="ident">into</span>()
