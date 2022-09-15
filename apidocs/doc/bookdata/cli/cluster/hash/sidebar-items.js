@@ -1,1 +1,0 @@
-initSidebarItems({"fn":[["scan_isbns","Load ISBN data"]],"struct":[["ClusterHash",""],["ClusterHashArray",""],["ClusterHashArrayIterator",""],["HashCmd","Compute a hash for each cluster."],["MutableClusterHashArray","A mutable [`arrow2::StructArray`] for elements of ClusterHash which is logically equivalent to a Vec"]]});

@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["MutableRatingRowArray","A mutable [`arrow2::StructArray`] for elements of RatingRow which is logically equivalent to a Vec"],["RatingRow","Structure for scanned ratings."],["RatingRowArray",""],["RatingRowArrayIterator",""],["SourceRating","A rating as described in a source CSV file."]]});

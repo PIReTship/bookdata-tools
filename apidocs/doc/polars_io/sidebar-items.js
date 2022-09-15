@@ -1,1 +1,0 @@
-initSidebarItems({"mod":[["aggregations",""],["csv","(De)serializing CSV files"],["csv_core",""],["export",""],["mmap",""],["parquet","Reading Apache parquet files."],["predicates",""],["prelude",""]],"struct":[["RowCount",""]],"trait":[["ArrowReader",""],["SerReader",""],["SerWriter",""],["WriterFactory",""]]});

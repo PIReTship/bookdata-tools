@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["ThreadRead","Reader that reads from a background thread."],["ThreadWrite","Writer that writes to a background thread."]]});

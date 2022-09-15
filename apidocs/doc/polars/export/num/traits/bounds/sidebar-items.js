@@ -1,1 +1,0 @@
-initSidebarItems({"trait":[["Bounded","Numbers which have upper and lower bounds"],["LowerBounded","Numbers which have lower bounds"],["UpperBounded","Numbers which have upper bounds"]]});
