@@ -30,8 +30,9 @@ corrected name parsing & normalization flow.
         punctuation in name records from any source.
     -   Added more tests for name parsing and normalization.
 -   Fixed a bug in GoodReads integration, where we were not extracting ASINs.
--   Updated various Rust dependencies
--   Better progress reporting for data scans
+-   Extract book genres and series from GoodReads.
+-   Updated various Rust dependencies.
+-   Better progress reporting for data scans.
 
 [peg]: https://docs.rs/peg
 
