@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["reset_string_cache","Reset the global string cache used for the Categorical Types."],["toggle_string_cache","Use a global string cache for the Categorical Types."],["with_string_cache",""]],"struct":[["StrHashGlobal",""]]});

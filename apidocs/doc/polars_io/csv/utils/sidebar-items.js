@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["get_reader_bytes",""],["infer_file_schema","Infer the schema of a CSV file by reading through the first n records of the file, with `max_read_records` controlling the maximum number of records to read."],["is_compressed","check if csv file is compressed"]]});

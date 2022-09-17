@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["ID_FILE",""],["INFO_FILE",""]],"struct":[["BookIdRecord",""],["BookIdRecordArray",""],["BookIdRecordArrayIterator",""],["BookRecord",""],["BookRecordArray",""],["BookRecordArrayIterator",""],["BookWriter","Output handler for GoodReads books."],["MutableBookIdRecordArray",""],["MutableBookRecordArray",""],["RawBook",""]]});

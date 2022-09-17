@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["HeapAlloc",""],["HeapPrealloc",""],["WrapBox",""]],"type":[["HeapAllocUninitialized",""]]});

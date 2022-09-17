@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["concatenate",""],["ewm",""],["float",""],["list",""],["rolling",""],["set",""],["sort_partition",""],["take",""],["take_agg","kernels that combine take and aggregations."]]});
