@@ -62,6 +62,21 @@ Identifiers extracted from each GoodReads book record.
 Metadata extracted from GoodReads book records.
 :::
 
+:::{file} goodreads/gr-book-genres.parquet
+
+GoodReads book-genre associations.
+:::
+
+:::{file} goodreads/gr-book-series.parquet
+
+GoodReads book series associations.
+:::
+
+:::{file} goodreads/gr-genres.parquet
+
+The genre labels to go with {file}`goodreads/gr-book-genres.parquet`.
+:::
+
 :::{file} goodreads/gr-book-link.parquet
 
 Linking identifiers (work and cluster) for GoodReads books.
