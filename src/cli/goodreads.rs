@@ -30,13 +30,13 @@ pub struct ScanInput {
 /// Input options for an interaction scan
 #[derive(StructOpt, Debug)]
 pub struct InterInput {
-  /// User ID mapping file
-  #[structopt(name="MAP", long="user-map", parse(from_os_str))]
-  user_map: Option<PathBuf>,
-
   /// Book ID mapping file (only for CSV input)
   #[structopt(name="MAP", long="book-map", parse(from_os_str))]
   book_map: Option<PathBuf>,
+
+  /// Run in CSV mode
+  #[structopt(long="csv")]
+  csv_mode: bool,
 
   #[structopt(flatten)]
   scan: ScanInput,
@@ -59,7 +59,6 @@ where
   W: ObjectWriter<R> + DataSink + Send + 'static,
   R: DeserializeOwned + Send + Sync + 'static
 {
-  let path: &Path = path.as_ref();
   let outs: Vec<_> = proc.output_files().iter().map(|p| p.to_path_buf()).collect();
 
   info!("reading data from {}", path.display());
@@ -95,8 +94,15 @@ impl Command for Goodreads {
         scan_gr(&opts.infile, genres::BookGenreWriter::open()?)?;
       },
       GRCmd::Scan { data: GRScan::Interactions(opts) } => {
-        info!("scanning GoodReads interactions");
-        scan_gr(&opts.scan.infile, interaction::IntWriter::open()?)?;
+        if opts.csv_mode {
+          info!("scanning simplified GoodReads interactions");
+          let books = opts.book_map.as_ref();
+          let books = books.ok_or_else(|| anyhow!("book map required for CSV mode"))?;
+          simple_interaction::scan_interaction_csv(books, &opts.scan.infile)?;
+        } else {
+          info!("scanning GoodReads interactions");
+          scan_gr(&opts.scan.infile, interaction::IntWriter::open()?)?;
+        }
       }
     }
 
