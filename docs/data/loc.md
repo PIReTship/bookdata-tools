@@ -34,9 +34,6 @@ The import is controlled by the following DVC steps:
 `book-authors`
 :   Extract (and clean up) author names for LOC books.
 
-`loc-clusters`
-:   Resolve LOC books into [book clusters](clusters), producing {file}`loc-mds/loc-clusters.parquet`.
-
 (marc-format)=
 ## Raw MARC data
 

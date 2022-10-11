@@ -4,11 +4,15 @@ Data schema information for the book data tools.
 
 import pandas as pd
 
+MULT_BASE = 100_000_000
+
+
 class NS:
     def __init__(self, name, num):
         self.name = name
         self.code = num
-        self.offset = num * 100000000
+        self.offset = num * MULT_BASE
+
 
 ns_work = NS('OL-W', 1)
 ns_edition = NS('OL-E', 2)

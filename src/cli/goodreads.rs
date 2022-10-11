@@ -1,9 +1,7 @@
-use std::mem::drop;
 use crate::prelude::*;
 use crate::goodreads::*;
 use crate::io::object::ThreadObjectWriter;
 use crate::util::logging::data_progress;
-use crate::util::logging::set_progress;
 use serde::de::DeserializeOwned;
 
 /// GoodReads processing commands.
@@ -50,6 +48,8 @@ enum GRScan {
   Works(ScanInput),
   /// Scan GoodReads books.
   Books(ScanInput),
+  /// Scan GoodReads genres.
+  Genres(ScanInput),
   /// Scan GoodReads interactions.
   Interactions(InterInput),
 }
@@ -66,11 +66,10 @@ where
   let pb = data_progress(0);
   let read = LineProcessor::open_gzip(path, pb.clone())?;
   let mut writer = ThreadObjectWriter::new(proc);
-  let _lg = set_progress(pb);
   read.process_json(&mut writer)?;
+  pb.finish_and_clear();
 
   writer.finish()?;
-  drop(_lg);
 
   for out in outs {
     let outf = out.as_path();
@@ -90,7 +89,11 @@ impl Command for Goodreads {
       GRCmd::Scan { data: GRScan::Books(opts) } => {
         info!("scanning GoodReads books");
         scan_gr(&opts.infile, book::BookWriter::open()?)?;
-      }
+      },
+      GRCmd::Scan { data: GRScan::Genres(opts) } => {
+        info!("scanning GoodReads book genres");
+        scan_gr(&opts.infile, genres::BookGenreWriter::open()?)?;
+      },
       GRCmd::Scan { data: GRScan::Interactions(opts) } => {
         info!("scanning GoodReads interactions");
         scan_gr(&opts.scan.infile, interaction::IntWriter::open()?)?;

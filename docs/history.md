@@ -14,10 +14,14 @@ corrected name parsing & normalization flow.
 -   Updated VIAF to May 1, 2022 dump
 -   Updated OpenLibrary to March 29, 2022 dump
 -   Added code to extract edition and work subjects
+-   Updated docs for current extraction layout
 
 ### Logic Updates
 
--   Updated to DataFusion 8.0
+-   Switched from DataFusion to [Polars](https://www.pola.rs/), to reduce volatility and improve
+    maintainability.  This also involved a switch from Arrow to Arrow2, which seems to have cleaner
+    code (and less custom logic needed for IO).  Python Polars code replaces the custom TCL driving
+    DataFusion.
 -   Improved name parsing
     -   Replaced `nom`-based name parser for {rust:fn}`~bookdata::cleaning::names::name_variants`
         with a new one written in [`peg`], that is both easier to read/maintain and more efficient.
@@ -25,8 +29,10 @@ corrected name parsing & normalization flow.
     -   Added `clean_name` function, used across all name formatting, to normalize whitespace and
         punctuation in name records from any source.
     -   Added more tests for name parsing and normalization.
--   Updated various Rust dependencies
--   Better progress reporting for data scans
+-   Fixed a bug in GoodReads integration, where we were not extracting ASINs.
+-   Extract book genres and series from GoodReads.
+-   Updated various Rust dependencies.
+-   Better progress reporting for data scans.
 
 [peg]: https://docs.rs/peg
 

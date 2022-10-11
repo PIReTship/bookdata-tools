@@ -1,15 +1,19 @@
 use std::io::{BufRead, Lines};
 use std::str;
 use std::convert::TryInto;
+use std::sync::mpsc::sync_channel;
+use std::thread::spawn;
 
+use rayon::prelude::*;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use quick_xml::events::attributes::Attributes;
 use fallible_iterator::FallibleIterator;
-use anyhow::{Result, anyhow};
+use anyhow::{Result, anyhow, Error};
 
 use crate::util::DataAccumulator;
 use crate::tsv::split_first;
+use crate::util::iteration::chunk_owned;
 
 use super::record::*;
 
@@ -36,7 +40,10 @@ enum Src<B: BufRead> {
   /// QuickXML Reader
   QXR(Reader<B>),
   /// Delimited lines
-  DL(Lines<B>)
+  #[allow(dead_code)]
+  DL(Lines<B>),
+  /// Iterable of parsed records
+  PRI(Box<dyn Iterator<Item=Result<MARCRecord,Error>>>),
 }
 
 /// Iterator of MARC records.
@@ -52,7 +59,8 @@ impl <B: BufRead> FallibleIterator for Records<B> {
   fn next(&mut self) -> Result<Option<MARCRecord>> {
     match &mut self.source {
       Src::QXR(reader) => next_qxr(reader, &mut self.buffer),
-      Src::DL(lines) => next_line(lines)
+      Src::DL(lines) => next_line(lines),
+      Src::PRI(iter) => iter.next().transpose(),
     }
   }
 }
@@ -97,10 +105,37 @@ pub fn read_records<B: BufRead>(reader: B) -> Records<B> {
 }
 
 /// Read MARC records from delimited XML.
-pub fn read_records_delim<B: BufRead>(reader: B) -> Records<B> {
+///
+/// This reader uses Rayon to parse the XML in parallel, since XML parsing is typically
+/// the bottleneck for MARC scanning.
+pub fn read_records_delim<B: BufRead + Send + 'static>(reader: B) -> Records<B> {
+  let lines = reader.lines();
+  // chunk lines (to decrease threading overhead)
+  let chunks = chunk_owned(lines, 5000);
+  // parse batches of lines in parallel
+  let chunks = chunks.par_bridge();
+  let mapped = chunks.map(|batch| {
+    let res: Vec<_> = batch.into_iter().map(|element| {
+      match element {
+        Ok(line) => parse_record(&line),
+        Err(e) => Err(e.into())
+      }
+    }).collect();
+    res
+  });
+  // now we need to route batches in the background, so we don't block the caller
+  let (send, recv) = sync_channel(100);
+  let _jh = spawn(move || {
+    mapped.for_each_with(send, |send, batch| {
+      send.send(batch).expect("channel error");
+    });
+  });
+
+  let flat = recv.into_iter().flatten();
+
   Records {
-    buffer: Vec::with_capacity(1024),
-    source: Src::DL(reader.lines())
+    buffer: Vec::new(),
+    source: Src::PRI(Box::new(flat))
   }
 }
 

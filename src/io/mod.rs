@@ -1,6 +1,8 @@
 use std::path::{Path, PathBuf};
 use std::io::{Result as IOResult};
 use std::fs;
+use friendly::bytes;
+use log::*;
 
 pub mod background;
 pub mod compress;
@@ -25,6 +27,17 @@ pub trait DataSink {
   fn input_files(&self) -> Vec<PathBuf> {
     Vec::new()
   }
+}
+
+/// Log the sizes of a set of files.
+pub fn log_file_info<P: AsRef<Path>, S: IntoIterator<Item=P>>(files: S) -> IOResult<()> {
+  for path in files {
+    let path = path.as_ref();
+    let size = file_size(path)?;
+    info!("output {:?}: {}", path, bytes(size));
+  }
+
+  Ok(())
 }
 
 /// Convert a list of strings into owned [PathBuf]s.

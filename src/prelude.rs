@@ -5,6 +5,7 @@ pub use anyhow::{Result, Error, anyhow};
 pub use log::*;
 pub use structopt::StructOpt;
 pub use fallible_iterator::FallibleIterator;
+pub use arrow2_convert::ArrowField;
 pub use crate::io::LineProcessor;
 pub use crate::io::ObjectWriter;
 pub use crate::io::DataSink;
@@ -13,7 +14,6 @@ pub use crate::io::file_size;
 pub use crate::json_from_str;
 pub use crate::util::Timer;
 pub use crate::util::default;
-pub use crate::util::logging::set_progress;
 pub use crate::cli::Command;
 
 /// Macro to implement FromStr using JSON.

@@ -1,13 +1,12 @@
 //! Book clustering command.
 use std::fs::File;
+use std::sync::Arc;
+use std::thread::spawn;
 
 use crate::prelude::*;
 use crate::arrow::*;
 use crate::graph::*;
 use crate::ids::codes::{NS_ISBN, ns_of_book_code};
-
-use super::AsyncCommand;
-use async_trait::async_trait;
 
 use serde::Serialize;
 use petgraph::algo::kosaraju_scc;
@@ -16,16 +15,18 @@ use petgraph::algo::kosaraju_scc;
 #[derive(StructOpt, Debug)]
 #[structopt(name="cluster-books")]
 pub struct ClusterBooks {
+  #[structopt(long="save-graph", parse(from_os_str))]
+  save_graph: Option<PathBuf>,
 }
 
-#[derive(ParquetRecordWriter, Debug)]
+#[derive(ArrowField, Debug)]
 struct ISBNClusterRec {
   isbn: Option<String>,
   isbn_id: i32,
   cluster: i32
 }
 
-#[derive(ParquetRecordWriter, Debug)]
+#[derive(ArrowField, Debug)]
 struct ClusterCode {
   book_code: i32,
   cluster: i32,
@@ -33,13 +34,13 @@ struct ClusterCode {
   label: Option<String>,
 }
 
-#[derive(ParquetRecordWriter, Debug)]
+#[derive(ArrowField, Debug)]
 struct GraphEdge {
   src: i32,
   dst: i32
 }
 
-#[derive(ParquetRecordWriter, Debug, Default)]
+#[derive(ArrowField, Debug, Default)]
 struct ClusterStat {
   cluster: i32,
   n_nodes: u32,
@@ -81,17 +82,16 @@ impl ClusterStat {
   }
 }
 
-#[async_trait]
-impl AsyncCommand for ClusterBooks {
-  async fn exec_future(&self) -> Result<()> {
-    let mut graph = construct_graph().await?;
+impl Command for ClusterBooks {
+  fn exec(&self) -> Result<()> {
+    let mut graph = construct_graph()?;
 
     info!("computing connected components");
     let clusters = kosaraju_scc(&graph);
 
     info!("computed {} clusters", clusters.len());
 
-    info!("adding cluster notations");
+    info!("adding cluster annotations");
     for ci in 0..clusters.len() {
       let verts = &clusters[ci];
       let vids: Vec<_> = verts.iter().map(|v| {
@@ -104,15 +104,26 @@ impl AsyncCommand for ClusterBooks {
       }
     }
 
-    info!("saving graph");
-    save_graph(&graph, "book-links/book-graph.mp.zst")?;
+    let graph = Arc::new(graph);
+    let sthread = if let Some(gf) = &self.save_graph {
+      let path = gf.clone();
+      let g2 = graph.clone();
+      Some(spawn(move || {
+        info!("saving graph to {:?} (in background)", path);
+        let res = save_graph(&g2, &path);
+        if let Err(e) = &res {
+          error!("error saving graph: {}", e);
+        }
+        res
+      }))
+    } else {
+      None
+    };
 
     info!("preparing to write graph results");
     let mut ic_w = TableWriter::open("book-links/isbn-clusters.parquet")?;
 
-    let n_wb = TableWriterBuilder::new()?;
-    let mut n_w = n_wb.open("book-links/cluster-graph-nodes.parquet")?;
-
+    let mut n_w = TableWriter::open("book-links/cluster-graph-nodes.parquet")?;
     let mut cs_w = TableWriter::open("book-links/cluster-stats.parquet")?;
 
     let mut m_size = 0;
@@ -168,6 +179,12 @@ impl AsyncCommand for ClusterBooks {
     };
     let statf = File::create("book-links/cluster-metrics.json")?;
     serde_json::to_writer(statf, &stats)?;
+
+    if let Some(h) = sthread {
+      debug!("waiting on background thread");
+      let br = h.join().expect("thread join failed");
+      br?;
+    }
 
     Ok(())
   }

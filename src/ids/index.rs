@@ -1,20 +1,17 @@
 //! Data structure for mapping string keys to numeric identifiers.
 use std::path::{Path};
-use std::sync::Arc;
+use std::fs::File;
 use std::hash::Hash;
 use std::borrow::Borrow;
+#[cfg(test)]
+use arrow2::io::parquet::read::read_metadata;
 use hashbrown::hash_map::{HashMap, Keys};
 
 use serde::de::DeserializeOwned;
 use log::*;
 use anyhow::Result;
 use thiserror::Error;
-use parquet::record::reader::RowIter;
-use parquet::record::RowAccessor;
-use parquet::basic::{Type as PhysicalType, LogicalType, Repetition};
-use parquet::schema::types::Type;
-use crate::io::ObjectWriter;
-use crate::arrow::*;
+use polars::prelude::*;
 
 #[cfg(test)]
 use quickcheck::{Arbitrary,Gen};
@@ -34,13 +31,6 @@ pub enum IndexError {
 pub struct IdIndex<K> {
   map: HashMap<K,Id>,
   frozen: bool,
-}
-
-/// Internal struct for ID records.
-#[derive(ParquetRecordWriter)]
-struct IdRec {
-  id: i32,
-  key: String,
 }
 
 impl <K> IdIndex<K> where K: Eq + Hash {
@@ -100,9 +90,11 @@ impl <K> IdIndex<K> where K: Eq + Hash {
   pub fn keys(&self) -> Keys<'_, K, Id> {
     self.map.keys()
   }
+}
 
+impl IdIndex<String> {
   /// Get the keys in order.
-  pub fn key_vec(&self) -> Vec<&K> {
+  pub fn key_vec(&self) -> Vec<&str> {
     let mut vec = Vec::with_capacity(self.len());
     vec.resize(self.len(), None);
     for (k, n) in self.map.iter() {
@@ -111,12 +103,21 @@ impl <K> IdIndex<K> where K: Eq + Hash {
       vec[i] = Some(k);
     }
 
-    let vec = vec.iter().map(|ro| ro.unwrap()).collect();
+    let vec = vec.iter().map(|ro| ro.unwrap().as_str()).collect();
     vec
   }
-}
 
-impl IdIndex<String> {
+  /// Conver this ID index into a [DataFrame], with columns for ID and key.
+  pub fn data_frame(&self, id_col: &str, key_col: &str) -> Result<DataFrame, PolarsError> {
+    debug!("preparing data frame for index");
+    let n = self.map.len() as i32;
+    let keys = self.key_vec();
+    let ids = Int32Chunked::new(id_col, 1..(n + 1));
+    let keys = Utf8Chunked::new(key_col, keys);
+
+    DataFrame::new(vec![ids.into_series(), keys.into_series()])
+  }
+
   /// Load from a Parquet file, with a standard configuration.
   ///
   /// This assumes the Parquet file has the following columns:
@@ -135,34 +136,21 @@ impl IdIndex<String> {
   pub fn load<P: AsRef<Path>>(path: P, id_col: &str, key_col: &str) -> Result<IdIndex<String>> {
     let path_str = path.as_ref().to_string_lossy();
     info!("reading index from file {}", path_str);
-    let read = open_parquet_file(path.as_ref())?;
+    let file = File::open(path.as_ref())?;
+    let frame = ParquetReader::new(file).finish()?;
+    debug!("file schema: {:?}", frame.schema());
 
-    let file_schema = read.metadata().file_metadata().schema();
-    debug!("file schema: {:?}", file_schema);
+    let ic = frame.column(id_col)?.i32()?;
+    let kc = frame.column(key_col)?.utf8()?;
 
-    let id_type = LogicalType::Integer { bit_width: 32, is_signed: true };
-    let key_type = LogicalType::String;
-    let mut tgt_fields = vec![
-      Arc::new(Type::primitive_type_builder(id_col, PhysicalType::INT32)
-        .with_logical_type(Some(id_type))
-        .with_repetition(Repetition::REQUIRED)
-        .build()?),
-      Arc::new(Type::primitive_type_builder(key_col, PhysicalType::BYTE_ARRAY)
-        .with_logical_type(Some(key_type))
-        .with_repetition(Repetition::REQUIRED)
-        .build()?),
-    ];
-    let tgt_schema = Type::group_type_builder(file_schema.name()).with_fields(&mut tgt_fields).build()?;
-    debug!("target schema: {:?}", tgt_schema);
-
-    let read = RowIter::from_file(Some(tgt_schema), &read)?;
     let mut map = HashMap::new();
 
     debug!("reading file contents");
-    for row in read {
-      let id = row.get_int(0)?;
-      let key = row.get_string(1)?;
-      map.insert(key.clone(), id);
+    let iter = ic.into_iter().zip(kc.into_iter());
+    for pair in iter {
+      if let (Some(id), Some(key)) = pair {
+        map.insert(key.to_string(), id);
+      }
     }
 
     info!("read {} keys from {}", map.len(), path_str);
@@ -202,19 +190,14 @@ impl IdIndex<String> {
 
   /// Save to a Parquet file with the standard configuration.
   pub fn save<P: AsRef<Path>>(&self, path: P, id_col: &str, key_col: &str) -> Result<()> {
-    let mut wb = TableWriterBuilder::new()?;
-    wb = wb.rename("id", id_col);
-    wb = wb.rename("key", key_col);
-    let mut writer = wb.open(path)?;
+    let mut frame = self.data_frame(id_col, key_col)?;
 
-    for (k, v) in &self.map {
-      writer.write_object(IdRec {
-        id: *v,
-        key: k.clone()
-      })?;
-    }
-
-    writer.finish()?;
+    let path = path.as_ref();
+    info!("saving index to {:?}", path);
+    let file = File::create(path)?;
+    let writer = ParquetWriter::new(file)
+      .with_compression(ParquetCompression::Zstd(None));
+    writer.finish(&mut frame)?;
 
     Ok(())
   }
@@ -276,7 +259,8 @@ fn test_index_intern_twice_owned() {
 }
 
 
-#[test]
+#[cfg(test)]
+#[test_log::test]
 fn test_index_save() -> Result<()> {
   let mut index: IdIndex<String> = IdIndex::new();
   let mut gen = Gen::new(100);
@@ -293,6 +277,11 @@ fn test_index_save() -> Result<()> {
   let dir = tempdir()?;
   let pq = dir.path().join("index.parquet");
   index.save_standard(&pq).expect("save error");
+
+  let mut pqf = File::open(&pq).expect("open error");
+  let meta = read_metadata(&mut pqf).expect("meta error");
+  println!("file metadata: {:?}", meta);
+  std::mem::drop(pqf);
 
   let i2 = IdIndex::load_standard(&pq).expect("load error");
   assert_eq!(i2.len(), index.len());

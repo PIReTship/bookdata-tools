@@ -9,6 +9,7 @@ use crate::cleaning::isbns::*;
 
 const ID_FILE: &'static str = "gr-book-ids.parquet";
 const INFO_FILE: &'static str = "gr-book-info.parquet";
+const SERIES_FILE: &'static str = "gr-book-series.parquet";
 
 // the records we read from JSON
 #[derive(Deserialize)]
@@ -26,10 +27,12 @@ pub struct RawBook {
   pub publication_month: String,
   #[serde(default)]
   pub publication_day: String,
+  #[serde(default)]
+  pub series: Vec<String>,
 }
 
 // the book ID records to write to Parquet.
-#[derive(ParquetRecordWriter)]
+#[derive(ArrowField)]
 pub struct BookIdRecord {
   pub book_id: i32,
   pub work_id: Option<i32>,
@@ -39,7 +42,7 @@ pub struct BookIdRecord {
 }
 
 // book info records to actually write
-#[derive(ParquetRecordWriter)]
+#[derive(ArrowField)]
 pub struct BookRecord {
   pub book_id: i32,
   pub title: Option<String>,
@@ -48,26 +51,34 @@ pub struct BookRecord {
   pub pub_date: Option<NaiveDate>,
 }
 
+// book series linking records
+#[derive(ArrowField)]
+pub struct BookSeriesRecord {
+  pub book_id: i32,
+  pub series: String,
+}
 
 /// Output handler for GoodReads books.
 pub struct BookWriter {
   id_out: TableWriter<BookIdRecord>,
-  info_out: TableWriter<BookRecord>
+  info_out: TableWriter<BookRecord>,
+  series_out: TableWriter<BookSeriesRecord>,
 }
 
 impl BookWriter {
   pub fn open() -> Result<BookWriter> {
     let id_out = TableWriter::open(ID_FILE)?;
     let info_out = TableWriter::open(INFO_FILE)?;
+    let series_out = TableWriter::open(SERIES_FILE)?;
     Ok(BookWriter {
-      id_out, info_out
+      id_out, info_out, series_out
     })
   }
 }
 
 impl DataSink for BookWriter {
   fn output_files<'a>(&'a self) -> Vec<PathBuf> {
-    path_list(&[ID_FILE, INFO_FILE])
+    path_list(&[ID_FILE, INFO_FILE, SERIES_FILE])
   }
 }
 
@@ -94,12 +105,20 @@ impl ObjectWriter<RawBook> for BookWriter {
       pub_year, pub_month, pub_date
     })?;
 
+    for series in row.series {
+      self.series_out.write_object(BookSeriesRecord {
+        book_id,
+        series
+      })?;
+    }
+
     Ok(())
   }
 
   fn finish(self) -> Result<usize> {
     self.id_out.finish()?;
     self.info_out.finish()?;
+    self.series_out.finish()?;
     Ok(0)
   }
 }

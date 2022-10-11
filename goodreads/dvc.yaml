@@ -8,6 +8,7 @@ stages:
     outs:
     - gr-book-ids.parquet
     - gr-book-info.parquet
+    - gr-book-series.parquet
 
   scan-work-info:
     cmd: python ../run.py --rust goodreads scan works ../data/goodreads/goodreads_book_works.json.gz
@@ -29,68 +30,72 @@ stages:
     - gr-interactions.parquet
     - gr-users.parquet
 
-  book-isbn-ids:
-    cmd: python ../run.py --rust fusion book-isbn-ids.tcl
+  scan-book-genres:
+    cmd: python ../run.py --rust goodreads scan genres ../data/goodreads/goodreads_book_genres_initial.json.gz
     deps:
-    - book-isbn-ids.tcl
+    - ../src/cli/goodreads.rs
+    - ../src/goodreads
+    - ../data/goodreads/goodreads_book_genres_initial.json.gz
+    outs:
+    - gr-book-genres.parquet
+    - gr-genres.parquet
+
+  book-isbn-ids:
+    cmd: python ../run.py book-isbn-ids.py
+    deps:
+    - book-isbn-ids.py
     - gr-book-ids.parquet
     - ../book-links/all-isbns.parquet
     outs:
     - book-isbn-ids.parquet
 
   book-links:
-    cmd: python ../run.py --rust fusion book-clusters.tcl
+    cmd: python ../run.py book-clusters.py
     deps:
-    - book-clusters.tcl
+    - book-clusters.py
     - gr-book-ids.parquet
     - ../book-links/cluster-graph-nodes.parquet
     outs:
     - gr-book-link.parquet
 
   cluster-actions:
-    cmd: python run.py --rust cluster group-actions -s gr-actions -o goodreads/gr-cluster-actions.parquet
-    wdir: ..
+    cmd: python ../run.py gr-cluster-interactions.py --add-actions -o gr-cluster-actions.parquet
     deps:
-    - src/cli/cluster
-    - src/goodreads
-    - goodreads/gr-interactions.parquet
-    - goodreads/gr-book-link.parquet
+    - gr-cluster-interactions.py
+    - gr-interactions.parquet
+    - gr-book-link.parquet
     outs:
-    - goodreads/gr-cluster-actions.parquet
+    - gr-cluster-actions.parquet
 
   cluster-ratings:
-    cmd: python run.py --rust cluster group-actions -s gr-ratings -o goodreads/gr-cluster-ratings.parquet
-    wdir: ..
+    cmd: python ../run.py gr-cluster-interactions.py --ratings -o gr-cluster-ratings.parquet
     deps:
-    - src/cli/cluster
-    - src/goodreads
-    - goodreads/gr-interactions.parquet
-    - goodreads/gr-book-link.parquet
+    - gr-cluster-interactions.py
+    - gr-interactions.parquet
+    - gr-book-link.parquet
     outs:
-    - goodreads/gr-cluster-ratings.parquet
+    - gr-cluster-ratings.parquet
 
   work-actions:
-    cmd: python run.py --rust cluster group-actions -s gr-actions --native-works -o goodreads/gr-work-actions.parquet
-    wdir: ..
+    cmd: python ../run.py gr-cluster-interactions.py --native-works --add-actions -o gr-work-actions.parquet
     deps:
-    - src/cli/cluster
-    - goodreads/gr-interactions.parquet
+    - gr-cluster-interactions.py
+    - gr-interactions.parquet
     outs:
-    - goodreads/gr-work-actions.parquet
+    - gr-work-actions.parquet
 
   work-ratings:
-    cmd: python run.py --rust cluster group-actions -s gr-ratings --native-works -o goodreads/gr-work-ratings.parquet
-    wdir: ..
+    cmd: python ../run.py gr-cluster-interactions.py --native-works --ratings -o gr-work-ratings.parquet
     deps:
-    - src/cli/cluster
-    - goodreads/gr-interactions.parquet
+    - gr-cluster-interactions.py
+    - gr-interactions.parquet
     outs:
-    - goodreads/gr-work-ratings.parquet
+    - gr-work-ratings.parquet
 
   work-gender:
-    cmd: python ../run.py --rust fusion work-gender.tcl
+    cmd: python ../run.py work-gender.py
     deps:
-    - work-gender.tcl
+    - work-gender.py
     - gr-book-link.parquet
     - ../book-links/cluster-genders.parquet
     outs:
@@ -101,6 +106,9 @@ stages:
     - gr-book-ids
     - gr-book-info
     - gr-book-link
+    - gr-book-series
+    - gr-book-genres
+    - gr-genres
     - book-isbn-ids
     - gr-work-info
     - gr-users

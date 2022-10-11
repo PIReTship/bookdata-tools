@@ -1,4 +1,5 @@
 use std::io::prelude::*;
+use std::marker::PhantomData;
 use std::thread::{spawn, JoinHandle};
 use std::mem::drop;
 
@@ -8,12 +9,41 @@ use std::sync::mpsc::{sync_channel, SyncSender};
 use anyhow::{anyhow, Result};
 
 /// Trait for writing objects to some kind of sink.
-pub trait ObjectWriter<T> {
+pub trait ObjectWriter<T>: Sized {
   /// Write one object.
   fn write_object(&mut self, object: T) -> Result<()>;
 
   /// Finish and close the target.
   fn finish(self) -> Result<usize>;
+
+  /// Wrap this object writer in a transformed writer.
+  fn with_transform<F, T2>(self, transform: F) -> MapWriter<F, T2, T, Self> where F: Fn(T2) -> Result<T> {
+    MapWriter { _phantom: PhantomData, transform, writer: self }
+  }
+}
+
+/// Writer that applies a transform to an underlying writer.
+pub struct MapWriter<F, T1, T2, W>
+where W: ObjectWriter<T2>,
+  F: Fn(T1) -> Result<T2>
+{
+  _phantom: PhantomData<(T1, T2)>,
+  transform: F,
+  writer: W,
+}
+
+impl <F, T1, T2, W> ObjectWriter<T1> for MapWriter<F, T1, T2, W>
+where W: ObjectWriter<T2>,
+  F: Fn(T1) -> Result<T2>
+{
+  fn write_object(&mut self, object: T1) -> Result<()> {
+    let mapped = (self.transform)(object)?;
+    self.writer.write_object(mapped)
+  }
+
+  fn finish(self) -> Result<usize> {
+    self.writer.finish()
+  }
 }
 
 /// Write objects in a background thread.

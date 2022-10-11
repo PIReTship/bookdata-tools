@@ -13,7 +13,7 @@ stages:
     - all-isbns.parquet
 
   cluster:
-    cmd: python run.py --rust cluster-books
+    cmd: python run.py --rust cluster-books --save-graph book-links/book-graph.mp.zst
     wdir: ..
     deps:
     - src/cli/cluster_books.rs
@@ -28,11 +28,11 @@ stages:
     - goodreads/gr-book-ids.parquet
     - goodreads/book-isbn-ids.parquet
     outs:
+    - book-links/book-graph.mp.zst
     - book-links/isbn-clusters.parquet
     - book-links/cluster-stats.parquet
     - book-links/cluster-graph-nodes.parquet
     - book-links/cluster-graph-edges.parquet
-    - book-links/book-graph.mp.zst
     metrics:
     - book-links/cluster-metrics.json
 
@@ -90,9 +90,9 @@ stages:
     - book-links/cluster-genders.parquet
 
   gender-stats:
-    cmd: python ../run.py --rust fusion integration-stats.tcl
+    cmd: python ../run.py integration-stats.py
     deps:
-    - integration-stats.tcl
+    - integration-stats.py
     - cluster-genders.parquet
     - isbn-clusters.parquet
     - ../loc-mds/book-isbn-ids.parquet
@@ -105,9 +105,9 @@ stages:
     - gender-stats.csv
 
   cluster-hashes:
-    cmd: python ../run.py --rust cluster hash -o cluster-hashes.parquet
+    cmd: python ../run.py --rust cluster hash -o cluster-hashes.parquet isbn-clusters.parquet
     deps:
-    - ../src/cli/cluster
+    - ../src/cli/cluster/hash.rs
     - isbn-clusters.parquet
     outs:
     - cluster-hashes.parquet

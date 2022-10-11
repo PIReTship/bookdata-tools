@@ -2,20 +2,16 @@
 use std::fs::read_to_string;
 use std::fmt::Debug;
 use std::collections::HashMap;
-use futures::StreamExt;
-use datafusion::prelude::*;
 
 use serde::Deserialize;
 use toml;
-use async_trait::async_trait;
 
-use arrow::array::*;
 use friendly::bytes;
 
+use polars::prelude::*;
 use crate::prelude::*;
+use crate::prelude::Result;
 use crate::ids::collector::KeyCollector;
-
-use super::AsyncCommand;
 
 /// Collect ISBNs from across the data sources.
 #[derive(StructOpt, Debug)]
@@ -57,46 +53,40 @@ impl MultiSource {
 }
 
 /// Read a single ISBN source into the accumulator.
-async fn read_source(ctx: &mut SessionContext, kc: &mut KeyCollector, name: &str, src: &ISBNSource) -> Result<()> {
+fn read_source(kc: &mut KeyCollector, name: &str, src: &ISBNSource) -> Result<()> {
   let mut acc = kc.accum(name);
   let id_col = src.column.as_deref().unwrap_or("isbn");
 
   info!("reading ISBNs from {} (column {})", src.path, id_col);
 
   let df = if src.path.ends_with(".csv") {
-    let opts = CsvReadOptions::new().has_header(true);
-    ctx.read_csv(&src.path, opts).await?
+    LazyCsvReader::new(src.path.to_string()).has_header(true).finish()?
   } else {
-    ctx.read_parquet(&src.path, default()).await?
+    LazyFrame::scan_parquet(src.path.to_string(), Default::default())?
   };
-  let df = df.select(vec![
-    col(id_col).alias("isbn")
-  ])?;
-  let df = df.filter(col("isbn").is_not_null())?;
+  let df = df.select(&[col(id_col)]);
+  let df = df.drop_nulls(None);
 
-  let mut batches = df.execute_stream().await?;
-  while let Some(batch) = batches.next().await {
-    let batch = batch?;
-    let col = batch.column(0);
-    let col = col.as_any().downcast_ref::<StringArray>().expect("failed to downcast");
-    acc.add_keys(col.iter().flatten());
-  }
+  let df = df.collect()?;
+
+  let isbns = df.column(id_col)?.utf8()?;
+
+  info!("adding {} ISBNs", isbns.len());
+  acc.add_keys(isbns.into_iter().flatten());
 
   Ok(())
 }
 
-#[async_trait]
-impl AsyncCommand for CollectISBNs {
-  async fn exec_future(&self) -> Result<()> {
+impl Command for CollectISBNs {
+  fn exec(&self) -> Result<()> {
     info!("reading spec from {}", self.source_file.display());
     let spec = read_to_string(&self.source_file)?;
     let spec: SourceSet = toml::de::from_str(&spec)?;
 
-    let mut ctx = SessionContext::new();
     let mut kc = KeyCollector::new();
     for (name, ms) in spec {
       for source in ms.to_list() {
-        read_source(&mut ctx, &mut kc, &name, source).await?;
+        read_source(&mut kc, &name, source)?;
       }
     }
 

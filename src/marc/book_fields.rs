@@ -1,14 +1,15 @@
 //! Code for writing extracted information specific to books.
 use serde::Serialize;
 
+use crate::cleaning::names::clean_name;
 use crate::prelude::*;
 use crate::arrow::*;
-use crate::cleaning::isbns::{ParserDefs, ParseResult};
+use crate::cleaning::isbns::{ParseResult, parse_isbn_string};
 use crate::marc::MARCRecord;
 use crate::marc::flat_fields::FieldOutput;
 
 /// Structure recording book identifiers from a MARC field.
-#[derive(ParquetRecordWriter, Debug)]
+#[derive(ArrowField, Debug)]
 struct BookIds {
   rec_id: u32,
   marc_cn: String,
@@ -19,21 +20,28 @@ struct BookIds {
 }
 
 /// Structure recording an ISBN record from a book.
-#[derive(Serialize, ParquetRecordWriter, Debug)]
+#[derive(Serialize, ArrowField, Debug)]
 struct ISBNrec {
   rec_id: u32,
   isbn: String,
   tag: Option<String>
 }
 
+/// Structure recording a record's author field.
+#[derive(Serialize, ArrowField, Debug)]
+struct AuthRec {
+  rec_id: u32,
+  author_name: String,
+}
+
 /// Output that writes books to set of Parquet files.
 pub struct BookOutput {
   n_books: u32,
-  parser: ParserDefs,
   prefix: String,
   fields: FieldOutput,
   ids: TableWriter<BookIds>,
-  isbns: TableWriter<ISBNrec>
+  isbns: TableWriter<ISBNrec>,
+  authors: TableWriter<AuthRec>,
 }
 
 impl BookOutput {
@@ -51,11 +59,14 @@ impl BookOutput {
     info!("writing book IDs to {}", isbnfn);
     let isbns = TableWriter::open(isbnfn)?;
 
+    let authfn = format!("{}-authors.parquet", prefix);
+    info!("writing book authors to {}", authfn);
+    let authors = TableWriter::open(authfn)?;
+
     Ok(BookOutput {
       n_books: 0,
-      parser: ParserDefs::new(),
       prefix: prefix.to_string(),
-      fields, ids, isbns
+      fields, ids, isbns, authors,
     })
   }
 }
@@ -78,12 +89,13 @@ impl ObjectWriter<MARCRecord> for BookOutput {
     self.n_books += 1;
     let rec_id = self.n_books;
 
-    // scan for ISBNs
+    // scan for ISBNs and authors
     for df in &record.fields {
+      // ISBNs: tag 20, subfield 'a'
       if df.tag == 20 {
         for sf in &df.subfields {
           if sf.code == 'a' {
-            match self.parser.parse(&sf.content) {
+            match parse_isbn_string(&sf.content) {
               ParseResult::Valid(isbns, _) => {
                 for isbn in isbns {
                   if isbn.tags.len() > 0 {
@@ -103,6 +115,19 @@ impl ObjectWriter<MARCRecord> for BookOutput {
               ParseResult::Unmatched(s) => {
                 warn!("unmatched ISBN text {}", s)
               }
+            }
+          }
+        }
+      } else if df.tag == 100 {
+        // authors: tag 100, subfield a
+        for sf in &df.subfields {
+          if sf.code == 'a' {
+            let content = sf.content.trim();
+            let author_name = clean_name(content);
+            if !author_name.is_empty() {
+              self.authors.write_object(AuthRec {
+                rec_id, author_name
+              })?;
             }
           }
         }

@@ -1,20 +1,17 @@
 //! Extract author information for book clusters.
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::path::{PathBuf};
+use std::fs::File;
 
+use arrow2::io::parquet::write::{FileWriter, WriteOptions};
+use parquet2::write::Version;
 use structopt::StructOpt;
 use parse_display::{Display, FromStr};
-use futures::{StreamExt};
 
-use serde::{Serialize, Deserialize};
-
-use datafusion::prelude::*;
+use polars::prelude::*;
+use crate::io::object::ThreadObjectWriter;
 use crate::prelude::*;
-use crate::arrow::*;
-use crate::arrow::fusion::*;
-use crate::arrow::row_de::RecordBatchDeserializer;
-use crate::cli::AsyncCommand;
-use async_trait::async_trait;
+use crate::arrow::dfext::*;
+use anyhow::Result;
 
 #[derive(Display, FromStr, Debug)]
 #[display(style="lowercase")]
@@ -40,117 +37,115 @@ pub struct ClusterAuthors {
   sources: Vec<Source>
 }
 
-#[derive(Serialize, Deserialize, Hash, PartialEq, Eq, Clone, ParquetRecordWriter, Default)]
-struct ClusterAuthor {
-  cluster: i32,
-  author_name: String
-}
-
-/// Write out author records to file, without duplicates.
-async fn write_authors_dedup<P: AsRef<Path>>(df: Arc<DataFrame>, path: P) -> Result<()> {
-  let mut writer = TableWriter::open(path)?;
-
-  info!("scanning author batches");
-  let stream = df.execute_stream().await?;
-  let mut last = ClusterAuthor::default();
-  let mut rec_stream = RecordBatchDeserializer::for_stream(stream);
-  while let Some(row) = rec_stream.next().await {
-    let row: ClusterAuthor = row?;
-    debug!("received batch");
-    if row != last {
-      writer.write_object(row.clone())?;
-      last = row;
-    }
-  }
-
-  let n = writer.finish()?;
-  info!("wrote {} cluster-author links", n);
-
-  Ok(())
-}
-
-/// Scan the OpenLibrary data for first authors
-async fn scan_openlib(ctx: &mut SessionContext, first_only: bool) -> Result<Arc<DataFrame>> {
+/// Scan the OpenLibrary data for authors.
+fn scan_openlib(first_only: bool) -> Result<LazyFrame> {
   info!("scanning OpenLibrary author data");
   info!("reading ISBN clusters");
-  let icl = ctx.read_parquet("book-links/isbn-clusters.parquet", default()).await?;
-  let icl = icl.select_columns(&["isbn_id", "cluster"])?;
+  let icl = LazyFrame::scan_parquet("book-links/isbn-clusters.parquet".into(), default())?;
+  let icl = icl.select(&[col("isbn_id"), col("cluster")]);
   info!("reading edition IDs");
-  let edl = ctx.read_parquet("openlibrary/edition-isbn-ids.parquet", default()).await?;
-  let edl = edl.filter(col("isbn_id").is_not_null())?;
+  let edl = LazyFrame::scan_parquet("openlibrary/edition-isbn-ids.parquet".into(), default())?;
+  let edl = edl.filter(col("isbn_id").is_not_null());
   info!("reading edition authors");
-  let mut eau = ctx.read_parquet("openlibrary/edition-authors.parquet", default()).await?;
+  let mut eau = LazyFrame::scan_parquet("openlibrary/edition-authors.parquet".into(), default())?;
   if first_only {
-    eau = eau.filter(col("pos").eq(lit(0)))?;
+    eau = eau.filter(col("pos").eq(0i16));
   }
+
   info!("reading author names");
-  let auth = ctx.read_parquet("openlibrary/author-names.parquet", default()).await?;
-  let linked = icl.join(edl, JoinType::Inner, &["isbn_id"], &["isbn_id"])?;
-  let linked = linked.join(eau, JoinType::Inner, &["edition"], &["edition"])?;
-  let linked = linked.join(auth, JoinType::Inner, &["author"], &["id"])?;
+  let auth = LazyFrame::scan_parquet("openlibrary/author-names.parquet".into(), default())?;
+  let linked = icl.join(edl, [col("isbn_id")], [col("isbn_id")], JoinType::Inner);
+  let linked = linked.join(eau, [col("edition")], [col("edition")], JoinType::Inner);
+  let linked = linked.join(auth, [col("author")], [col("id")], JoinType::Inner);
   let authors = linked.select(vec![
     col("cluster"),
-    udf_clean_name(col("name")).alias("author_name")
-  ])?;
+    col("name").alias("author_name").map(udf_clean_name, GetOutput::from_type(DataType::Utf8)),
+  ]);
+
   Ok(authors)
 }
 
 /// Scan the Library of Congress data for first authors.
-async fn scan_loc(ctx: &mut SessionContext, first_only: bool) -> Result<Arc<DataFrame>> {
+fn scan_loc(first_only: bool) -> Result<LazyFrame> {
   if !first_only {
     error!("only first-author extraction is currently supported");
     return Err(anyhow!("cannot extract multiple authors"));
   }
 
   info!("reading ISBN clusters");
-  let icl = ctx.read_parquet("book-links/isbn-clusters.parquet", default()).await?;
-  let icl = icl.select_columns(&["isbn_id", "cluster"])?;
+  let icl = LazyFrame::scan_parquet("book-links/isbn-clusters.parquet".into(), default())?;
+  let icl = icl.select([col("isbn_id"), col("cluster")]);
 
   info!("reading book records");
-  let books = ctx.read_parquet("loc-mds/book-isbn-ids.parquet", default()).await?;
+  let books = LazyFrame::scan_parquet("loc-mds/book-isbn-ids.parquet".into(), default())?;
 
   info!("reading book authors");
-  let authors = ctx.read_parquet("loc-mds/book-authors.parquet", default()).await?;
-  let authors = authors.filter(col("author_name").is_not_null())?;
+  let authors = LazyFrame::scan_parquet("loc-mds/book-authors.parquet".into(), default())?;
+  let authors = authors.filter(col("author_name").is_not_null());
 
-  let linked = icl.join(books, JoinType::Inner, &["isbn_id"], &["isbn_id"])?;
-  let linked = linked.join(authors, JoinType::Inner, &["rec_id"], &["rec_id"])?;
+  let linked = icl.join(books, [col("isbn_id")], [col("isbn_id")], JoinType::Inner);
+  let linked = linked.join(authors, [col("rec_id")], [col("rec_id")], JoinType::Inner);
   let authors = linked.select(vec![
     col("cluster"),
-    udf_clean_name(col("author_name")).alias("author_name")
-  ])?;
-
-  // we shouldn't have null author names, but the data thinks we do. fix.
-  let authors = authors.filter(col("author_name").is_not_null())?;
+    col("author_name").map(udf_clean_name, GetOutput::from_type(DataType::Utf8)),
+  ]);
 
   Ok(authors)
 }
 
-#[async_trait]
-impl AsyncCommand for ClusterAuthors {
-  async fn exec_future(&self) -> Result<()> {
-    let mut ctx = SessionContext::new();
-
-    let mut authors: Option<Arc<DataFrame>> = None;
+impl Command for ClusterAuthors {
+  fn exec(&self) -> Result<()> {
+    let mut authors: Option<LazyFrame> = None;
     for source in &self.sources {
       let astr = match source {
-        Source::OpenLib => scan_openlib(&mut ctx, self.first_author).await?,
-        Source::LOC => scan_loc(&mut ctx, self.first_author).await?,
+        Source::OpenLib => scan_openlib(self.first_author)?,
+        Source::LOC => scan_loc(self.first_author)?,
       };
       debug!("author source {} has schema {:?}", source, astr.schema());
       if let Some(adf) = authors {
-        authors = Some(adf.union(astr)?);
+        authors = Some(concat([adf, astr], false)?);
       } else {
         authors = Some(astr);
       }
     }
     let authors = authors.ok_or(anyhow!("no sources specified"))?;
-    let authors = authors.sort(vec![
-      col("cluster").sort(true, true),
-      col("author_name").sort(true, true)
-    ])?;
+    let authors = authors.filter(
+      col("author_name").is_not_null()
+      .and(col("author_name").neq("".lit()))
+    );
 
-    write_authors_dedup(authors, &self.output).await?;
+    let authors = authors.unique(None, UniqueKeepStrategy::First);
+
+    debug!("plan: {}", authors.describe_plan());
+
+    info!("collecting results");
+    let mut authors = authors.collect()?;
+    info!("found {} cluster-author links", authors.height());
+
+    debug!("rechunking author table");
+    authors.rechunk();
+
+    info!("saving to {:?}", &self.output);
+    // clean up nullability
+    // we do the writing ourself because we have no nulls, but polars doesn't deal with that
+    let mut schema = authors.schema().to_arrow();
+    schema.fields[0].is_nullable = false;
+    schema.fields[1].is_nullable = false;
+    debug!("schema: {:?}", schema);
+
+    let writer = File::create(&self.output)?;
+    let writer = FileWriter::try_new(writer, schema, WriteOptions {
+      compression: ParquetCompression::Zstd(None),
+      version: Version::V2,
+      write_statistics: false,
+    })?;
+    let mut writer = ThreadObjectWriter::new(writer);
+    for chunk in authors.iter_chunks() {
+      writer.write_object(chunk)?;
+    }
+    writer.finish()?;
+
+    info!("output file is {}", friendly::bytes(file_size(&self.output)?));
 
     Ok(())
   }

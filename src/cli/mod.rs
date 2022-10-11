@@ -4,8 +4,8 @@
 //! compilation time and disk space in common configurations, with different tools
 //! implemented as subcommands.  Each subcommand implements the [Command] trait, which
 //! exposes the command line arguments and invocation.
-pub mod fusion;
 pub mod scan_marc;
+pub mod filter_marc;
 pub mod index_names;
 pub mod extract_graph;
 pub mod cluster_books;
@@ -20,14 +20,14 @@ use log::*;
 use paste::paste;
 use structopt::StructOpt;
 use anyhow::Result;
-use tokio::runtime::Runtime;
 use enum_dispatch::enum_dispatch;
-use async_trait::async_trait;
 use cpu_time::ProcessTime;
+use rayon::ThreadPoolBuilder;
+use happylog::LogOpts;
 
 #[cfg(unix)]
 use crate::util::process;
-use crate::util::{logging::*, Timer};
+use crate::util::Timer;
 
 /// Macro to generate wrappers for subcommand enums.
 ///
@@ -62,8 +62,8 @@ pub trait Command {
 #[enum_dispatch(Command)]
 #[derive(StructOpt, Debug)]
 pub enum BDCommand {
-  Fusion(fusion::Fusion),
   ScanMARC(scan_marc::ScanMARC),
+  FilterMARC(filter_marc::FilterMARC),
   ClusterBooks(cluster_books::ClusterBooks),
   IndexNames(index_names::IndexNames),
   ExtractGraph(extract_graph::ExtractGraph),
@@ -93,35 +93,16 @@ pub enum ClusterCommand {
   Hash(cluster::hash::HashCmd),
   ExtractAuthors(cluster::authors::ClusterAuthors),
   ExtractAuthorGender(cluster::author_gender::AuthorGender),
-  GroupActions(cluster::actions::ClusterActions),
-}
-
-/// Trait for implementing commands asynchronously.
-#[async_trait]
-pub trait AsyncCommand {
-  async fn exec_future(&self) -> Result<()>;
-}
-
-#[async_trait]
-impl <T: AsyncCommand> Command for T {
-  fn exec(&self) -> Result<()> {
-    let runtime = Runtime::new()?;
-    let task = self.exec_future();
-    runtime.block_on(task)
-  }
 }
 
 /// Entry point for the Book Data Tools.
 ///
-/// This program runs the various book data tools, exposed as subcommands.  The top-level
-/// command handles setting up logging.  Logging can be configured in detail with the
-/// environment variable `BOOKDATA_LOG`, using the `env_logger` crate; the command
-/// line options provide shortcuts but are overridden by the environment variable.
+/// This program runs the various book data tools, exposed as subcommands.
 #[derive(StructOpt, Debug)]
 #[structopt(name="bookdata")]
 pub struct CLI {
   #[structopt(flatten)]
-  logging: LogOptions,
+  logging: LogOpts,
 
   #[structopt(subcommand)]
   command: BDCommand,
@@ -129,10 +110,19 @@ pub struct CLI {
 
 impl CLI {
   pub fn exec(self) -> Result<()> {
-    self.logging.setup()?;
+    self.logging.init()?;
+
+    let npar = std::cmp::min(num_cpus::get(), num_cpus::get_physical());
+    debug!("setting up Rayon pool with {} threads", npar);
+    ThreadPoolBuilder::new().num_threads(npar).build_global()?;
+
     let timer = Timer::new();
 
     let res = self.command.exec();
+    if let Err(e) = &res {
+      error!("command failed: {}", e);
+      return res;
+    }
 
     info!("work completed in {}", timer.human_elapsed());
     match ProcessTime::try_now() {
