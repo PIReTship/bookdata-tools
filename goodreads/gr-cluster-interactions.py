@@ -46,15 +46,12 @@ def id_col_expr(opts):
 
 def load_input(opts):
     _log.info('setting up input')
-    if opts['--simple']:
-        interactions = pl.scan_parquet('gr-simple-interactions.parquet')
-    else:
-        interactions = pl.scan_parquet('gr-interactions.parquet')
+    interactions = pl.scan_parquet('gr-interactions.parquet')
 
     if opts['--ratings']:
         interactions = interactions.filter(pl.col('rating').is_not_null())
 
-    links = pl.scan_parquet("gr-book-link.parquet")
+    links = pl.scan_parquet("../gr-book-link.parquet")
     interactions = interactions.join(links, on='book_id')
 
     return interactions

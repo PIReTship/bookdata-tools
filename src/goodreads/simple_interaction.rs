@@ -7,7 +7,7 @@ use crate::prelude::*;
 use crate::arrow::*;
 use crate::util::logging::data_progress;
 
-pub const OUT_FILE: &str = "gr-simple-interactions.parquet";
+pub const OUT_FILE: &str = "gr-interactions.parquet";
 
 /// Interaction records we read from CSV.
 #[derive(Deserialize)]

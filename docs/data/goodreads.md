@@ -94,24 +94,48 @@ GoodReads interaction records.
 
 ## Cluster-Level Tables
 
-:::{file} goodreads/gr-cluster-actions.parquet
+:::{file} goodreads/full/gr-cluster-actions.parquet
 
-Cluster-level implicit-feedback records, suitable for use in LensKit. The `item` column contains cluster IDs.
+Cluster-level implicit-feedback records, suitable for use in LensKit. The `item` column contains cluster IDs.  This version of the table
+is processed from the JSON version of the full interaction log, which is only available by request.
 :::
 
-:::{file} goodreads/gr-cluster-ratings.parquet
+:::{file} goodreads/full/gr-cluster-ratings.parquet
 
-Cluster-level explicit-feedback records, suitable for use in LensKit. The `item` column contains cluster IDs.
+Cluster-level explicit-feedback records, suitable for use in LensKit. The `item` column contains cluster IDs.  This version of the table
+is processed from the JSON version of the full interaction log, which is only available by request.
+:::
+
+:::{file} goodreads/simple/gr-cluster-actions.parquet
+
+Cluster-level implicit-feedback records, suitable for use in LensKit. The `item` column contains cluster IDs.  This version of the table
+is processed from the CSV data.
+:::
+
+:::{file} goodreads/simple/gr-cluster-ratings.parquet
+
+Cluster-level explicit-feedback records, suitable for use in LensKit. The `item` column contains cluster IDs.  This version of the table
+is processed from the CSV data.
 :::
 
 ## Work-Level Tables
 
-:::{file} goodreads/gr-work-actions.parquet
+:::{file} goodreads/full/gr-work-actions.parquet
 
 Work-level implicit-feedback records, suitable for use in LensKit. The `item` column contains work IDs.
 :::
 
-:::{file} goodreads/gr-work-ratings.parquet
+:::{file} goodreads/full/gr-work-ratings.parquet
+
+Work-level explicit-feedback records, suitable for use in LensKit. The `item` column contains work IDs.
+:::
+
+:::{file} goodreads/simple/gr-work-actions.parquet
+
+Work-level implicit-feedback records, suitable for use in LensKit. The `item` column contains work IDs.
+:::
+
+:::{file} goodreads/simple/gr-work-ratings.parquet
 
 Work-level explicit-feedback records, suitable for use in LensKit. The `item` column contains work IDs.
 :::

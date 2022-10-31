@@ -13,6 +13,7 @@ Options:
 
 from bookdata import script_log
 from docopt import docopt
+import tomli
 
 import polars as pl
 
@@ -20,8 +21,8 @@ DATASETS = {
     'BX-I': '../bx/bx-cluster-actions.parquet',
     'BX-E': '../bx/bx-cluster-ratings.parquet',
     'AZ': '../az2014/az-cluster-ratings.parquet',
-    'GR-I': '../goodreads/gr-cluster-actions.parquet',
-    'GR-E': '../goodreads/gr-cluster-ratings.parquet',
+    'GR-I': '../goodreads/%SOURCE%/gr-cluster-actions.parquet',
+    'GR-E': '../goodreads/%SOURCE%/gr-cluster-ratings.parquet',
 }
 
 
@@ -49,8 +50,11 @@ def scan_loc(genders):
     return bg
 
 
-def scan_actions(genders, data):
+def scan_actions(config, genders, data):
     fn = DATASETS[data]
+    if data.startswith('GR'):
+        fn = fn.replace('%SOURCE%', config['goodreads']['interactions'])
+
     _log.info('scanning data %s from %s', data, fn)
     actions = pl.scan_parquet(fn)
     ga = actions.join(genders, left_on='item', right_on='cluster')
@@ -68,9 +72,12 @@ def scan_actions(genders, data):
 
 
 def main(opts):
+    with open('../params.toml') as cf:
+        config = tomli.load(cf)
+
     genders = scan_genders()
     loc_books = scan_loc(genders)
-    actions = [scan_actions(genders, ds) for ds in DATASETS.keys()]
+    actions = [scan_actions(config, genders, ds) for ds in DATASETS.keys()]
     stats = pl.concat([loc_books] + actions)
 
     _log.info('collecting results')
