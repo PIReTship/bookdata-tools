@@ -19,17 +19,27 @@ namespace eval dvcpipe {
     set stages [huddle false]
     set stack {}
 
+    proc _ensure_list {name} {
+        set keys [huddle keys $::dvcpipe::current]
+        if {[lsearch $name $keys] < 0} {
+            huddle append ::dvcpipe::current $name [huddle list]
+        }
+    }
+
     proc init {name} {
+        dbg_msg "initializing stage $name"
         set ::dvcpipe::name $name
-        set ::dvcpipe::current [huddle create]
-        set ::dvcpipe::deps [huddle list]
-        set ::dvcpipe::outs [huddle list]
+        if {[array exists ::dvcpipe::current]} {
+            array unset ::dvcpipe::current
+        }
+        array set ::dvcpipe::current {}
+        set ::dvcpipe::targets [list]
     }
 
     proc save {} {
         if {[info exists ::dvcpipe::name]} {
             dbg_msg "saving $::dvcpipe::name"
-            set obj [huddle create name [huddle string $::dvcpipe::name] cur $::dvcpipe::current deps $::dvcpipe::deps outs $::dvcpipe::outs]
+            set obj [dict create name $::dvcpipe::name obj [array get ::dvcpipe::current] targets $::dvcpipe::targets]
             lappend ::dvcpipe::stack $obj
         }
     }
@@ -38,38 +48,64 @@ namespace eval dvcpipe {
         if {[llength $::dvcpipe::stack] > 0} {
             set obj [lindex $::dvcpipe::stack ::dvcpipe::stack end]
             set ::dvcpipe::stack [lreplace $::dvcpipe::stack end-1 end]
-            set ::dvcpipe::name [huddle get $obj name]
+            set ::dvcpipe::name [dict get $obj name]
             dbg_msg "restoring $::dvcpipe::name"
-            set ::dvcpipe::current [huddle get $obj cur]
-            set ::dvcpipe::deps [huddle get $obj deps]
-            set ::dvcpipe::outs [huddle get $obj outs]
+            if {[array exists ::dvcpipe::current]} {
+                array unset ::dvcpipe::current
+            }
+            array set ::dvcpipe::current [dict get $obj obj]
+            set ::dvcpipe::targets [dict get $obj targets]
+        }
+    }
+
+    proc set_field {key val} {
+        dbg_msg "key: $key"
+        dbg_msg "val: $val"
+        array set ::dvcpipe::current [list $key $val]
+    }
+
+    proc push_field {key val} {
+        if {[info exists ::dvcpipe::current($key)]} {
+            huddle append ::dvcpipe::current($key) $val
+        } else {
+            array set ::dvcpipe::current [list $key [huddle list $val]]
         }
     }
 
     proc finish {} {
         dbg_msg "finishing $::dvcpipe::name"
-        if {[huddle llength $::dvcpipe::deps] > 0} {
-            huddle append ::dvcpipe::current deps $::dvcpipe::deps
+        set var [huddle create]
+
+        foreach v {cmd wdir deps outs metrics} {
+            if {[info exists ::dvcpipe::current($v)]} {
+                huddle append var $v $::dvcpipe::current($v)
+            }
         }
-        if {[huddle llength $::dvcpipe::outs] > 0} {
-            huddle append ::dvcpipe::current outs $::dvcpipe::outs
+
+        if {[llength $::dvcpipe::targets] > 0} {
+            set tgts [huddle list]
+            foreach t $::dvcpipe::targets {
+                huddle append tgts [huddle string $t]
+            }
+            set var [huddle create foreach $tgts do $var]
         }
-        set var $::dvcpipe::current
+
         unset ::dvcpipe::name
         unset ::dvcpipe::current
-        unset ::dvcpipe::deps
-        unset ::dvcpipe::outs
+        unset ::dvcpipe::targets
+
         return $var
     }
 }
 
 namespace eval dvcstage {
+    namespace export target
     namespace export cmd
     namespace export wdir
     namespace export dep
     namespace export out
 
-    proc mkdep {nocache dep} {
+    proc mkout {nocache dep} {
         if {$nocache} {
             return [huddle create $dep [huddle create cache false]]
         } else {
@@ -77,11 +113,16 @@ namespace eval dvcstage {
         }
     }
 
+    proc target {tgt} {
+        dbg_msg "task $::dvcpipe::name has subtarget $tgt"
+        lappend ::dvcpipe::targets $tgt
+    }
+
     proc cmd {s} {
-        huddle append ::dvcpipe::current cmd [huddle string $s]
+        ::dvcpipe::set_field cmd [huddle string $s]
     }
     proc wdir {s} {
-        huddle append ::dvcpipe::current wdir [huddle string $s]
+        ::dvcpipe::set_field wdir [huddle string $s]
     }
 
     proc dep args {
@@ -92,10 +133,10 @@ namespace eval dvcstage {
             } else {
                 if $rl {
                     foreach e $a {
-                        huddle append ::dvcpipe::deps [huddle string $e]
+                        ::dvcpipe::push_field deps [huddle string $e]
                     }
                 } else {
-                    huddle append ::dvcpipe::deps [huddle string $a]
+                    ::dvcpipe::push_field deps [huddle string $a]
                 }
                 set rl 0
             }
@@ -113,12 +154,24 @@ namespace eval dvcstage {
             } else {
                 if $rl {
                     foreach e $a {
-                        huddle append ::dvcpipe::outs [mkdep $nocache $e]
+                        ::dvcpipe::push_field outs [mkout $nocache $e]
                     }
                 } else {
-                    huddle append ::dvcpipe::outs [mkdep $nocache $a]
+                    ::dvcpipe::push_field outs [mkout $nocache $a]
                 }
                 set rl 0
+                set nocache 0
+            }
+        }
+    }
+
+    proc metric args {
+        set nocache 0
+        foreach a $args {
+            if {[string equal $a -nocache]} {
+                set nocache 1
+            } else {
+                ::dvcpipe::push_field metrics [mkout $nocache $a]
                 set nocache 0
             }
         }
@@ -127,7 +180,7 @@ namespace eval dvcstage {
 
 proc stage {name block} {
     ::dvcpipe::save
-    ::dvcpipe::init name
+    ::dvcpipe::init $name
     namespace eval dvcstage $block
     huddle append ::dvcpipe::stages $name [::dvcpipe::finish]
     ::dvcpipe::restore
@@ -149,6 +202,8 @@ proc _run_pipeline_script {tclfn ymlfn} {
     set ::dvcpipe::stages $saved
 
     set pipeline [huddle create stages $stages]
+
+    dbg_msg $pipeline
 
     info_msg "writing $ymlfn with [llength [huddle keys $stages]] stages"
     if {$::_cmd_params(out)} {

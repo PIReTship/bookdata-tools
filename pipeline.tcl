@@ -13,13 +13,11 @@ stage LinkageStats {
     metric "book-coverage.json"
 }
 
-  html-report:
-    foreach:
-    - LinkageStats
-    - ClusterStats
-    do:
-      cmd: jupyter nbconvert --to html "${item}.ipynb"
-      deps:
-      - ${item}.ipynb
-      outs:
-      - ${item}.html
+stage html-report {
+    target LinkageStats
+    target ClusterStats
+
+    cmd "jupyter nbconvert --to html \${item}.ipynb"
+    dep "\${item}.ipynb"
+    out "\${item}.html"
+}
