@@ -1,4 +1,7 @@
 # Render the DVC pipeline from source files.
+#
+# This TCL program interprets a TCL-based DSL for generating reconfigurable
+# DVC pipelines.  The pipelines themselves are defined in 'pipeline.tcl' files.
 package require huddle
 package require yaml
 package require cmdline
