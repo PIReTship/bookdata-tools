@@ -35,11 +35,14 @@ where
 {
   let chunk = chunk?;
   let chunk_size = chunk.len();
-  let sa = StructArray::try_new(R::data_type(), chunk.into_arrays(), None)?;
+  let sa = StructArray::try_new(R::data_type(), chunk.into_arrays(), None).map_err(|e| {
+    error!("error decoding struct array: {:?}", e);
+    e
+  })?;
   let sa: Box<dyn Array> = Box::new(sa);
   let sadt = sa.data_type().clone();
   let recs: Vec<R> = sa.try_into_collection().map_err(|e| {
-    error!("error decoding batch: {:?}", e);
+    error!("error deserializing batch: {:?}", e);
     info!("chunk schema: {:?}", sadt);
     info!("target schema: {:?}", R::data_type());
     e
