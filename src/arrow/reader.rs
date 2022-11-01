@@ -37,7 +37,13 @@ where
   let chunk_size = chunk.len();
   let sa = StructArray::try_new(R::data_type(), chunk.into_arrays(), None)?;
   let sa: Box<dyn Array> = Box::new(sa);
-  let recs: Vec<R> = sa.try_into_collection()?;
+  let sadt = sa.data_type().clone();
+  let recs: Vec<R> = sa.try_into_collection().map_err(|e| {
+    error!("error decoding batch: {:?}", e);
+    info!("chunk schema: {:?}", sadt);
+    info!("target schema: {:?}", R::data_type());
+    e
+  })?;
   assert_eq!(recs.len(), chunk_size);
   Ok(recs)
 }
@@ -70,8 +76,9 @@ where
       let recs = match recs {
         Ok(v) => v,
         Err(e) => {
+          debug!("routing backend error {:?}", e);
           send.send(Err(e)).expect("channel send error");
-          panic!("decode error in writer thread");
+          return;
         }
       };
       send.send(Ok(recs)).expect("channel send error");
