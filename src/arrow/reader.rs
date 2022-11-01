@@ -55,6 +55,7 @@ where
   let meta = reader.metadata();
   let row_count = meta.num_rows;
   info!("scanning {:?} with {} rows", path, row_count);
+  debug!("file schema: {:?}", meta.schema_descr);
   drop(meta);
 
   // use a small bound since we're sending whole batches

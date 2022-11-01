@@ -26,7 +26,7 @@ pub struct ClusterStats {
 #[derive(Debug, ArrowField)]
 struct ClusterAuthor {
   cluster: i32,
-  #[arrow_field(override="LargeString")]
+  // #[arrow_field(override="LargeString")]
   author_name: String,
 }
 
