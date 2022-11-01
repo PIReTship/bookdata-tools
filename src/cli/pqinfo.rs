@@ -60,7 +60,12 @@ fn check_length<R: Read + Seek>(reader: &mut FileReader<R>, expected: usize) -> 
   let mut len = 0;
   for chunk in reader {
     let chunk = chunk?;
-    len += chunk.len();
+    let clen = chunk.len();
+    let arrays = chunk.into_arrays();
+    let types = arrays.iter().map(|a| a.data_type()).collect::<Vec<_>>();
+    debug!("chunk length: {}", clen);
+    debug!("chunk types: {:?}", types);
+    len += clen;
   }
 
   if len != expected {
