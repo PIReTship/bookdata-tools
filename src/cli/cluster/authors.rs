@@ -41,19 +41,19 @@ pub struct ClusterAuthors {
 fn scan_openlib(first_only: bool) -> Result<LazyFrame> {
   info!("scanning OpenLibrary author data");
   info!("reading ISBN clusters");
-  let icl = LazyFrame::scan_parquet("book-links/isbn-clusters.parquet".into(), default())?;
+  let icl = LazyFrame::scan_parquet("book-links/isbn-clusters.parquet", default())?;
   let icl = icl.select(&[col("isbn_id"), col("cluster")]);
   info!("reading edition IDs");
-  let edl = LazyFrame::scan_parquet("openlibrary/edition-isbn-ids.parquet".into(), default())?;
+  let edl = LazyFrame::scan_parquet("openlibrary/edition-isbn-ids.parquet", default())?;
   let edl = edl.filter(col("isbn_id").is_not_null());
   info!("reading edition authors");
-  let mut eau = LazyFrame::scan_parquet("openlibrary/edition-authors.parquet".into(), default())?;
+  let mut eau = LazyFrame::scan_parquet("openlibrary/edition-authors.parquet", default())?;
   if first_only {
     eau = eau.filter(col("pos").eq(0i16));
   }
 
   info!("reading author names");
-  let auth = LazyFrame::scan_parquet("openlibrary/author-names.parquet".into(), default())?;
+  let auth = LazyFrame::scan_parquet("openlibrary/author-names.parquet", default())?;
   let linked = icl.join(edl, [col("isbn_id")], [col("isbn_id")], JoinType::Inner);
   let linked = linked.join(eau, [col("edition")], [col("edition")], JoinType::Inner);
   let linked = linked.join(auth, [col("author")], [col("id")], JoinType::Inner);
@@ -73,14 +73,14 @@ fn scan_loc(first_only: bool) -> Result<LazyFrame> {
   }
 
   info!("reading ISBN clusters");
-  let icl = LazyFrame::scan_parquet("book-links/isbn-clusters.parquet".into(), default())?;
+  let icl = LazyFrame::scan_parquet("book-links/isbn-clusters.parquet", default())?;
   let icl = icl.select([col("isbn_id"), col("cluster")]);
 
   info!("reading book records");
-  let books = LazyFrame::scan_parquet("loc-mds/book-isbn-ids.parquet".into(), default())?;
+  let books = LazyFrame::scan_parquet("loc-mds/book-isbn-ids.parquet", default())?;
 
   info!("reading book authors");
-  let authors = LazyFrame::scan_parquet("loc-mds/book-authors.parquet".into(), default())?;
+  let authors = LazyFrame::scan_parquet("loc-mds/book-authors.parquet", default())?;
   let authors = authors.filter(col("author_name").is_not_null());
 
   let linked = icl.join(books, [col("isbn_id")], [col("isbn_id")], JoinType::Inner);
@@ -103,7 +103,7 @@ impl Command for ClusterAuthors {
       };
       debug!("author source {} has schema {:?}", source, astr.schema());
       if let Some(adf) = authors {
-        authors = Some(concat([adf, astr], false)?);
+        authors = Some(concat([adf, astr], false, true)?);
       } else {
         authors = Some(astr);
       }

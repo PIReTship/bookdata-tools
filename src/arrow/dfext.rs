@@ -4,7 +4,7 @@ use polars::prelude::*;
 
 use crate::cleaning::names::clean_name;
 
-pub fn udf_clean_name(col: Series) -> Result<Series> {
+pub fn udf_clean_name(col: Series) -> PolarsResult<Series> {
   let col = col.utf8()?;
   let res: Utf8Chunked = col.into_iter().map(|n| {
     if let Some(s) = n {

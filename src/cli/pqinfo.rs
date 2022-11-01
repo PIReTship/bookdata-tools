@@ -74,12 +74,12 @@ impl Command for PQInfo {
   fn exec(&self) -> Result<()> {
     info!("reading {:?}", self.source_file);
 
-    let pqf = File::open(&self.source_file)?;
+    let mut pqf = File::open(&self.source_file)?;
     let fmeta = pqf.metadata()?;
     info!("file size: {}", bytes(fmeta.len()));
 
-    let mut pqr = FileReader::try_new(pqf, None, None, None, None)?;
-    let meta = pqr.metadata().clone();
+    let meta = read_metadata(&mut pqf)?;
+
     info!("row count: {}", scalar(meta.num_rows));
     info!("row groups: {}", meta.row_groups.len());
     let rc2: usize = meta.row_groups.iter().map(|rg| rg.num_rows()).sum();
@@ -110,7 +110,9 @@ impl Command for PQInfo {
     }
 
     if self.check_length {
-      check_length(&mut pqr, meta.num_rows)?;
+      let schema = infer_schema(&meta)?;
+      let mut reader = FileReader::new(pqf, meta.row_groups, schema, None, None, None);
+      check_length(&mut reader, meta.num_rows)?;
     }
 
     Ok(())

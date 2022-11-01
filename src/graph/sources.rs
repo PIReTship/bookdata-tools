@@ -35,7 +35,7 @@ fn id_col(name: &str, ns: NS<'_>) -> Expr {
 
 impl NodeRead for ISBN {
   fn read_node_ids(&self) -> Result<LazyFrame> {
-    let df = LazyFrame::scan_parquet("book-links/all-isbns.parquet".into(), default())?;
+    let df = LazyFrame::scan_parquet("book-links/all-isbns.parquet", default())?;
     let df = df.select([
       id_col("isbn_id", NS_ISBN).alias("code"),
       col("isbn").alias("label")
@@ -46,7 +46,7 @@ impl NodeRead for ISBN {
 
 impl NodeRead for LOC {
   fn read_node_ids(&self) -> Result<LazyFrame> {
-    let df = LazyFrame::scan_parquet("loc-mds/book-ids.parquet".into(), default())?;
+    let df = LazyFrame::scan_parquet("loc-mds/book-ids.parquet", default())?;
     let df = df.select([
       id_col("rec_id", NS_LOC_REC).alias("code")
     ]);
@@ -56,7 +56,7 @@ impl NodeRead for LOC {
 
 impl EdgeRead for LOC {
   fn read_edges(&self) -> Result<LazyFrame> {
-    let df = LazyFrame::scan_parquet("loc-mds/book-isbn-ids.parquet".into(), default())?;
+    let df = LazyFrame::scan_parquet("loc-mds/book-isbn-ids.parquet", default())?;
     let df = df.select([
       id_col("isbn_id", NS_ISBN).alias("src"),
       id_col("rec_id", NS_LOC_REC).alias("dst")
@@ -67,7 +67,7 @@ impl EdgeRead for LOC {
 
 impl NodeRead for OLEditions {
   fn read_node_ids(&self) -> Result<LazyFrame> {
-    let df = LazyFrame::scan_parquet("openlibrary/editions.parquet".into(), default())?;
+    let df = LazyFrame::scan_parquet("openlibrary/editions.parquet", default())?;
     let df = df.select([
       id_col("id", NS_EDITION).alias("code")
     ]);
@@ -77,7 +77,7 @@ impl NodeRead for OLEditions {
 
 impl EdgeRead for OLEditions {
   fn read_edges(&self) -> Result<LazyFrame> {
-    let df = LazyFrame::scan_parquet("openlibrary/edition-isbn-ids.parquet".into(), default())?;
+    let df = LazyFrame::scan_parquet("openlibrary/edition-isbn-ids.parquet", default())?;
     let df = df.select([
       id_col("isbn_id", NS_ISBN).alias("src"),
       id_col("edition", NS_EDITION).alias("dst")
@@ -88,7 +88,7 @@ impl EdgeRead for OLEditions {
 
 impl NodeRead for OLWorks {
   fn read_node_ids(&self) -> Result<LazyFrame> {
-    let df = LazyFrame::scan_parquet("openlibrary/all-works.parquet".into(), default())?;
+    let df = LazyFrame::scan_parquet("openlibrary/all-works.parquet", default())?;
     let df = df.select([
       id_col("id", NS_WORK).alias("code"),
       col("key").alias("label")
@@ -99,7 +99,7 @@ impl NodeRead for OLWorks {
 
 impl EdgeRead for OLWorks {
   fn read_edges(&self) -> Result<LazyFrame> {
-    let df = LazyFrame::scan_parquet("openlibrary/edition-works.parquet".into(), default())?;
+    let df = LazyFrame::scan_parquet("openlibrary/edition-works.parquet", default())?;
     let df = df.select([
       id_col("edition", NS_EDITION).alias("src"),
       id_col("work", NS_WORK).alias("dst")
@@ -110,7 +110,7 @@ impl EdgeRead for OLWorks {
 
 impl NodeRead for GRBooks {
   fn read_node_ids(&self) -> Result<LazyFrame> {
-    let df = LazyFrame::scan_parquet("goodreads/gr-book-ids.parquet".into(), default())?;
+    let df = LazyFrame::scan_parquet("goodreads/gr-book-ids.parquet", default())?;
     let df = df.select([
       id_col("book_id", NS_GR_BOOK).alias("code")
     ]);
@@ -120,7 +120,7 @@ impl NodeRead for GRBooks {
 
 impl EdgeRead for GRBooks {
   fn read_edges(&self) -> Result<LazyFrame> {
-    let df = LazyFrame::scan_parquet("goodreads/book-isbn-ids.parquet".into(), default())?;
+    let df = LazyFrame::scan_parquet("goodreads/book-isbn-ids.parquet", default())?;
     let df = df.select([
       id_col("isbn_id", NS_ISBN).alias("src"),
       id_col("book_id", NS_GR_BOOK).alias("dst")
@@ -131,7 +131,7 @@ impl EdgeRead for GRBooks {
 
 impl NodeRead for GRWorks {
   fn read_node_ids(&self) -> Result<LazyFrame> {
-    let df = LazyFrame::scan_parquet("goodreads/gr-book-ids.parquet".into(), default())?;
+    let df = LazyFrame::scan_parquet("goodreads/gr-book-ids.parquet", default())?;
     let df = df.filter(col("work_id").is_not_null());
     let df = df.select([
       id_col("work_id", NS_GR_WORK).alias("code")
@@ -142,7 +142,7 @@ impl NodeRead for GRWorks {
 
 impl EdgeRead for GRWorks {
   fn read_edges(&self) -> Result<LazyFrame> {
-    let df = LazyFrame::scan_parquet("goodreads/gr-book-ids.parquet".into(), default())?;
+    let df = LazyFrame::scan_parquet("goodreads/gr-book-ids.parquet", default())?;
     let df = df.filter(col("work_id").is_not_null());
     let df = df.select([
       id_col("book_id", NS_GR_BOOK).alias("src"),

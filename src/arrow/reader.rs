@@ -2,7 +2,6 @@
 use std::path::Path;
 use std::fs::File;
 use std::thread::spawn;
-use std::mem::drop;
 use std::sync::mpsc::{Receiver, sync_channel};
 
 use arrow2::chunk::Chunk;
@@ -10,7 +9,7 @@ use log::*;
 use anyhow::Result;
 
 use arrow2::array::{Array, StructArray};
-use arrow2::io::parquet::read::FileReader;
+use arrow2::io::parquet::read::{FileReader, read_metadata, infer_schema};
 
 use arrow2_convert::deserialize::*;
 
@@ -59,13 +58,16 @@ where
   for <'a> &'a R::ArrayType: IntoIterator<Item=Option<R>>
 {
   let path = path.as_ref();
-  let reader = File::open(path)?;
-  let reader = FileReader::try_new(reader, None, None, None, None)?;
-  let meta = reader.metadata();
+  let mut reader = File::open(path)?;
+
+  let meta = read_metadata(&mut reader)?;
+  let schema = infer_schema(&meta)?;
   let row_count = meta.num_rows;
+  let row_groups = meta.row_groups;
+
+  let reader = FileReader::new(reader, row_groups, schema,None, None, None);
   info!("scanning {:?} with {} rows", path, row_count);
   debug!("file schema: {:?}", meta.schema_descr);
-  drop(meta);
 
   // use a small bound since we're sending whole batches
   let (send, receive) = sync_channel(5);
