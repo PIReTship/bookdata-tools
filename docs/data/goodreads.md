@@ -14,16 +14,39 @@ will need the following:
 - Authors
 - Book genres
 - Book series
-- **Full** interaction data
+- Interaction data (the CSV summary file, along with its book and user ID files,
+  is used by default; the full JSON file is also supported)
 
-We do not yet support reviews, or the CSV summary of the interaction data.
+We do not yet support reviews
 
 **If you use this data, cite the paper(s) documented on the data set web site.**
 
-:::{index} pair: directory; gr
+:::{index} pair: directory; goodreads
 :::
 
-Imported data lives in the `gr` directory.
+Imported data lives in the `goodreads` directory.
+
+## Configuration
+
+The `config.toml` file defines what source of GoodReads interaction data is used:
+
+```toml
+[goodreads]
+interactions = "simple"
+```
+
+The default, `simple`, uses the CSV summary data that you can download directly
+from the web site in 3 files:
+
+- `goodreads_interactions.csv`
+- `user_id_map.csv`
+- `book_id_map.csv`
+
+Download and save these 3 files in `data/goodreads`, along with the other metadata files.
+
+The tools also support the detailed version (change interactions to `full`),
+delivered in JSON format.  If you want this version, you need to contact Mengtin
+Wan as noted on the web site.
 
 ## Import Steps
 

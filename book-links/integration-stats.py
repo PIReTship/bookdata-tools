@@ -72,7 +72,7 @@ def scan_actions(config, genders, data):
 
 
 def main(opts):
-    with open('../params.toml', 'rb') as cf:
+    with open('../config.toml', 'rb') as cf:
         config = tomli.load(cf)
 
     genders = scan_genders()

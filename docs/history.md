@@ -5,9 +5,16 @@ released version has a corresponding Git tag (e.g. `v2.0`).
 
 ## Book Data 2.1 (in progress)
 
-Version 2.1 has a few updates but does not change existing data schemas.  It does
-have improved book/author linking that increases coverage due to a revised and
-corrected name parsing & normalization flow.
+Version 2.1 has a few updates but does not change existing data schemas when run
+with the full GoodReads interaction files.  It does have improved book/author
+linking that increases coverage due to a revised and corrected name parsing &
+normalization flow.
+
+The tools now support the GoodReads interaction CSV file, which is available
+without registration, and uses this by default.  See the [GoodReads data
+docs](data/goodreads.md) for the details.  This means that, in their default
+configuration, the book data integration uses only data that is publicly
+available without special request.
 
 ### Data Updates
 
