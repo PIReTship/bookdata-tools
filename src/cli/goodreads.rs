@@ -17,7 +17,9 @@ enum GRCmd {
   Scan {
     #[structopt(subcommand)]
     data: GRScan
-  }
+  },
+  /// Cluster GoodReads intearaction data.
+  ClusterInteractions(CIOptions)
 }
 
 #[derive(StructOpt, Debug)]
@@ -40,6 +42,29 @@ pub struct InterInput {
 
   #[structopt(flatten)]
   scan: ScanInput,
+}
+
+#[derive(StructOpt, Debug)]
+pub struct CIOptions {
+  /// Cluster ratings
+  #[structopt(long="ratings")]
+  ratings: bool,
+
+  /// Cluster add-to-shelf actions
+  #[structopt(long="add-actions")]
+  add_actions: bool,
+
+  /// Cluster using simple data instead of full data.
+  #[structopt(long="simple")]
+  simple: bool,
+
+  /// Cluster using native GoodReads works instead of book clusters.
+  #[structopt(long="native-works")]
+  native_works: bool,
+
+  /// Write output to FILE
+  #[structopt(short="o", long="output", name="FILE", parse(from_os_str))]
+  output: PathBuf,
 }
 
 #[derive(StructOpt, Debug)]
@@ -103,7 +128,25 @@ impl Command for Goodreads {
           info!("scanning GoodReads interactions");
           scan_gr(&opts.scan.infile, interaction::IntWriter::open()?)?;
         }
-      }
+      },
+      GRCmd::ClusterInteractions(opts) => {
+        let mut op = if opts.add_actions {
+          cluster::ClusterOp::add_actions(&opts.output)
+        } else if opts.ratings {
+          cluster::ClusterOp::ratings(&opts.output)
+        } else {
+          error!("must specify one of --add-actions or --raitngs");
+          return Err(anyhow!("no operating mode specified"));
+        };
+        if opts.native_works {
+          op = op.native_works();
+        }
+        if opts.simple {
+          op = op.simple();
+        }
+
+        op.cluster()?;
+      },
     }
 
     Ok(())
