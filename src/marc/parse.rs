@@ -11,7 +11,7 @@ use quick_xml::events::attributes::Attributes;
 use fallible_iterator::FallibleIterator;
 use anyhow::{Result, anyhow, Error};
 
-use crate::util::DataAccumulator;
+use crate::util::StringAccumulator;
 use crate::tsv::split_first;
 use crate::util::iteration::chunk_owned;
 
@@ -67,10 +67,10 @@ impl <B: BufRead> FallibleIterator for Records<B> {
 
 fn next_qxr<B: BufRead>(reader: &mut Reader<B>, buf: &mut Vec<u8>) -> Result<Option<MARCRecord>> {
   loop {
-    match reader.read_event(buf)? {
+    match reader.read_event_into(buf)? {
       Event::Start(ref e) => {
         let name = e.local_name();
-        match name {
+        match name.into_inner() {
           b"record" => {
             return Ok(Some(read_record(reader)?))
           },
@@ -149,7 +149,7 @@ pub fn parse_record<S: AsRef<str>>(xml: S) -> Result<MARCRecord> {
 #[inline(never)] // make profiling a little easier, this fn isn't worth inlining
 fn read_record<B: BufRead>(rdr: &mut Reader<B>) -> Result<MARCRecord> {
   let mut buf = Vec::new();
-  let mut content = DataAccumulator::new();
+  let mut content = StringAccumulator::new();
   let mut record = MARCRecord {
     leader: String::new(),
     control: Vec::new(),
@@ -159,10 +159,10 @@ fn read_record<B: BufRead>(rdr: &mut Reader<B>) -> Result<MARCRecord> {
   let mut tag = 0;
   let mut sf_code = Code::default();
   loop {
-    match rdr.read_event(&mut buf)? {
+    match rdr.read_event_into(&mut buf)? {
       Event::Start(ref e) => {
         let name = e.local_name();
-        match name {
+        match name.into_inner() {
           b"record" => (),
           b"leader" => {
             content.activate();
@@ -184,20 +184,20 @@ fn read_record<B: BufRead>(rdr: &mut Reader<B>) -> Result<MARCRecord> {
       },
       Event::End(ref e) => {
         let name = e.local_name();
-        match name {
+        match name.into_inner() {
           b"leader" => {
-            record.leader = content.finish_string()?;
+            record.leader = content.finish();
           }
           b"controlfield" => {
             record.control.push(ControlField {
               tag: tag.try_into()?,
-              content: content.finish_string()?
+              content: content.finish()
             })
           }
           b"subfield" => {
             field.subfields.push(Subfield {
               code: sf_code,
-              content: content.finish_string()?
+              content: content.finish()
             })
           },
           b"datafield" => {
@@ -211,8 +211,8 @@ fn read_record<B: BufRead>(rdr: &mut Reader<B>) -> Result<MARCRecord> {
         }
       },
       Event::Text(e) => {
-        let t = e.unescaped()?;
-        content.add_slice(&t);
+        let t = e.unescape()?;
+        content.add_slice(t);
       },
       Event::Eof => break,
       _ => ()
@@ -225,9 +225,9 @@ fn read_record<B: BufRead>(rdr: &mut Reader<B>) -> Result<MARCRecord> {
 fn read_tag_attr(attrs: Attributes<'_>) -> Result<i16> {
   for ar in attrs {
     let a = ar?;
-    if a.key == b"tag" {
-      let tag = a.unescaped_value()?;
-      return Ok(str::from_utf8(&tag)?.parse()?);
+    if a.key.into_inner() == b"tag" {
+      let tag = a.unescape_value()?;
+      return Ok(tag.parse()?);
     }
   }
 
@@ -242,11 +242,11 @@ fn read_code_attrs(attrs: Attributes<'_>) -> Result<Codes> {
 
   for ar in attrs {
     let a = ar?;
-    let v = a.unescaped_value()?;
-    match a.key {
-      b"tag" => tag = str::from_utf8(&v)?.parse()?,
-      b"ind1" => ind1 = v[0].into(),
-      b"ind2" => ind2 = v[0].into(),
+    let v = a.unescape_value()?;
+    match a.key.into_inner() {
+      b"tag" => tag = v.parse()?,
+      b"ind1" => ind1 = v.as_bytes()[0].into(),
+      b"ind2" => ind2 = v.as_bytes()[0].into(),
       _ => ()
     }
   }
@@ -264,9 +264,9 @@ fn read_code_attrs(attrs: Attributes<'_>) -> Result<Codes> {
 fn read_sf_code_attr(attrs: Attributes<'_>) -> Result<Code> {
   for ar in attrs {
     let a = ar?;
-    if a.key == b"code" {
-      let code = a.unescaped_value()?;
-      return Ok(code[0].into())
+    if a.key.into_inner() == b"code" {
+      let code = a.unescape_value()?;
+      return Ok(code.as_bytes()[0].into())
     }
   }
 
