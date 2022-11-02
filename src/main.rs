@@ -31,7 +31,7 @@ use mimalloc::MiMalloc;
 static GLOBAL: MiMalloc = MiMalloc;
 
 #[cfg(feature="jemalloc")]
-use jemalloc::Jemalloc;
+use jemallocator::Jemalloc;
 
 #[cfg(feature="jemalloc")]
 #[global_allocator]
