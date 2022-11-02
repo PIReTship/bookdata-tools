@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["verbosify","Make a log level more verbose by one step"]]});
+window.SIDEBAR_ITEMS = {"fn":[["verbosify","Make a log level more verbose by one step"]]};

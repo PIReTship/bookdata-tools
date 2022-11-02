@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["resolve_homedir",""]]});
+window.SIDEBAR_ITEMS = {"fn":[["resolve_homedir",""]]};

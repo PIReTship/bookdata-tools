@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["combine_validities",""]],"struct":[["TrustMyLength",""]],"trait":[["CustomIterTools",""],["CustomIterToolsSized",""],["FromTrustedLenIterator",""]]});
+window.SIDEBAR_ITEMS = {"fn":[["combine_validities",""]],"struct":[["TrustMyLength",""]],"trait":[["CustomIterTools",""],["CustomIterToolsSized",""],["FromTrustedLenIterator",""]]};

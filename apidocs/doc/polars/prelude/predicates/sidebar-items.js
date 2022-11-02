@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["BatchStats","A collection of column stats with a known schema."],["ColumnStats","The statistics for a column in a Parquet file they typically hold"]]});

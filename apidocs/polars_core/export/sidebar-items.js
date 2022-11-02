@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["_boost_hash_combine",""]]});
+window.SIDEBAR_ITEMS = {"fn":[["_boost_hash_combine",""]]};

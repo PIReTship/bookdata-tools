@@ -1,1 +1,0 @@
-initSidebarItems({"type":[["Result","A specialized Result type for lexical operations."]]});

@@ -1,1 +1,1 @@
-initSidebarItems({"trait":[["IsFloat","Safety"]],"type":[["ArrayRef",""]]});
+window.SIDEBAR_ITEMS = {"trait":[["IsFloat","Safety"]],"type":[["ArrayRef",""]]};

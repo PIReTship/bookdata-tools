@@ -1,1 +1,0 @@
-initSidebarItems({"fn":[["__parse_cs_name",""],["__parse_digit",""],["__parse_ending",""],["__parse_name",""],["__parse_name_entry",""],["__parse_single_name",""],["__parse_space",""],["__parse_trailing_junk",""],["__parse_year_range",""],["__parse_year_tag",""],["name_entry",""]],"struct":[["ParseState",""]],"type":[["Input",""],["PositionRepr",""]]});

@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["split_first",""]]});
+window.SIDEBAR_ITEMS = {"fn":[["split_first",""]]};

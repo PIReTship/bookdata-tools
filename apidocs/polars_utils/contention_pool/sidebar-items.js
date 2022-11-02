@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["LowContentionPool",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["LowContentionPool",""]]};

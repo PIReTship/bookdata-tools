@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["chunk_to_struct",""]]});
+window.SIDEBAR_ITEMS = {"fn":[["chunk_to_struct",""],["primitive_to_vec","Returns its underlying [`Vec`], if possible."]]};

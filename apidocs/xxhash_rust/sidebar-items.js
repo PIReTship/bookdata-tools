@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["xxh64","64 bit version of xxhash algorithm"]]});
+window.SIDEBAR_ITEMS = {"mod":[["xxh64","64 bit version of xxhash algorithm"]]};

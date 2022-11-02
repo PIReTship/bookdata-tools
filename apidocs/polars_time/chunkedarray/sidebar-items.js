@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["unix_time",""]],"mod":[["utf8",""]],"struct":[["RollingOptions",""],["RollingOptionsImpl",""]],"trait":[["DateMethods",""],["DatetimeMethods",""],["DurationMethods",""],["RollingAgg",""],["TimeMethods",""]]});
+window.SIDEBAR_ITEMS = {"fn":[["unix_time",""]],"mod":[["utf8",""]],"trait":[["DateMethods",""],["DatetimeMethods",""],["DurationMethods",""],["RollingAgg",""],["TimeMethods",""]]};

@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["ewm_std",""],["ewm_var",""],["ewma",""],["ewma_inf_hist_no_nulls",""],["ewma_inf_hists","Arguments"],["ewma_no_nulls",""],["set_first_none_null",""]],"struct":[["EWMOptions",""]]});
+window.SIDEBAR_ITEMS = {"fn":[["ewm_mean",""],["ewm_std",""],["ewm_var",""]],"struct":[["EWMOptions",""]]};

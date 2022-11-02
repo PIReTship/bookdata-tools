@@ -1,1 +1,0 @@
-initSidebarItems({"constant":[["UTF8_ROUND_CORNERS","A modifier, that when applied will convert the outer corners to round corners."],["UTF8_SOLID_INNER_BORDERS","A modifier, that when applied will convert the inner borders to solid lines."]]});

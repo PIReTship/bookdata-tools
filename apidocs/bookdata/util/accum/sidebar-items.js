@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["DataAccumulator","Activatable data acumulator."]]});
+window.SIDEBAR_ITEMS = {"struct":[["DataAccumulator","Activatable data acumulator."]]};

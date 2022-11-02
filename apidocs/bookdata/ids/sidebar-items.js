@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["codes","Book codes and their number spaces."],["collector","Support for collecting keys and counting the records that contributed them."],["index","Data structure for mapping string keys to numeric identifiers."]]});
+window.SIDEBAR_ITEMS = {"mod":[["codes","Book codes and their number spaces."],["collector","Support for collecting keys and counting the records that contributed them."],["index","Data structure for mapping string keys to numeric identifiers."]]};

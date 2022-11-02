@@ -1,1 +1,1 @@
-initSidebarItems({"trait":[["TrustedLen","An iterator of known, fixed size. A trait denoting Rusts’ unstable TrustedLen. This is re-defined here and implemented for some iterators until `std::iter::TrustedLen` is stabilized."]]});
+window.SIDEBAR_ITEMS = {"trait":[["TrustedLen","An iterator of known, fixed size. A trait denoting Rusts’ unstable TrustedLen. This is re-defined here and implemented for some iterators until `std::iter::TrustedLen` is stabilized."]]};

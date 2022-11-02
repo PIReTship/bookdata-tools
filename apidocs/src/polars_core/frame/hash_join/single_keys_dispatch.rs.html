@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.23.2/src/frame/hash_join/single_keys_dispatch.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>single_keys_dispatch.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script src="../../../../crates.js"></script><script defer src="../../../../main.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.25.1/src/frame/hash_join/single_keys_dispatch.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>single_keys_dispatch.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -457,6 +452,152 @@
 <span id="452">452</span>
 <span id="453">453</span>
 <span id="454">454</span>
+<span id="455">455</span>
+<span id="456">456</span>
+<span id="457">457</span>
+<span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
+<span id="464">464</span>
+<span id="465">465</span>
+<span id="466">466</span>
+<span id="467">467</span>
+<span id="468">468</span>
+<span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
+<span id="478">478</span>
+<span id="479">479</span>
+<span id="480">480</span>
+<span id="481">481</span>
+<span id="482">482</span>
+<span id="483">483</span>
+<span id="484">484</span>
+<span id="485">485</span>
+<span id="486">486</span>
+<span id="487">487</span>
+<span id="488">488</span>
+<span id="489">489</span>
+<span id="490">490</span>
+<span id="491">491</span>
+<span id="492">492</span>
+<span id="493">493</span>
+<span id="494">494</span>
+<span id="495">495</span>
+<span id="496">496</span>
+<span id="497">497</span>
+<span id="498">498</span>
+<span id="499">499</span>
+<span id="500">500</span>
+<span id="501">501</span>
+<span id="502">502</span>
+<span id="503">503</span>
+<span id="504">504</span>
+<span id="505">505</span>
+<span id="506">506</span>
+<span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
+<span id="532">532</span>
+<span id="533">533</span>
+<span id="534">534</span>
+<span id="535">535</span>
+<span id="536">536</span>
+<span id="537">537</span>
+<span id="538">538</span>
+<span id="539">539</span>
+<span id="540">540</span>
+<span id="541">541</span>
+<span id="542">542</span>
+<span id="543">543</span>
+<span id="544">544</span>
+<span id="545">545</span>
+<span id="546">546</span>
+<span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
+<span id="567">567</span>
+<span id="568">568</span>
+<span id="569">569</span>
+<span id="570">570</span>
+<span id="571">571</span>
+<span id="572">572</span>
+<span id="573">573</span>
+<span id="574">574</span>
+<span id="575">575</span>
+<span id="576">576</span>
+<span id="577">577</span>
+<span id="578">578</span>
+<span id="579">579</span>
+<span id="580">580</span>
+<span id="581">581</span>
+<span id="582">582</span>
+<span id="583">583</span>
+<span id="584">584</span>
+<span id="585">585</span>
+<span id="586">586</span>
+<span id="587">587</span>
+<span id="588">588</span>
+<span id="589">589</span>
+<span id="590">590</span>
+<span id="591">591</span>
+<span id="592">592</span>
+<span id="593">593</span>
+<span id="594">594</span>
+<span id="595">595</span>
+<span id="596">596</span>
+<span id="597">597</span>
+<span id="598">598</span>
+<span id="599">599</span>
+<span id="600">600</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;chunked_ids&quot;</span>)]</span>
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::create_chunked_index_mapping</span>;
@@ -472,6 +613,12 @@
             <span class="ident">Utf8</span> =&gt; {
                 <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">utf8</span>().<span class="ident">unwrap</span>();
                 <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">utf8</span>().<span class="ident">unwrap</span>();
+                <span class="ident">lhs</span>.<span class="ident">hash_join_left</span>(<span class="ident">rhs</span>)
+            }
+            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-binary&quot;</span>)]</span>
+            <span class="ident">Binary</span> =&gt; {
+                <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">binary</span>().<span class="ident">unwrap</span>();
+                <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">binary</span>().<span class="ident">unwrap</span>();
                 <span class="ident">lhs</span>.<span class="ident">hash_join_left</span>(<span class="ident">rhs</span>)
             }
             <span class="kw">_</span> =&gt; {
@@ -499,6 +646,12 @@
                 <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">utf8</span>().<span class="ident">unwrap</span>();
                 <span class="ident">lhs</span>.<span class="ident">hash_join_semi_anti</span>(<span class="ident">rhs</span>, <span class="ident">anti</span>)
             }
+            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-binary&quot;</span>)]</span>
+            <span class="ident">Binary</span> =&gt; {
+                <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">binary</span>().<span class="ident">unwrap</span>();
+                <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">binary</span>().<span class="ident">unwrap</span>();
+                <span class="ident">lhs</span>.<span class="ident">hash_join_semi_anti</span>(<span class="ident">rhs</span>, <span class="ident">anti</span>)
+            }
             <span class="kw">_</span> =&gt; {
                 <span class="kw">if</span> <span class="self">self</span>.<span class="ident">bit_repr_is_large</span>() {
                     <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">bit_repr_large</span>();
@@ -513,7 +666,8 @@
         }
     }
 
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">hash_join_inner</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">Series</span>) -&gt; (<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>) {
+    <span class="comment">// returns the join tuples and whether or not the lhs tuples are sorted</span>
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">hash_join_inner</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">Series</span>) -&gt; ((<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>), <span class="ident">bool</span>) {
         <span class="kw">let</span> (<span class="ident">lhs</span>, <span class="ident">rhs</span>) <span class="op">=</span> (<span class="self">self</span>.<span class="ident">to_physical_repr</span>(), <span class="ident">other</span>.<span class="ident">to_physical_repr</span>());
 
         <span class="kw">use</span> <span class="ident">DataType</span>::<span class="kw-2">*</span>;
@@ -521,6 +675,12 @@
             <span class="ident">Utf8</span> =&gt; {
                 <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">utf8</span>().<span class="ident">unwrap</span>();
                 <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">utf8</span>().<span class="ident">unwrap</span>();
+                <span class="ident">lhs</span>.<span class="ident">hash_join_inner</span>(<span class="ident">rhs</span>)
+            }
+            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-binary&quot;</span>)]</span>
+            <span class="ident">Binary</span> =&gt; {
+                <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">binary</span>().<span class="ident">unwrap</span>();
+                <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">binary</span>().<span class="ident">unwrap</span>();
                 <span class="ident">lhs</span>.<span class="ident">hash_join_inner</span>(<span class="ident">rhs</span>)
             }
             <span class="kw">_</span> =&gt; {
@@ -548,6 +708,12 @@
             <span class="ident">Utf8</span> =&gt; {
                 <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">utf8</span>().<span class="ident">unwrap</span>();
                 <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">utf8</span>().<span class="ident">unwrap</span>();
+                <span class="ident">lhs</span>.<span class="ident">hash_join_outer</span>(<span class="ident">rhs</span>)
+            }
+            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-binary&quot;</span>)]</span>
+            <span class="ident">Binary</span> =&gt; {
+                <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">binary</span>().<span class="ident">unwrap</span>();
+                <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">binary</span>().<span class="ident">unwrap</span>();
                 <span class="ident">lhs</span>.<span class="ident">hash_join_outer</span>(<span class="ident">rhs</span>)
             }
             <span class="kw">_</span> =&gt; {
@@ -592,10 +758,11 @@
         .<span class="ident">collect</span>()
 }
 
+<span class="comment">// returns the join tuples and whether or not the lhs tuples are sorted</span>
 <span class="kw">fn</span> <span class="ident">num_group_join_inner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
     <span class="ident">left</span>: <span class="kw-2">&amp;</span><span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
     <span class="ident">right</span>: <span class="kw-2">&amp;</span><span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-) -&gt; (<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>)
+) -&gt; ((<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>), <span class="ident">bool</span>)
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">PolarsIntegerType</span>,
     <span class="ident">T::Native</span>: <span class="ident">Hash</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">AsU64</span> <span class="op">+</span> <span class="ident">Copy</span>,
@@ -614,17 +781,17 @@
         (<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="number">1</span>, <span class="number">1</span>) =&gt; {
             <span class="kw">let</span> <span class="ident">keys_a</span> <span class="op">=</span> <span class="ident">splitted_to_slice</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>);
             <span class="kw">let</span> <span class="ident">keys_b</span> <span class="op">=</span> <span class="ident">splitted_to_slice</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>);
-            <span class="ident">hash_join_tuples_inner</span>(<span class="ident">keys_a</span>, <span class="ident">keys_b</span>, <span class="ident">swap</span>)
+            (<span class="ident">hash_join_tuples_inner</span>(<span class="ident">keys_a</span>, <span class="ident">keys_b</span>, <span class="ident">swap</span>), <span class="op">!</span><span class="ident">swap</span>)
         }
         (<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
             <span class="kw">let</span> <span class="ident">keys_a</span> <span class="op">=</span> <span class="ident">splitted_by_chunks</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>);
             <span class="kw">let</span> <span class="ident">keys_b</span> <span class="op">=</span> <span class="ident">splitted_by_chunks</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>);
-            <span class="ident">hash_join_tuples_inner</span>(<span class="ident">keys_a</span>, <span class="ident">keys_b</span>, <span class="ident">swap</span>)
+            (<span class="ident">hash_join_tuples_inner</span>(<span class="ident">keys_a</span>, <span class="ident">keys_b</span>, <span class="ident">swap</span>), <span class="op">!</span><span class="ident">swap</span>)
         }
         <span class="kw">_</span> =&gt; {
             <span class="kw">let</span> <span class="ident">keys_a</span> <span class="op">=</span> <span class="ident">splitted_to_opt_vec</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>);
             <span class="kw">let</span> <span class="ident">keys_b</span> <span class="op">=</span> <span class="ident">splitted_to_opt_vec</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>);
-            <span class="ident">hash_join_tuples_inner</span>(<span class="ident">keys_a</span>, <span class="ident">keys_b</span>, <span class="ident">swap</span>)
+            (<span class="ident">hash_join_tuples_inner</span>(<span class="ident">keys_a</span>, <span class="ident">keys_b</span>, <span class="ident">swap</span>), <span class="op">!</span><span class="ident">swap</span>)
         }
     }
 }
@@ -721,7 +888,7 @@
     <span class="kw">fn</span> <span class="ident">hash_join_outer</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>)<span class="op">&gt;</span> {
         <span class="kw">let</span> (<span class="ident">a</span>, <span class="ident">b</span>, <span class="ident">swap</span>) <span class="op">=</span> <span class="macro">det_hash_prone_order!</span>(<span class="self">self</span>, <span class="ident">other</span>);
 
-        <span class="kw">let</span> <span class="ident">n_partitions</span> <span class="op">=</span> <span class="ident">set_partition_size</span>();
+        <span class="kw">let</span> <span class="ident">n_partitions</span> <span class="op">=</span> <span class="ident">_set_partition_size</span>();
         <span class="kw">let</span> <span class="ident">splitted_a</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">a</span>, <span class="ident">n_partitions</span>).<span class="ident">unwrap</span>();
         <span class="kw">let</span> <span class="ident">splitted_b</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">b</span>, <span class="ident">n_partitions</span>).<span class="ident">unwrap</span>();
 
@@ -755,7 +922,7 @@
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">prepare_strs</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
     <span class="ident">been_split</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">Utf8Chunked</span>],
     <span class="ident">hb</span>: <span class="kw-2">&amp;</span><span class="ident">RandomState</span>,
-) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">StrHash</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">BytesHash</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
     <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
         <span class="ident">been_split</span>
             .<span class="ident">par_iter</span>()
@@ -765,7 +932,7 @@
                         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state</span> <span class="op">=</span> <span class="ident">hb</span>.<span class="ident">build_hasher</span>();
                         <span class="ident">opt_s</span>.<span class="ident">hash</span>(<span class="kw-2">&amp;mut</span> <span class="ident">state</span>);
                         <span class="kw">let</span> <span class="ident">hash</span> <span class="op">=</span> <span class="ident">state</span>.<span class="ident">finish</span>();
-                        <span class="ident">StrHash::new</span>(<span class="ident">opt_s</span>, <span class="ident">hash</span>)
+                        <span class="ident">BytesHash::new_from_str</span>(<span class="ident">opt_s</span>, <span class="ident">hash</span>)
                     })
                     .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()
             })
@@ -794,11 +961,15 @@
         (<span class="ident">splitted_a</span>, <span class="ident">splitted_b</span>, <span class="ident">swap</span>, <span class="ident">hb</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">hash_join_inner</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">Utf8Chunked</span>) -&gt; (<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>) {
+    <span class="comment">// returns the join tuples and whether or not the lhs tuples are sorted</span>
+    <span class="kw">fn</span> <span class="ident">hash_join_inner</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">Utf8Chunked</span>) -&gt; ((<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>), <span class="ident">bool</span>) {
         <span class="kw">let</span> (<span class="ident">splitted_a</span>, <span class="ident">splitted_b</span>, <span class="ident">swap</span>, <span class="ident">hb</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prepare</span>(<span class="ident">other</span>, <span class="bool-val">true</span>);
         <span class="kw">let</span> <span class="ident">str_hashes_a</span> <span class="op">=</span> <span class="ident">prepare_strs</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
         <span class="kw">let</span> <span class="ident">str_hashes_b</span> <span class="op">=</span> <span class="ident">prepare_strs</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
-        <span class="ident">hash_join_tuples_inner</span>(<span class="ident">str_hashes_a</span>, <span class="ident">str_hashes_b</span>, <span class="ident">swap</span>)
+        (
+            <span class="ident">hash_join_tuples_inner</span>(<span class="ident">str_hashes_a</span>, <span class="ident">str_hashes_b</span>, <span class="ident">swap</span>),
+            <span class="op">!</span><span class="ident">swap</span>,
+        )
     }
 
     <span class="kw">fn</span> <span class="ident">hash_join_left</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">Utf8Chunked</span>) -&gt; <span class="ident">LeftJoinIds</span> {
@@ -831,7 +1002,123 @@
     <span class="kw">fn</span> <span class="ident">hash_join_outer</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">Utf8Chunked</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>)<span class="op">&gt;</span> {
         <span class="kw">let</span> (<span class="ident">a</span>, <span class="ident">b</span>, <span class="ident">swap</span>) <span class="op">=</span> <span class="macro">det_hash_prone_order!</span>(<span class="self">self</span>, <span class="ident">other</span>);
 
-        <span class="kw">let</span> <span class="ident">n_partitions</span> <span class="op">=</span> <span class="ident">set_partition_size</span>();
+        <span class="kw">let</span> <span class="ident">n_partitions</span> <span class="op">=</span> <span class="ident">_set_partition_size</span>();
+        <span class="kw">let</span> <span class="ident">splitted_a</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">a</span>, <span class="ident">n_partitions</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">splitted_b</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">b</span>, <span class="ident">n_partitions</span>).<span class="ident">unwrap</span>();
+
+        <span class="kw">match</span> (<span class="ident">a</span>.<span class="ident">has_validity</span>(), <span class="ident">b</span>.<span class="ident">has_validity</span>()) {
+            (<span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; {
+                <span class="kw">let</span> <span class="ident">iters_a</span> <span class="op">=</span> <span class="ident">splitted_a</span>
+                    .<span class="ident">iter</span>()
+                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">into_no_null_iter</span>())
+                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+                <span class="kw">let</span> <span class="ident">iters_b</span> <span class="op">=</span> <span class="ident">splitted_b</span>
+                    .<span class="ident">iter</span>()
+                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">into_no_null_iter</span>())
+                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+                <span class="ident">hash_join_tuples_outer</span>(<span class="ident">iters_a</span>, <span class="ident">iters_b</span>, <span class="ident">swap</span>)
+            }
+            <span class="kw">_</span> =&gt; {
+                <span class="kw">let</span> <span class="ident">iters_a</span> <span class="op">=</span> <span class="ident">splitted_a</span>
+                    .<span class="ident">iter</span>()
+                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">into_iter</span>())
+                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+                <span class="kw">let</span> <span class="ident">iters_b</span> <span class="op">=</span> <span class="ident">splitted_b</span>
+                    .<span class="ident">iter</span>()
+                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">into_iter</span>())
+                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+                <span class="ident">hash_join_tuples_outer</span>(<span class="ident">iters_a</span>, <span class="ident">iters_b</span>, <span class="ident">swap</span>)
+            }
+        }
+    }
+}
+
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-binary&quot;</span>)]</span>
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">prepare_bytes</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
+    <span class="ident">been_split</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">BinaryChunked</span>],
+    <span class="ident">hb</span>: <span class="kw-2">&amp;</span><span class="ident">RandomState</span>,
+) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">BytesHash</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+    <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
+        <span class="ident">been_split</span>
+            .<span class="ident">par_iter</span>()
+            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> {
+                <span class="ident">ca</span>.<span class="ident">into_iter</span>()
+                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">opt_b</span><span class="op">|</span> {
+                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state</span> <span class="op">=</span> <span class="ident">hb</span>.<span class="ident">build_hasher</span>();
+                        <span class="ident">opt_b</span>.<span class="ident">hash</span>(<span class="kw-2">&amp;mut</span> <span class="ident">state</span>);
+                        <span class="kw">let</span> <span class="ident">hash</span> <span class="op">=</span> <span class="ident">state</span>.<span class="ident">finish</span>();
+                        <span class="ident">BytesHash::new</span>(<span class="ident">opt_b</span>, <span class="ident">hash</span>)
+                    })
+                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()
+            })
+            .<span class="ident">collect</span>()
+    })
+}
+
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-binary&quot;</span>)]</span>
+<span class="kw">impl</span> <span class="ident">BinaryChunked</span> {
+    <span class="kw">fn</span> <span class="ident">prepare</span>(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">BinaryChunked</span>,
+        <span class="ident">swapped</span>: <span class="ident">bool</span>,
+    ) -&gt; (<span class="ident">Vec</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">bool</span>, <span class="ident">RandomState</span>) {
+        <span class="kw">let</span> <span class="ident">n_threads</span> <span class="op">=</span> <span class="ident">POOL</span>.<span class="ident">current_num_threads</span>();
+
+        <span class="kw">let</span> (<span class="ident">a</span>, <span class="ident">b</span>, <span class="ident">swap</span>) <span class="op">=</span> <span class="kw">if</span> <span class="ident">swapped</span> {
+            <span class="macro">det_hash_prone_order!</span>(<span class="self">self</span>, <span class="ident">other</span>)
+        } <span class="kw">else</span> {
+            (<span class="self">self</span>, <span class="ident">other</span>, <span class="bool-val">false</span>)
+        };
+
+        <span class="kw">let</span> <span class="ident">hb</span> <span class="op">=</span> <span class="ident">RandomState::default</span>();
+        <span class="kw">let</span> <span class="ident">splitted_a</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">a</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">splitted_b</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">b</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
+
+        (<span class="ident">splitted_a</span>, <span class="ident">splitted_b</span>, <span class="ident">swap</span>, <span class="ident">hb</span>)
+    }
+
+    <span class="comment">// returns the join tuples and whether or not the lhs tuples are sorted</span>
+    <span class="kw">fn</span> <span class="ident">hash_join_inner</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">BinaryChunked</span>) -&gt; ((<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>), <span class="ident">bool</span>) {
+        <span class="kw">let</span> (<span class="ident">splitted_a</span>, <span class="ident">splitted_b</span>, <span class="ident">swap</span>, <span class="ident">hb</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prepare</span>(<span class="ident">other</span>, <span class="bool-val">true</span>);
+        <span class="kw">let</span> <span class="ident">str_hashes_a</span> <span class="op">=</span> <span class="ident">prepare_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
+        <span class="kw">let</span> <span class="ident">str_hashes_b</span> <span class="op">=</span> <span class="ident">prepare_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
+        (
+            <span class="ident">hash_join_tuples_inner</span>(<span class="ident">str_hashes_a</span>, <span class="ident">str_hashes_b</span>, <span class="ident">swap</span>),
+            <span class="op">!</span><span class="ident">swap</span>,
+        )
+    }
+
+    <span class="kw">fn</span> <span class="ident">hash_join_left</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">BinaryChunked</span>) -&gt; <span class="ident">LeftJoinIds</span> {
+        <span class="kw">let</span> (<span class="ident">splitted_a</span>, <span class="ident">splitted_b</span>, <span class="kw">_</span>, <span class="ident">hb</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prepare</span>(<span class="ident">other</span>, <span class="bool-val">false</span>);
+        <span class="kw">let</span> <span class="ident">str_hashes_a</span> <span class="op">=</span> <span class="ident">prepare_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
+        <span class="kw">let</span> <span class="ident">str_hashes_b</span> <span class="op">=</span> <span class="ident">prepare_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
+
+        <span class="kw">let</span> (<span class="ident">mapping_left</span>, <span class="ident">mapping_right</span>) <span class="op">=</span>
+            <span class="ident">create_mappings</span>(<span class="self">self</span>.<span class="ident">chunks</span>(), <span class="ident">other</span>.<span class="ident">chunks</span>(), <span class="self">self</span>.<span class="ident">len</span>(), <span class="ident">other</span>.<span class="ident">len</span>());
+        <span class="ident">hash_join_tuples_left</span>(
+            <span class="ident">str_hashes_a</span>,
+            <span class="ident">str_hashes_b</span>,
+            <span class="ident">mapping_left</span>.<span class="ident">as_deref</span>(),
+            <span class="ident">mapping_right</span>.<span class="ident">as_deref</span>(),
+        )
+    }
+
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;semi_anti_join&quot;</span>)]</span>
+    <span class="kw">fn</span> <span class="ident">hash_join_semi_anti</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">BinaryChunked</span>, <span class="ident">anti</span>: <span class="ident">bool</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span> {
+        <span class="kw">let</span> (<span class="ident">splitted_a</span>, <span class="ident">splitted_b</span>, <span class="kw">_</span>, <span class="ident">hb</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prepare</span>(<span class="ident">other</span>, <span class="bool-val">false</span>);
+        <span class="kw">let</span> <span class="ident">str_hashes_a</span> <span class="op">=</span> <span class="ident">prepare_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
+        <span class="kw">let</span> <span class="ident">str_hashes_b</span> <span class="op">=</span> <span class="ident">prepare_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
+        <span class="kw">if</span> <span class="ident">anti</span> {
+            <span class="ident">hash_join_tuples_left_anti</span>(<span class="ident">str_hashes_a</span>, <span class="ident">str_hashes_b</span>)
+        } <span class="kw">else</span> {
+            <span class="ident">hash_join_tuples_left_semi</span>(<span class="ident">str_hashes_a</span>, <span class="ident">str_hashes_b</span>)
+        }
+    }
+
+    <span class="kw">fn</span> <span class="ident">hash_join_outer</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">BinaryChunked</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>)<span class="op">&gt;</span> {
+        <span class="kw">let</span> (<span class="ident">a</span>, <span class="ident">b</span>, <span class="ident">swap</span>) <span class="op">=</span> <span class="macro">det_hash_prone_order!</span>(<span class="self">self</span>, <span class="ident">other</span>);
+
+        <span class="kw">let</span> <span class="ident">n_partitions</span> <span class="op">=</span> <span class="ident">_set_partition_size</span>();
         <span class="kw">let</span> <span class="ident">splitted_a</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">a</span>, <span class="ident">n_partitions</span>).<span class="ident">unwrap</span>();
         <span class="kw">let</span> <span class="ident">splitted_b</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">b</span>, <span class="ident">n_partitions</span>).<span class="ident">unwrap</span>();
 
@@ -912,5 +1199,4 @@
     }
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0 (fe5b13d68 2022-05-18)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>

@@ -1,1 +1,1 @@
-initSidebarItems({"derive":[["ArrowField","Derive macro for arrow fields"]]});
+window.SIDEBAR_ITEMS = {"derive":[["ArrowField","Derive macro for arrow fields"]]};

@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["flatten",""]],"mod":[["arena",""],["contention_pool",""],["mem",""],["sort",""]],"type":[["IdxSize",""]]});
+window.SIDEBAR_ITEMS = {"fn":[["flatten",""],["get_hash",""],["hash_to_partition",""]],"mod":[["arena",""],["contention_pool",""],["mem",""],["slice",""],["sort",""],["unwrap",""]],"trait":[["HashSingle",""]],"type":[["IdxSize",""]]};

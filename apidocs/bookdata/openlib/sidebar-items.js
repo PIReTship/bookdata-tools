@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["author","OpenLibrary author schemas."],["edition","OpenLibrary edition schemas."],["source","Parse OpenLibrary JSON."],["work","OpenLibrary work schemas."]]});
+window.SIDEBAR_ITEMS = {"mod":[["author","OpenLibrary author schemas."],["edition","OpenLibrary edition schemas."],["source","Parse OpenLibrary JSON."],["work","OpenLibrary work schemas."]]};

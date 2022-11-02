@@ -1,1 +1,1 @@
-initSidebarItems({"derive":[["Display",""],["FromStr",""]]});
+window.SIDEBAR_ITEMS = {"derive":[["Display",""],["FromStr",""]]};

@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["cast",""]]});
+window.SIDEBAR_ITEMS = {"mod":[["cast",""],["take",""]]};

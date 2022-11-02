@@ -1,1 +1,0 @@
-initSidebarItems({"mod":[["list",""]],"struct":[["BooleanChunkedBuilder",""],["PrimitiveChunkedBuilder",""],["Utf8ChunkedBuilder",""],["Utf8ChunkedBuilderCow",""]],"trait":[["ChunkedBuilder",""],["NewChunkedArray",""]]});

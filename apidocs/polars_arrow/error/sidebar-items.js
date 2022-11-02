@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["PolarsError",""]],"type":[["Result",""]]});
+window.SIDEBAR_ITEMS = {"enum":[["PolarsError",""]],"type":[["Result",""]]};

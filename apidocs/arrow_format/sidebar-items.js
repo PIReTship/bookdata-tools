@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["ipc",""]]});
+window.SIDEBAR_ITEMS = {"mod":[["ipc",""]]};

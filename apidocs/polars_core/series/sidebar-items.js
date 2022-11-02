@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["IsSorted",""]],"mod":[["implementations",""],["ops",""],["unstable",""]],"struct":[["Series","Series"],["SeriesIter",""]],"trait":[["IntoSeries",""],["SeriesTrait",""]]});
+window.SIDEBAR_ITEMS = {"enum":[["IsSorted",""]],"mod":[["implementations",""],["ops",""],["unstable",""]],"struct":[["Series","Series"],["SeriesIter",""]],"trait":[["IntoSeries","Used to convert a [`ChunkedArray`], `&dyn SeriesTrait` and [`Series`] into a [`Series`]."],["SeriesTrait",""]]};

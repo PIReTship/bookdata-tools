@@ -1,1 +1,1 @@
-initSidebarItems({"derive":[["Parse",""],["StructMeta",""],["ToTokens",""]]});
+window.SIDEBAR_ITEMS = {"derive":[["Parse",""],["StructMeta",""],["ToTokens",""]]};

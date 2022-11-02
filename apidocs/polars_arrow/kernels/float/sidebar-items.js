@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["is_finite",""],["is_infinite",""],["is_nan",""],["is_not_nan",""]]});
+window.SIDEBAR_ITEMS = {"fn":[["is_finite",""],["is_infinite",""],["is_nan",""],["is_not_nan",""]]};

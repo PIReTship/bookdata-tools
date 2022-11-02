@@ -1,1 +1,0 @@
-initSidebarItems({"trait":[["AsSeries",""],["IntoSeriesOps",""],["SeriesOpsTime",""],["TemporalMethods",""]]});

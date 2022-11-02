@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["LogOpts","Command line options for configuring the logger with StructOpt."]]});

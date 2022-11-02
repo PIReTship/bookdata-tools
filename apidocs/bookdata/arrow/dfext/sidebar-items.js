@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["udf_clean_name",""]]});
+window.SIDEBAR_ITEMS = {"fn":[["udf_clean_name",""]]};

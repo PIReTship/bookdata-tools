@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["ForeignVec","A continuous memory region that may be allocated externally."]]});
+window.SIDEBAR_ITEMS = {"struct":[["ForeignVec","A continuous memory region that may be allocated externally."]]};
