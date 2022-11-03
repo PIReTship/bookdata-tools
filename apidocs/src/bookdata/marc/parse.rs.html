@@ -272,20 +272,35 @@
 <span id="272">272</span>
 <span id="273">273</span>
 <span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::io</span>::{<span class="ident">BufRead</span>, <span class="ident">Lines</span>};
 <span class="kw">use</span> <span class="ident">std::str</span>;
 <span class="kw">use</span> <span class="ident">std::convert::TryInto</span>;
-<span class="kw">use</span> <span class="ident">std::sync::mpsc::sync_channel</span>;
 <span class="kw">use</span> <span class="ident">std::thread::spawn</span>;
 
-<span class="kw">use</span> <span class="ident">rayon::prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">use</span> <span class="ident">log</span>::<span class="kw-2">*</span>;
+<span class="kw">use</span> <span class="ident">crossbeam::channel::bounded</span>;
+
 <span class="kw">use</span> <span class="ident">quick_xml::Reader</span>;
 <span class="kw">use</span> <span class="ident">quick_xml::events::Event</span>;
 <span class="kw">use</span> <span class="ident">quick_xml::events::attributes::Attributes</span>;
 <span class="kw">use</span> <span class="ident">fallible_iterator::FallibleIterator</span>;
 <span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="prelude-ty">Result</span>, <span class="ident">anyhow</span>, <span class="ident">Error</span>};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::util::DataAccumulator</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::util::StringAccumulator</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::tsv::split_first</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::util::iteration::chunk_owned</span>;
 
@@ -341,10 +356,10 @@
 
 <span class="kw">fn</span> <span class="ident">next_qxr</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">BufRead</span><span class="op">&gt;</span>(<span class="ident">reader</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Reader</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>, <span class="ident">buf</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MARCRecord</span><span class="op">&gt;</span><span class="op">&gt;</span> {
   <span class="kw">loop</span> {
-    <span class="kw">match</span> <span class="ident">reader</span>.<span class="ident">read_event</span>(<span class="ident">buf</span>)<span class="question-mark">?</span> {
+    <span class="kw">match</span> <span class="ident">reader</span>.<span class="ident">read_event_into</span>(<span class="ident">buf</span>)<span class="question-mark">?</span> {
       <span class="ident">Event::Start</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) =&gt; {
         <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">local_name</span>();
-        <span class="kw">match</span> <span class="ident">name</span> {
+        <span class="kw">match</span> <span class="ident">name</span>.<span class="ident">into_inner</span>() {
           <span class="string">b&quot;record&quot;</span> =&gt; {
             <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">read_record</span>(<span class="ident">reader</span>)<span class="question-mark">?</span>))
           },
@@ -386,26 +401,39 @@
   <span class="kw">let</span> <span class="ident">lines</span> <span class="op">=</span> <span class="ident">reader</span>.<span class="ident">lines</span>();
   <span class="comment">// chunk lines (to decrease threading overhead)</span>
   <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="ident">chunk_owned</span>(<span class="ident">lines</span>, <span class="number">5000</span>);
-  <span class="comment">// parse batches of lines in parallel</span>
-  <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="ident">chunks</span>.<span class="ident">par_bridge</span>();
-  <span class="kw">let</span> <span class="ident">mapped</span> <span class="op">=</span> <span class="ident">chunks</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">batch</span><span class="op">|</span> {
-    <span class="kw">let</span> <span class="ident">res</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">batch</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">element</span><span class="op">|</span> {
-      <span class="kw">match</span> <span class="ident">element</span> {
-        <span class="prelude-val">Ok</span>(<span class="ident">line</span>) =&gt; <span class="ident">parse_record</span>(<span class="kw-2">&amp;</span><span class="ident">line</span>),
-        <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="prelude-val">Err</span>(<span class="ident">e</span>.<span class="ident">into</span>())
-      }
-    }).<span class="ident">collect</span>();
-    <span class="ident">res</span>
-  });
-  <span class="comment">// now we need to route batches in the background, so we don&#39;t block the caller</span>
-  <span class="kw">let</span> (<span class="ident">send</span>, <span class="ident">recv</span>) <span class="op">=</span> <span class="ident">sync_channel</span>(<span class="number">100</span>);
-  <span class="kw">let</span> <span class="ident">_jh</span> <span class="op">=</span> <span class="ident">spawn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
-    <span class="ident">mapped</span>.<span class="ident">for_each_with</span>(<span class="ident">send</span>, <span class="op">|</span><span class="ident">send</span>, <span class="ident">batch</span><span class="op">|</span> {
-      <span class="ident">send</span>.<span class="ident">send</span>(<span class="ident">batch</span>).<span class="ident">expect</span>(<span class="string">&quot;channel error&quot;</span>);
-    });
+
+  <span class="comment">// receivers &amp; senders for chunks of lines</span>
+  <span class="kw">let</span> (<span class="ident">chunk_tx</span>, <span class="ident">chunk_rx</span>) <span class="op">=</span> <span class="ident">bounded</span>(<span class="number">100</span>);
+
+  <span class="comment">// receivers and senders for chunks of parsed records</span>
+  <span class="kw">let</span> (<span class="ident">parsed_tx</span>, <span class="ident">parsed_rx</span>) <span class="op">=</span> <span class="ident">bounded</span>(<span class="number">100</span>);
+
+  <span class="comment">// background thread getting lines</span>
+  <span class="macro">info!</span>(<span class="string">&quot;spawning reader thread&quot;</span>);
+  <span class="kw">let</span> <span class="ident">_bg_read</span> <span class="op">=</span> <span class="ident">spawn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
+    <span class="kw">for</span> <span class="ident">chunk</span> <span class="kw">in</span> <span class="ident">chunks</span> {
+      <span class="ident">chunk_tx</span>.<span class="ident">send</span>(<span class="ident">chunk</span>).<span class="ident">expect</span>(<span class="string">&quot;background send failed&quot;</span>);
+    }
   });
 
-  <span class="kw">let</span> <span class="ident">flat</span> <span class="op">=</span> <span class="ident">recv</span>.<span class="ident">into_iter</span>().<span class="ident">flatten</span>();
+  <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">4</span> {
+    <span class="macro">info!</span>(<span class="string">&quot;spawning parser thread {}&quot;</span>, <span class="ident">i</span> <span class="op">+</span> <span class="number">1</span>);
+    <span class="kw">let</span> <span class="ident">rx</span> <span class="op">=</span> <span class="ident">chunk_rx</span>.<span class="ident">clone</span>();
+    <span class="kw">let</span> <span class="ident">tx</span> <span class="op">=</span> <span class="ident">parsed_tx</span>.<span class="ident">clone</span>();
+    <span class="ident">spawn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
+      <span class="kw">for</span> <span class="ident">chunk</span> <span class="kw">in</span> <span class="ident">rx</span> {
+        <span class="kw">let</span> <span class="ident">res</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">chunk</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">lres</span><span class="op">|</span> {
+          <span class="kw">match</span> <span class="ident">lres</span> {
+            <span class="prelude-val">Ok</span>(<span class="ident">line</span>) =&gt; <span class="ident">parse_record</span>(<span class="kw-2">&amp;</span><span class="ident">line</span>),
+            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="prelude-val">Err</span>(<span class="ident">e</span>.<span class="ident">into</span>()),
+          }
+        }).<span class="ident">collect</span>();
+        <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">res</span>).<span class="ident">expect</span>(<span class="string">&quot;background send failed&quot;</span>);
+      }
+    });
+  }
+
+  <span class="kw">let</span> <span class="ident">flat</span> <span class="op">=</span> <span class="ident">parsed_rx</span>.<span class="ident">into_iter</span>().<span class="ident">flatten</span>();
 
   <span class="ident">Records</span> {
     <span class="ident">buffer</span>: <span class="ident">Vec::new</span>(),
@@ -423,7 +451,7 @@
 <span class="attribute">#[<span class="ident">inline</span>(<span class="ident">never</span>)]</span> <span class="comment">// make profiling a little easier, this fn isn&#39;t worth inlining</span>
 <span class="kw">fn</span> <span class="ident">read_record</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">BufRead</span><span class="op">&gt;</span>(<span class="ident">rdr</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Reader</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">MARCRecord</span><span class="op">&gt;</span> {
   <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-  <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">content</span> <span class="op">=</span> <span class="ident">DataAccumulator::new</span>();
+  <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">content</span> <span class="op">=</span> <span class="ident">StringAccumulator::new</span>();
   <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">record</span> <span class="op">=</span> <span class="ident">MARCRecord</span> {
     <span class="ident">leader</span>: <span class="ident">String::new</span>(),
     <span class="ident">control</span>: <span class="ident">Vec::new</span>(),
@@ -433,10 +461,10 @@
   <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">tag</span> <span class="op">=</span> <span class="number">0</span>;
   <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sf_code</span> <span class="op">=</span> <span class="ident">Code::default</span>();
   <span class="kw">loop</span> {
-    <span class="kw">match</span> <span class="ident">rdr</span>.<span class="ident">read_event</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>)<span class="question-mark">?</span> {
+    <span class="kw">match</span> <span class="ident">rdr</span>.<span class="ident">read_event_into</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buf</span>)<span class="question-mark">?</span> {
       <span class="ident">Event::Start</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) =&gt; {
         <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">local_name</span>();
-        <span class="kw">match</span> <span class="ident">name</span> {
+        <span class="kw">match</span> <span class="ident">name</span>.<span class="ident">into_inner</span>() {
           <span class="string">b&quot;record&quot;</span> =&gt; (),
           <span class="string">b&quot;leader&quot;</span> =&gt; {
             <span class="ident">content</span>.<span class="ident">activate</span>();
@@ -458,20 +486,20 @@
       },
       <span class="ident">Event::End</span>(<span class="kw-2">ref</span> <span class="ident">e</span>) =&gt; {
         <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">local_name</span>();
-        <span class="kw">match</span> <span class="ident">name</span> {
+        <span class="kw">match</span> <span class="ident">name</span>.<span class="ident">into_inner</span>() {
           <span class="string">b&quot;leader&quot;</span> =&gt; {
-            <span class="ident">record</span>.<span class="ident">leader</span> <span class="op">=</span> <span class="ident">content</span>.<span class="ident">finish_string</span>()<span class="question-mark">?</span>;
+            <span class="ident">record</span>.<span class="ident">leader</span> <span class="op">=</span> <span class="ident">content</span>.<span class="ident">finish</span>();
           }
           <span class="string">b&quot;controlfield&quot;</span> =&gt; {
             <span class="ident">record</span>.<span class="ident">control</span>.<span class="ident">push</span>(<span class="ident">ControlField</span> {
               <span class="ident">tag</span>: <span class="ident">tag</span>.<span class="ident">try_into</span>()<span class="question-mark">?</span>,
-              <span class="ident">content</span>: <span class="ident">content</span>.<span class="ident">finish_string</span>()<span class="question-mark">?</span>
+              <span class="ident">content</span>: <span class="ident">content</span>.<span class="ident">finish</span>()
             })
           }
           <span class="string">b&quot;subfield&quot;</span> =&gt; {
             <span class="ident">field</span>.<span class="ident">subfields</span>.<span class="ident">push</span>(<span class="ident">Subfield</span> {
               <span class="ident">code</span>: <span class="ident">sf_code</span>,
-              <span class="ident">content</span>: <span class="ident">content</span>.<span class="ident">finish_string</span>()<span class="question-mark">?</span>
+              <span class="ident">content</span>: <span class="ident">content</span>.<span class="ident">finish</span>()
             })
           },
           <span class="string">b&quot;datafield&quot;</span> =&gt; {
@@ -485,8 +513,8 @@
         }
       },
       <span class="ident">Event::Text</span>(<span class="ident">e</span>) =&gt; {
-        <span class="kw">let</span> <span class="ident">t</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">unescaped</span>()<span class="question-mark">?</span>;
-        <span class="ident">content</span>.<span class="ident">add_slice</span>(<span class="kw-2">&amp;</span><span class="ident">t</span>);
+        <span class="kw">let</span> <span class="ident">t</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">unescape</span>()<span class="question-mark">?</span>;
+        <span class="ident">content</span>.<span class="ident">add_slice</span>(<span class="ident">t</span>);
       },
       <span class="ident">Event::Eof</span> =&gt; <span class="kw">break</span>,
       <span class="kw">_</span> =&gt; ()
@@ -499,9 +527,9 @@
 <span class="kw">fn</span> <span class="ident">read_tag_attr</span>(<span class="ident">attrs</span>: <span class="ident">Attributes</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">i16</span><span class="op">&gt;</span> {
   <span class="kw">for</span> <span class="ident">ar</span> <span class="kw">in</span> <span class="ident">attrs</span> {
     <span class="kw">let</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">ar</span><span class="question-mark">?</span>;
-    <span class="kw">if</span> <span class="ident">a</span>.<span class="ident">key</span> <span class="op">==</span> <span class="string">b&quot;tag&quot;</span> {
-      <span class="kw">let</span> <span class="ident">tag</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">unescaped_value</span>()<span class="question-mark">?</span>;
-      <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">str::from_utf8</span>(<span class="kw-2">&amp;</span><span class="ident">tag</span>)<span class="question-mark">?</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>);
+    <span class="kw">if</span> <span class="ident">a</span>.<span class="ident">key</span>.<span class="ident">into_inner</span>() <span class="op">==</span> <span class="string">b&quot;tag&quot;</span> {
+      <span class="kw">let</span> <span class="ident">tag</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">unescape_value</span>()<span class="question-mark">?</span>;
+      <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">tag</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>);
     }
   }
 
@@ -516,11 +544,11 @@
 
   <span class="kw">for</span> <span class="ident">ar</span> <span class="kw">in</span> <span class="ident">attrs</span> {
     <span class="kw">let</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">ar</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">v</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">unescaped_value</span>()<span class="question-mark">?</span>;
-    <span class="kw">match</span> <span class="ident">a</span>.<span class="ident">key</span> {
-      <span class="string">b&quot;tag&quot;</span> =&gt; <span class="ident">tag</span> <span class="op">=</span> <span class="ident">str::from_utf8</span>(<span class="kw-2">&amp;</span><span class="ident">v</span>)<span class="question-mark">?</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>,
-      <span class="string">b&quot;ind1&quot;</span> =&gt; <span class="ident">ind1</span> <span class="op">=</span> <span class="ident">v</span>[<span class="number">0</span>].<span class="ident">into</span>(),
-      <span class="string">b&quot;ind2&quot;</span> =&gt; <span class="ident">ind2</span> <span class="op">=</span> <span class="ident">v</span>[<span class="number">0</span>].<span class="ident">into</span>(),
+    <span class="kw">let</span> <span class="ident">v</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">unescape_value</span>()<span class="question-mark">?</span>;
+    <span class="kw">match</span> <span class="ident">a</span>.<span class="ident">key</span>.<span class="ident">into_inner</span>() {
+      <span class="string">b&quot;tag&quot;</span> =&gt; <span class="ident">tag</span> <span class="op">=</span> <span class="ident">v</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>,
+      <span class="string">b&quot;ind1&quot;</span> =&gt; <span class="ident">ind1</span> <span class="op">=</span> <span class="ident">v</span>.<span class="ident">as_bytes</span>()[<span class="number">0</span>].<span class="ident">into</span>(),
+      <span class="string">b&quot;ind2&quot;</span> =&gt; <span class="ident">ind2</span> <span class="op">=</span> <span class="ident">v</span>.<span class="ident">as_bytes</span>()[<span class="number">0</span>].<span class="ident">into</span>(),
       <span class="kw">_</span> =&gt; ()
     }
   }
@@ -538,9 +566,9 @@
 <span class="kw">fn</span> <span class="ident">read_sf_code_attr</span>(<span class="ident">attrs</span>: <span class="ident">Attributes</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Code</span><span class="op">&gt;</span> {
   <span class="kw">for</span> <span class="ident">ar</span> <span class="kw">in</span> <span class="ident">attrs</span> {
     <span class="kw">let</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">ar</span><span class="question-mark">?</span>;
-    <span class="kw">if</span> <span class="ident">a</span>.<span class="ident">key</span> <span class="op">==</span> <span class="string">b&quot;code&quot;</span> {
-      <span class="kw">let</span> <span class="ident">code</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">unescaped_value</span>()<span class="question-mark">?</span>;
-      <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">code</span>[<span class="number">0</span>].<span class="ident">into</span>())
+    <span class="kw">if</span> <span class="ident">a</span>.<span class="ident">key</span>.<span class="ident">into_inner</span>() <span class="op">==</span> <span class="string">b&quot;code&quot;</span> {
+      <span class="kw">let</span> <span class="ident">code</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">unescape_value</span>()<span class="question-mark">?</span>;
+      <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">code</span>.<span class="ident">as_bytes</span>()[<span class="number">0</span>].<span class="ident">into</span>())
     }
   }
 

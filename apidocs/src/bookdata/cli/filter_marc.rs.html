@@ -218,9 +218,9 @@
 <span class="kw">use</span> <span class="ident">std::io::Write</span>;
 <span class="kw">use</span> <span class="ident">std::fs::File</span>;
 <span class="kw">use</span> <span class="ident">std::mem</span>;
-<span class="kw">use</span> <span class="ident">std::sync::mpsc</span>::{<span class="ident">sync_channel</span>, <span class="ident">SyncSender</span>, <span class="ident">Receiver</span>};
 <span class="kw">use</span> <span class="ident">std::thread</span>::{<span class="ident">spawn</span>, <span class="ident">JoinHandle</span>};
 
+<span class="kw">use</span> <span class="ident">crossbeam::channel</span>::{<span class="ident">bounded</span>, <span class="ident">Receiver</span>, <span class="ident">Sender</span>};
 <span class="kw">use</span> <span class="ident">arrow2::array</span>::{<span class="ident">MutablePrimitiveArray</span>, <span class="ident">MutableUtf8Array</span>, <span class="ident">MutableArray</span>};
 <span class="kw">use</span> <span class="ident">arrow2::chunk::Chunk</span>;
 <span class="kw">use</span> <span class="ident">arrow2::datatypes</span>::{<span class="ident">Schema</span>, <span class="ident">DataType</span>, <span class="ident">Field</span>};
@@ -320,7 +320,7 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// Failes quickly if there is an error opening the file; errors reading the file are</span>
 <span class="doccomment">/// from the thread and are availabl when it is joined.</span>
-<span class="kw">fn</span> <span class="ident">scan_records</span>(<span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>, <span class="ident">filter</span>: <span class="kw-2">&amp;</span><span class="ident">FilterSpec</span>, <span class="ident">send</span>: <span class="ident">SyncSender</span><span class="op">&lt;</span><span class="ident">FieldRecord</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">JoinHandle</span><span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">scan_records</span>(<span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>, <span class="ident">filter</span>: <span class="kw-2">&amp;</span><span class="ident">FilterSpec</span>, <span class="ident">send</span>: <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">FieldRecord</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">JoinHandle</span><span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
   <span class="macro">info!</span>(<span class="string">&quot;reading names from authority fields in {:?}&quot;</span>, <span class="ident">path</span>);
   <span class="kw">let</span> <span class="ident">scanner</span> <span class="op">=</span> <span class="ident">scan_parquet_file</span>(<span class="ident">path</span>)<span class="question-mark">?</span>;
   <span class="kw">let</span> <span class="ident">filter</span> <span class="op">=</span> <span class="ident">filter</span>.<span class="ident">clone</span>(); <span class="comment">// to transfer to thread</span>
@@ -417,7 +417,7 @@
 
 <span class="kw">impl</span> <span class="ident">Command</span> <span class="kw">for</span> <span class="ident">FilterMARC</span> {
   <span class="kw">fn</span> <span class="ident">exec</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> (<span class="ident">send</span>, <span class="ident">recv</span>) <span class="op">=</span> <span class="ident">sync_channel</span>(<span class="number">4096</span>);
+    <span class="kw">let</span> (<span class="ident">send</span>, <span class="ident">recv</span>) <span class="op">=</span> <span class="ident">bounded</span>(<span class="number">4096</span>);
     <span class="kw">let</span> <span class="ident">h</span> <span class="op">=</span> <span class="ident">scan_records</span>(<span class="self">self</span>.<span class="ident">field_file</span>.<span class="ident">as_path</span>(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">filter</span>, <span class="ident">send</span>)<span class="question-mark">?</span>;
 
     <span class="kw">let</span> <span class="ident">nwritten</span> <span class="op">=</span> <span class="ident">write_records</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">output</span>, <span class="ident">recv</span>)<span class="question-mark">?</span>;

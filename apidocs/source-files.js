@@ -33,9 +33,11 @@ var sourcesIndex = JSON.parse('{\
 "console":["",[],["ansi.rs","common_term.rs","kb.rs","lib.rs","term.rs","unix_term.rs","utils.rs"]],\
 "cpu_time":["",[],["clock_gettime.rs","lib.rs"]],\
 "crc32fast":["",[["specialized",[],["mod.rs","pclmulqdq.rs"]]],["baseline.rs","combine.rs","lib.rs","table.rs"]],\
+"crossbeam":["",[],["lib.rs"]],\
 "crossbeam_channel":["",[["flavors",[],["array.rs","at.rs","list.rs","mod.rs","never.rs","tick.rs","zero.rs"]]],["channel.rs","context.rs","counter.rs","err.rs","lib.rs","select.rs","select_macro.rs","utils.rs","waker.rs"]],\
 "crossbeam_deque":["",[],["deque.rs","lib.rs"]],\
 "crossbeam_epoch":["",[["sync",[],["list.rs","mod.rs","once_lock.rs","queue.rs"]]],["atomic.rs","collector.rs","default.rs","deferred.rs","epoch.rs","guard.rs","internal.rs","lib.rs"]],\
+"crossbeam_queue":["",[],["array_queue.rs","lib.rs","seg_queue.rs"]],\
 "crossbeam_utils":["",[["atomic",[],["atomic_cell.rs","consume.rs","mod.rs","seq_lock.rs"]],["sync",[],["mod.rs","once_lock.rs","parker.rs","sharded_lock.rs","wait_group.rs"]]],["backoff.rs","cache_padded.rs","lib.rs","thread.rs"]],\
 "crossterm":["",[["cursor",[["sys",[],["unix.rs"]]],["sys.rs"]],["event",[["source",[],["unix.rs"]],["sys",[["unix",[],["file_descriptor.rs","parse.rs"]]],["unix.rs"]]],["filter.rs","read.rs","source.rs","sys.rs","timeout.rs"]],["style",[["types",[],["attribute.rs","color.rs","colored.rs","colors.rs"]]],["attributes.rs","content_style.rs","styled_content.rs","stylize.rs","sys.rs","types.rs"]],["terminal",[["sys",[],["unix.rs"]]],["sys.rs"]]],["command.rs","cursor.rs","error.rs","event.rs","lib.rs","macros.rs","style.rs","terminal.rs","tty.rs"]],\
 "crypto_common":["",[],["lib.rs"]],\
@@ -139,7 +141,7 @@ var sourcesIndex = JSON.parse('{\
 "proc_macro2":["",[],["detection.rs","fallback.rs","lib.rs","marker.rs","parse.rs","rcvec.rs","wrapper.rs"]],\
 "proc_macro_error":["",[["imp",[],["fallback.rs"]]],["diagnostic.rs","dummy.rs","lib.rs","macros.rs","sealed.rs"]],\
 "proc_macro_error_attr":["",[],["lib.rs","parse.rs","settings.rs"]],\
-"quick_xml":["",[["events",[],["attributes.rs","mod.rs"]]],["errors.rs","escapei.rs","lib.rs","reader.rs","utils.rs","writer.rs"]],\
+"quick_xml":["",[["events",[],["attributes.rs","mod.rs"]],["reader",[],["buffered_reader.rs","mod.rs","ns_reader.rs","parser.rs","slice_reader.rs"]]],["encoding.rs","errors.rs","escapei.rs","lib.rs","name.rs","utils.rs","writer.rs"]],\
 "quote":["",[],["ext.rs","format.rs","ident_fragment.rs","lib.rs","runtime.rs","spanned.rs","to_tokens.rs"]],\
 "rand":["",[["distributions",[],["bernoulli.rs","distribution.rs","float.rs","integer.rs","mod.rs","other.rs","slice.rs","uniform.rs","utils.rs","weighted.rs","weighted_index.rs"]],["rngs",[["adapter",[],["mod.rs","read.rs","reseeding.rs"]]],["mock.rs","mod.rs","small.rs","std.rs","thread.rs","xoshiro256plusplus.rs"]],["seq",[],["index.rs","mod.rs"]]],["lib.rs","prelude.rs","rng.rs"]],\
 "rand_chacha":["",[],["chacha.rs","guts.rs","lib.rs"]],\
