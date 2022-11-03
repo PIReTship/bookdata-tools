@@ -2,7 +2,8 @@
 use std::path::Path;
 use std::fs::File;
 use std::thread::spawn;
-use std::sync::mpsc::{Receiver, sync_channel};
+
+use crossbeam::channel::{Receiver, bounded};
 
 use arrow2::chunk::Chunk;
 use log::*;
@@ -70,7 +71,7 @@ where
   debug!("file schema: {:?}", meta.schema_descr);
 
   // use a small bound since we're sending whole batches
-  let (send, receive) = sync_channel(5);
+  let (send, receive) = bounded(5);
 
   spawn(move || {
     let send = send;

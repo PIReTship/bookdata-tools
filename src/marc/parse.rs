@@ -1,10 +1,11 @@
 use std::io::{BufRead, Lines};
 use std::str;
 use std::convert::TryInto;
-use std::sync::mpsc::sync_channel;
 use std::thread::spawn;
 
-use rayon::prelude::*;
+use log::*;
+use crossbeam::channel::bounded;
+
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use quick_xml::events::attributes::Attributes;
@@ -112,26 +113,39 @@ pub fn read_records_delim<B: BufRead + Send + 'static>(reader: B) -> Records<B> 
   let lines = reader.lines();
   // chunk lines (to decrease threading overhead)
   let chunks = chunk_owned(lines, 5000);
-  // parse batches of lines in parallel
-  let chunks = chunks.par_bridge();
-  let mapped = chunks.map(|batch| {
-    let res: Vec<_> = batch.into_iter().map(|element| {
-      match element {
-        Ok(line) => parse_record(&line),
-        Err(e) => Err(e.into())
-      }
-    }).collect();
-    res
-  });
-  // now we need to route batches in the background, so we don't block the caller
-  let (send, recv) = sync_channel(100);
-  let _jh = spawn(move || {
-    mapped.for_each_with(send, |send, batch| {
-      send.send(batch).expect("channel error");
-    });
+
+  // receivers & senders for chunks of lines
+  let (chunk_tx, chunk_rx) = bounded(100);
+
+  // receivers and senders for chunks of parsed records
+  let (parsed_tx, parsed_rx) = bounded(100);
+
+  // background thread getting lines
+  info!("spawning reader thread");
+  let _bg_read = spawn(move || {
+    for chunk in chunks {
+      chunk_tx.send(chunk).expect("background send failed");
+    }
   });
 
-  let flat = recv.into_iter().flatten();
+  for i in 0..4 {
+    info!("spawning parser thread {}", i + 1);
+    let rx = chunk_rx.clone();
+    let tx = parsed_tx.clone();
+    spawn(move || {
+      for chunk in rx {
+        let res: Vec<_> = chunk.into_iter().map(|lres| {
+          match lres {
+            Ok(line) => parse_record(&line),
+            Err(e) => Err(e.into()),
+          }
+        }).collect();
+        tx.send(res).expect("background send failed");
+      }
+    });
+  }
+
+  let flat = parsed_rx.into_iter().flatten();
 
   Records {
     buffer: Vec::new(),
