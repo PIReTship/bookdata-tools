@@ -17,7 +17,9 @@ enum GRCmd {
   Scan {
     #[structopt(subcommand)]
     data: GRScan
-  }
+  },
+  /// Cluster GoodReads intearaction data.
+  ClusterInteractions(CIOptions)
 }
 
 #[derive(StructOpt, Debug)]
@@ -25,6 +27,44 @@ pub struct ScanInput {
   /// Input file
   #[structopt(name = "INPUT", parse(from_os_str))]
   infile: PathBuf
+}
+
+/// Input options for an interaction scan
+#[derive(StructOpt, Debug)]
+pub struct InterInput {
+  /// Book ID mapping file (only for CSV input)
+  #[structopt(name="MAP", long="book-map", parse(from_os_str))]
+  book_map: Option<PathBuf>,
+
+  /// Run in CSV mode
+  #[structopt(long="csv")]
+  csv_mode: bool,
+
+  #[structopt(flatten)]
+  scan: ScanInput,
+}
+
+#[derive(StructOpt, Debug)]
+pub struct CIOptions {
+  /// Cluster ratings
+  #[structopt(long="ratings")]
+  ratings: bool,
+
+  /// Cluster add-to-shelf actions
+  #[structopt(long="add-actions")]
+  add_actions: bool,
+
+  /// Cluster using simple data instead of full data.
+  #[structopt(long="simple")]
+  simple: bool,
+
+  /// Cluster using native GoodReads works instead of book clusters.
+  #[structopt(long="native-works")]
+  native_works: bool,
+
+  /// Write output to FILE
+  #[structopt(short="o", long="output", name="FILE", parse(from_os_str))]
+  output: PathBuf,
 }
 
 #[derive(StructOpt, Debug)]
@@ -36,7 +76,7 @@ enum GRScan {
   /// Scan GoodReads genres.
   Genres(ScanInput),
   /// Scan GoodReads interactions.
-  Interactions(ScanInput),
+  Interactions(InterInput),
 }
 
 fn scan_gr<R, W>(path: &Path, proc: W) -> Result<()>
@@ -44,7 +84,6 @@ where
   W: ObjectWriter<R> + DataSink + Send + 'static,
   R: DeserializeOwned + Send + Sync + 'static
 {
-  let path: &Path = path.as_ref();
   let outs: Vec<_> = proc.output_files().iter().map(|p| p.to_path_buf()).collect();
 
   info!("reading data from {}", path.display());
@@ -80,9 +119,34 @@ impl Command for Goodreads {
         scan_gr(&opts.infile, genres::BookGenreWriter::open()?)?;
       },
       GRCmd::Scan { data: GRScan::Interactions(opts) } => {
-        info!("scanning GoodReads interactions");
-        scan_gr(&opts.infile, interaction::IntWriter::open()?)?;
-      }
+        if opts.csv_mode {
+          info!("scanning simplified GoodReads interactions");
+          let books = opts.book_map.as_ref();
+          let books = books.ok_or_else(|| anyhow!("book map required for CSV mode"))?;
+          simple_interaction::scan_interaction_csv(books, &opts.scan.infile)?;
+        } else {
+          info!("scanning GoodReads interactions");
+          scan_gr(&opts.scan.infile, interaction::IntWriter::open()?)?;
+        }
+      },
+      GRCmd::ClusterInteractions(opts) => {
+        let mut op = if opts.add_actions {
+          cluster::ClusterOp::add_actions(&opts.output)
+        } else if opts.ratings {
+          cluster::ClusterOp::ratings(&opts.output)
+        } else {
+          error!("must specify one of --add-actions or --raitngs");
+          return Err(anyhow!("no operating mode specified"));
+        };
+        if opts.native_works {
+          op = op.native_works();
+        }
+        if opts.simple {
+          op = op.simple();
+        }
+
+        op.cluster()?;
+      },
     }
 
     Ok(())

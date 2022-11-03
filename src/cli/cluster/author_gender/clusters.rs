@@ -3,6 +3,7 @@ use std::convert::identity;
 use std::path::Path;
 use std::collections::{HashMap, HashSet};
 
+#[allow(unused_imports)]
 use arrow2_convert::field::LargeString;
 use polars::prelude::*;
 use crate::prelude::*;
@@ -25,7 +26,7 @@ pub struct ClusterStats {
 #[derive(Debug, ArrowField)]
 struct ClusterAuthor {
   cluster: i32,
-  #[arrow_field(override="LargeString")]
+  #[arrow_field(type="LargeString")]
   author_name: String,
 }
 

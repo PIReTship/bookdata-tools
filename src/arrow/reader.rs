@@ -2,15 +2,15 @@
 use std::path::Path;
 use std::fs::File;
 use std::thread::spawn;
-use std::mem::drop;
-use std::sync::mpsc::{Receiver, sync_channel};
+
+use crossbeam::channel::{Receiver, bounded};
 
 use arrow2::chunk::Chunk;
 use log::*;
 use anyhow::Result;
 
 use arrow2::array::{Array, StructArray};
-use arrow2::io::parquet::read::FileReader;
+use arrow2::io::parquet::read::{FileReader, read_metadata, infer_schema};
 
 use arrow2_convert::deserialize::*;
 
@@ -35,9 +35,18 @@ where
 {
   let chunk = chunk?;
   let chunk_size = chunk.len();
-  let sa = StructArray::try_new(R::data_type(), chunk.into_arrays(), None)?;
+  let sa = StructArray::try_new(R::data_type(), chunk.into_arrays(), None).map_err(|e| {
+    error!("error decoding struct array: {:?}", e);
+    e
+  })?;
   let sa: Box<dyn Array> = Box::new(sa);
-  let recs: Vec<R> = sa.try_into_collection()?;
+  let sadt = sa.data_type().clone();
+  let recs: Vec<R> = sa.try_into_collection().map_err(|e| {
+    error!("error deserializing batch: {:?}", e);
+    info!("chunk schema: {:?}", sadt);
+    info!("target schema: {:?}", R::data_type());
+    e
+  })?;
   assert_eq!(recs.len(), chunk_size);
   Ok(recs)
 }
@@ -50,15 +59,19 @@ where
   for <'a> &'a R::ArrayType: IntoIterator<Item=Option<R>>
 {
   let path = path.as_ref();
-  let reader = File::open(path)?;
-  let reader = FileReader::try_new(reader, None, None, None, None)?;
-  let meta = reader.metadata();
+  let mut reader = File::open(path)?;
+
+  let meta = read_metadata(&mut reader)?;
+  let schema = infer_schema(&meta)?;
   let row_count = meta.num_rows;
+  let row_groups = meta.row_groups;
+
+  let reader = FileReader::new(reader, row_groups, schema,None, None, None);
   info!("scanning {:?} with {} rows", path, row_count);
-  drop(meta);
+  debug!("file schema: {:?}", meta.schema_descr);
 
   // use a small bound since we're sending whole batches
-  let (send, receive) = sync_channel(5);
+  let (send, receive) = bounded(5);
 
   spawn(move || {
     let send = send;
@@ -69,8 +82,9 @@ where
       let recs = match recs {
         Ok(v) => v,
         Err(e) => {
+          debug!("routing backend error {:?}", e);
           send.send(Err(e)).expect("channel send error");
-          panic!("decode error in writer thread");
+          return;
         }
       };
       send.send(Ok(recs)).expect("channel send error");

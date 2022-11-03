@@ -10,7 +10,7 @@ use arrow2::io::parquet::write::*;
 use arrow2::array::{MutableArray, TryExtend, StructArray, Array};
 use arrow2::chunk::Chunk;
 use arrow2::datatypes::*;
-use arrow2_convert::serialize::{ArrowSerialize, ArrowMutableArray};
+use arrow2_convert::serialize::{ArrowSerialize};
 
 use crate::io::object::{ObjectWriter, ThreadObjectWriter};
 use crate::io::{DataSink};
@@ -125,7 +125,7 @@ pub fn vec_to_chunk<R>(vec: Vec<R>) -> Result<Chunk<Box<dyn Array>>>
 where R: ArrowSerialize, R::MutableArrayType: TryExtend<Option<R>>
 {
   let mut array = R::new_array();
-  array.reserve(vec.len(), vec.len());
+  array.reserve(vec.len());
   array.try_extend(vec.into_iter().map(Some))?;
 
   // get the struct array to chunkify

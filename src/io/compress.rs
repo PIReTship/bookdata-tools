@@ -14,18 +14,13 @@ use friendly::bytes;
 
 use crate::util::Timer;
 use crate::io::background::ThreadRead;
+use super::open_progress;
 
 /// Open a gzip-compressed file for input, with a progress bar.
 ///
 /// It sets the progress bar's prefix to the file name.
 pub fn open_gzin_progress(path: &Path, pb: ProgressBar) -> Result<impl BufRead> {
-  let name = path.file_name().unwrap().to_string_lossy();
-  let read = File::open(path)?;
-  pb.set_length(read.metadata()?.len());
-  pb.set_prefix(name.to_string());
-
-  let read = pb.wrap_read(read);
-  let read = BufReader::new(read);
+  let read = open_progress(path, pb)?;
   let gzf = MultiGzDecoder::new(read);
 
   let thr = ThreadRead::new(gzf)?;

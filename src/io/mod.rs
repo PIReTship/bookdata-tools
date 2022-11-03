@@ -1,8 +1,9 @@
 use std::path::{Path, PathBuf};
-use std::io::{Result as IOResult};
+use std::io::{Result as IOResult, BufReader, BufRead};
 use std::fs;
 use friendly::bytes;
 use log::*;
+use indicatif::ProgressBar;
 
 pub mod background;
 pub mod compress;
@@ -49,4 +50,16 @@ pub fn path_list(paths: &[&str]) -> Vec<PathBuf> {
 pub fn file_size<P: AsRef<Path>>(path: P) -> IOResult<u64> {
   let meta = fs::metadata(path)?;
   Ok(meta.len())
+}
+
+/// Open a file as a buffered reader with a progress bar.
+pub fn open_progress(path: &Path, pb: ProgressBar) -> IOResult<impl BufRead> {
+  let name = path.file_name().unwrap().to_string_lossy();
+  let read = fs::File::open(path)?;
+  pb.set_length(read.metadata()?.len());
+  pb.set_prefix(name.to_string());
+
+  let read = pb.wrap_read(read);
+  let read = BufReader::new(read);
+  Ok(read)
 }

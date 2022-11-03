@@ -14,16 +14,39 @@ will need the following:
 - Authors
 - Book genres
 - Book series
-- **Full** interaction data
+- Interaction data (the CSV summary file, along with its book and user ID files,
+  is used by default; the full JSON file is also supported)
 
-We do not yet support reviews, or the CSV summary of the interaction data.
+We do not yet support reviews
 
 **If you use this data, cite the paper(s) documented on the data set web site.**
 
-:::{index} pair: directory; gr
+:::{index} pair: directory; goodreads
 :::
 
-Imported data lives in the `gr` directory.
+Imported data lives in the `goodreads` directory.
+
+## Configuration
+
+The `config.toml` file defines what source of GoodReads interaction data is used:
+
+```toml
+[goodreads]
+interactions = "simple"
+```
+
+The default, `simple`, uses the CSV summary data that you can download directly
+from the web site in 3 files:
+
+- `goodreads_interactions.csv`
+- `user_id_map.csv`
+- `book_id_map.csv`
+
+Download and save these 3 files in `data/goodreads`, along with the other metadata files.
+
+The tools also support the detailed version (change interactions to `full`),
+delivered in JSON format.  If you want this version, you need to contact Mengtin
+Wan as noted on the web site.
 
 ## Import Steps
 
@@ -62,6 +85,21 @@ Identifiers extracted from each GoodReads book record.
 Metadata extracted from GoodReads book records.
 :::
 
+:::{file} goodreads/gr-book-genres.parquet
+
+GoodReads book-genre associations.
+:::
+
+:::{file} goodreads/gr-book-series.parquet
+
+GoodReads book series associations.
+:::
+
+:::{file} goodreads/gr-genres.parquet
+
+The genre labels to go with {file}`goodreads/gr-book-genres.parquet`.
+:::
+
 :::{file} goodreads/gr-book-link.parquet
 
 Linking identifiers (work and cluster) for GoodReads books.
@@ -79,24 +117,48 @@ GoodReads interaction records.
 
 ## Cluster-Level Tables
 
-:::{file} goodreads/gr-cluster-actions.parquet
+:::{file} goodreads/full/gr-cluster-actions.parquet
 
-Cluster-level implicit-feedback records, suitable for use in LensKit. The `item` column contains cluster IDs.
+Cluster-level implicit-feedback records, suitable for use in LensKit. The `item` column contains cluster IDs.  This version of the table
+is processed from the JSON version of the full interaction log, which is only available by request.
 :::
 
-:::{file} goodreads/gr-cluster-ratings.parquet
+:::{file} goodreads/full/gr-cluster-ratings.parquet
 
-Cluster-level explicit-feedback records, suitable for use in LensKit. The `item` column contains cluster IDs.
+Cluster-level explicit-feedback records, suitable for use in LensKit. The `item` column contains cluster IDs.  This version of the table
+is processed from the JSON version of the full interaction log, which is only available by request.
+:::
+
+:::{file} goodreads/simple/gr-cluster-actions.parquet
+
+Cluster-level implicit-feedback records, suitable for use in LensKit. The `item` column contains cluster IDs.  This version of the table
+is processed from the CSV data.
+:::
+
+:::{file} goodreads/simple/gr-cluster-ratings.parquet
+
+Cluster-level explicit-feedback records, suitable for use in LensKit. The `item` column contains cluster IDs.  This version of the table
+is processed from the CSV data.
 :::
 
 ## Work-Level Tables
 
-:::{file} goodreads/gr-work-actions.parquet
+:::{file} goodreads/full/gr-work-actions.parquet
 
 Work-level implicit-feedback records, suitable for use in LensKit. The `item` column contains work IDs.
 :::
 
-:::{file} goodreads/gr-work-ratings.parquet
+:::{file} goodreads/full/gr-work-ratings.parquet
+
+Work-level explicit-feedback records, suitable for use in LensKit. The `item` column contains work IDs.
+:::
+
+:::{file} goodreads/simple/gr-work-actions.parquet
+
+Work-level implicit-feedback records, suitable for use in LensKit. The `item` column contains work IDs.
+:::
+
+:::{file} goodreads/simple/gr-work-ratings.parquet
 
 Work-level explicit-feedback records, suitable for use in LensKit. The `item` column contains work IDs.
 :::

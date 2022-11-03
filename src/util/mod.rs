@@ -9,7 +9,7 @@ pub mod logging;
 pub mod iteration;
 pub mod unicode;
 
-pub use accum::DataAccumulator;
+pub use accum::StringAccumulator;
 pub use timing::Timer;
 
 /// Free default function for easily constructiong defaults.
