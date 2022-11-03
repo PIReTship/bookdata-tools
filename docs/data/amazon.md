@@ -32,7 +32,8 @@ For 2018 data:
 
 Imported data lives in the `az2014` and `az2018` directories.  The source files
 are not automatically downloaded — you will need to download the
-**ratings-only** data for the Books category from each data site.
+**ratings-only** data for the Books category from each data site and save them
+in the `data/az2014` and `data/az2018` directories.
 
 ## Import Steps
 
