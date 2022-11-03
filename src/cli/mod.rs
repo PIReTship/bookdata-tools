@@ -89,6 +89,7 @@ wrap_subcommands!(ClusterCommand);
 #[derive(StructOpt, Debug)]
 enum AmazonCommand {
   ScanRatings(amazon::ScanRatings),
+  ClusterRatings(amazon::ClusterRatings),
 }
 
 #[enum_dispatch(Command)]
