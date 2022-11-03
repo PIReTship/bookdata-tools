@@ -1,9 +1,9 @@
 use std::path::{Path, PathBuf};
-use std::fs::File;
 
 use structopt::StructOpt;
 
 use crate::prelude::*;
+use crate::arrow::polars::*;
 use crate::ids::codes::{NS_GR_WORK, NS_GR_BOOK};
 
 use polars::prelude::*;
@@ -129,14 +129,10 @@ impl ClusterOp {
     debug!("logical plan: {:?}", actions.describe_plan());
     debug!("optimized plan: {:?}", actions.describe_optimized_plan()?);
     info!("collecting results");
-    let mut actions = actions.collect()?;
+    let actions = actions.collect()?;
 
     info!("writing {} actions to {:?}", actions.height(), &self.output);
-    let file = File::create(&self.output)?;
-    ParquetWriter::new(file)
-      .with_compression(ParquetCompression::Zstd(None))
-      .with_row_group_size(Some(1000_000))
-      .finish(&mut actions)?;
+    save_df_parquet(actions, &self.output)?;
 
     Ok(())
   }
