@@ -14,6 +14,8 @@ pub use crate::io::file_size;
 pub use crate::json_from_str;
 pub use crate::util::Timer;
 pub use crate::util::default;
+pub use crate::util::require_working_dir;
+pub use crate::arrow::polars::save_df_parquet;
 pub use crate::cli::Command;
 
 /// Macro to implement FromStr using JSON.
