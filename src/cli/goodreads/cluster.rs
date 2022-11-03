@@ -1,11 +1,35 @@
-//! Support for resolving GoodReads interactions to clusters.
 use std::path::{Path, PathBuf};
 use std::fs::File;
+
+use structopt::StructOpt;
 
 use crate::prelude::*;
 use crate::ids::codes::{NS_GR_WORK, NS_GR_BOOK};
 
 use polars::prelude::*;
+
+#[derive(StructOpt, Debug)]
+pub struct CICommand {
+  /// Cluster ratings
+  #[structopt(long="ratings")]
+  ratings: bool,
+
+  /// Cluster add-to-shelf actions
+  #[structopt(long="add-actions")]
+  add_actions: bool,
+
+  /// Cluster using simple data instead of full data.
+  #[structopt(long="simple")]
+  simple: bool,
+
+  /// Cluster using native GoodReads works instead of book clusters.
+  #[structopt(long="native-works")]
+  native_works: bool,
+
+  /// Write output to FILE
+  #[structopt(short="o", long="output", name="FILE", parse(from_os_str))]
+  output: PathBuf,
+}
 
 #[derive(Debug, PartialEq, Eq)]
 enum SrcType {
@@ -31,6 +55,27 @@ pub struct ClusterOp {
   data: SrcType,
   clusters: AggType,
   output: PathBuf,
+}
+
+impl CICommand {
+  pub fn exec(&self) -> Result<()> {
+    let mut op = if self.add_actions {
+      ClusterOp::add_actions(&self.output)
+    } else if self.ratings {
+      ClusterOp::ratings(&self.output)
+    } else {
+      error!("must specify one of --add-actions or --raitngs");
+      return Err(anyhow!("no operating mode specified"));
+    };
+    if self.native_works {
+      op = op.native_works();
+    }
+    if self.simple {
+      op = op.simple();
+    }
+
+    op.cluster()
+  }
 }
 
 impl ClusterOp {

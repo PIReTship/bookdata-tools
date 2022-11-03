@@ -1,25 +1,22 @@
+use structopt::StructOpt;
+
 use crate::prelude::*;
 use crate::goodreads::*;
 use crate::io::object::ThreadObjectWriter;
 use crate::util::logging::data_progress;
 use serde::de::DeserializeOwned;
 
-/// GoodReads processing commands.
-#[derive(StructOpt, Debug)]
-pub struct Goodreads {
-  #[structopt(subcommand)]
-  command: GRCmd
-}
 
 #[derive(StructOpt, Debug)]
-enum GRCmd {
-  /// Scan GoodReads data.
-  Scan {
-    #[structopt(subcommand)]
-    data: GRScan
-  },
-  /// Cluster GoodReads intearaction data.
-  ClusterInteractions(CIOptions)
+pub enum GRScan {
+  /// Scan GoodReads works.
+  Works(ScanInput),
+  /// Scan GoodReads books.
+  Books(ScanInput),
+  /// Scan GoodReads genres.
+  Genres(ScanInput),
+  /// Scan GoodReads interactions.
+  Interactions(InterInput),
 }
 
 #[derive(StructOpt, Debug)]
@@ -42,41 +39,6 @@ pub struct InterInput {
 
   #[structopt(flatten)]
   scan: ScanInput,
-}
-
-#[derive(StructOpt, Debug)]
-pub struct CIOptions {
-  /// Cluster ratings
-  #[structopt(long="ratings")]
-  ratings: bool,
-
-  /// Cluster add-to-shelf actions
-  #[structopt(long="add-actions")]
-  add_actions: bool,
-
-  /// Cluster using simple data instead of full data.
-  #[structopt(long="simple")]
-  simple: bool,
-
-  /// Cluster using native GoodReads works instead of book clusters.
-  #[structopt(long="native-works")]
-  native_works: bool,
-
-  /// Write output to FILE
-  #[structopt(short="o", long="output", name="FILE", parse(from_os_str))]
-  output: PathBuf,
-}
-
-#[derive(StructOpt, Debug)]
-enum GRScan {
-  /// Scan GoodReads works.
-  Works(ScanInput),
-  /// Scan GoodReads books.
-  Books(ScanInput),
-  /// Scan GoodReads genres.
-  Genres(ScanInput),
-  /// Scan GoodReads interactions.
-  Interactions(InterInput),
 }
 
 fn scan_gr<R, W>(path: &Path, proc: W) -> Result<()>
@@ -103,22 +65,22 @@ where
   Ok(())
 }
 
-impl Command for Goodreads {
-  fn exec(&self) -> Result<()> {
-    match &self.command {
-      GRCmd::Scan { data: GRScan::Works(opts) } => {
+impl GRScan {
+  pub fn exec(&self) -> Result<()> {
+    match self {
+      GRScan::Works(opts) => {
         info!("scanning GoodReads works");
         scan_gr(&opts.infile, work::WorkWriter::open()?)?;
-      }
-      GRCmd::Scan { data: GRScan::Books(opts) } => {
+      },
+      GRScan::Books(opts) => {
         info!("scanning GoodReads books");
         scan_gr(&opts.infile, book::BookWriter::open()?)?;
       },
-      GRCmd::Scan { data: GRScan::Genres(opts) } => {
+      GRScan::Genres(opts) => {
         info!("scanning GoodReads book genres");
         scan_gr(&opts.infile, genres::BookGenreWriter::open()?)?;
       },
-      GRCmd::Scan { data: GRScan::Interactions(opts) } => {
+      GRScan::Interactions(opts) => {
         if opts.csv_mode {
           info!("scanning simplified GoodReads interactions");
           let books = opts.book_map.as_ref();
@@ -129,25 +91,7 @@ impl Command for Goodreads {
           scan_gr(&opts.scan.infile, interaction::IntWriter::open()?)?;
         }
       },
-      GRCmd::ClusterInteractions(opts) => {
-        let mut op = if opts.add_actions {
-          cluster::ClusterOp::add_actions(&opts.output)
-        } else if opts.ratings {
-          cluster::ClusterOp::ratings(&opts.output)
-        } else {
-          error!("must specify one of --add-actions or --raitngs");
-          return Err(anyhow!("no operating mode specified"));
-        };
-        if opts.native_works {
-          op = op.native_works();
-        }
-        if opts.simple {
-          op = op.simple();
-        }
-
-        op.cluster()?;
-      },
-    }
+    };
 
     Ok(())
   }
