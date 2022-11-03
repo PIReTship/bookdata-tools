@@ -45,7 +45,7 @@ impl Command for ClusterRatings {
     let actions = actions.collect()?;
 
     info!("saving {} records", actions.height());
-    save_df_parquet(actions, &self.ratings_out);
+    save_df_parquet(actions, &self.ratings_out)?;
 
     Ok(())
   }
