@@ -4,7 +4,7 @@
 //! themselves live under [cli], while the rest of the package contains data
 //! definitions and helper routines that build on this code.  The tools are not
 //! currently usable as a library; you can extend them by adding additional commands
-//! to the [cli] module.
+//! to the [cli] module (`src/cli/` in the source tree).
 
 mod cleaning;
 mod parsing;
