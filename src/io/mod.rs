@@ -9,6 +9,7 @@ pub mod background;
 pub mod compress;
 pub mod lines;
 pub mod object;
+pub mod ext;
 
 pub use lines::LineProcessor;
 pub use compress::open_gzin_progress;

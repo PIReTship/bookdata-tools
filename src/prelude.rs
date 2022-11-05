@@ -11,6 +11,7 @@ pub use crate::io::ObjectWriter;
 pub use crate::io::DataSink;
 pub use crate::io::path_list;
 pub use crate::io::file_size;
+pub use crate::io::ext::LengthRead;
 pub use crate::json_from_str;
 pub use crate::util::Timer;
 pub use crate::util::default;

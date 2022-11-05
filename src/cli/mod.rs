@@ -15,6 +15,7 @@ pub mod amazon;
 pub mod openlib;
 pub mod goodreads;
 pub mod pqinfo;
+pub mod bx;
 
 use log::*;
 use paste::paste;
@@ -74,8 +75,11 @@ pub enum BDCommand {
   CollectISBNS(collect_isbns::CollectISBNs),
   /// Commands for processing Amazon data.
   Amazon(AmazonCommandWrapper),
-  /// Commands for processing OpenLibrary data,
+  /// Commands for processing OpenLibrary data.
   Openlib(openlib::OpenLib),
+  /// Commands for processing BookCrossing data.
+  BX(BXCommandWrapper),
+  /// Commands for processing GoodReads data.
   Goodreads(goodreads::Goodreads),
   /// Commands for working with clusters.
   Cluster(ClusterCommandWrapper),
@@ -83,6 +87,7 @@ pub enum BDCommand {
 }
 
 wrap_subcommands!(AmazonCommand);
+wrap_subcommands!(BXCommand);
 wrap_subcommands!(ClusterCommand);
 
 #[enum_dispatch(Command)]
@@ -90,6 +95,12 @@ wrap_subcommands!(ClusterCommand);
 enum AmazonCommand {
   ScanRatings(amazon::ScanRatings),
   ClusterRatings(amazon::ClusterRatings),
+}
+
+#[enum_dispatch(Command)]
+#[derive(StructOpt, Debug)]
+enum BXCommand {
+  Extract(bx::Extract),
 }
 
 #[enum_dispatch(Command)]
