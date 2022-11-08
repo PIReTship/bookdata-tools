@@ -11,6 +11,7 @@ pub mod extract_graph;
 pub mod cluster_books;
 pub mod cluster;
 pub mod collect_isbns;
+pub mod link_isbns;
 pub mod amazon;
 pub mod openlib;
 pub mod goodreads;
@@ -73,6 +74,7 @@ pub enum BDCommand {
   IndexNames(index_names::IndexNames),
   ExtractGraph(extract_graph::ExtractGraph),
   CollectISBNS(collect_isbns::CollectISBNs),
+  LinkISBNIds(link_isbns::LinkISBNIds),
   /// Commands for processing Amazon data.
   Amazon(AmazonCommandWrapper),
   /// Commands for processing OpenLibrary data.
