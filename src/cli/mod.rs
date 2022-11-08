@@ -100,7 +100,10 @@ enum AmazonCommand {
 #[enum_dispatch(Command)]
 #[derive(StructOpt, Debug)]
 enum BXCommand {
+  /// Extract BX from source data and clean.
   Extract(bx::Extract),
+  /// Match BX interactions with clusters.
+  ClusterActions(bx::Cluster),
 }
 
 #[enum_dispatch(Command)]
