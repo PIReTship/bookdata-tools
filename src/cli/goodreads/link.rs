@@ -13,9 +13,6 @@ static BOOK_LINK_FILE: &str = "gr-book-link.parquet";
 
 #[derive(StructOpt, Debug)]
 pub enum GRLink {
-  /// Link ISBN IDs.
-  #[structopt(name="isbn-ids")]
-  IsbnIDs,
   /// Link book clusters.
   #[structopt(name="clusters")]
   Clusters,
@@ -24,42 +21,9 @@ pub enum GRLink {
 impl GRLink {
   pub fn exec(&self) -> Result<()> {
     match self {
-      GRLink::IsbnIDs => link_isbn_ids(),
       GRLink::Clusters => link_clusters(),
     }
   }
-}
-
-fn link_isbn_ids() -> Result<()> {
-  require_working_dir("goodreads")?;
-
-  let isbns = LazyFrame::scan_parquet(ALL_ISBNS_FILE, default())?;
-  let books = LazyFrame::scan_parquet(BOOK_ID_FILE, default())?;
-
-  let mut melt = MeltArgs::default();
-  melt.id_vars.push("book_id".to_string());
-  melt.value_vars.push("isbn10".to_string());
-  melt.value_vars.push("isbn13".to_string());
-  melt.value_vars.push("asin".to_string());
-  melt.value_name = Some("isbn".to_string());
-  melt.variable_name = Some("field".to_string());
-  let book_isbns = books.melt(melt);
-  let book_isbns = book_isbns.filter(col("isbn").is_not_null());
-
-  let all_isbns = book_isbns.join(isbns, &[col("isbn")], &[col("isbn")], JoinType::Inner);
-  let all_isbns = all_isbns.select(&[
-    col("book_id"),
-    col("isbn_id"),
-  ]).unique(None, UniqueKeepStrategy::First);
-
-  debug!("plan: {}", all_isbns.describe_optimized_plan()?);
-  info!("collecting ISBN results");
-  let all_isbns = all_isbns.collect()?;
-
-  info!("saving {} isbn records", all_isbns.height());
-  save_df_parquet(all_isbns, BOOK_ISBN_ID_FILE)?;
-
-  Ok(())
 }
 
 fn link_clusters() -> Result<()> {
