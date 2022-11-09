@@ -5,7 +5,7 @@ use std::time::Instant;
 use log::*;
 
 use glob::glob;
-use structopt::StructOpt;
+use clap::Args;
 use fallible_iterator::FallibleIterator;
 
 use crate::prelude::*;
@@ -24,31 +24,31 @@ use crate::util::logging::data_progress;
 /// modes: normal, which simply writes MARC fields to the Parquet file, and
 /// 'book mode', which only saves books and produces additional output files
 /// summarizing book record information and book ISBNs.
-#[derive(StructOpt, Debug)]
-#[structopt(name="scan-marc")]
+#[derive(Args, Debug)]
+#[command(name="scan-marc")]
 pub struct ScanMARC {
   /// Output files for normal mode.
-  #[structopt(short="o", long="output", parse(from_os_str))]
+  #[arg(short='o', long="output")]
   output: Option<PathBuf>,
 
   /// Prefix for output files in book mode.
-  #[structopt(short="p", long="output-prefix")]
+  #[arg(short='p', long="output-prefix")]
   prefix: Option<String>,
 
   /// Turn on book mode.
-  #[structopt(long="book-mode")]
+  #[arg(long="book-mode")]
   book_mode: bool,
 
   /// Read in line mode
-  #[structopt(short="L", long="line-mode")]
+  #[arg(short='L', long="line-mode")]
   line_mode: bool,
 
   /// Glob for files to parse.
-  #[structopt(short="G", long="glob")]
+  #[arg(short='G', long="glob")]
   glob: Option<String>,
 
   /// Input files to parse (GZ-compressed)
-  #[structopt(name = "FILE", parse(from_os_str))]
+  #[arg(name = "FILE")]
   files: Vec<PathBuf>
 }
 

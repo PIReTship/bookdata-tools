@@ -21,7 +21,7 @@ pub struct NS<'a> {
 
 /// The multiplier base for distinguishing numbers in a number space.
 /// Each space supports up to 100K identifiers.
-const NS_MULT_BASE: i32 = 100_000_000;
+pub const NS_MULT_BASE: i32 = 100_000_000;
 
 #[allow(dead_code)]
 pub const NS_WORK: NS<'static> = NS::new("OL-W", "ol_work", 1);
@@ -96,6 +96,18 @@ impl <'a> NS<'a> {
     } else {
       None
     }
+  }
+}
+
+impl NS<'static> {
+  pub fn by_name(name: &str) -> Option<&'static NS<'static>> {
+    for ns in NAMESPACES {
+      if ns.name() == name {
+        return Some(ns);
+      }
+    }
+
+    None
   }
 }
 

@@ -12,10 +12,10 @@ use serde::Serialize;
 use petgraph::algo::kosaraju_scc;
 
 /// Run the book clustering algorithm.
-#[derive(StructOpt, Debug)]
-#[structopt(name="cluster-books")]
+#[derive(Args, Debug)]
+#[command(name="cluster-books")]
 pub struct ClusterBooks {
-  #[structopt(long="save-graph", parse(from_os_str))]
+  #[arg(long="save-graph")]
   save_graph: Option<PathBuf>,
 }
 

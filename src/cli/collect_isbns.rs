@@ -14,15 +14,15 @@ use crate::prelude::Result;
 use crate::ids::collector::KeyCollector;
 
 /// Collect ISBNs from across the data sources.
-#[derive(StructOpt, Debug)]
-#[structopt(name="collect-isbns")]
+#[derive(Args, Debug)]
+#[command(name="collect-isbns")]
 pub struct CollectISBNs {
   /// Path to the output file (in Parquet format)
-  #[structopt(short="o", long="output")]
+  #[arg(short='o', long="output")]
   out_file: PathBuf,
 
   /// path to the ISBN source definition file (in TOML format)
-  #[structopt(name="DEFS")]
+  #[arg(name="DEFS")]
   source_file: PathBuf
 }
 

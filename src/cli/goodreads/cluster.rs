@@ -1,11 +1,35 @@
-//! Support for resolving GoodReads interactions to clusters.
 use std::path::{Path, PathBuf};
-use std::fs::File;
+
+use clap::Args;
 
 use crate::prelude::*;
+use crate::arrow::polars::*;
 use crate::ids::codes::{NS_GR_WORK, NS_GR_BOOK};
 
 use polars::prelude::*;
+
+#[derive(Args, Debug)]
+pub struct CICommand {
+  /// Cluster ratings
+  #[arg(long="ratings")]
+  ratings: bool,
+
+  /// Cluster add-to-shelf actions
+  #[arg(long="add-actions")]
+  add_actions: bool,
+
+  /// Cluster using simple data instead of full data.
+  #[arg(long="simple")]
+  simple: bool,
+
+  /// Cluster using native GoodReads works instead of book clusters.
+  #[arg(long="native-works")]
+  native_works: bool,
+
+  /// Write output to FILE
+  #[arg(short='o', long="output", name="FILE")]
+  output: PathBuf,
+}
 
 #[derive(Debug, PartialEq, Eq)]
 enum SrcType {
@@ -31,6 +55,27 @@ pub struct ClusterOp {
   data: SrcType,
   clusters: AggType,
   output: PathBuf,
+}
+
+impl CICommand {
+  pub fn exec(&self) -> Result<()> {
+    let mut op = if self.add_actions {
+      ClusterOp::add_actions(&self.output)
+    } else if self.ratings {
+      ClusterOp::ratings(&self.output)
+    } else {
+      error!("must specify one of --add-actions or --raitngs");
+      return Err(anyhow!("no operating mode specified"));
+    };
+    if self.native_works {
+      op = op.native_works();
+    }
+    if self.simple {
+      op = op.simple();
+    }
+
+    op.cluster()
+  }
 }
 
 impl ClusterOp {
@@ -84,14 +129,10 @@ impl ClusterOp {
     debug!("logical plan: {:?}", actions.describe_plan());
     debug!("optimized plan: {:?}", actions.describe_optimized_plan()?);
     info!("collecting results");
-    let mut actions = actions.collect()?;
+    let actions = actions.collect()?;
 
     info!("writing {} actions to {:?}", actions.height(), &self.output);
-    let file = File::create(&self.output)?;
-    ParquetWriter::new(file)
-      .with_compression(ParquetCompression::Zstd(None))
-      .with_row_group_size(Some(1000_000))
-      .finish(&mut actions)?;
+    save_df_parquet(actions, &self.output)?;
 
     Ok(())
   }

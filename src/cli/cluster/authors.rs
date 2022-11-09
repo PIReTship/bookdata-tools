@@ -4,7 +4,6 @@ use std::fs::File;
 
 use arrow2::io::parquet::write::{FileWriter, WriteOptions};
 use parquet2::write::Version;
-use structopt::StructOpt;
 use parse_display::{Display, FromStr};
 
 use polars::prelude::*;
@@ -13,27 +12,27 @@ use crate::prelude::*;
 use crate::arrow::dfext::*;
 use anyhow::Result;
 
-#[derive(Display, FromStr, Debug)]
+#[derive(Display, FromStr, Debug, Clone)]
 #[display(style="lowercase")]
 enum Source {
   OpenLib,
   LOC,
 }
 
-#[derive(StructOpt, Debug)]
-#[structopt(name="extract-authors")]
+#[derive(Args, Debug)]
+#[command(name="extract-authors")]
 /// Extract cluster author data from extracted book data.
 pub struct ClusterAuthors {
   /// Only extract first authors
-  #[structopt(long="first-author")]
+  #[arg(long="first-author")]
   first_author: bool,
 
   /// Specify output file
-  #[structopt(short="o", long="output")]
+  #[arg(short='o', long="output")]
   output: PathBuf,
 
   /// Specify the source
-  #[structopt(short="s", long="source")]
+  #[arg(short='s', long="source")]
   sources: Vec<Source>
 }
 

@@ -4,7 +4,7 @@
 //! themselves live under [cli], while the rest of the package contains data
 //! definitions and helper routines that build on this code.  The tools are not
 //! currently usable as a library; you can extend them by adding additional commands
-//! to the [cli] module.
+//! to the [cli] module (`src/cli/` in the source tree).
 
 mod cleaning;
 mod parsing;
@@ -13,6 +13,7 @@ mod util;
 mod io;
 mod ids;
 mod gender;
+mod layout;
 mod graph;
 mod marc;
 mod openlib;
@@ -29,11 +30,11 @@ use mimalloc::MiMalloc;
 static GLOBAL: MiMalloc = MiMalloc;
 
 use anyhow::Result;
-use structopt::StructOpt;
+use clap::Parser;
 
 use cli::CLI;
 
 fn main() -> Result<()> {
-  let opt = CLI::from_args();
+  let opt = CLI::parse();
   opt.exec()
 }

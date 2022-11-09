@@ -13,6 +13,23 @@ pub trait ObjectWriter<T>: Sized {
   /// Write one object.
   fn write_object(&mut self, object: T) -> Result<()>;
 
+  /// Write an iterator full of objects.
+  fn write_all_objects<I>(&mut self, objects: I) -> Result<usize> where I: Iterator<Item=T> {
+    let mut count = 0;
+    for obj in objects {
+      self.write_object(obj)?;
+      count += 1;
+    }
+    Ok(count)
+  }
+
+  /// Write an iterator of objects and finish the writer.
+  fn write_and_finish<I>(mut self, objects: I) -> Result<usize> where I: Iterator<Item=T> {
+    let n = self.write_all_objects(objects)?;
+    self.finish()?;
+    Ok(n)
+  }
+
   /// Finish and close the target.
   fn finish(self) -> Result<usize>;
 

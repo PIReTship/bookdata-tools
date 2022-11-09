@@ -1,6 +1,6 @@
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::fs::{OpenOptions};
+use std::fs::{File, OpenOptions};
 use std::mem::{replace};
 use std::marker::PhantomData;
 
@@ -16,6 +16,18 @@ use crate::io::object::{ObjectWriter, ThreadObjectWriter};
 use crate::io::{DataSink};
 
 const BATCH_SIZE: usize = 1024 * 1024;
+
+/// Open a Parquet writer using BookData defaults.
+pub fn open_parquet_writer<P: AsRef<Path>>(path: P, schema: Schema) -> Result<FileWriter<File>> {
+  let compression = CompressionOptions::Zstd(None);
+  let options = WriteOptions { write_statistics: true, version: Version::V2, compression };
+
+  info!("creating Parquet file {:?}", path.as_ref());
+  let file = OpenOptions::new().create(true).truncate(true).write(true).open(path)?;
+  let writer = FileWriter::try_new(file, schema, options)?;
+
+  Ok(writer)
+}
 
 /// Parquet table writer.
 ///
@@ -45,12 +57,7 @@ impl <R> TableWriter<R> where R: ArrowSerialize + Send + Sync + 'static, R::Muta
       d => panic!("invalid data type {:?}", d)
     };
 
-    let compression = CompressionOptions::Zstd(None);
-    let options = WriteOptions { write_statistics: true, version: Version::V2, compression };
-
-    info!("creating Parquet file {:?}", path);
-    let file = OpenOptions::new().create(true).truncate(true).write(true).open(path)?;
-    let writer = FileWriter::try_new(file, schema, options)?;
+    let writer = open_parquet_writer(path, schema)?;
     let writer = ThreadObjectWriter::new(writer);
     let writer = writer.with_transform(vec_to_chunk);
     let writer = ThreadObjectWriter::new(writer);

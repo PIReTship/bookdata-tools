@@ -22,13 +22,17 @@ available without special request.
 -   Updated OpenLibrary to March 29, 2022 dump
 -   Added code to extract edition and work subjects
 -   Updated docs for current extraction layout
+-   Added {file}`openlibrary/work-clusters.parquet` to simplify OpenLibrary integration
 
 ### Logic Updates
 
 -   Switched from DataFusion to [Polars](https://www.pola.rs/), to reduce volatility and improve
     maintainability.  This also involved a switch from Arrow to Arrow2, which seems to have cleaner
-    code (and less custom logic needed for IO).  Python Polars code replaces the custom TCL driving
-    DataFusion.
+    code (and less custom logic needed for IO).
+-   Rewrote logic that was previously in DataFusion + custom TCL in Rust, so all integration code
+    is in Rust for consistency (and to avoid redundancy in things like logging configuration between
+    Rust and Python).  The code is now in 2 languages: Rust integration and Python notebooks to report
+    on integration statistics.
 -   Improved name parsing
     -   Replaced `nom`-based name parser for {rust:fn}`~bookdata::cleaning::names::name_variants`
         with a new one written in [`peg`], that is both easier to read/maintain and more efficient.
@@ -38,7 +42,7 @@ available without special request.
     -   Added more tests for name parsing and normalization.
 -   Fixed a bug in GoodReads integration, where we were not extracting ASINs.
 -   Extract book genres and series from GoodReads.
--   Updated various Rust dependencies.
+-   Updated various Rust dependencies, and upgraded from StructOpt to `clap`'s derive macros.
 -   Better progress reporting for data scans.
 
 [peg]: https://docs.rs/peg

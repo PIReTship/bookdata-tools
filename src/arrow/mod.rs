@@ -1,6 +1,7 @@
 pub mod reader;
 pub mod writer;
 pub mod dfext;
+pub mod polars;
 
 pub use reader::scan_parquet_file;
 pub use arrow2_convert::ArrowField;

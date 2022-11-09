@@ -1,5 +1,4 @@
 //! Various utility modules.
-
 mod accum;
 #[cfg(unix)]
 pub mod process;

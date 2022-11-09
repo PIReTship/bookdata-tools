@@ -9,15 +9,15 @@ use crate::amazon::*;
 use crate::util::logging::data_progress;
 
 /// Scan an Amazon rating CSV file into Parquet.
-#[derive(StructOpt, Debug)]
-#[structopt(name="scan-ratings")]
+#[derive(Args, Debug)]
+#[command(name="scan-ratings")]
 pub struct ScanRatings {
   /// Rating output file
-  #[structopt(short="o", long="rating-output", name="FILE", parse(from_os_str))]
+  #[arg(short='o', long="rating-output", name="FILE")]
   ratings_out: PathBuf,
 
   /// Input file
-  #[structopt(name = "INPUT", parse(from_os_str))]
+  #[arg(name = "INPUT")]
   infile: PathBuf,
 }
 

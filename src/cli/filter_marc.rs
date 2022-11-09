@@ -11,7 +11,6 @@ use arrow2::chunk::Chunk;
 use arrow2::datatypes::{Schema, DataType, Field};
 use arrow2::io::parquet::write::{FileWriter, WriteOptions, Version, CompressionOptions};
 use friendly::scalar;
-use structopt::StructOpt;
 
 use crate::marc::flat_fields::FieldRecord;
 use crate::prelude::*;
@@ -21,49 +20,49 @@ use crate::util::logging::{item_progress};
 const BATCH_SIZE: usize = 1024 * 1024;
 
 /// Filter a MARC field file to only contain certain results.
-#[derive(StructOpt, Debug)]
-#[structopt(name="filter-marc")]
+#[derive(Args, Debug)]
+#[command(name="filter-marc")]
 pub struct FilterMARC {
-  #[structopt(flatten)]
+  #[command(flatten)]
   filter: FilterSpec,
 
-  #[structopt(flatten)]
+  #[command(flatten)]
   output: OutputSpec,
 
   /// Input file of MARC field data.
-  #[structopt(name="FIELD_FILE", parse(from_os_str))]
+  #[arg(name="FIELD_FILE")]
   field_file: PathBuf,
 }
 
 /// Options for filtering MARC records.
-#[derive(StructOpt, Debug, Clone)]
+#[derive(Args, Debug, Clone)]
 struct FilterSpec {
   /// Specify the tag to filter to.
-  #[structopt(short="t", long="tag", name="TAG")]
+  #[arg(short='t', long="tag", name="TAG")]
   tag: Option<i16>,
 
   /// Specify the subfield to filter to.
-  #[structopt(short="f", long="subfield", name="CODE")]
+  #[arg(short='f', long="subfield", name="CODE")]
   subfield: Option<char>,
 
   /// Trim the contents before emitting.
-  #[structopt(short="T", long="trim")]
+  #[arg(short='T', long="trim")]
   trim: bool,
 
   /// Lowercase the contents before emitting.
-  #[structopt(short="L", long="lower")]
+  #[arg(short='L', long="lower")]
   lower: bool,
 }
 
 /// Options for output.
-#[derive(StructOpt, Debug, Clone)]
+#[derive(Args, Debug, Clone)]
 struct OutputSpec {
   /// Rename the content field.
-  #[structopt(short="n", long="name", name="FIELD")]
+  #[arg(short='n', long="name", name="FIELD")]
   content_name: Option<String>,
 
   /// Output file for filtered MARC fields.
-  #[structopt(short="o", long="output", name = "FILE", parse(from_os_str))]
+  #[arg(short='o', long="output", name = "FILE")]
   file: PathBuf,
 }
 

@@ -16,19 +16,19 @@ use crate::prelude::*;
 use super::Command;
 
 /// Extract basic information from a Parquet file.
-#[derive(StructOpt, Debug)]
-#[structopt(name="collect-isbns")]
+#[derive(Args, Debug)]
+#[command(name="collect-isbns")]
 pub struct PQInfo {
   /// Check the length by decoding the file.
-  #[structopt(long="check-length")]
+  #[arg(long="check-length")]
   check_length: bool,
 
   /// Path to the output JSON file.
-  #[structopt(short="o", long="output")]
+  #[arg(short='o', long="output")]
   out_file: Option<PathBuf>,
 
   /// Path to the Parquet file.
-  #[structopt(name="FILE")]
+  #[arg(name="FILE")]
   source_file: PathBuf
 }
 
