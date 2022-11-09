@@ -24,17 +24,16 @@ Options:
 import os
 import os.path
 import sys
-import runpy
 from pathlib import Path
-import logging
 import subprocess as sp
-
-_log = logging.getLogger('run.py')
 
 src_dir = Path(__file__).parent
 sys.path.insert(0, src_dir)
 
-from bookdata import setup, bin_dir
+
+def _msg(format, *args):
+    msg = format % args
+    print(msg, file=sys.stderr)
 
 
 def run_rust():
@@ -43,7 +42,7 @@ def run_rust():
     # we need to fix up Rust environment in some cases
     sysroot = os.environ.get('CONDA_BUILD_SYSROOT', None)
     if sysroot and 'RUSTFLAGS' not in os.environ:
-        _log.info('setting Rust flags from sysroot')
+        _msg('setting Rust flags from sysroot')
         os.environ['RUSTFLAGS'] = f'-L native={sysroot}/usr/lib64 -L native={sysroot}/lib64'
 
     # shell out to 'cargo run' to run the command
@@ -51,29 +50,14 @@ def run_rust():
 
     run = ['cargo', 'run']
     if os.environ.get('BOOKDATA_DEBUG_MODE', None):
-        pass # no op
+        pass  # no op
     else:
         run.append('--release')
     run.append('--')
 
-    _log.info('building and running Rust tool %s', tool_name)
+    _msg('building and running Rust tool %s', tool_name)
     sp.run(run + sys.argv[1:], check=True)
 
 
-def run_script():
-    script = sys.argv[1]
-    del sys.argv[1]
-    if os.path.exists(script):
-        _log.info('running %s', script)
-        runpy.run_path(script)
-    else:
-        _log.info('preparing to run scripts.%s', script)
-        runpy.run_module(f'scripts.{script}', alter_sys=True)
-
-
 if __name__ == '__main__':
-    setup()
-    if sys.argv[1] == '--rust':
-        run_rust()
-    else:
-        run_script()
+    run_rust()
