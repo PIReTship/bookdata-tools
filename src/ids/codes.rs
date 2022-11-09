@@ -99,6 +99,18 @@ impl <'a> NS<'a> {
   }
 }
 
+impl NS<'static> {
+  pub fn by_name(name: &str) -> Option<&'static NS<'static>> {
+    for ns in NAMESPACES {
+      if ns.name() == name {
+        return Some(ns);
+      }
+    }
+
+    None
+  }
+}
+
 /// Get the namespace for a book code.
 pub fn ns_of_book_code(code: i32) -> Option<&'static NS<'static>> {
   let pfx = code / NS_MULT_BASE;
