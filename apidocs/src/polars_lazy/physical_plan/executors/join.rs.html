@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.25.1/src/physical_plan/executors/join.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>join.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.25.1/src/physical_plan/executors/join.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>join.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -165,147 +165,147 @@
 <span id="165">165</span>
 <span id="166">166</span>
 <span id="167">167</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">JoinExec</span> {
-    <span class="ident">input_left</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Executor</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">input_right</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Executor</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">how</span>: <span class="ident">JoinType</span>,
-    <span class="ident">left_on</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">right_on</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">parallel</span>: <span class="ident">bool</span>,
-    <span class="ident">suffix</span>: <span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span>,
-    <span class="ident">slice</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">i64</span>, <span class="ident">usize</span>)<span class="op">&gt;</span>,
+<span class="kw">pub struct </span>JoinExec {
+    input_left: <span class="prelude-ty">Option</span>&lt;Box&lt;<span class="kw">dyn </span>Executor&gt;&gt;,
+    input_right: <span class="prelude-ty">Option</span>&lt;Box&lt;<span class="kw">dyn </span>Executor&gt;&gt;,
+    how: JoinType,
+    left_on: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
+    right_on: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
+    parallel: bool,
+    suffix: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;,
+    slice: <span class="prelude-ty">Option</span>&lt;(i64, usize)&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">JoinExec</span> {
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::too_many_arguments</span>)]</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">input_left</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Executor</span><span class="op">&gt;</span>,
-        <span class="ident">input_right</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Executor</span><span class="op">&gt;</span>,
-        <span class="ident">how</span>: <span class="ident">JoinType</span>,
-        <span class="ident">left_on</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">right_on</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">parallel</span>: <span class="ident">bool</span>,
-        <span class="ident">suffix</span>: <span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span>,
-        <span class="ident">slice</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">i64</span>, <span class="ident">usize</span>)<span class="op">&gt;</span>,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="ident">JoinExec</span> {
-            <span class="ident">input_left</span>: <span class="prelude-val">Some</span>(<span class="ident">input_left</span>),
-            <span class="ident">input_right</span>: <span class="prelude-val">Some</span>(<span class="ident">input_right</span>),
-            <span class="ident">how</span>,
-            <span class="ident">left_on</span>,
-            <span class="ident">right_on</span>,
-            <span class="ident">parallel</span>,
-            <span class="ident">suffix</span>,
-            <span class="ident">slice</span>,
+<span class="kw">impl </span>JoinExec {
+    <span class="attribute">#[allow(clippy::too_many_arguments)]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(
+        input_left: Box&lt;<span class="kw">dyn </span>Executor&gt;,
+        input_right: Box&lt;<span class="kw">dyn </span>Executor&gt;,
+        how: JoinType,
+        left_on: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
+        right_on: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
+        parallel: bool,
+        suffix: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;,
+        slice: <span class="prelude-ty">Option</span>&lt;(i64, usize)&gt;,
+    ) -&gt; <span class="self">Self </span>{
+        JoinExec {
+            input_left: <span class="prelude-val">Some</span>(input_left),
+            input_right: <span class="prelude-val">Some</span>(input_right),
+            how,
+            left_on,
+            right_on,
+            parallel,
+            suffix,
+            slice,
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Executor</span> <span class="kw">for</span> <span class="ident">JoinExec</span> {
-    <span class="kw">fn</span> <span class="ident">execute</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">ExecutionState</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span> {
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">debug_assertions</span>)]</span>
-        {
-            <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">verbose</span>() {
+<span class="kw">impl </span>Executor <span class="kw">for </span>JoinExec {
+    <span class="kw">fn </span>execute&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span><span class="self">self</span>, state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>ExecutionState) -&gt; PolarsResult&lt;DataFrame&gt; {
+        <span class="attribute">#[cfg(debug_assertions)]
+        </span>{
+            <span class="kw">if </span>state.verbose() {
                 <span class="macro">println!</span>(<span class="string">&quot;run JoinExec&quot;</span>)
             }
         }
-        <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">verbose</span>() {
-            <span class="macro">eprintln!</span>(<span class="string">&quot;join parallel: {}&quot;</span>, <span class="self">self</span>.<span class="ident">parallel</span>);
+        <span class="kw">if </span>state.verbose() {
+            <span class="macro">eprintln!</span>(<span class="string">&quot;join parallel: {}&quot;</span>, <span class="self">self</span>.parallel);
         };
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">input_left</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">input_left</span>.<span class="ident">take</span>().<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">input_right</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">input_right</span>.<span class="ident">take</span>().<span class="ident">unwrap</span>();
+        <span class="kw">let </span><span class="kw-2">mut </span>input_left = <span class="self">self</span>.input_left.take().unwrap();
+        <span class="kw">let </span><span class="kw-2">mut </span>input_right = <span class="self">self</span>.input_right.take().unwrap();
 
-        <span class="kw">let</span> (<span class="ident">df_left</span>, <span class="ident">df_right</span>) <span class="op">=</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">parallel</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state_right</span> <span class="op">=</span> <span class="ident">state</span>.<span class="ident">split</span>();
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state_left</span> <span class="op">=</span> <span class="ident">state</span>.<span class="ident">split</span>();
-            <span class="ident">state_right</span>.<span class="ident">branch_idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-            <span class="comment">// propagate the fetch_rows static value to the spawning threads.</span>
-            <span class="kw">let</span> <span class="ident">fetch_rows</span> <span class="op">=</span> <span class="ident">FETCH_ROWS</span>.<span class="ident">with</span>(<span class="op">|</span><span class="ident">fetch_rows</span><span class="op">|</span> <span class="ident">fetch_rows</span>.<span class="ident">get</span>());
+        <span class="kw">let </span>(df_left, df_right) = <span class="kw">if </span><span class="self">self</span>.parallel {
+            <span class="kw">let </span><span class="kw-2">mut </span>state_right = state.split();
+            <span class="kw">let </span><span class="kw-2">mut </span>state_left = state.split();
+            state_right.branch_idx += <span class="number">1</span>;
+            <span class="comment">// propagate the fetch_rows static value to the spawning threads.
+            </span><span class="kw">let </span>fetch_rows = FETCH_ROWS.with(|fetch_rows| fetch_rows.get());
 
-            <span class="ident">POOL</span>.<span class="ident">join</span>(
-                <span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
-                    <span class="ident">FETCH_ROWS</span>.<span class="ident">with</span>(<span class="op">|</span><span class="ident">fr</span><span class="op">|</span> <span class="ident">fr</span>.<span class="ident">set</span>(<span class="ident">fetch_rows</span>));
-                    <span class="ident">input_left</span>.<span class="ident">execute</span>(<span class="kw-2">&amp;mut</span> <span class="ident">state_left</span>)
+            POOL.join(
+                <span class="kw">move </span>|| {
+                    FETCH_ROWS.with(|fr| fr.set(fetch_rows));
+                    input_left.execute(<span class="kw-2">&amp;mut </span>state_left)
                 },
-                <span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
-                    <span class="ident">FETCH_ROWS</span>.<span class="ident">with</span>(<span class="op">|</span><span class="ident">fr</span><span class="op">|</span> <span class="ident">fr</span>.<span class="ident">set</span>(<span class="ident">fetch_rows</span>));
-                    <span class="ident">input_right</span>.<span class="ident">execute</span>(<span class="kw-2">&amp;mut</span> <span class="ident">state_right</span>)
+                <span class="kw">move </span>|| {
+                    FETCH_ROWS.with(|fr| fr.set(fetch_rows));
+                    input_right.execute(<span class="kw-2">&amp;mut </span>state_right)
                 },
             )
-        } <span class="kw">else</span> {
-            (<span class="ident">input_left</span>.<span class="ident">execute</span>(<span class="ident">state</span>), <span class="ident">input_right</span>.<span class="ident">execute</span>(<span class="ident">state</span>))
+        } <span class="kw">else </span>{
+            (input_left.execute(state), input_right.execute(state))
         };
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df_left</span> <span class="op">=</span> <span class="ident">df_left</span><span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df_right</span> <span class="op">=</span> <span class="ident">df_right</span><span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>df_left = df_left<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>df_right = df_right<span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="ident">profile_name</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">has_node_timer</span>() {
-            <span class="kw">let</span> <span class="ident">by</span> <span class="op">=</span> <span class="self">self</span>
-                .<span class="ident">left_on</span>
-                .<span class="ident">iter</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="prelude-val">Ok</span>(<span class="ident">s</span>.<span class="ident">to_field</span>(<span class="kw-2">&amp;</span><span class="ident">df_left</span>.<span class="ident">schema</span>())<span class="question-mark">?</span>.<span class="ident">name</span>))
-                .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
-            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">column_delimited</span>(<span class="string">&quot;join&quot;</span>.<span class="ident">to_string</span>(), <span class="kw-2">&amp;</span><span class="ident">by</span>);
-            <span class="ident">Cow::Owned</span>(<span class="ident">name</span>)
-        } <span class="kw">else</span> {
-            <span class="ident">Cow::Borrowed</span>(<span class="string">&quot;&quot;</span>)
+        <span class="kw">let </span>profile_name = <span class="kw">if </span>state.has_node_timer() {
+            <span class="kw">let </span>by = <span class="self">self
+                </span>.left_on
+                .iter()
+                .map(|s| <span class="prelude-val">Ok</span>(s.to_field(<span class="kw-2">&amp;</span>df_left.schema())<span class="question-mark">?</span>.name))
+                .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
+            <span class="kw">let </span>name = column_delimited(<span class="string">&quot;join&quot;</span>.to_string(), <span class="kw-2">&amp;</span>by);
+            Cow::Owned(name)
+        } <span class="kw">else </span>{
+            Cow::Borrowed(<span class="string">&quot;&quot;</span>)
         };
 
-        <span class="ident">state</span>.<span class="ident">record</span>(<span class="op">|</span><span class="op">|</span> {
+        state.record(|| {
 
-            <span class="kw">let</span> <span class="ident">left_on_series</span> <span class="op">=</span> <span class="self">self</span>
-                .<span class="ident">left_on</span>
-                .<span class="ident">iter</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">evaluate</span>(<span class="kw-2">&amp;</span><span class="ident">df_left</span>, <span class="ident">state</span>))
-                .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+            <span class="kw">let </span>left_on_series = <span class="self">self
+                </span>.left_on
+                .iter()
+                .map(|e| e.evaluate(<span class="kw-2">&amp;</span>df_left, state))
+                .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
 
-            <span class="kw">let</span> <span class="ident">right_on_series</span> <span class="op">=</span> <span class="self">self</span>
-                .<span class="ident">right_on</span>
-                .<span class="ident">iter</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">evaluate</span>(<span class="kw-2">&amp;</span><span class="ident">df_right</span>, <span class="ident">state</span>))
-                .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+            <span class="kw">let </span>right_on_series = <span class="self">self
+                </span>.right_on
+                .iter()
+                .map(|e| e.evaluate(<span class="kw-2">&amp;</span>df_right, state))
+                .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
 
-            <span class="comment">// make sure that we can join on evaluated expressions</span>
-            <span class="kw">for</span> <span class="ident">s</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">left_on_series</span> {
-                <span class="ident">df_left</span>.<span class="ident">with_column</span>(<span class="ident">s</span>.<span class="ident">clone</span>())<span class="question-mark">?</span>;
+            <span class="comment">// make sure that we can join on evaluated expressions
+            </span><span class="kw">for </span>s <span class="kw">in </span><span class="kw-2">&amp;</span>left_on_series {
+                df_left.with_column(s.clone())<span class="question-mark">?</span>;
             }
-            <span class="kw">for</span> <span class="ident">s</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">right_on_series</span> {
-                <span class="ident">df_right</span>.<span class="ident">with_column</span>(<span class="ident">s</span>.<span class="ident">clone</span>())<span class="question-mark">?</span>;
+            <span class="kw">for </span>s <span class="kw">in </span><span class="kw-2">&amp;</span>right_on_series {
+                df_right.with_column(s.clone())<span class="question-mark">?</span>;
             }
 
-            <span class="comment">// prepare the tolerance</span>
-            <span class="comment">// we must ensure that we use the right units</span>
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;asof_join&quot;</span>)]</span>
-            {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">JoinType::AsOf</span>(<span class="ident">options</span>) <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">how</span> {
-                    <span class="kw">use</span> <span class="ident">polars_core::utils::arrow::temporal_conversions::MILLISECONDS_IN_DAY</span>;
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tol</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">options</span>.<span class="ident">tolerance_str</span> {
-                        <span class="kw">let</span> <span class="ident">duration</span> <span class="op">=</span> <span class="ident">polars_time::Duration::parse</span>(<span class="ident">tol</span>);
-                        <span class="kw">if</span> <span class="ident">duration</span>.<span class="ident">months</span>() <span class="op">!</span><span class="op">=</span> <span class="number">0</span> {
-                            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">PolarsError::ComputeError</span>(<span class="string">&quot;Cannot use month offset in timedelta of an asof join. Consider using 4 weeks&quot;</span>.<span class="ident">into</span>()));
+            <span class="comment">// prepare the tolerance
+            // we must ensure that we use the right units
+            </span><span class="attribute">#[cfg(feature = <span class="string">&quot;asof_join&quot;</span>)]
+            </span>{
+                <span class="kw">if let </span>JoinType::AsOf(options) = <span class="kw-2">&amp;mut </span><span class="self">self</span>.how {
+                    <span class="kw">use </span>polars_core::utils::arrow::temporal_conversions::MILLISECONDS_IN_DAY;
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(tol) = <span class="kw-2">&amp;</span>options.tolerance_str {
+                        <span class="kw">let </span>duration = polars_time::Duration::parse(tol);
+                        <span class="kw">if </span>duration.months() != <span class="number">0 </span>{
+                            <span class="kw">return </span><span class="prelude-val">Err</span>(PolarsError::ComputeError(<span class="string">&quot;Cannot use month offset in timedelta of an asof join. Consider using 4 weeks&quot;</span>.into()));
                         }
-                        <span class="kw">let</span> <span class="ident">left_asof</span> <span class="op">=</span> <span class="ident">df_left</span>.<span class="ident">column</span>(<span class="ident">left_on_series</span>[<span class="number">0</span>].<span class="ident">name</span>())<span class="question-mark">?</span>;
-                        <span class="kw">use</span> <span class="ident">DataType</span>::<span class="kw-2">*</span>;
-                        <span class="kw">match</span> <span class="ident">left_asof</span>.<span class="ident">dtype</span>() {
-                            <span class="ident">Datetime</span>(<span class="ident">tu</span>, <span class="kw">_</span>) <span class="op">|</span> <span class="ident">Duration</span>(<span class="ident">tu</span>) =&gt; {
-                                <span class="kw">let</span> <span class="ident">tolerance</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">tu</span> {
-                                    <span class="ident">TimeUnit::Nanoseconds</span> =&gt; <span class="ident">duration</span>.<span class="ident">duration_ns</span>(),
-                                    <span class="ident">TimeUnit::Microseconds</span> =&gt; <span class="ident">duration</span>.<span class="ident">duration_us</span>(),
-                                    <span class="ident">TimeUnit::Milliseconds</span> =&gt; <span class="ident">duration</span>.<span class="ident">duration_ms</span>(),
+                        <span class="kw">let </span>left_asof = df_left.column(left_on_series[<span class="number">0</span>].name())<span class="question-mark">?</span>;
+                        <span class="kw">use </span>DataType::<span class="kw-2">*</span>;
+                        <span class="kw">match </span>left_asof.dtype() {
+                            Datetime(tu, <span class="kw">_</span>) | Duration(tu) =&gt; {
+                                <span class="kw">let </span>tolerance = <span class="kw">match </span>tu {
+                                    TimeUnit::Nanoseconds =&gt; duration.duration_ns(),
+                                    TimeUnit::Microseconds =&gt; duration.duration_us(),
+                                    TimeUnit::Milliseconds =&gt; duration.duration_ms(),
                                 };
-                                <span class="ident">options</span>.<span class="ident">tolerance</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">AnyValue::from</span>(<span class="ident">tolerance</span>))
+                                options.tolerance = <span class="prelude-val">Some</span>(AnyValue::from(tolerance))
                             }
-                            <span class="ident">Date</span> =&gt; {
-                                <span class="kw">let</span> <span class="ident">days</span> <span class="op">=</span> (<span class="ident">duration</span>.<span class="ident">duration_ms</span>() <span class="op">/</span> <span class="ident">MILLISECONDS_IN_DAY</span>) <span class="kw">as</span> <span class="ident">i32</span>;
-                                <span class="ident">options</span>.<span class="ident">tolerance</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">AnyValue::from</span>(<span class="ident">days</span>))
+                            Date =&gt; {
+                                <span class="kw">let </span>days = (duration.duration_ms() / MILLISECONDS_IN_DAY) <span class="kw">as </span>i32;
+                                options.tolerance = <span class="prelude-val">Some</span>(AnyValue::from(days))
                             }
-                            <span class="ident">Time</span> =&gt; {
-                                <span class="kw">let</span> <span class="ident">tolerance</span> <span class="op">=</span> <span class="ident">duration</span>.<span class="ident">duration_ns</span>();
-                                <span class="ident">options</span>.<span class="ident">tolerance</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">AnyValue::from</span>(<span class="ident">tolerance</span>))
+                            Time =&gt; {
+                                <span class="kw">let </span>tolerance = duration.duration_ns();
+                                options.tolerance = <span class="prelude-val">Some</span>(AnyValue::from(tolerance))
                             }
-                            <span class="kw">_</span> =&gt; {
+                            <span class="kw">_ </span>=&gt; {
                                 <span class="macro">panic!</span>(<span class="string">&quot;can only use timedelta string language with Date/Datetime/Duration/Time dtypes&quot;</span>)
                             }
                         }
@@ -313,24 +313,24 @@
                 }
             }
 
-            <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">df_left</span>.<span class="ident">_join_impl</span>(
-                <span class="kw-2">&amp;</span><span class="ident">df_right</span>,
-                <span class="ident">left_on_series</span>,
-                <span class="ident">right_on_series</span>,
-                <span class="self">self</span>.<span class="ident">how</span>.<span class="ident">clone</span>(),
-                <span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="ident">suffix</span>.<span class="ident">clone</span>().<span class="ident">into_owned</span>()),
-                <span class="self">self</span>.<span class="ident">slice</span>,
+            <span class="kw">let </span>df = df_left._join_impl(
+                <span class="kw-2">&amp;</span>df_right,
+                left_on_series,
+                right_on_series,
+                <span class="self">self</span>.how.clone(),
+                <span class="prelude-val">Some</span>(<span class="self">self</span>.suffix.clone().into_owned()),
+                <span class="self">self</span>.slice,
                 <span class="bool-val">true</span>,
-                <span class="ident">state</span>.<span class="ident">verbose</span>(),
+                state.verbose(),
             );
 
-            <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">verbose</span>() {
-                <span class="macro">eprintln!</span>(<span class="string">&quot;{:?} join dataframes finished&quot;</span>, <span class="self">self</span>.<span class="ident">how</span>);
+            <span class="kw">if </span>state.verbose() {
+                <span class="macro">eprintln!</span>(<span class="string">&quot;{:?} join dataframes finished&quot;</span>, <span class="self">self</span>.how);
             };
-            <span class="ident">df</span>
+            df
 
-        }, <span class="ident">profile_name</span>)
+        }, profile_name)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_lazy" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_lazy" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

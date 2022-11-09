@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.25.1/src/chunked_array/ops/apply.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>apply.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.25.1/src/chunked_array/ops/apply.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>apply.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -869,876 +869,876 @@
 <span id="869">869</span>
 <span id="870">870</span>
 <span id="871">871</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Implementations of the ChunkApply Trait.</span>
-<span class="kw">use</span> <span class="ident">std::borrow::Cow</span>;
-<span class="kw">use</span> <span class="ident">std::convert::TryFrom</span>;
+</pre><pre class="rust"><code><span class="doccomment">//! Implementations of the ChunkApply Trait.
+</span><span class="kw">use </span>std::borrow::Cow;
+<span class="kw">use </span>std::convert::TryFrom;
 
-<span class="kw">use</span> <span class="ident">arrow::array</span>::{<span class="ident">BooleanArray</span>, <span class="ident">PrimitiveArray</span>};
-<span class="kw">use</span> <span class="ident">polars_arrow::array::PolarsArray</span>;
-<span class="kw">use</span> <span class="ident">polars_arrow::trusted_len::PushUnchecked</span>;
+<span class="kw">use </span>arrow::array::{BooleanArray, PrimitiveArray};
+<span class="kw">use </span>polars_arrow::array::PolarsArray;
+<span class="kw">use </span>polars_arrow::trusted_len::PushUnchecked;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::series::IsSorted</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils</span>::{<span class="ident">CustomIterTools</span>, <span class="ident">NoNull</span>};
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::series::IsSorted;
+<span class="kw">use </span><span class="kw">crate</span>::utils::{CustomIterTools, NoNull};
 
-<span class="macro">macro_rules!</span> <span class="ident">try_apply</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">self</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">f</span>:<span class="ident">expr</span>) =&gt; {{
-        <span class="kw">if</span> <span class="op">!</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">self</span>.<span class="ident">has_validity</span>() {
-            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">self</span>.<span class="ident">into_no_null_iter</span>().<span class="ident">map</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">f</span>).<span class="ident">collect</span>()
-        } <span class="kw">else</span> {
-            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">self</span>
-                .<span class="ident">into_iter</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">opt_v</span><span class="op">|</span> <span class="ident">opt_v</span>.<span class="ident">map</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">f</span>).<span class="ident">transpose</span>())
-                .<span class="ident">collect</span>()
+<span class="macro">macro_rules! </span>try_apply {
+    (<span class="macro-nonterminal">$self</span>:expr, <span class="macro-nonterminal">$f</span>:expr) =&gt; {{
+        <span class="kw">if </span>!<span class="macro-nonterminal">$self</span>.has_validity() {
+            <span class="macro-nonterminal">$self</span>.into_no_null_iter().map(<span class="macro-nonterminal">$f</span>).collect()
+        } <span class="kw">else </span>{
+            <span class="macro-nonterminal">$self
+                </span>.into_iter()
+                .map(|opt_v| opt_v.map(<span class="macro-nonterminal">$f</span>).transpose())
+                .collect()
         }
     }};
 }
 
-<span class="macro">macro_rules!</span> <span class="ident">apply</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">self</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">f</span>:<span class="ident">expr</span>) =&gt; {{
-        <span class="kw">if</span> <span class="op">!</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">self</span>.<span class="ident">has_validity</span>() {
-            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">self</span>.<span class="ident">into_no_null_iter</span>().<span class="ident">map</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">f</span>).<span class="ident">collect_trusted</span>()
-        } <span class="kw">else</span> {
-            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">self</span>
-                .<span class="ident">into_iter</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">opt_v</span><span class="op">|</span> <span class="ident">opt_v</span>.<span class="ident">map</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">f</span>))
-                .<span class="ident">collect_trusted</span>()
+<span class="macro">macro_rules! </span>apply {
+    (<span class="macro-nonterminal">$self</span>:expr, <span class="macro-nonterminal">$f</span>:expr) =&gt; {{
+        <span class="kw">if </span>!<span class="macro-nonterminal">$self</span>.has_validity() {
+            <span class="macro-nonterminal">$self</span>.into_no_null_iter().map(<span class="macro-nonterminal">$f</span>).collect_trusted()
+        } <span class="kw">else </span>{
+            <span class="macro-nonterminal">$self
+                </span>.into_iter()
+                .map(|opt_v| opt_v.map(<span class="macro-nonterminal">$f</span>))
+                .collect_trusted()
         }
     }};
 }
 
-<span class="macro">macro_rules!</span> <span class="ident">apply_enumerate</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">self</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">f</span>:<span class="ident">expr</span>) =&gt; {{
-        <span class="kw">if</span> <span class="op">!</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">self</span>.<span class="ident">has_validity</span>() {
-            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">self</span>
-                .<span class="ident">into_no_null_iter</span>()
-                .<span class="ident">enumerate</span>()
-                .<span class="ident">map</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">f</span>)
-                .<span class="ident">collect_trusted</span>()
-        } <span class="kw">else</span> {
-            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">self</span>
-                .<span class="ident">into_iter</span>()
-                .<span class="ident">enumerate</span>()
-                .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">idx</span>, <span class="ident">opt_v</span>)<span class="op">|</span> <span class="ident">opt_v</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">f</span>((<span class="ident">idx</span>, <span class="ident">v</span>))))
-                .<span class="ident">collect_trusted</span>()
+<span class="macro">macro_rules! </span>apply_enumerate {
+    (<span class="macro-nonterminal">$self</span>:expr, <span class="macro-nonterminal">$f</span>:expr) =&gt; {{
+        <span class="kw">if </span>!<span class="macro-nonterminal">$self</span>.has_validity() {
+            <span class="macro-nonterminal">$self
+                </span>.into_no_null_iter()
+                .enumerate()
+                .map(<span class="macro-nonterminal">$f</span>)
+                .collect_trusted()
+        } <span class="kw">else </span>{
+            <span class="macro-nonterminal">$self
+                </span>.into_iter()
+                .enumerate()
+                .map(|(idx, opt_v)| opt_v.map(|v| <span class="macro-nonterminal">$f</span>((idx, v))))
+                .collect_trusted()
         }
     }};
 }
 
-<span class="kw">fn</span> <span class="ident">apply_in_place_impl</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">chunks</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ArrayRef</span><span class="op">&gt;</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="ident">S::Native</span>) -&gt; <span class="ident">S::Native</span> <span class="op">+</span> <span class="ident">Copy</span>,
-    <span class="ident">S</span>: <span class="ident">PolarsNumericType</span>,
+<span class="kw">fn </span>apply_in_place_impl&lt;S, F&gt;(name: <span class="kw-2">&amp;</span>str, chunks: Vec&lt;ArrayRef&gt;, f: F) -&gt; ChunkedArray&lt;S&gt;
+<span class="kw">where
+    </span>F: Fn(S::Native) -&gt; S::Native + Copy,
+    S: PolarsNumericType,
 {
-    <span class="kw">use</span> <span class="ident">arrow::Either</span>::<span class="kw-2">*</span>;
-    <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="ident">chunks</span>
-        .<span class="ident">into_iter</span>()
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">arr</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">owned_arr</span> <span class="op">=</span> <span class="ident">arr</span>
-                .<span class="ident">as_any</span>()
-                .<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">S::Native</span><span class="op">&gt;</span><span class="op">&gt;</span>()
-                .<span class="ident">unwrap</span>()
-                .<span class="ident">clone</span>();
-            <span class="comment">// make sure we have a single ref count coming in.</span>
-            <span class="ident">drop</span>(<span class="ident">arr</span>);
+    <span class="kw">use </span>arrow::Either::<span class="kw-2">*</span>;
+    <span class="kw">let </span>chunks = chunks
+        .into_iter()
+        .map(|arr| {
+            <span class="kw">let </span>owned_arr = arr
+                .as_any()
+                .downcast_ref::&lt;PrimitiveArray&lt;S::Native&gt;&gt;()
+                .unwrap()
+                .clone();
+            <span class="comment">// make sure we have a single ref count coming in.
+            </span>drop(arr);
 
-            <span class="kw">match</span> <span class="ident">owned_arr</span>.<span class="ident">into_mut</span>() {
-                <span class="ident">Left</span>(<span class="ident">immutable</span>) =&gt; <span class="ident">Box::new</span>(<span class="ident">arrow::compute::arity::unary</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">immutable</span>,
-                    <span class="ident">f</span>,
-                    <span class="ident">S::get_dtype</span>().<span class="ident">to_arrow</span>(),
+            <span class="kw">match </span>owned_arr.into_mut() {
+                Left(immutable) =&gt; Box::new(arrow::compute::arity::unary(
+                    <span class="kw-2">&amp;</span>immutable,
+                    f,
+                    S::get_dtype().to_arrow(),
                 )),
-                <span class="ident">Right</span>(<span class="kw-2">mut</span> <span class="ident">mutable</span>) =&gt; {
-                    <span class="kw">let</span> <span class="ident">vals</span> <span class="op">=</span> <span class="ident">mutable</span>.<span class="ident">values_mut_slice</span>();
-                    <span class="ident">vals</span>.<span class="ident">iter_mut</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="kw-2">*</span><span class="ident">v</span> <span class="op">=</span> <span class="ident">f</span>(<span class="kw-2">*</span><span class="ident">v</span>));
-                    <span class="kw">let</span> <span class="ident">a</span>: <span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">mutable</span>.<span class="ident">into</span>();
-                    <span class="ident">Box::new</span>(<span class="ident">a</span>) <span class="kw">as</span> <span class="ident">ArrayRef</span>
+                Right(<span class="kw-2">mut </span>mutable) =&gt; {
+                    <span class="kw">let </span>vals = mutable.values_mut_slice();
+                    vals.iter_mut().for_each(|v| <span class="kw-2">*</span>v = f(<span class="kw-2">*</span>v));
+                    <span class="kw">let </span>a: PrimitiveArray&lt;<span class="kw">_</span>&gt; = mutable.into();
+                    Box::new(a) <span class="kw">as </span>ArrayRef
                 }
             }
         })
-        .<span class="ident">collect</span>();
-    <span class="ident">ChunkedArray</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span><span class="ident">::from_chunks</span>(<span class="ident">name</span>, <span class="ident">chunks</span>)
+        .collect();
+    ChunkedArray::&lt;S&gt;::from_chunks(name, chunks)
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">PolarsNumericType</span><span class="op">&gt;</span> <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Cast a numeric array to another numeric data type and apply a function in place.</span>
-    <span class="doccomment">/// This saves an allocation.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">cast_and_apply_in_place</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="ident">S::Native</span>) -&gt; <span class="ident">S::Native</span> <span class="op">+</span> <span class="ident">Copy</span>,
-        <span class="ident">S</span>: <span class="ident">PolarsNumericType</span>,
+<span class="kw">impl</span>&lt;T: PolarsNumericType&gt; ChunkedArray&lt;T&gt; {
+    <span class="doccomment">/// Cast a numeric array to another numeric data type and apply a function in place.
+    /// This saves an allocation.
+    </span><span class="kw">pub fn </span>cast_and_apply_in_place&lt;F, S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; ChunkedArray&lt;S&gt;
+    <span class="kw">where
+        </span>F: Fn(S::Native) -&gt; S::Native + Copy,
+        S: PolarsNumericType,
     {
-        <span class="comment">// if we cast, we create a new arrow buffer</span>
-        <span class="comment">// then we clone the arrays and drop the casted arrays</span>
-        <span class="comment">// this will ensure we have a single ref count</span>
-        <span class="comment">// and we can mutate in place</span>
-        <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> {
-            <span class="kw">let</span> <span class="ident">s</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">cast</span>(<span class="kw-2">&amp;</span><span class="ident">S::get_dtype</span>()).<span class="ident">unwrap</span>();
-            <span class="ident">s</span>.<span class="ident">chunks</span>().<span class="ident">clone</span>()
+        <span class="comment">// if we cast, we create a new arrow buffer
+        // then we clone the arrays and drop the casted arrays
+        // this will ensure we have a single ref count
+        // and we can mutate in place
+        </span><span class="kw">let </span>chunks = {
+            <span class="kw">let </span>s = <span class="self">self</span>.cast(<span class="kw-2">&amp;</span>S::get_dtype()).unwrap();
+            s.chunks().clone()
         };
-        <span class="ident">apply_in_place_impl</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">chunks</span>, <span class="ident">f</span>)
+        apply_in_place_impl(<span class="self">self</span>.name(), chunks, f)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">PolarsNumericType</span><span class="op">&gt;</span> <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">apply_mut</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>)
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="ident">T::Native</span>) -&gt; <span class="ident">T::Native</span> <span class="op">+</span> <span class="ident">Copy</span>,
+<span class="kw">impl</span>&lt;T: PolarsNumericType&gt; ChunkedArray&lt;T&gt; {
+    <span class="kw">pub fn </span>apply_mut&lt;F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, f: F)
+    <span class="kw">where
+        </span>F: Fn(T::Native) -&gt; T::Native + Copy,
     {
-        <span class="comment">// safety, we do no t change the lengths</span>
-        <span class="kw">unsafe</span> {
-            <span class="self">self</span>.<span class="ident">downcast_iter_mut</span>()
-                .<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">arr</span><span class="op">|</span> <span class="ident">arrow::compute::arity_assign::unary</span>(<span class="ident">arr</span>, <span class="ident">f</span>))
+        <span class="comment">// safety, we do no t change the lengths
+        </span><span class="kw">unsafe </span>{
+            <span class="self">self</span>.downcast_iter_mut()
+                .for_each(|arr| arrow::compute::arity_assign::unary(arr, f))
         };
-        <span class="comment">// can be in any order now</span>
-        <span class="self">self</span>.<span class="ident">set_sorted2</span>(<span class="ident">IsSorted::Not</span>);
+        <span class="comment">// can be in any order now
+        </span><span class="self">self</span>.set_sorted2(IsSorted::Not);
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">ChunkApply</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T::Native</span>, <span class="ident">T::Native</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">PolarsNumericType</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; ChunkApply&lt;<span class="lifetime">&#39;a</span>, T::Native, T::Native&gt; <span class="kw">for </span>ChunkedArray&lt;T&gt;
+<span class="kw">where
+    </span>T: PolarsNumericType,
 {
-    <span class="kw">fn</span> <span class="ident">apply_cast_numeric</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="ident">T::Native</span>) -&gt; <span class="ident">S::Native</span> <span class="op">+</span> <span class="ident">Copy</span>,
-        <span class="ident">S</span>: <span class="ident">PolarsNumericType</span>,
+    <span class="kw">fn </span>apply_cast_numeric&lt;F, S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; ChunkedArray&lt;S&gt;
+    <span class="kw">where
+        </span>F: Fn(T::Native) -&gt; S::Native + Copy,
+        S: PolarsNumericType,
     {
-        <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">data_views</span>()
-            .<span class="ident">zip</span>(<span class="self">self</span>.<span class="ident">iter_validities</span>())
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">slice</span>, <span class="ident">validity</span>)<span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="ident">::from_trusted_len_iter</span>(<span class="ident">slice</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">v</span><span class="op">|</span> <span class="ident">f</span>(<span class="ident">v</span>)));
-                <span class="ident">to_array</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="ident">values</span>, <span class="ident">validity</span>.<span class="ident">cloned</span>())
+        <span class="kw">let </span>chunks = <span class="self">self
+            </span>.data_views()
+            .zip(<span class="self">self</span>.iter_validities())
+            .map(|(slice, validity)| {
+                <span class="kw">let </span>values = Vec::&lt;<span class="kw">_</span>&gt;::from_trusted_len_iter(slice.iter().map(|<span class="kw-2">&amp;</span>v| f(v)));
+                to_array::&lt;S&gt;(values, validity.cloned())
             })
-            .<span class="ident">collect</span>();
-        <span class="ident">ChunkedArray</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span><span class="ident">::from_chunks</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">chunks</span>)
+            .collect();
+        ChunkedArray::&lt;S&gt;::from_chunks(<span class="self">self</span>.name(), chunks)
     }
 
-    <span class="kw">fn</span> <span class="ident">branch_apply_cast_numeric_no_null</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T::Native</span><span class="op">&gt;</span>) -&gt; <span class="ident">S::Native</span>,
-        <span class="ident">S</span>: <span class="ident">PolarsNumericType</span>,
+    <span class="kw">fn </span>branch_apply_cast_numeric_no_null&lt;F, S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; ChunkedArray&lt;S&gt;
+    <span class="kw">where
+        </span>F: Fn(<span class="prelude-ty">Option</span>&lt;T::Native&gt;) -&gt; S::Native,
+        S: PolarsNumericType,
     {
-        <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">downcast_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">array</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="kw">if</span> <span class="op">!</span><span class="ident">array</span>.<span class="ident">has_validity</span>() {
-                    <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">values</span>().<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">v</span><span class="op">|</span> <span class="ident">f</span>(<span class="prelude-val">Some</span>(<span class="ident">v</span>)));
-                    <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="ident">::from_trusted_len_iter</span>(<span class="ident">values</span>)
-                } <span class="kw">else</span> {
-                    <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">f</span>(<span class="ident">v</span>.<span class="ident">copied</span>()));
-                    <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="ident">::from_trusted_len_iter</span>(<span class="ident">values</span>)
+        <span class="kw">let </span>chunks = <span class="self">self
+            </span>.downcast_iter()
+            .map(|array| {
+                <span class="kw">let </span>values = <span class="kw">if </span>!array.has_validity() {
+                    <span class="kw">let </span>values = array.values().iter().map(|<span class="kw-2">&amp;</span>v| f(<span class="prelude-val">Some</span>(v)));
+                    Vec::&lt;<span class="kw">_</span>&gt;::from_trusted_len_iter(values)
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span>values = array.into_iter().map(|v| f(v.copied()));
+                    Vec::&lt;<span class="kw">_</span>&gt;::from_trusted_len_iter(values)
                 };
-                <span class="ident">to_array</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="ident">values</span>, <span class="prelude-val">None</span>)
+                to_array::&lt;S&gt;(values, <span class="prelude-val">None</span>)
             })
-            .<span class="ident">collect</span>();
-        <span class="ident">ChunkedArray</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span><span class="ident">::from_chunks</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">chunks</span>)
+            .collect();
+        ChunkedArray::&lt;S&gt;::from_chunks(<span class="self">self</span>.name(), chunks)
     }
 
-    <span class="kw">fn</span> <span class="ident">apply</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="ident">T::Native</span>) -&gt; <span class="ident">T::Native</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>apply&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn(T::Native) -&gt; T::Native + Copy,
     {
-        <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">data_views</span>()
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">zip</span>(<span class="self">self</span>.<span class="ident">iter_validities</span>())
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">slice</span>, <span class="ident">validity</span>)<span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">slice</span>.<span class="ident">iter</span>().<span class="ident">copied</span>().<span class="ident">map</span>(<span class="ident">f</span>);
-                <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="ident">::from_trusted_len_iter</span>(<span class="ident">values</span>);
-                <span class="ident">to_array</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">values</span>, <span class="ident">validity</span>.<span class="ident">cloned</span>())
+        <span class="kw">let </span>chunks = <span class="self">self
+            </span>.data_views()
+            .into_iter()
+            .zip(<span class="self">self</span>.iter_validities())
+            .map(|(slice, validity)| {
+                <span class="kw">let </span>values = slice.iter().copied().map(f);
+                <span class="kw">let </span>values = Vec::&lt;<span class="kw">_</span>&gt;::from_trusted_len_iter(values);
+                to_array::&lt;T&gt;(values, validity.cloned())
             })
-            .<span class="ident">collect</span>();
-        <span class="ident">ChunkedArray</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::from_chunks</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">chunks</span>)
+            .collect();
+        ChunkedArray::&lt;T&gt;::from_chunks(<span class="self">self</span>.name(), chunks)
     }
 
-    <span class="kw">fn</span> <span class="ident">try_apply</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="ident">T::Native</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">T::Native</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>try_apply&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span>F: Fn(T::Native) -&gt; PolarsResult&lt;T::Native&gt; + Copy,
     {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ca</span>: <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">data_views</span>()
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">zip</span>(<span class="self">self</span>.<span class="ident">iter_validities</span>())
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">slice</span>, <span class="ident">validity</span>)<span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">vec</span>: <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">slice</span>.<span class="ident">iter</span>().<span class="ident">copied</span>().<span class="ident">map</span>(<span class="ident">f</span>).<span class="ident">collect</span>();
-                <span class="prelude-val">Ok</span>((<span class="ident">vec</span><span class="question-mark">?</span>, <span class="ident">validity</span>.<span class="ident">cloned</span>()))
+        <span class="kw">let </span><span class="kw-2">mut </span>ca: ChunkedArray&lt;T&gt; = <span class="self">self
+            </span>.data_views()
+            .into_iter()
+            .zip(<span class="self">self</span>.iter_validities())
+            .map(|(slice, validity)| {
+                <span class="kw">let </span>vec: PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt; = slice.iter().copied().map(f).collect();
+                <span class="prelude-val">Ok</span>((vec<span class="question-mark">?</span>, validity.cloned()))
             })
-            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
-        <span class="ident">ca</span>.<span class="ident">rename</span>(<span class="self">self</span>.<span class="ident">name</span>());
-        <span class="prelude-val">Ok</span>(<span class="ident">ca</span>)
+            .collect::&lt;PolarsResult&lt;<span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
+        ca.rename(<span class="self">self</span>.name());
+        <span class="prelude-val">Ok</span>(ca)
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_on_opt</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T::Native</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T::Native</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>apply_on_opt&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn(<span class="prelude-ty">Option</span>&lt;T::Native&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;T::Native&gt; + Copy,
     {
-        <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">downcast_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">arr</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">iter</span> <span class="op">=</span> <span class="ident">arr</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">opt_v</span><span class="op">|</span> <span class="ident">f</span>(<span class="ident">opt_v</span>.<span class="ident">copied</span>()));
-                <span class="kw">let</span> <span class="ident">arr</span> <span class="op">=</span> <span class="ident">PrimitiveArray</span>::<span class="op">&lt;</span><span class="ident">T::Native</span><span class="op">&gt;</span><span class="ident">::from_trusted_len_iter</span>(<span class="ident">iter</span>)
-                    .<span class="ident">to</span>(<span class="ident">T::get_dtype</span>().<span class="ident">to_arrow</span>());
-                <span class="ident">Box::new</span>(<span class="ident">arr</span>) <span class="kw">as</span> <span class="ident">ArrayRef</span>
+        <span class="kw">let </span>chunks = <span class="self">self
+            </span>.downcast_iter()
+            .map(|arr| {
+                <span class="kw">let </span>iter = arr.into_iter().map(|opt_v| f(opt_v.copied()));
+                <span class="kw">let </span>arr = PrimitiveArray::&lt;T::Native&gt;::from_trusted_len_iter(iter)
+                    .to(T::get_dtype().to_arrow());
+                Box::new(arr) <span class="kw">as </span>ArrayRef
             })
-            .<span class="ident">collect</span>();
-        <span class="ident"><span class="self">Self</span>::from_chunks</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">chunks</span>)
+            .collect();
+        <span class="self">Self</span>::from_chunks(<span class="self">self</span>.name(), chunks)
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_with_idx</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>((<span class="ident">usize</span>, <span class="ident">T::Native</span>)) -&gt; <span class="ident">T::Native</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>apply_with_idx&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn((usize, T::Native)) -&gt; T::Native + Copy,
     {
-        <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">has_validity</span>() {
-            <span class="kw">let</span> <span class="ident">ca</span>: <span class="ident">NoNull</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="self">self</span>
-                .<span class="ident">into_no_null_iter</span>()
-                .<span class="ident">enumerate</span>()
-                .<span class="ident">map</span>(<span class="ident">f</span>)
-                .<span class="ident">collect_trusted</span>();
-            <span class="ident">ca</span>.<span class="ident">into_inner</span>()
-        } <span class="kw">else</span> {
-            <span class="comment">// we know that we only iterate over length == self.len()</span>
-            <span class="kw">unsafe</span> {
-                <span class="self">self</span>.<span class="ident">downcast_iter</span>()
-                    .<span class="ident">flatten</span>()
-                    .<span class="ident">trust_my_length</span>(<span class="self">self</span>.<span class="ident">len</span>())
-                    .<span class="ident">enumerate</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">idx</span>, <span class="ident">opt_v</span>)<span class="op">|</span> <span class="ident">opt_v</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">f</span>((<span class="ident">idx</span>, <span class="kw-2">*</span><span class="ident">v</span>))))
-                    .<span class="ident">collect_trusted</span>()
+        <span class="kw">if </span>!<span class="self">self</span>.has_validity() {
+            <span class="kw">let </span>ca: NoNull&lt;<span class="kw">_</span>&gt; = <span class="self">self
+                </span>.into_no_null_iter()
+                .enumerate()
+                .map(f)
+                .collect_trusted();
+            ca.into_inner()
+        } <span class="kw">else </span>{
+            <span class="comment">// we know that we only iterate over length == self.len()
+            </span><span class="kw">unsafe </span>{
+                <span class="self">self</span>.downcast_iter()
+                    .flatten()
+                    .trust_my_length(<span class="self">self</span>.len())
+                    .enumerate()
+                    .map(|(idx, opt_v)| opt_v.map(|v| f((idx, <span class="kw-2">*</span>v))))
+                    .collect_trusted()
             }
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_with_idx_on_opt</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>((<span class="ident">usize</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T::Native</span><span class="op">&gt;</span>)) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T::Native</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>apply_with_idx_on_opt&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn((usize, <span class="prelude-ty">Option</span>&lt;T::Native&gt;)) -&gt; <span class="prelude-ty">Option</span>&lt;T::Native&gt; + Copy,
     {
-        <span class="comment">// we know that we only iterate over length == self.len()</span>
-        <span class="kw">unsafe</span> {
-            <span class="self">self</span>.<span class="ident">downcast_iter</span>()
-                .<span class="ident">flatten</span>()
-                .<span class="ident">trust_my_length</span>(<span class="self">self</span>.<span class="ident">len</span>())
-                .<span class="ident">enumerate</span>()
-                .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">idx</span>, <span class="ident">v</span>)<span class="op">|</span> <span class="ident">f</span>((<span class="ident">idx</span>, <span class="ident">v</span>.<span class="ident">copied</span>())))
-                .<span class="ident">collect_trusted</span>()
+        <span class="comment">// we know that we only iterate over length == self.len()
+        </span><span class="kw">unsafe </span>{
+            <span class="self">self</span>.downcast_iter()
+                .flatten()
+                .trust_my_length(<span class="self">self</span>.len())
+                .enumerate()
+                .map(|(idx, v)| f((idx, v.copied())))
+                .collect_trusted()
         }
     }
-    <span class="kw">fn</span> <span class="ident">apply_to_slice</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">V</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>, <span class="ident">slice</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">V</span>])
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T::Native</span><span class="op">&gt;</span>, <span class="kw-2">&amp;</span><span class="ident">V</span>) -&gt; <span class="ident">V</span>,
+    <span class="kw">fn </span>apply_to_slice&lt;F, V&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F, slice: <span class="kw-2">&amp;mut </span>[V])
+    <span class="kw">where
+        </span>F: Fn(<span class="prelude-ty">Option</span>&lt;T::Native&gt;, <span class="kw-2">&amp;</span>V) -&gt; V,
     {
-        <span class="macro">assert!</span>(<span class="ident">slice</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">len</span>());
+        <span class="macro">assert!</span>(slice.len() &gt;= <span class="self">self</span>.len());
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx</span> <span class="op">=</span> <span class="number">0</span>;
-        <span class="self">self</span>.<span class="ident">downcast_iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">arr</span><span class="op">|</span> {
-            <span class="ident">arr</span>.<span class="ident">into_iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">opt_val</span><span class="op">|</span> {
-                <span class="comment">// Safety:</span>
-                <span class="comment">// length asserted above</span>
-                <span class="kw">let</span> <span class="ident">item</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">slice</span>.<span class="ident">get_unchecked_mut</span>(<span class="ident">idx</span>) };
-                <span class="kw-2">*</span><span class="ident">item</span> <span class="op">=</span> <span class="ident">f</span>(<span class="ident">opt_val</span>.<span class="ident">copied</span>(), <span class="ident">item</span>);
-                <span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>idx = <span class="number">0</span>;
+        <span class="self">self</span>.downcast_iter().for_each(|arr| {
+            arr.into_iter().for_each(|opt_val| {
+                <span class="comment">// Safety:
+                // length asserted above
+                </span><span class="kw">let </span>item = <span class="kw">unsafe </span>{ slice.get_unchecked_mut(idx) };
+                <span class="kw-2">*</span>item = f(opt_val.copied(), item);
+                idx += <span class="number">1</span>;
             })
         });
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">ChunkApply</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">bool</span>, <span class="ident">bool</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">BooleanChunked</span> {
-    <span class="kw">fn</span> <span class="ident">apply_cast_numeric</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="ident">bool</span>) -&gt; <span class="ident">S::Native</span> <span class="op">+</span> <span class="ident">Copy</span>,
-        <span class="ident">S</span>: <span class="ident">PolarsNumericType</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; ChunkApply&lt;<span class="lifetime">&#39;a</span>, bool, bool&gt; <span class="kw">for </span>BooleanChunked {
+    <span class="kw">fn </span>apply_cast_numeric&lt;F, S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; ChunkedArray&lt;S&gt;
+    <span class="kw">where
+        </span>F: Fn(bool) -&gt; S::Native + Copy,
+        S: PolarsNumericType,
     {
-        <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="op">|</span><span class="ident">array</span>: <span class="kw-2">&amp;</span><span class="ident">BooleanArray</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">values</span>().<span class="ident">iter</span>().<span class="ident">map</span>(<span class="ident">f</span>);
-            <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="ident">::from_trusted_len_iter</span>(<span class="ident">values</span>);
-            <span class="kw">let</span> <span class="ident">validity</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">validity</span>().<span class="ident">cloned</span>();
-            <span class="ident">to_array</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="ident">values</span>, <span class="ident">validity</span>)
+        <span class="kw">let </span>f = |array: <span class="kw-2">&amp;</span>BooleanArray| {
+            <span class="kw">let </span>values = array.values().iter().map(f);
+            <span class="kw">let </span>values = Vec::&lt;<span class="kw">_</span>&gt;::from_trusted_len_iter(values);
+            <span class="kw">let </span>validity = array.validity().cloned();
+            to_array::&lt;S&gt;(values, validity)
         };
 
-        <span class="self">self</span>.<span class="ident">apply_kernel_cast</span>(<span class="kw-2">&amp;</span><span class="ident">f</span>)
+        <span class="self">self</span>.apply_kernel_cast(<span class="kw-2">&amp;</span>f)
     }
 
-    <span class="kw">fn</span> <span class="ident">branch_apply_cast_numeric_no_null</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span>) -&gt; <span class="ident">S::Native</span> <span class="op">+</span> <span class="ident">Copy</span>,
-        <span class="ident">S</span>: <span class="ident">PolarsNumericType</span>,
+    <span class="kw">fn </span>branch_apply_cast_numeric_no_null&lt;F, S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; ChunkedArray&lt;S&gt;
+    <span class="kw">where
+        </span>F: Fn(<span class="prelude-ty">Option</span>&lt;bool&gt;) -&gt; S::Native + Copy,
+        S: PolarsNumericType,
     {
-        <span class="self">self</span>.<span class="ident">apply_kernel_cast</span>(<span class="kw-2">&amp;</span><span class="op">|</span><span class="ident">array</span>: <span class="kw-2">&amp;</span><span class="ident">BooleanArray</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="ident">::from_trusted_len_iter</span>(<span class="ident">array</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="ident">f</span>));
-            <span class="ident">to_array</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="ident">values</span>, <span class="prelude-val">None</span>)
+        <span class="self">self</span>.apply_kernel_cast(<span class="kw-2">&amp;</span>|array: <span class="kw-2">&amp;</span>BooleanArray| {
+            <span class="kw">let </span>values = Vec::&lt;<span class="kw">_</span>&gt;::from_trusted_len_iter(array.into_iter().map(f));
+            to_array::&lt;S&gt;(values, <span class="prelude-val">None</span>)
         })
     }
 
-    <span class="kw">fn</span> <span class="ident">apply</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="ident">bool</span>) -&gt; <span class="ident">bool</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>apply&lt;F&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn(bool) -&gt; bool + Copy,
     {
-        <span class="macro">apply!</span>(<span class="self">self</span>, <span class="ident">f</span>)
+        <span class="macro">apply!</span>(<span class="self">self</span>, f)
     }
 
-    <span class="kw">fn</span> <span class="ident">try_apply</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="ident">bool</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>try_apply&lt;F&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span>F: Fn(bool) -&gt; PolarsResult&lt;bool&gt; + Copy,
     {
-        <span class="macro">try_apply!</span>(<span class="self">self</span>, <span class="ident">f</span>)
+        <span class="macro">try_apply!</span>(<span class="self">self</span>, f)
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_on_opt</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>apply_on_opt&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn(<span class="prelude-ty">Option</span>&lt;bool&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;bool&gt; + Copy,
     {
-        <span class="self">self</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="ident">f</span>).<span class="ident">collect_trusted</span>()
+        <span class="self">self</span>.into_iter().map(f).collect_trusted()
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_with_idx</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>((<span class="ident">usize</span>, <span class="ident">bool</span>)) -&gt; <span class="ident">bool</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>apply_with_idx&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn((usize, bool)) -&gt; bool + Copy,
     {
-        <span class="macro">apply_enumerate!</span>(<span class="self">self</span>, <span class="ident">f</span>)
+        <span class="macro">apply_enumerate!</span>(<span class="self">self</span>, f)
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_with_idx_on_opt</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>((<span class="ident">usize</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span>)) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>apply_with_idx_on_opt&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn((usize, <span class="prelude-ty">Option</span>&lt;bool&gt;)) -&gt; <span class="prelude-ty">Option</span>&lt;bool&gt; + Copy,
     {
-        <span class="self">self</span>.<span class="ident">into_iter</span>().<span class="ident">enumerate</span>().<span class="ident">map</span>(<span class="ident">f</span>).<span class="ident">collect_trusted</span>()
+        <span class="self">self</span>.into_iter().enumerate().map(f).collect_trusted()
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_to_slice</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>, <span class="ident">slice</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">T</span>])
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span>, <span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">T</span>,
+    <span class="kw">fn </span>apply_to_slice&lt;F, T&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F, slice: <span class="kw-2">&amp;mut </span>[T])
+    <span class="kw">where
+        </span>F: Fn(<span class="prelude-ty">Option</span>&lt;bool&gt;, <span class="kw-2">&amp;</span>T) -&gt; T,
     {
-        <span class="macro">assert!</span>(<span class="ident">slice</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">len</span>());
+        <span class="macro">assert!</span>(slice.len() &gt;= <span class="self">self</span>.len());
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx</span> <span class="op">=</span> <span class="number">0</span>;
-        <span class="self">self</span>.<span class="ident">downcast_iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">arr</span><span class="op">|</span> {
-            <span class="ident">arr</span>.<span class="ident">into_iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">opt_val</span><span class="op">|</span> {
-                <span class="comment">// Safety:</span>
-                <span class="comment">// length asserted above</span>
-                <span class="kw">let</span> <span class="ident">item</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">slice</span>.<span class="ident">get_unchecked_mut</span>(<span class="ident">idx</span>) };
-                <span class="kw-2">*</span><span class="ident">item</span> <span class="op">=</span> <span class="ident">f</span>(<span class="ident">opt_val</span>, <span class="ident">item</span>);
-                <span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>idx = <span class="number">0</span>;
+        <span class="self">self</span>.downcast_iter().for_each(|arr| {
+            arr.into_iter().for_each(|opt_val| {
+                <span class="comment">// Safety:
+                // length asserted above
+                </span><span class="kw">let </span>item = <span class="kw">unsafe </span>{ slice.get_unchecked_mut(idx) };
+                <span class="kw-2">*</span>item = f(opt_val, item);
+                idx += <span class="number">1</span>;
             })
         });
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">ChunkApply</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>, <span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Utf8Chunked</span> {
-    <span class="kw">fn</span> <span class="ident">apply_cast_numeric</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>) -&gt; <span class="ident">S::Native</span> <span class="op">+</span> <span class="ident">Copy</span>,
-        <span class="ident">S</span>: <span class="ident">PolarsNumericType</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; ChunkApply&lt;<span class="lifetime">&#39;a</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str, Cow&lt;<span class="lifetime">&#39;a</span>, str&gt;&gt; <span class="kw">for </span>Utf8Chunked {
+    <span class="kw">fn </span>apply_cast_numeric&lt;F, S&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; ChunkedArray&lt;S&gt;
+    <span class="kw">where
+        </span>F: Fn(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str) -&gt; S::Native + Copy,
+        S: PolarsNumericType,
     {
-        <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">downcast_iter</span>()
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">array</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">values_iter</span>().<span class="ident">map</span>(<span class="ident">f</span>);
-                <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="ident">::from_trusted_len_iter</span>(<span class="ident">values</span>);
-                <span class="ident">to_array</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="ident">values</span>, <span class="ident">array</span>.<span class="ident">validity</span>().<span class="ident">cloned</span>())
+        <span class="kw">let </span>chunks = <span class="self">self
+            </span>.downcast_iter()
+            .into_iter()
+            .map(|array| {
+                <span class="kw">let </span>values = array.values_iter().map(f);
+                <span class="kw">let </span>values = Vec::&lt;<span class="kw">_</span>&gt;::from_trusted_len_iter(values);
+                to_array::&lt;S&gt;(values, array.validity().cloned())
             })
-            .<span class="ident">collect</span>();
-        <span class="ident">ChunkedArray::from_chunks</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">chunks</span>)
+            .collect();
+        ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks)
     }
 
-    <span class="kw">fn</span> <span class="ident">branch_apply_cast_numeric_no_null</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span><span class="op">&gt;</span>) -&gt; <span class="ident">S::Native</span> <span class="op">+</span> <span class="ident">Copy</span>,
-        <span class="ident">S</span>: <span class="ident">PolarsNumericType</span>,
+    <span class="kw">fn </span>branch_apply_cast_numeric_no_null&lt;F, S&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; ChunkedArray&lt;S&gt;
+    <span class="kw">where
+        </span>F: Fn(<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt;) -&gt; S::Native + Copy,
+        S: PolarsNumericType,
     {
-        <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">downcast_iter</span>()
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">array</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="ident">f</span>);
-                <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="ident">::from_trusted_len_iter</span>(<span class="ident">values</span>);
-                <span class="ident">to_array</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="ident">values</span>, <span class="ident">array</span>.<span class="ident">validity</span>().<span class="ident">cloned</span>())
+        <span class="kw">let </span>chunks = <span class="self">self
+            </span>.downcast_iter()
+            .into_iter()
+            .map(|array| {
+                <span class="kw">let </span>values = array.into_iter().map(f);
+                <span class="kw">let </span>values = Vec::&lt;<span class="kw">_</span>&gt;::from_trusted_len_iter(values);
+                to_array::&lt;S&gt;(values, array.validity().cloned())
             })
-            .<span class="ident">collect</span>();
-        <span class="ident">ChunkedArray::from_chunks</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">chunks</span>)
+            .collect();
+        ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks)
     }
 
-    <span class="kw">fn</span> <span class="ident">apply</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>) -&gt; <span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">str</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>apply&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str) -&gt; Cow&lt;<span class="lifetime">&#39;a</span>, str&gt; + Copy,
     {
-        <span class="macro">apply!</span>(<span class="self">self</span>, <span class="ident">f</span>)
+        <span class="macro">apply!</span>(<span class="self">self</span>, f)
     }
 
-    <span class="kw">fn</span> <span class="ident">try_apply</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>try_apply&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span>F: Fn(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str) -&gt; PolarsResult&lt;Cow&lt;<span class="lifetime">&#39;a</span>, str&gt;&gt; + Copy,
     {
-        <span class="macro">try_apply!</span>(<span class="self">self</span>, <span class="ident">f</span>)
+        <span class="macro">try_apply!</span>(<span class="self">self</span>, f)
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_on_opt</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>apply_on_opt&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn(<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;Cow&lt;<span class="lifetime">&#39;a</span>, str&gt;&gt; + Copy,
     {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ca</span>: <span class="self">Self</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="ident">f</span>).<span class="ident">collect_trusted</span>();
-        <span class="ident">ca</span>.<span class="ident">rename</span>(<span class="self">self</span>.<span class="ident">name</span>());
-        <span class="ident">ca</span>
+        <span class="kw">let </span><span class="kw-2">mut </span>ca: <span class="self">Self </span>= <span class="self">self</span>.into_iter().map(f).collect_trusted();
+        ca.rename(<span class="self">self</span>.name());
+        ca
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_with_idx</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>((<span class="ident">usize</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>)) -&gt; <span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">str</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>apply_with_idx&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn((usize, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str)) -&gt; Cow&lt;<span class="lifetime">&#39;a</span>, str&gt; + Copy,
     {
-        <span class="macro">apply_enumerate!</span>(<span class="self">self</span>, <span class="ident">f</span>)
+        <span class="macro">apply_enumerate!</span>(<span class="self">self</span>, f)
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_with_idx_on_opt</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>((<span class="ident">usize</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span><span class="op">&gt;</span>)) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>apply_with_idx_on_opt&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn((usize, <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt;)) -&gt; <span class="prelude-ty">Option</span>&lt;Cow&lt;<span class="lifetime">&#39;a</span>, str&gt;&gt; + Copy,
     {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ca</span>: <span class="self">Self</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">into_iter</span>().<span class="ident">enumerate</span>().<span class="ident">map</span>(<span class="ident">f</span>).<span class="ident">collect_trusted</span>();
-        <span class="ident">ca</span>.<span class="ident">rename</span>(<span class="self">self</span>.<span class="ident">name</span>());
-        <span class="ident">ca</span>
+        <span class="kw">let </span><span class="kw-2">mut </span>ca: <span class="self">Self </span>= <span class="self">self</span>.into_iter().enumerate().map(f).collect_trusted();
+        ca.rename(<span class="self">self</span>.name());
+        ca
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_to_slice</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>, <span class="ident">slice</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">T</span>])
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span><span class="op">&gt;</span>, <span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">T</span>,
+    <span class="kw">fn </span>apply_to_slice&lt;F, T&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F, slice: <span class="kw-2">&amp;mut </span>[T])
+    <span class="kw">where
+        </span>F: Fn(<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt;, <span class="kw-2">&amp;</span>T) -&gt; T,
     {
-        <span class="macro">assert!</span>(<span class="ident">slice</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">len</span>());
+        <span class="macro">assert!</span>(slice.len() &gt;= <span class="self">self</span>.len());
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx</span> <span class="op">=</span> <span class="number">0</span>;
-        <span class="self">self</span>.<span class="ident">downcast_iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">arr</span><span class="op">|</span> {
-            <span class="ident">arr</span>.<span class="ident">into_iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">opt_val</span><span class="op">|</span> {
-                <span class="comment">// Safety:</span>
-                <span class="comment">// length asserted above</span>
-                <span class="kw">let</span> <span class="ident">item</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">slice</span>.<span class="ident">get_unchecked_mut</span>(<span class="ident">idx</span>) };
-                <span class="kw-2">*</span><span class="ident">item</span> <span class="op">=</span> <span class="ident">f</span>(<span class="ident">opt_val</span>, <span class="ident">item</span>);
-                <span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-            })
-        });
-    }
-}
-
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-binary&quot;</span>)]</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">ChunkApply</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>], <span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, [<span class="ident">u8</span>]<span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">BinaryChunked</span> {
-    <span class="kw">fn</span> <span class="ident">apply_cast_numeric</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) -&gt; <span class="ident">S::Native</span> <span class="op">+</span> <span class="ident">Copy</span>,
-        <span class="ident">S</span>: <span class="ident">PolarsNumericType</span>,
-    {
-        <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">downcast_iter</span>()
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">array</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">values_iter</span>().<span class="ident">map</span>(<span class="ident">f</span>);
-                <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="ident">::from_trusted_len_iter</span>(<span class="ident">values</span>);
-                <span class="ident">to_array</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="ident">values</span>, <span class="ident">array</span>.<span class="ident">validity</span>().<span class="ident">cloned</span>())
-            })
-            .<span class="ident">collect</span>();
-        <span class="ident">ChunkedArray::from_chunks</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">chunks</span>)
-    }
-
-    <span class="kw">fn</span> <span class="ident">branch_apply_cast_numeric_no_null</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]<span class="op">&gt;</span>) -&gt; <span class="ident">S::Native</span> <span class="op">+</span> <span class="ident">Copy</span>,
-        <span class="ident">S</span>: <span class="ident">PolarsNumericType</span>,
-    {
-        <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">downcast_iter</span>()
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">array</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="ident">f</span>);
-                <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="ident">::from_trusted_len_iter</span>(<span class="ident">values</span>);
-                <span class="ident">to_array</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="ident">values</span>, <span class="ident">array</span>.<span class="ident">validity</span>().<span class="ident">cloned</span>())
-            })
-            .<span class="ident">collect</span>();
-        <span class="ident">ChunkedArray::from_chunks</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">chunks</span>)
-    }
-
-    <span class="kw">fn</span> <span class="ident">apply</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) -&gt; <span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, [<span class="ident">u8</span>]<span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
-    {
-        <span class="macro">apply!</span>(<span class="self">self</span>, <span class="ident">f</span>)
-    }
-
-    <span class="kw">fn</span> <span class="ident">try_apply</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, [<span class="ident">u8</span>]<span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
-    {
-        <span class="macro">try_apply!</span>(<span class="self">self</span>, <span class="ident">f</span>)
-    }
-
-    <span class="kw">fn</span> <span class="ident">apply_on_opt</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]<span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, [<span class="ident">u8</span>]<span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
-    {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ca</span>: <span class="self">Self</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="ident">f</span>).<span class="ident">collect_trusted</span>();
-        <span class="ident">ca</span>.<span class="ident">rename</span>(<span class="self">self</span>.<span class="ident">name</span>());
-        <span class="ident">ca</span>
-    }
-
-    <span class="kw">fn</span> <span class="ident">apply_with_idx</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>((<span class="ident">usize</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>])) -&gt; <span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, [<span class="ident">u8</span>]<span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
-    {
-        <span class="macro">apply_enumerate!</span>(<span class="self">self</span>, <span class="ident">f</span>)
-    }
-
-    <span class="kw">fn</span> <span class="ident">apply_with_idx_on_opt</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>((<span class="ident">usize</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]<span class="op">&gt;</span>)) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, [<span class="ident">u8</span>]<span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
-    {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ca</span>: <span class="self">Self</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">into_iter</span>().<span class="ident">enumerate</span>().<span class="ident">map</span>(<span class="ident">f</span>).<span class="ident">collect_trusted</span>();
-        <span class="ident">ca</span>.<span class="ident">rename</span>(<span class="self">self</span>.<span class="ident">name</span>());
-        <span class="ident">ca</span>
-    }
-
-    <span class="kw">fn</span> <span class="ident">apply_to_slice</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>, <span class="ident">slice</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">T</span>])
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]<span class="op">&gt;</span>, <span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">T</span>,
-    {
-        <span class="macro">assert!</span>(<span class="ident">slice</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">len</span>());
-
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx</span> <span class="op">=</span> <span class="number">0</span>;
-        <span class="self">self</span>.<span class="ident">downcast_iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">arr</span><span class="op">|</span> {
-            <span class="ident">arr</span>.<span class="ident">into_iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">opt_val</span><span class="op">|</span> {
-                <span class="comment">// Safety:</span>
-                <span class="comment">// length asserted above</span>
-                <span class="kw">let</span> <span class="ident">item</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">slice</span>.<span class="ident">get_unchecked_mut</span>(<span class="ident">idx</span>) };
-                <span class="kw-2">*</span><span class="ident">item</span> <span class="op">=</span> <span class="ident">f</span>(<span class="ident">opt_val</span>, <span class="ident">item</span>);
-                <span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>idx = <span class="number">0</span>;
+        <span class="self">self</span>.downcast_iter().for_each(|arr| {
+            arr.into_iter().for_each(|opt_val| {
+                <span class="comment">// Safety:
+                // length asserted above
+                </span><span class="kw">let </span>item = <span class="kw">unsafe </span>{ slice.get_unchecked_mut(idx) };
+                <span class="kw-2">*</span>item = f(opt_val, item);
+                idx += <span class="number">1</span>;
             })
         });
     }
 }
 
-<span class="kw">impl</span> <span class="ident">ChunkApplyKernel</span><span class="op">&lt;</span><span class="ident">BooleanArray</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">BooleanChunked</span> {
-    <span class="kw">fn</span> <span class="ident">apply_kernel</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="ident">BooleanArray</span>) -&gt; <span class="ident">ArrayRef</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">downcast_iter</span>().<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="ident">f</span>).<span class="ident">collect</span>();
-        <span class="ident"><span class="self">Self</span>::from_chunks</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">chunks</span>)
+<span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-binary&quot;</span>)]
+</span><span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; ChunkApply&lt;<span class="lifetime">&#39;a</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8], Cow&lt;<span class="lifetime">&#39;a</span>, [u8]&gt;&gt; <span class="kw">for </span>BinaryChunked {
+    <span class="kw">fn </span>apply_cast_numeric&lt;F, S&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; ChunkedArray&lt;S&gt;
+    <span class="kw">where
+        </span>F: Fn(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]) -&gt; S::Native + Copy,
+        S: PolarsNumericType,
+    {
+        <span class="kw">let </span>chunks = <span class="self">self
+            </span>.downcast_iter()
+            .into_iter()
+            .map(|array| {
+                <span class="kw">let </span>values = array.values_iter().map(f);
+                <span class="kw">let </span>values = Vec::&lt;<span class="kw">_</span>&gt;::from_trusted_len_iter(values);
+                to_array::&lt;S&gt;(values, array.validity().cloned())
+            })
+            .collect();
+        ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks)
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_kernel_cast</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="ident">BooleanArray</span>) -&gt; <span class="ident">ArrayRef</span>) -&gt; <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">PolarsDataType</span>,
+    <span class="kw">fn </span>branch_apply_cast_numeric_no_null&lt;F, S&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; ChunkedArray&lt;S&gt;
+    <span class="kw">where
+        </span>F: Fn(<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]&gt;) -&gt; S::Native + Copy,
+        S: PolarsNumericType,
     {
-        <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">downcast_iter</span>().<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="ident">f</span>).<span class="ident">collect</span>();
-        <span class="ident">ChunkedArray</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span><span class="ident">::from_chunks</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">chunks</span>)
+        <span class="kw">let </span>chunks = <span class="self">self
+            </span>.downcast_iter()
+            .into_iter()
+            .map(|array| {
+                <span class="kw">let </span>values = array.into_iter().map(f);
+                <span class="kw">let </span>values = Vec::&lt;<span class="kw">_</span>&gt;::from_trusted_len_iter(values);
+                to_array::&lt;S&gt;(values, array.validity().cloned())
+            })
+            .collect();
+        ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks)
+    }
+
+    <span class="kw">fn </span>apply&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]) -&gt; Cow&lt;<span class="lifetime">&#39;a</span>, [u8]&gt; + Copy,
+    {
+        <span class="macro">apply!</span>(<span class="self">self</span>, f)
+    }
+
+    <span class="kw">fn </span>try_apply&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span>F: Fn(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]) -&gt; PolarsResult&lt;Cow&lt;<span class="lifetime">&#39;a</span>, [u8]&gt;&gt; + Copy,
+    {
+        <span class="macro">try_apply!</span>(<span class="self">self</span>, f)
+    }
+
+    <span class="kw">fn </span>apply_on_opt&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn(<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;Cow&lt;<span class="lifetime">&#39;a</span>, [u8]&gt;&gt; + Copy,
+    {
+        <span class="kw">let </span><span class="kw-2">mut </span>ca: <span class="self">Self </span>= <span class="self">self</span>.into_iter().map(f).collect_trusted();
+        ca.rename(<span class="self">self</span>.name());
+        ca
+    }
+
+    <span class="kw">fn </span>apply_with_idx&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn((usize, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8])) -&gt; Cow&lt;<span class="lifetime">&#39;a</span>, [u8]&gt; + Copy,
+    {
+        <span class="macro">apply_enumerate!</span>(<span class="self">self</span>, f)
+    }
+
+    <span class="kw">fn </span>apply_with_idx_on_opt&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn((usize, <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]&gt;)) -&gt; <span class="prelude-ty">Option</span>&lt;Cow&lt;<span class="lifetime">&#39;a</span>, [u8]&gt;&gt; + Copy,
+    {
+        <span class="kw">let </span><span class="kw-2">mut </span>ca: <span class="self">Self </span>= <span class="self">self</span>.into_iter().enumerate().map(f).collect_trusted();
+        ca.rename(<span class="self">self</span>.name());
+        ca
+    }
+
+    <span class="kw">fn </span>apply_to_slice&lt;F, T&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F, slice: <span class="kw-2">&amp;mut </span>[T])
+    <span class="kw">where
+        </span>F: Fn(<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]&gt;, <span class="kw-2">&amp;</span>T) -&gt; T,
+    {
+        <span class="macro">assert!</span>(slice.len() &gt;= <span class="self">self</span>.len());
+
+        <span class="kw">let </span><span class="kw-2">mut </span>idx = <span class="number">0</span>;
+        <span class="self">self</span>.downcast_iter().for_each(|arr| {
+            arr.into_iter().for_each(|opt_val| {
+                <span class="comment">// Safety:
+                // length asserted above
+                </span><span class="kw">let </span>item = <span class="kw">unsafe </span>{ slice.get_unchecked_mut(idx) };
+                <span class="kw-2">*</span>item = f(opt_val, item);
+                idx += <span class="number">1</span>;
+            })
+        });
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">ChunkApplyKernel</span><span class="op">&lt;</span><span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">T::Native</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">PolarsNumericType</span>,
+<span class="kw">impl </span>ChunkApplyKernel&lt;BooleanArray&gt; <span class="kw">for </span>BooleanChunked {
+    <span class="kw">fn </span>apply_kernel(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>BooleanArray) -&gt; ArrayRef) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>chunks = <span class="self">self</span>.downcast_iter().into_iter().map(f).collect();
+        <span class="self">Self</span>::from_chunks(<span class="self">self</span>.name(), chunks)
+    }
+
+    <span class="kw">fn </span>apply_kernel_cast&lt;S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>BooleanArray) -&gt; ArrayRef) -&gt; ChunkedArray&lt;S&gt;
+    <span class="kw">where
+        </span>S: PolarsDataType,
+    {
+        <span class="kw">let </span>chunks = <span class="self">self</span>.downcast_iter().into_iter().map(f).collect();
+        ChunkedArray::&lt;S&gt;::from_chunks(<span class="self">self</span>.name(), chunks)
+    }
+}
+
+<span class="kw">impl</span>&lt;T&gt; ChunkApplyKernel&lt;PrimitiveArray&lt;T::Native&gt;&gt; <span class="kw">for </span>ChunkedArray&lt;T&gt;
+<span class="kw">where
+    </span>T: PolarsNumericType,
 {
-    <span class="kw">fn</span> <span class="ident">apply_kernel</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">T::Native</span><span class="op">&gt;</span>) -&gt; <span class="ident">ArrayRef</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">apply_kernel_cast</span>(<span class="kw-2">&amp;</span><span class="ident">f</span>)
+    <span class="kw">fn </span>apply_kernel(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>PrimitiveArray&lt;T::Native&gt;) -&gt; ArrayRef) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.apply_kernel_cast(<span class="kw-2">&amp;</span>f)
     }
-    <span class="kw">fn</span> <span class="ident">apply_kernel_cast</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(
+    <span class="kw">fn </span>apply_kernel_cast&lt;S&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">T::Native</span><span class="op">&gt;</span>) -&gt; <span class="ident">ArrayRef</span>,
-    ) -&gt; <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">PolarsDataType</span>,
+        f: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>PrimitiveArray&lt;T::Native&gt;) -&gt; ArrayRef,
+    ) -&gt; ChunkedArray&lt;S&gt;
+    <span class="kw">where
+        </span>S: PolarsDataType,
     {
-        <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">downcast_iter</span>().<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="ident">f</span>).<span class="ident">collect</span>();
-        <span class="ident">ChunkedArray::from_chunks</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">chunks</span>)
+        <span class="kw">let </span>chunks = <span class="self">self</span>.downcast_iter().into_iter().map(f).collect();
+        ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">ChunkApplyKernel</span><span class="op">&lt;</span><span class="ident">LargeStringArray</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Utf8Chunked</span> {
-    <span class="kw">fn</span> <span class="ident">apply_kernel</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="ident">LargeStringArray</span>) -&gt; <span class="ident">ArrayRef</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">apply_kernel_cast</span>(<span class="kw-2">&amp;</span><span class="ident">f</span>)
+<span class="kw">impl </span>ChunkApplyKernel&lt;LargeStringArray&gt; <span class="kw">for </span>Utf8Chunked {
+    <span class="kw">fn </span>apply_kernel(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>LargeStringArray) -&gt; ArrayRef) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.apply_kernel_cast(<span class="kw-2">&amp;</span>f)
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_kernel_cast</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="ident">LargeStringArray</span>) -&gt; <span class="ident">ArrayRef</span>) -&gt; <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">PolarsDataType</span>,
+    <span class="kw">fn </span>apply_kernel_cast&lt;S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>LargeStringArray) -&gt; ArrayRef) -&gt; ChunkedArray&lt;S&gt;
+    <span class="kw">where
+        </span>S: PolarsDataType,
     {
-        <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">downcast_iter</span>().<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="ident">f</span>).<span class="ident">collect</span>();
-        <span class="ident">ChunkedArray::from_chunks</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">chunks</span>)
+        <span class="kw">let </span>chunks = <span class="self">self</span>.downcast_iter().into_iter().map(f).collect();
+        ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks)
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-binary&quot;</span>)]</span>
-<span class="kw">impl</span> <span class="ident">ChunkApplyKernel</span><span class="op">&lt;</span><span class="ident">LargeBinaryArray</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">BinaryChunked</span> {
-    <span class="kw">fn</span> <span class="ident">apply_kernel</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="ident">LargeBinaryArray</span>) -&gt; <span class="ident">ArrayRef</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">apply_kernel_cast</span>(<span class="kw-2">&amp;</span><span class="ident">f</span>)
+<span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-binary&quot;</span>)]
+</span><span class="kw">impl </span>ChunkApplyKernel&lt;LargeBinaryArray&gt; <span class="kw">for </span>BinaryChunked {
+    <span class="kw">fn </span>apply_kernel(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>LargeBinaryArray) -&gt; ArrayRef) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.apply_kernel_cast(<span class="kw-2">&amp;</span>f)
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_kernel_cast</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="ident">LargeBinaryArray</span>) -&gt; <span class="ident">ArrayRef</span>) -&gt; <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">PolarsDataType</span>,
+    <span class="kw">fn </span>apply_kernel_cast&lt;S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>LargeBinaryArray) -&gt; ArrayRef) -&gt; ChunkedArray&lt;S&gt;
+    <span class="kw">where
+        </span>S: PolarsDataType,
     {
-        <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">downcast_iter</span>().<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="ident">f</span>).<span class="ident">collect</span>();
-        <span class="ident">ChunkedArray::from_chunks</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">chunks</span>)
+        <span class="kw">let </span>chunks = <span class="self">self</span>.downcast_iter().into_iter().map(f).collect();
+        ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">ChunkApply</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">Series</span>, <span class="ident">Series</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ListChunked</span> {
-    <span class="kw">fn</span> <span class="ident">apply_cast_numeric</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="ident">Series</span>) -&gt; <span class="ident">S::Native</span> <span class="op">+</span> <span class="ident">Copy</span>,
-        <span class="ident">S</span>: <span class="ident">PolarsNumericType</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; ChunkApply&lt;<span class="lifetime">&#39;a</span>, Series, Series&gt; <span class="kw">for </span>ListChunked {
+    <span class="kw">fn </span>apply_cast_numeric&lt;F, S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; ChunkedArray&lt;S&gt;
+    <span class="kw">where
+        </span>F: Fn(Series) -&gt; S::Native + Copy,
+        S: PolarsNumericType,
     {
-        <span class="kw">let</span> <span class="ident">dtype</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner_dtype</span>();
-        <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">downcast_iter</span>()
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">array</span><span class="op">|</span> {
-                <span class="kw">unsafe</span> {
-                    <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">array</span>
-                        .<span class="ident">values_iter</span>()
-                        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">array</span><span class="op">|</span> {
-                            <span class="comment">// safety</span>
-                            <span class="comment">// reported dtype is correct</span>
-                            <span class="kw">let</span> <span class="ident">series</span> <span class="op">=</span>
-                                <span class="ident">Series::from_chunks_and_dtype_unchecked</span>(<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="ident">array</span>], <span class="kw-2">&amp;</span><span class="ident">dtype</span>);
-                            <span class="ident">f</span>(<span class="ident">series</span>)
+        <span class="kw">let </span>dtype = <span class="self">self</span>.inner_dtype();
+        <span class="kw">let </span>chunks = <span class="self">self
+            </span>.downcast_iter()
+            .into_iter()
+            .map(|array| {
+                <span class="kw">unsafe </span>{
+                    <span class="kw">let </span>values = array
+                        .values_iter()
+                        .map(|array| {
+                            <span class="comment">// safety
+                            // reported dtype is correct
+                            </span><span class="kw">let </span>series =
+                                Series::from_chunks_and_dtype_unchecked(<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[array], <span class="kw-2">&amp;</span>dtype);
+                            f(series)
                         })
-                        .<span class="ident">trust_my_length</span>(<span class="self">self</span>.<span class="ident">len</span>())
-                        .<span class="ident">collect_trusted</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+                        .trust_my_length(<span class="self">self</span>.len())
+                        .collect_trusted::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-                    <span class="ident">to_array</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="ident">values</span>, <span class="ident">array</span>.<span class="ident">validity</span>().<span class="ident">cloned</span>())
+                    to_array::&lt;S&gt;(values, array.validity().cloned())
                 }
             })
-            .<span class="ident">collect</span>();
-        <span class="ident">ChunkedArray::from_chunks</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">chunks</span>)
+            .collect();
+        ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks)
     }
 
-    <span class="kw">fn</span> <span class="ident">branch_apply_cast_numeric_no_null</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span>) -&gt; <span class="ident">S::Native</span> <span class="op">+</span> <span class="ident">Copy</span>,
-        <span class="ident">S</span>: <span class="ident">PolarsNumericType</span>,
+    <span class="kw">fn </span>branch_apply_cast_numeric_no_null&lt;F, S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; ChunkedArray&lt;S&gt;
+    <span class="kw">where
+        </span>F: Fn(<span class="prelude-ty">Option</span>&lt;Series&gt;) -&gt; S::Native + Copy,
+        S: PolarsNumericType,
     {
-        <span class="kw">let</span> <span class="ident">dtype</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner_dtype</span>();
-        <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">downcast_iter</span>()
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">array</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> {
-                    <span class="kw">let</span> <span class="ident">x</span> <span class="op">=</span> <span class="ident">x</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> {
-                        <span class="comment">// safety</span>
-                        <span class="comment">// reported dtype is correct</span>
-                        <span class="kw">unsafe</span> { <span class="ident">Series::from_chunks_and_dtype_unchecked</span>(<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[<span class="ident">x</span>], <span class="kw-2">&amp;</span><span class="ident">dtype</span>) }
+        <span class="kw">let </span>dtype = <span class="self">self</span>.inner_dtype();
+        <span class="kw">let </span>chunks = <span class="self">self
+            </span>.downcast_iter()
+            .into_iter()
+            .map(|array| {
+                <span class="kw">let </span>values = array.iter().map(|x| {
+                    <span class="kw">let </span>x = x.map(|x| {
+                        <span class="comment">// safety
+                        // reported dtype is correct
+                        </span><span class="kw">unsafe </span>{ Series::from_chunks_and_dtype_unchecked(<span class="string">&quot;&quot;</span>, <span class="macro">vec!</span>[x], <span class="kw-2">&amp;</span>dtype) }
                     });
-                    <span class="ident">f</span>(<span class="ident">x</span>)
+                    f(x)
                 });
-                <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">values</span>.<span class="ident">len</span>();
+                <span class="kw">let </span>len = values.len();
 
-                <span class="comment">// we know the iterators len</span>
-                <span class="kw">unsafe</span> {
-                    <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="ident">::from_trusted_len_iter</span>(<span class="ident">values</span>.<span class="ident">trust_my_length</span>(<span class="ident">len</span>));
-                    <span class="ident">to_array</span>::<span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="ident">values</span>, <span class="ident">array</span>.<span class="ident">validity</span>().<span class="ident">cloned</span>())
+                <span class="comment">// we know the iterators len
+                </span><span class="kw">unsafe </span>{
+                    <span class="kw">let </span>values = Vec::&lt;<span class="kw">_</span>&gt;::from_trusted_len_iter(values.trust_my_length(len));
+                    to_array::&lt;S&gt;(values, array.validity().cloned())
                 }
             })
-            .<span class="ident">collect</span>();
-        <span class="ident">ChunkedArray::from_chunks</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="ident">chunks</span>)
+            .collect();
+        ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks)
     }
 
-    <span class="doccomment">/// Apply a closure `F` elementwise.</span>
-    <span class="kw">fn</span> <span class="ident">apply</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="ident">Series</span>) -&gt; <span class="ident">Series</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="doccomment">/// Apply a closure `F` elementwise.
+    </span><span class="kw">fn </span>apply&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn(Series) -&gt; Series + Copy,
     {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">return</span> <span class="self">self</span>.<span class="ident">clone</span>();
+        <span class="kw">if </span><span class="self">self</span>.is_empty() {
+            <span class="kw">return </span><span class="self">self</span>.clone();
         }
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fast_explode</span> <span class="op">=</span> <span class="bool-val">true</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">function</span> <span class="op">=</span> <span class="op">|</span><span class="ident">s</span>: <span class="ident">Series</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">f</span>(<span class="ident">s</span>);
-            <span class="kw">if</span> <span class="ident">out</span>.<span class="ident">is_empty</span>() {
-                <span class="ident">fast_explode</span> <span class="op">=</span> <span class="bool-val">false</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>fast_explode = <span class="bool-val">true</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>function = |s: Series| {
+            <span class="kw">let </span>out = f(s);
+            <span class="kw">if </span>out.is_empty() {
+                fast_explode = <span class="bool-val">false</span>;
             }
-            <span class="ident">out</span>
+            out
         };
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ca</span>: <span class="ident">ListChunked</span> <span class="op">=</span> <span class="macro">apply!</span>(<span class="self">self</span>, <span class="kw-2">&amp;mut</span> <span class="ident">function</span>);
-        <span class="kw">if</span> <span class="ident">fast_explode</span> {
-            <span class="ident">ca</span>.<span class="ident">set_fast_explode</span>()
+        <span class="kw">let </span><span class="kw-2">mut </span>ca: ListChunked = <span class="macro">apply!</span>(<span class="self">self</span>, <span class="kw-2">&amp;mut </span>function);
+        <span class="kw">if </span>fast_explode {
+            ca.set_fast_explode()
         }
-        <span class="ident">ca</span>
+        ca
     }
 
-    <span class="kw">fn</span> <span class="ident">try_apply</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="ident">Series</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>try_apply&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span>F: Fn(Series) -&gt; PolarsResult&lt;Series&gt; + Copy,
     {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">clone</span>());
+        <span class="kw">if </span><span class="self">self</span>.is_empty() {
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="self">self</span>.clone());
         }
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fast_explode</span> <span class="op">=</span> <span class="bool-val">true</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">function</span> <span class="op">=</span> <span class="op">|</span><span class="ident">s</span>: <span class="ident">Series</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">f</span>(<span class="ident">s</span>);
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">out</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">out</span> {
-                <span class="kw">if</span> <span class="ident">out</span>.<span class="ident">is_empty</span>() {
-                    <span class="ident">fast_explode</span> <span class="op">=</span> <span class="bool-val">false</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>fast_explode = <span class="bool-val">true</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>function = |s: Series| {
+            <span class="kw">let </span>out = f(s);
+            <span class="kw">if let </span><span class="prelude-val">Ok</span>(out) = <span class="kw-2">&amp;</span>out {
+                <span class="kw">if </span>out.is_empty() {
+                    fast_explode = <span class="bool-val">false</span>;
                 }
             }
-            <span class="ident">out</span>
+            out
         };
-        <span class="kw">let</span> <span class="ident">ca</span>: <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">ListChunked</span><span class="op">&gt;</span> <span class="op">=</span> <span class="macro">try_apply!</span>(<span class="self">self</span>, <span class="kw-2">&amp;mut</span> <span class="ident">function</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ca</span> <span class="op">=</span> <span class="ident">ca</span><span class="question-mark">?</span>;
-        <span class="kw">if</span> <span class="ident">fast_explode</span> {
-            <span class="ident">ca</span>.<span class="ident">set_fast_explode</span>()
+        <span class="kw">let </span>ca: PolarsResult&lt;ListChunked&gt; = <span class="macro">try_apply!</span>(<span class="self">self</span>, <span class="kw-2">&amp;mut </span>function);
+        <span class="kw">let </span><span class="kw-2">mut </span>ca = ca<span class="question-mark">?</span>;
+        <span class="kw">if </span>fast_explode {
+            ca.set_fast_explode()
         }
-        <span class="prelude-val">Ok</span>(<span class="ident">ca</span>)
+        <span class="prelude-val">Ok</span>(ca)
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_on_opt</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>apply_on_opt&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn(<span class="prelude-ty">Option</span>&lt;Series&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;Series&gt; + Copy,
     {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">return</span> <span class="self">self</span>.<span class="ident">clone</span>();
+        <span class="kw">if </span><span class="self">self</span>.is_empty() {
+            <span class="kw">return </span><span class="self">self</span>.clone();
         }
-        <span class="self">self</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="ident">f</span>).<span class="ident">collect_trusted</span>()
+        <span class="self">self</span>.into_iter().map(f).collect_trusted()
     }
 
-    <span class="doccomment">/// Apply a closure elementwise. The closure gets the index of the element as first argument.</span>
-    <span class="kw">fn</span> <span class="ident">apply_with_idx</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>((<span class="ident">usize</span>, <span class="ident">Series</span>)) -&gt; <span class="ident">Series</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="doccomment">/// Apply a closure elementwise. The closure gets the index of the element as first argument.
+    </span><span class="kw">fn </span>apply_with_idx&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn((usize, Series)) -&gt; Series + Copy,
     {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">return</span> <span class="self">self</span>.<span class="ident">clone</span>();
+        <span class="kw">if </span><span class="self">self</span>.is_empty() {
+            <span class="kw">return </span><span class="self">self</span>.clone();
         }
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fast_explode</span> <span class="op">=</span> <span class="bool-val">true</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">function</span> <span class="op">=</span> <span class="op">|</span>(<span class="ident">idx</span>, <span class="ident">s</span>)<span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">f</span>((<span class="ident">idx</span>, <span class="ident">s</span>));
-            <span class="kw">if</span> <span class="ident">out</span>.<span class="ident">is_empty</span>() {
-                <span class="ident">fast_explode</span> <span class="op">=</span> <span class="bool-val">false</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>fast_explode = <span class="bool-val">true</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>function = |(idx, s)| {
+            <span class="kw">let </span>out = f((idx, s));
+            <span class="kw">if </span>out.is_empty() {
+                fast_explode = <span class="bool-val">false</span>;
             }
-            <span class="ident">out</span>
+            out
         };
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ca</span>: <span class="ident">ListChunked</span> <span class="op">=</span> <span class="macro">apply_enumerate!</span>(<span class="self">self</span>, <span class="ident">function</span>);
-        <span class="kw">if</span> <span class="ident">fast_explode</span> {
-            <span class="ident">ca</span>.<span class="ident">set_fast_explode</span>()
+        <span class="kw">let </span><span class="kw-2">mut </span>ca: ListChunked = <span class="macro">apply_enumerate!</span>(<span class="self">self</span>, function);
+        <span class="kw">if </span>fast_explode {
+            ca.set_fast_explode()
         }
-        <span class="ident">ca</span>
+        ca
     }
 
-    <span class="doccomment">/// Apply a closure elementwise. The closure gets the index of the element as first argument.</span>
-    <span class="kw">fn</span> <span class="ident">apply_with_idx_on_opt</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>((<span class="ident">usize</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span>)) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="doccomment">/// Apply a closure elementwise. The closure gets the index of the element as first argument.
+    </span><span class="kw">fn </span>apply_with_idx_on_opt&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn((usize, <span class="prelude-ty">Option</span>&lt;Series&gt;)) -&gt; <span class="prelude-ty">Option</span>&lt;Series&gt; + Copy,
     {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">return</span> <span class="self">self</span>.<span class="ident">clone</span>();
+        <span class="kw">if </span><span class="self">self</span>.is_empty() {
+            <span class="kw">return </span><span class="self">self</span>.clone();
         }
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fast_explode</span> <span class="op">=</span> <span class="bool-val">true</span>;
-        <span class="kw">let</span> <span class="ident">function</span> <span class="op">=</span> <span class="op">|</span>(<span class="ident">idx</span>, <span class="ident">s</span>)<span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">f</span>((<span class="ident">idx</span>, <span class="ident">s</span>));
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">out</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">out</span> {
-                <span class="kw">if</span> <span class="ident">out</span>.<span class="ident">is_empty</span>() {
-                    <span class="ident">fast_explode</span> <span class="op">=</span> <span class="bool-val">false</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>fast_explode = <span class="bool-val">true</span>;
+        <span class="kw">let </span>function = |(idx, s)| {
+            <span class="kw">let </span>out = f((idx, s));
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(out) = <span class="kw-2">&amp;</span>out {
+                <span class="kw">if </span>out.is_empty() {
+                    fast_explode = <span class="bool-val">false</span>;
                 }
             }
-            <span class="ident">out</span>
+            out
         };
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ca</span>: <span class="ident">ListChunked</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">into_iter</span>().<span class="ident">enumerate</span>().<span class="ident">map</span>(<span class="ident">function</span>).<span class="ident">collect_trusted</span>();
-        <span class="kw">if</span> <span class="ident">fast_explode</span> {
-            <span class="ident">ca</span>.<span class="ident">set_fast_explode</span>()
+        <span class="kw">let </span><span class="kw-2">mut </span>ca: ListChunked = <span class="self">self</span>.into_iter().enumerate().map(function).collect_trusted();
+        <span class="kw">if </span>fast_explode {
+            ca.set_fast_explode()
         }
-        <span class="ident">ca</span>
+        ca
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_to_slice</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>, <span class="ident">slice</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">T</span>])
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span>, <span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">T</span>,
+    <span class="kw">fn </span>apply_to_slice&lt;F, T&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F, slice: <span class="kw-2">&amp;mut </span>[T])
+    <span class="kw">where
+        </span>F: Fn(<span class="prelude-ty">Option</span>&lt;Series&gt;, <span class="kw-2">&amp;</span>T) -&gt; T,
     {
-        <span class="macro">assert!</span>(<span class="ident">slice</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">len</span>());
+        <span class="macro">assert!</span>(slice.len() &gt;= <span class="self">self</span>.len());
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx</span> <span class="op">=</span> <span class="number">0</span>;
-        <span class="self">self</span>.<span class="ident">downcast_iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">arr</span><span class="op">|</span> {
-            <span class="ident">arr</span>.<span class="ident">iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">opt_val</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">opt_val</span> <span class="op">=</span> <span class="ident">opt_val</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">arrayref</span><span class="op">|</span> <span class="ident">Series::try_from</span>((<span class="string">&quot;&quot;</span>, <span class="ident">arrayref</span>)).<span class="ident">unwrap</span>());
+        <span class="kw">let </span><span class="kw-2">mut </span>idx = <span class="number">0</span>;
+        <span class="self">self</span>.downcast_iter().for_each(|arr| {
+            arr.iter().for_each(|opt_val| {
+                <span class="kw">let </span>opt_val = opt_val.map(|arrayref| Series::try_from((<span class="string">&quot;&quot;</span>, arrayref)).unwrap());
 
-                <span class="comment">// Safety:</span>
-                <span class="comment">// length asserted above</span>
-                <span class="kw">let</span> <span class="ident">item</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">slice</span>.<span class="ident">get_unchecked_mut</span>(<span class="ident">idx</span>) };
-                <span class="kw-2">*</span><span class="ident">item</span> <span class="op">=</span> <span class="ident">f</span>(<span class="ident">opt_val</span>, <span class="ident">item</span>);
-                <span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                <span class="comment">// Safety:
+                // length asserted above
+                </span><span class="kw">let </span>item = <span class="kw">unsafe </span>{ slice.get_unchecked_mut(idx) };
+                <span class="kw-2">*</span>item = f(opt_val, item);
+                idx += <span class="number">1</span>;
             })
         });
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;object&quot;</span>)]</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">ChunkApply</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">T</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ObjectChunked</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">PolarsObject</span>,
+<span class="attribute">#[cfg(feature = <span class="string">&quot;object&quot;</span>)]
+</span><span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; ChunkApply&lt;<span class="lifetime">&#39;a</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>T, T&gt; <span class="kw">for </span>ObjectChunked&lt;T&gt;
+<span class="kw">where
+    </span>T: PolarsObject,
 {
-    <span class="kw">fn</span> <span class="ident">apply_cast_numeric</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">_f</span>: <span class="ident">F</span>) -&gt; <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">T</span>) -&gt; <span class="ident">S::Native</span> <span class="op">+</span> <span class="ident">Copy</span>,
-        <span class="ident">S</span>: <span class="ident">PolarsNumericType</span>,
+    <span class="kw">fn </span>apply_cast_numeric&lt;F, S&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, _f: F) -&gt; ChunkedArray&lt;S&gt;
+    <span class="kw">where
+        </span>F: Fn(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>T) -&gt; S::Native + Copy,
+        S: PolarsNumericType,
     {
         <span class="macro">todo!</span>()
     }
 
-    <span class="kw">fn</span> <span class="ident">branch_apply_cast_numeric_no_null</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">_f</span>: <span class="ident">F</span>) -&gt; <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="ident">S::Native</span> <span class="op">+</span> <span class="ident">Copy</span>,
-        <span class="ident">S</span>: <span class="ident">PolarsNumericType</span>,
+    <span class="kw">fn </span>branch_apply_cast_numeric_no_null&lt;F, S&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, _f: F) -&gt; ChunkedArray&lt;S&gt;
+    <span class="kw">where
+        </span>F: Fn(<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>T&gt;) -&gt; S::Native + Copy,
+        S: PolarsNumericType,
     {
         <span class="macro">todo!</span>()
     }
 
-    <span class="kw">fn</span> <span class="ident">apply</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">T</span>) -&gt; <span class="ident">T</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>apply&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>T) -&gt; T + Copy,
     {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ca</span>: <span class="ident">ObjectChunked</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">opt_v</span><span class="op">|</span> <span class="ident">opt_v</span>.<span class="ident">map</span>(<span class="ident">f</span>)).<span class="ident">collect</span>();
-        <span class="ident">ca</span>.<span class="ident">rename</span>(<span class="self">self</span>.<span class="ident">name</span>());
-        <span class="ident">ca</span>
+        <span class="kw">let </span><span class="kw-2">mut </span>ca: ObjectChunked&lt;T&gt; = <span class="self">self</span>.into_iter().map(|opt_v| opt_v.map(f)).collect();
+        ca.rename(<span class="self">self</span>.name());
+        ca
     }
 
-    <span class="kw">fn</span> <span class="ident">try_apply</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">_f</span>: <span class="ident">F</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">T</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>try_apply&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, _f: F) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span>F: Fn(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>T) -&gt; PolarsResult&lt;T&gt; + Copy,
     {
         <span class="macro">todo!</span>()
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_on_opt</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>apply_on_opt&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn(<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>T&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; + Copy,
     {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ca</span>: <span class="ident">ObjectChunked</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="ident">f</span>).<span class="ident">collect</span>();
-        <span class="ident">ca</span>.<span class="ident">rename</span>(<span class="self">self</span>.<span class="ident">name</span>());
-        <span class="ident">ca</span>
+        <span class="kw">let </span><span class="kw-2">mut </span>ca: ObjectChunked&lt;T&gt; = <span class="self">self</span>.into_iter().map(f).collect();
+        ca.rename(<span class="self">self</span>.name());
+        ca
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_with_idx</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">_f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>((<span class="ident">usize</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">T</span>)) -&gt; <span class="ident">T</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>apply_with_idx&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, _f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn((usize, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>T)) -&gt; T + Copy,
     {
         <span class="macro">todo!</span>()
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_with_idx_on_opt</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">_f</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>((<span class="ident">usize</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">T</span><span class="op">&gt;</span>)) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Copy</span>,
+    <span class="kw">fn </span>apply_with_idx_on_opt&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, _f: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: Fn((usize, <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>T&gt;)) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; + Copy,
     {
         <span class="macro">todo!</span>()
     }
 
-    <span class="kw">fn</span> <span class="ident">apply_to_slice</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">V</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>, <span class="ident">slice</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">V</span>])
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">T</span><span class="op">&gt;</span>, <span class="kw-2">&amp;</span><span class="ident">V</span>) -&gt; <span class="ident">V</span>,
+    <span class="kw">fn </span>apply_to_slice&lt;F, V&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F, slice: <span class="kw-2">&amp;mut </span>[V])
+    <span class="kw">where
+        </span>F: Fn(<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>T&gt;, <span class="kw-2">&amp;</span>V) -&gt; V,
     {
-        <span class="macro">assert!</span>(<span class="ident">slice</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">len</span>());
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx</span> <span class="op">=</span> <span class="number">0</span>;
-        <span class="self">self</span>.<span class="ident">downcast_iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">arr</span><span class="op">|</span> {
-            <span class="ident">arr</span>.<span class="ident">into_iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">opt_val</span><span class="op">|</span> {
-                <span class="comment">// Safety:</span>
-                <span class="comment">// length asserted above</span>
-                <span class="kw">let</span> <span class="ident">item</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">slice</span>.<span class="ident">get_unchecked_mut</span>(<span class="ident">idx</span>) };
-                <span class="kw-2">*</span><span class="ident">item</span> <span class="op">=</span> <span class="ident">f</span>(<span class="ident">opt_val</span>, <span class="ident">item</span>);
-                <span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+        <span class="macro">assert!</span>(slice.len() &gt;= <span class="self">self</span>.len());
+        <span class="kw">let </span><span class="kw-2">mut </span>idx = <span class="number">0</span>;
+        <span class="self">self</span>.downcast_iter().for_each(|arr| {
+            arr.into_iter().for_each(|opt_val| {
+                <span class="comment">// Safety:
+                // length asserted above
+                </span><span class="kw">let </span>item = <span class="kw">unsafe </span>{ slice.get_unchecked_mut(idx) };
+                <span class="kw-2">*</span>item = f(opt_val, item);
+                idx += <span class="number">1</span>;
             })
         });
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

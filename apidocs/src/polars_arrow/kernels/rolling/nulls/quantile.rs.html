@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-arrow-0.25.1/src/kernels/rolling/nulls/quantile.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>quantile.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../polars_arrow/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../polars_arrow/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../polars_arrow/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-arrow-0.25.1/src/kernels/rolling/nulls/quantile.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>quantile.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../normalize.css"><link rel="stylesheet" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../polars_arrow/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../polars_arrow/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../polars_arrow/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -371,378 +371,378 @@
 <span id="371">371</span>
 <span id="372">372</span>
 <span id="373">373</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::index::IdxSize</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::trusted_len::TrustedLen</span>;
+</pre><pre class="rust"><code><span class="kw">use super</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::index::IdxSize;
+<span class="kw">use </span><span class="kw">crate</span>::trusted_len::TrustedLen;
 
-<span class="comment">// used by agg_quantile</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::too_many_arguments</span>)]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">rolling_quantile_by_iter</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">O</span><span class="op">&gt;</span>(
-    <span class="ident">values</span>: <span class="kw-2">&amp;</span>[<span class="ident">T</span>],
-    <span class="ident">bitmap</span>: <span class="kw-2">&amp;</span><span class="ident">Bitmap</span>,
-    <span class="ident">quantile</span>: <span class="ident">f64</span>,
-    <span class="ident">interpolation</span>: <span class="ident">QuantileInterpolOptions</span>,
-    <span class="ident">offsets</span>: <span class="ident">O</span>,
-) -&gt; <span class="ident">ArrayRef</span>
-<span class="kw">where</span>
-    <span class="ident">O</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> (<span class="ident">IdxSize</span>, <span class="ident">IdxSize</span>)<span class="op">&gt;</span> <span class="op">+</span> <span class="ident">TrustedLen</span>,
-    <span class="ident">T</span>: <span class="ident">std::iter::Sum</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">NativeType</span>
-        <span class="op">+</span> <span class="ident">Copy</span>
-        <span class="op">+</span> <span class="ident">std::cmp::PartialOrd</span>
-        <span class="op">+</span> <span class="ident">num::ToPrimitive</span>
-        <span class="op">+</span> <span class="ident">NumCast</span>
-        <span class="op">+</span> <span class="ident">Add</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">Sub</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">Div</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">IsFloat</span>
-        <span class="op">+</span> <span class="ident">AddAssign</span>
-        <span class="op">+</span> <span class="ident">Zero</span>,
+<span class="comment">// used by agg_quantile
+</span><span class="attribute">#[allow(clippy::too_many_arguments)]
+</span><span class="kw">pub fn </span>rolling_quantile_by_iter&lt;T, O&gt;(
+    values: <span class="kw-2">&amp;</span>[T],
+    bitmap: <span class="kw-2">&amp;</span>Bitmap,
+    quantile: f64,
+    interpolation: QuantileInterpolOptions,
+    offsets: O,
+) -&gt; ArrayRef
+<span class="kw">where
+    </span>O: Iterator&lt;Item = (IdxSize, IdxSize)&gt; + TrustedLen,
+    T: std::iter::Sum&lt;T&gt;
+        + NativeType
+        + Copy
+        + std::cmp::PartialOrd
+        + num::ToPrimitive
+        + NumCast
+        + Add&lt;Output = T&gt;
+        + Sub&lt;Output = T&gt;
+        + Div&lt;Output = T&gt;
+        + Mul&lt;Output = T&gt;
+        + IsFloat
+        + AddAssign
+        + Zero,
 {
-    <span class="kw">if</span> <span class="ident">values</span>.<span class="ident">is_empty</span>() {
-        <span class="kw">let</span> <span class="ident">out</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="macro">vec!</span>[];
-        <span class="kw">return</span> <span class="ident">Box::new</span>(<span class="ident">PrimitiveArray::from_data</span>(
-            <span class="ident">T::PRIMITIVE</span>.<span class="ident">into</span>(),
-            <span class="ident">out</span>.<span class="ident">into</span>(),
+    <span class="kw">if </span>values.is_empty() {
+        <span class="kw">let </span>out: Vec&lt;T&gt; = <span class="macro">vec!</span>[];
+        <span class="kw">return </span>Box::new(PrimitiveArray::from_data(
+            T::PRIMITIVE.into(),
+            out.into(),
             <span class="prelude-val">None</span>,
         ));
     }
 
-    <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">values</span>.<span class="ident">len</span>();
-    <span class="comment">// Safety</span>
-    <span class="comment">// we are in bounds</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sorted_window</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">SortedBufNulls::new</span>(<span class="ident">values</span>, <span class="ident">bitmap</span>, <span class="number">0</span>, <span class="number">1</span>) };
+    <span class="kw">let </span>len = values.len();
+    <span class="comment">// Safety
+    // we are in bounds
+    </span><span class="kw">let </span><span class="kw-2">mut </span>sorted_window = <span class="kw">unsafe </span>{ SortedBufNulls::new(values, bitmap, <span class="number">0</span>, <span class="number">1</span>) };
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">validity</span> <span class="op">=</span> <span class="ident">MutableBitmap::with_capacity</span>(<span class="ident">len</span>);
-    <span class="ident">validity</span>.<span class="ident">extend_constant</span>(<span class="ident">len</span>, <span class="bool-val">true</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>validity = MutableBitmap::with_capacity(len);
+    validity.extend_constant(len, <span class="bool-val">true</span>);
 
-    <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">offsets</span>
-        .<span class="ident">enumerate</span>()
-        .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">idx</span>, (<span class="ident">start</span>, <span class="ident">len</span>))<span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">end</span> <span class="op">=</span> <span class="ident">start</span> <span class="op">+</span> <span class="ident">len</span>;
+    <span class="kw">let </span>out = offsets
+        .enumerate()
+        .map(|(idx, (start, len))| {
+            <span class="kw">let </span>end = start + len;
 
-            <span class="kw">if</span> <span class="ident">start</span> <span class="op">==</span> <span class="ident">end</span> {
-                <span class="ident">validity</span>.<span class="ident">set</span>(<span class="ident">idx</span>, <span class="bool-val">false</span>);
-                <span class="ident">T::default</span>()
-            } <span class="kw">else</span> {
-                <span class="comment">// safety</span>
-                <span class="comment">// we are in bounds</span>
-                <span class="kw">unsafe</span> { <span class="ident">sorted_window</span>.<span class="ident">update</span>(<span class="ident">start</span> <span class="kw">as</span> <span class="ident">usize</span>, <span class="ident">end</span> <span class="kw">as</span> <span class="ident">usize</span>) };
-                <span class="kw">let</span> <span class="ident">null_count</span> <span class="op">=</span> <span class="ident">sorted_window</span>.<span class="ident">null_count</span>;
-                <span class="kw">let</span> <span class="ident">window</span> <span class="op">=</span> <span class="ident">sorted_window</span>.<span class="ident">window</span>();
+            <span class="kw">if </span>start == end {
+                validity.set(idx, <span class="bool-val">false</span>);
+                T::default()
+            } <span class="kw">else </span>{
+                <span class="comment">// safety
+                // we are in bounds
+                </span><span class="kw">unsafe </span>{ sorted_window.update(start <span class="kw">as </span>usize, end <span class="kw">as </span>usize) };
+                <span class="kw">let </span>null_count = sorted_window.null_count;
+                <span class="kw">let </span>window = sorted_window.window();
 
-                <span class="kw">match</span> <span class="ident">compute_quantile</span>(<span class="ident">window</span>, <span class="ident">null_count</span>, <span class="ident">quantile</span>, <span class="ident">interpolation</span>, <span class="number">1</span>) {
-                    <span class="prelude-val">Some</span>(<span class="ident">val</span>) =&gt; <span class="ident">val</span>,
-                    <span class="prelude-val">None</span> =&gt; {
-                        <span class="ident">validity</span>.<span class="ident">set</span>(<span class="ident">idx</span>, <span class="bool-val">false</span>);
-                        <span class="ident">T::default</span>()
+                <span class="kw">match </span>compute_quantile(window, null_count, quantile, interpolation, <span class="number">1</span>) {
+                    <span class="prelude-val">Some</span>(val) =&gt; val,
+                    <span class="prelude-val">None </span>=&gt; {
+                        validity.set(idx, <span class="bool-val">false</span>);
+                        T::default()
                     }
                 }
             }
         })
-        .<span class="ident">collect_trusted</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+        .collect_trusted::&lt;Vec&lt;T&gt;&gt;();
 
-    <span class="ident">Box::new</span>(<span class="ident">PrimitiveArray::from_data</span>(
-        <span class="ident">T::PRIMITIVE</span>.<span class="ident">into</span>(),
-        <span class="ident">out</span>.<span class="ident">into</span>(),
-        <span class="prelude-val">Some</span>(<span class="ident">validity</span>.<span class="ident">into</span>()),
+    Box::new(PrimitiveArray::from_data(
+        T::PRIMITIVE.into(),
+        out.into(),
+        <span class="prelude-val">Some</span>(validity.into()),
     ))
 }
 
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::too_many_arguments</span>)]</span>
-<span class="kw">fn</span> <span class="ident">rolling_apply_quantile</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">Fo</span>, <span class="ident">Fa</span><span class="op">&gt;</span>(
-    <span class="ident">values</span>: <span class="kw-2">&amp;</span>[<span class="ident">T</span>],
-    <span class="ident">bitmap</span>: <span class="kw-2">&amp;</span><span class="ident">Bitmap</span>,
-    <span class="ident">quantile</span>: <span class="ident">f64</span>,
-    <span class="ident">interpolation</span>: <span class="ident">QuantileInterpolOptions</span>,
-    <span class="ident">window_size</span>: <span class="ident">usize</span>,
-    <span class="ident">min_periods</span>: <span class="ident">usize</span>,
-    <span class="ident">det_offsets_fn</span>: <span class="ident">Fo</span>,
-    <span class="ident">aggregator</span>: <span class="ident">Fa</span>,
-) -&gt; <span class="ident">ArrayRef</span>
-<span class="kw">where</span>
-    <span class="ident">Fo</span>: <span class="ident">Fn</span>(<span class="ident">Idx</span>, <span class="ident">WindowSize</span>, <span class="ident">Len</span>) -&gt; (<span class="ident">Start</span>, <span class="ident">End</span>) <span class="op">+</span> <span class="ident">Copy</span>,
-    <span class="comment">// &amp;[Option&lt;T&gt;] -&gt; window values</span>
-    <span class="comment">// usize -&gt; null_count</span>
-    <span class="comment">// f764 -&gt;  quantile</span>
-    <span class="comment">// QuantileInterpolOptions -&gt; Interpolation option</span>
-    <span class="comment">// usize -&gt; min_periods</span>
-    <span class="ident">Fa</span>: <span class="ident">Fn</span>(<span class="kw-2">&amp;</span>[<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>], <span class="ident">usize</span>, <span class="ident">f64</span>, <span class="ident">QuantileInterpolOptions</span>, <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-    <span class="ident">T</span>: <span class="ident">Default</span> <span class="op">+</span> <span class="ident">NativeType</span> <span class="op">+</span> <span class="ident">IsFloat</span> <span class="op">+</span> <span class="ident">PartialOrd</span>,
+<span class="attribute">#[allow(clippy::too_many_arguments)]
+</span><span class="kw">fn </span>rolling_apply_quantile&lt;T, Fo, Fa&gt;(
+    values: <span class="kw-2">&amp;</span>[T],
+    bitmap: <span class="kw-2">&amp;</span>Bitmap,
+    quantile: f64,
+    interpolation: QuantileInterpolOptions,
+    window_size: usize,
+    min_periods: usize,
+    det_offsets_fn: Fo,
+    aggregator: Fa,
+) -&gt; ArrayRef
+<span class="kw">where
+    </span>Fo: Fn(Idx, WindowSize, Len) -&gt; (Start, End) + Copy,
+    <span class="comment">// &amp;[Option&lt;T&gt;] -&gt; window values
+    // usize -&gt; null_count
+    // f764 -&gt;  quantile
+    // QuantileInterpolOptions -&gt; Interpolation option
+    // usize -&gt; min_periods
+    </span>Fa: Fn(<span class="kw-2">&amp;</span>[<span class="prelude-ty">Option</span>&lt;T&gt;], usize, f64, QuantileInterpolOptions, usize) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt;,
+    T: Default + NativeType + IsFloat + PartialOrd,
 {
-    <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">values</span>.<span class="ident">len</span>();
-    <span class="kw">let</span> (<span class="ident">start</span>, <span class="ident">end</span>) <span class="op">=</span> <span class="ident">det_offsets_fn</span>(<span class="number">0</span>, <span class="ident">window_size</span>, <span class="ident">len</span>);
-    <span class="comment">// Safety</span>
-    <span class="comment">// we are in bounds</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sorted_window</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">SortedBufNulls::new</span>(<span class="ident">values</span>, <span class="ident">bitmap</span>, <span class="ident">start</span>, <span class="ident">end</span>) };
+    <span class="kw">let </span>len = values.len();
+    <span class="kw">let </span>(start, end) = det_offsets_fn(<span class="number">0</span>, window_size, len);
+    <span class="comment">// Safety
+    // we are in bounds
+    </span><span class="kw">let </span><span class="kw-2">mut </span>sorted_window = <span class="kw">unsafe </span>{ SortedBufNulls::new(values, bitmap, start, end) };
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">validity</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">create_validity</span>(<span class="ident">min_periods</span>, <span class="ident">len</span>, <span class="ident">window_size</span>, <span class="ident">det_offsets_fn</span>) {
-        <span class="prelude-val">Some</span>(<span class="ident">v</span>) =&gt; <span class="ident">v</span>,
-        <span class="prelude-val">None</span> =&gt; {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">validity</span> <span class="op">=</span> <span class="ident">MutableBitmap::with_capacity</span>(<span class="ident">len</span>);
-            <span class="ident">validity</span>.<span class="ident">extend_constant</span>(<span class="ident">len</span>, <span class="bool-val">true</span>);
-            <span class="ident">validity</span>
+    <span class="kw">let </span><span class="kw-2">mut </span>validity = <span class="kw">match </span>create_validity(min_periods, len, window_size, det_offsets_fn) {
+        <span class="prelude-val">Some</span>(v) =&gt; v,
+        <span class="prelude-val">None </span>=&gt; {
+            <span class="kw">let </span><span class="kw-2">mut </span>validity = MutableBitmap::with_capacity(len);
+            validity.extend_constant(len, <span class="bool-val">true</span>);
+            validity
         }
     };
 
-    <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> (<span class="number">0</span>..<span class="ident">len</span>)
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">idx</span><span class="op">|</span> {
-            <span class="kw">let</span> (<span class="ident">start</span>, <span class="ident">end</span>) <span class="op">=</span> <span class="ident">det_offsets_fn</span>(<span class="ident">idx</span>, <span class="ident">window_size</span>, <span class="ident">len</span>);
+    <span class="kw">let </span>out = (<span class="number">0</span>..len)
+        .map(|idx| {
+            <span class="kw">let </span>(start, end) = det_offsets_fn(idx, window_size, len);
 
-            <span class="comment">// safety</span>
-            <span class="comment">// we are in bounds</span>
-            <span class="kw">unsafe</span> { <span class="ident">sorted_window</span>.<span class="ident">update</span>(<span class="ident">start</span>, <span class="ident">end</span>) };
-            <span class="kw">let</span> <span class="ident">null_count</span> <span class="op">=</span> <span class="ident">sorted_window</span>.<span class="ident">null_count</span>;
-            <span class="kw">let</span> <span class="ident">window</span> <span class="op">=</span> <span class="ident">sorted_window</span>.<span class="ident">window</span>();
+            <span class="comment">// safety
+            // we are in bounds
+            </span><span class="kw">unsafe </span>{ sorted_window.update(start, end) };
+            <span class="kw">let </span>null_count = sorted_window.null_count;
+            <span class="kw">let </span>window = sorted_window.window();
 
-            <span class="kw">match</span> <span class="ident">aggregator</span>(<span class="ident">window</span>, <span class="ident">null_count</span>, <span class="ident">quantile</span>, <span class="ident">interpolation</span>, <span class="ident">min_periods</span>) {
-                <span class="prelude-val">Some</span>(<span class="ident">val</span>) =&gt; <span class="ident">val</span>,
-                <span class="prelude-val">None</span> =&gt; {
-                    <span class="ident">validity</span>.<span class="ident">set</span>(<span class="ident">idx</span>, <span class="bool-val">false</span>);
-                    <span class="ident">T::default</span>()
+            <span class="kw">match </span>aggregator(window, null_count, quantile, interpolation, min_periods) {
+                <span class="prelude-val">Some</span>(val) =&gt; val,
+                <span class="prelude-val">None </span>=&gt; {
+                    validity.set(idx, <span class="bool-val">false</span>);
+                    T::default()
                 }
             }
         })
-        .<span class="ident">collect_trusted</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+        .collect_trusted::&lt;Vec&lt;T&gt;&gt;();
 
-    <span class="ident">Box::new</span>(<span class="ident">PrimitiveArray::from_data</span>(
-        <span class="ident">T::PRIMITIVE</span>.<span class="ident">into</span>(),
-        <span class="ident">out</span>.<span class="ident">into</span>(),
-        <span class="prelude-val">Some</span>(<span class="ident">validity</span>.<span class="ident">into</span>()),
+    Box::new(PrimitiveArray::from_data(
+        T::PRIMITIVE.into(),
+        out.into(),
+        <span class="prelude-val">Some</span>(validity.into()),
     ))
 }
 
-<span class="kw">fn</span> <span class="ident">compute_quantile</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
-    <span class="ident">values</span>: <span class="kw-2">&amp;</span>[<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>],
-    <span class="ident">null_count</span>: <span class="ident">usize</span>,
-    <span class="ident">quantile</span>: <span class="ident">f64</span>,
-    <span class="ident">interpolation</span>: <span class="ident">QuantileInterpolOptions</span>,
-    <span class="ident">min_periods</span>: <span class="ident">usize</span>,
-) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">NativeType</span>
-        <span class="op">+</span> <span class="ident">std::iter::Sum</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">Zero</span>
-        <span class="op">+</span> <span class="ident">AddAssign</span>
-        <span class="op">+</span> <span class="ident">std::cmp::PartialOrd</span>
-        <span class="op">+</span> <span class="ident">num::ToPrimitive</span>
-        <span class="op">+</span> <span class="ident">NumCast</span>
-        <span class="op">+</span> <span class="ident">Default</span>
-        <span class="op">+</span> <span class="ident">Add</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">Sub</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">Div</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">IsFloat</span>,
+<span class="kw">fn </span>compute_quantile&lt;T&gt;(
+    values: <span class="kw-2">&amp;</span>[<span class="prelude-ty">Option</span>&lt;T&gt;],
+    null_count: usize,
+    quantile: f64,
+    interpolation: QuantileInterpolOptions,
+    min_periods: usize,
+) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt;
+<span class="kw">where
+    </span>T: NativeType
+        + std::iter::Sum&lt;T&gt;
+        + Zero
+        + AddAssign
+        + std::cmp::PartialOrd
+        + num::ToPrimitive
+        + NumCast
+        + Default
+        + Add&lt;Output = T&gt;
+        + Sub&lt;Output = T&gt;
+        + Div&lt;Output = T&gt;
+        + Mul&lt;Output = T&gt;
+        + IsFloat,
 {
-    <span class="kw">if</span> (<span class="ident">values</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="ident">null_count</span>) <span class="op">&lt;</span> <span class="ident">min_periods</span> {
-        <span class="kw">return</span> <span class="prelude-val">None</span>;
+    <span class="kw">if </span>(values.len() - null_count) &lt; min_periods {
+        <span class="kw">return </span><span class="prelude-val">None</span>;
     }
-    <span class="comment">// slice off nulls</span>
-    <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">values</span>[<span class="ident">null_count</span>..];
-    <span class="kw">let</span> <span class="ident">length</span> <span class="op">=</span> <span class="ident">values</span>.<span class="ident">len</span>();
+    <span class="comment">// slice off nulls
+    </span><span class="kw">let </span>values = <span class="kw-2">&amp;</span>values[null_count..];
+    <span class="kw">let </span>length = values.len();
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">interpolation</span> {
-        <span class="ident">QuantileInterpolOptions::Nearest</span> =&gt; ((<span class="ident">length</span> <span class="kw">as</span> <span class="ident">f64</span>) <span class="op">*</span> <span class="ident">quantile</span>) <span class="kw">as</span> <span class="ident">usize</span>,
-        <span class="ident">QuantileInterpolOptions::Lower</span>
-        <span class="op">|</span> <span class="ident">QuantileInterpolOptions::Midpoint</span>
-        <span class="op">|</span> <span class="ident">QuantileInterpolOptions::Linear</span> =&gt; ((<span class="ident">length</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">-</span> <span class="number">1.0</span>) <span class="op">*</span> <span class="ident">quantile</span>).<span class="ident">floor</span>() <span class="kw">as</span> <span class="ident">usize</span>,
-        <span class="ident">QuantileInterpolOptions::Higher</span> =&gt; ((<span class="ident">length</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">-</span> <span class="number">1.0</span>) <span class="op">*</span> <span class="ident">quantile</span>).<span class="ident">ceil</span>() <span class="kw">as</span> <span class="ident">usize</span>,
+    <span class="kw">let </span><span class="kw-2">mut </span>idx = <span class="kw">match </span>interpolation {
+        QuantileInterpolOptions::Nearest =&gt; ((length <span class="kw">as </span>f64) * quantile) <span class="kw">as </span>usize,
+        QuantileInterpolOptions::Lower
+        | QuantileInterpolOptions::Midpoint
+        | QuantileInterpolOptions::Linear =&gt; ((length <span class="kw">as </span>f64 - <span class="number">1.0</span>) * quantile).floor() <span class="kw">as </span>usize,
+        QuantileInterpolOptions::Higher =&gt; ((length <span class="kw">as </span>f64 - <span class="number">1.0</span>) * quantile).ceil() <span class="kw">as </span>usize,
     };
 
-    <span class="ident">idx</span> <span class="op">=</span> <span class="ident">std::cmp::min</span>(<span class="ident">idx</span>, <span class="ident">length</span> <span class="op">-</span> <span class="number">1</span>);
+    idx = std::cmp::min(idx, length - <span class="number">1</span>);
 
-    <span class="comment">// we can unwrap because we sliced of the nulls</span>
-    <span class="kw">match</span> <span class="ident">interpolation</span> {
-        <span class="ident">QuantileInterpolOptions::Midpoint</span> =&gt; {
-            <span class="kw">let</span> <span class="ident">top_idx</span> <span class="op">=</span> ((<span class="ident">length</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">-</span> <span class="number">1.0</span>) <span class="op">*</span> <span class="ident">quantile</span>).<span class="ident">ceil</span>() <span class="kw">as</span> <span class="ident">usize</span>;
+    <span class="comment">// we can unwrap because we sliced of the nulls
+    </span><span class="kw">match </span>interpolation {
+        QuantileInterpolOptions::Midpoint =&gt; {
+            <span class="kw">let </span>top_idx = ((length <span class="kw">as </span>f64 - <span class="number">1.0</span>) * quantile).ceil() <span class="kw">as </span>usize;
             <span class="prelude-val">Some</span>(
-                (<span class="ident">values</span>[<span class="ident">idx</span>].<span class="ident">unwrap</span>() <span class="op">+</span> <span class="ident">values</span>[<span class="ident">top_idx</span>].<span class="ident">unwrap</span>()) <span class="op">/</span> <span class="ident">T::from</span>::<span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span>(<span class="number">2.0f64</span>).<span class="ident">unwrap</span>(),
+                (values[idx].unwrap() + values[top_idx].unwrap()) / T::from::&lt;f64&gt;(<span class="number">2.0f64</span>).unwrap(),
             )
         }
-        <span class="ident">QuantileInterpolOptions::Linear</span> =&gt; {
-            <span class="kw">let</span> <span class="ident">float_idx</span> <span class="op">=</span> (<span class="ident">length</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">-</span> <span class="number">1.0</span>) <span class="op">*</span> <span class="ident">quantile</span>;
-            <span class="kw">let</span> <span class="ident">top_idx</span> <span class="op">=</span> <span class="ident">f64::ceil</span>(<span class="ident">float_idx</span>) <span class="kw">as</span> <span class="ident">usize</span>;
+        QuantileInterpolOptions::Linear =&gt; {
+            <span class="kw">let </span>float_idx = (length <span class="kw">as </span>f64 - <span class="number">1.0</span>) * quantile;
+            <span class="kw">let </span>top_idx = f64::ceil(float_idx) <span class="kw">as </span>usize;
 
-            <span class="kw">if</span> <span class="ident">top_idx</span> <span class="op">==</span> <span class="ident">idx</span> {
-                <span class="prelude-val">Some</span>(<span class="ident">values</span>[<span class="ident">idx</span>].<span class="ident">unwrap</span>())
-            } <span class="kw">else</span> {
-                <span class="kw">let</span> <span class="ident">proportion</span> <span class="op">=</span> <span class="ident">T::from</span>(<span class="ident">float_idx</span> <span class="op">-</span> <span class="ident">idx</span> <span class="kw">as</span> <span class="ident">f64</span>).<span class="ident">unwrap</span>();
+            <span class="kw">if </span>top_idx == idx {
+                <span class="prelude-val">Some</span>(values[idx].unwrap())
+            } <span class="kw">else </span>{
+                <span class="kw">let </span>proportion = T::from(float_idx - idx <span class="kw">as </span>f64).unwrap();
                 <span class="prelude-val">Some</span>(
-                    <span class="ident">proportion</span> <span class="op">*</span> (<span class="ident">values</span>[<span class="ident">top_idx</span>].<span class="ident">unwrap</span>() <span class="op">-</span> <span class="ident">values</span>[<span class="ident">idx</span>].<span class="ident">unwrap</span>())
-                        <span class="op">+</span> <span class="ident">values</span>[<span class="ident">idx</span>].<span class="ident">unwrap</span>(),
+                    proportion * (values[top_idx].unwrap() - values[idx].unwrap())
+                        + values[idx].unwrap(),
                 )
             }
         }
-        <span class="kw">_</span> =&gt; <span class="prelude-val">Some</span>(<span class="ident">values</span>[<span class="ident">idx</span>].<span class="ident">unwrap</span>()),
+        <span class="kw">_ </span>=&gt; <span class="prelude-val">Some</span>(values[idx].unwrap()),
     }
 }
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">rolling_median</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
-    <span class="ident">arr</span>: <span class="kw-2">&amp;</span><span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-    <span class="ident">window_size</span>: <span class="ident">usize</span>,
-    <span class="ident">min_periods</span>: <span class="ident">usize</span>,
-    <span class="ident">center</span>: <span class="ident">bool</span>,
-    <span class="ident">weights</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">f64</span>]<span class="op">&gt;</span>,
-) -&gt; <span class="ident">ArrayRef</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">NativeType</span>
-        <span class="op">+</span> <span class="ident">std::iter::Sum</span>
-        <span class="op">+</span> <span class="ident">Zero</span>
-        <span class="op">+</span> <span class="ident">AddAssign</span>
-        <span class="op">+</span> <span class="ident">Copy</span>
-        <span class="op">+</span> <span class="ident">std::cmp::PartialOrd</span>
-        <span class="op">+</span> <span class="ident">num::ToPrimitive</span>
-        <span class="op">+</span> <span class="ident">NumCast</span>
-        <span class="op">+</span> <span class="ident">Default</span>
-        <span class="op">+</span> <span class="ident">Add</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">Sub</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">Div</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">IsFloat</span>,
+<span class="kw">pub fn </span>rolling_median&lt;T&gt;(
+    arr: <span class="kw-2">&amp;</span>PrimitiveArray&lt;T&gt;,
+    window_size: usize,
+    min_periods: usize,
+    center: bool,
+    weights: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[f64]&gt;,
+) -&gt; ArrayRef
+<span class="kw">where
+    </span>T: NativeType
+        + std::iter::Sum
+        + Zero
+        + AddAssign
+        + Copy
+        + std::cmp::PartialOrd
+        + num::ToPrimitive
+        + NumCast
+        + Default
+        + Add&lt;Output = T&gt;
+        + Sub&lt;Output = T&gt;
+        + Div&lt;Output = T&gt;
+        + Mul&lt;Output = T&gt;
+        + IsFloat,
 {
-    <span class="ident">rolling_quantile</span>(
-        <span class="ident">arr</span>,
+    rolling_quantile(
+        arr,
         <span class="number">0.5</span>,
-        <span class="ident">QuantileInterpolOptions::Linear</span>,
-        <span class="ident">window_size</span>,
-        <span class="ident">min_periods</span>,
-        <span class="ident">center</span>,
-        <span class="ident">weights</span>,
+        QuantileInterpolOptions::Linear,
+        window_size,
+        min_periods,
+        center,
+        weights,
     )
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">rolling_quantile</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
-    <span class="ident">arr</span>: <span class="kw-2">&amp;</span><span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-    <span class="ident">quantile</span>: <span class="ident">f64</span>,
-    <span class="ident">interpolation</span>: <span class="ident">QuantileInterpolOptions</span>,
-    <span class="ident">window_size</span>: <span class="ident">usize</span>,
-    <span class="ident">min_periods</span>: <span class="ident">usize</span>,
-    <span class="ident">center</span>: <span class="ident">bool</span>,
-    <span class="ident">weights</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">f64</span>]<span class="op">&gt;</span>,
-) -&gt; <span class="ident">ArrayRef</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">NativeType</span>
-        <span class="op">+</span> <span class="ident">std::iter::Sum</span>
-        <span class="op">+</span> <span class="ident">Zero</span>
-        <span class="op">+</span> <span class="ident">AddAssign</span>
-        <span class="op">+</span> <span class="ident">Copy</span>
-        <span class="op">+</span> <span class="ident">std::cmp::PartialOrd</span>
-        <span class="op">+</span> <span class="ident">num::ToPrimitive</span>
-        <span class="op">+</span> <span class="ident">NumCast</span>
-        <span class="op">+</span> <span class="ident">Default</span>
-        <span class="op">+</span> <span class="ident">Add</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">Sub</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">Div</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">IsFloat</span>,
+<span class="kw">pub fn </span>rolling_quantile&lt;T&gt;(
+    arr: <span class="kw-2">&amp;</span>PrimitiveArray&lt;T&gt;,
+    quantile: f64,
+    interpolation: QuantileInterpolOptions,
+    window_size: usize,
+    min_periods: usize,
+    center: bool,
+    weights: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[f64]&gt;,
+) -&gt; ArrayRef
+<span class="kw">where
+    </span>T: NativeType
+        + std::iter::Sum
+        + Zero
+        + AddAssign
+        + Copy
+        + std::cmp::PartialOrd
+        + num::ToPrimitive
+        + NumCast
+        + Default
+        + Add&lt;Output = T&gt;
+        + Sub&lt;Output = T&gt;
+        + Div&lt;Output = T&gt;
+        + Mul&lt;Output = T&gt;
+        + IsFloat,
 {
-    <span class="kw">if</span> <span class="ident">weights</span>.<span class="ident">is_some</span>() {
+    <span class="kw">if </span>weights.is_some() {
         <span class="macro">panic!</span>(<span class="string">&quot;weights not yet supported on array with null values&quot;</span>)
     }
-    <span class="kw">if</span> <span class="ident">center</span> {
-        <span class="ident">rolling_apply_quantile</span>(
-            <span class="ident">arr</span>.<span class="ident">values</span>().<span class="ident">as_slice</span>(),
-            <span class="ident">arr</span>.<span class="ident">validity</span>().<span class="ident">as_ref</span>().<span class="ident">unwrap</span>(),
-            <span class="ident">quantile</span>,
-            <span class="ident">interpolation</span>,
-            <span class="ident">window_size</span>,
-            <span class="ident">min_periods</span>,
-            <span class="ident">det_offsets_center</span>,
-            <span class="ident">compute_quantile</span>,
+    <span class="kw">if </span>center {
+        rolling_apply_quantile(
+            arr.values().as_slice(),
+            arr.validity().as_ref().unwrap(),
+            quantile,
+            interpolation,
+            window_size,
+            min_periods,
+            det_offsets_center,
+            compute_quantile,
         )
-    } <span class="kw">else</span> {
-        <span class="ident">rolling_apply_quantile</span>(
-            <span class="ident">arr</span>.<span class="ident">values</span>().<span class="ident">as_slice</span>(),
-            <span class="ident">arr</span>.<span class="ident">validity</span>().<span class="ident">as_ref</span>().<span class="ident">unwrap</span>(),
-            <span class="ident">quantile</span>,
-            <span class="ident">interpolation</span>,
-            <span class="ident">window_size</span>,
-            <span class="ident">min_periods</span>,
-            <span class="ident">det_offsets</span>,
-            <span class="ident">compute_quantile</span>,
+    } <span class="kw">else </span>{
+        rolling_apply_quantile(
+            arr.values().as_slice(),
+            arr.validity().as_ref().unwrap(),
+            quantile,
+            interpolation,
+            window_size,
+            min_periods,
+            det_offsets,
+            compute_quantile,
         )
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">test</span> {
-    <span class="kw">use</span> <span class="ident">arrow::buffer::Buffer</span>;
-    <span class="kw">use</span> <span class="ident">arrow::datatypes::DataType</span>;
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>test {
+    <span class="kw">use </span>arrow::buffer::Buffer;
+    <span class="kw">use </span>arrow::datatypes::DataType;
 
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::kernels::rolling::nulls</span>::{<span class="ident">rolling_max</span>, <span class="ident">rolling_min</span>};
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::kernels::rolling::nulls::{rolling_max, rolling_min};
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_rolling_median_nulls</span>() {
-        <span class="kw">let</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">Buffer::from</span>(<span class="macro">vec!</span>[<span class="number">1.0</span>, <span class="number">2.0</span>, <span class="number">3.0</span>, <span class="number">4.0</span>]);
-        <span class="kw">let</span> <span class="ident">arr</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">PrimitiveArray::from_data</span>(
-            <span class="ident">DataType::Float64</span>,
-            <span class="ident">buf</span>,
-            <span class="prelude-val">Some</span>(<span class="ident">Bitmap::from</span>(<span class="kw-2">&amp;</span>[<span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>, <span class="bool-val">true</span>])),
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_rolling_median_nulls() {
+        <span class="kw">let </span>buf = Buffer::from(<span class="macro">vec!</span>[<span class="number">1.0</span>, <span class="number">2.0</span>, <span class="number">3.0</span>, <span class="number">4.0</span>]);
+        <span class="kw">let </span>arr = <span class="kw-2">&amp;</span>PrimitiveArray::from_data(
+            DataType::Float64,
+            buf,
+            <span class="prelude-val">Some</span>(Bitmap::from(<span class="kw-2">&amp;</span>[<span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>, <span class="bool-val">true</span>])),
         );
 
-        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">rolling_quantile</span>(<span class="ident">arr</span>, <span class="number">0.5</span>, <span class="ident">QuantileInterpolOptions::Linear</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="bool-val">false</span>, <span class="prelude-val">None</span>);
-        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">out</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">out</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">v</span>.<span class="ident">copied</span>()).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-        <span class="macro">assert_eq!</span>(<span class="ident">out</span>, <span class="kw-2">&amp;</span>[<span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">3.5</span>)]);
+        <span class="kw">let </span>out = rolling_quantile(arr, <span class="number">0.5</span>, QuantileInterpolOptions::Linear, <span class="number">2</span>, <span class="number">2</span>, <span class="bool-val">false</span>, <span class="prelude-val">None</span>);
+        <span class="kw">let </span>out = out.as_any().downcast_ref::&lt;PrimitiveArray&lt;f64&gt;&gt;().unwrap();
+        <span class="kw">let </span>out = out.into_iter().map(|v| v.copied()).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="macro">assert_eq!</span>(out, <span class="kw-2">&amp;</span>[<span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">3.5</span>)]);
 
-        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">rolling_quantile</span>(<span class="ident">arr</span>, <span class="number">0.5</span>, <span class="ident">QuantileInterpolOptions::Linear</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="bool-val">false</span>, <span class="prelude-val">None</span>);
-        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">out</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">out</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">v</span>.<span class="ident">copied</span>()).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-        <span class="macro">assert_eq!</span>(<span class="ident">out</span>, <span class="kw-2">&amp;</span>[<span class="prelude-val">Some</span>(<span class="number">1.0</span>), <span class="prelude-val">Some</span>(<span class="number">1.0</span>), <span class="prelude-val">Some</span>(<span class="number">3.0</span>), <span class="prelude-val">Some</span>(<span class="number">3.5</span>)]);
+        <span class="kw">let </span>out = rolling_quantile(arr, <span class="number">0.5</span>, QuantileInterpolOptions::Linear, <span class="number">2</span>, <span class="number">1</span>, <span class="bool-val">false</span>, <span class="prelude-val">None</span>);
+        <span class="kw">let </span>out = out.as_any().downcast_ref::&lt;PrimitiveArray&lt;f64&gt;&gt;().unwrap();
+        <span class="kw">let </span>out = out.into_iter().map(|v| v.copied()).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="macro">assert_eq!</span>(out, <span class="kw-2">&amp;</span>[<span class="prelude-val">Some</span>(<span class="number">1.0</span>), <span class="prelude-val">Some</span>(<span class="number">1.0</span>), <span class="prelude-val">Some</span>(<span class="number">3.0</span>), <span class="prelude-val">Some</span>(<span class="number">3.5</span>)]);
 
-        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">rolling_quantile</span>(<span class="ident">arr</span>, <span class="number">0.5</span>, <span class="ident">QuantileInterpolOptions::Linear</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="bool-val">false</span>, <span class="prelude-val">None</span>);
-        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">out</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">out</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">v</span>.<span class="ident">copied</span>()).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-        <span class="macro">assert_eq!</span>(<span class="ident">out</span>, <span class="kw-2">&amp;</span>[<span class="prelude-val">Some</span>(<span class="number">1.0</span>), <span class="prelude-val">Some</span>(<span class="number">1.0</span>), <span class="prelude-val">Some</span>(<span class="number">2.0</span>), <span class="prelude-val">Some</span>(<span class="number">3.0</span>)]);
+        <span class="kw">let </span>out = rolling_quantile(arr, <span class="number">0.5</span>, QuantileInterpolOptions::Linear, <span class="number">4</span>, <span class="number">1</span>, <span class="bool-val">false</span>, <span class="prelude-val">None</span>);
+        <span class="kw">let </span>out = out.as_any().downcast_ref::&lt;PrimitiveArray&lt;f64&gt;&gt;().unwrap();
+        <span class="kw">let </span>out = out.into_iter().map(|v| v.copied()).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="macro">assert_eq!</span>(out, <span class="kw-2">&amp;</span>[<span class="prelude-val">Some</span>(<span class="number">1.0</span>), <span class="prelude-val">Some</span>(<span class="number">1.0</span>), <span class="prelude-val">Some</span>(<span class="number">2.0</span>), <span class="prelude-val">Some</span>(<span class="number">3.0</span>)]);
 
-        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">rolling_quantile</span>(<span class="ident">arr</span>, <span class="number">0.5</span>, <span class="ident">QuantileInterpolOptions::Linear</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="bool-val">true</span>, <span class="prelude-val">None</span>);
-        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">out</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">out</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">v</span>.<span class="ident">copied</span>()).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-        <span class="macro">assert_eq!</span>(<span class="ident">out</span>, <span class="kw-2">&amp;</span>[<span class="prelude-val">Some</span>(<span class="number">1.0</span>), <span class="prelude-val">Some</span>(<span class="number">2.0</span>), <span class="prelude-val">Some</span>(<span class="number">3.0</span>), <span class="prelude-val">Some</span>(<span class="number">3.5</span>)]);
+        <span class="kw">let </span>out = rolling_quantile(arr, <span class="number">0.5</span>, QuantileInterpolOptions::Linear, <span class="number">4</span>, <span class="number">1</span>, <span class="bool-val">true</span>, <span class="prelude-val">None</span>);
+        <span class="kw">let </span>out = out.as_any().downcast_ref::&lt;PrimitiveArray&lt;f64&gt;&gt;().unwrap();
+        <span class="kw">let </span>out = out.into_iter().map(|v| v.copied()).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="macro">assert_eq!</span>(out, <span class="kw-2">&amp;</span>[<span class="prelude-val">Some</span>(<span class="number">1.0</span>), <span class="prelude-val">Some</span>(<span class="number">2.0</span>), <span class="prelude-val">Some</span>(<span class="number">3.0</span>), <span class="prelude-val">Some</span>(<span class="number">3.5</span>)]);
 
-        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">rolling_quantile</span>(<span class="ident">arr</span>, <span class="number">0.5</span>, <span class="ident">QuantileInterpolOptions::Linear</span>, <span class="number">4</span>, <span class="number">4</span>, <span class="bool-val">true</span>, <span class="prelude-val">None</span>);
-        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">out</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">out</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">v</span>.<span class="ident">copied</span>()).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-        <span class="macro">assert_eq!</span>(<span class="ident">out</span>, <span class="kw-2">&amp;</span>[<span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>]);
+        <span class="kw">let </span>out = rolling_quantile(arr, <span class="number">0.5</span>, QuantileInterpolOptions::Linear, <span class="number">4</span>, <span class="number">4</span>, <span class="bool-val">true</span>, <span class="prelude-val">None</span>);
+        <span class="kw">let </span>out = out.as_any().downcast_ref::&lt;PrimitiveArray&lt;f64&gt;&gt;().unwrap();
+        <span class="kw">let </span>out = out.into_iter().map(|v| v.copied()).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="macro">assert_eq!</span>(out, <span class="kw-2">&amp;</span>[<span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>]);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_rolling_quantile_nulls_limits</span>() {
-        <span class="comment">// compare quantiles to corresponding min/max/median values</span>
-        <span class="kw">let</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">Buffer</span>::<span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span><span class="ident">::from</span>(<span class="macro">vec!</span>[<span class="number">1.0</span>, <span class="number">2.0</span>, <span class="number">3.0</span>, <span class="number">4.0</span>, <span class="number">5.0</span>]);
-        <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">PrimitiveArray::from_data</span>(
-            <span class="ident">DataType::Float64</span>,
-            <span class="ident">buf</span>,
-            <span class="prelude-val">Some</span>(<span class="ident">Bitmap::from</span>(<span class="kw-2">&amp;</span>[<span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>, <span class="bool-val">true</span>])),
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_rolling_quantile_nulls_limits() {
+        <span class="comment">// compare quantiles to corresponding min/max/median values
+        </span><span class="kw">let </span>buf = Buffer::&lt;f64&gt;::from(<span class="macro">vec!</span>[<span class="number">1.0</span>, <span class="number">2.0</span>, <span class="number">3.0</span>, <span class="number">4.0</span>, <span class="number">5.0</span>]);
+        <span class="kw">let </span>values = <span class="kw-2">&amp;</span>PrimitiveArray::from_data(
+            DataType::Float64,
+            buf,
+            <span class="prelude-val">Some</span>(Bitmap::from(<span class="kw-2">&amp;</span>[<span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>, <span class="bool-val">true</span>])),
         );
 
-        <span class="kw">let</span> <span class="ident">interpol_options</span> <span class="op">=</span> <span class="macro">vec!</span>[
-            <span class="ident">QuantileInterpolOptions::Lower</span>,
-            <span class="ident">QuantileInterpolOptions::Higher</span>,
-            <span class="ident">QuantileInterpolOptions::Nearest</span>,
-            <span class="ident">QuantileInterpolOptions::Midpoint</span>,
-            <span class="ident">QuantileInterpolOptions::Linear</span>,
+        <span class="kw">let </span>interpol_options = <span class="macro">vec!</span>[
+            QuantileInterpolOptions::Lower,
+            QuantileInterpolOptions::Higher,
+            QuantileInterpolOptions::Nearest,
+            QuantileInterpolOptions::Midpoint,
+            QuantileInterpolOptions::Linear,
         ];
 
-        <span class="kw">for</span> <span class="ident">interpol</span> <span class="kw">in</span> <span class="ident">interpol_options</span> {
-            <span class="kw">let</span> <span class="ident">out1</span> <span class="op">=</span> <span class="ident">rolling_min</span>(<span class="ident">values</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="bool-val">false</span>, <span class="prelude-val">None</span>);
-            <span class="kw">let</span> <span class="ident">out1</span> <span class="op">=</span> <span class="ident">out1</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-            <span class="kw">let</span> <span class="ident">out1</span> <span class="op">=</span> <span class="ident">out1</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">v</span>.<span class="ident">copied</span>()).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-            <span class="kw">let</span> <span class="ident">out2</span> <span class="op">=</span> <span class="ident">rolling_quantile</span>(<span class="ident">values</span>, <span class="number">0.0</span>, <span class="ident">interpol</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="bool-val">false</span>, <span class="prelude-val">None</span>);
-            <span class="kw">let</span> <span class="ident">out2</span> <span class="op">=</span> <span class="ident">out2</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-            <span class="kw">let</span> <span class="ident">out2</span> <span class="op">=</span> <span class="ident">out2</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">v</span>.<span class="ident">copied</span>()).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-            <span class="macro">assert_eq!</span>(<span class="ident">out1</span>, <span class="ident">out2</span>);
+        <span class="kw">for </span>interpol <span class="kw">in </span>interpol_options {
+            <span class="kw">let </span>out1 = rolling_min(values, <span class="number">2</span>, <span class="number">1</span>, <span class="bool-val">false</span>, <span class="prelude-val">None</span>);
+            <span class="kw">let </span>out1 = out1.as_any().downcast_ref::&lt;PrimitiveArray&lt;f64&gt;&gt;().unwrap();
+            <span class="kw">let </span>out1 = out1.into_iter().map(|v| v.copied()).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+            <span class="kw">let </span>out2 = rolling_quantile(values, <span class="number">0.0</span>, interpol, <span class="number">2</span>, <span class="number">1</span>, <span class="bool-val">false</span>, <span class="prelude-val">None</span>);
+            <span class="kw">let </span>out2 = out2.as_any().downcast_ref::&lt;PrimitiveArray&lt;f64&gt;&gt;().unwrap();
+            <span class="kw">let </span>out2 = out2.into_iter().map(|v| v.copied()).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+            <span class="macro">assert_eq!</span>(out1, out2);
 
-            <span class="kw">let</span> <span class="ident">out1</span> <span class="op">=</span> <span class="ident">rolling_max</span>(<span class="ident">values</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="bool-val">false</span>, <span class="prelude-val">None</span>);
-            <span class="kw">let</span> <span class="ident">out1</span> <span class="op">=</span> <span class="ident">out1</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-            <span class="kw">let</span> <span class="ident">out1</span> <span class="op">=</span> <span class="ident">out1</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">v</span>.<span class="ident">copied</span>()).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-            <span class="kw">let</span> <span class="ident">out2</span> <span class="op">=</span> <span class="ident">rolling_quantile</span>(<span class="ident">values</span>, <span class="number">1.0</span>, <span class="ident">interpol</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="bool-val">false</span>, <span class="prelude-val">None</span>);
-            <span class="kw">let</span> <span class="ident">out2</span> <span class="op">=</span> <span class="ident">out2</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-            <span class="kw">let</span> <span class="ident">out2</span> <span class="op">=</span> <span class="ident">out2</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">v</span>.<span class="ident">copied</span>()).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-            <span class="macro">assert_eq!</span>(<span class="ident">out1</span>, <span class="ident">out2</span>);
+            <span class="kw">let </span>out1 = rolling_max(values, <span class="number">2</span>, <span class="number">1</span>, <span class="bool-val">false</span>, <span class="prelude-val">None</span>);
+            <span class="kw">let </span>out1 = out1.as_any().downcast_ref::&lt;PrimitiveArray&lt;f64&gt;&gt;().unwrap();
+            <span class="kw">let </span>out1 = out1.into_iter().map(|v| v.copied()).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+            <span class="kw">let </span>out2 = rolling_quantile(values, <span class="number">1.0</span>, interpol, <span class="number">2</span>, <span class="number">1</span>, <span class="bool-val">false</span>, <span class="prelude-val">None</span>);
+            <span class="kw">let </span>out2 = out2.as_any().downcast_ref::&lt;PrimitiveArray&lt;f64&gt;&gt;().unwrap();
+            <span class="kw">let </span>out2 = out2.into_iter().map(|v| v.copied()).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+            <span class="macro">assert_eq!</span>(out1, out2);
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="polars_arrow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="polars_arrow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

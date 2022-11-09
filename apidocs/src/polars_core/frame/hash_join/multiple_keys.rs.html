@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.25.1/src/frame/hash_join/multiple_keys.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>multiple_keys.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.25.1/src/frame/hash_join/multiple_keys.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>multiple_keys.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -594,601 +594,601 @@
 <span id="594">594</span>
 <span id="595">595</span>
 <span id="596">596</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">hashbrown::hash_map::RawEntryMut</span>;
-<span class="kw">use</span> <span class="ident">hashbrown::HashMap</span>;
-<span class="kw">use</span> <span class="ident">rayon::prelude</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>hashbrown::hash_map::RawEntryMut;
+<span class="kw">use </span>hashbrown::HashMap;
+<span class="kw">use </span>rayon::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::frame::groupby::hashing</span>::{<span class="ident">populate_multiple_key_hashmap</span>, <span class="ident">HASHMAP_INIT_SIZE</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::frame::hash_join</span>::{
-    <span class="ident">get_hash_tbl_threaded_join_mut_partitioned</span>, <span class="ident">get_hash_tbl_threaded_join_partitioned</span>,
+<span class="kw">use super</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::frame::groupby::hashing::{populate_multiple_key_hashmap, HASHMAP_INIT_SIZE};
+<span class="kw">use </span><span class="kw">crate</span>::frame::hash_join::{
+    get_hash_tbl_threaded_join_mut_partitioned, get_hash_tbl_threaded_join_partitioned,
 };
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::series::to_physical_and_bit_repr</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils</span>::{<span class="ident">_set_partition_size</span>, <span class="ident">split_df</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::vector_hasher</span>::{<span class="ident">df_rows_to_hashes_threaded</span>, <span class="ident">this_partition</span>, <span class="ident">IdBuildHasher</span>, <span class="ident">IdxHash</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::POOL</span>;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::utils::series::to_physical_and_bit_repr;
+<span class="kw">use </span><span class="kw">crate</span>::utils::{_set_partition_size, split_df};
+<span class="kw">use </span><span class="kw">crate</span>::vector_hasher::{df_rows_to_hashes_threaded, this_partition, IdBuildHasher, IdxHash};
+<span class="kw">use </span><span class="kw">crate</span>::POOL;
 
-<span class="doccomment">/// Compare the rows of two DataFrames</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">compare_df_rows2</span>(
-    <span class="ident">left</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-    <span class="ident">right</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-    <span class="ident">left_idx</span>: <span class="ident">usize</span>,
-    <span class="ident">right_idx</span>: <span class="ident">usize</span>,
-) -&gt; <span class="ident">bool</span> {
-    <span class="kw">for</span> (<span class="ident">l</span>, <span class="ident">r</span>) <span class="kw">in</span> <span class="ident">left</span>.<span class="ident">get_columns</span>().<span class="ident">iter</span>().<span class="ident">zip</span>(<span class="ident">right</span>.<span class="ident">get_columns</span>()) {
-        <span class="comment">// get: there could be nulls.</span>
-        <span class="kw">if</span> <span class="op">!</span>(<span class="ident">l</span>.<span class="ident">get</span>(<span class="ident">left_idx</span>) <span class="op">==</span> <span class="ident">r</span>.<span class="ident">get</span>(<span class="ident">right_idx</span>)) {
-            <span class="kw">return</span> <span class="bool-val">false</span>;
+<span class="doccomment">/// Compare the rows of two DataFrames
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe fn </span>compare_df_rows2(
+    left: <span class="kw-2">&amp;</span>DataFrame,
+    right: <span class="kw-2">&amp;</span>DataFrame,
+    left_idx: usize,
+    right_idx: usize,
+) -&gt; bool {
+    <span class="kw">for </span>(l, r) <span class="kw">in </span>left.get_columns().iter().zip(right.get_columns()) {
+        <span class="comment">// get: there could be nulls.
+        </span><span class="kw">if </span>!(l.get(left_idx) == r.get(right_idx)) {
+            <span class="kw">return </span><span class="bool-val">false</span>;
         }
     }
-    <span class="bool-val">true</span>
-}
+    <span class="bool-val">true
+</span>}
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">create_probe_table</span>(
-    <span class="ident">hashes</span>: <span class="kw-2">&amp;</span>[<span class="ident">UInt64Chunked</span>],
-    <span class="ident">keys</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">IdxHash</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">IdBuildHasher</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">n_partitions</span> <span class="op">=</span> <span class="ident">_set_partition_size</span>();
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>create_probe_table(
+    hashes: <span class="kw-2">&amp;</span>[UInt64Chunked],
+    keys: <span class="kw-2">&amp;</span>DataFrame,
+) -&gt; Vec&lt;HashMap&lt;IdxHash, Vec&lt;IdxSize&gt;, IdBuildHasher&gt;&gt; {
+    <span class="kw">let </span>n_partitions = _set_partition_size();
 
-    <span class="comment">// We will create a hashtable in every thread.</span>
-    <span class="comment">// We use the hash to partition the keys to the matching hashtable.</span>
-    <span class="comment">// Every thread traverses all keys/hashes and ignores the ones that doesn&#39;t fall in that partition.</span>
-    <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
-        (<span class="number">0</span>..<span class="ident">n_partitions</span>).<span class="ident">into_par_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">part_no</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">part_no</span> <span class="op">=</span> <span class="ident">part_no</span> <span class="kw">as</span> <span class="ident">u64</span>;
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hash_tbl</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">IdxHash</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">IdBuildHasher</span><span class="op">&gt;</span> <span class="op">=</span>
-                <span class="ident">HashMap::with_capacity_and_hasher</span>(<span class="ident">HASHMAP_INIT_SIZE</span>, <span class="ident">Default::default</span>());
+    <span class="comment">// We will create a hashtable in every thread.
+    // We use the hash to partition the keys to the matching hashtable.
+    // Every thread traverses all keys/hashes and ignores the ones that doesn&#39;t fall in that partition.
+    </span>POOL.install(|| {
+        (<span class="number">0</span>..n_partitions).into_par_iter().map(|part_no| {
+            <span class="kw">let </span>part_no = part_no <span class="kw">as </span>u64;
+            <span class="kw">let </span><span class="kw-2">mut </span>hash_tbl: HashMap&lt;IdxHash, Vec&lt;IdxSize&gt;, IdBuildHasher&gt; =
+                HashMap::with_capacity_and_hasher(HASHMAP_INIT_SIZE, Default::default());
 
-            <span class="kw">let</span> <span class="ident">n_partitions</span> <span class="op">=</span> <span class="ident">n_partitions</span> <span class="kw">as</span> <span class="ident">u64</span>;
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">offset</span> <span class="op">=</span> <span class="number">0</span>;
-            <span class="kw">for</span> <span class="ident">hashes</span> <span class="kw">in</span> <span class="ident">hashes</span> {
-                <span class="kw">for</span> <span class="ident">hashes</span> <span class="kw">in</span> <span class="ident">hashes</span>.<span class="ident">data_views</span>() {
-                    <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">hashes</span>.<span class="ident">len</span>();
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx</span> <span class="op">=</span> <span class="number">0</span>;
-                    <span class="ident">hashes</span>.<span class="ident">iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">h</span><span class="op">|</span> {
-                        <span class="comment">// partition hashes by thread no.</span>
-                        <span class="comment">// So only a part of the hashes go to this hashmap</span>
-                        <span class="kw">if</span> <span class="ident">this_partition</span>(<span class="kw-2">*</span><span class="ident">h</span>, <span class="ident">part_no</span>, <span class="ident">n_partitions</span>) {
-                            <span class="kw">let</span> <span class="ident">idx</span> <span class="op">=</span> <span class="ident">idx</span> <span class="op">+</span> <span class="ident">offset</span>;
-                            <span class="ident">populate_multiple_key_hashmap</span>(
-                                <span class="kw-2">&amp;mut</span> <span class="ident">hash_tbl</span>,
-                                <span class="ident">idx</span>,
-                                <span class="kw-2">*</span><span class="ident">h</span>,
-                                <span class="ident">keys</span>,
-                                <span class="op">|</span><span class="op">|</span> <span class="macro">vec!</span>[<span class="ident">idx</span>],
-                                <span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">v</span>.<span class="ident">push</span>(<span class="ident">idx</span>),
+            <span class="kw">let </span>n_partitions = n_partitions <span class="kw">as </span>u64;
+            <span class="kw">let </span><span class="kw-2">mut </span>offset = <span class="number">0</span>;
+            <span class="kw">for </span>hashes <span class="kw">in </span>hashes {
+                <span class="kw">for </span>hashes <span class="kw">in </span>hashes.data_views() {
+                    <span class="kw">let </span>len = hashes.len();
+                    <span class="kw">let </span><span class="kw-2">mut </span>idx = <span class="number">0</span>;
+                    hashes.iter().for_each(|h| {
+                        <span class="comment">// partition hashes by thread no.
+                        // So only a part of the hashes go to this hashmap
+                        </span><span class="kw">if </span>this_partition(<span class="kw-2">*</span>h, part_no, n_partitions) {
+                            <span class="kw">let </span>idx = idx + offset;
+                            populate_multiple_key_hashmap(
+                                <span class="kw-2">&amp;mut </span>hash_tbl,
+                                idx,
+                                <span class="kw-2">*</span>h,
+                                keys,
+                                || <span class="macro">vec!</span>[idx],
+                                |v| v.push(idx),
                             )
                         }
-                        <span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                        idx += <span class="number">1</span>;
                     });
 
-                    <span class="ident">offset</span> <span class="op">+</span><span class="op">=</span> <span class="ident">len</span> <span class="kw">as</span> <span class="ident">IdxSize</span>;
+                    offset += len <span class="kw">as </span>IdxSize;
                 }
             }
-            <span class="ident">hash_tbl</span>
+            hash_tbl
         })
     })
-    .<span class="ident">collect</span>()
+    .collect()
 }
 
-<span class="kw">fn</span> <span class="ident">create_build_table_outer</span>(
-    <span class="ident">hashes</span>: <span class="kw-2">&amp;</span>[<span class="ident">UInt64Chunked</span>],
-    <span class="ident">keys</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">IdxHash</span>, (<span class="ident">bool</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>), <span class="ident">IdBuildHasher</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="comment">// Outer join equivalent of create_build_table() adds a bool in the hashmap values for tracking</span>
-    <span class="comment">// whether a value in the hash table has already been matched to a value in the probe hashes.</span>
-    <span class="kw">let</span> <span class="ident">n_partitions</span> <span class="op">=</span> <span class="ident">_set_partition_size</span>();
+<span class="kw">fn </span>create_build_table_outer(
+    hashes: <span class="kw-2">&amp;</span>[UInt64Chunked],
+    keys: <span class="kw-2">&amp;</span>DataFrame,
+) -&gt; Vec&lt;HashMap&lt;IdxHash, (bool, Vec&lt;IdxSize&gt;), IdBuildHasher&gt;&gt; {
+    <span class="comment">// Outer join equivalent of create_build_table() adds a bool in the hashmap values for tracking
+    // whether a value in the hash table has already been matched to a value in the probe hashes.
+    </span><span class="kw">let </span>n_partitions = _set_partition_size();
 
-    <span class="comment">// We will create a hashtable in every thread.</span>
-    <span class="comment">// We use the hash to partition the keys to the matching hashtable.</span>
-    <span class="comment">// Every thread traverses all keys/hashes and ignores the ones that doesn&#39;t fall in that partition.</span>
-    <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
-        (<span class="number">0</span>..<span class="ident">n_partitions</span>).<span class="ident">into_par_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">part_no</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">part_no</span> <span class="op">=</span> <span class="ident">part_no</span> <span class="kw">as</span> <span class="ident">u64</span>;
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hash_tbl</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">IdxHash</span>, (<span class="ident">bool</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>), <span class="ident">IdBuildHasher</span><span class="op">&gt;</span> <span class="op">=</span>
-                <span class="ident">HashMap::with_capacity_and_hasher</span>(<span class="ident">HASHMAP_INIT_SIZE</span>, <span class="ident">Default::default</span>());
+    <span class="comment">// We will create a hashtable in every thread.
+    // We use the hash to partition the keys to the matching hashtable.
+    // Every thread traverses all keys/hashes and ignores the ones that doesn&#39;t fall in that partition.
+    </span>POOL.install(|| {
+        (<span class="number">0</span>..n_partitions).into_par_iter().map(|part_no| {
+            <span class="kw">let </span>part_no = part_no <span class="kw">as </span>u64;
+            <span class="kw">let </span><span class="kw-2">mut </span>hash_tbl: HashMap&lt;IdxHash, (bool, Vec&lt;IdxSize&gt;), IdBuildHasher&gt; =
+                HashMap::with_capacity_and_hasher(HASHMAP_INIT_SIZE, Default::default());
 
-            <span class="kw">let</span> <span class="ident">n_partitions</span> <span class="op">=</span> <span class="ident">n_partitions</span> <span class="kw">as</span> <span class="ident">u64</span>;
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">offset</span> <span class="op">=</span> <span class="number">0</span>;
-            <span class="kw">for</span> <span class="ident">hashes</span> <span class="kw">in</span> <span class="ident">hashes</span> {
-                <span class="kw">for</span> <span class="ident">hashes</span> <span class="kw">in</span> <span class="ident">hashes</span>.<span class="ident">data_views</span>() {
-                    <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">hashes</span>.<span class="ident">len</span>();
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx</span> <span class="op">=</span> <span class="number">0</span>;
-                    <span class="ident">hashes</span>.<span class="ident">iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">h</span><span class="op">|</span> {
-                        <span class="comment">// partition hashes by thread no.</span>
-                        <span class="comment">// So only a part of the hashes go to this hashmap</span>
-                        <span class="kw">if</span> <span class="ident">this_partition</span>(<span class="kw-2">*</span><span class="ident">h</span>, <span class="ident">part_no</span>, <span class="ident">n_partitions</span>) {
-                            <span class="kw">let</span> <span class="ident">idx</span> <span class="op">=</span> <span class="ident">idx</span> <span class="op">+</span> <span class="ident">offset</span>;
-                            <span class="ident">populate_multiple_key_hashmap</span>(
-                                <span class="kw-2">&amp;mut</span> <span class="ident">hash_tbl</span>,
-                                <span class="ident">idx</span>,
-                                <span class="kw-2">*</span><span class="ident">h</span>,
-                                <span class="ident">keys</span>,
-                                <span class="op">|</span><span class="op">|</span> (<span class="bool-val">false</span>, <span class="macro">vec!</span>[<span class="ident">idx</span>]),
-                                <span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">v</span>.<span class="number">1</span>.<span class="ident">push</span>(<span class="ident">idx</span>),
+            <span class="kw">let </span>n_partitions = n_partitions <span class="kw">as </span>u64;
+            <span class="kw">let </span><span class="kw-2">mut </span>offset = <span class="number">0</span>;
+            <span class="kw">for </span>hashes <span class="kw">in </span>hashes {
+                <span class="kw">for </span>hashes <span class="kw">in </span>hashes.data_views() {
+                    <span class="kw">let </span>len = hashes.len();
+                    <span class="kw">let </span><span class="kw-2">mut </span>idx = <span class="number">0</span>;
+                    hashes.iter().for_each(|h| {
+                        <span class="comment">// partition hashes by thread no.
+                        // So only a part of the hashes go to this hashmap
+                        </span><span class="kw">if </span>this_partition(<span class="kw-2">*</span>h, part_no, n_partitions) {
+                            <span class="kw">let </span>idx = idx + offset;
+                            populate_multiple_key_hashmap(
+                                <span class="kw-2">&amp;mut </span>hash_tbl,
+                                idx,
+                                <span class="kw-2">*</span>h,
+                                keys,
+                                || (<span class="bool-val">false</span>, <span class="macro">vec!</span>[idx]),
+                                |v| v.<span class="number">1</span>.push(idx),
                             )
                         }
-                        <span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                        idx += <span class="number">1</span>;
                     });
 
-                    <span class="ident">offset</span> <span class="op">+</span><span class="op">=</span> <span class="ident">len</span> <span class="kw">as</span> <span class="ident">IdxSize</span>;
+                    offset += len <span class="kw">as </span>IdxSize;
                 }
             }
-            <span class="ident">hash_tbl</span>
+            hash_tbl
         })
     })
-    .<span class="ident">collect</span>()
+    .collect()
 }
 
-<span class="doccomment">/// Probe the build table and add tuples to the results (inner join)</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::too_many_arguments</span>)]</span>
-<span class="kw">fn</span> <span class="ident">probe_inner</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(
-    <span class="ident">probe_hashes</span>: <span class="kw-2">&amp;</span><span class="ident">UInt64Chunked</span>,
-    <span class="ident">hash_tbls</span>: <span class="kw-2">&amp;</span>[<span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">IdxHash</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">IdBuildHasher</span><span class="op">&gt;</span>],
-    <span class="ident">results</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">IdxSize</span>, <span class="ident">IdxSize</span>)<span class="op">&gt;</span>,
-    <span class="ident">local_offset</span>: <span class="ident">usize</span>,
-    <span class="ident">n_tables</span>: <span class="ident">u64</span>,
-    <span class="ident">a</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-    <span class="ident">b</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-    <span class="ident">swap_fn</span>: <span class="ident">F</span>,
-) <span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="ident">IdxSize</span>, <span class="ident">IdxSize</span>) -&gt; (<span class="ident">IdxSize</span>, <span class="ident">IdxSize</span>),
+<span class="doccomment">/// Probe the build table and add tuples to the results (inner join)
+</span><span class="attribute">#[allow(clippy::too_many_arguments)]
+</span><span class="kw">fn </span>probe_inner&lt;F&gt;(
+    probe_hashes: <span class="kw-2">&amp;</span>UInt64Chunked,
+    hash_tbls: <span class="kw-2">&amp;</span>[HashMap&lt;IdxHash, Vec&lt;IdxSize&gt;, IdBuildHasher&gt;],
+    results: <span class="kw-2">&amp;mut </span>Vec&lt;(IdxSize, IdxSize)&gt;,
+    local_offset: usize,
+    n_tables: u64,
+    a: <span class="kw-2">&amp;</span>DataFrame,
+    b: <span class="kw-2">&amp;</span>DataFrame,
+    swap_fn: F,
+) <span class="kw">where
+    </span>F: Fn(IdxSize, IdxSize) -&gt; (IdxSize, IdxSize),
 {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx_a</span> <span class="op">=</span> <span class="ident">local_offset</span> <span class="kw">as</span> <span class="ident">IdxSize</span>;
-    <span class="kw">for</span> <span class="ident">probe_hashes</span> <span class="kw">in</span> <span class="ident">probe_hashes</span>.<span class="ident">data_views</span>() {
-        <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">h</span> <span class="kw">in</span> <span class="ident">probe_hashes</span> {
-            <span class="comment">// probe table that contains the hashed value</span>
-            <span class="kw">let</span> <span class="ident">current_probe_table</span> <span class="op">=</span>
-                <span class="kw">unsafe</span> { <span class="ident">get_hash_tbl_threaded_join_partitioned</span>(<span class="ident">h</span>, <span class="ident">hash_tbls</span>, <span class="ident">n_tables</span>) };
+    <span class="kw">let </span><span class="kw-2">mut </span>idx_a = local_offset <span class="kw">as </span>IdxSize;
+    <span class="kw">for </span>probe_hashes <span class="kw">in </span>probe_hashes.data_views() {
+        <span class="kw">for </span><span class="kw-2">&amp;</span>h <span class="kw">in </span>probe_hashes {
+            <span class="comment">// probe table that contains the hashed value
+            </span><span class="kw">let </span>current_probe_table =
+                <span class="kw">unsafe </span>{ get_hash_tbl_threaded_join_partitioned(h, hash_tbls, n_tables) };
 
-            <span class="kw">let</span> <span class="ident">entry</span> <span class="op">=</span> <span class="ident">current_probe_table</span>.<span class="ident">raw_entry</span>().<span class="ident">from_hash</span>(<span class="ident">h</span>, <span class="op">|</span><span class="ident">idx_hash</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">idx_b</span> <span class="op">=</span> <span class="ident">idx_hash</span>.<span class="ident">idx</span>;
-                <span class="comment">// Safety:</span>
-                <span class="comment">// indices in a join operation are always in bounds.</span>
-                <span class="kw">unsafe</span> { <span class="ident">compare_df_rows2</span>(<span class="ident">a</span>, <span class="ident">b</span>, <span class="ident">idx_a</span> <span class="kw">as</span> <span class="ident">usize</span>, <span class="ident">idx_b</span> <span class="kw">as</span> <span class="ident">usize</span>) }
+            <span class="kw">let </span>entry = current_probe_table.raw_entry().from_hash(h, |idx_hash| {
+                <span class="kw">let </span>idx_b = idx_hash.idx;
+                <span class="comment">// Safety:
+                // indices in a join operation are always in bounds.
+                </span><span class="kw">unsafe </span>{ compare_df_rows2(a, b, idx_a <span class="kw">as </span>usize, idx_b <span class="kw">as </span>usize) }
             });
 
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="kw">_</span>, <span class="ident">indexes_b</span>)) <span class="op">=</span> <span class="ident">entry</span> {
-                <span class="kw">let</span> <span class="ident">tuples</span> <span class="op">=</span> <span class="ident">indexes_b</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">idx_b</span><span class="op">|</span> <span class="ident">swap_fn</span>(<span class="ident">idx_a</span>, <span class="ident">idx_b</span>));
-                <span class="ident">results</span>.<span class="ident">extend</span>(<span class="ident">tuples</span>);
+            <span class="kw">if let </span><span class="prelude-val">Some</span>((<span class="kw">_</span>, indexes_b)) = entry {
+                <span class="kw">let </span>tuples = indexes_b.iter().map(|<span class="kw-2">&amp;</span>idx_b| swap_fn(idx_a, idx_b));
+                results.extend(tuples);
             }
-            <span class="ident">idx_a</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+            idx_a += <span class="number">1</span>;
         }
     }
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">get_offsets</span>(<span class="ident">probe_hashes</span>: <span class="kw-2">&amp;</span>[<span class="ident">UInt64Chunked</span>]) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
-    <span class="ident">probe_hashes</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ph</span><span class="op">|</span> <span class="ident">ph</span>.<span class="ident">len</span>())
-        .<span class="ident">scan</span>(<span class="number">0</span>, <span class="op">|</span><span class="ident">state</span>, <span class="ident">val</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="kw-2">*</span><span class="ident">state</span>;
-            <span class="kw-2">*</span><span class="ident">state</span> <span class="op">+</span><span class="op">=</span> <span class="ident">val</span>;
-            <span class="prelude-val">Some</span>(<span class="ident">out</span>)
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>get_offsets(probe_hashes: <span class="kw-2">&amp;</span>[UInt64Chunked]) -&gt; Vec&lt;usize&gt; {
+    probe_hashes
+        .iter()
+        .map(|ph| ph.len())
+        .scan(<span class="number">0</span>, |state, val| {
+            <span class="kw">let </span>out = <span class="kw-2">*</span>state;
+            <span class="kw-2">*</span>state += val;
+            <span class="prelude-val">Some</span>(out)
         })
-        .<span class="ident">collect</span>()
+        .collect()
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">inner_join_multiple_keys</span>(
-    <span class="ident">a</span>: <span class="kw-2">&amp;mut</span> <span class="ident">DataFrame</span>,
-    <span class="ident">b</span>: <span class="kw-2">&amp;mut</span> <span class="ident">DataFrame</span>,
-    <span class="ident">swap</span>: <span class="ident">bool</span>,
-) -&gt; (<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>) {
-    <span class="comment">// we assume that the b DataFrame is the shorter relation.</span>
-    <span class="comment">// b will be used for the build phase.</span>
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>inner_join_multiple_keys(
+    a: <span class="kw-2">&amp;mut </span>DataFrame,
+    b: <span class="kw-2">&amp;mut </span>DataFrame,
+    swap: bool,
+) -&gt; (Vec&lt;IdxSize&gt;, Vec&lt;IdxSize&gt;) {
+    <span class="comment">// we assume that the b DataFrame is the shorter relation.
+    // b will be used for the build phase.
 
-    <span class="kw">let</span> <span class="ident">n_threads</span> <span class="op">=</span> <span class="ident">POOL</span>.<span class="ident">current_num_threads</span>();
-    <span class="kw">let</span> <span class="ident">dfs_a</span> <span class="op">=</span> <span class="ident">split_df</span>(<span class="ident">a</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">dfs_b</span> <span class="op">=</span> <span class="ident">split_df</span>(<span class="ident">b</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
+    </span><span class="kw">let </span>n_threads = POOL.current_num_threads();
+    <span class="kw">let </span>dfs_a = split_df(a, n_threads).unwrap();
+    <span class="kw">let </span>dfs_b = split_df(b, n_threads).unwrap();
 
-    <span class="kw">let</span> (<span class="ident">build_hashes</span>, <span class="ident">random_state</span>) <span class="op">=</span> <span class="ident">df_rows_to_hashes_threaded</span>(<span class="kw-2">&amp;</span><span class="ident">dfs_b</span>, <span class="prelude-val">None</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> (<span class="ident">probe_hashes</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">df_rows_to_hashes_threaded</span>(<span class="kw-2">&amp;</span><span class="ident">dfs_a</span>, <span class="prelude-val">Some</span>(<span class="ident">random_state</span>)).<span class="ident">unwrap</span>();
+    <span class="kw">let </span>(build_hashes, random_state) = df_rows_to_hashes_threaded(<span class="kw-2">&amp;</span>dfs_b, <span class="prelude-val">None</span>).unwrap();
+    <span class="kw">let </span>(probe_hashes, <span class="kw">_</span>) = df_rows_to_hashes_threaded(<span class="kw-2">&amp;</span>dfs_a, <span class="prelude-val">Some</span>(random_state)).unwrap();
 
-    <span class="kw">let</span> <span class="ident">hash_tbls</span> <span class="op">=</span> <span class="ident">create_probe_table</span>(<span class="kw-2">&amp;</span><span class="ident">build_hashes</span>, <span class="ident">b</span>);
-    <span class="comment">// early drop to reduce memory pressure</span>
-    <span class="ident">drop</span>(<span class="ident">build_hashes</span>);
+    <span class="kw">let </span>hash_tbls = create_probe_table(<span class="kw-2">&amp;</span>build_hashes, b);
+    <span class="comment">// early drop to reduce memory pressure
+    </span>drop(build_hashes);
 
-    <span class="kw">let</span> <span class="ident">n_tables</span> <span class="op">=</span> <span class="ident">hash_tbls</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u64</span>;
-    <span class="kw">let</span> <span class="ident">offsets</span> <span class="op">=</span> <span class="ident">get_offsets</span>(<span class="kw-2">&amp;</span><span class="ident">probe_hashes</span>);
-    <span class="comment">// next we probe the other relation</span>
-    <span class="comment">// code duplication is because we want to only do the swap check once</span>
-    <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
-        <span class="ident">probe_hashes</span>
-            .<span class="ident">into_par_iter</span>()
-            .<span class="ident">zip</span>(<span class="ident">offsets</span>)
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">probe_hashes</span>, <span class="ident">offset</span>)<span class="op">|</span> {
-                <span class="comment">// local reference</span>
-                <span class="kw">let</span> <span class="ident">hash_tbls</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">hash_tbls</span>;
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">results</span> <span class="op">=</span>
-                    <span class="ident">Vec::with_capacity</span>(<span class="ident">probe_hashes</span>.<span class="ident">len</span>() <span class="op">/</span> <span class="ident">POOL</span>.<span class="ident">current_num_threads</span>());
-                <span class="kw">let</span> <span class="ident">local_offset</span> <span class="op">=</span> <span class="ident">offset</span>;
-                <span class="comment">// code duplication is to hoist swap out of the inner loop.</span>
-                <span class="kw">if</span> <span class="ident">swap</span> {
-                    <span class="ident">probe_inner</span>(
-                        <span class="kw-2">&amp;</span><span class="ident">probe_hashes</span>,
-                        <span class="ident">hash_tbls</span>,
-                        <span class="kw-2">&amp;mut</span> <span class="ident">results</span>,
-                        <span class="ident">local_offset</span>,
-                        <span class="ident">n_tables</span>,
-                        <span class="ident">a</span>,
-                        <span class="ident">b</span>,
-                        <span class="op">|</span><span class="ident">idx_a</span>, <span class="ident">idx_b</span><span class="op">|</span> (<span class="ident">idx_b</span>, <span class="ident">idx_a</span>),
+    <span class="kw">let </span>n_tables = hash_tbls.len() <span class="kw">as </span>u64;
+    <span class="kw">let </span>offsets = get_offsets(<span class="kw-2">&amp;</span>probe_hashes);
+    <span class="comment">// next we probe the other relation
+    // code duplication is because we want to only do the swap check once
+    </span>POOL.install(|| {
+        probe_hashes
+            .into_par_iter()
+            .zip(offsets)
+            .map(|(probe_hashes, offset)| {
+                <span class="comment">// local reference
+                </span><span class="kw">let </span>hash_tbls = <span class="kw-2">&amp;</span>hash_tbls;
+                <span class="kw">let </span><span class="kw-2">mut </span>results =
+                    Vec::with_capacity(probe_hashes.len() / POOL.current_num_threads());
+                <span class="kw">let </span>local_offset = offset;
+                <span class="comment">// code duplication is to hoist swap out of the inner loop.
+                </span><span class="kw">if </span>swap {
+                    probe_inner(
+                        <span class="kw-2">&amp;</span>probe_hashes,
+                        hash_tbls,
+                        <span class="kw-2">&amp;mut </span>results,
+                        local_offset,
+                        n_tables,
+                        a,
+                        b,
+                        |idx_a, idx_b| (idx_b, idx_a),
                     )
-                } <span class="kw">else</span> {
-                    <span class="ident">probe_inner</span>(
-                        <span class="kw-2">&amp;</span><span class="ident">probe_hashes</span>,
-                        <span class="ident">hash_tbls</span>,
-                        <span class="kw-2">&amp;mut</span> <span class="ident">results</span>,
-                        <span class="ident">local_offset</span>,
-                        <span class="ident">n_tables</span>,
-                        <span class="ident">a</span>,
-                        <span class="ident">b</span>,
-                        <span class="op">|</span><span class="ident">idx_a</span>, <span class="ident">idx_b</span><span class="op">|</span> (<span class="ident">idx_a</span>, <span class="ident">idx_b</span>),
+                } <span class="kw">else </span>{
+                    probe_inner(
+                        <span class="kw-2">&amp;</span>probe_hashes,
+                        hash_tbls,
+                        <span class="kw-2">&amp;mut </span>results,
+                        local_offset,
+                        n_tables,
+                        a,
+                        b,
+                        |idx_a, idx_b| (idx_a, idx_b),
                     )
                 }
 
-                <span class="ident">results</span>
+                results
             })
-            .<span class="ident">flatten</span>()
-            .<span class="ident">unzip</span>()
+            .flatten()
+            .unzip()
     })
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;private&quot;</span>)]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">private_left_join_multiple_keys</span>(
-    <span class="ident">a</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-    <span class="ident">b</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-    <span class="comment">// map the global indices to [chunk_idx, array_idx]</span>
-    <span class="comment">// only needed if we have non contiguous memory</span>
-    <span class="ident">chunk_mapping_left</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">ChunkId</span>]<span class="op">&gt;</span>,
-    <span class="ident">chunk_mapping_right</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">ChunkId</span>]<span class="op">&gt;</span>,
-) -&gt; <span class="ident">LeftJoinIds</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">DataFrame::new_no_checks</span>(<span class="ident">to_physical_and_bit_repr</span>(<span class="ident">a</span>.<span class="ident">get_columns</span>()));
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">b</span> <span class="op">=</span> <span class="ident">DataFrame::new_no_checks</span>(<span class="ident">to_physical_and_bit_repr</span>(<span class="ident">b</span>.<span class="ident">get_columns</span>()));
-    <span class="ident">left_join_multiple_keys</span>(<span class="kw-2">&amp;mut</span> <span class="ident">a</span>, <span class="kw-2">&amp;mut</span> <span class="ident">b</span>, <span class="ident">chunk_mapping_left</span>, <span class="ident">chunk_mapping_right</span>)
+<span class="attribute">#[cfg(feature = <span class="string">&quot;private&quot;</span>)]
+</span><span class="kw">pub fn </span>private_left_join_multiple_keys(
+    a: <span class="kw-2">&amp;</span>DataFrame,
+    b: <span class="kw-2">&amp;</span>DataFrame,
+    <span class="comment">// map the global indices to [chunk_idx, array_idx]
+    // only needed if we have non contiguous memory
+    </span>chunk_mapping_left: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[ChunkId]&gt;,
+    chunk_mapping_right: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[ChunkId]&gt;,
+) -&gt; LeftJoinIds {
+    <span class="kw">let </span><span class="kw-2">mut </span>a = DataFrame::new_no_checks(to_physical_and_bit_repr(a.get_columns()));
+    <span class="kw">let </span><span class="kw-2">mut </span>b = DataFrame::new_no_checks(to_physical_and_bit_repr(b.get_columns()));
+    left_join_multiple_keys(<span class="kw-2">&amp;mut </span>a, <span class="kw-2">&amp;mut </span>b, chunk_mapping_left, chunk_mapping_right)
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">left_join_multiple_keys</span>(
-    <span class="ident">a</span>: <span class="kw-2">&amp;mut</span> <span class="ident">DataFrame</span>,
-    <span class="ident">b</span>: <span class="kw-2">&amp;mut</span> <span class="ident">DataFrame</span>,
-    <span class="comment">// map the global indices to [chunk_idx, array_idx]</span>
-    <span class="comment">// only needed if we have non contiguous memory</span>
-    <span class="ident">chunk_mapping_left</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">ChunkId</span>]<span class="op">&gt;</span>,
-    <span class="ident">chunk_mapping_right</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">ChunkId</span>]<span class="op">&gt;</span>,
-) -&gt; <span class="ident">LeftJoinIds</span> {
-    <span class="comment">// we should not join on logical types</span>
-    <span class="macro">debug_assert!</span>(<span class="op">!</span><span class="ident">a</span>.<span class="ident">iter</span>().<span class="ident">any</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">dtype</span>().<span class="ident">is_logical</span>()));
-    <span class="macro">debug_assert!</span>(<span class="op">!</span><span class="ident">b</span>.<span class="ident">iter</span>().<span class="ident">any</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">dtype</span>().<span class="ident">is_logical</span>()));
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>left_join_multiple_keys(
+    a: <span class="kw-2">&amp;mut </span>DataFrame,
+    b: <span class="kw-2">&amp;mut </span>DataFrame,
+    <span class="comment">// map the global indices to [chunk_idx, array_idx]
+    // only needed if we have non contiguous memory
+    </span>chunk_mapping_left: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[ChunkId]&gt;,
+    chunk_mapping_right: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[ChunkId]&gt;,
+) -&gt; LeftJoinIds {
+    <span class="comment">// we should not join on logical types
+    </span><span class="macro">debug_assert!</span>(!a.iter().any(|s| s.dtype().is_logical()));
+    <span class="macro">debug_assert!</span>(!b.iter().any(|s| s.dtype().is_logical()));
 
-    <span class="kw">let</span> <span class="ident">n_threads</span> <span class="op">=</span> <span class="ident">POOL</span>.<span class="ident">current_num_threads</span>();
-    <span class="kw">let</span> <span class="ident">dfs_a</span> <span class="op">=</span> <span class="ident">split_df</span>(<span class="ident">a</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">dfs_b</span> <span class="op">=</span> <span class="ident">split_df</span>(<span class="ident">b</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
+    <span class="kw">let </span>n_threads = POOL.current_num_threads();
+    <span class="kw">let </span>dfs_a = split_df(a, n_threads).unwrap();
+    <span class="kw">let </span>dfs_b = split_df(b, n_threads).unwrap();
 
-    <span class="kw">let</span> (<span class="ident">build_hashes</span>, <span class="ident">random_state</span>) <span class="op">=</span> <span class="ident">df_rows_to_hashes_threaded</span>(<span class="kw-2">&amp;</span><span class="ident">dfs_b</span>, <span class="prelude-val">None</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> (<span class="ident">probe_hashes</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">df_rows_to_hashes_threaded</span>(<span class="kw-2">&amp;</span><span class="ident">dfs_a</span>, <span class="prelude-val">Some</span>(<span class="ident">random_state</span>)).<span class="ident">unwrap</span>();
+    <span class="kw">let </span>(build_hashes, random_state) = df_rows_to_hashes_threaded(<span class="kw-2">&amp;</span>dfs_b, <span class="prelude-val">None</span>).unwrap();
+    <span class="kw">let </span>(probe_hashes, <span class="kw">_</span>) = df_rows_to_hashes_threaded(<span class="kw-2">&amp;</span>dfs_a, <span class="prelude-val">Some</span>(random_state)).unwrap();
 
-    <span class="kw">let</span> <span class="ident">hash_tbls</span> <span class="op">=</span> <span class="ident">create_probe_table</span>(<span class="kw-2">&amp;</span><span class="ident">build_hashes</span>, <span class="ident">b</span>);
-    <span class="comment">// early drop to reduce memory pressure</span>
-    <span class="ident">drop</span>(<span class="ident">build_hashes</span>);
+    <span class="kw">let </span>hash_tbls = create_probe_table(<span class="kw-2">&amp;</span>build_hashes, b);
+    <span class="comment">// early drop to reduce memory pressure
+    </span>drop(build_hashes);
 
-    <span class="kw">let</span> <span class="ident">n_tables</span> <span class="op">=</span> <span class="ident">hash_tbls</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u64</span>;
-    <span class="kw">let</span> <span class="ident">offsets</span> <span class="op">=</span> <span class="ident">get_offsets</span>(<span class="kw-2">&amp;</span><span class="ident">probe_hashes</span>);
+    <span class="kw">let </span>n_tables = hash_tbls.len() <span class="kw">as </span>u64;
+    <span class="kw">let </span>offsets = get_offsets(<span class="kw-2">&amp;</span>probe_hashes);
 
-    <span class="comment">// next we probe the other relation</span>
-    <span class="comment">// code duplication is because we want to only do the swap check once</span>
-    <span class="kw">let</span> <span class="ident">results</span> <span class="op">=</span> <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
-        <span class="ident">probe_hashes</span>
-            .<span class="ident">into_par_iter</span>()
-            .<span class="ident">zip</span>(<span class="ident">offsets</span>)
-            .<span class="ident">map</span>(<span class="kw">move</span> <span class="op">|</span>(<span class="ident">probe_hashes</span>, <span class="ident">offset</span>)<span class="op">|</span> {
-                <span class="comment">// local reference</span>
-                <span class="kw">let</span> <span class="ident">hash_tbls</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">hash_tbls</span>;
+    <span class="comment">// next we probe the other relation
+    // code duplication is because we want to only do the swap check once
+    </span><span class="kw">let </span>results = POOL.install(<span class="kw">move </span>|| {
+        probe_hashes
+            .into_par_iter()
+            .zip(offsets)
+            .map(<span class="kw">move </span>|(probe_hashes, offset)| {
+                <span class="comment">// local reference
+                </span><span class="kw">let </span>hash_tbls = <span class="kw-2">&amp;</span>hash_tbls;
 
-                <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">probe_hashes</span>.<span class="ident">len</span>() <span class="op">/</span> <span class="ident">POOL</span>.<span class="ident">current_num_threads</span>();
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">result_idx_left</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">len</span>);
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">result_idx_right</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">len</span>);
-                <span class="kw">let</span> <span class="ident">local_offset</span> <span class="op">=</span> <span class="ident">offset</span>;
+                <span class="kw">let </span>len = probe_hashes.len() / POOL.current_num_threads();
+                <span class="kw">let </span><span class="kw-2">mut </span>result_idx_left = Vec::with_capacity(len);
+                <span class="kw">let </span><span class="kw-2">mut </span>result_idx_right = Vec::with_capacity(len);
+                <span class="kw">let </span>local_offset = offset;
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx_a</span> <span class="op">=</span> <span class="ident">local_offset</span> <span class="kw">as</span> <span class="ident">IdxSize</span>;
-                <span class="kw">for</span> <span class="ident">probe_hashes</span> <span class="kw">in</span> <span class="ident">probe_hashes</span>.<span class="ident">data_views</span>() {
-                    <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">h</span> <span class="kw">in</span> <span class="ident">probe_hashes</span> {
-                        <span class="comment">// probe table that contains the hashed value</span>
-                        <span class="kw">let</span> <span class="ident">current_probe_table</span> <span class="op">=</span> <span class="kw">unsafe</span> {
-                            <span class="ident">get_hash_tbl_threaded_join_partitioned</span>(<span class="ident">h</span>, <span class="ident">hash_tbls</span>, <span class="ident">n_tables</span>)
+                <span class="kw">let </span><span class="kw-2">mut </span>idx_a = local_offset <span class="kw">as </span>IdxSize;
+                <span class="kw">for </span>probe_hashes <span class="kw">in </span>probe_hashes.data_views() {
+                    <span class="kw">for </span><span class="kw-2">&amp;</span>h <span class="kw">in </span>probe_hashes {
+                        <span class="comment">// probe table that contains the hashed value
+                        </span><span class="kw">let </span>current_probe_table = <span class="kw">unsafe </span>{
+                            get_hash_tbl_threaded_join_partitioned(h, hash_tbls, n_tables)
                         };
 
-                        <span class="kw">let</span> <span class="ident">entry</span> <span class="op">=</span> <span class="ident">current_probe_table</span>.<span class="ident">raw_entry</span>().<span class="ident">from_hash</span>(<span class="ident">h</span>, <span class="op">|</span><span class="ident">idx_hash</span><span class="op">|</span> {
-                            <span class="kw">let</span> <span class="ident">idx_b</span> <span class="op">=</span> <span class="ident">idx_hash</span>.<span class="ident">idx</span>;
-                            <span class="comment">// Safety:</span>
-                            <span class="comment">// indices in a join operation are always in bounds.</span>
-                            <span class="kw">unsafe</span> { <span class="ident">compare_df_rows2</span>(<span class="ident">a</span>, <span class="ident">b</span>, <span class="ident">idx_a</span> <span class="kw">as</span> <span class="ident">usize</span>, <span class="ident">idx_b</span> <span class="kw">as</span> <span class="ident">usize</span>) }
+                        <span class="kw">let </span>entry = current_probe_table.raw_entry().from_hash(h, |idx_hash| {
+                            <span class="kw">let </span>idx_b = idx_hash.idx;
+                            <span class="comment">// Safety:
+                            // indices in a join operation are always in bounds.
+                            </span><span class="kw">unsafe </span>{ compare_df_rows2(a, b, idx_a <span class="kw">as </span>usize, idx_b <span class="kw">as </span>usize) }
                         });
 
-                        <span class="kw">match</span> <span class="ident">entry</span> {
-                            <span class="comment">// left and right matches</span>
-                            <span class="prelude-val">Some</span>((<span class="kw">_</span>, <span class="ident">indexes_b</span>)) =&gt; {
-                                <span class="ident">result_idx_left</span>
-                                    .<span class="ident">extend</span>(<span class="ident">std::iter::repeat</span>(<span class="ident">idx_a</span>).<span class="ident">take</span>(<span class="ident">indexes_b</span>.<span class="ident">len</span>()));
-                                <span class="ident">result_idx_right</span>.<span class="ident">extend</span>(<span class="ident">indexes_b</span>.<span class="ident">iter</span>().<span class="ident">copied</span>().<span class="ident">map</span>(<span class="prelude-val">Some</span>))
+                        <span class="kw">match </span>entry {
+                            <span class="comment">// left and right matches
+                            </span><span class="prelude-val">Some</span>((<span class="kw">_</span>, indexes_b)) =&gt; {
+                                result_idx_left
+                                    .extend(std::iter::repeat(idx_a).take(indexes_b.len()));
+                                result_idx_right.extend(indexes_b.iter().copied().map(<span class="prelude-val">Some</span>))
                             }
-                            <span class="comment">// only left values, right = null</span>
-                            <span class="prelude-val">None</span> =&gt; {
-                                <span class="ident">result_idx_left</span>.<span class="ident">push</span>(<span class="ident">idx_a</span>);
-                                <span class="ident">result_idx_right</span>.<span class="ident">push</span>(<span class="prelude-val">None</span>);
+                            <span class="comment">// only left values, right = null
+                            </span><span class="prelude-val">None </span>=&gt; {
+                                result_idx_left.push(idx_a);
+                                result_idx_right.push(<span class="prelude-val">None</span>);
                             }
                         }
-                        <span class="ident">idx_a</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                        idx_a += <span class="number">1</span>;
                     }
                 }
 
-                <span class="ident">finish_left_join_mappings</span>(
-                    <span class="ident">result_idx_left</span>,
-                    <span class="ident">result_idx_right</span>,
-                    <span class="ident">chunk_mapping_left</span>,
-                    <span class="ident">chunk_mapping_right</span>,
+                finish_left_join_mappings(
+                    result_idx_left,
+                    result_idx_right,
+                    chunk_mapping_left,
+                    chunk_mapping_right,
                 )
             })
-            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()
+            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
     });
-    <span class="ident">flatten_left_join_ids</span>(<span class="ident">results</span>)
+    flatten_left_join_ids(results)
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;semi_anti_join&quot;</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">create_build_table_semi_anti</span>(
-    <span class="ident">hashes</span>: <span class="kw-2">&amp;</span>[<span class="ident">UInt64Chunked</span>],
-    <span class="ident">keys</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">IdxHash</span>, (), <span class="ident">IdBuildHasher</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">n_partitions</span> <span class="op">=</span> <span class="ident">_set_partition_size</span>();
+<span class="attribute">#[cfg(feature = <span class="string">&quot;semi_anti_join&quot;</span>)]
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>create_build_table_semi_anti(
+    hashes: <span class="kw-2">&amp;</span>[UInt64Chunked],
+    keys: <span class="kw-2">&amp;</span>DataFrame,
+) -&gt; Vec&lt;HashMap&lt;IdxHash, (), IdBuildHasher&gt;&gt; {
+    <span class="kw">let </span>n_partitions = _set_partition_size();
 
-    <span class="comment">// We will create a hashtable in every thread.</span>
-    <span class="comment">// We use the hash to partition the keys to the matching hashtable.</span>
-    <span class="comment">// Every thread traverses all keys/hashes and ignores the ones that doesn&#39;t fall in that partition.</span>
-    <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
-        (<span class="number">0</span>..<span class="ident">n_partitions</span>).<span class="ident">into_par_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">part_no</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">part_no</span> <span class="op">=</span> <span class="ident">part_no</span> <span class="kw">as</span> <span class="ident">u64</span>;
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hash_tbl</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">IdxHash</span>, (), <span class="ident">IdBuildHasher</span><span class="op">&gt;</span> <span class="op">=</span>
-                <span class="ident">HashMap::with_capacity_and_hasher</span>(<span class="ident">HASHMAP_INIT_SIZE</span>, <span class="ident">Default::default</span>());
+    <span class="comment">// We will create a hashtable in every thread.
+    // We use the hash to partition the keys to the matching hashtable.
+    // Every thread traverses all keys/hashes and ignores the ones that doesn&#39;t fall in that partition.
+    </span>POOL.install(|| {
+        (<span class="number">0</span>..n_partitions).into_par_iter().map(|part_no| {
+            <span class="kw">let </span>part_no = part_no <span class="kw">as </span>u64;
+            <span class="kw">let </span><span class="kw-2">mut </span>hash_tbl: HashMap&lt;IdxHash, (), IdBuildHasher&gt; =
+                HashMap::with_capacity_and_hasher(HASHMAP_INIT_SIZE, Default::default());
 
-            <span class="kw">let</span> <span class="ident">n_partitions</span> <span class="op">=</span> <span class="ident">n_partitions</span> <span class="kw">as</span> <span class="ident">u64</span>;
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">offset</span> <span class="op">=</span> <span class="number">0</span>;
-            <span class="kw">for</span> <span class="ident">hashes</span> <span class="kw">in</span> <span class="ident">hashes</span> {
-                <span class="kw">for</span> <span class="ident">hashes</span> <span class="kw">in</span> <span class="ident">hashes</span>.<span class="ident">data_views</span>() {
-                    <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">hashes</span>.<span class="ident">len</span>();
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx</span> <span class="op">=</span> <span class="number">0</span>;
-                    <span class="ident">hashes</span>.<span class="ident">iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">h</span><span class="op">|</span> {
-                        <span class="comment">// partition hashes by thread no.</span>
-                        <span class="comment">// So only a part of the hashes go to this hashmap</span>
-                        <span class="kw">if</span> <span class="ident">this_partition</span>(<span class="kw-2">*</span><span class="ident">h</span>, <span class="ident">part_no</span>, <span class="ident">n_partitions</span>) {
-                            <span class="kw">let</span> <span class="ident">idx</span> <span class="op">=</span> <span class="ident">idx</span> <span class="op">+</span> <span class="ident">offset</span>;
-                            <span class="ident">populate_multiple_key_hashmap</span>(
-                                <span class="kw-2">&amp;mut</span> <span class="ident">hash_tbl</span>,
-                                <span class="ident">idx</span>,
-                                <span class="kw-2">*</span><span class="ident">h</span>,
-                                <span class="ident">keys</span>,
-                                <span class="op">|</span><span class="op">|</span> (),
-                                <span class="op">|</span><span class="kw">_</span><span class="op">|</span> (),
+            <span class="kw">let </span>n_partitions = n_partitions <span class="kw">as </span>u64;
+            <span class="kw">let </span><span class="kw-2">mut </span>offset = <span class="number">0</span>;
+            <span class="kw">for </span>hashes <span class="kw">in </span>hashes {
+                <span class="kw">for </span>hashes <span class="kw">in </span>hashes.data_views() {
+                    <span class="kw">let </span>len = hashes.len();
+                    <span class="kw">let </span><span class="kw-2">mut </span>idx = <span class="number">0</span>;
+                    hashes.iter().for_each(|h| {
+                        <span class="comment">// partition hashes by thread no.
+                        // So only a part of the hashes go to this hashmap
+                        </span><span class="kw">if </span>this_partition(<span class="kw-2">*</span>h, part_no, n_partitions) {
+                            <span class="kw">let </span>idx = idx + offset;
+                            populate_multiple_key_hashmap(
+                                <span class="kw-2">&amp;mut </span>hash_tbl,
+                                idx,
+                                <span class="kw-2">*</span>h,
+                                keys,
+                                || (),
+                                |<span class="kw">_</span>| (),
                             )
                         }
-                        <span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                        idx += <span class="number">1</span>;
                     });
 
-                    <span class="ident">offset</span> <span class="op">+</span><span class="op">=</span> <span class="ident">len</span> <span class="kw">as</span> <span class="ident">IdxSize</span>;
+                    offset += len <span class="kw">as </span>IdxSize;
                 }
             }
-            <span class="ident">hash_tbl</span>
+            hash_tbl
         })
     })
-    .<span class="ident">collect</span>()
+    .collect()
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;semi_anti_join&quot;</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">semi_anti_join_multiple_keys_impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
-    <span class="ident">a</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">DataFrame</span>,
-    <span class="ident">b</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">DataFrame</span>,
-) -&gt; <span class="kw">impl</span> <span class="ident">ParallelIterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> (<span class="ident">IdxSize</span>, <span class="ident">bool</span>)<span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;a</span> {
-    <span class="comment">// we should not join on logical types</span>
-    <span class="macro">debug_assert!</span>(<span class="op">!</span><span class="ident">a</span>.<span class="ident">iter</span>().<span class="ident">any</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">dtype</span>().<span class="ident">is_logical</span>()));
-    <span class="macro">debug_assert!</span>(<span class="op">!</span><span class="ident">b</span>.<span class="ident">iter</span>().<span class="ident">any</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">dtype</span>().<span class="ident">is_logical</span>()));
+<span class="attribute">#[cfg(feature = <span class="string">&quot;semi_anti_join&quot;</span>)]
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>semi_anti_join_multiple_keys_impl&lt;<span class="lifetime">&#39;a</span>&gt;(
+    a: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>DataFrame,
+    b: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>DataFrame,
+) -&gt; <span class="kw">impl </span>ParallelIterator&lt;Item = (IdxSize, bool)&gt; + <span class="lifetime">&#39;a </span>{
+    <span class="comment">// we should not join on logical types
+    </span><span class="macro">debug_assert!</span>(!a.iter().any(|s| s.dtype().is_logical()));
+    <span class="macro">debug_assert!</span>(!b.iter().any(|s| s.dtype().is_logical()));
 
-    <span class="kw">let</span> <span class="ident">n_threads</span> <span class="op">=</span> <span class="ident">POOL</span>.<span class="ident">current_num_threads</span>();
-    <span class="kw">let</span> <span class="ident">dfs_a</span> <span class="op">=</span> <span class="ident">split_df</span>(<span class="ident">a</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">dfs_b</span> <span class="op">=</span> <span class="ident">split_df</span>(<span class="ident">b</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
+    <span class="kw">let </span>n_threads = POOL.current_num_threads();
+    <span class="kw">let </span>dfs_a = split_df(a, n_threads).unwrap();
+    <span class="kw">let </span>dfs_b = split_df(b, n_threads).unwrap();
 
-    <span class="kw">let</span> (<span class="ident">build_hashes</span>, <span class="ident">random_state</span>) <span class="op">=</span> <span class="ident">df_rows_to_hashes_threaded</span>(<span class="kw-2">&amp;</span><span class="ident">dfs_b</span>, <span class="prelude-val">None</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> (<span class="ident">probe_hashes</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">df_rows_to_hashes_threaded</span>(<span class="kw-2">&amp;</span><span class="ident">dfs_a</span>, <span class="prelude-val">Some</span>(<span class="ident">random_state</span>)).<span class="ident">unwrap</span>();
+    <span class="kw">let </span>(build_hashes, random_state) = df_rows_to_hashes_threaded(<span class="kw-2">&amp;</span>dfs_b, <span class="prelude-val">None</span>).unwrap();
+    <span class="kw">let </span>(probe_hashes, <span class="kw">_</span>) = df_rows_to_hashes_threaded(<span class="kw-2">&amp;</span>dfs_a, <span class="prelude-val">Some</span>(random_state)).unwrap();
 
-    <span class="kw">let</span> <span class="ident">hash_tbls</span> <span class="op">=</span> <span class="ident">create_build_table_semi_anti</span>(<span class="kw-2">&amp;</span><span class="ident">build_hashes</span>, <span class="ident">b</span>);
-    <span class="comment">// early drop to reduce memory pressure</span>
-    <span class="ident">drop</span>(<span class="ident">build_hashes</span>);
+    <span class="kw">let </span>hash_tbls = create_build_table_semi_anti(<span class="kw-2">&amp;</span>build_hashes, b);
+    <span class="comment">// early drop to reduce memory pressure
+    </span>drop(build_hashes);
 
-    <span class="kw">let</span> <span class="ident">n_tables</span> <span class="op">=</span> <span class="ident">hash_tbls</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u64</span>;
-    <span class="kw">let</span> <span class="ident">offsets</span> <span class="op">=</span> <span class="ident">get_offsets</span>(<span class="kw-2">&amp;</span><span class="ident">probe_hashes</span>);
+    <span class="kw">let </span>n_tables = hash_tbls.len() <span class="kw">as </span>u64;
+    <span class="kw">let </span>offsets = get_offsets(<span class="kw-2">&amp;</span>probe_hashes);
 
-    <span class="comment">// next we probe the other relation</span>
-    <span class="comment">// code duplication is because we want to only do the swap check once</span>
-    <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
-        <span class="ident">probe_hashes</span>
-            .<span class="ident">into_par_iter</span>()
-            .<span class="ident">zip</span>(<span class="ident">offsets</span>)
-            .<span class="ident">map</span>(<span class="kw">move</span> <span class="op">|</span>(<span class="ident">probe_hashes</span>, <span class="ident">offset</span>)<span class="op">|</span> {
-                <span class="comment">// local reference</span>
-                <span class="kw">let</span> <span class="ident">hash_tbls</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">hash_tbls</span>;
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">results</span> <span class="op">=</span>
-                    <span class="ident">Vec::with_capacity</span>(<span class="ident">probe_hashes</span>.<span class="ident">len</span>() <span class="op">/</span> <span class="ident">POOL</span>.<span class="ident">current_num_threads</span>());
-                <span class="kw">let</span> <span class="ident">local_offset</span> <span class="op">=</span> <span class="ident">offset</span>;
+    <span class="comment">// next we probe the other relation
+    // code duplication is because we want to only do the swap check once
+    </span>POOL.install(<span class="kw">move </span>|| {
+        probe_hashes
+            .into_par_iter()
+            .zip(offsets)
+            .map(<span class="kw">move </span>|(probe_hashes, offset)| {
+                <span class="comment">// local reference
+                </span><span class="kw">let </span>hash_tbls = <span class="kw-2">&amp;</span>hash_tbls;
+                <span class="kw">let </span><span class="kw-2">mut </span>results =
+                    Vec::with_capacity(probe_hashes.len() / POOL.current_num_threads());
+                <span class="kw">let </span>local_offset = offset;
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx_a</span> <span class="op">=</span> <span class="ident">local_offset</span> <span class="kw">as</span> <span class="ident">IdxSize</span>;
-                <span class="kw">for</span> <span class="ident">probe_hashes</span> <span class="kw">in</span> <span class="ident">probe_hashes</span>.<span class="ident">data_views</span>() {
-                    <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">h</span> <span class="kw">in</span> <span class="ident">probe_hashes</span> {
-                        <span class="comment">// probe table that contains the hashed value</span>
-                        <span class="kw">let</span> <span class="ident">current_probe_table</span> <span class="op">=</span> <span class="kw">unsafe</span> {
-                            <span class="ident">get_hash_tbl_threaded_join_partitioned</span>(<span class="ident">h</span>, <span class="ident">hash_tbls</span>, <span class="ident">n_tables</span>)
+                <span class="kw">let </span><span class="kw-2">mut </span>idx_a = local_offset <span class="kw">as </span>IdxSize;
+                <span class="kw">for </span>probe_hashes <span class="kw">in </span>probe_hashes.data_views() {
+                    <span class="kw">for </span><span class="kw-2">&amp;</span>h <span class="kw">in </span>probe_hashes {
+                        <span class="comment">// probe table that contains the hashed value
+                        </span><span class="kw">let </span>current_probe_table = <span class="kw">unsafe </span>{
+                            get_hash_tbl_threaded_join_partitioned(h, hash_tbls, n_tables)
                         };
 
-                        <span class="kw">let</span> <span class="ident">entry</span> <span class="op">=</span> <span class="ident">current_probe_table</span>.<span class="ident">raw_entry</span>().<span class="ident">from_hash</span>(<span class="ident">h</span>, <span class="op">|</span><span class="ident">idx_hash</span><span class="op">|</span> {
-                            <span class="kw">let</span> <span class="ident">idx_b</span> <span class="op">=</span> <span class="ident">idx_hash</span>.<span class="ident">idx</span>;
-                            <span class="comment">// Safety:</span>
-                            <span class="comment">// indices in a join operation are always in bounds.</span>
-                            <span class="kw">unsafe</span> { <span class="ident">compare_df_rows2</span>(<span class="ident">a</span>, <span class="ident">b</span>, <span class="ident">idx_a</span> <span class="kw">as</span> <span class="ident">usize</span>, <span class="ident">idx_b</span> <span class="kw">as</span> <span class="ident">usize</span>) }
+                        <span class="kw">let </span>entry = current_probe_table.raw_entry().from_hash(h, |idx_hash| {
+                            <span class="kw">let </span>idx_b = idx_hash.idx;
+                            <span class="comment">// Safety:
+                            // indices in a join operation are always in bounds.
+                            </span><span class="kw">unsafe </span>{ compare_df_rows2(a, b, idx_a <span class="kw">as </span>usize, idx_b <span class="kw">as </span>usize) }
                         });
 
-                        <span class="kw">match</span> <span class="ident">entry</span> {
-                            <span class="comment">// left and right matches</span>
-                            <span class="prelude-val">Some</span>((<span class="kw">_</span>, <span class="kw">_</span>)) =&gt; <span class="ident">results</span>.<span class="ident">push</span>((<span class="ident">idx_a</span>, <span class="bool-val">true</span>)),
-                            <span class="comment">// only left values, right = null</span>
-                            <span class="prelude-val">None</span> =&gt; <span class="ident">results</span>.<span class="ident">push</span>((<span class="ident">idx_a</span>, <span class="bool-val">false</span>)),
+                        <span class="kw">match </span>entry {
+                            <span class="comment">// left and right matches
+                            </span><span class="prelude-val">Some</span>((<span class="kw">_</span>, <span class="kw">_</span>)) =&gt; results.push((idx_a, <span class="bool-val">true</span>)),
+                            <span class="comment">// only left values, right = null
+                            </span><span class="prelude-val">None </span>=&gt; results.push((idx_a, <span class="bool-val">false</span>)),
                         }
-                        <span class="ident">idx_a</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                        idx_a += <span class="number">1</span>;
                     }
                 }
 
-                <span class="ident">results</span>
+                results
             })
-            .<span class="ident">flatten</span>()
+            .flatten()
     })
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;semi_anti_join&quot;</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">left_anti_multiple_keys</span>(<span class="ident">a</span>: <span class="kw-2">&amp;mut</span> <span class="ident">DataFrame</span>, <span class="ident">b</span>: <span class="kw-2">&amp;mut</span> <span class="ident">DataFrame</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span> {
-    <span class="ident">semi_anti_join_multiple_keys_impl</span>(<span class="ident">a</span>, <span class="ident">b</span>)
-        .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">tpls</span><span class="op">|</span> <span class="op">!</span><span class="ident">tpls</span>.<span class="number">1</span>)
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">tpls</span><span class="op">|</span> <span class="ident">tpls</span>.<span class="number">0</span>)
-        .<span class="ident">collect</span>()
+<span class="attribute">#[cfg(feature = <span class="string">&quot;semi_anti_join&quot;</span>)]
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>left_anti_multiple_keys(a: <span class="kw-2">&amp;mut </span>DataFrame, b: <span class="kw-2">&amp;mut </span>DataFrame) -&gt; Vec&lt;IdxSize&gt; {
+    semi_anti_join_multiple_keys_impl(a, b)
+        .filter(|tpls| !tpls.<span class="number">1</span>)
+        .map(|tpls| tpls.<span class="number">0</span>)
+        .collect()
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;semi_anti_join&quot;</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">left_semi_multiple_keys</span>(<span class="ident">a</span>: <span class="kw-2">&amp;mut</span> <span class="ident">DataFrame</span>, <span class="ident">b</span>: <span class="kw-2">&amp;mut</span> <span class="ident">DataFrame</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span> {
-    <span class="ident">semi_anti_join_multiple_keys_impl</span>(<span class="ident">a</span>, <span class="ident">b</span>)
-        .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">tpls</span><span class="op">|</span> <span class="ident">tpls</span>.<span class="number">1</span>)
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">tpls</span><span class="op">|</span> <span class="ident">tpls</span>.<span class="number">0</span>)
-        .<span class="ident">collect</span>()
+<span class="attribute">#[cfg(feature = <span class="string">&quot;semi_anti_join&quot;</span>)]
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>left_semi_multiple_keys(a: <span class="kw-2">&amp;mut </span>DataFrame, b: <span class="kw-2">&amp;mut </span>DataFrame) -&gt; Vec&lt;IdxSize&gt; {
+    semi_anti_join_multiple_keys_impl(a, b)
+        .filter(|tpls| tpls.<span class="number">1</span>)
+        .map(|tpls| tpls.<span class="number">0</span>)
+        .collect()
 }
 
-<span class="doccomment">/// Probe the build table and add tuples to the results (inner join)</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::too_many_arguments</span>)]</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::type_complexity</span>)]</span>
-<span class="kw">fn</span> <span class="ident">probe_outer</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">G</span>, <span class="ident">H</span><span class="op">&gt;</span>(
-    <span class="ident">probe_hashes</span>: <span class="kw-2">&amp;</span>[<span class="ident">UInt64Chunked</span>],
-    <span class="ident">hash_tbls</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">IdxHash</span>, (<span class="ident">bool</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>), <span class="ident">IdBuildHasher</span><span class="op">&gt;</span>],
-    <span class="ident">results</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>)<span class="op">&gt;</span>,
-    <span class="ident">n_tables</span>: <span class="ident">u64</span>,
-    <span class="ident">a</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-    <span class="ident">b</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-    <span class="comment">// Function that get index_a, index_b when there is a match and pushes to result</span>
-    <span class="ident">swap_fn_match</span>: <span class="ident">F</span>,
-    <span class="comment">// Function that get index_a when there is no match and pushes to result</span>
-    <span class="ident">swap_fn_no_match</span>: <span class="ident">G</span>,
-    <span class="comment">// Function that get index_b from the build table that did not match any in A and pushes to result</span>
-    <span class="ident">swap_fn_drain</span>: <span class="ident">H</span>,
-) <span class="kw">where</span>
-    <span class="comment">// idx_a, idx_b -&gt; ...</span>
-    <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="ident">IdxSize</span>, <span class="ident">IdxSize</span>) -&gt; (<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>),
-    <span class="comment">// idx_a -&gt; ...</span>
-    <span class="ident">G</span>: <span class="ident">Fn</span>(<span class="ident">IdxSize</span>) -&gt; (<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>),
-    <span class="comment">// idx_b -&gt; ...</span>
-    <span class="ident">H</span>: <span class="ident">Fn</span>(<span class="ident">IdxSize</span>) -&gt; (<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>),
+<span class="doccomment">/// Probe the build table and add tuples to the results (inner join)
+</span><span class="attribute">#[allow(clippy::too_many_arguments)]
+#[allow(clippy::type_complexity)]
+</span><span class="kw">fn </span>probe_outer&lt;F, G, H&gt;(
+    probe_hashes: <span class="kw-2">&amp;</span>[UInt64Chunked],
+    hash_tbls: <span class="kw-2">&amp;mut </span>[HashMap&lt;IdxHash, (bool, Vec&lt;IdxSize&gt;), IdBuildHasher&gt;],
+    results: <span class="kw-2">&amp;mut </span>Vec&lt;(<span class="prelude-ty">Option</span>&lt;IdxSize&gt;, <span class="prelude-ty">Option</span>&lt;IdxSize&gt;)&gt;,
+    n_tables: u64,
+    a: <span class="kw-2">&amp;</span>DataFrame,
+    b: <span class="kw-2">&amp;</span>DataFrame,
+    <span class="comment">// Function that get index_a, index_b when there is a match and pushes to result
+    </span>swap_fn_match: F,
+    <span class="comment">// Function that get index_a when there is no match and pushes to result
+    </span>swap_fn_no_match: G,
+    <span class="comment">// Function that get index_b from the build table that did not match any in A and pushes to result
+    </span>swap_fn_drain: H,
+) <span class="kw">where
+    </span><span class="comment">// idx_a, idx_b -&gt; ...
+    </span>F: Fn(IdxSize, IdxSize) -&gt; (<span class="prelude-ty">Option</span>&lt;IdxSize&gt;, <span class="prelude-ty">Option</span>&lt;IdxSize&gt;),
+    <span class="comment">// idx_a -&gt; ...
+    </span>G: Fn(IdxSize) -&gt; (<span class="prelude-ty">Option</span>&lt;IdxSize&gt;, <span class="prelude-ty">Option</span>&lt;IdxSize&gt;),
+    <span class="comment">// idx_b -&gt; ...
+    </span>H: Fn(IdxSize) -&gt; (<span class="prelude-ty">Option</span>&lt;IdxSize&gt;, <span class="prelude-ty">Option</span>&lt;IdxSize&gt;),
 {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx_a</span> <span class="op">=</span> <span class="number">0</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>idx_a = <span class="number">0</span>;
 
-    <span class="comment">// vec&lt;ca&gt;</span>
-    <span class="kw">for</span> <span class="ident">probe_hashes</span> <span class="kw">in</span> <span class="ident">probe_hashes</span> {
-        <span class="comment">// ca</span>
-        <span class="kw">for</span> <span class="ident">probe_hashes</span> <span class="kw">in</span> <span class="ident">probe_hashes</span>.<span class="ident">data_views</span>() {
-            <span class="comment">// chunk slices</span>
-            <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">h</span> <span class="kw">in</span> <span class="ident">probe_hashes</span> {
-                <span class="comment">// probe table that contains the hashed value</span>
-                <span class="kw">let</span> <span class="ident">current_probe_table</span> <span class="op">=</span>
-                    <span class="kw">unsafe</span> { <span class="ident">get_hash_tbl_threaded_join_mut_partitioned</span>(<span class="ident">h</span>, <span class="ident">hash_tbls</span>, <span class="ident">n_tables</span>) };
+    <span class="comment">// vec&lt;ca&gt;
+    </span><span class="kw">for </span>probe_hashes <span class="kw">in </span>probe_hashes {
+        <span class="comment">// ca
+        </span><span class="kw">for </span>probe_hashes <span class="kw">in </span>probe_hashes.data_views() {
+            <span class="comment">// chunk slices
+            </span><span class="kw">for </span><span class="kw-2">&amp;</span>h <span class="kw">in </span>probe_hashes {
+                <span class="comment">// probe table that contains the hashed value
+                </span><span class="kw">let </span>current_probe_table =
+                    <span class="kw">unsafe </span>{ get_hash_tbl_threaded_join_mut_partitioned(h, hash_tbls, n_tables) };
 
-                <span class="kw">let</span> <span class="ident">entry</span> <span class="op">=</span> <span class="ident">current_probe_table</span>
-                    .<span class="ident">raw_entry_mut</span>()
-                    .<span class="ident">from_hash</span>(<span class="ident">h</span>, <span class="op">|</span><span class="ident">idx_hash</span><span class="op">|</span> {
-                        <span class="kw">let</span> <span class="ident">idx_b</span> <span class="op">=</span> <span class="ident">idx_hash</span>.<span class="ident">idx</span>;
-                        <span class="comment">// Safety:</span>
-                        <span class="comment">// indices in a join operation are always in bounds.</span>
-                        <span class="kw">unsafe</span> { <span class="ident">compare_df_rows2</span>(<span class="ident">a</span>, <span class="ident">b</span>, <span class="ident">idx_a</span> <span class="kw">as</span> <span class="ident">usize</span>, <span class="ident">idx_b</span> <span class="kw">as</span> <span class="ident">usize</span>) }
+                <span class="kw">let </span>entry = current_probe_table
+                    .raw_entry_mut()
+                    .from_hash(h, |idx_hash| {
+                        <span class="kw">let </span>idx_b = idx_hash.idx;
+                        <span class="comment">// Safety:
+                        // indices in a join operation are always in bounds.
+                        </span><span class="kw">unsafe </span>{ compare_df_rows2(a, b, idx_a <span class="kw">as </span>usize, idx_b <span class="kw">as </span>usize) }
                     });
 
-                <span class="kw">match</span> <span class="ident">entry</span> {
-                    <span class="comment">// match and remove</span>
-                    <span class="ident">RawEntryMut::Occupied</span>(<span class="kw-2">mut</span> <span class="ident">occupied</span>) =&gt; {
-                        <span class="kw">let</span> (<span class="ident">tracker</span>, <span class="ident">indexes_b</span>) <span class="op">=</span> <span class="ident">occupied</span>.<span class="ident">get_mut</span>();
-                        <span class="kw-2">*</span><span class="ident">tracker</span> <span class="op">=</span> <span class="bool-val">true</span>;
-                        <span class="ident">results</span>.<span class="ident">extend</span>(<span class="ident">indexes_b</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">idx_b</span><span class="op">|</span> <span class="ident">swap_fn_match</span>(<span class="ident">idx_a</span>, <span class="ident">idx_b</span>)))
+                <span class="kw">match </span>entry {
+                    <span class="comment">// match and remove
+                    </span>RawEntryMut::Occupied(<span class="kw-2">mut </span>occupied) =&gt; {
+                        <span class="kw">let </span>(tracker, indexes_b) = occupied.get_mut();
+                        <span class="kw-2">*</span>tracker = <span class="bool-val">true</span>;
+                        results.extend(indexes_b.iter().map(|<span class="kw-2">&amp;</span>idx_b| swap_fn_match(idx_a, idx_b)))
                     }
-                    <span class="comment">// no match</span>
-                    <span class="ident">RawEntryMut::Vacant</span>(<span class="kw">_</span>) =&gt; <span class="ident">results</span>.<span class="ident">push</span>(<span class="ident">swap_fn_no_match</span>(<span class="ident">idx_a</span>)),
+                    <span class="comment">// no match
+                    </span>RawEntryMut::Vacant(<span class="kw">_</span>) =&gt; results.push(swap_fn_no_match(idx_a)),
                 }
-                <span class="ident">idx_a</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                idx_a += <span class="number">1</span>;
             }
         }
     }
 
-    <span class="kw">for</span> <span class="ident">hash_tbl</span> <span class="kw">in</span> <span class="ident">hash_tbls</span> {
-        <span class="ident">hash_tbl</span>.<span class="ident">iter</span>().<span class="ident">for_each</span>(<span class="op">|</span>(<span class="ident">_k</span>, (<span class="ident">tracker</span>, <span class="ident">indexes_b</span>))<span class="op">|</span> {
-            <span class="comment">// remaining unmatched joined values from the right table</span>
-            <span class="kw">if</span> <span class="op">!</span><span class="kw-2">*</span><span class="ident">tracker</span> {
-                <span class="ident">results</span>.<span class="ident">extend</span>(<span class="ident">indexes_b</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">idx_b</span><span class="op">|</span> <span class="ident">swap_fn_drain</span>(<span class="ident">idx_b</span>)))
+    <span class="kw">for </span>hash_tbl <span class="kw">in </span>hash_tbls {
+        hash_tbl.iter().for_each(|(_k, (tracker, indexes_b))| {
+            <span class="comment">// remaining unmatched joined values from the right table
+            </span><span class="kw">if </span>!<span class="kw-2">*</span>tracker {
+                results.extend(indexes_b.iter().map(|<span class="kw-2">&amp;</span>idx_b| swap_fn_drain(idx_b)))
             }
         });
     }
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">outer_join_multiple_keys</span>(
-    <span class="ident">a</span>: <span class="kw-2">&amp;mut</span> <span class="ident">DataFrame</span>,
-    <span class="ident">b</span>: <span class="kw-2">&amp;mut</span> <span class="ident">DataFrame</span>,
-    <span class="ident">swap</span>: <span class="ident">bool</span>,
-) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>)<span class="op">&gt;</span> {
-    <span class="comment">// we assume that the b DataFrame is the shorter relation.</span>
-    <span class="comment">// b will be used for the build phase.</span>
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>outer_join_multiple_keys(
+    a: <span class="kw-2">&amp;mut </span>DataFrame,
+    b: <span class="kw-2">&amp;mut </span>DataFrame,
+    swap: bool,
+) -&gt; Vec&lt;(<span class="prelude-ty">Option</span>&lt;IdxSize&gt;, <span class="prelude-ty">Option</span>&lt;IdxSize&gt;)&gt; {
+    <span class="comment">// we assume that the b DataFrame is the shorter relation.
+    // b will be used for the build phase.
 
-    <span class="kw">let</span> <span class="ident">size</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">height</span>() <span class="op">+</span> <span class="ident">b</span>.<span class="ident">height</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">results</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">size</span>);
+    </span><span class="kw">let </span>size = a.height() + b.height();
+    <span class="kw">let </span><span class="kw-2">mut </span>results = Vec::with_capacity(size);
 
-    <span class="kw">let</span> <span class="ident">n_threads</span> <span class="op">=</span> <span class="ident">POOL</span>.<span class="ident">current_num_threads</span>();
-    <span class="kw">let</span> <span class="ident">dfs_a</span> <span class="op">=</span> <span class="ident">split_df</span>(<span class="ident">a</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">dfs_b</span> <span class="op">=</span> <span class="ident">split_df</span>(<span class="ident">b</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
+    <span class="kw">let </span>n_threads = POOL.current_num_threads();
+    <span class="kw">let </span>dfs_a = split_df(a, n_threads).unwrap();
+    <span class="kw">let </span>dfs_b = split_df(b, n_threads).unwrap();
 
-    <span class="kw">let</span> (<span class="ident">build_hashes</span>, <span class="ident">random_state</span>) <span class="op">=</span> <span class="ident">df_rows_to_hashes_threaded</span>(<span class="kw-2">&amp;</span><span class="ident">dfs_b</span>, <span class="prelude-val">None</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> (<span class="ident">probe_hashes</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">df_rows_to_hashes_threaded</span>(<span class="kw-2">&amp;</span><span class="ident">dfs_a</span>, <span class="prelude-val">Some</span>(<span class="ident">random_state</span>)).<span class="ident">unwrap</span>();
+    <span class="kw">let </span>(build_hashes, random_state) = df_rows_to_hashes_threaded(<span class="kw-2">&amp;</span>dfs_b, <span class="prelude-val">None</span>).unwrap();
+    <span class="kw">let </span>(probe_hashes, <span class="kw">_</span>) = df_rows_to_hashes_threaded(<span class="kw-2">&amp;</span>dfs_a, <span class="prelude-val">Some</span>(random_state)).unwrap();
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hash_tbls</span> <span class="op">=</span> <span class="ident">create_build_table_outer</span>(<span class="kw-2">&amp;</span><span class="ident">build_hashes</span>, <span class="ident">b</span>);
-    <span class="comment">// early drop to reduce memory pressure</span>
-    <span class="ident">drop</span>(<span class="ident">build_hashes</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>hash_tbls = create_build_table_outer(<span class="kw-2">&amp;</span>build_hashes, b);
+    <span class="comment">// early drop to reduce memory pressure
+    </span>drop(build_hashes);
 
-    <span class="kw">let</span> <span class="ident">n_tables</span> <span class="op">=</span> <span class="ident">hash_tbls</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u64</span>;
-    <span class="comment">// probe the hash table.</span>
-    <span class="comment">// Note: indexes from b that are not matched will be None, Some(idx_b)</span>
-    <span class="comment">// Therefore we remove the matches and the remaining will be joined from the right</span>
+    <span class="kw">let </span>n_tables = hash_tbls.len() <span class="kw">as </span>u64;
+    <span class="comment">// probe the hash table.
+    // Note: indexes from b that are not matched will be None, Some(idx_b)
+    // Therefore we remove the matches and the remaining will be joined from the right
 
-    <span class="comment">// branch is because we want to only do the swap check once</span>
-    <span class="kw">if</span> <span class="ident">swap</span> {
-        <span class="ident">probe_outer</span>(
-            <span class="kw-2">&amp;</span><span class="ident">probe_hashes</span>,
-            <span class="kw-2">&amp;mut</span> <span class="ident">hash_tbls</span>,
-            <span class="kw-2">&amp;mut</span> <span class="ident">results</span>,
-            <span class="ident">n_tables</span>,
-            <span class="ident">a</span>,
-            <span class="ident">b</span>,
-            <span class="op">|</span><span class="ident">idx_a</span>, <span class="ident">idx_b</span><span class="op">|</span> (<span class="prelude-val">Some</span>(<span class="ident">idx_b</span>), <span class="prelude-val">Some</span>(<span class="ident">idx_a</span>)),
-            <span class="op">|</span><span class="ident">idx_a</span><span class="op">|</span> (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="ident">idx_a</span>)),
-            <span class="op">|</span><span class="ident">idx_b</span><span class="op">|</span> (<span class="prelude-val">Some</span>(<span class="ident">idx_b</span>), <span class="prelude-val">None</span>),
+    // branch is because we want to only do the swap check once
+    </span><span class="kw">if </span>swap {
+        probe_outer(
+            <span class="kw-2">&amp;</span>probe_hashes,
+            <span class="kw-2">&amp;mut </span>hash_tbls,
+            <span class="kw-2">&amp;mut </span>results,
+            n_tables,
+            a,
+            b,
+            |idx_a, idx_b| (<span class="prelude-val">Some</span>(idx_b), <span class="prelude-val">Some</span>(idx_a)),
+            |idx_a| (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(idx_a)),
+            |idx_b| (<span class="prelude-val">Some</span>(idx_b), <span class="prelude-val">None</span>),
         )
-    } <span class="kw">else</span> {
-        <span class="ident">probe_outer</span>(
-            <span class="kw-2">&amp;</span><span class="ident">probe_hashes</span>,
-            <span class="kw-2">&amp;mut</span> <span class="ident">hash_tbls</span>,
-            <span class="kw-2">&amp;mut</span> <span class="ident">results</span>,
-            <span class="ident">n_tables</span>,
-            <span class="ident">a</span>,
-            <span class="ident">b</span>,
-            <span class="op">|</span><span class="ident">idx_a</span>, <span class="ident">idx_b</span><span class="op">|</span> (<span class="prelude-val">Some</span>(<span class="ident">idx_a</span>), <span class="prelude-val">Some</span>(<span class="ident">idx_b</span>)),
-            <span class="op">|</span><span class="ident">idx_a</span><span class="op">|</span> (<span class="prelude-val">Some</span>(<span class="ident">idx_a</span>), <span class="prelude-val">None</span>),
-            <span class="op">|</span><span class="ident">idx_b</span><span class="op">|</span> (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="ident">idx_b</span>)),
+    } <span class="kw">else </span>{
+        probe_outer(
+            <span class="kw-2">&amp;</span>probe_hashes,
+            <span class="kw-2">&amp;mut </span>hash_tbls,
+            <span class="kw-2">&amp;mut </span>results,
+            n_tables,
+            a,
+            b,
+            |idx_a, idx_b| (<span class="prelude-val">Some</span>(idx_a), <span class="prelude-val">Some</span>(idx_b)),
+            |idx_a| (<span class="prelude-val">Some</span>(idx_a), <span class="prelude-val">None</span>),
+            |idx_b| (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(idx_b)),
         )
     }
-    <span class="ident">results</span>
+    results
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.25.1/src/frame/hash_join/single_keys_inner.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>single_keys_inner.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.25.1/src/frame/hash_join/single_keys_inner.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>single_keys_inner.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -86,93 +86,93 @@
 <span id="86">86</span>
 <span id="87">87</span>
 <span id="88">88</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-<span class="doccomment">/// Probe the build table and add tuples to the results (inner join)</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">probe_inner</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">F</span><span class="op">&gt;</span>(
-    <span class="ident">probe</span>: <span class="kw-2">&amp;</span>[<span class="ident">T</span>],
-    <span class="ident">hash_tbls</span>: <span class="kw-2">&amp;</span>[<span class="ident">PlHashMap</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span><span class="op">&gt;</span>],
-    <span class="ident">results</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">IdxSize</span>, <span class="ident">IdxSize</span>)<span class="op">&gt;</span>,
-    <span class="ident">local_offset</span>: <span class="ident">usize</span>,
-    <span class="ident">n_tables</span>: <span class="ident">u64</span>,
-    <span class="ident">swap_fn</span>: <span class="ident">F</span>,
-) <span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Hash</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Copy</span> <span class="op">+</span> <span class="ident">AsU64</span>,
-    <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="ident">IdxSize</span>, <span class="ident">IdxSize</span>) -&gt; (<span class="ident">IdxSize</span>, <span class="ident">IdxSize</span>),
+<span class="doccomment">/// Probe the build table and add tuples to the results (inner join)
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>probe_inner&lt;T, F&gt;(
+    probe: <span class="kw-2">&amp;</span>[T],
+    hash_tbls: <span class="kw-2">&amp;</span>[PlHashMap&lt;T, Vec&lt;IdxSize&gt;&gt;],
+    results: <span class="kw-2">&amp;mut </span>Vec&lt;(IdxSize, IdxSize)&gt;,
+    local_offset: usize,
+    n_tables: u64,
+    swap_fn: F,
+) <span class="kw">where
+    </span>T: Send + Hash + Eq + Sync + Copy + AsU64,
+    F: Fn(IdxSize, IdxSize) -&gt; (IdxSize, IdxSize),
 {
-    <span class="macro">assert!</span>(<span class="ident">hash_tbls</span>.<span class="ident">len</span>().<span class="ident">is_power_of_two</span>());
-    <span class="ident">probe</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>().<span class="ident">for_each</span>(<span class="op">|</span>(<span class="ident">idx_a</span>, <span class="ident">k</span>)<span class="op">|</span> {
-        <span class="kw">let</span> <span class="ident">idx_a</span> <span class="op">=</span> (<span class="ident">idx_a</span> <span class="op">+</span> <span class="ident">local_offset</span>) <span class="kw">as</span> <span class="ident">IdxSize</span>;
-        <span class="comment">// probe table that contains the hashed value</span>
-        <span class="kw">let</span> <span class="ident">current_probe_table</span> <span class="op">=</span>
-            <span class="kw">unsafe</span> { <span class="ident">get_hash_tbl_threaded_join_partitioned</span>(<span class="ident">k</span>.<span class="ident">as_u64</span>(), <span class="ident">hash_tbls</span>, <span class="ident">n_tables</span>) };
+    <span class="macro">assert!</span>(hash_tbls.len().is_power_of_two());
+    probe.iter().enumerate().for_each(|(idx_a, k)| {
+        <span class="kw">let </span>idx_a = (idx_a + local_offset) <span class="kw">as </span>IdxSize;
+        <span class="comment">// probe table that contains the hashed value
+        </span><span class="kw">let </span>current_probe_table =
+            <span class="kw">unsafe </span>{ get_hash_tbl_threaded_join_partitioned(k.as_u64(), hash_tbls, n_tables) };
 
-        <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">current_probe_table</span>.<span class="ident">get</span>(<span class="ident">k</span>);
+        <span class="kw">let </span>value = current_probe_table.get(k);
 
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">indexes_b</span>) <span class="op">=</span> <span class="ident">value</span> {
-            <span class="kw">let</span> <span class="ident">tuples</span> <span class="op">=</span> <span class="ident">indexes_b</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">idx_b</span><span class="op">|</span> <span class="ident">swap_fn</span>(<span class="ident">idx_a</span>, <span class="ident">idx_b</span>));
-            <span class="ident">results</span>.<span class="ident">extend</span>(<span class="ident">tuples</span>);
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(indexes_b) = value {
+            <span class="kw">let </span>tuples = indexes_b.iter().map(|<span class="kw-2">&amp;</span>idx_b| swap_fn(idx_a, idx_b));
+            results.extend(tuples);
         }
     });
 }
 
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">hash_join_tuples_inner</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">IntoSlice</span><span class="op">&gt;</span>(
-    <span class="ident">probe</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IntoSlice</span><span class="op">&gt;</span>,
-    <span class="ident">build</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IntoSlice</span><span class="op">&gt;</span>,
-    <span class="comment">// Because b should be the shorter relation we could need to swap to keep left left and right right.</span>
-    <span class="ident">swap</span>: <span class="ident">bool</span>,
-) -&gt; (<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>)
-<span class="kw">where</span>
-    <span class="ident">IntoSlice</span>: <span class="ident">AsRef</span><span class="op">&lt;</span>[<span class="ident">T</span>]<span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span>,
-    <span class="ident">T</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Hash</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Copy</span> <span class="op">+</span> <span class="ident">AsU64</span>,
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>hash_join_tuples_inner&lt;T, IntoSlice&gt;(
+    probe: Vec&lt;IntoSlice&gt;,
+    build: Vec&lt;IntoSlice&gt;,
+    <span class="comment">// Because b should be the shorter relation we could need to swap to keep left left and right right.
+    </span>swap: bool,
+) -&gt; (Vec&lt;IdxSize&gt;, Vec&lt;IdxSize&gt;)
+<span class="kw">where
+    </span>IntoSlice: AsRef&lt;[T]&gt; + Send + Sync,
+    T: Send + Hash + Eq + Sync + Copy + AsU64,
 {
-    <span class="comment">// NOTE: see the left join for more elaborate comments</span>
+    <span class="comment">// NOTE: see the left join for more elaborate comments
 
-    <span class="comment">// first we hash one relation</span>
-    <span class="kw">let</span> <span class="ident">hash_tbls</span> <span class="op">=</span> <span class="ident">create_probe_table</span>(<span class="ident">build</span>);
+    // first we hash one relation
+    </span><span class="kw">let </span>hash_tbls = create_probe_table(build);
 
-    <span class="kw">let</span> <span class="ident">n_tables</span> <span class="op">=</span> <span class="ident">hash_tbls</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u64</span>;
-    <span class="macro">debug_assert!</span>(<span class="ident">n_tables</span>.<span class="ident">is_power_of_two</span>());
-    <span class="kw">let</span> <span class="ident">offsets</span> <span class="op">=</span> <span class="ident">probe_to_offsets</span>(<span class="kw-2">&amp;</span><span class="ident">probe</span>);
-    <span class="comment">// next we probe the other relation</span>
-    <span class="comment">// code duplication is because we want to only do the swap check once</span>
-    <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
-        <span class="ident">probe</span>
-            .<span class="ident">into_par_iter</span>()
-            .<span class="ident">zip</span>(<span class="ident">offsets</span>)
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">probe</span>, <span class="ident">offset</span>)<span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">probe</span> <span class="op">=</span> <span class="ident">probe</span>.<span class="ident">as_ref</span>();
-                <span class="comment">// local reference</span>
-                <span class="kw">let</span> <span class="ident">hash_tbls</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">hash_tbls</span>;
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">results</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">probe</span>.<span class="ident">len</span>());
-                <span class="kw">let</span> <span class="ident">local_offset</span> <span class="op">=</span> <span class="ident">offset</span>;
+    <span class="kw">let </span>n_tables = hash_tbls.len() <span class="kw">as </span>u64;
+    <span class="macro">debug_assert!</span>(n_tables.is_power_of_two());
+    <span class="kw">let </span>offsets = probe_to_offsets(<span class="kw-2">&amp;</span>probe);
+    <span class="comment">// next we probe the other relation
+    // code duplication is because we want to only do the swap check once
+    </span>POOL.install(|| {
+        probe
+            .into_par_iter()
+            .zip(offsets)
+            .map(|(probe, offset)| {
+                <span class="kw">let </span>probe = probe.as_ref();
+                <span class="comment">// local reference
+                </span><span class="kw">let </span>hash_tbls = <span class="kw-2">&amp;</span>hash_tbls;
+                <span class="kw">let </span><span class="kw-2">mut </span>results = Vec::with_capacity(probe.len());
+                <span class="kw">let </span>local_offset = offset;
 
-                <span class="comment">// branch is to hoist swap out of the inner loop.</span>
-                <span class="kw">if</span> <span class="ident">swap</span> {
-                    <span class="ident">probe_inner</span>(
-                        <span class="ident">probe</span>,
-                        <span class="ident">hash_tbls</span>,
-                        <span class="kw-2">&amp;mut</span> <span class="ident">results</span>,
-                        <span class="ident">local_offset</span>,
-                        <span class="ident">n_tables</span>,
-                        <span class="op">|</span><span class="ident">idx_a</span>, <span class="ident">idx_b</span><span class="op">|</span> (<span class="ident">idx_b</span>, <span class="ident">idx_a</span>),
+                <span class="comment">// branch is to hoist swap out of the inner loop.
+                </span><span class="kw">if </span>swap {
+                    probe_inner(
+                        probe,
+                        hash_tbls,
+                        <span class="kw-2">&amp;mut </span>results,
+                        local_offset,
+                        n_tables,
+                        |idx_a, idx_b| (idx_b, idx_a),
                     )
-                } <span class="kw">else</span> {
-                    <span class="ident">probe_inner</span>(
-                        <span class="ident">probe</span>,
-                        <span class="ident">hash_tbls</span>,
-                        <span class="kw-2">&amp;mut</span> <span class="ident">results</span>,
-                        <span class="ident">local_offset</span>,
-                        <span class="ident">n_tables</span>,
-                        <span class="op">|</span><span class="ident">idx_a</span>, <span class="ident">idx_b</span><span class="op">|</span> (<span class="ident">idx_a</span>, <span class="ident">idx_b</span>),
+                } <span class="kw">else </span>{
+                    probe_inner(
+                        probe,
+                        hash_tbls,
+                        <span class="kw-2">&amp;mut </span>results,
+                        local_offset,
+                        n_tables,
+                        |idx_a, idx_b| (idx_a, idx_b),
                     )
                 }
 
-                <span class="ident">results</span>
+                results
             })
-            .<span class="ident">flatten</span>()
-            .<span class="ident">unzip</span>()
+            .flatten()
+            .unzip()
     })
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

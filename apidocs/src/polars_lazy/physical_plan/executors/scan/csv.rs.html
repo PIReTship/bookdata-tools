@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.25.1/src/physical_plan/executors/scan/csv.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>csv.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.25.1/src/physical_plan/executors/scan/csv.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>csv.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../normalize.css"><link rel="stylesheet" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -81,88 +81,88 @@
 <span id="81">81</span>
 <span id="82">82</span>
 <span id="83">83</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">CsvExec</span> {
-    <span class="kw">pub</span> <span class="ident">path</span>: <span class="ident">PathBuf</span>,
-    <span class="kw">pub</span> <span class="ident">schema</span>: <span class="ident">SchemaRef</span>,
-    <span class="kw">pub</span> <span class="ident">options</span>: <span class="ident">CsvParserOptions</span>,
-    <span class="kw">pub</span> <span class="ident">predicate</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="kw">pub struct </span>CsvExec {
+    <span class="kw">pub </span>path: PathBuf,
+    <span class="kw">pub </span>schema: SchemaRef,
+    <span class="kw">pub </span>options: CsvParserOptions,
+    <span class="kw">pub </span>predicate: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">CsvExec</span> {
-    <span class="kw">fn</span> <span class="ident">read</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">with_columns</span> <span class="op">=</span> <span class="ident">mem::take</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">options</span>.<span class="ident">with_columns</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">projected_len</span> <span class="op">=</span> <span class="number">0</span>;
-        <span class="ident">with_columns</span>.<span class="ident">as_ref</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">columns</span><span class="op">|</span> {
-            <span class="ident">projected_len</span> <span class="op">=</span> <span class="ident">columns</span>.<span class="ident">len</span>();
-            <span class="ident">columns</span>
+<span class="kw">impl </span>CsvExec {
+    <span class="kw">fn </span>read(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; PolarsResult&lt;DataFrame&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>with_columns = mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.options.with_columns);
+        <span class="kw">let </span><span class="kw-2">mut </span>projected_len = <span class="number">0</span>;
+        with_columns.as_ref().map(|columns| {
+            projected_len = columns.len();
+            columns
         });
 
-        <span class="kw">if</span> <span class="ident">projected_len</span> <span class="op">==</span> <span class="number">0</span> {
-            <span class="ident">with_columns</span> <span class="op">=</span> <span class="prelude-val">None</span>;
+        <span class="kw">if </span>projected_len == <span class="number">0 </span>{
+            with_columns = <span class="prelude-val">None</span>;
         }
-        <span class="kw">let</span> <span class="ident">n_rows</span> <span class="op">=</span> <span class="ident">_set_n_rows_for_scan</span>(<span class="self">self</span>.<span class="ident">options</span>.<span class="ident">n_rows</span>);
-        <span class="kw">let</span> <span class="ident">predicate</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">predicate</span>
-            .<span class="ident">clone</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">expr</span><span class="op">|</span> <span class="ident">Arc::new</span>(<span class="ident">PhysicalIoHelper</span> { <span class="ident">expr</span> }) <span class="kw">as</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalIoExpr</span><span class="op">&gt;</span>);
+        <span class="kw">let </span>n_rows = _set_n_rows_for_scan(<span class="self">self</span>.options.n_rows);
+        <span class="kw">let </span>predicate = <span class="self">self
+            </span>.predicate
+            .clone()
+            .map(|expr| Arc::new(PhysicalIoHelper { expr }) <span class="kw">as </span>Arc&lt;<span class="kw">dyn </span>PhysicalIoExpr&gt;);
 
-        <span class="ident">CsvReader::from_path</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">path</span>)
-            .<span class="ident">unwrap</span>()
-            .<span class="ident">has_header</span>(<span class="self">self</span>.<span class="ident">options</span>.<span class="ident">has_header</span>)
-            .<span class="ident">with_schema</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">schema</span>)
-            .<span class="ident">with_delimiter</span>(<span class="self">self</span>.<span class="ident">options</span>.<span class="ident">delimiter</span>)
-            .<span class="ident">with_ignore_parser_errors</span>(<span class="self">self</span>.<span class="ident">options</span>.<span class="ident">ignore_errors</span>)
-            .<span class="ident">with_skip_rows</span>(<span class="self">self</span>.<span class="ident">options</span>.<span class="ident">skip_rows</span>)
-            .<span class="ident">with_n_rows</span>(<span class="ident">n_rows</span>)
-            .<span class="ident">with_columns</span>(<span class="ident">with_columns</span>.<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">mut</span> <span class="ident">cols</span><span class="op">|</span> <span class="ident">std::mem::take</span>(<span class="ident">Arc::make_mut</span>(<span class="kw-2">&amp;mut</span> <span class="ident">cols</span>))))
-            .<span class="ident">low_memory</span>(<span class="self">self</span>.<span class="ident">options</span>.<span class="ident">low_memory</span>)
-            .<span class="ident">with_null_values</span>(<span class="ident">std::mem::take</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">options</span>.<span class="ident">null_values</span>))
-            .<span class="ident">with_predicate</span>(<span class="ident">predicate</span>)
-            .<span class="ident">with_encoding</span>(<span class="ident">CsvEncoding::LossyUtf8</span>)
-            .<span class="ident">with_comment_char</span>(<span class="self">self</span>.<span class="ident">options</span>.<span class="ident">comment_char</span>)
-            .<span class="ident">with_quote_char</span>(<span class="self">self</span>.<span class="ident">options</span>.<span class="ident">quote_char</span>)
-            .<span class="ident">with_end_of_line_char</span>(<span class="self">self</span>.<span class="ident">options</span>.<span class="ident">eol_char</span>)
-            .<span class="ident">with_encoding</span>(<span class="self">self</span>.<span class="ident">options</span>.<span class="ident">encoding</span>)
-            .<span class="ident">with_rechunk</span>(<span class="self">self</span>.<span class="ident">options</span>.<span class="ident">rechunk</span>)
-            .<span class="ident">with_row_count</span>(<span class="ident">std::mem::take</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">options</span>.<span class="ident">row_count</span>))
-            .<span class="ident">with_parse_dates</span>(<span class="self">self</span>.<span class="ident">options</span>.<span class="ident">parse_dates</span>)
-            .<span class="ident">finish</span>()
+        CsvReader::from_path(<span class="kw-2">&amp;</span><span class="self">self</span>.path)
+            .unwrap()
+            .has_header(<span class="self">self</span>.options.has_header)
+            .with_schema(<span class="kw-2">&amp;</span><span class="self">self</span>.schema)
+            .with_delimiter(<span class="self">self</span>.options.delimiter)
+            .with_ignore_parser_errors(<span class="self">self</span>.options.ignore_errors)
+            .with_skip_rows(<span class="self">self</span>.options.skip_rows)
+            .with_n_rows(n_rows)
+            .with_columns(with_columns.map(|<span class="kw-2">mut </span>cols| std::mem::take(Arc::make_mut(<span class="kw-2">&amp;mut </span>cols))))
+            .low_memory(<span class="self">self</span>.options.low_memory)
+            .with_null_values(std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.options.null_values))
+            .with_predicate(predicate)
+            .with_encoding(CsvEncoding::LossyUtf8)
+            .with_comment_char(<span class="self">self</span>.options.comment_char)
+            .with_quote_char(<span class="self">self</span>.options.quote_char)
+            .with_end_of_line_char(<span class="self">self</span>.options.eol_char)
+            .with_encoding(<span class="self">self</span>.options.encoding)
+            .with_rechunk(<span class="self">self</span>.options.rechunk)
+            .with_row_count(std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.options.row_count))
+            .with_parse_dates(<span class="self">self</span>.options.parse_dates)
+            .finish()
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Executor</span> <span class="kw">for</span> <span class="ident">CsvExec</span> {
-    <span class="kw">fn</span> <span class="ident">execute</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">state</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ExecutionState</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">finger_print</span> <span class="op">=</span> <span class="ident">FileFingerPrint</span> {
-            <span class="ident">path</span>: <span class="self">self</span>.<span class="ident">path</span>.<span class="ident">clone</span>(),
-            <span class="ident">predicate</span>: <span class="self">self</span>
-                .<span class="ident">predicate</span>
-                .<span class="ident">as_ref</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ae</span><span class="op">|</span> <span class="ident">ae</span>.<span class="ident">as_expression</span>().<span class="ident">unwrap</span>().<span class="ident">clone</span>()),
-            <span class="ident">slice</span>: (<span class="self">self</span>.<span class="ident">options</span>.<span class="ident">skip_rows</span>, <span class="self">self</span>.<span class="ident">options</span>.<span class="ident">n_rows</span>),
+<span class="kw">impl </span>Executor <span class="kw">for </span>CsvExec {
+    <span class="kw">fn </span>execute(<span class="kw-2">&amp;mut </span><span class="self">self</span>, state: <span class="kw-2">&amp;mut </span>ExecutionState) -&gt; PolarsResult&lt;DataFrame&gt; {
+        <span class="kw">let </span>finger_print = FileFingerPrint {
+            path: <span class="self">self</span>.path.clone(),
+            predicate: <span class="self">self
+                </span>.predicate
+                .as_ref()
+                .map(|ae| ae.as_expression().unwrap().clone()),
+            slice: (<span class="self">self</span>.options.skip_rows, <span class="self">self</span>.options.n_rows),
         };
 
-        <span class="kw">let</span> <span class="ident">profile_name</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">has_node_timer</span>() {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ids</span> <span class="op">=</span> <span class="macro">vec!</span>[<span class="self">self</span>.<span class="ident">path</span>.<span class="ident">to_string_lossy</span>().<span class="ident">to_string</span>()];
-            <span class="kw">if</span> <span class="self">self</span>.<span class="ident">predicate</span>.<span class="ident">is_some</span>() {
-                <span class="ident">ids</span>.<span class="ident">push</span>(<span class="string">&quot;predicate&quot;</span>.<span class="ident">to_string</span>())
+        <span class="kw">let </span>profile_name = <span class="kw">if </span>state.has_node_timer() {
+            <span class="kw">let </span><span class="kw-2">mut </span>ids = <span class="macro">vec!</span>[<span class="self">self</span>.path.to_string_lossy().to_string()];
+            <span class="kw">if </span><span class="self">self</span>.predicate.is_some() {
+                ids.push(<span class="string">&quot;predicate&quot;</span>.to_string())
             }
-            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">column_delimited</span>(<span class="string">&quot;csv&quot;</span>.<span class="ident">to_string</span>(), <span class="kw-2">&amp;</span><span class="ident">ids</span>);
-            <span class="ident">Cow::Owned</span>(<span class="ident">name</span>)
-        } <span class="kw">else</span> {
-            <span class="ident">Cow::Borrowed</span>(<span class="string">&quot;&quot;</span>)
+            <span class="kw">let </span>name = column_delimited(<span class="string">&quot;csv&quot;</span>.to_string(), <span class="kw-2">&amp;</span>ids);
+            Cow::Owned(name)
+        } <span class="kw">else </span>{
+            Cow::Borrowed(<span class="string">&quot;&quot;</span>)
         };
 
-        <span class="ident">state</span>.<span class="ident">record</span>(
-            <span class="op">|</span><span class="op">|</span> {
-                <span class="ident">state</span>
-                    .<span class="ident">file_cache</span>
-                    .<span class="ident">read</span>(<span class="ident">finger_print</span>, <span class="self">self</span>.<span class="ident">options</span>.<span class="ident">file_counter</span>, <span class="kw-2">&amp;mut</span> <span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">read</span>())
+        state.record(
+            || {
+                state
+                    .file_cache
+                    .read(finger_print, <span class="self">self</span>.options.file_counter, <span class="kw-2">&amp;mut </span>|| <span class="self">self</span>.read())
             },
-            <span class="ident">profile_name</span>,
+            profile_name,
         )
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="polars_lazy" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="polars_lazy" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

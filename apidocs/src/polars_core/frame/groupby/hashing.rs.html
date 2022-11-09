@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.25.1/src/frame/groupby/hashing.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>hashing.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.25.1/src/frame/groupby/hashing.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>hashing.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -335,342 +335,342 @@
 <span id="335">335</span>
 <span id="336">336</span>
 <span id="337">337</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::hash</span>::{<span class="ident">BuildHasher</span>, <span class="ident">Hash</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>std::hash::{BuildHasher, Hash};
 
-<span class="kw">use</span> <span class="ident">hashbrown::hash_map</span>::{<span class="ident">Entry</span>, <span class="ident">RawEntryMut</span>};
-<span class="kw">use</span> <span class="ident">hashbrown::HashMap</span>;
-<span class="kw">use</span> <span class="ident">polars_utils</span>::{<span class="ident">flatten</span>, <span class="ident">HashSingle</span>};
-<span class="kw">use</span> <span class="ident">rayon::prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span>hashbrown::hash_map::{Entry, RawEntryMut};
+<span class="kw">use </span>hashbrown::HashMap;
+<span class="kw">use </span>polars_utils::{flatten, HashSingle};
+<span class="kw">use </span>rayon::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::GroupsProxy</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::datatypes::PlHashMap</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::frame::groupby</span>::{<span class="ident">GroupsIdx</span>, <span class="ident">IdxItem</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude::compare_inner::PartialEqInner</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils</span>::{<span class="ident">split_df</span>, <span class="ident">CustomIterTools</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::vector_hasher</span>::{
-    <span class="ident">df_rows_to_hashes_threaded</span>, <span class="ident">this_partition</span>, <span class="ident">AsU64</span>, <span class="ident">IdBuildHasher</span>, <span class="ident">IdxHash</span>,
+<span class="kw">use </span><span class="kw">super</span>::GroupsProxy;
+<span class="kw">use </span><span class="kw">crate</span>::datatypes::PlHashMap;
+<span class="kw">use </span><span class="kw">crate</span>::frame::groupby::{GroupsIdx, IdxItem};
+<span class="kw">use </span><span class="kw">crate</span>::prelude::compare_inner::PartialEqInner;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::utils::{split_df, CustomIterTools};
+<span class="kw">use </span><span class="kw">crate</span>::vector_hasher::{
+    df_rows_to_hashes_threaded, this_partition, AsU64, IdBuildHasher, IdxHash,
 };
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::POOL</span>;
+<span class="kw">use </span><span class="kw">crate</span>::POOL;
 
-<span class="kw">fn</span> <span class="ident">finish_group_order</span>(<span class="kw-2">mut</span> <span class="ident">out</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxItem</span><span class="op">&gt;</span><span class="op">&gt;</span>, <span class="ident">sorted</span>: <span class="ident">bool</span>) -&gt; <span class="ident">GroupsProxy</span> {
-    <span class="kw">if</span> <span class="ident">sorted</span> {
-        <span class="comment">// we can just take the first value, no need to flatten</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">out</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="number">1</span> {
-            <span class="ident">out</span>.<span class="ident">pop</span>().<span class="ident">unwrap</span>()
-        } <span class="kw">else</span> {
-            <span class="comment">// pre-sort every array</span>
-            <span class="comment">// this will make the final single threaded sort much faster</span>
-            <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
-                <span class="ident">out</span>.<span class="ident">par_iter_mut</span>()
-                    .<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">g</span><span class="op">|</span> <span class="ident">g</span>.<span class="ident">sort_unstable_by_key</span>(<span class="op">|</span><span class="ident">g</span><span class="op">|</span> <span class="ident">g</span>.<span class="number">0</span>))
+<span class="kw">fn </span>finish_group_order(<span class="kw-2">mut </span>out: Vec&lt;Vec&lt;IdxItem&gt;&gt;, sorted: bool) -&gt; GroupsProxy {
+    <span class="kw">if </span>sorted {
+        <span class="comment">// we can just take the first value, no need to flatten
+        </span><span class="kw">let </span><span class="kw-2">mut </span>out = <span class="kw">if </span>out.len() == <span class="number">1 </span>{
+            out.pop().unwrap()
+        } <span class="kw">else </span>{
+            <span class="comment">// pre-sort every array
+            // this will make the final single threaded sort much faster
+            </span>POOL.install(|| {
+                out.par_iter_mut()
+                    .for_each(|g| g.sort_unstable_by_key(|g| g.<span class="number">0</span>))
             });
 
-            <span class="ident">flatten</span>(<span class="kw-2">&amp;</span><span class="ident">out</span>, <span class="prelude-val">None</span>)
+            flatten(<span class="kw-2">&amp;</span>out, <span class="prelude-val">None</span>)
         };
-        <span class="ident">out</span>.<span class="ident">sort_unstable_by_key</span>(<span class="op">|</span><span class="ident">g</span><span class="op">|</span> <span class="ident">g</span>.<span class="number">0</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx</span> <span class="op">=</span> <span class="ident">GroupsIdx::from_iter</span>(<span class="ident">out</span>.<span class="ident">into_iter</span>());
-        <span class="ident">idx</span>.<span class="ident">sorted</span> <span class="op">=</span> <span class="bool-val">true</span>;
-        <span class="ident">GroupsProxy::Idx</span>(<span class="ident">idx</span>)
-    } <span class="kw">else</span> {
-        <span class="comment">// we can just take the first value, no need to flatten</span>
-        <span class="kw">if</span> <span class="ident">out</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="number">1</span> {
-            <span class="ident">GroupsProxy::Idx</span>(<span class="ident">GroupsIdx::from</span>(<span class="ident">out</span>.<span class="ident">pop</span>().<span class="ident">unwrap</span>()))
-        } <span class="kw">else</span> {
-            <span class="comment">// flattens</span>
-            <span class="ident">GroupsProxy::Idx</span>(<span class="ident">GroupsIdx::from</span>(<span class="ident">out</span>))
+        out.sort_unstable_by_key(|g| g.<span class="number">0</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>idx = GroupsIdx::from_iter(out.into_iter());
+        idx.sorted = <span class="bool-val">true</span>;
+        GroupsProxy::Idx(idx)
+    } <span class="kw">else </span>{
+        <span class="comment">// we can just take the first value, no need to flatten
+        </span><span class="kw">if </span>out.len() == <span class="number">1 </span>{
+            GroupsProxy::Idx(GroupsIdx::from(out.pop().unwrap()))
+        } <span class="kw">else </span>{
+            <span class="comment">// flattens
+            </span>GroupsProxy::Idx(GroupsIdx::from(out))
         }
     }
 }
 
-<span class="comment">// We must strike a balance between cache coherence and resizing costs.</span>
-<span class="comment">// Overallocation seems a lot more expensive than resizing so we start reasonable small.</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const</span> <span class="ident">HASHMAP_INIT_SIZE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">512</span>;
+<span class="comment">// We must strike a balance between cache coherence and resizing costs.
+// Overallocation seems a lot more expensive than resizing so we start reasonable small.
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>HASHMAP_INIT_SIZE: usize = <span class="number">512</span>;
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">groupby</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">a</span>: <span class="kw">impl</span> <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">sorted</span>: <span class="ident">bool</span>) -&gt; <span class="ident">GroupsProxy</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Hash</span> <span class="op">+</span> <span class="ident">Eq</span>,
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>groupby&lt;T&gt;(a: <span class="kw">impl </span>Iterator&lt;Item = T&gt;, sorted: bool) -&gt; GroupsProxy
+<span class="kw">where
+    </span>T: Hash + Eq,
 {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hash_tbl</span>: <span class="ident">PlHashMap</span><span class="op">&lt;</span><span class="ident">T</span>, (<span class="ident">IdxSize</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>)<span class="op">&gt;</span> <span class="op">=</span>
-        <span class="ident">PlHashMap::with_capacity</span>(<span class="ident">HASHMAP_INIT_SIZE</span>);
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cnt</span> <span class="op">=</span> <span class="number">0</span>;
-    <span class="ident">a</span>.<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">k</span><span class="op">|</span> {
-        <span class="kw">let</span> <span class="ident">idx</span> <span class="op">=</span> <span class="ident">cnt</span>;
-        <span class="ident">cnt</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-        <span class="kw">let</span> <span class="ident">entry</span> <span class="op">=</span> <span class="ident">hash_tbl</span>.<span class="ident">entry</span>(<span class="ident">k</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>hash_tbl: PlHashMap&lt;T, (IdxSize, Vec&lt;IdxSize&gt;)&gt; =
+        PlHashMap::with_capacity(HASHMAP_INIT_SIZE);
+    <span class="kw">let </span><span class="kw-2">mut </span>cnt = <span class="number">0</span>;
+    a.for_each(|k| {
+        <span class="kw">let </span>idx = cnt;
+        cnt += <span class="number">1</span>;
+        <span class="kw">let </span>entry = hash_tbl.entry(k);
 
-        <span class="kw">match</span> <span class="ident">entry</span> {
-            <span class="ident">Entry::Vacant</span>(<span class="ident">entry</span>) =&gt; {
-                <span class="ident">entry</span>.<span class="ident">insert</span>((<span class="ident">idx</span>, <span class="macro">vec!</span>[<span class="ident">idx</span>]));
+        <span class="kw">match </span>entry {
+            Entry::Vacant(entry) =&gt; {
+                entry.insert((idx, <span class="macro">vec!</span>[idx]));
             }
-            <span class="ident">Entry::Occupied</span>(<span class="kw-2">mut</span> <span class="ident">entry</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">v</span> <span class="op">=</span> <span class="ident">entry</span>.<span class="ident">get_mut</span>();
-                <span class="ident">v</span>.<span class="number">1</span>.<span class="ident">push</span>(<span class="ident">idx</span>);
+            Entry::Occupied(<span class="kw-2">mut </span>entry) =&gt; {
+                <span class="kw">let </span>v = entry.get_mut();
+                v.<span class="number">1</span>.push(idx);
             }
         }
     });
-    <span class="kw">if</span> <span class="ident">sorted</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">groups</span> <span class="op">=</span> <span class="ident">hash_tbl</span>
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">_k</span>, <span class="ident">v</span>)<span class="op">|</span> <span class="ident">v</span>)
-            .<span class="ident">collect_trusted</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-        <span class="ident">groups</span>.<span class="ident">sort_unstable_by_key</span>(<span class="op">|</span><span class="ident">g</span><span class="op">|</span> <span class="ident">g</span>.<span class="number">0</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx</span>: <span class="ident">GroupsIdx</span> <span class="op">=</span> <span class="ident">groups</span>.<span class="ident">into_iter</span>().<span class="ident">collect</span>();
-        <span class="ident">idx</span>.<span class="ident">sorted</span> <span class="op">=</span> <span class="bool-val">true</span>;
-        <span class="ident">GroupsProxy::Idx</span>(<span class="ident">idx</span>)
-    } <span class="kw">else</span> {
-        <span class="ident">GroupsProxy::Idx</span>(<span class="ident">hash_tbl</span>.<span class="ident">into_values</span>().<span class="ident">collect</span>())
+    <span class="kw">if </span>sorted {
+        <span class="kw">let </span><span class="kw-2">mut </span>groups = hash_tbl
+            .into_iter()
+            .map(|(_k, v)| v)
+            .collect_trusted::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        groups.sort_unstable_by_key(|g| g.<span class="number">0</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>idx: GroupsIdx = groups.into_iter().collect();
+        idx.sorted = <span class="bool-val">true</span>;
+        GroupsProxy::Idx(idx)
+    } <span class="kw">else </span>{
+        GroupsProxy::Idx(hash_tbl.into_values().collect())
     }
 }
 
-<span class="doccomment">/// Determine group tuples over different threads. The hash of the key is used to determine the partitions.</span>
-<span class="doccomment">/// Note that rehashing of the keys should be cheap and the keys small to allow efficient rehashing and improved cache locality.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Besides numeric values, we can also use this for pre hashed strings. The keys are simply a ptr to the str + precomputed hash.</span>
-<span class="doccomment">/// The hash will be used to rehash, and the str will be used for equality.</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">groupby_threaded_num</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">IntoSlice</span><span class="op">&gt;</span>(
-    <span class="ident">keys</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IntoSlice</span><span class="op">&gt;</span>,
-    <span class="ident">group_size_hint</span>: <span class="ident">usize</span>,
-    <span class="ident">n_partitions</span>: <span class="ident">u64</span>,
-    <span class="ident">sorted</span>: <span class="ident">bool</span>,
-) -&gt; <span class="ident">GroupsProxy</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Hash</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Copy</span> <span class="op">+</span> <span class="ident">AsU64</span>,
-    <span class="ident">IntoSlice</span>: <span class="ident">AsRef</span><span class="op">&lt;</span>[<span class="ident">T</span>]<span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span>,
+<span class="doccomment">/// Determine group tuples over different threads. The hash of the key is used to determine the partitions.
+/// Note that rehashing of the keys should be cheap and the keys small to allow efficient rehashing and improved cache locality.
+///
+/// Besides numeric values, we can also use this for pre hashed strings. The keys are simply a ptr to the str + precomputed hash.
+/// The hash will be used to rehash, and the str will be used for equality.
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>groupby_threaded_num&lt;T, IntoSlice&gt;(
+    keys: Vec&lt;IntoSlice&gt;,
+    group_size_hint: usize,
+    n_partitions: u64,
+    sorted: bool,
+) -&gt; GroupsProxy
+<span class="kw">where
+    </span>T: Send + Hash + Eq + Sync + Copy + AsU64,
+    IntoSlice: AsRef&lt;[T]&gt; + Send + Sync,
 {
-    <span class="macro">assert!</span>(<span class="ident">n_partitions</span>.<span class="ident">is_power_of_two</span>());
+    <span class="macro">assert!</span>(n_partitions.is_power_of_two());
 
-    <span class="comment">// We will create a hashtable in every thread.</span>
-    <span class="comment">// We use the hash to partition the keys to the matching hashtable.</span>
-    <span class="comment">// Every thread traverses all keys/hashes and ignores the ones that doesn&#39;t fall in that partition.</span>
-    <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">POOL</span>
-        .<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
-            (<span class="number">0</span>..<span class="ident">n_partitions</span>).<span class="ident">into_par_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">thread_no</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hash_tbl</span>: <span class="ident">PlHashMap</span><span class="op">&lt;</span><span class="ident">T</span>, (<span class="ident">IdxSize</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>)<span class="op">&gt;</span> <span class="op">=</span>
-                    <span class="ident">PlHashMap::with_capacity</span>(<span class="ident">HASHMAP_INIT_SIZE</span>);
+    <span class="comment">// We will create a hashtable in every thread.
+    // We use the hash to partition the keys to the matching hashtable.
+    // Every thread traverses all keys/hashes and ignores the ones that doesn&#39;t fall in that partition.
+    </span><span class="kw">let </span>out = POOL
+        .install(|| {
+            (<span class="number">0</span>..n_partitions).into_par_iter().map(|thread_no| {
+                <span class="kw">let </span><span class="kw-2">mut </span>hash_tbl: PlHashMap&lt;T, (IdxSize, Vec&lt;IdxSize&gt;)&gt; =
+                    PlHashMap::with_capacity(HASHMAP_INIT_SIZE);
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">offset</span> <span class="op">=</span> <span class="number">0</span>;
-                <span class="kw">for</span> <span class="ident">keys</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">keys</span> {
-                    <span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">keys</span>.<span class="ident">as_ref</span>();
-                    <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">keys</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">IdxSize</span>;
-                    <span class="kw">let</span> <span class="ident">hasher</span> <span class="op">=</span> <span class="ident">hash_tbl</span>.<span class="ident">hasher</span>().<span class="ident">clone</span>();
+                <span class="kw">let </span><span class="kw-2">mut </span>offset = <span class="number">0</span>;
+                <span class="kw">for </span>keys <span class="kw">in </span><span class="kw-2">&amp;</span>keys {
+                    <span class="kw">let </span>keys = keys.as_ref();
+                    <span class="kw">let </span>len = keys.len() <span class="kw">as </span>IdxSize;
+                    <span class="kw">let </span>hasher = hash_tbl.hasher().clone();
 
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cnt</span> <span class="op">=</span> <span class="number">0</span>;
-                    <span class="ident">keys</span>.<span class="ident">iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">k</span><span class="op">|</span> {
-                        <span class="kw">let</span> <span class="ident">idx</span> <span class="op">=</span> <span class="ident">cnt</span> <span class="op">+</span> <span class="ident">offset</span>;
-                        <span class="ident">cnt</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                    <span class="kw">let </span><span class="kw-2">mut </span>cnt = <span class="number">0</span>;
+                    keys.iter().for_each(|k| {
+                        <span class="kw">let </span>idx = cnt + offset;
+                        cnt += <span class="number">1</span>;
 
-                        <span class="kw">if</span> <span class="ident">this_partition</span>(<span class="ident">k</span>.<span class="ident">as_u64</span>(), <span class="ident">thread_no</span>, <span class="ident">n_partitions</span>) {
-                            <span class="kw">let</span> <span class="ident">hash</span> <span class="op">=</span> <span class="ident">hasher</span>.<span class="ident">hash_single</span>(<span class="ident">k</span>);
-                            <span class="kw">let</span> <span class="ident">entry</span> <span class="op">=</span> <span class="ident">hash_tbl</span>.<span class="ident">raw_entry_mut</span>().<span class="ident">from_key_hashed_nocheck</span>(<span class="ident">hash</span>, <span class="ident">k</span>);
+                        <span class="kw">if </span>this_partition(k.as_u64(), thread_no, n_partitions) {
+                            <span class="kw">let </span>hash = hasher.hash_single(k);
+                            <span class="kw">let </span>entry = hash_tbl.raw_entry_mut().from_key_hashed_nocheck(hash, k);
 
-                            <span class="kw">match</span> <span class="ident">entry</span> {
-                                <span class="ident">RawEntryMut::Vacant</span>(<span class="ident">entry</span>) =&gt; {
-                                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">tuples</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">group_size_hint</span>);
-                                    <span class="ident">tuples</span>.<span class="ident">push</span>(<span class="ident">idx</span>);
-                                    <span class="ident">entry</span>.<span class="ident">insert_with_hasher</span>(<span class="ident">hash</span>, <span class="kw-2">*</span><span class="ident">k</span>, (<span class="ident">idx</span>, <span class="ident">tuples</span>), <span class="op">|</span><span class="ident">k</span><span class="op">|</span> {
-                                        <span class="ident">hasher</span>.<span class="ident">hash_single</span>(<span class="ident">k</span>)
+                            <span class="kw">match </span>entry {
+                                RawEntryMut::Vacant(entry) =&gt; {
+                                    <span class="kw">let </span><span class="kw-2">mut </span>tuples = Vec::with_capacity(group_size_hint);
+                                    tuples.push(idx);
+                                    entry.insert_with_hasher(hash, <span class="kw-2">*</span>k, (idx, tuples), |k| {
+                                        hasher.hash_single(k)
                                     });
                                 }
-                                <span class="ident">RawEntryMut::Occupied</span>(<span class="kw-2">mut</span> <span class="ident">entry</span>) =&gt; {
-                                    <span class="kw">let</span> <span class="ident">v</span> <span class="op">=</span> <span class="ident">entry</span>.<span class="ident">get_mut</span>();
-                                    <span class="ident">v</span>.<span class="number">1</span>.<span class="ident">push</span>(<span class="ident">idx</span>);
+                                RawEntryMut::Occupied(<span class="kw-2">mut </span>entry) =&gt; {
+                                    <span class="kw">let </span>v = entry.get_mut();
+                                    v.<span class="number">1</span>.push(idx);
                                 }
                             }
                         }
                     });
-                    <span class="ident">offset</span> <span class="op">+</span><span class="op">=</span> <span class="ident">len</span>;
+                    offset += len;
                 }
-                <span class="ident">hash_tbl</span>
-                    .<span class="ident">into_iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">_k</span>, <span class="ident">v</span>)<span class="op">|</span> <span class="ident">v</span>)
-                    .<span class="ident">collect_trusted</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()
+                hash_tbl
+                    .into_iter()
+                    .map(|(_k, v)| v)
+                    .collect_trusted::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
             })
         })
-        .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-    <span class="ident">finish_group_order</span>(<span class="ident">out</span>, <span class="ident">sorted</span>)
+        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+    finish_group_order(out, sorted)
 }
 
-<span class="doccomment">/// Utility function used as comparison function in the hashmap.</span>
-<span class="doccomment">/// The rationale is that equality is an AND operation and therefore its probability of success</span>
-<span class="doccomment">/// declines rapidly with the number of keys. Instead of first copying an entire row from both</span>
-<span class="doccomment">/// sides and then do the comparison, we do the comparison value by value catching early failures</span>
-<span class="doccomment">/// eagerly.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Safety</span>
-<span class="doccomment">/// Doesn&#39;t check any bounds</span>
-<span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">compare_df_rows</span>(<span class="ident">keys</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>, <span class="ident">idx_a</span>: <span class="ident">usize</span>, <span class="ident">idx_b</span>: <span class="ident">usize</span>) -&gt; <span class="ident">bool</span> {
-    <span class="kw">for</span> <span class="ident">s</span> <span class="kw">in</span> <span class="ident">keys</span>.<span class="ident">get_columns</span>() {
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">s</span>.<span class="ident">equal_element</span>(<span class="ident">idx_a</span>, <span class="ident">idx_b</span>, <span class="ident">s</span>) {
-            <span class="kw">return</span> <span class="bool-val">false</span>;
+<span class="doccomment">/// Utility function used as comparison function in the hashmap.
+/// The rationale is that equality is an AND operation and therefore its probability of success
+/// declines rapidly with the number of keys. Instead of first copying an entire row from both
+/// sides and then do the comparison, we do the comparison value by value catching early failures
+/// eagerly.
+///
+/// # Safety
+/// Doesn&#39;t check any bounds
+</span><span class="attribute">#[inline]
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe fn </span>compare_df_rows(keys: <span class="kw-2">&amp;</span>DataFrame, idx_a: usize, idx_b: usize) -&gt; bool {
+    <span class="kw">for </span>s <span class="kw">in </span>keys.get_columns() {
+        <span class="kw">if </span>!s.equal_element(idx_a, idx_b, s) {
+            <span class="kw">return </span><span class="bool-val">false</span>;
         }
     }
-    <span class="bool-val">true</span>
-}
+    <span class="bool-val">true
+</span>}
 
-<span class="doccomment">/// Populate a multiple key hashmap with row indexes.</span>
-<span class="doccomment">/// Instead of the keys (which could be very large), the row indexes are stored.</span>
-<span class="doccomment">/// To check if a row is equal the original DataFrame is also passed as ref.</span>
-<span class="doccomment">/// When a hash collision occurs the indexes are ptrs to the rows and the rows are compared</span>
-<span class="doccomment">/// on equality.</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">populate_multiple_key_hashmap</span><span class="op">&lt;</span><span class="ident">V</span>, <span class="ident">H</span>, <span class="ident">F</span>, <span class="ident">G</span><span class="op">&gt;</span>(
-    <span class="ident">hash_tbl</span>: <span class="kw-2">&amp;mut</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">IdxHash</span>, <span class="ident">V</span>, <span class="ident">H</span><span class="op">&gt;</span>,
-    <span class="comment">// row index</span>
-    <span class="ident">idx</span>: <span class="ident">IdxSize</span>,
-    <span class="comment">// hash</span>
-    <span class="ident">original_h</span>: <span class="ident">u64</span>,
-    <span class="comment">// keys of the hash table (will not be inserted, the indexes will be used)</span>
-    <span class="comment">// the keys are needed for the equality check</span>
-    <span class="ident">keys</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-    <span class="comment">// value to insert</span>
-    <span class="ident">vacant_fn</span>: <span class="ident">G</span>,
-    <span class="comment">// function that gets a mutable ref to the occupied value in the hash table</span>
-    <span class="ident">occupied_fn</span>: <span class="ident">F</span>,
-) <span class="kw">where</span>
-    <span class="ident">G</span>: <span class="ident">Fn</span>() -&gt; <span class="ident">V</span>,
-    <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="kw-2">&amp;mut</span> <span class="ident">V</span>),
-    <span class="ident">H</span>: <span class="ident">BuildHasher</span>,
+<span class="doccomment">/// Populate a multiple key hashmap with row indexes.
+/// Instead of the keys (which could be very large), the row indexes are stored.
+/// To check if a row is equal the original DataFrame is also passed as ref.
+/// When a hash collision occurs the indexes are ptrs to the rows and the rows are compared
+/// on equality.
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>populate_multiple_key_hashmap&lt;V, H, F, G&gt;(
+    hash_tbl: <span class="kw-2">&amp;mut </span>HashMap&lt;IdxHash, V, H&gt;,
+    <span class="comment">// row index
+    </span>idx: IdxSize,
+    <span class="comment">// hash
+    </span>original_h: u64,
+    <span class="comment">// keys of the hash table (will not be inserted, the indexes will be used)
+    // the keys are needed for the equality check
+    </span>keys: <span class="kw-2">&amp;</span>DataFrame,
+    <span class="comment">// value to insert
+    </span>vacant_fn: G,
+    <span class="comment">// function that gets a mutable ref to the occupied value in the hash table
+    </span>occupied_fn: F,
+) <span class="kw">where
+    </span>G: Fn() -&gt; V,
+    F: Fn(<span class="kw-2">&amp;mut </span>V),
+    H: BuildHasher,
 {
-    <span class="kw">let</span> <span class="ident">entry</span> <span class="op">=</span> <span class="ident">hash_tbl</span>
-        .<span class="ident">raw_entry_mut</span>()
-        <span class="comment">// uses the idx to probe rows in the original DataFrame with keys</span>
-        <span class="comment">// to check equality to find an entry</span>
-        <span class="comment">// this does not invalidate the hashmap as this equality function is not used</span>
-        <span class="comment">// during rehashing/resize (then the keys are already known to be unique).</span>
-        <span class="comment">// Only during insertion and probing an equality function is needed</span>
-        .<span class="ident">from_hash</span>(<span class="ident">original_h</span>, <span class="op">|</span><span class="ident">idx_hash</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">key_idx</span> <span class="op">=</span> <span class="ident">idx_hash</span>.<span class="ident">idx</span>;
-            <span class="comment">// Safety:</span>
-            <span class="comment">// indices in a groupby operation are always in bounds.</span>
-            <span class="kw">unsafe</span> { <span class="ident">compare_df_rows</span>(<span class="ident">keys</span>, <span class="ident">key_idx</span> <span class="kw">as</span> <span class="ident">usize</span>, <span class="ident">idx</span> <span class="kw">as</span> <span class="ident">usize</span>) }
+    <span class="kw">let </span>entry = hash_tbl
+        .raw_entry_mut()
+        <span class="comment">// uses the idx to probe rows in the original DataFrame with keys
+        // to check equality to find an entry
+        // this does not invalidate the hashmap as this equality function is not used
+        // during rehashing/resize (then the keys are already known to be unique).
+        // Only during insertion and probing an equality function is needed
+        </span>.from_hash(original_h, |idx_hash| {
+            <span class="kw">let </span>key_idx = idx_hash.idx;
+            <span class="comment">// Safety:
+            // indices in a groupby operation are always in bounds.
+            </span><span class="kw">unsafe </span>{ compare_df_rows(keys, key_idx <span class="kw">as </span>usize, idx <span class="kw">as </span>usize) }
         });
-    <span class="kw">match</span> <span class="ident">entry</span> {
-        <span class="ident">RawEntryMut::Vacant</span>(<span class="ident">entry</span>) =&gt; {
-            <span class="ident">entry</span>.<span class="ident">insert_hashed_nocheck</span>(<span class="ident">original_h</span>, <span class="ident">IdxHash::new</span>(<span class="ident">idx</span>, <span class="ident">original_h</span>), <span class="ident">vacant_fn</span>());
+    <span class="kw">match </span>entry {
+        RawEntryMut::Vacant(entry) =&gt; {
+            entry.insert_hashed_nocheck(original_h, IdxHash::new(idx, original_h), vacant_fn());
         }
-        <span class="ident">RawEntryMut::Occupied</span>(<span class="kw-2">mut</span> <span class="ident">entry</span>) =&gt; {
-            <span class="kw">let</span> (<span class="ident">_k</span>, <span class="ident">v</span>) <span class="op">=</span> <span class="ident">entry</span>.<span class="ident">get_key_value_mut</span>();
-            <span class="ident">occupied_fn</span>(<span class="ident">v</span>);
+        RawEntryMut::Occupied(<span class="kw-2">mut </span>entry) =&gt; {
+            <span class="kw">let </span>(_k, v) = entry.get_key_value_mut();
+            occupied_fn(v);
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">compare_keys</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
-    <span class="ident">keys_cmp</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PartialEqInner</span> <span class="op">+</span> <span class="lifetime">&#39;a</span><span class="op">&gt;</span>],
-    <span class="ident">idx_a</span>: <span class="ident">usize</span>,
-    <span class="ident">idx_b</span>: <span class="ident">usize</span>,
-) -&gt; <span class="ident">bool</span> {
-    <span class="kw">for</span> <span class="ident">cmp</span> <span class="kw">in</span> <span class="ident">keys_cmp</span> {
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">cmp</span>.<span class="ident">eq_element_unchecked</span>(<span class="ident">idx_a</span>, <span class="ident">idx_b</span>) {
-            <span class="kw">return</span> <span class="bool-val">false</span>;
+<span class="attribute">#[inline]
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe fn </span>compare_keys&lt;<span class="lifetime">&#39;a</span>&gt;(
+    keys_cmp: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Box&lt;<span class="kw">dyn </span>PartialEqInner + <span class="lifetime">&#39;a</span>&gt;],
+    idx_a: usize,
+    idx_b: usize,
+) -&gt; bool {
+    <span class="kw">for </span>cmp <span class="kw">in </span>keys_cmp {
+        <span class="kw">if </span>!cmp.eq_element_unchecked(idx_a, idx_b) {
+            <span class="kw">return </span><span class="bool-val">false</span>;
         }
     }
-    <span class="bool-val">true</span>
-}
+    <span class="bool-val">true
+</span>}
 
-<span class="comment">// Differs in the because this one uses the PartialEqInner trait objects</span>
-<span class="comment">// is faster when multiple chunks. Not yet used in join.</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">populate_multiple_key_hashmap2</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">V</span>, <span class="ident">H</span>, <span class="ident">F</span>, <span class="ident">G</span><span class="op">&gt;</span>(
-    <span class="ident">hash_tbl</span>: <span class="kw-2">&amp;mut</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">IdxHash</span>, <span class="ident">V</span>, <span class="ident">H</span><span class="op">&gt;</span>,
-    <span class="comment">// row index</span>
-    <span class="ident">idx</span>: <span class="ident">IdxSize</span>,
-    <span class="comment">// hash</span>
-    <span class="ident">original_h</span>: <span class="ident">u64</span>,
-    <span class="comment">// keys of the hash table (will not be inserted, the indexes will be used)</span>
-    <span class="comment">// the keys are needed for the equality check</span>
-    <span class="ident">keys_cmp</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PartialEqInner</span> <span class="op">+</span> <span class="lifetime">&#39;a</span><span class="op">&gt;</span>],
-    <span class="comment">// value to insert</span>
-    <span class="ident">vacant_fn</span>: <span class="ident">G</span>,
-    <span class="comment">// function that gets a mutable ref to the occupied value in the hash table</span>
-    <span class="ident">occupied_fn</span>: <span class="ident">F</span>,
-) <span class="kw">where</span>
-    <span class="ident">G</span>: <span class="ident">Fn</span>() -&gt; <span class="ident">V</span>,
-    <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="kw-2">&amp;mut</span> <span class="ident">V</span>),
-    <span class="ident">H</span>: <span class="ident">BuildHasher</span>,
+<span class="comment">// Differs in the because this one uses the PartialEqInner trait objects
+// is faster when multiple chunks. Not yet used in join.
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>populate_multiple_key_hashmap2&lt;<span class="lifetime">&#39;a</span>, V, H, F, G&gt;(
+    hash_tbl: <span class="kw-2">&amp;mut </span>HashMap&lt;IdxHash, V, H&gt;,
+    <span class="comment">// row index
+    </span>idx: IdxSize,
+    <span class="comment">// hash
+    </span>original_h: u64,
+    <span class="comment">// keys of the hash table (will not be inserted, the indexes will be used)
+    // the keys are needed for the equality check
+    </span>keys_cmp: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Box&lt;<span class="kw">dyn </span>PartialEqInner + <span class="lifetime">&#39;a</span>&gt;],
+    <span class="comment">// value to insert
+    </span>vacant_fn: G,
+    <span class="comment">// function that gets a mutable ref to the occupied value in the hash table
+    </span>occupied_fn: F,
+) <span class="kw">where
+    </span>G: Fn() -&gt; V,
+    F: Fn(<span class="kw-2">&amp;mut </span>V),
+    H: BuildHasher,
 {
-    <span class="kw">let</span> <span class="ident">entry</span> <span class="op">=</span> <span class="ident">hash_tbl</span>
-        .<span class="ident">raw_entry_mut</span>()
-        <span class="comment">// uses the idx to probe rows in the original DataFrame with keys</span>
-        <span class="comment">// to check equality to find an entry</span>
-        <span class="comment">// this does not invalidate the hashmap as this equality function is not used</span>
-        <span class="comment">// during rehashing/resize (then the keys are already known to be unique).</span>
-        <span class="comment">// Only during insertion and probing an equality function is needed</span>
-        .<span class="ident">from_hash</span>(<span class="ident">original_h</span>, <span class="op">|</span><span class="ident">idx_hash</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">key_idx</span> <span class="op">=</span> <span class="ident">idx_hash</span>.<span class="ident">idx</span>;
-            <span class="comment">// Safety:</span>
-            <span class="comment">// indices in a groupby operation are always in bounds.</span>
-            <span class="kw">unsafe</span> { <span class="ident">compare_keys</span>(<span class="ident">keys_cmp</span>, <span class="ident">key_idx</span> <span class="kw">as</span> <span class="ident">usize</span>, <span class="ident">idx</span> <span class="kw">as</span> <span class="ident">usize</span>) }
+    <span class="kw">let </span>entry = hash_tbl
+        .raw_entry_mut()
+        <span class="comment">// uses the idx to probe rows in the original DataFrame with keys
+        // to check equality to find an entry
+        // this does not invalidate the hashmap as this equality function is not used
+        // during rehashing/resize (then the keys are already known to be unique).
+        // Only during insertion and probing an equality function is needed
+        </span>.from_hash(original_h, |idx_hash| {
+            <span class="kw">let </span>key_idx = idx_hash.idx;
+            <span class="comment">// Safety:
+            // indices in a groupby operation are always in bounds.
+            </span><span class="kw">unsafe </span>{ compare_keys(keys_cmp, key_idx <span class="kw">as </span>usize, idx <span class="kw">as </span>usize) }
         });
-    <span class="kw">match</span> <span class="ident">entry</span> {
-        <span class="ident">RawEntryMut::Vacant</span>(<span class="ident">entry</span>) =&gt; {
-            <span class="ident">entry</span>.<span class="ident">insert_hashed_nocheck</span>(<span class="ident">original_h</span>, <span class="ident">IdxHash::new</span>(<span class="ident">idx</span>, <span class="ident">original_h</span>), <span class="ident">vacant_fn</span>());
+    <span class="kw">match </span>entry {
+        RawEntryMut::Vacant(entry) =&gt; {
+            entry.insert_hashed_nocheck(original_h, IdxHash::new(idx, original_h), vacant_fn());
         }
-        <span class="ident">RawEntryMut::Occupied</span>(<span class="kw-2">mut</span> <span class="ident">entry</span>) =&gt; {
-            <span class="kw">let</span> (<span class="ident">_k</span>, <span class="ident">v</span>) <span class="op">=</span> <span class="ident">entry</span>.<span class="ident">get_key_value_mut</span>();
-            <span class="ident">occupied_fn</span>(<span class="ident">v</span>);
+        RawEntryMut::Occupied(<span class="kw-2">mut </span>entry) =&gt; {
+            <span class="kw">let </span>(_k, v) = entry.get_key_value_mut();
+            occupied_fn(v);
         }
     }
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">groupby_threaded_multiple_keys_flat</span>(
-    <span class="kw-2">mut</span> <span class="ident">keys</span>: <span class="ident">DataFrame</span>,
-    <span class="ident">n_partitions</span>: <span class="ident">usize</span>,
-    <span class="ident">sorted</span>: <span class="ident">bool</span>,
-) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">GroupsProxy</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">dfs</span> <span class="op">=</span> <span class="ident">split_df</span>(<span class="kw-2">&amp;mut</span> <span class="ident">keys</span>, <span class="ident">n_partitions</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> (<span class="ident">hashes</span>, <span class="ident">_random_state</span>) <span class="op">=</span> <span class="ident">df_rows_to_hashes_threaded</span>(<span class="kw-2">&amp;</span><span class="ident">dfs</span>, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">n_partitions</span> <span class="op">=</span> <span class="ident">n_partitions</span> <span class="kw">as</span> <span class="ident">u64</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>groupby_threaded_multiple_keys_flat(
+    <span class="kw-2">mut </span>keys: DataFrame,
+    n_partitions: usize,
+    sorted: bool,
+) -&gt; PolarsResult&lt;GroupsProxy&gt; {
+    <span class="kw">let </span>dfs = split_df(<span class="kw-2">&amp;mut </span>keys, n_partitions).unwrap();
+    <span class="kw">let </span>(hashes, _random_state) = df_rows_to_hashes_threaded(<span class="kw-2">&amp;</span>dfs, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>n_partitions = n_partitions <span class="kw">as </span>u64;
 
-    <span class="comment">// trait object to compare inner types.</span>
-    <span class="kw">let</span> <span class="ident">keys_cmp</span> <span class="op">=</span> <span class="ident">keys</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">into_partial_eq_inner</span>())
-        .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+    <span class="comment">// trait object to compare inner types.
+    </span><span class="kw">let </span>keys_cmp = keys
+        .iter()
+        .map(|s| s.into_partial_eq_inner())
+        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-    <span class="comment">// We will create a hashtable in every thread.</span>
-    <span class="comment">// We use the hash to partition the keys to the matching hashtable.</span>
-    <span class="comment">// Every thread traverses all keys/hashes and ignores the ones that doesn&#39;t fall in that partition.</span>
-    <span class="kw">let</span> <span class="ident">groups</span> <span class="op">=</span> <span class="ident">POOL</span>
-        .<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
-            (<span class="number">0</span>..<span class="ident">n_partitions</span>).<span class="ident">into_par_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">thread_no</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">hashes</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">hashes</span>;
+    <span class="comment">// We will create a hashtable in every thread.
+    // We use the hash to partition the keys to the matching hashtable.
+    // Every thread traverses all keys/hashes and ignores the ones that doesn&#39;t fall in that partition.
+    </span><span class="kw">let </span>groups = POOL
+        .install(|| {
+            (<span class="number">0</span>..n_partitions).into_par_iter().map(|thread_no| {
+                <span class="kw">let </span>hashes = <span class="kw-2">&amp;</span>hashes;
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hash_tbl</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">IdxHash</span>, (<span class="ident">IdxSize</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>), <span class="ident">IdBuildHasher</span><span class="op">&gt;</span> <span class="op">=</span>
-                    <span class="ident">HashMap::with_capacity_and_hasher</span>(<span class="ident">HASHMAP_INIT_SIZE</span>, <span class="ident">Default::default</span>());
+                <span class="kw">let </span><span class="kw-2">mut </span>hash_tbl: HashMap&lt;IdxHash, (IdxSize, Vec&lt;IdxSize&gt;), IdBuildHasher&gt; =
+                    HashMap::with_capacity_and_hasher(HASHMAP_INIT_SIZE, Default::default());
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">offset</span> <span class="op">=</span> <span class="number">0</span>;
-                <span class="kw">for</span> <span class="ident">hashes</span> <span class="kw">in</span> <span class="ident">hashes</span> {
-                    <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">hashes</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">IdxSize</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>offset = <span class="number">0</span>;
+                <span class="kw">for </span>hashes <span class="kw">in </span>hashes {
+                    <span class="kw">let </span>len = hashes.len() <span class="kw">as </span>IdxSize;
 
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx</span> <span class="op">=</span> <span class="number">0</span>;
-                    <span class="kw">for</span> <span class="ident">hashes_chunk</span> <span class="kw">in</span> <span class="ident">hashes</span>.<span class="ident">data_views</span>() {
-                        <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">h</span> <span class="kw">in</span> <span class="ident">hashes_chunk</span> {
-                            <span class="comment">// partition hashes by thread no.</span>
-                            <span class="comment">// So only a part of the hashes go to this hashmap</span>
-                            <span class="kw">if</span> <span class="ident">this_partition</span>(<span class="ident">h</span>, <span class="ident">thread_no</span>, <span class="ident">n_partitions</span>) {
-                                <span class="kw">let</span> <span class="ident">idx</span> <span class="op">=</span> <span class="ident">idx</span> <span class="op">+</span> <span class="ident">offset</span>;
-                                <span class="ident">populate_multiple_key_hashmap2</span>(
-                                    <span class="kw-2">&amp;mut</span> <span class="ident">hash_tbl</span>,
-                                    <span class="ident">idx</span>,
-                                    <span class="ident">h</span>,
-                                    <span class="kw-2">&amp;</span><span class="ident">keys_cmp</span>,
-                                    <span class="op">|</span><span class="op">|</span> (<span class="ident">idx</span>, <span class="macro">vec!</span>[<span class="ident">idx</span>]),
-                                    <span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">v</span>.<span class="number">1</span>.<span class="ident">push</span>(<span class="ident">idx</span>),
+                    <span class="kw">let </span><span class="kw-2">mut </span>idx = <span class="number">0</span>;
+                    <span class="kw">for </span>hashes_chunk <span class="kw">in </span>hashes.data_views() {
+                        <span class="kw">for </span><span class="kw-2">&amp;</span>h <span class="kw">in </span>hashes_chunk {
+                            <span class="comment">// partition hashes by thread no.
+                            // So only a part of the hashes go to this hashmap
+                            </span><span class="kw">if </span>this_partition(h, thread_no, n_partitions) {
+                                <span class="kw">let </span>idx = idx + offset;
+                                populate_multiple_key_hashmap2(
+                                    <span class="kw-2">&amp;mut </span>hash_tbl,
+                                    idx,
+                                    h,
+                                    <span class="kw-2">&amp;</span>keys_cmp,
+                                    || (idx, <span class="macro">vec!</span>[idx]),
+                                    |v| v.<span class="number">1</span>.push(idx),
                                 );
                             }
-                            <span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                            idx += <span class="number">1</span>;
                         }
                     }
 
-                    <span class="ident">offset</span> <span class="op">+</span><span class="op">=</span> <span class="ident">len</span>;
+                    offset += len;
                 }
-                <span class="ident">hash_tbl</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">_k</span>, <span class="ident">v</span>)<span class="op">|</span> <span class="ident">v</span>).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()
+                hash_tbl.into_iter().map(|(_k, v)| v).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
             })
         })
-        .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-    <span class="prelude-val">Ok</span>(<span class="ident">finish_group_order</span>(<span class="ident">groups</span>, <span class="ident">sorted</span>))
+        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+    <span class="prelude-val">Ok</span>(finish_group_order(groups, sorted))
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

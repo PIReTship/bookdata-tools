@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.25.1/src/frame/hash_join/sort_merge.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>sort_merge.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.25.1/src/frame/hash_join/sort_merge.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>sort_merge.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -300,307 +300,307 @@
 <span id="300">300</span>
 <span id="301">301</span>
 <span id="302">302</span>
-</pre><pre class="rust"><code><span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;performant&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident">polars_arrow::kernels::sorted_join</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;performant&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident">polars_utils::flatten</span>;
+</pre><pre class="rust"><code><span class="attribute">#[cfg(feature = <span class="string">&quot;performant&quot;</span>)]
+</span><span class="kw">use </span>polars_arrow::kernels::sorted_join;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;performant&quot;</span>)]
+</span><span class="kw">use </span>polars_utils::flatten;
 
-<span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;performant&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::_split_offsets</span>;
+<span class="kw">use super</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;performant&quot;</span>)]
+</span><span class="kw">use </span><span class="kw">crate</span>::utils::_split_offsets;
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;performant&quot;</span>)]</span>
-<span class="kw">fn</span> <span class="ident">par_sorted_merge_left_impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
-    <span class="ident">s_left</span>: <span class="kw-2">&amp;</span><span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-    <span class="ident">s_right</span>: <span class="kw-2">&amp;</span><span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-) -&gt; (<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span><span class="op">&gt;</span>)
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">PolarsNumericType</span>,
+<span class="attribute">#[cfg(feature = <span class="string">&quot;performant&quot;</span>)]
+</span><span class="kw">fn </span>par_sorted_merge_left_impl&lt;T&gt;(
+    s_left: <span class="kw-2">&amp;</span>ChunkedArray&lt;T&gt;,
+    s_right: <span class="kw-2">&amp;</span>ChunkedArray&lt;T&gt;,
+) -&gt; (Vec&lt;IdxSize&gt;, Vec&lt;<span class="prelude-ty">Option</span>&lt;IdxSize&gt;&gt;)
+<span class="kw">where
+    </span>T: PolarsNumericType,
 {
-    <span class="kw">let</span> <span class="ident">offsets</span> <span class="op">=</span> <span class="ident">_split_offsets</span>(<span class="ident">s_left</span>.<span class="ident">len</span>(), <span class="ident">POOL</span>.<span class="ident">current_num_threads</span>());
-    <span class="kw">let</span> <span class="ident">s_left</span> <span class="op">=</span> <span class="ident">s_left</span>.<span class="ident">rechunk</span>();
-    <span class="kw">let</span> <span class="ident">s_right</span> <span class="op">=</span> <span class="ident">s_right</span>.<span class="ident">rechunk</span>();
+    <span class="kw">let </span>offsets = _split_offsets(s_left.len(), POOL.current_num_threads());
+    <span class="kw">let </span>s_left = s_left.rechunk();
+    <span class="kw">let </span>s_right = s_right.rechunk();
 
-    <span class="comment">// we can unwrap because we should not have nulls</span>
-    <span class="kw">let</span> <span class="ident">slice_left</span> <span class="op">=</span> <span class="ident">s_left</span>.<span class="ident">cont_slice</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">slice_right</span> <span class="op">=</span> <span class="ident">s_right</span>.<span class="ident">cont_slice</span>().<span class="ident">unwrap</span>();
+    <span class="comment">// we can unwrap because we should not have nulls
+    </span><span class="kw">let </span>slice_left = s_left.cont_slice().unwrap();
+    <span class="kw">let </span>slice_right = s_right.cont_slice().unwrap();
 
-    <span class="kw">let</span> <span class="ident">indexes</span> <span class="op">=</span> <span class="ident">offsets</span>
-        .<span class="ident">into_par_iter</span>()
-        .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">offset</span>, <span class="ident">len</span>)<span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">slice_left</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">slice_left</span>[<span class="ident">offset</span>..<span class="ident">offset</span> <span class="op">+</span> <span class="ident">len</span>];
-            <span class="ident">sorted_join::left::join</span>(<span class="ident">slice_left</span>, <span class="ident">slice_right</span>, <span class="ident">offset</span> <span class="kw">as</span> <span class="ident">IdxSize</span>)
+    <span class="kw">let </span>indexes = offsets
+        .into_par_iter()
+        .map(|(offset, len)| {
+            <span class="kw">let </span>slice_left = <span class="kw-2">&amp;</span>slice_left[offset..offset + len];
+            sorted_join::left::join(slice_left, slice_right, offset <span class="kw">as </span>IdxSize)
         })
-        .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-    <span class="kw">let</span> <span class="ident">lefts</span> <span class="op">=</span> <span class="ident">indexes</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> <span class="kw-2">&amp;</span><span class="ident">t</span>.<span class="number">0</span>).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-    <span class="kw">let</span> <span class="ident">rights</span> <span class="op">=</span> <span class="ident">indexes</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> <span class="kw-2">&amp;</span><span class="ident">t</span>.<span class="number">1</span>).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+    <span class="kw">let </span>lefts = indexes.iter().map(|t| <span class="kw-2">&amp;</span>t.<span class="number">0</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+    <span class="kw">let </span>rights = indexes.iter().map(|t| <span class="kw-2">&amp;</span>t.<span class="number">1</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-    (<span class="ident">flatten</span>(<span class="kw-2">&amp;</span><span class="ident">lefts</span>, <span class="prelude-val">None</span>), <span class="ident">flatten</span>(<span class="kw-2">&amp;</span><span class="ident">rights</span>, <span class="prelude-val">None</span>))
+    (flatten(<span class="kw-2">&amp;</span>lefts, <span class="prelude-val">None</span>), flatten(<span class="kw-2">&amp;</span>rights, <span class="prelude-val">None</span>))
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;performant&quot;</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">par_sorted_merge_left</span>(
-    <span class="ident">s_left</span>: <span class="kw-2">&amp;</span><span class="ident">Series</span>,
-    <span class="ident">s_right</span>: <span class="kw-2">&amp;</span><span class="ident">Series</span>,
-) -&gt; (<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
-    <span class="comment">// Don&#39;t use bit_repr here. It messes up sortedness.</span>
-    <span class="macro">debug_assert_eq!</span>(<span class="ident">s_left</span>.<span class="ident">dtype</span>(), <span class="ident">s_right</span>.<span class="ident">dtype</span>());
-    <span class="kw">let</span> <span class="ident">s_left</span> <span class="op">=</span> <span class="ident">s_left</span>.<span class="ident">to_physical_repr</span>();
-    <span class="kw">let</span> <span class="ident">s_right</span> <span class="op">=</span> <span class="ident">s_right</span>.<span class="ident">to_physical_repr</span>();
+<span class="attribute">#[cfg(feature = <span class="string">&quot;performant&quot;</span>)]
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>par_sorted_merge_left(
+    s_left: <span class="kw-2">&amp;</span>Series,
+    s_right: <span class="kw-2">&amp;</span>Series,
+) -&gt; (Vec&lt;IdxSize&gt;, Vec&lt;<span class="prelude-ty">Option</span>&lt;IdxSize&gt;&gt;) {
+    <span class="comment">// Don&#39;t use bit_repr here. It messes up sortedness.
+    </span><span class="macro">debug_assert_eq!</span>(s_left.dtype(), s_right.dtype());
+    <span class="kw">let </span>s_left = s_left.to_physical_repr();
+    <span class="kw">let </span>s_right = s_right.to_physical_repr();
 
-    <span class="kw">match</span> <span class="ident">s_left</span>.<span class="ident">dtype</span>() {
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-i8&quot;</span>)]</span>
-        <span class="ident">DataType::Int8</span> =&gt; <span class="ident">par_sorted_merge_left_impl</span>(<span class="ident">s_left</span>.<span class="ident">i8</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">i8</span>().<span class="ident">unwrap</span>()),
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-u8&quot;</span>)]</span>
-        <span class="ident">DataType::UInt8</span> =&gt; <span class="ident">par_sorted_merge_left_impl</span>(<span class="ident">s_left</span>.<span class="ident">u8</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">u8</span>().<span class="ident">unwrap</span>()),
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-u16&quot;</span>)]</span>
-        <span class="ident">DataType::UInt16</span> =&gt; {
-            <span class="ident">par_sorted_merge_left_impl</span>(<span class="ident">s_left</span>.<span class="ident">u16</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">u16</span>().<span class="ident">unwrap</span>())
+    <span class="kw">match </span>s_left.dtype() {
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-i8&quot;</span>)]
+        </span>DataType::Int8 =&gt; par_sorted_merge_left_impl(s_left.i8().unwrap(), s_right.i8().unwrap()),
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-u8&quot;</span>)]
+        </span>DataType::UInt8 =&gt; par_sorted_merge_left_impl(s_left.u8().unwrap(), s_right.u8().unwrap()),
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-u16&quot;</span>)]
+        </span>DataType::UInt16 =&gt; {
+            par_sorted_merge_left_impl(s_left.u16().unwrap(), s_right.u16().unwrap())
         }
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-i16&quot;</span>)]</span>
-        <span class="ident">DataType::Int16</span> =&gt; {
-            <span class="ident">par_sorted_merge_left_impl</span>(<span class="ident">s_left</span>.<span class="ident">i16</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">i16</span>().<span class="ident">unwrap</span>())
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-i16&quot;</span>)]
+        </span>DataType::Int16 =&gt; {
+            par_sorted_merge_left_impl(s_left.i16().unwrap(), s_right.i16().unwrap())
         }
-        <span class="ident">DataType::UInt32</span> =&gt; {
-            <span class="ident">par_sorted_merge_left_impl</span>(<span class="ident">s_left</span>.<span class="ident">u32</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">u32</span>().<span class="ident">unwrap</span>())
+        DataType::UInt32 =&gt; {
+            par_sorted_merge_left_impl(s_left.u32().unwrap(), s_right.u32().unwrap())
         }
-        <span class="ident">DataType::Int32</span> =&gt; {
-            <span class="ident">par_sorted_merge_left_impl</span>(<span class="ident">s_left</span>.<span class="ident">i32</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">i32</span>().<span class="ident">unwrap</span>())
+        DataType::Int32 =&gt; {
+            par_sorted_merge_left_impl(s_left.i32().unwrap(), s_right.i32().unwrap())
         }
-        <span class="ident">DataType::UInt64</span> =&gt; {
-            <span class="ident">par_sorted_merge_left_impl</span>(<span class="ident">s_left</span>.<span class="ident">u64</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">u64</span>().<span class="ident">unwrap</span>())
+        DataType::UInt64 =&gt; {
+            par_sorted_merge_left_impl(s_left.u64().unwrap(), s_right.u64().unwrap())
         }
-        <span class="ident">DataType::Int64</span> =&gt; {
-            <span class="ident">par_sorted_merge_left_impl</span>(<span class="ident">s_left</span>.<span class="ident">i64</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">i64</span>().<span class="ident">unwrap</span>())
+        DataType::Int64 =&gt; {
+            par_sorted_merge_left_impl(s_left.i64().unwrap(), s_right.i64().unwrap())
         }
-        <span class="ident">DataType::Float32</span> =&gt; {
-            <span class="ident">par_sorted_merge_left_impl</span>(<span class="ident">s_left</span>.<span class="ident">f32</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">f32</span>().<span class="ident">unwrap</span>())
+        DataType::Float32 =&gt; {
+            par_sorted_merge_left_impl(s_left.f32().unwrap(), s_right.f32().unwrap())
         }
-        <span class="ident">DataType::Float64</span> =&gt; {
-            <span class="ident">par_sorted_merge_left_impl</span>(<span class="ident">s_left</span>.<span class="ident">f64</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">f64</span>().<span class="ident">unwrap</span>())
+        DataType::Float64 =&gt; {
+            par_sorted_merge_left_impl(s_left.f64().unwrap(), s_right.f64().unwrap())
         }
-        <span class="kw">_</span> =&gt; <span class="macro">unreachable!</span>(),
+        <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
     }
 }
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;performant&quot;</span>)]</span>
-<span class="kw">fn</span> <span class="ident">par_sorted_merge_inner_impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
-    <span class="ident">s_left</span>: <span class="kw-2">&amp;</span><span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-    <span class="ident">s_right</span>: <span class="kw-2">&amp;</span><span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-) -&gt; (<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>)
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">PolarsNumericType</span>,
+<span class="attribute">#[cfg(feature = <span class="string">&quot;performant&quot;</span>)]
+</span><span class="kw">fn </span>par_sorted_merge_inner_impl&lt;T&gt;(
+    s_left: <span class="kw-2">&amp;</span>ChunkedArray&lt;T&gt;,
+    s_right: <span class="kw-2">&amp;</span>ChunkedArray&lt;T&gt;,
+) -&gt; (Vec&lt;IdxSize&gt;, Vec&lt;IdxSize&gt;)
+<span class="kw">where
+    </span>T: PolarsNumericType,
 {
-    <span class="kw">let</span> <span class="ident">offsets</span> <span class="op">=</span> <span class="ident">_split_offsets</span>(<span class="ident">s_left</span>.<span class="ident">len</span>(), <span class="ident">POOL</span>.<span class="ident">current_num_threads</span>());
-    <span class="kw">let</span> <span class="ident">s_left</span> <span class="op">=</span> <span class="ident">s_left</span>.<span class="ident">rechunk</span>();
-    <span class="kw">let</span> <span class="ident">s_right</span> <span class="op">=</span> <span class="ident">s_right</span>.<span class="ident">rechunk</span>();
+    <span class="kw">let </span>offsets = _split_offsets(s_left.len(), POOL.current_num_threads());
+    <span class="kw">let </span>s_left = s_left.rechunk();
+    <span class="kw">let </span>s_right = s_right.rechunk();
 
-    <span class="comment">// we can unwrap because we should not have nulls</span>
-    <span class="kw">let</span> <span class="ident">slice_left</span> <span class="op">=</span> <span class="ident">s_left</span>.<span class="ident">cont_slice</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">slice_right</span> <span class="op">=</span> <span class="ident">s_right</span>.<span class="ident">cont_slice</span>().<span class="ident">unwrap</span>();
+    <span class="comment">// we can unwrap because we should not have nulls
+    </span><span class="kw">let </span>slice_left = s_left.cont_slice().unwrap();
+    <span class="kw">let </span>slice_right = s_right.cont_slice().unwrap();
 
-    <span class="kw">let</span> <span class="ident">indexes</span> <span class="op">=</span> <span class="ident">offsets</span>
-        .<span class="ident">into_par_iter</span>()
-        .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">offset</span>, <span class="ident">len</span>)<span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">slice_left</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">slice_left</span>[<span class="ident">offset</span>..<span class="ident">offset</span> <span class="op">+</span> <span class="ident">len</span>];
-            <span class="ident">sorted_join::inner::join</span>(<span class="ident">slice_left</span>, <span class="ident">slice_right</span>, <span class="ident">offset</span> <span class="kw">as</span> <span class="ident">IdxSize</span>)
+    <span class="kw">let </span>indexes = offsets
+        .into_par_iter()
+        .map(|(offset, len)| {
+            <span class="kw">let </span>slice_left = <span class="kw-2">&amp;</span>slice_left[offset..offset + len];
+            sorted_join::inner::join(slice_left, slice_right, offset <span class="kw">as </span>IdxSize)
         })
-        .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-    <span class="kw">let</span> <span class="ident">lefts</span> <span class="op">=</span> <span class="ident">indexes</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> <span class="kw-2">&amp;</span><span class="ident">t</span>.<span class="number">0</span>).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-    <span class="kw">let</span> <span class="ident">rights</span> <span class="op">=</span> <span class="ident">indexes</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> <span class="kw-2">&amp;</span><span class="ident">t</span>.<span class="number">1</span>).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+    <span class="kw">let </span>lefts = indexes.iter().map(|t| <span class="kw-2">&amp;</span>t.<span class="number">0</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+    <span class="kw">let </span>rights = indexes.iter().map(|t| <span class="kw-2">&amp;</span>t.<span class="number">1</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-    (<span class="ident">flatten</span>(<span class="kw-2">&amp;</span><span class="ident">lefts</span>, <span class="prelude-val">None</span>), <span class="ident">flatten</span>(<span class="kw-2">&amp;</span><span class="ident">rights</span>, <span class="prelude-val">None</span>))
+    (flatten(<span class="kw-2">&amp;</span>lefts, <span class="prelude-val">None</span>), flatten(<span class="kw-2">&amp;</span>rights, <span class="prelude-val">None</span>))
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;performant&quot;</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">par_sorted_merge_inner</span>(
-    <span class="ident">s_left</span>: <span class="kw-2">&amp;</span><span class="ident">Series</span>,
-    <span class="ident">s_right</span>: <span class="kw-2">&amp;</span><span class="ident">Series</span>,
-) -&gt; (<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>) {
-    <span class="comment">// Don&#39;t use bit_repr here. It messes up sortedness.</span>
-    <span class="macro">debug_assert_eq!</span>(<span class="ident">s_left</span>.<span class="ident">dtype</span>(), <span class="ident">s_right</span>.<span class="ident">dtype</span>());
-    <span class="kw">let</span> <span class="ident">s_left</span> <span class="op">=</span> <span class="ident">s_left</span>.<span class="ident">to_physical_repr</span>();
-    <span class="kw">let</span> <span class="ident">s_right</span> <span class="op">=</span> <span class="ident">s_right</span>.<span class="ident">to_physical_repr</span>();
+<span class="attribute">#[cfg(feature = <span class="string">&quot;performant&quot;</span>)]
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>par_sorted_merge_inner(
+    s_left: <span class="kw-2">&amp;</span>Series,
+    s_right: <span class="kw-2">&amp;</span>Series,
+) -&gt; (Vec&lt;IdxSize&gt;, Vec&lt;IdxSize&gt;) {
+    <span class="comment">// Don&#39;t use bit_repr here. It messes up sortedness.
+    </span><span class="macro">debug_assert_eq!</span>(s_left.dtype(), s_right.dtype());
+    <span class="kw">let </span>s_left = s_left.to_physical_repr();
+    <span class="kw">let </span>s_right = s_right.to_physical_repr();
 
-    <span class="kw">match</span> <span class="ident">s_left</span>.<span class="ident">dtype</span>() {
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-i8&quot;</span>)]</span>
-        <span class="ident">DataType::Int8</span> =&gt; <span class="ident">par_sorted_merge_inner_impl</span>(<span class="ident">s_left</span>.<span class="ident">i8</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">i8</span>().<span class="ident">unwrap</span>()),
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-u8&quot;</span>)]</span>
-        <span class="ident">DataType::UInt8</span> =&gt; <span class="ident">par_sorted_merge_inner_impl</span>(<span class="ident">s_left</span>.<span class="ident">u8</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">u8</span>().<span class="ident">unwrap</span>()),
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-u16&quot;</span>)]</span>
-        <span class="ident">DataType::UInt16</span> =&gt; {
-            <span class="ident">par_sorted_merge_inner_impl</span>(<span class="ident">s_left</span>.<span class="ident">u16</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">u16</span>().<span class="ident">unwrap</span>())
+    <span class="kw">match </span>s_left.dtype() {
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-i8&quot;</span>)]
+        </span>DataType::Int8 =&gt; par_sorted_merge_inner_impl(s_left.i8().unwrap(), s_right.i8().unwrap()),
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-u8&quot;</span>)]
+        </span>DataType::UInt8 =&gt; par_sorted_merge_inner_impl(s_left.u8().unwrap(), s_right.u8().unwrap()),
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-u16&quot;</span>)]
+        </span>DataType::UInt16 =&gt; {
+            par_sorted_merge_inner_impl(s_left.u16().unwrap(), s_right.u16().unwrap())
         }
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-i16&quot;</span>)]</span>
-        <span class="ident">DataType::Int16</span> =&gt; {
-            <span class="ident">par_sorted_merge_inner_impl</span>(<span class="ident">s_left</span>.<span class="ident">i16</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">i16</span>().<span class="ident">unwrap</span>())
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-i16&quot;</span>)]
+        </span>DataType::Int16 =&gt; {
+            par_sorted_merge_inner_impl(s_left.i16().unwrap(), s_right.i16().unwrap())
         }
-        <span class="ident">DataType::UInt32</span> =&gt; {
-            <span class="ident">par_sorted_merge_inner_impl</span>(<span class="ident">s_left</span>.<span class="ident">u32</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">u32</span>().<span class="ident">unwrap</span>())
+        DataType::UInt32 =&gt; {
+            par_sorted_merge_inner_impl(s_left.u32().unwrap(), s_right.u32().unwrap())
         }
-        <span class="ident">DataType::Int32</span> =&gt; {
-            <span class="ident">par_sorted_merge_inner_impl</span>(<span class="ident">s_left</span>.<span class="ident">i32</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">i32</span>().<span class="ident">unwrap</span>())
+        DataType::Int32 =&gt; {
+            par_sorted_merge_inner_impl(s_left.i32().unwrap(), s_right.i32().unwrap())
         }
-        <span class="ident">DataType::UInt64</span> =&gt; {
-            <span class="ident">par_sorted_merge_inner_impl</span>(<span class="ident">s_left</span>.<span class="ident">u64</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">u64</span>().<span class="ident">unwrap</span>())
+        DataType::UInt64 =&gt; {
+            par_sorted_merge_inner_impl(s_left.u64().unwrap(), s_right.u64().unwrap())
         }
-        <span class="ident">DataType::Int64</span> =&gt; {
-            <span class="ident">par_sorted_merge_inner_impl</span>(<span class="ident">s_left</span>.<span class="ident">i64</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">i64</span>().<span class="ident">unwrap</span>())
+        DataType::Int64 =&gt; {
+            par_sorted_merge_inner_impl(s_left.i64().unwrap(), s_right.i64().unwrap())
         }
-        <span class="ident">DataType::Float32</span> =&gt; {
-            <span class="ident">par_sorted_merge_inner_impl</span>(<span class="ident">s_left</span>.<span class="ident">f32</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">f32</span>().<span class="ident">unwrap</span>())
+        DataType::Float32 =&gt; {
+            par_sorted_merge_inner_impl(s_left.f32().unwrap(), s_right.f32().unwrap())
         }
-        <span class="ident">DataType::Float64</span> =&gt; {
-            <span class="ident">par_sorted_merge_inner_impl</span>(<span class="ident">s_left</span>.<span class="ident">f64</span>().<span class="ident">unwrap</span>(), <span class="ident">s_right</span>.<span class="ident">f64</span>().<span class="ident">unwrap</span>())
+        DataType::Float64 =&gt; {
+            par_sorted_merge_inner_impl(s_left.f64().unwrap(), s_right.f64().unwrap())
         }
-        <span class="kw">_</span> =&gt; <span class="macro">unreachable!</span>(),
+        <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;performant&quot;</span>)]</span>
-<span class="kw">fn</span> <span class="ident">to_left_join_ids</span>(<span class="ident">left_idx</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">right_idx</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span><span class="op">&gt;</span>) -&gt; <span class="ident">LeftJoinIds</span> {
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;chunked_ids&quot;</span>)]</span>
-    {
-        (<span class="ident">Either::Left</span>(<span class="ident">left_idx</span>), <span class="ident">Either::Left</span>(<span class="ident">right_idx</span>))
+<span class="attribute">#[cfg(feature = <span class="string">&quot;performant&quot;</span>)]
+</span><span class="kw">fn </span>to_left_join_ids(left_idx: Vec&lt;IdxSize&gt;, right_idx: Vec&lt;<span class="prelude-ty">Option</span>&lt;IdxSize&gt;&gt;) -&gt; LeftJoinIds {
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;chunked_ids&quot;</span>)]
+    </span>{
+        (Either::Left(left_idx), Either::Left(right_idx))
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;chunked_ids&quot;</span>))]</span>
-    {
-        (<span class="ident">left_idx</span>, <span class="ident">right_idx</span>)
+    <span class="attribute">#[cfg(not(feature = <span class="string">&quot;chunked_ids&quot;</span>))]
+    </span>{
+        (left_idx, right_idx)
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;performant&quot;</span>)]</span>
-<span class="kw">fn</span> <span class="ident">create_reverse_map_from_argsort</span>(<span class="kw-2">mut</span> <span class="ident">argsort</span>: <span class="ident">IdxCa</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">arr</span> <span class="op">=</span> <span class="ident">argsort</span>.<span class="ident">chunks</span>.<span class="ident">pop</span>().<span class="ident">unwrap</span>();
-    <span class="ident">primitive_to_vec</span>::<span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>(<span class="ident">arr</span>).<span class="ident">unwrap</span>()
+<span class="attribute">#[cfg(feature = <span class="string">&quot;performant&quot;</span>)]
+</span><span class="kw">fn </span>create_reverse_map_from_argsort(<span class="kw-2">mut </span>argsort: IdxCa) -&gt; Vec&lt;IdxSize&gt; {
+    <span class="kw">let </span>arr = argsort.chunks.pop().unwrap();
+    primitive_to_vec::&lt;IdxSize&gt;(arr).unwrap()
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;performant&quot;</span>))]</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">sort_or_hash_inner</span>(
-    <span class="ident">s_left</span>: <span class="kw-2">&amp;</span><span class="ident">Series</span>,
-    <span class="ident">s_right</span>: <span class="kw-2">&amp;</span><span class="ident">Series</span>,
-    <span class="ident">_verbose</span>: <span class="ident">bool</span>,
-) -&gt; ((<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>), <span class="ident">bool</span>) {
-    <span class="ident">s_left</span>.<span class="ident">hash_join_inner</span>(<span class="ident">s_right</span>)
+<span class="attribute">#[cfg(not(feature = <span class="string">&quot;performant&quot;</span>))]
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>sort_or_hash_inner(
+    s_left: <span class="kw-2">&amp;</span>Series,
+    s_right: <span class="kw-2">&amp;</span>Series,
+    _verbose: bool,
+) -&gt; ((Vec&lt;IdxSize&gt;, Vec&lt;IdxSize&gt;), bool) {
+    s_left.hash_join_inner(s_right)
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;performant&quot;</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">sort_or_hash_inner</span>(
-    <span class="ident">s_left</span>: <span class="kw-2">&amp;</span><span class="ident">Series</span>,
-    <span class="ident">s_right</span>: <span class="kw-2">&amp;</span><span class="ident">Series</span>,
-    <span class="ident">verbose</span>: <span class="ident">bool</span>,
-) -&gt; ((<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>), <span class="ident">bool</span>) {
-    <span class="kw">let</span> <span class="ident">size_factor_rhs</span> <span class="op">=</span> <span class="ident">s_right</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">f32</span> <span class="op">/</span> <span class="ident">s_left</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">f32</span>;
-    <span class="kw">let</span> <span class="ident">size_factor_lhs</span> <span class="op">=</span> <span class="ident">s_left</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">f32</span> <span class="op">/</span> <span class="ident">s_right</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">f32</span>;
-    <span class="kw">let</span> <span class="ident">size_factor_acceptable</span> <span class="op">=</span> <span class="ident">std::env::var</span>(<span class="string">&quot;POLARS_JOIN_SORT_FACTOR&quot;</span>)
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">f32</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>())
-        .<span class="ident">unwrap_or</span>(<span class="number">1.0</span>);
-    <span class="kw">let</span> <span class="ident">is_numeric</span> <span class="op">=</span> <span class="ident">s_left</span>.<span class="ident">dtype</span>().<span class="ident">to_physical</span>().<span class="ident">is_numeric</span>();
-    <span class="kw">match</span> (<span class="ident">s_left</span>.<span class="ident">is_sorted</span>(), <span class="ident">s_right</span>.<span class="ident">is_sorted</span>()) {
-        (<span class="ident">IsSorted::Ascending</span>, <span class="ident">IsSorted::Ascending</span>) <span class="kw">if</span> <span class="ident">is_numeric</span> =&gt; {
-            <span class="kw">if</span> <span class="ident">verbose</span> {
+<span class="attribute">#[cfg(feature = <span class="string">&quot;performant&quot;</span>)]
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>sort_or_hash_inner(
+    s_left: <span class="kw-2">&amp;</span>Series,
+    s_right: <span class="kw-2">&amp;</span>Series,
+    verbose: bool,
+) -&gt; ((Vec&lt;IdxSize&gt;, Vec&lt;IdxSize&gt;), bool) {
+    <span class="kw">let </span>size_factor_rhs = s_right.len() <span class="kw">as </span>f32 / s_left.len() <span class="kw">as </span>f32;
+    <span class="kw">let </span>size_factor_lhs = s_left.len() <span class="kw">as </span>f32 / s_right.len() <span class="kw">as </span>f32;
+    <span class="kw">let </span>size_factor_acceptable = std::env::var(<span class="string">&quot;POLARS_JOIN_SORT_FACTOR&quot;</span>)
+        .map(|s| s.parse::&lt;f32&gt;().unwrap())
+        .unwrap_or(<span class="number">1.0</span>);
+    <span class="kw">let </span>is_numeric = s_left.dtype().to_physical().is_numeric();
+    <span class="kw">match </span>(s_left.is_sorted(), s_right.is_sorted()) {
+        (IsSorted::Ascending, IsSorted::Ascending) <span class="kw">if </span>is_numeric =&gt; {
+            <span class="kw">if </span>verbose {
                 <span class="macro">eprintln!</span>(<span class="string">&quot;inner join: keys are sorted: use sorted merge join&quot;</span>);
             }
-            (<span class="ident">par_sorted_merge_inner</span>(<span class="ident">s_left</span>, <span class="ident">s_right</span>), <span class="bool-val">true</span>)
+            (par_sorted_merge_inner(s_left, s_right), <span class="bool-val">true</span>)
         }
-        (<span class="ident">IsSorted::Ascending</span>, <span class="kw">_</span>) <span class="kw">if</span> <span class="ident">is_numeric</span> <span class="op">&amp;&amp;</span> <span class="ident">size_factor_rhs</span> <span class="op">&lt;</span> <span class="ident">size_factor_acceptable</span> =&gt; {
-            <span class="kw">if</span> <span class="ident">verbose</span> {
+        (IsSorted::Ascending, <span class="kw">_</span>) <span class="kw">if </span>is_numeric &amp;&amp; size_factor_rhs &lt; size_factor_acceptable =&gt; {
+            <span class="kw">if </span>verbose {
                 <span class="macro">eprintln!</span>(<span class="string">&quot;right key will be reverse sorted in inner join operation.&quot;</span>)
             }
 
-            <span class="kw">let</span> <span class="ident">sort_idx</span> <span class="op">=</span> <span class="ident">s_right</span>.<span class="ident">argsort</span>(<span class="ident">SortOptions</span> {
-                <span class="ident">descending</span>: <span class="bool-val">false</span>,
-                <span class="ident">nulls_last</span>: <span class="bool-val">false</span>,
+            <span class="kw">let </span>sort_idx = s_right.argsort(SortOptions {
+                descending: <span class="bool-val">false</span>,
+                nulls_last: <span class="bool-val">false</span>,
             });
-            <span class="kw">let</span> <span class="ident">s_right</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">s_right</span>.<span class="ident">take_unchecked</span>(<span class="kw-2">&amp;</span><span class="ident">sort_idx</span>).<span class="ident">unwrap</span>() };
-            <span class="kw">let</span> <span class="ident">ids</span> <span class="op">=</span> <span class="ident">par_sorted_merge_inner</span>(<span class="ident">s_left</span>, <span class="kw-2">&amp;</span><span class="ident">s_right</span>);
-            <span class="kw">let</span> <span class="ident">reverse_idx_map</span> <span class="op">=</span> <span class="ident">create_reverse_map_from_argsort</span>(<span class="ident">sort_idx</span>);
+            <span class="kw">let </span>s_right = <span class="kw">unsafe </span>{ s_right.take_unchecked(<span class="kw-2">&amp;</span>sort_idx).unwrap() };
+            <span class="kw">let </span>ids = par_sorted_merge_inner(s_left, <span class="kw-2">&amp;</span>s_right);
+            <span class="kw">let </span>reverse_idx_map = create_reverse_map_from_argsort(sort_idx);
 
-            <span class="kw">let</span> (<span class="ident">left</span>, <span class="kw-2">mut</span> <span class="ident">right</span>) <span class="op">=</span> <span class="ident">ids</span>;
+            <span class="kw">let </span>(left, <span class="kw-2">mut </span>right) = ids;
 
-            <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
-                <span class="ident">right</span>.<span class="ident">par_iter_mut</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">idx</span><span class="op">|</span> {
-                    <span class="kw-2">*</span><span class="ident">idx</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="kw-2">*</span><span class="ident">reverse_idx_map</span>.<span class="ident">get_unchecked</span>(<span class="kw-2">*</span><span class="ident">idx</span> <span class="kw">as</span> <span class="ident">usize</span>) };
+            POOL.install(|| {
+                right.par_iter_mut().for_each(|idx| {
+                    <span class="kw-2">*</span>idx = <span class="kw">unsafe </span>{ <span class="kw-2">*</span>reverse_idx_map.get_unchecked(<span class="kw-2">*</span>idx <span class="kw">as </span>usize) };
                 });
             });
 
-            ((<span class="ident">left</span>, <span class="ident">right</span>), <span class="bool-val">true</span>)
+            ((left, right), <span class="bool-val">true</span>)
         }
-        (<span class="kw">_</span>, <span class="ident">IsSorted::Ascending</span>) <span class="kw">if</span> <span class="ident">is_numeric</span> <span class="op">&amp;&amp;</span> <span class="ident">size_factor_lhs</span> <span class="op">&lt;</span> <span class="ident">size_factor_acceptable</span> =&gt; {
-            <span class="kw">if</span> <span class="ident">verbose</span> {
+        (<span class="kw">_</span>, IsSorted::Ascending) <span class="kw">if </span>is_numeric &amp;&amp; size_factor_lhs &lt; size_factor_acceptable =&gt; {
+            <span class="kw">if </span>verbose {
                 <span class="macro">eprintln!</span>(<span class="string">&quot;left key will be reverse sorted in inner join operation.&quot;</span>)
             }
 
-            <span class="kw">let</span> <span class="ident">sort_idx</span> <span class="op">=</span> <span class="ident">s_left</span>.<span class="ident">argsort</span>(<span class="ident">SortOptions</span> {
-                <span class="ident">descending</span>: <span class="bool-val">false</span>,
-                <span class="ident">nulls_last</span>: <span class="bool-val">false</span>,
+            <span class="kw">let </span>sort_idx = s_left.argsort(SortOptions {
+                descending: <span class="bool-val">false</span>,
+                nulls_last: <span class="bool-val">false</span>,
             });
-            <span class="kw">let</span> <span class="ident">s_left</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">s_left</span>.<span class="ident">take_unchecked</span>(<span class="kw-2">&amp;</span><span class="ident">sort_idx</span>).<span class="ident">unwrap</span>() };
-            <span class="kw">let</span> <span class="ident">ids</span> <span class="op">=</span> <span class="ident">par_sorted_merge_inner</span>(<span class="kw-2">&amp;</span><span class="ident">s_left</span>, <span class="ident">s_right</span>);
-            <span class="kw">let</span> <span class="ident">reverse_idx_map</span> <span class="op">=</span> <span class="ident">create_reverse_map_from_argsort</span>(<span class="ident">sort_idx</span>);
+            <span class="kw">let </span>s_left = <span class="kw">unsafe </span>{ s_left.take_unchecked(<span class="kw-2">&amp;</span>sort_idx).unwrap() };
+            <span class="kw">let </span>ids = par_sorted_merge_inner(<span class="kw-2">&amp;</span>s_left, s_right);
+            <span class="kw">let </span>reverse_idx_map = create_reverse_map_from_argsort(sort_idx);
 
-            <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">left</span>, <span class="ident">right</span>) <span class="op">=</span> <span class="ident">ids</span>;
+            <span class="kw">let </span>(<span class="kw-2">mut </span>left, right) = ids;
 
-            <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
-                <span class="ident">left</span>.<span class="ident">par_iter_mut</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">idx</span><span class="op">|</span> {
-                    <span class="kw-2">*</span><span class="ident">idx</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="kw-2">*</span><span class="ident">reverse_idx_map</span>.<span class="ident">get_unchecked</span>(<span class="kw-2">*</span><span class="ident">idx</span> <span class="kw">as</span> <span class="ident">usize</span>) };
+            POOL.install(|| {
+                left.par_iter_mut().for_each(|idx| {
+                    <span class="kw-2">*</span>idx = <span class="kw">unsafe </span>{ <span class="kw-2">*</span>reverse_idx_map.get_unchecked(<span class="kw-2">*</span>idx <span class="kw">as </span>usize) };
                 });
             });
 
-            ((<span class="ident">left</span>, <span class="ident">right</span>), <span class="bool-val">true</span>)
+            ((left, right), <span class="bool-val">true</span>)
         }
-        <span class="kw">_</span> =&gt; <span class="ident">s_left</span>.<span class="ident">hash_join_inner</span>(<span class="ident">s_right</span>),
+        <span class="kw">_ </span>=&gt; s_left.hash_join_inner(s_right),
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;performant&quot;</span>))]</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">sort_or_hash_left</span>(<span class="ident">s_left</span>: <span class="kw-2">&amp;</span><span class="ident">Series</span>, <span class="ident">s_right</span>: <span class="kw-2">&amp;</span><span class="ident">Series</span>, <span class="ident">_verbose</span>: <span class="ident">bool</span>) -&gt; <span class="ident">LeftJoinIds</span> {
-    <span class="ident">s_left</span>.<span class="ident">hash_join_left</span>(<span class="ident">s_right</span>)
+<span class="attribute">#[cfg(not(feature = <span class="string">&quot;performant&quot;</span>))]
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>sort_or_hash_left(s_left: <span class="kw-2">&amp;</span>Series, s_right: <span class="kw-2">&amp;</span>Series, _verbose: bool) -&gt; LeftJoinIds {
+    s_left.hash_join_left(s_right)
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;performant&quot;</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">sort_or_hash_left</span>(<span class="ident">s_left</span>: <span class="kw-2">&amp;</span><span class="ident">Series</span>, <span class="ident">s_right</span>: <span class="kw-2">&amp;</span><span class="ident">Series</span>, <span class="ident">verbose</span>: <span class="ident">bool</span>) -&gt; <span class="ident">LeftJoinIds</span> {
-    <span class="kw">let</span> <span class="ident">size_factor_rhs</span> <span class="op">=</span> <span class="ident">s_right</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">f32</span> <span class="op">/</span> <span class="ident">s_left</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">f32</span>;
-    <span class="kw">let</span> <span class="ident">size_factor_acceptable</span> <span class="op">=</span> <span class="ident">std::env::var</span>(<span class="string">&quot;POLARS_JOIN_SORT_FACTOR&quot;</span>)
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">f32</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>())
-        .<span class="ident">unwrap_or</span>(<span class="number">1.0</span>);
-    <span class="kw">let</span> <span class="ident">is_numeric</span> <span class="op">=</span> <span class="ident">s_left</span>.<span class="ident">dtype</span>().<span class="ident">to_physical</span>().<span class="ident">is_numeric</span>();
+<span class="attribute">#[cfg(feature = <span class="string">&quot;performant&quot;</span>)]
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>sort_or_hash_left(s_left: <span class="kw-2">&amp;</span>Series, s_right: <span class="kw-2">&amp;</span>Series, verbose: bool) -&gt; LeftJoinIds {
+    <span class="kw">let </span>size_factor_rhs = s_right.len() <span class="kw">as </span>f32 / s_left.len() <span class="kw">as </span>f32;
+    <span class="kw">let </span>size_factor_acceptable = std::env::var(<span class="string">&quot;POLARS_JOIN_SORT_FACTOR&quot;</span>)
+        .map(|s| s.parse::&lt;f32&gt;().unwrap())
+        .unwrap_or(<span class="number">1.0</span>);
+    <span class="kw">let </span>is_numeric = s_left.dtype().to_physical().is_numeric();
 
-    <span class="kw">match</span> (<span class="ident">s_left</span>.<span class="ident">is_sorted</span>(), <span class="ident">s_right</span>.<span class="ident">is_sorted</span>()) {
-        (<span class="ident">IsSorted::Ascending</span>, <span class="ident">IsSorted::Ascending</span>) <span class="kw">if</span> <span class="ident">is_numeric</span> =&gt; {
-            <span class="kw">if</span> <span class="ident">verbose</span> {
+    <span class="kw">match </span>(s_left.is_sorted(), s_right.is_sorted()) {
+        (IsSorted::Ascending, IsSorted::Ascending) <span class="kw">if </span>is_numeric =&gt; {
+            <span class="kw">if </span>verbose {
                 <span class="macro">eprintln!</span>(<span class="string">&quot;left join: keys are sorted: use sorted merge join&quot;</span>);
             }
-            <span class="kw">let</span> (<span class="ident">left_idx</span>, <span class="ident">right_idx</span>) <span class="op">=</span> <span class="ident">par_sorted_merge_left</span>(<span class="ident">s_left</span>, <span class="ident">s_right</span>);
-            <span class="ident">to_left_join_ids</span>(<span class="ident">left_idx</span>, <span class="ident">right_idx</span>)
+            <span class="kw">let </span>(left_idx, right_idx) = par_sorted_merge_left(s_left, s_right);
+            to_left_join_ids(left_idx, right_idx)
         }
-        (<span class="ident">IsSorted::Ascending</span>, <span class="kw">_</span>) <span class="kw">if</span> <span class="ident">is_numeric</span> <span class="op">&amp;&amp;</span> <span class="ident">size_factor_rhs</span> <span class="op">&lt;</span> <span class="ident">size_factor_acceptable</span> =&gt; {
-            <span class="kw">if</span> <span class="ident">verbose</span> {
+        (IsSorted::Ascending, <span class="kw">_</span>) <span class="kw">if </span>is_numeric &amp;&amp; size_factor_rhs &lt; size_factor_acceptable =&gt; {
+            <span class="kw">if </span>verbose {
                 <span class="macro">eprintln!</span>(<span class="string">&quot;right key will be reverse sorted in left join operation.&quot;</span>)
             }
 
-            <span class="kw">let</span> <span class="ident">sort_idx</span> <span class="op">=</span> <span class="ident">s_right</span>.<span class="ident">argsort</span>(<span class="ident">SortOptions</span> {
-                <span class="ident">descending</span>: <span class="bool-val">false</span>,
-                <span class="ident">nulls_last</span>: <span class="bool-val">false</span>,
+            <span class="kw">let </span>sort_idx = s_right.argsort(SortOptions {
+                descending: <span class="bool-val">false</span>,
+                nulls_last: <span class="bool-val">false</span>,
             });
-            <span class="kw">let</span> <span class="ident">s_right</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">s_right</span>.<span class="ident">take_unchecked</span>(<span class="kw-2">&amp;</span><span class="ident">sort_idx</span>).<span class="ident">unwrap</span>() };
+            <span class="kw">let </span>s_right = <span class="kw">unsafe </span>{ s_right.take_unchecked(<span class="kw-2">&amp;</span>sort_idx).unwrap() };
 
-            <span class="kw">let</span> <span class="ident">ids</span> <span class="op">=</span> <span class="ident">par_sorted_merge_left</span>(<span class="ident">s_left</span>, <span class="kw-2">&amp;</span><span class="ident">s_right</span>);
-            <span class="kw">let</span> <span class="ident">reverse_idx_map</span> <span class="op">=</span> <span class="ident">create_reverse_map_from_argsort</span>(<span class="ident">sort_idx</span>);
-            <span class="kw">let</span> (<span class="ident">left</span>, <span class="kw-2">mut</span> <span class="ident">right</span>) <span class="op">=</span> <span class="ident">ids</span>;
+            <span class="kw">let </span>ids = par_sorted_merge_left(s_left, <span class="kw-2">&amp;</span>s_right);
+            <span class="kw">let </span>reverse_idx_map = create_reverse_map_from_argsort(sort_idx);
+            <span class="kw">let </span>(left, <span class="kw-2">mut </span>right) = ids;
 
-            <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
-                <span class="ident">right</span>.<span class="ident">par_iter_mut</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">opt_idx</span><span class="op">|</span> {
-                    <span class="kw-2">*</span><span class="ident">opt_idx</span> <span class="op">=</span>
-                        <span class="ident">opt_idx</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">idx</span><span class="op">|</span> <span class="kw">unsafe</span> { <span class="kw-2">*</span><span class="ident">reverse_idx_map</span>.<span class="ident">get_unchecked</span>(<span class="ident">idx</span> <span class="kw">as</span> <span class="ident">usize</span>) });
+            POOL.install(|| {
+                right.par_iter_mut().for_each(|opt_idx| {
+                    <span class="kw-2">*</span>opt_idx =
+                        opt_idx.map(|idx| <span class="kw">unsafe </span>{ <span class="kw-2">*</span>reverse_idx_map.get_unchecked(idx <span class="kw">as </span>usize) });
                 });
             });
 
-            <span class="ident">to_left_join_ids</span>(<span class="ident">left</span>, <span class="ident">right</span>)
+            to_left_join_ids(left, right)
         }
-        <span class="comment">// don&#39;t reverse sort a left join key yet. Have to figure out how to set sorted flag</span>
-        <span class="kw">_</span> =&gt; <span class="ident">s_left</span>.<span class="ident">hash_join_left</span>(<span class="ident">s_right</span>),
+        <span class="comment">// don&#39;t reverse sort a left join key yet. Have to figure out how to set sorted flag
+        </span><span class="kw">_ </span>=&gt; s_left.hash_join_left(s_right),
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

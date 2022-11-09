@@ -144,3 +144,11 @@ This file contains basic information about OpenLibrary authors.
 
 This file contains the names associated with each author in {file}`openlibrary/authors.parquet`.
 :::
+
+## Utility Tables
+
+:::{file} openlibrary/work-clusters.parquet
+
+This file is a helper table to make it easier to connect OpenLibrary data to clusters by mapping
+OpenLibrary work IDs to book data cluster IDs.
+:::

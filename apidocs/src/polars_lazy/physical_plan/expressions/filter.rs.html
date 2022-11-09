@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.25.1/src/physical_plan/expressions/filter.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>filter.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.25.1/src/physical_plan/expressions/filter.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>filter.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -149,156 +149,156 @@
 <span id="149">149</span>
 <span id="150">150</span>
 <span id="151">151</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use</span> <span class="ident">polars_arrow::is_valid::IsValid</span>;
-<span class="kw">use</span> <span class="ident">polars_core::frame::groupby::GroupsProxy</span>;
-<span class="kw">use</span> <span class="ident">polars_core::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">polars_core::POOL</span>;
-<span class="kw">use</span> <span class="ident">rayon::prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span>polars_arrow::is_valid::IsValid;
+<span class="kw">use </span>polars_core::frame::groupby::GroupsProxy;
+<span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>polars_core::POOL;
+<span class="kw">use </span>rayon::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::physical_plan::state::ExecutionState</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude::UpdateGroups::WithSeriesLen</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::physical_plan::state::ExecutionState;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::UpdateGroups::WithSeriesLen;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FilterExpr</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">input</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">by</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span>,
-    <span class="ident">expr</span>: <span class="ident">Expr</span>,
+<span class="kw">pub struct </span>FilterExpr {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) input: Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) by: Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;,
+    expr: Expr,
 }
 
-<span class="kw">impl</span> <span class="ident">FilterExpr</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">input</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span>, <span class="ident">by</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span>, <span class="ident">expr</span>: <span class="ident">Expr</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">input</span>, <span class="ident">by</span>, <span class="ident">expr</span> }
+<span class="kw">impl </span>FilterExpr {
+    <span class="kw">pub fn </span>new(input: Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;, by: Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;, expr: Expr) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ input, by, expr }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">PhysicalExpr</span> <span class="kw">for</span> <span class="ident">FilterExpr</span> {
-    <span class="kw">fn</span> <span class="ident">as_expression</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Expr</span><span class="op">&gt;</span> {
-        <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">expr</span>)
+<span class="kw">impl </span>PhysicalExpr <span class="kw">for </span>FilterExpr {
+    <span class="kw">fn </span>as_expression(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Expr&gt; {
+        <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.expr)
     }
-    <span class="kw">fn</span> <span class="ident">evaluate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">df</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>, <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionState</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">s_f</span> <span class="op">=</span> <span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">evaluate</span>(<span class="ident">df</span>, <span class="ident">state</span>);
-        <span class="kw">let</span> <span class="ident">predicate_f</span> <span class="op">=</span> <span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">by</span>.<span class="ident">evaluate</span>(<span class="ident">df</span>, <span class="ident">state</span>);
+    <span class="kw">fn </span>evaluate(<span class="kw-2">&amp;</span><span class="self">self</span>, df: <span class="kw-2">&amp;</span>DataFrame, state: <span class="kw-2">&amp;</span>ExecutionState) -&gt; PolarsResult&lt;Series&gt; {
+        <span class="kw">let </span>s_f = || <span class="self">self</span>.input.evaluate(df, state);
+        <span class="kw">let </span>predicate_f = || <span class="self">self</span>.by.evaluate(df, state);
 
-        <span class="kw">let</span> (<span class="ident">series</span>, <span class="ident">predicate</span>) <span class="op">=</span> <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">rayon::join</span>(<span class="ident">s_f</span>, <span class="ident">predicate_f</span>));
-        <span class="kw">let</span> (<span class="ident">series</span>, <span class="ident">predicate</span>) <span class="op">=</span> (<span class="ident">series</span><span class="question-mark">?</span>, <span class="ident">predicate</span><span class="question-mark">?</span>);
+        <span class="kw">let </span>(series, predicate) = POOL.install(|| rayon::join(s_f, predicate_f));
+        <span class="kw">let </span>(series, predicate) = (series<span class="question-mark">?</span>, predicate<span class="question-mark">?</span>);
 
-        <span class="ident">series</span>.<span class="ident">filter</span>(<span class="ident">predicate</span>.<span class="ident">bool</span>()<span class="question-mark">?</span>)
+        series.filter(predicate.bool()<span class="question-mark">?</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">evaluate_on_groups</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
+    <span class="kw">fn </span>evaluate_on_groups&lt;<span class="lifetime">&#39;a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">df</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-        <span class="ident">groups</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">GroupsProxy</span>,
-        <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionState</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">AggregationContext</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">ac_s_f</span> <span class="op">=</span> <span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">evaluate_on_groups</span>(<span class="ident">df</span>, <span class="ident">groups</span>, <span class="ident">state</span>);
-        <span class="kw">let</span> <span class="ident">ac_predicate_f</span> <span class="op">=</span> <span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">by</span>.<span class="ident">evaluate_on_groups</span>(<span class="ident">df</span>, <span class="ident">groups</span>, <span class="ident">state</span>);
+        df: <span class="kw-2">&amp;</span>DataFrame,
+        groups: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GroupsProxy,
+        state: <span class="kw-2">&amp;</span>ExecutionState,
+    ) -&gt; PolarsResult&lt;AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+        <span class="kw">let </span>ac_s_f = || <span class="self">self</span>.input.evaluate_on_groups(df, groups, state);
+        <span class="kw">let </span>ac_predicate_f = || <span class="self">self</span>.by.evaluate_on_groups(df, groups, state);
 
-        <span class="kw">let</span> (<span class="ident">ac_s</span>, <span class="ident">ac_predicate</span>) <span class="op">=</span> <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">rayon::join</span>(<span class="ident">ac_s_f</span>, <span class="ident">ac_predicate_f</span>));
-        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">ac_s</span>, <span class="kw-2">mut</span> <span class="ident">ac_predicate</span>) <span class="op">=</span> (<span class="ident">ac_s</span><span class="question-mark">?</span>, <span class="ident">ac_predicate</span><span class="question-mark">?</span>);
+        <span class="kw">let </span>(ac_s, ac_predicate) = POOL.install(|| rayon::join(ac_s_f, ac_predicate_f));
+        <span class="kw">let </span>(<span class="kw-2">mut </span>ac_s, <span class="kw-2">mut </span>ac_predicate) = (ac_s<span class="question-mark">?</span>, ac_predicate<span class="question-mark">?</span>);
 
-        <span class="kw">match</span> <span class="ident">ac_predicate</span>.<span class="ident">is_aggregated</span>() {
-            <span class="bool-val">true</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">preds</span> <span class="op">=</span> <span class="ident">ac_predicate</span>.<span class="ident">iter_groups</span>();
-                <span class="kw">let</span> <span class="ident">s</span> <span class="op">=</span> <span class="ident">ac_s</span>.<span class="ident">aggregated</span>();
-                <span class="kw">let</span> <span class="ident">ca</span> <span class="op">=</span> <span class="ident">s</span>.<span class="ident">list</span>()<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">ca</span>
-                    .<span class="ident">amortized_iter</span>()
-                    .<span class="ident">zip</span>(<span class="ident">preds</span>)
-                    .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">opt_s</span>, <span class="ident">opt_pred</span>)<span class="op">|</span> <span class="kw">match</span> (<span class="ident">opt_s</span>, <span class="ident">opt_pred</span>) {
-                        (<span class="prelude-val">Some</span>(<span class="ident">s</span>), <span class="prelude-val">Some</span>(<span class="ident">pred</span>)) =&gt; <span class="ident">s</span>.<span class="ident">as_ref</span>().<span class="ident">filter</span>(<span class="ident">pred</span>.<span class="ident">as_ref</span>().<span class="ident">bool</span>()<span class="question-mark">?</span>).<span class="ident">map</span>(<span class="prelude-val">Some</span>),
-                        <span class="kw">_</span> =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+        <span class="kw">match </span>ac_predicate.is_aggregated() {
+            <span class="bool-val">true </span>=&gt; {
+                <span class="kw">let </span>preds = ac_predicate.iter_groups();
+                <span class="kw">let </span>s = ac_s.aggregated();
+                <span class="kw">let </span>ca = s.list()<span class="question-mark">?</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>out = ca
+                    .amortized_iter()
+                    .zip(preds)
+                    .map(|(opt_s, opt_pred)| <span class="kw">match </span>(opt_s, opt_pred) {
+                        (<span class="prelude-val">Some</span>(s), <span class="prelude-val">Some</span>(pred)) =&gt; s.as_ref().filter(pred.as_ref().bool()<span class="question-mark">?</span>).map(<span class="prelude-val">Some</span>),
+                        <span class="kw">_ </span>=&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
                     })
-                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">ListChunked</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
-                <span class="ident">out</span>.<span class="ident">rename</span>(<span class="ident">s</span>.<span class="ident">name</span>());
-                <span class="ident">ac_s</span>.<span class="ident">with_series</span>(<span class="ident">out</span>.<span class="ident">into_series</span>(), <span class="bool-val">true</span>);
-                <span class="ident">ac_s</span>.<span class="ident">update_groups</span> <span class="op">=</span> <span class="ident">WithSeriesLen</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">ac_s</span>)
+                    .collect::&lt;PolarsResult&lt;ListChunked&gt;&gt;()<span class="question-mark">?</span>;
+                out.rename(s.name());
+                ac_s.with_series(out.into_series(), <span class="bool-val">true</span>);
+                ac_s.update_groups = WithSeriesLen;
+                <span class="prelude-val">Ok</span>(ac_s)
             }
-            <span class="bool-val">false</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">groups</span> <span class="op">=</span> <span class="ident">ac_s</span>.<span class="ident">groups</span>();
-                <span class="kw">let</span> <span class="ident">predicate_s</span> <span class="op">=</span> <span class="ident">ac_predicate</span>.<span class="ident">flat_naive</span>();
-                <span class="kw">let</span> <span class="ident">predicate</span> <span class="op">=</span> <span class="ident">predicate_s</span>.<span class="ident">bool</span>()<span class="question-mark">?</span>.<span class="ident">rechunk</span>();
+            <span class="bool-val">false </span>=&gt; {
+                <span class="kw">let </span>groups = ac_s.groups();
+                <span class="kw">let </span>predicate_s = ac_predicate.flat_naive();
+                <span class="kw">let </span>predicate = predicate_s.bool()<span class="question-mark">?</span>.rechunk();
 
-                <span class="comment">// all values true don&#39;t do anything</span>
-                <span class="kw">if</span> <span class="ident">predicate</span>.<span class="ident">all</span>() {
-                    <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">ac_s</span>);
+                <span class="comment">// all values true don&#39;t do anything
+                </span><span class="kw">if </span>predicate.all() {
+                    <span class="kw">return </span><span class="prelude-val">Ok</span>(ac_s);
                 }
-                <span class="comment">// all values false</span>
-                <span class="comment">// create empty groups</span>
-                <span class="kw">let</span> <span class="ident">groups</span> <span class="op">=</span> <span class="kw">if</span> <span class="op">!</span><span class="ident">predicate</span>.<span class="ident">any</span>() {
-                    <span class="kw">let</span> <span class="ident">groups</span> <span class="op">=</span> <span class="ident">groups</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">gi</span><span class="op">|</span> [<span class="ident">gi</span>.<span class="ident">first</span>(), <span class="number">0</span>]).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-                    <span class="ident">GroupsProxy::Slice</span> {
-                        <span class="ident">groups</span>,
-                        <span class="ident">rolling</span>: <span class="bool-val">false</span>,
+                <span class="comment">// all values false
+                // create empty groups
+                </span><span class="kw">let </span>groups = <span class="kw">if </span>!predicate.any() {
+                    <span class="kw">let </span>groups = groups.iter().map(|gi| [gi.first(), <span class="number">0</span>]).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                    GroupsProxy::Slice {
+                        groups,
+                        rolling: <span class="bool-val">false</span>,
                     }
                 }
-                <span class="comment">// filter the indexes that are true</span>
-                <span class="kw">else</span> {
-                    <span class="kw">let</span> <span class="ident">predicate</span> <span class="op">=</span> <span class="ident">predicate</span>.<span class="ident">downcast_iter</span>().<span class="ident">next</span>().<span class="ident">unwrap</span>();
-                    <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
-                        <span class="kw">match</span> <span class="ident">groups</span>.<span class="ident">as_ref</span>() {
-                            <span class="ident">GroupsProxy::Idx</span>(<span class="ident">groups</span>) =&gt; {
-                                <span class="kw">let</span> <span class="ident">groups</span> <span class="op">=</span> <span class="ident">groups</span>
-                                    .<span class="ident">par_iter</span>()
-                                    .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">first</span>, <span class="ident">idx</span>)<span class="op">|</span> <span class="kw">unsafe</span> {
-                                        <span class="kw">let</span> <span class="ident">idx</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">idx</span>
-                                            .<span class="ident">iter</span>()
-                                            <span class="comment">// Safety:</span>
-                                            <span class="comment">// just checked bounds in short circuited lhs</span>
-                                            .<span class="ident">filter_map</span>(<span class="op">|</span><span class="ident">i</span><span class="op">|</span> {
-                                                <span class="kw">match</span> <span class="ident">predicate</span>.<span class="ident">value</span>(<span class="kw-2">*</span><span class="ident">i</span> <span class="kw">as</span> <span class="ident">usize</span>)
-                                                    <span class="op">&amp;&amp;</span> <span class="ident">predicate</span>.<span class="ident">is_valid_unchecked</span>(<span class="kw-2">*</span><span class="ident">i</span> <span class="kw">as</span> <span class="ident">usize</span>)
+                <span class="comment">// filter the indexes that are true
+                </span><span class="kw">else </span>{
+                    <span class="kw">let </span>predicate = predicate.downcast_iter().next().unwrap();
+                    POOL.install(|| {
+                        <span class="kw">match </span>groups.as_ref() {
+                            GroupsProxy::Idx(groups) =&gt; {
+                                <span class="kw">let </span>groups = groups
+                                    .par_iter()
+                                    .map(|(first, idx)| <span class="kw">unsafe </span>{
+                                        <span class="kw">let </span>idx: Vec&lt;IdxSize&gt; = idx
+                                            .iter()
+                                            <span class="comment">// Safety:
+                                            // just checked bounds in short circuited lhs
+                                            </span>.filter_map(|i| {
+                                                <span class="kw">match </span>predicate.value(<span class="kw-2">*</span>i <span class="kw">as </span>usize)
+                                                    &amp;&amp; predicate.is_valid_unchecked(<span class="kw-2">*</span>i <span class="kw">as </span>usize)
                                                 {
-                                                    <span class="bool-val">true</span> =&gt; <span class="prelude-val">Some</span>(<span class="kw-2">*</span><span class="ident">i</span>),
-                                                    <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
+                                                    <span class="bool-val">true </span>=&gt; <span class="prelude-val">Some</span>(<span class="kw-2">*</span>i),
+                                                    <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
                                                 }
                                             })
-                                            .<span class="ident">collect</span>();
+                                            .collect();
 
-                                        (<span class="kw-2">*</span><span class="ident">idx</span>.<span class="ident">first</span>().<span class="ident">unwrap_or</span>(<span class="kw-2">&amp;</span><span class="ident">first</span>), <span class="ident">idx</span>)
+                                        (<span class="kw-2">*</span>idx.first().unwrap_or(<span class="kw-2">&amp;</span>first), idx)
                                     })
-                                    .<span class="ident">collect</span>();
+                                    .collect();
 
-                                <span class="ident">GroupsProxy::Idx</span>(<span class="ident">groups</span>)
+                                GroupsProxy::Idx(groups)
                             }
-                            <span class="ident">GroupsProxy::Slice</span> { <span class="ident">groups</span>, .. } =&gt; {
-                                <span class="kw">let</span> <span class="ident">groups</span> <span class="op">=</span> <span class="ident">groups</span>
-                                    .<span class="ident">par_iter</span>()
-                                    .<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span>[<span class="ident">first</span>, <span class="ident">len</span>]<span class="op">|</span> <span class="kw">unsafe</span> {
-                                        <span class="kw">let</span> <span class="ident">idx</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span> <span class="op">=</span> (<span class="ident">first</span>..<span class="ident">first</span> <span class="op">+</span> <span class="ident">len</span>)
-                                            <span class="comment">// Safety:</span>
-                                            <span class="comment">// just checked bounds in short circuited lhs</span>
-                                            .<span class="ident">filter</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">i</span><span class="op">|</span> {
-                                                <span class="ident">predicate</span>.<span class="ident">value</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">usize</span>)
-                                                    <span class="op">&amp;&amp;</span> <span class="ident">predicate</span>.<span class="ident">is_valid_unchecked</span>(<span class="ident">i</span> <span class="kw">as</span> <span class="ident">usize</span>)
+                            GroupsProxy::Slice { groups, .. } =&gt; {
+                                <span class="kw">let </span>groups = groups
+                                    .par_iter()
+                                    .map(|<span class="kw-2">&amp;</span>[first, len]| <span class="kw">unsafe </span>{
+                                        <span class="kw">let </span>idx: Vec&lt;IdxSize&gt; = (first..first + len)
+                                            <span class="comment">// Safety:
+                                            // just checked bounds in short circuited lhs
+                                            </span>.filter(|<span class="kw-2">&amp;</span>i| {
+                                                predicate.value(i <span class="kw">as </span>usize)
+                                                    &amp;&amp; predicate.is_valid_unchecked(i <span class="kw">as </span>usize)
                                             })
-                                            .<span class="ident">collect</span>();
+                                            .collect();
 
-                                        (<span class="kw-2">*</span><span class="ident">idx</span>.<span class="ident">first</span>().<span class="ident">unwrap_or</span>(<span class="kw-2">&amp;</span><span class="ident">first</span>), <span class="ident">idx</span>)
+                                        (<span class="kw-2">*</span>idx.first().unwrap_or(<span class="kw-2">&amp;</span>first), idx)
                                     })
-                                    .<span class="ident">collect</span>();
-                                <span class="ident">GroupsProxy::Idx</span>(<span class="ident">groups</span>)
+                                    .collect();
+                                GroupsProxy::Idx(groups)
                             }
                         }
                     })
                 };
 
-                <span class="ident">ac_s</span>.<span class="ident">with_groups</span>(<span class="ident">groups</span>).<span class="ident">set_original_len</span>(<span class="bool-val">false</span>);
-                <span class="prelude-val">Ok</span>(<span class="ident">ac_s</span>)
+                ac_s.with_groups(groups).set_original_len(<span class="bool-val">false</span>);
+                <span class="prelude-val">Ok</span>(ac_s)
             }
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">to_field</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">input_schema</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Field</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">to_field</span>(<span class="ident">input_schema</span>)
+    <span class="kw">fn </span>to_field(<span class="kw-2">&amp;</span><span class="self">self</span>, input_schema: <span class="kw-2">&amp;</span>Schema) -&gt; PolarsResult&lt;Field&gt; {
+        <span class="self">self</span>.input.to_field(input_schema)
     }
 
-    <span class="kw">fn</span> <span class="ident">is_valid_aggregation</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">is_valid_aggregation</span>()
+    <span class="kw">fn </span>is_valid_aggregation(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.input.is_valid_aggregation()
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_lazy" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_lazy" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

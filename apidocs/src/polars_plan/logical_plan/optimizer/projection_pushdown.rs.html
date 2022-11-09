@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.25.1/src/logical_plan/optimizer/projection_pushdown.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>projection_pushdown.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.25.1/src/logical_plan/optimizer/projection_pushdown.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>projection_pushdown.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -1254,1261 +1254,1261 @@
 <span id="1254">1254</span>
 <span id="1255">1255</span>
 <span id="1256">1256</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">polars_core::datatypes::PlHashSet</span>;
-<span class="kw">use</span> <span class="ident">polars_core::prelude</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>polars_core::datatypes::PlHashSet;
+<span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::logical_plan::Context</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude::iterator::ArenaExprIter</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils</span>::{
-    <span class="ident">aexpr_assign_renamed_root</span>, <span class="ident">aexpr_to_leaf_names</span>, <span class="ident">aexpr_to_leaf_nodes</span>, <span class="ident">check_input_node</span>,
+<span class="kw">use </span><span class="kw">crate</span>::logical_plan::Context;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::iterator::ArenaExprIter;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::utils::{
+    aexpr_assign_renamed_root, aexpr_to_leaf_names, aexpr_to_leaf_nodes, check_input_node,
 };
 
-<span class="kw">fn</span> <span class="ident">init_vec</span>() -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span> {
-    <span class="ident">Vec::with_capacity</span>(<span class="number">16</span>)
+<span class="kw">fn </span>init_vec() -&gt; Vec&lt;Node&gt; {
+    Vec::with_capacity(<span class="number">16</span>)
 }
-<span class="kw">fn</span> <span class="ident">init_set</span>() -&gt; <span class="ident">PlHashSet</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="ident">PlHashSet::with_capacity</span>(<span class="number">32</span>)
+<span class="kw">fn </span>init_set() -&gt; PlHashSet&lt;Arc&lt;str&gt;&gt; {
+    PlHashSet::with_capacity(<span class="number">32</span>)
 }
 
-<span class="doccomment">/// utility function to get names of the columns needed in projection at scan level</span>
-<span class="kw">fn</span> <span class="ident">get_scan_columns</span>(
-    <span class="ident">acc_projections</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
-    <span class="ident">expr_arena</span>: <span class="kw-2">&amp;</span><span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">with_columns</span> <span class="op">=</span> <span class="prelude-val">None</span>;
-    <span class="kw">if</span> <span class="op">!</span><span class="ident">acc_projections</span>.<span class="ident">is_empty</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">columns</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">acc_projections</span>.<span class="ident">len</span>());
-        <span class="kw">for</span> <span class="ident">expr</span> <span class="kw">in</span> <span class="ident">acc_projections</span> {
-            <span class="kw">for</span> <span class="ident">name</span> <span class="kw">in</span> <span class="ident">aexpr_to_leaf_names</span>(<span class="kw-2">*</span><span class="ident">expr</span>, <span class="ident">expr_arena</span>) {
-                <span class="ident">columns</span>.<span class="ident">push</span>((<span class="kw-2">*</span><span class="ident">name</span>).<span class="ident">to_owned</span>())
+<span class="doccomment">/// utility function to get names of the columns needed in projection at scan level
+</span><span class="kw">fn </span>get_scan_columns(
+    acc_projections: <span class="kw-2">&amp;mut </span>Vec&lt;Node&gt;,
+    expr_arena: <span class="kw-2">&amp;</span>Arena&lt;AExpr&gt;,
+) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;Vec&lt;String&gt;&gt;&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>with_columns = <span class="prelude-val">None</span>;
+    <span class="kw">if </span>!acc_projections.is_empty() {
+        <span class="kw">let </span><span class="kw-2">mut </span>columns = Vec::with_capacity(acc_projections.len());
+        <span class="kw">for </span>expr <span class="kw">in </span>acc_projections {
+            <span class="kw">for </span>name <span class="kw">in </span>aexpr_to_leaf_names(<span class="kw-2">*</span>expr, expr_arena) {
+                columns.push((<span class="kw-2">*</span>name).to_owned())
             }
         }
-        <span class="ident">with_columns</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">Arc::new</span>(<span class="ident">columns</span>));
+        with_columns = <span class="prelude-val">Some</span>(Arc::new(columns));
     }
-    <span class="ident">with_columns</span>
+    with_columns
 }
 
-<span class="doccomment">/// split in a projection vec that can be pushed down and a projection vec that should be used</span>
-<span class="doccomment">/// in this node</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Returns</span>
-<span class="doccomment">/// accumulated_projections, local_projections, accumulated_names</span>
-<span class="kw">fn</span> <span class="ident">split_acc_projections</span>(
-    <span class="ident">acc_projections</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
-    <span class="ident">down_schema</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>,
-    <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-) -&gt; (<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>, <span class="ident">PlHashSet</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
-    <span class="comment">// If node above has as many columns as the projection there is nothing to pushdown.</span>
-    <span class="kw">if</span> <span class="ident">down_schema</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="ident">acc_projections</span>.<span class="ident">len</span>() {
-        <span class="kw">let</span> <span class="ident">local_projections</span> <span class="op">=</span> <span class="ident">acc_projections</span>;
-        (<span class="macro">vec!</span>[], <span class="ident">local_projections</span>, <span class="ident">PlHashSet::new</span>())
-    } <span class="kw">else</span> {
-        <span class="kw">let</span> (<span class="ident">acc_projections</span>, <span class="ident">local_projections</span>): (<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>) <span class="op">=</span> <span class="ident">acc_projections</span>
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">partition</span>(<span class="op">|</span><span class="ident">expr</span><span class="op">|</span> <span class="ident">check_input_node</span>(<span class="kw-2">*</span><span class="ident">expr</span>, <span class="ident">down_schema</span>, <span class="ident">expr_arena</span>));
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">names</span> <span class="op">=</span> <span class="ident">init_set</span>();
-        <span class="kw">for</span> <span class="ident">proj</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">acc_projections</span> {
-            <span class="kw">for</span> <span class="ident">name</span> <span class="kw">in</span> <span class="ident">aexpr_to_leaf_names</span>(<span class="kw-2">*</span><span class="ident">proj</span>, <span class="ident">expr_arena</span>) {
-                <span class="ident">names</span>.<span class="ident">insert</span>(<span class="ident">name</span>);
+<span class="doccomment">/// split in a projection vec that can be pushed down and a projection vec that should be used
+/// in this node
+///
+/// # Returns
+/// accumulated_projections, local_projections, accumulated_names
+</span><span class="kw">fn </span>split_acc_projections(
+    acc_projections: Vec&lt;Node&gt;,
+    down_schema: <span class="kw-2">&amp;</span>Schema,
+    expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+) -&gt; (Vec&lt;Node&gt;, Vec&lt;Node&gt;, PlHashSet&lt;Arc&lt;str&gt;&gt;) {
+    <span class="comment">// If node above has as many columns as the projection there is nothing to pushdown.
+    </span><span class="kw">if </span>down_schema.len() == acc_projections.len() {
+        <span class="kw">let </span>local_projections = acc_projections;
+        (<span class="macro">vec!</span>[], local_projections, PlHashSet::new())
+    } <span class="kw">else </span>{
+        <span class="kw">let </span>(acc_projections, local_projections): (Vec&lt;Node&gt;, Vec&lt;Node&gt;) = acc_projections
+            .into_iter()
+            .partition(|expr| check_input_node(<span class="kw-2">*</span>expr, down_schema, expr_arena));
+        <span class="kw">let </span><span class="kw-2">mut </span>names = init_set();
+        <span class="kw">for </span>proj <span class="kw">in </span><span class="kw-2">&amp;</span>acc_projections {
+            <span class="kw">for </span>name <span class="kw">in </span>aexpr_to_leaf_names(<span class="kw-2">*</span>proj, expr_arena) {
+                names.insert(name);
             }
         }
-        (<span class="ident">acc_projections</span>, <span class="ident">local_projections</span>, <span class="ident">names</span>)
+        (acc_projections, local_projections, names)
     }
 }
 
-<span class="doccomment">/// utility function such that we can recurse all binary expressions in the expression tree</span>
-<span class="kw">fn</span> <span class="ident">add_expr_to_accumulated</span>(
-    <span class="ident">expr</span>: <span class="ident">Node</span>,
-    <span class="ident">acc_projections</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
-    <span class="ident">projected_names</span>: <span class="kw-2">&amp;mut</span> <span class="ident">PlHashSet</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
+<span class="doccomment">/// utility function such that we can recurse all binary expressions in the expression tree
+</span><span class="kw">fn </span>add_expr_to_accumulated(
+    expr: Node,
+    acc_projections: <span class="kw-2">&amp;mut </span>Vec&lt;Node&gt;,
+    projected_names: <span class="kw-2">&amp;mut </span>PlHashSet&lt;Arc&lt;str&gt;&gt;,
+    expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
 ) {
-    <span class="kw">for</span> <span class="ident">root_node</span> <span class="kw">in</span> <span class="ident">aexpr_to_leaf_nodes</span>(<span class="ident">expr</span>, <span class="ident">expr_arena</span>) {
-        <span class="kw">for</span> <span class="ident">name</span> <span class="kw">in</span> <span class="ident">aexpr_to_leaf_names</span>(<span class="ident">root_node</span>, <span class="ident">expr_arena</span>) {
-            <span class="kw">if</span> <span class="ident">projected_names</span>.<span class="ident">insert</span>(<span class="ident">name</span>) {
-                <span class="ident">acc_projections</span>.<span class="ident">push</span>(<span class="ident">root_node</span>)
+    <span class="kw">for </span>root_node <span class="kw">in </span>aexpr_to_leaf_nodes(expr, expr_arena) {
+        <span class="kw">for </span>name <span class="kw">in </span>aexpr_to_leaf_names(root_node, expr_arena) {
+            <span class="kw">if </span>projected_names.insert(name) {
+                acc_projections.push(root_node)
             }
         }
     }
 }
 
-<span class="kw">fn</span> <span class="ident">add_str_to_accumulated</span>(
-    <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
-    <span class="ident">acc_projections</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
-    <span class="ident">projected_names</span>: <span class="kw-2">&amp;mut</span> <span class="ident">PlHashSet</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
+<span class="kw">fn </span>add_str_to_accumulated(
+    name: <span class="kw-2">&amp;</span>str,
+    acc_projections: <span class="kw-2">&amp;mut </span>Vec&lt;Node&gt;,
+    projected_names: <span class="kw-2">&amp;mut </span>PlHashSet&lt;Arc&lt;str&gt;&gt;,
+    expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
 ) {
-    <span class="comment">// if empty: all columns are already projected.</span>
-    <span class="kw">if</span> <span class="op">!</span><span class="ident">acc_projections</span>.<span class="ident">is_empty</span>() {
-        <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Column</span>(<span class="ident">Arc::from</span>(<span class="ident">name</span>)));
-        <span class="ident">add_expr_to_accumulated</span>(<span class="ident">node</span>, <span class="ident">acc_projections</span>, <span class="ident">projected_names</span>, <span class="ident">expr_arena</span>);
+    <span class="comment">// if empty: all columns are already projected.
+    </span><span class="kw">if </span>!acc_projections.is_empty() {
+        <span class="kw">let </span>node = expr_arena.add(AExpr::Column(Arc::from(name)));
+        add_expr_to_accumulated(node, acc_projections, projected_names, expr_arena);
     }
 }
 
-<span class="kw">fn</span> <span class="ident">update_scan_schema</span>(
-    <span class="ident">acc_projections</span>: <span class="kw-2">&amp;</span>[<span class="ident">Node</span>],
-    <span class="ident">expr_arena</span>: <span class="kw-2">&amp;</span><span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-    <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>,
-    <span class="comment">// this is only needed for parsers that sort the projections</span>
-    <span class="comment">// currently these are:</span>
-    <span class="comment">// sorting parsers: csv,</span>
-    <span class="comment">// non-sorting: parquet, ipc</span>
-    <span class="ident">sort_projections</span>: <span class="ident">bool</span>,
-) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Schema</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_schema</span> <span class="op">=</span> <span class="ident">Schema::with_capacity</span>(<span class="ident">acc_projections</span>.<span class="ident">len</span>());
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_cols</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">acc_projections</span>.<span class="ident">len</span>());
-    <span class="kw">for</span> <span class="ident">node</span> <span class="kw">in</span> <span class="ident">acc_projections</span>.<span class="ident">iter</span>() {
-        <span class="kw">for</span> <span class="ident">name</span> <span class="kw">in</span> <span class="ident">aexpr_to_leaf_names</span>(<span class="kw-2">*</span><span class="ident">node</span>, <span class="ident">expr_arena</span>) {
-            <span class="kw">let</span> <span class="ident">item</span> <span class="op">=</span> <span class="ident">schema</span>.<span class="ident">get_full</span>(<span class="kw-2">&amp;</span><span class="ident">name</span>).<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> {
-                <span class="ident">PolarsError::ComputeError</span>(
-                    <span class="macro">format!</span>(<span class="string">&quot;column &#39;{}&#39; not available in schema {:?}&quot;</span>, <span class="ident">name</span>, <span class="ident">schema</span>).<span class="ident">into</span>(),
+<span class="kw">fn </span>update_scan_schema(
+    acc_projections: <span class="kw-2">&amp;</span>[Node],
+    expr_arena: <span class="kw-2">&amp;</span>Arena&lt;AExpr&gt;,
+    schema: <span class="kw-2">&amp;</span>Schema,
+    <span class="comment">// this is only needed for parsers that sort the projections
+    // currently these are:
+    // sorting parsers: csv,
+    // non-sorting: parquet, ipc
+    </span>sort_projections: bool,
+) -&gt; PolarsResult&lt;Schema&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>new_schema = Schema::with_capacity(acc_projections.len());
+    <span class="kw">let </span><span class="kw-2">mut </span>new_cols = Vec::with_capacity(acc_projections.len());
+    <span class="kw">for </span>node <span class="kw">in </span>acc_projections.iter() {
+        <span class="kw">for </span>name <span class="kw">in </span>aexpr_to_leaf_names(<span class="kw-2">*</span>node, expr_arena) {
+            <span class="kw">let </span>item = schema.get_full(<span class="kw-2">&amp;</span>name).ok_or_else(|| {
+                PolarsError::ComputeError(
+                    <span class="macro">format!</span>(<span class="string">&quot;column &#39;{}&#39; not available in schema {:?}&quot;</span>, name, schema).into(),
                 )
             })<span class="question-mark">?</span>;
-            <span class="ident">new_cols</span>.<span class="ident">push</span>(<span class="ident">item</span>);
+            new_cols.push(item);
         }
     }
-    <span class="comment">// make sure that the projections are sorted by the schema.</span>
-    <span class="kw">if</span> <span class="ident">sort_projections</span> {
-        <span class="ident">new_cols</span>.<span class="ident">sort_unstable_by_key</span>(<span class="op">|</span><span class="ident">item</span><span class="op">|</span> <span class="ident">item</span>.<span class="number">0</span>);
+    <span class="comment">// make sure that the projections are sorted by the schema.
+    </span><span class="kw">if </span>sort_projections {
+        new_cols.sort_unstable_by_key(|item| item.<span class="number">0</span>);
     }
-    <span class="kw">for</span> <span class="ident">item</span> <span class="kw">in</span> <span class="ident">new_cols</span> {
-        <span class="ident">new_schema</span>.<span class="ident">with_column</span>(<span class="ident">item</span>.<span class="number">1</span>.<span class="ident">clone</span>(), <span class="ident">item</span>.<span class="number">2</span>.<span class="ident">clone</span>())
+    <span class="kw">for </span>item <span class="kw">in </span>new_cols {
+        new_schema.with_column(item.<span class="number">1</span>.clone(), item.<span class="number">2</span>.clone())
     }
-    <span class="prelude-val">Ok</span>(<span class="ident">new_schema</span>)
+    <span class="prelude-val">Ok</span>(new_schema)
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ProjectionPushDown</span> {}
+<span class="kw">pub struct </span>ProjectionPushDown {}
 
-<span class="kw">impl</span> <span class="ident">ProjectionPushDown</span> {
-    <span class="doccomment">/// Projection will be done at this node, but we continue optimization</span>
-    <span class="kw">fn</span> <span class="ident">no_pushdown_restart_opt</span>(
+<span class="kw">impl </span>ProjectionPushDown {
+    <span class="doccomment">/// Projection will be done at this node, but we continue optimization
+    </span><span class="kw">fn </span>no_pushdown_restart_opt(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">lp</span>: <span class="ident">ALogicalPlan</span>,
-        <span class="ident">acc_projections</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
-        <span class="ident">projections_seen</span>: <span class="ident">usize</span>,
-        <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">inputs</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">get_inputs</span>();
-        <span class="kw">let</span> <span class="ident">exprs</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">get_exprs</span>();
+        lp: ALogicalPlan,
+        acc_projections: Vec&lt;Node&gt;,
+        projections_seen: usize,
+        lp_arena: <span class="kw-2">&amp;mut </span>Arena&lt;ALogicalPlan&gt;,
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+    ) -&gt; PolarsResult&lt;ALogicalPlan&gt; {
+        <span class="kw">let </span>inputs = lp.get_inputs();
+        <span class="kw">let </span>exprs = lp.get_exprs();
 
-        <span class="kw">let</span> <span class="ident">new_inputs</span> <span class="op">=</span> <span class="ident">inputs</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">node</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">node</span>);
-                <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">push_down</span>(
-                    <span class="ident">alp</span>,
-                    <span class="ident">Default::default</span>(),
-                    <span class="ident">Default::default</span>(),
-                    <span class="ident">projections_seen</span>,
-                    <span class="ident">lp_arena</span>,
-                    <span class="ident">expr_arena</span>,
+        <span class="kw">let </span>new_inputs = inputs
+            .iter()
+            .map(|<span class="kw-2">&amp;</span>node| {
+                <span class="kw">let </span>alp = lp_arena.take(node);
+                <span class="kw">let </span>alp = <span class="self">self</span>.push_down(
+                    alp,
+                    Default::default(),
+                    Default::default(),
+                    projections_seen,
+                    lp_arena,
+                    expr_arena,
                 )<span class="question-mark">?</span>;
-                <span class="ident">lp_arena</span>.<span class="ident">replace</span>(<span class="ident">node</span>, <span class="ident">alp</span>);
-                <span class="prelude-val">Ok</span>(<span class="ident">node</span>)
+                lp_arena.replace(node, alp);
+                <span class="prelude-val">Ok</span>(node)
             })
-            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">with_exprs_and_input</span>(<span class="ident">exprs</span>, <span class="ident">new_inputs</span>);
+            .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
+        <span class="kw">let </span>lp = lp.with_exprs_and_input(exprs, new_inputs);
 
-        <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">ALogicalPlanBuilder::from_lp</span>(<span class="ident">lp</span>, <span class="ident">expr_arena</span>, <span class="ident">lp_arena</span>);
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">finish_node</span>(<span class="ident">acc_projections</span>, <span class="ident">builder</span>))
+        <span class="kw">let </span>builder = ALogicalPlanBuilder::from_lp(lp, expr_arena, lp_arena);
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.finish_node(acc_projections, builder))
     }
 
-    <span class="kw">fn</span> <span class="ident">finish_node</span>(
+    <span class="kw">fn </span>finish_node(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">local_projections</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
-        <span class="ident">builder</span>: <span class="ident">ALogicalPlanBuilder</span>,
-    ) -&gt; <span class="ident">ALogicalPlan</span> {
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">local_projections</span>.<span class="ident">is_empty</span>() {
-            <span class="ident">builder</span>.<span class="ident">project</span>(<span class="ident">local_projections</span>).<span class="ident">build</span>()
-        } <span class="kw">else</span> {
-            <span class="ident">builder</span>.<span class="ident">build</span>()
+        local_projections: Vec&lt;Node&gt;,
+        builder: ALogicalPlanBuilder,
+    ) -&gt; ALogicalPlan {
+        <span class="kw">if </span>!local_projections.is_empty() {
+            builder.project(local_projections).build()
+        } <span class="kw">else </span>{
+            builder.build()
         }
     }
 
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::too_many_arguments</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">join_push_down</span>(
+    <span class="attribute">#[allow(clippy::too_many_arguments)]
+    </span><span class="kw">fn </span>join_push_down(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">schema_left</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>,
-        <span class="ident">schema_right</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>,
-        <span class="ident">proj</span>: <span class="ident">Node</span>,
-        <span class="ident">pushdown_left</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
-        <span class="ident">pushdown_right</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
-        <span class="ident">names_left</span>: <span class="kw-2">&amp;mut</span> <span class="ident">PlHashSet</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">names_right</span>: <span class="kw-2">&amp;mut</span> <span class="ident">PlHashSet</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">bool</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pushed_at_least_one</span> <span class="op">=</span> <span class="bool-val">false</span>;
-        <span class="kw">let</span> <span class="ident">names</span> <span class="op">=</span> <span class="ident">aexpr_to_leaf_names</span>(<span class="ident">proj</span>, <span class="ident">expr_arena</span>);
-        <span class="kw">let</span> <span class="ident">root_projections</span> <span class="op">=</span> <span class="ident">aexpr_to_leaf_nodes</span>(<span class="ident">proj</span>, <span class="ident">expr_arena</span>);
+        schema_left: <span class="kw-2">&amp;</span>Schema,
+        schema_right: <span class="kw-2">&amp;</span>Schema,
+        proj: Node,
+        pushdown_left: <span class="kw-2">&amp;mut </span>Vec&lt;Node&gt;,
+        pushdown_right: <span class="kw-2">&amp;mut </span>Vec&lt;Node&gt;,
+        names_left: <span class="kw-2">&amp;mut </span>PlHashSet&lt;Arc&lt;str&gt;&gt;,
+        names_right: <span class="kw-2">&amp;mut </span>PlHashSet&lt;Arc&lt;str&gt;&gt;,
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+    ) -&gt; bool {
+        <span class="kw">let </span><span class="kw-2">mut </span>pushed_at_least_one = <span class="bool-val">false</span>;
+        <span class="kw">let </span>names = aexpr_to_leaf_names(proj, expr_arena);
+        <span class="kw">let </span>root_projections = aexpr_to_leaf_nodes(proj, expr_arena);
 
-        <span class="kw">for</span> (<span class="ident">name</span>, <span class="ident">root_projection</span>) <span class="kw">in</span> <span class="ident">names</span>.<span class="ident">into_iter</span>().<span class="ident">zip</span>(<span class="ident">root_projections</span>) {
-            <span class="kw">if</span> <span class="ident">check_input_node</span>(<span class="ident">root_projection</span>, <span class="ident">schema_left</span>, <span class="ident">expr_arena</span>)
-                <span class="op">&amp;&amp;</span> <span class="ident">names_left</span>.<span class="ident">insert</span>(<span class="ident">name</span>.<span class="ident">clone</span>())
+        <span class="kw">for </span>(name, root_projection) <span class="kw">in </span>names.into_iter().zip(root_projections) {
+            <span class="kw">if </span>check_input_node(root_projection, schema_left, expr_arena)
+                &amp;&amp; names_left.insert(name.clone())
             {
-                <span class="ident">pushdown_left</span>.<span class="ident">push</span>(<span class="ident">proj</span>);
-                <span class="ident">pushed_at_least_one</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                pushdown_left.push(proj);
+                pushed_at_least_one = <span class="bool-val">true</span>;
             }
-            <span class="kw">if</span> <span class="ident">check_input_node</span>(<span class="ident">root_projection</span>, <span class="ident">schema_right</span>, <span class="ident">expr_arena</span>)
-                <span class="op">&amp;&amp;</span> <span class="ident">names_right</span>.<span class="ident">insert</span>(<span class="ident">name</span>)
+            <span class="kw">if </span>check_input_node(root_projection, schema_right, expr_arena)
+                &amp;&amp; names_right.insert(name)
             {
-                <span class="ident">pushdown_right</span>.<span class="ident">push</span>(<span class="ident">proj</span>);
-                <span class="ident">pushed_at_least_one</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                pushdown_right.push(proj);
+                pushed_at_least_one = <span class="bool-val">true</span>;
             }
         }
 
-        <span class="ident">pushed_at_least_one</span>
+        pushed_at_least_one
     }
 
-    <span class="doccomment">/// This pushes down current node and assigns the result to this node.</span>
-    <span class="kw">fn</span> <span class="ident">pushdown_and_assign</span>(
+    <span class="doccomment">/// This pushes down current node and assigns the result to this node.
+    </span><span class="kw">fn </span>pushdown_and_assign(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">input</span>: <span class="ident">Node</span>,
-        <span class="ident">acc_projections</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
-        <span class="ident">names</span>: <span class="ident">PlHashSet</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">projections_seen</span>: <span class="ident">usize</span>,
-        <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">input</span>);
-        <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">push_down</span>(
-            <span class="ident">alp</span>,
-            <span class="ident">acc_projections</span>,
-            <span class="ident">names</span>,
-            <span class="ident">projections_seen</span>,
-            <span class="ident">lp_arena</span>,
-            <span class="ident">expr_arena</span>,
+        input: Node,
+        acc_projections: Vec&lt;Node&gt;,
+        names: PlHashSet&lt;Arc&lt;str&gt;&gt;,
+        projections_seen: usize,
+        lp_arena: <span class="kw-2">&amp;mut </span>Arena&lt;ALogicalPlan&gt;,
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+    ) -&gt; PolarsResult&lt;()&gt; {
+        <span class="kw">let </span>alp = lp_arena.take(input);
+        <span class="kw">let </span>lp = <span class="self">self</span>.push_down(
+            alp,
+            acc_projections,
+            names,
+            projections_seen,
+            lp_arena,
+            expr_arena,
         )<span class="question-mark">?</span>;
-        <span class="ident">lp_arena</span>.<span class="ident">replace</span>(<span class="ident">input</span>, <span class="ident">lp</span>);
+        lp_arena.replace(input, lp);
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// This pushes down the projection that are validated</span>
-    <span class="doccomment">/// that they can be done successful at the schema above</span>
-    <span class="doccomment">/// The result is assigned to this node.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The local projections are return and still have to be applied</span>
-    <span class="kw">fn</span> <span class="ident">pushdown_and_assign_check_schema</span>(
+    <span class="doccomment">/// This pushes down the projection that are validated
+    /// that they can be done successful at the schema above
+    /// The result is assigned to this node.
+    ///
+    /// The local projections are return and still have to be applied
+    </span><span class="kw">fn </span>pushdown_and_assign_check_schema(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">input</span>: <span class="ident">Node</span>,
-        <span class="ident">acc_projections</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
-        <span class="ident">projections_seen</span>: <span class="ident">usize</span>,
-        <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">input</span>);
-        <span class="kw">let</span> <span class="ident">down_schema</span> <span class="op">=</span> <span class="ident">alp</span>.<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
-        <span class="kw">let</span> (<span class="ident">acc_projections</span>, <span class="ident">local_projections</span>, <span class="ident">names</span>) <span class="op">=</span>
-            <span class="ident">split_acc_projections</span>(<span class="ident">acc_projections</span>, <span class="kw-2">&amp;</span><span class="ident">down_schema</span>, <span class="ident">expr_arena</span>);
+        input: Node,
+        acc_projections: Vec&lt;Node&gt;,
+        projections_seen: usize,
+        lp_arena: <span class="kw-2">&amp;mut </span>Arena&lt;ALogicalPlan&gt;,
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+    ) -&gt; PolarsResult&lt;Vec&lt;Node&gt;&gt; {
+        <span class="kw">let </span>alp = lp_arena.take(input);
+        <span class="kw">let </span>down_schema = alp.schema(lp_arena);
+        <span class="kw">let </span>(acc_projections, local_projections, names) =
+            split_acc_projections(acc_projections, <span class="kw-2">&amp;</span>down_schema, expr_arena);
 
-        <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">push_down</span>(
-            <span class="ident">alp</span>,
-            <span class="ident">acc_projections</span>,
-            <span class="ident">names</span>,
-            <span class="ident">projections_seen</span>,
-            <span class="ident">lp_arena</span>,
-            <span class="ident">expr_arena</span>,
+        <span class="kw">let </span>lp = <span class="self">self</span>.push_down(
+            alp,
+            acc_projections,
+            names,
+            projections_seen,
+            lp_arena,
+            expr_arena,
         )<span class="question-mark">?</span>;
-        <span class="ident">lp_arena</span>.<span class="ident">replace</span>(<span class="ident">input</span>, <span class="ident">lp</span>);
-        <span class="prelude-val">Ok</span>(<span class="ident">local_projections</span>)
+        lp_arena.replace(input, lp);
+        <span class="prelude-val">Ok</span>(local_projections)
     }
 
-    <span class="doccomment">/// Projection pushdown optimizer</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Arguments</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// * `AlogicalPlan` - Arena based logical plan tree representing the query.</span>
-    <span class="doccomment">/// * `acc_projections` - The projections we accumulate during tree traversal.</span>
-    <span class="doccomment">/// * `names` - We keep track of the names to ensure we don&#39;t do duplicate projections.</span>
-    <span class="doccomment">/// * `projections_seen` - Count the number of projection operations during tree traversal.</span>
-    <span class="doccomment">/// * `lp_arena` - The local memory arena for the logical plan.</span>
-    <span class="doccomment">/// * `expr_arena` - The local memory arena for the expressions.</span>
-    <span class="doccomment">///</span>
-    <span class="kw">fn</span> <span class="ident">push_down</span>(
+    <span class="doccomment">/// Projection pushdown optimizer
+    ///
+    /// # Arguments
+    ///
+    /// * `AlogicalPlan` - Arena based logical plan tree representing the query.
+    /// * `acc_projections` - The projections we accumulate during tree traversal.
+    /// * `names` - We keep track of the names to ensure we don&#39;t do duplicate projections.
+    /// * `projections_seen` - Count the number of projection operations during tree traversal.
+    /// * `lp_arena` - The local memory arena for the logical plan.
+    /// * `expr_arena` - The local memory arena for the expressions.
+    ///
+    </span><span class="kw">fn </span>push_down(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">logical_plan</span>: <span class="ident">ALogicalPlan</span>,
-        <span class="kw-2">mut</span> <span class="ident">acc_projections</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
-        <span class="kw-2">mut</span> <span class="ident">projected_names</span>: <span class="ident">PlHashSet</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">projections_seen</span>: <span class="ident">usize</span>,
-        <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span> {
-        <span class="kw">use</span> <span class="ident">ALogicalPlan</span>::<span class="kw-2">*</span>;
+        logical_plan: ALogicalPlan,
+        <span class="kw-2">mut </span>acc_projections: Vec&lt;Node&gt;,
+        <span class="kw-2">mut </span>projected_names: PlHashSet&lt;Arc&lt;str&gt;&gt;,
+        projections_seen: usize,
+        lp_arena: <span class="kw-2">&amp;mut </span>Arena&lt;ALogicalPlan&gt;,
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+    ) -&gt; PolarsResult&lt;ALogicalPlan&gt; {
+        <span class="kw">use </span>ALogicalPlan::<span class="kw-2">*</span>;
 
-        <span class="kw">match</span> <span class="ident">logical_plan</span> {
-            <span class="ident">Projection</span> { <span class="ident">expr</span>, <span class="ident">input</span>, .. } =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">local_projection</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">expr</span>.<span class="ident">len</span>());
-                <span class="comment">// A projection can consist of a chain of expressions followed by an alias.</span>
-                <span class="comment">// We want to do the chain locally because it can have complicated side effects.</span>
-                <span class="comment">// The only thing we push down is the root name of the projection.</span>
-                <span class="comment">// So we:</span>
-                <span class="comment">//      - add the root of the projections to accumulation,</span>
-                <span class="comment">//      - also do the complete projection locally to keep the schema (column order) and the alias.</span>
+        <span class="kw">match </span>logical_plan {
+            Projection { expr, input, .. } =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>local_projection = Vec::with_capacity(expr.len());
+                <span class="comment">// A projection can consist of a chain of expressions followed by an alias.
+                // We want to do the chain locally because it can have complicated side effects.
+                // The only thing we push down is the root name of the projection.
+                // So we:
+                //      - add the root of the projections to accumulation,
+                //      - also do the complete projection locally to keep the schema (column order) and the alias.
 
-                <span class="comment">// set this flag outside the loop as we modify within the loop</span>
-                <span class="kw">let</span> <span class="ident">has_pushed_down</span> <span class="op">=</span> <span class="op">!</span><span class="ident">acc_projections</span>.<span class="ident">is_empty</span>();
-                <span class="kw">for</span> <span class="ident">e</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">expr</span> {
-                    <span class="kw">if</span> <span class="ident">has_pushed_down</span> {
-                        <span class="comment">// remove projections that are not used upstream</span>
-                        <span class="kw">if</span> <span class="ident">projections_seen</span> <span class="op">&gt;</span> <span class="number">0</span> {
-                            <span class="kw">let</span> <span class="ident">input_schema</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">input</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
-                            <span class="comment">// don&#39;t do projection that is not used in upstream selection</span>
-                            <span class="kw">let</span> <span class="ident">output_field</span> <span class="op">=</span> <span class="ident">expr_arena</span>
-                                .<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">e</span>)
-                                .<span class="ident">to_field</span>(<span class="ident">input_schema</span>.<span class="ident">as_ref</span>(), <span class="ident">Context::Default</span>, <span class="ident">expr_arena</span>)
-                                .<span class="ident">unwrap</span>();
-                            <span class="kw">let</span> <span class="ident">output_name</span> <span class="op">=</span> <span class="ident">output_field</span>.<span class="ident">name</span>();
-                            <span class="kw">let</span> <span class="ident">is_used_upstream</span> <span class="op">=</span> <span class="ident">projected_names</span>.<span class="ident">contains</span>(<span class="ident">output_name</span>.<span class="ident">as_str</span>());
-                            <span class="kw">if</span> <span class="op">!</span><span class="ident">is_used_upstream</span> {
+                // set this flag outside the loop as we modify within the loop
+                </span><span class="kw">let </span>has_pushed_down = !acc_projections.is_empty();
+                <span class="kw">for </span>e <span class="kw">in </span><span class="kw-2">&amp;</span>expr {
+                    <span class="kw">if </span>has_pushed_down {
+                        <span class="comment">// remove projections that are not used upstream
+                        </span><span class="kw">if </span>projections_seen &gt; <span class="number">0 </span>{
+                            <span class="kw">let </span>input_schema = lp_arena.get(input).schema(lp_arena);
+                            <span class="comment">// don&#39;t do projection that is not used in upstream selection
+                            </span><span class="kw">let </span>output_field = expr_arena
+                                .get(<span class="kw-2">*</span>e)
+                                .to_field(input_schema.as_ref(), Context::Default, expr_arena)
+                                .unwrap();
+                            <span class="kw">let </span>output_name = output_field.name();
+                            <span class="kw">let </span>is_used_upstream = projected_names.contains(output_name.as_str());
+                            <span class="kw">if </span>!is_used_upstream {
                                 <span class="kw">continue</span>;
                             }
                         }
 
-                        <span class="comment">// in this branch we check a double projection case</span>
-                        <span class="comment">// df</span>
-                        <span class="comment">//   .select(col(&quot;foo&quot;).alias(&quot;bar&quot;))</span>
-                        <span class="comment">//   .select(col(&quot;bar&quot;)</span>
-                        <span class="comment">//</span>
-                        <span class="comment">// In this query, bar cannot pass this projection, as it would not exist in DF.</span>
-                        <span class="comment">// THE ORDER IS IMPORTANT HERE!</span>
-                        <span class="comment">// this removes projection names, so any checks ot upstream names should</span>
-                        <span class="comment">// be done before this branch.</span>
-                        <span class="kw">for</span> (<span class="kw">_</span>, <span class="ident">ae</span>) <span class="kw">in</span> (<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">expr_arena</span>).<span class="ident">iter</span>(<span class="kw-2">*</span><span class="ident">e</span>) {
-                            <span class="kw">if</span> <span class="kw">let</span> <span class="ident">AExpr::Alias</span>(<span class="kw">_</span>, <span class="ident">name</span>) <span class="op">=</span> <span class="ident">ae</span> {
-                                <span class="kw">if</span> <span class="ident">projected_names</span>.<span class="ident">remove</span>(<span class="ident">name</span>) {
-                                    <span class="ident">acc_projections</span>.<span class="ident">retain</span>(<span class="op">|</span><span class="ident">expr</span><span class="op">|</span> {
-                                        <span class="op">!</span><span class="ident">aexpr_to_leaf_names</span>(<span class="kw-2">*</span><span class="ident">expr</span>, <span class="ident">expr_arena</span>).<span class="ident">contains</span>(<span class="ident">name</span>)
+                        <span class="comment">// in this branch we check a double projection case
+                        // df
+                        //   .select(col(&quot;foo&quot;).alias(&quot;bar&quot;))
+                        //   .select(col(&quot;bar&quot;)
+                        //
+                        // In this query, bar cannot pass this projection, as it would not exist in DF.
+                        // THE ORDER IS IMPORTANT HERE!
+                        // this removes projection names, so any checks ot upstream names should
+                        // be done before this branch.
+                        </span><span class="kw">for </span>(<span class="kw">_</span>, ae) <span class="kw">in </span>(<span class="kw-2">&amp;*</span>expr_arena).iter(<span class="kw-2">*</span>e) {
+                            <span class="kw">if let </span>AExpr::Alias(<span class="kw">_</span>, name) = ae {
+                                <span class="kw">if </span>projected_names.remove(name) {
+                                    acc_projections.retain(|expr| {
+                                        !aexpr_to_leaf_names(<span class="kw-2">*</span>expr, expr_arena).contains(name)
                                     });
                                 }
                             }
                         }
                     }
-                    <span class="comment">// do local as we still need the effect of the projection</span>
-                    <span class="comment">// e.g. a projection is more than selecting a column, it can</span>
-                    <span class="comment">// also be a function/ complicated expression</span>
-                    <span class="ident">local_projection</span>.<span class="ident">push</span>(<span class="kw-2">*</span><span class="ident">e</span>);
+                    <span class="comment">// do local as we still need the effect of the projection
+                    // e.g. a projection is more than selecting a column, it can
+                    // also be a function/ complicated expression
+                    </span>local_projection.push(<span class="kw-2">*</span>e);
 
-                    <span class="ident">add_expr_to_accumulated</span>(
-                        <span class="kw-2">*</span><span class="ident">e</span>,
-                        <span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>,
-                        <span class="kw-2">&amp;mut</span> <span class="ident">projected_names</span>,
-                        <span class="ident">expr_arena</span>,
+                    add_expr_to_accumulated(
+                        <span class="kw-2">*</span>e,
+                        <span class="kw-2">&amp;mut </span>acc_projections,
+                        <span class="kw-2">&amp;mut </span>projected_names,
+                        expr_arena,
                     );
                 }
 
-                <span class="self">self</span>.<span class="ident">pushdown_and_assign</span>(
-                    <span class="ident">input</span>,
-                    <span class="ident">acc_projections</span>,
-                    <span class="ident">projected_names</span>,
-                    <span class="ident">projections_seen</span> <span class="op">+</span> <span class="number">1</span>,
-                    <span class="ident">lp_arena</span>,
-                    <span class="ident">expr_arena</span>,
+                <span class="self">self</span>.pushdown_and_assign(
+                    input,
+                    acc_projections,
+                    projected_names,
+                    projections_seen + <span class="number">1</span>,
+                    lp_arena,
+                    expr_arena,
                 )<span class="question-mark">?</span>;
 
-                <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">ALogicalPlanBuilder::new</span>(<span class="ident">input</span>, <span class="ident">expr_arena</span>, <span class="ident">lp_arena</span>);
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">finish_node</span>(<span class="ident">local_projection</span>, <span class="ident">builder</span>);
-                <span class="prelude-val">Ok</span>(<span class="ident">lp</span>)
+                <span class="kw">let </span>builder = ALogicalPlanBuilder::new(input, expr_arena, lp_arena);
+                <span class="kw">let </span>lp = <span class="self">self</span>.finish_node(local_projection, builder);
+                <span class="prelude-val">Ok</span>(lp)
             }
-            <span class="ident">LocalProjection</span> { <span class="ident">expr</span>, <span class="ident">input</span>, .. } =&gt; {
-                <span class="self">self</span>.<span class="ident">pushdown_and_assign</span>(
-                    <span class="ident">input</span>,
-                    <span class="ident">acc_projections</span>,
-                    <span class="ident">projected_names</span>,
-                    <span class="ident">projections_seen</span>,
-                    <span class="ident">lp_arena</span>,
-                    <span class="ident">expr_arena</span>,
+            LocalProjection { expr, input, .. } =&gt; {
+                <span class="self">self</span>.pushdown_and_assign(
+                    input,
+                    acc_projections,
+                    projected_names,
+                    projections_seen,
+                    lp_arena,
+                    expr_arena,
                 )<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">input</span>);
-                <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
+                <span class="kw">let </span>lp = lp_arena.get(input);
+                <span class="kw">let </span>schema = lp.schema(lp_arena);
 
-                <span class="comment">// projection from a wildcard may be dropped if the schema changes due to the optimization</span>
-                <span class="kw">let</span> <span class="ident">proj</span> <span class="op">=</span> <span class="ident">expr</span>
-                    .<span class="ident">into_iter</span>()
-                    .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">check_input_node</span>(<span class="kw-2">*</span><span class="ident">e</span>, <span class="kw-2">&amp;</span><span class="ident">schema</span>, <span class="ident">expr_arena</span>))
-                    .<span class="ident">collect</span>();
-                <span class="prelude-val">Ok</span>(<span class="ident">ALogicalPlanBuilder::new</span>(<span class="ident">input</span>, <span class="ident">expr_arena</span>, <span class="ident">lp_arena</span>)
-                    .<span class="ident">project_local</span>(<span class="ident">proj</span>)
-                    .<span class="ident">build</span>())
+                <span class="comment">// projection from a wildcard may be dropped if the schema changes due to the optimization
+                </span><span class="kw">let </span>proj = expr
+                    .into_iter()
+                    .filter(|e| check_input_node(<span class="kw-2">*</span>e, <span class="kw-2">&amp;</span>schema, expr_arena))
+                    .collect();
+                <span class="prelude-val">Ok</span>(ALogicalPlanBuilder::new(input, expr_arena, lp_arena)
+                    .project_local(proj)
+                    .build())
             }
-            <span class="ident">AnonymousScan</span> {
-                <span class="ident">function</span>,
-                <span class="ident">schema</span>,
-                <span class="ident">predicate</span>,
-                <span class="kw-2">mut</span> <span class="ident">options</span>,
-                <span class="ident">output_schema</span>,
+            AnonymousScan {
+                function,
+                schema,
+                predicate,
+                <span class="kw-2">mut </span>options,
+                output_schema,
             } =&gt; {
-                <span class="kw">if</span> <span class="ident">function</span>.<span class="ident">allows_projection_pushdown</span>() {
-                    <span class="ident">options</span>.<span class="ident">with_columns</span> <span class="op">=</span> <span class="ident">get_scan_columns</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>, <span class="ident">expr_arena</span>);
+                <span class="kw">if </span>function.allows_projection_pushdown() {
+                    options.with_columns = get_scan_columns(<span class="kw-2">&amp;mut </span>acc_projections, expr_arena);
 
-                    <span class="kw">let</span> <span class="ident">output_schema</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">options</span>.<span class="ident">with_columns</span>.<span class="ident">is_none</span>() {
-                        <span class="prelude-val">None</span>
-                    } <span class="kw">else</span> {
-                        <span class="prelude-val">Some</span>(<span class="ident">Arc::new</span>(<span class="ident">update_scan_schema</span>(
-                            <span class="kw-2">&amp;</span><span class="ident">acc_projections</span>,
-                            <span class="ident">expr_arena</span>,
-                            <span class="kw-2">&amp;</span><span class="ident">schema</span>,
+                    <span class="kw">let </span>output_schema = <span class="kw">if </span>options.with_columns.is_none() {
+                        <span class="prelude-val">None
+                    </span>} <span class="kw">else </span>{
+                        <span class="prelude-val">Some</span>(Arc::new(update_scan_schema(
+                            <span class="kw-2">&amp;</span>acc_projections,
+                            expr_arena,
+                            <span class="kw-2">&amp;</span>schema,
                             <span class="bool-val">true</span>,
                         )<span class="question-mark">?</span>))
                     };
-                    <span class="ident">options</span>.<span class="ident">output_schema</span> <span class="op">=</span> <span class="ident">output_schema</span>.<span class="ident">clone</span>();
+                    options.output_schema = output_schema.clone();
 
-                    <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">AnonymousScan</span> {
-                        <span class="ident">function</span>,
-                        <span class="ident">schema</span>,
-                        <span class="ident">output_schema</span>,
-                        <span class="ident">options</span>,
-                        <span class="ident">predicate</span>,
+                    <span class="kw">let </span>lp = AnonymousScan {
+                        function,
+                        schema,
+                        output_schema,
+                        options,
+                        predicate,
                     };
-                    <span class="prelude-val">Ok</span>(<span class="ident">lp</span>)
-                } <span class="kw">else</span> {
-                    <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">AnonymousScan</span> {
-                        <span class="ident">function</span>,
-                        <span class="ident">schema</span>,
-                        <span class="ident">predicate</span>,
-                        <span class="ident">options</span>,
-                        <span class="ident">output_schema</span>,
+                    <span class="prelude-val">Ok</span>(lp)
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span>lp = AnonymousScan {
+                        function,
+                        schema,
+                        predicate,
+                        options,
+                        output_schema,
                     };
-                    <span class="prelude-val">Ok</span>(<span class="ident">lp</span>)
+                    <span class="prelude-val">Ok</span>(lp)
                 }
             }
-            <span class="ident">DataFrameScan</span> {
-                <span class="ident">df</span>,
-                <span class="ident">schema</span>,
-                <span class="kw-2">mut</span> <span class="ident">output_schema</span>,
-                <span class="ident">selection</span>,
+            DataFrameScan {
+                df,
+                schema,
+                <span class="kw-2">mut </span>output_schema,
+                selection,
                 ..
             } =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">projection</span> <span class="op">=</span> <span class="prelude-val">None</span>;
-                <span class="kw">if</span> <span class="op">!</span><span class="ident">acc_projections</span>.<span class="ident">is_empty</span>() {
-                    <span class="ident">output_schema</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">Arc::new</span>(<span class="ident">update_scan_schema</span>(
-                        <span class="kw-2">&amp;</span><span class="ident">acc_projections</span>,
-                        <span class="ident">expr_arena</span>,
-                        <span class="kw-2">&amp;</span><span class="ident">schema</span>,
+                <span class="kw">let </span><span class="kw-2">mut </span>projection = <span class="prelude-val">None</span>;
+                <span class="kw">if </span>!acc_projections.is_empty() {
+                    output_schema = <span class="prelude-val">Some</span>(Arc::new(update_scan_schema(
+                        <span class="kw-2">&amp;</span>acc_projections,
+                        expr_arena,
+                        <span class="kw-2">&amp;</span>schema,
                         <span class="bool-val">false</span>,
                     )<span class="question-mark">?</span>));
-                    <span class="ident">projection</span> <span class="op">=</span> <span class="ident">get_scan_columns</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>, <span class="ident">expr_arena</span>);
+                    projection = get_scan_columns(<span class="kw-2">&amp;mut </span>acc_projections, expr_arena);
                 }
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">DataFrameScan</span> {
-                    <span class="ident">df</span>,
-                    <span class="ident">schema</span>,
-                    <span class="ident">output_schema</span>,
-                    <span class="ident">projection</span>,
-                    <span class="ident">selection</span>,
+                <span class="kw">let </span>lp = DataFrameScan {
+                    df,
+                    schema,
+                    output_schema,
+                    projection,
+                    selection,
                 };
-                <span class="prelude-val">Ok</span>(<span class="ident">lp</span>)
+                <span class="prelude-val">Ok</span>(lp)
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ipc&quot;</span>)]</span>
-            <span class="ident">IpcScan</span> {
-                <span class="ident">path</span>,
-                <span class="ident">schema</span>,
-                <span class="ident">predicate</span>,
-                <span class="kw-2">mut</span> <span class="ident">options</span>,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
+            </span>IpcScan {
+                path,
+                schema,
+                predicate,
+                <span class="kw-2">mut </span>options,
                 ..
             } =&gt; {
-                <span class="kw">let</span> <span class="ident">with_columns</span> <span class="op">=</span> <span class="ident">get_scan_columns</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>, <span class="ident">expr_arena</span>);
-                <span class="kw">let</span> <span class="ident">output_schema</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">with_columns</span>.<span class="ident">is_none</span>() {
-                    <span class="prelude-val">None</span>
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">Some</span>(<span class="ident">Arc::new</span>(<span class="ident">update_scan_schema</span>(
-                        <span class="kw-2">&amp;</span><span class="ident">acc_projections</span>,
-                        <span class="ident">expr_arena</span>,
-                        <span class="kw-2">&amp;</span><span class="ident">schema</span>,
+                <span class="kw">let </span>with_columns = get_scan_columns(<span class="kw-2">&amp;mut </span>acc_projections, expr_arena);
+                <span class="kw">let </span>output_schema = <span class="kw">if </span>with_columns.is_none() {
+                    <span class="prelude-val">None
+                </span>} <span class="kw">else </span>{
+                    <span class="prelude-val">Some</span>(Arc::new(update_scan_schema(
+                        <span class="kw-2">&amp;</span>acc_projections,
+                        expr_arena,
+                        <span class="kw-2">&amp;</span>schema,
                         <span class="bool-val">false</span>,
                     )<span class="question-mark">?</span>))
                 };
-                <span class="ident">options</span>.<span class="ident">with_columns</span> <span class="op">=</span> <span class="ident">with_columns</span>;
+                options.with_columns = with_columns;
 
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">IpcScan</span> {
-                    <span class="ident">path</span>,
-                    <span class="ident">schema</span>,
-                    <span class="ident">output_schema</span>,
-                    <span class="ident">predicate</span>,
-                    <span class="ident">options</span>,
+                <span class="kw">let </span>lp = IpcScan {
+                    path,
+                    schema,
+                    output_schema,
+                    predicate,
+                    options,
                 };
-                <span class="prelude-val">Ok</span>(<span class="ident">lp</span>)
+                <span class="prelude-val">Ok</span>(lp)
             }
 
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>)]</span>
-            <span class="ident">ParquetScan</span> {
-                <span class="ident">path</span>,
-                <span class="ident">schema</span>,
-                <span class="ident">predicate</span>,
-                <span class="kw-2">mut</span> <span class="ident">options</span>,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
+            </span>ParquetScan {
+                path,
+                schema,
+                predicate,
+                <span class="kw-2">mut </span>options,
                 ..
             } =&gt; {
-                <span class="kw">let</span> <span class="ident">with_columns</span> <span class="op">=</span> <span class="ident">get_scan_columns</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>, <span class="ident">expr_arena</span>);
-                <span class="kw">let</span> <span class="ident">output_schema</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">with_columns</span>.<span class="ident">is_none</span>() {
-                    <span class="prelude-val">None</span>
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">Some</span>(<span class="ident">Arc::new</span>(<span class="ident">update_scan_schema</span>(
-                        <span class="kw-2">&amp;</span><span class="ident">acc_projections</span>,
-                        <span class="ident">expr_arena</span>,
-                        <span class="kw-2">&amp;</span><span class="ident">schema</span>,
+                <span class="kw">let </span>with_columns = get_scan_columns(<span class="kw-2">&amp;mut </span>acc_projections, expr_arena);
+                <span class="kw">let </span>output_schema = <span class="kw">if </span>with_columns.is_none() {
+                    <span class="prelude-val">None
+                </span>} <span class="kw">else </span>{
+                    <span class="prelude-val">Some</span>(Arc::new(update_scan_schema(
+                        <span class="kw-2">&amp;</span>acc_projections,
+                        expr_arena,
+                        <span class="kw-2">&amp;</span>schema,
                         <span class="bool-val">false</span>,
                     )<span class="question-mark">?</span>))
                 };
-                <span class="ident">options</span>.<span class="ident">with_columns</span> <span class="op">=</span> <span class="ident">with_columns</span>;
+                options.with_columns = with_columns;
 
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">ParquetScan</span> {
-                    <span class="ident">path</span>,
-                    <span class="ident">schema</span>,
-                    <span class="ident">output_schema</span>,
-                    <span class="ident">predicate</span>,
-                    <span class="ident">options</span>,
+                <span class="kw">let </span>lp = ParquetScan {
+                    path,
+                    schema,
+                    output_schema,
+                    predicate,
+                    options,
                 };
-                <span class="prelude-val">Ok</span>(<span class="ident">lp</span>)
+                <span class="prelude-val">Ok</span>(lp)
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;python&quot;</span>)]</span>
-            <span class="ident">PythonScan</span> { <span class="kw-2">mut</span> <span class="ident">options</span> } =&gt; {
-                <span class="ident">options</span>.<span class="ident">with_columns</span> <span class="op">=</span> <span class="ident">get_scan_columns</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>, <span class="ident">expr_arena</span>);
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;python&quot;</span>)]
+            </span>PythonScan { <span class="kw-2">mut </span>options } =&gt; {
+                options.with_columns = get_scan_columns(<span class="kw-2">&amp;mut </span>acc_projections, expr_arena);
 
-                <span class="ident">options</span>.<span class="ident">output_schema</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">options</span>.<span class="ident">with_columns</span>.<span class="ident">is_none</span>() {
-                    <span class="prelude-val">None</span>
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">Some</span>(<span class="ident">Arc::new</span>(<span class="ident">update_scan_schema</span>(
-                        <span class="kw-2">&amp;</span><span class="ident">acc_projections</span>,
-                        <span class="ident">expr_arena</span>,
-                        <span class="kw-2">&amp;</span><span class="ident">options</span>.<span class="ident">schema</span>,
+                options.output_schema = <span class="kw">if </span>options.with_columns.is_none() {
+                    <span class="prelude-val">None
+                </span>} <span class="kw">else </span>{
+                    <span class="prelude-val">Some</span>(Arc::new(update_scan_schema(
+                        <span class="kw-2">&amp;</span>acc_projections,
+                        expr_arena,
+                        <span class="kw-2">&amp;</span>options.schema,
                         <span class="bool-val">true</span>,
                     )<span class="question-mark">?</span>))
                 };
-                <span class="prelude-val">Ok</span>(<span class="ident">PythonScan</span> { <span class="ident">options</span> })
+                <span class="prelude-val">Ok</span>(PythonScan { options })
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;csv-file&quot;</span>)]</span>
-            <span class="ident">CsvScan</span> {
-                <span class="ident">path</span>,
-                <span class="ident">schema</span>,
-                <span class="kw-2">mut</span> <span class="ident">options</span>,
-                <span class="ident">predicate</span>,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;csv-file&quot;</span>)]
+            </span>CsvScan {
+                path,
+                schema,
+                <span class="kw-2">mut </span>options,
+                predicate,
                 ..
             } =&gt; {
-                <span class="ident">options</span>.<span class="ident">with_columns</span> <span class="op">=</span> <span class="ident">get_scan_columns</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>, <span class="ident">expr_arena</span>);
+                options.with_columns = get_scan_columns(<span class="kw-2">&amp;mut </span>acc_projections, expr_arena);
 
-                <span class="kw">let</span> <span class="ident">output_schema</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">options</span>.<span class="ident">with_columns</span>.<span class="ident">is_none</span>() {
-                    <span class="prelude-val">None</span>
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">Some</span>(<span class="ident">Arc::new</span>(<span class="ident">update_scan_schema</span>(
-                        <span class="kw-2">&amp;</span><span class="ident">acc_projections</span>,
-                        <span class="ident">expr_arena</span>,
-                        <span class="kw-2">&amp;</span><span class="ident">schema</span>,
+                <span class="kw">let </span>output_schema = <span class="kw">if </span>options.with_columns.is_none() {
+                    <span class="prelude-val">None
+                </span>} <span class="kw">else </span>{
+                    <span class="prelude-val">Some</span>(Arc::new(update_scan_schema(
+                        <span class="kw-2">&amp;</span>acc_projections,
+                        expr_arena,
+                        <span class="kw-2">&amp;</span>schema,
                         <span class="bool-val">true</span>,
                     )<span class="question-mark">?</span>))
                 };
 
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">CsvScan</span> {
-                    <span class="ident">path</span>,
-                    <span class="ident">schema</span>,
-                    <span class="ident">output_schema</span>,
-                    <span class="ident">options</span>,
-                    <span class="ident">predicate</span>,
+                <span class="kw">let </span>lp = CsvScan {
+                    path,
+                    schema,
+                    output_schema,
+                    options,
+                    predicate,
                 };
-                <span class="prelude-val">Ok</span>(<span class="ident">lp</span>)
+                <span class="prelude-val">Ok</span>(lp)
             }
-            <span class="ident">Sort</span> {
-                <span class="ident">input</span>,
-                <span class="ident">by_column</span>,
-                <span class="ident">args</span>,
+            Sort {
+                input,
+                by_column,
+                args,
             } =&gt; {
-                <span class="kw">if</span> <span class="op">!</span><span class="ident">acc_projections</span>.<span class="ident">is_empty</span>() {
-                    <span class="comment">// Make sure that the column(s) used for the sort is projected</span>
-                    <span class="ident">by_column</span>.<span class="ident">iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">node</span><span class="op">|</span> {
-                        <span class="ident">aexpr_to_leaf_nodes</span>(<span class="kw-2">*</span><span class="ident">node</span>, <span class="ident">expr_arena</span>)
-                            .<span class="ident">iter</span>()
-                            .<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">root</span><span class="op">|</span> {
-                                <span class="ident">add_expr_to_accumulated</span>(
-                                    <span class="kw-2">*</span><span class="ident">root</span>,
-                                    <span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>,
-                                    <span class="kw-2">&amp;mut</span> <span class="ident">projected_names</span>,
-                                    <span class="ident">expr_arena</span>,
+                <span class="kw">if </span>!acc_projections.is_empty() {
+                    <span class="comment">// Make sure that the column(s) used for the sort is projected
+                    </span>by_column.iter().for_each(|node| {
+                        aexpr_to_leaf_nodes(<span class="kw-2">*</span>node, expr_arena)
+                            .iter()
+                            .for_each(|root| {
+                                add_expr_to_accumulated(
+                                    <span class="kw-2">*</span>root,
+                                    <span class="kw-2">&amp;mut </span>acc_projections,
+                                    <span class="kw-2">&amp;mut </span>projected_names,
+                                    expr_arena,
                                 );
                             })
                     });
                 }
 
-                <span class="self">self</span>.<span class="ident">pushdown_and_assign</span>(
-                    <span class="ident">input</span>,
-                    <span class="ident">acc_projections</span>,
-                    <span class="ident">projected_names</span>,
-                    <span class="ident">projections_seen</span>,
-                    <span class="ident">lp_arena</span>,
-                    <span class="ident">expr_arena</span>,
+                <span class="self">self</span>.pushdown_and_assign(
+                    input,
+                    acc_projections,
+                    projected_names,
+                    projections_seen,
+                    lp_arena,
+                    expr_arena,
                 )<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">Sort</span> {
-                    <span class="ident">input</span>,
-                    <span class="ident">by_column</span>,
-                    <span class="ident">args</span>,
+                <span class="prelude-val">Ok</span>(Sort {
+                    input,
+                    by_column,
+                    args,
                 })
             }
-            <span class="ident">Explode</span> {
-                <span class="ident">input</span>,
-                <span class="ident">columns</span>,
-                <span class="ident">schema</span>,
+            Explode {
+                input,
+                columns,
+                schema,
             } =&gt; {
-                <span class="ident">columns</span>.<span class="ident">iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">name</span><span class="op">|</span> {
-                    <span class="ident">add_str_to_accumulated</span>(
-                        <span class="ident">name</span>,
-                        <span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>,
-                        <span class="kw-2">&amp;mut</span> <span class="ident">projected_names</span>,
-                        <span class="ident">expr_arena</span>,
+                columns.iter().for_each(|name| {
+                    add_str_to_accumulated(
+                        name,
+                        <span class="kw-2">&amp;mut </span>acc_projections,
+                        <span class="kw-2">&amp;mut </span>projected_names,
+                        expr_arena,
                     )
                 });
-                <span class="self">self</span>.<span class="ident">pushdown_and_assign</span>(
-                    <span class="ident">input</span>,
-                    <span class="ident">acc_projections</span>,
-                    <span class="ident">projected_names</span>,
-                    <span class="ident">projections_seen</span>,
-                    <span class="ident">lp_arena</span>,
-                    <span class="ident">expr_arena</span>,
+                <span class="self">self</span>.pushdown_and_assign(
+                    input,
+                    acc_projections,
+                    projected_names,
+                    projections_seen,
+                    lp_arena,
+                    expr_arena,
                 )<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">Explode</span> {
-                    <span class="ident">input</span>,
-                    <span class="ident">columns</span>,
-                    <span class="ident">schema</span>,
+                <span class="prelude-val">Ok</span>(Explode {
+                    input,
+                    columns,
+                    schema,
                 })
             }
-            <span class="ident">Distinct</span> { <span class="ident">input</span>, <span class="ident">options</span> } =&gt; {
-                <span class="comment">// make sure that the set of unique columns is projected</span>
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">subset</span>) <span class="op">=</span> <span class="ident">options</span>.<span class="ident">subset</span>.<span class="ident">as_ref</span>() {
-                    <span class="ident">subset</span>.<span class="ident">iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">name</span><span class="op">|</span> {
-                        <span class="ident">add_str_to_accumulated</span>(
-                            <span class="ident">name</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">projected_names</span>,
-                            <span class="ident">expr_arena</span>,
+            Distinct { input, options } =&gt; {
+                <span class="comment">// make sure that the set of unique columns is projected
+                </span><span class="kw">if let </span><span class="prelude-val">Some</span>(subset) = options.subset.as_ref() {
+                    subset.iter().for_each(|name| {
+                        add_str_to_accumulated(
+                            name,
+                            <span class="kw-2">&amp;mut </span>acc_projections,
+                            <span class="kw-2">&amp;mut </span>projected_names,
+                            expr_arena,
                         )
                     })
                 }
 
-                <span class="self">self</span>.<span class="ident">pushdown_and_assign</span>(
-                    <span class="ident">input</span>,
-                    <span class="ident">acc_projections</span>,
-                    <span class="ident">projected_names</span>,
-                    <span class="ident">projections_seen</span>,
-                    <span class="ident">lp_arena</span>,
-                    <span class="ident">expr_arena</span>,
+                <span class="self">self</span>.pushdown_and_assign(
+                    input,
+                    acc_projections,
+                    projected_names,
+                    projections_seen,
+                    lp_arena,
+                    expr_arena,
                 )<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">Distinct</span> { <span class="ident">input</span>, <span class="ident">options</span> })
+                <span class="prelude-val">Ok</span>(Distinct { input, options })
             }
-            <span class="ident">Selection</span> { <span class="ident">predicate</span>, <span class="ident">input</span> } =&gt; {
-                <span class="kw">if</span> <span class="op">!</span><span class="ident">acc_projections</span>.<span class="ident">is_empty</span>() {
-                    <span class="comment">// make sure that the filter column is projected</span>
-                    <span class="ident">add_expr_to_accumulated</span>(
-                        <span class="ident">predicate</span>,
-                        <span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>,
-                        <span class="kw-2">&amp;mut</span> <span class="ident">projected_names</span>,
-                        <span class="ident">expr_arena</span>,
+            Selection { predicate, input } =&gt; {
+                <span class="kw">if </span>!acc_projections.is_empty() {
+                    <span class="comment">// make sure that the filter column is projected
+                    </span>add_expr_to_accumulated(
+                        predicate,
+                        <span class="kw-2">&amp;mut </span>acc_projections,
+                        <span class="kw-2">&amp;mut </span>projected_names,
+                        expr_arena,
                     );
                 };
-                <span class="self">self</span>.<span class="ident">pushdown_and_assign</span>(
-                    <span class="ident">input</span>,
-                    <span class="ident">acc_projections</span>,
-                    <span class="ident">projected_names</span>,
-                    <span class="ident">projections_seen</span>,
-                    <span class="ident">lp_arena</span>,
-                    <span class="ident">expr_arena</span>,
+                <span class="self">self</span>.pushdown_and_assign(
+                    input,
+                    acc_projections,
+                    projected_names,
+                    projections_seen,
+                    lp_arena,
+                    expr_arena,
                 )<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">Selection</span> { <span class="ident">predicate</span>, <span class="ident">input</span> })
+                <span class="prelude-val">Ok</span>(Selection { predicate, input })
             }
-            <span class="ident">Melt</span> {
-                <span class="ident">input</span>,
-                <span class="ident">args</span>,
-                <span class="ident">schema</span>,
+            Melt {
+                input,
+                args,
+                schema,
             } =&gt; {
-                <span class="comment">// all columns are used in melt</span>
-                <span class="kw">if</span> <span class="ident">args</span>.<span class="ident">value_vars</span>.<span class="ident">is_empty</span>() {
-                    <span class="comment">// restart projection pushdown</span>
-                    <span class="self">self</span>.<span class="ident">no_pushdown_restart_opt</span>(
-                        <span class="ident">Melt</span> {
-                            <span class="ident">input</span>,
-                            <span class="ident">args</span>,
-                            <span class="ident">schema</span>,
+                <span class="comment">// all columns are used in melt
+                </span><span class="kw">if </span>args.value_vars.is_empty() {
+                    <span class="comment">// restart projection pushdown
+                    </span><span class="self">self</span>.no_pushdown_restart_opt(
+                        Melt {
+                            input,
+                            args,
+                            schema,
                         },
-                        <span class="ident">acc_projections</span>,
-                        <span class="ident">projections_seen</span>,
-                        <span class="ident">lp_arena</span>,
-                        <span class="ident">expr_arena</span>,
+                        acc_projections,
+                        projections_seen,
+                        lp_arena,
+                        expr_arena,
                     )
-                } <span class="kw">else</span> {
-                    <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">acc_projections</span>, <span class="kw-2">mut</span> <span class="ident">local_projections</span>, <span class="ident">names</span>) <span class="op">=</span> <span class="ident">split_acc_projections</span>(
-                        <span class="ident">acc_projections</span>,
-                        <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">input</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>).<span class="ident">as_ref</span>(),
-                        <span class="ident">expr_arena</span>,
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span>(<span class="kw-2">mut </span>acc_projections, <span class="kw-2">mut </span>local_projections, names) = split_acc_projections(
+                        acc_projections,
+                        lp_arena.get(input).schema(lp_arena).as_ref(),
+                        expr_arena,
                     );
 
-                    <span class="kw">if</span> <span class="op">!</span><span class="ident">local_projections</span>.<span class="ident">is_empty</span>() {
-                        <span class="ident">local_projections</span>.<span class="ident">extend_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">acc_projections</span>);
+                    <span class="kw">if </span>!local_projections.is_empty() {
+                        local_projections.extend_from_slice(<span class="kw-2">&amp;</span>acc_projections);
                     }
 
-                    <span class="comment">// make sure that the requested columns are projected</span>
-                    <span class="ident">args</span>.<span class="ident">id_vars</span>.<span class="ident">iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">name</span><span class="op">|</span> {
-                        <span class="ident">add_str_to_accumulated</span>(
-                            <span class="ident">name</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">projected_names</span>,
-                            <span class="ident">expr_arena</span>,
+                    <span class="comment">// make sure that the requested columns are projected
+                    </span>args.id_vars.iter().for_each(|name| {
+                        add_str_to_accumulated(
+                            name,
+                            <span class="kw-2">&amp;mut </span>acc_projections,
+                            <span class="kw-2">&amp;mut </span>projected_names,
+                            expr_arena,
                         )
                     });
-                    <span class="ident">args</span>.<span class="ident">value_vars</span>.<span class="ident">iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">name</span><span class="op">|</span> {
-                        <span class="ident">add_str_to_accumulated</span>(
-                            <span class="ident">name</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">projected_names</span>,
-                            <span class="ident">expr_arena</span>,
+                    args.value_vars.iter().for_each(|name| {
+                        add_str_to_accumulated(
+                            name,
+                            <span class="kw-2">&amp;mut </span>acc_projections,
+                            <span class="kw-2">&amp;mut </span>projected_names,
+                            expr_arena,
                         )
                     });
 
-                    <span class="self">self</span>.<span class="ident">pushdown_and_assign</span>(
-                        <span class="ident">input</span>,
-                        <span class="ident">acc_projections</span>,
-                        <span class="ident">names</span>,
-                        <span class="ident">projections_seen</span>,
-                        <span class="ident">lp_arena</span>,
-                        <span class="ident">expr_arena</span>,
+                    <span class="self">self</span>.pushdown_and_assign(
+                        input,
+                        acc_projections,
+                        names,
+                        projections_seen,
+                        lp_arena,
+                        expr_arena,
                     )<span class="question-mark">?</span>;
 
-                    <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">ALogicalPlanBuilder::new</span>(<span class="ident">input</span>, <span class="ident">expr_arena</span>, <span class="ident">lp_arena</span>).<span class="ident">melt</span>(<span class="ident">args</span>);
-                    <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">finish_node</span>(<span class="ident">local_projections</span>, <span class="ident">builder</span>))
+                    <span class="kw">let </span>builder = ALogicalPlanBuilder::new(input, expr_arena, lp_arena).melt(args);
+                    <span class="prelude-val">Ok</span>(<span class="self">self</span>.finish_node(local_projections, builder))
                 }
             }
-            <span class="ident">Aggregate</span> {
-                <span class="ident">input</span>,
-                <span class="ident">keys</span>,
-                <span class="ident">aggs</span>,
-                <span class="ident">apply</span>,
-                <span class="ident">schema</span>,
-                <span class="ident">maintain_order</span>,
-                <span class="ident">options</span>,
+            Aggregate {
+                input,
+                keys,
+                aggs,
+                apply,
+                schema,
+                maintain_order,
+                options,
             } =&gt; {
-                <span class="comment">// the custom function may need all columns so we do the projections here.</span>
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">f</span>) <span class="op">=</span> <span class="ident">apply</span> {
-                    <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">Aggregate</span> {
-                        <span class="ident">input</span>,
-                        <span class="ident">keys</span>,
-                        <span class="ident">aggs</span>,
-                        <span class="ident">schema</span>,
-                        <span class="ident">apply</span>: <span class="prelude-val">Some</span>(<span class="ident">f</span>),
-                        <span class="ident">maintain_order</span>,
-                        <span class="ident">options</span>,
+                <span class="comment">// the custom function may need all columns so we do the projections here.
+                </span><span class="kw">if let </span><span class="prelude-val">Some</span>(f) = apply {
+                    <span class="kw">let </span>lp = Aggregate {
+                        input,
+                        keys,
+                        aggs,
+                        schema,
+                        apply: <span class="prelude-val">Some</span>(f),
+                        maintain_order,
+                        options,
                     };
-                    <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">add</span>(<span class="ident">lp</span>);
+                    <span class="kw">let </span>input = lp_arena.add(lp);
 
-                    <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">ALogicalPlanBuilder::new</span>(<span class="ident">input</span>, <span class="ident">expr_arena</span>, <span class="ident">lp_arena</span>);
-                    <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">finish_node</span>(<span class="ident">acc_projections</span>, <span class="ident">builder</span>))
-                } <span class="kw">else</span> {
-                    <span class="comment">// todo! remove unnecessary vec alloc.</span>
-                    <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">acc_projections</span>, <span class="ident">_local_projections</span>, <span class="kw-2">mut</span> <span class="ident">names</span>) <span class="op">=</span>
-                        <span class="ident">split_acc_projections</span>(
-                            <span class="ident">acc_projections</span>,
-                            <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">input</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>).<span class="ident">as_ref</span>(),
-                            <span class="ident">expr_arena</span>,
+                    <span class="kw">let </span>builder = ALogicalPlanBuilder::new(input, expr_arena, lp_arena);
+                    <span class="prelude-val">Ok</span>(<span class="self">self</span>.finish_node(acc_projections, builder))
+                } <span class="kw">else </span>{
+                    <span class="comment">// todo! remove unnecessary vec alloc.
+                    </span><span class="kw">let </span>(<span class="kw-2">mut </span>acc_projections, _local_projections, <span class="kw-2">mut </span>names) =
+                        split_acc_projections(
+                            acc_projections,
+                            lp_arena.get(input).schema(lp_arena).as_ref(),
+                            expr_arena,
                         );
 
-                    <span class="comment">// add the columns used in the aggregations to the projection</span>
-                    <span class="kw">for</span> <span class="ident">agg</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">aggs</span> {
-                        <span class="ident">add_expr_to_accumulated</span>(<span class="kw-2">*</span><span class="ident">agg</span>, <span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>, <span class="kw-2">&amp;mut</span> <span class="ident">names</span>, <span class="ident">expr_arena</span>);
+                    <span class="comment">// add the columns used in the aggregations to the projection
+                    </span><span class="kw">for </span>agg <span class="kw">in </span><span class="kw-2">&amp;</span>aggs {
+                        add_expr_to_accumulated(<span class="kw-2">*</span>agg, <span class="kw-2">&amp;mut </span>acc_projections, <span class="kw-2">&amp;mut </span>names, expr_arena);
                     }
 
-                    <span class="comment">// make sure the keys are projected</span>
-                    <span class="kw">for</span> <span class="ident">key</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">keys</span> {
-                        <span class="ident">add_expr_to_accumulated</span>(<span class="kw-2">*</span><span class="ident">key</span>, <span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>, <span class="kw-2">&amp;mut</span> <span class="ident">names</span>, <span class="ident">expr_arena</span>);
+                    <span class="comment">// make sure the keys are projected
+                    </span><span class="kw">for </span>key <span class="kw">in </span><span class="kw-2">&amp;*</span>keys {
+                        add_expr_to_accumulated(<span class="kw-2">*</span>key, <span class="kw-2">&amp;mut </span>acc_projections, <span class="kw-2">&amp;mut </span>names, expr_arena);
                     }
 
-                    <span class="comment">// make sure that the dynamic key is projected</span>
-                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dynamic_groupby&quot;</span>)]</span>
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">options</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">options</span>.<span class="ident">dynamic</span> {
-                        <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span>
-                            <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Column</span>(<span class="ident">Arc::from</span>(<span class="ident">options</span>.<span class="ident">index_column</span>.<span class="ident">as_str</span>())));
-                        <span class="ident">add_expr_to_accumulated</span>(<span class="ident">node</span>, <span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>, <span class="kw-2">&amp;mut</span> <span class="ident">names</span>, <span class="ident">expr_arena</span>);
+                    <span class="comment">// make sure that the dynamic key is projected
+                    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;dynamic_groupby&quot;</span>)]
+                    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(options) = <span class="kw-2">&amp;</span>options.dynamic {
+                        <span class="kw">let </span>node =
+                            expr_arena.add(AExpr::Column(Arc::from(options.index_column.as_str())));
+                        add_expr_to_accumulated(node, <span class="kw-2">&amp;mut </span>acc_projections, <span class="kw-2">&amp;mut </span>names, expr_arena);
                     }
-                    <span class="comment">// make sure that the rolling key is projected</span>
-                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dynamic_groupby&quot;</span>)]</span>
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">options</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">options</span>.<span class="ident">rolling</span> {
-                        <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span>
-                            <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Column</span>(<span class="ident">Arc::from</span>(<span class="ident">options</span>.<span class="ident">index_column</span>.<span class="ident">as_str</span>())));
-                        <span class="ident">add_expr_to_accumulated</span>(<span class="ident">node</span>, <span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>, <span class="kw-2">&amp;mut</span> <span class="ident">names</span>, <span class="ident">expr_arena</span>);
+                    <span class="comment">// make sure that the rolling key is projected
+                    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;dynamic_groupby&quot;</span>)]
+                    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(options) = <span class="kw-2">&amp;</span>options.rolling {
+                        <span class="kw">let </span>node =
+                            expr_arena.add(AExpr::Column(Arc::from(options.index_column.as_str())));
+                        add_expr_to_accumulated(node, <span class="kw-2">&amp;mut </span>acc_projections, <span class="kw-2">&amp;mut </span>names, expr_arena);
                     }
 
-                    <span class="self">self</span>.<span class="ident">pushdown_and_assign</span>(
-                        <span class="ident">input</span>,
-                        <span class="ident">acc_projections</span>,
-                        <span class="ident">names</span>,
-                        <span class="ident">projections_seen</span>,
-                        <span class="ident">lp_arena</span>,
-                        <span class="ident">expr_arena</span>,
+                    <span class="self">self</span>.pushdown_and_assign(
+                        input,
+                        acc_projections,
+                        names,
+                        projections_seen,
+                        lp_arena,
+                        expr_arena,
                     )<span class="question-mark">?</span>;
 
-                    <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">ALogicalPlanBuilder::new</span>(<span class="ident">input</span>, <span class="ident">expr_arena</span>, <span class="ident">lp_arena</span>).<span class="ident">groupby</span>(
-                        <span class="ident">keys</span>,
-                        <span class="ident">aggs</span>,
-                        <span class="ident">apply</span>,
-                        <span class="ident">maintain_order</span>,
-                        <span class="ident">options</span>,
+                    <span class="kw">let </span>builder = ALogicalPlanBuilder::new(input, expr_arena, lp_arena).groupby(
+                        keys,
+                        aggs,
+                        apply,
+                        maintain_order,
+                        options,
                     );
-                    <span class="prelude-val">Ok</span>(<span class="ident">builder</span>.<span class="ident">build</span>())
+                    <span class="prelude-val">Ok</span>(builder.build())
                 }
             }
-            <span class="ident">Join</span> {
-                <span class="ident">input_left</span>,
-                <span class="ident">input_right</span>,
-                <span class="ident">left_on</span>,
-                <span class="ident">right_on</span>,
-                <span class="ident">options</span>,
+            Join {
+                input_left,
+                input_right,
+                left_on,
+                right_on,
+                options,
                 ..
             } =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pushdown_left</span> <span class="op">=</span> <span class="ident">init_vec</span>();
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pushdown_right</span> <span class="op">=</span> <span class="ident">init_vec</span>();
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">names_left</span> <span class="op">=</span> <span class="ident">init_set</span>();
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">names_right</span> <span class="op">=</span> <span class="ident">init_set</span>();
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">local_projection</span> <span class="op">=</span> <span class="ident">init_vec</span>();
+                <span class="kw">let </span><span class="kw-2">mut </span>pushdown_left = init_vec();
+                <span class="kw">let </span><span class="kw-2">mut </span>pushdown_right = init_vec();
+                <span class="kw">let </span><span class="kw-2">mut </span>names_left = init_set();
+                <span class="kw">let </span><span class="kw-2">mut </span>names_right = init_set();
+                <span class="kw">let </span><span class="kw-2">mut </span>local_projection = init_vec();
 
-                <span class="kw">fn</span> <span class="ident">add_nodes_to_accumulated_state</span>(
-                    <span class="ident">expr</span>: <span class="ident">Node</span>,
-                    <span class="ident">acc_projections</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
-                    <span class="ident">local_projection</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
-                    <span class="ident">projected_names</span>: <span class="kw-2">&amp;mut</span> <span class="ident">PlHashSet</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-                    <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-                    <span class="comment">// only for left hand side table we add local names</span>
-                    <span class="ident">left_side</span>: <span class="ident">bool</span>,
+                <span class="kw">fn </span>add_nodes_to_accumulated_state(
+                    expr: Node,
+                    acc_projections: <span class="kw-2">&amp;mut </span>Vec&lt;Node&gt;,
+                    local_projection: <span class="kw-2">&amp;mut </span>Vec&lt;Node&gt;,
+                    projected_names: <span class="kw-2">&amp;mut </span>PlHashSet&lt;Arc&lt;str&gt;&gt;,
+                    expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+                    <span class="comment">// only for left hand side table we add local names
+                    </span>left_side: bool,
                 ) {
-                    <span class="ident">add_expr_to_accumulated</span>(<span class="ident">expr</span>, <span class="ident">acc_projections</span>, <span class="ident">projected_names</span>, <span class="ident">expr_arena</span>);
-                    <span class="comment">// the projections may do more than simply project.</span>
-                    <span class="comment">// e.g. col(&quot;foo&quot;).truncate().alias(&quot;bar&quot;)</span>
-                    <span class="comment">// that means we don&#39;t want to execute the projection as that is already done by</span>
-                    <span class="comment">// the JOIN executor</span>
-                    <span class="comment">// we only want to add the `col` and the `alias` as two `col()` expressions.</span>
-                    <span class="kw">if</span> <span class="ident">left_side</span> {
-                        <span class="kw">for</span> <span class="ident">node</span> <span class="kw">in</span> <span class="ident">aexpr_to_leaf_nodes</span>(<span class="ident">expr</span>, <span class="ident">expr_arena</span>) {
-                            <span class="kw">if</span> <span class="op">!</span><span class="ident">local_projection</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">node</span>) {
-                                <span class="ident">local_projection</span>.<span class="ident">push</span>(<span class="ident">node</span>)
+                    add_expr_to_accumulated(expr, acc_projections, projected_names, expr_arena);
+                    <span class="comment">// the projections may do more than simply project.
+                    // e.g. col(&quot;foo&quot;).truncate().alias(&quot;bar&quot;)
+                    // that means we don&#39;t want to execute the projection as that is already done by
+                    // the JOIN executor
+                    // we only want to add the `col` and the `alias` as two `col()` expressions.
+                    </span><span class="kw">if </span>left_side {
+                        <span class="kw">for </span>node <span class="kw">in </span>aexpr_to_leaf_nodes(expr, expr_arena) {
+                            <span class="kw">if </span>!local_projection.contains(<span class="kw-2">&amp;</span>node) {
+                                local_projection.push(node)
                             }
                         }
-                        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">AExpr::Alias</span>(<span class="kw">_</span>, <span class="ident">alias_name</span>) <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="ident">expr</span>) {
-                            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">add</span> <span class="op">=</span> <span class="bool-val">true</span>;
-                            <span class="kw">for</span> <span class="ident">node</span> <span class="kw">in</span> <span class="ident">local_projection</span>.<span class="ident">as_slice</span>() {
-                                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">AExpr::Column</span>(<span class="ident">col_name</span>) <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">node</span>) {
-                                    <span class="kw">if</span> <span class="ident">alias_name</span> <span class="op">==</span> <span class="ident">col_name</span> {
-                                        <span class="ident">add</span> <span class="op">=</span> <span class="bool-val">false</span>;
+                        <span class="kw">if let </span>AExpr::Alias(<span class="kw">_</span>, alias_name) = expr_arena.get(expr) {
+                            <span class="kw">let </span><span class="kw-2">mut </span>add = <span class="bool-val">true</span>;
+                            <span class="kw">for </span>node <span class="kw">in </span>local_projection.as_slice() {
+                                <span class="kw">if let </span>AExpr::Column(col_name) = expr_arena.get(<span class="kw-2">*</span>node) {
+                                    <span class="kw">if </span>alias_name == col_name {
+                                        add = <span class="bool-val">false</span>;
                                         <span class="kw">break</span>;
                                     }
                                 }
                             }
-                            <span class="kw">if</span> <span class="ident">add</span> {
-                                <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Column</span>(<span class="ident">alias_name</span>.<span class="ident">clone</span>()));
-                                <span class="ident">local_projection</span>.<span class="ident">push</span>(<span class="ident">node</span>);
+                            <span class="kw">if </span>add {
+                                <span class="kw">let </span>node = expr_arena.add(AExpr::Column(alias_name.clone()));
+                                local_projection.push(node);
                             }
                         }
                     }
                 }
 
-                <span class="comment">// if there are no projections we don&#39;t have to do anything (all columns are projected)</span>
-                <span class="comment">// otherwise we build local projections to sort out proper column names due to the</span>
-                <span class="comment">// join operation</span>
-                <span class="comment">//</span>
-                <span class="comment">// Joins on columns with different names, for example</span>
-                <span class="comment">// left_on = &quot;a&quot;, right_on = &quot;b</span>
-                <span class="comment">// will remove the name &quot;b&quot; (it is &quot;a&quot; now). That columns should therefore not</span>
-                <span class="comment">// be added to a local projection.</span>
-                <span class="kw">if</span> <span class="op">!</span><span class="ident">acc_projections</span>.<span class="ident">is_empty</span>() {
-                    <span class="kw">let</span> <span class="ident">schema_left</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">input_left</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
-                    <span class="kw">let</span> <span class="ident">schema_right</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">input_right</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
+                <span class="comment">// if there are no projections we don&#39;t have to do anything (all columns are projected)
+                // otherwise we build local projections to sort out proper column names due to the
+                // join operation
+                //
+                // Joins on columns with different names, for example
+                // left_on = &quot;a&quot;, right_on = &quot;b
+                // will remove the name &quot;b&quot; (it is &quot;a&quot; now). That columns should therefore not
+                // be added to a local projection.
+                </span><span class="kw">if </span>!acc_projections.is_empty() {
+                    <span class="kw">let </span>schema_left = lp_arena.get(input_left).schema(lp_arena);
+                    <span class="kw">let </span>schema_right = lp_arena.get(input_right).schema(lp_arena);
 
-                    <span class="comment">// make sure that the asof join &#39;by&#39; columns are projected</span>
-                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;asof_join&quot;</span>)]</span>
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="ident">JoinType::AsOf</span>(<span class="ident">asof_options</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">options</span>.<span class="ident">how</span> {
-                        <span class="kw">if</span> <span class="kw">let</span> (<span class="prelude-val">Some</span>(<span class="ident">left_by</span>), <span class="prelude-val">Some</span>(<span class="ident">right_by</span>)) <span class="op">=</span>
-                            (<span class="kw-2">&amp;</span><span class="ident">asof_options</span>.<span class="ident">left_by</span>, <span class="kw-2">&amp;</span><span class="ident">asof_options</span>.<span class="ident">right_by</span>)
+                    <span class="comment">// make sure that the asof join &#39;by&#39; columns are projected
+                    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;asof_join&quot;</span>)]
+                    </span><span class="kw">if let </span>JoinType::AsOf(asof_options) = <span class="kw-2">&amp;</span>options.how {
+                        <span class="kw">if let </span>(<span class="prelude-val">Some</span>(left_by), <span class="prelude-val">Some</span>(right_by)) =
+                            (<span class="kw-2">&amp;</span>asof_options.left_by, <span class="kw-2">&amp;</span>asof_options.right_by)
                         {
-                            <span class="kw">for</span> <span class="ident">name</span> <span class="kw">in</span> <span class="ident">left_by</span> {
-                                <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Column</span>(<span class="ident">Arc::from</span>(<span class="ident">name</span>.<span class="ident">as_str</span>())));
-                                <span class="ident">add_nodes_to_accumulated_state</span>(
-                                    <span class="ident">node</span>,
-                                    <span class="kw-2">&amp;mut</span> <span class="ident">pushdown_left</span>,
-                                    <span class="kw-2">&amp;mut</span> <span class="ident">local_projection</span>,
-                                    <span class="kw-2">&amp;mut</span> <span class="ident">names_left</span>,
-                                    <span class="ident">expr_arena</span>,
+                            <span class="kw">for </span>name <span class="kw">in </span>left_by {
+                                <span class="kw">let </span>node = expr_arena.add(AExpr::Column(Arc::from(name.as_str())));
+                                add_nodes_to_accumulated_state(
+                                    node,
+                                    <span class="kw-2">&amp;mut </span>pushdown_left,
+                                    <span class="kw-2">&amp;mut </span>local_projection,
+                                    <span class="kw-2">&amp;mut </span>names_left,
+                                    expr_arena,
                                     <span class="bool-val">true</span>,
                                 );
                             }
-                            <span class="kw">for</span> <span class="ident">name</span> <span class="kw">in</span> <span class="ident">right_by</span> {
-                                <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Column</span>(<span class="ident">Arc::from</span>(<span class="ident">name</span>.<span class="ident">as_str</span>())));
-                                <span class="ident">add_nodes_to_accumulated_state</span>(
-                                    <span class="ident">node</span>,
-                                    <span class="kw-2">&amp;mut</span> <span class="ident">pushdown_right</span>,
-                                    <span class="kw-2">&amp;mut</span> <span class="ident">local_projection</span>,
-                                    <span class="kw-2">&amp;mut</span> <span class="ident">names_right</span>,
-                                    <span class="ident">expr_arena</span>,
+                            <span class="kw">for </span>name <span class="kw">in </span>right_by {
+                                <span class="kw">let </span>node = expr_arena.add(AExpr::Column(Arc::from(name.as_str())));
+                                add_nodes_to_accumulated_state(
+                                    node,
+                                    <span class="kw-2">&amp;mut </span>pushdown_right,
+                                    <span class="kw-2">&amp;mut </span>local_projection,
+                                    <span class="kw-2">&amp;mut </span>names_right,
+                                    expr_arena,
                                     <span class="bool-val">false</span>,
                                 );
                             }
                         }
                     }
 
-                    <span class="comment">// We need the join columns so we push the projection downwards</span>
-                    <span class="kw">for</span> <span class="ident">e</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">left_on</span> {
-                        <span class="ident">add_nodes_to_accumulated_state</span>(
-                            <span class="kw-2">*</span><span class="ident">e</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">pushdown_left</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">local_projection</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">names_left</span>,
-                            <span class="ident">expr_arena</span>,
+                    <span class="comment">// We need the join columns so we push the projection downwards
+                    </span><span class="kw">for </span>e <span class="kw">in </span><span class="kw-2">&amp;</span>left_on {
+                        add_nodes_to_accumulated_state(
+                            <span class="kw-2">*</span>e,
+                            <span class="kw-2">&amp;mut </span>pushdown_left,
+                            <span class="kw-2">&amp;mut </span>local_projection,
+                            <span class="kw-2">&amp;mut </span>names_left,
+                            expr_arena,
                             <span class="bool-val">true</span>,
                         );
                     }
-                    <span class="kw">for</span> <span class="ident">e</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">right_on</span> {
-                        <span class="ident">add_nodes_to_accumulated_state</span>(
-                            <span class="kw-2">*</span><span class="ident">e</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">pushdown_right</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">local_projection</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">names_right</span>,
-                            <span class="ident">expr_arena</span>,
+                    <span class="kw">for </span>e <span class="kw">in </span><span class="kw-2">&amp;</span>right_on {
+                        add_nodes_to_accumulated_state(
+                            <span class="kw-2">*</span>e,
+                            <span class="kw-2">&amp;mut </span>pushdown_right,
+                            <span class="kw-2">&amp;mut </span>local_projection,
+                            <span class="kw-2">&amp;mut </span>names_right,
+                            expr_arena,
                             <span class="bool-val">false</span>,
                         );
                     }
 
-                    <span class="kw">for</span> <span class="ident">proj</span> <span class="kw">in</span> <span class="ident">acc_projections</span> {
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">add_local</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                    <span class="kw">for </span>proj <span class="kw">in </span>acc_projections {
+                        <span class="kw">let </span><span class="kw-2">mut </span>add_local = <span class="bool-val">true</span>;
 
-                        <span class="comment">// if it is an alias we want to project the root column name downwards</span>
-                        <span class="comment">// but we don&#39;t want to project it a this level, otherwise we project both</span>
-                        <span class="comment">// the root and the alias, hence add_local = false.</span>
-                        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">AExpr::Alias</span>(<span class="ident">expr</span>, <span class="ident">name</span>) <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="ident">proj</span>).<span class="ident">clone</span>() {
-                            <span class="kw">for</span> <span class="ident">root_name</span> <span class="kw">in</span> <span class="ident">aexpr_to_leaf_names</span>(<span class="ident">expr</span>, <span class="ident">expr_arena</span>) {
-                                <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Column</span>(<span class="ident">root_name</span>));
-                                <span class="kw">let</span> <span class="ident">proj</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Alias</span>(<span class="ident">node</span>, <span class="ident">name</span>.<span class="ident">clone</span>()));
-                                <span class="ident">local_projection</span>.<span class="ident">push</span>(<span class="ident">proj</span>)
+                        <span class="comment">// if it is an alias we want to project the root column name downwards
+                        // but we don&#39;t want to project it a this level, otherwise we project both
+                        // the root and the alias, hence add_local = false.
+                        </span><span class="kw">if let </span>AExpr::Alias(expr, name) = expr_arena.get(proj).clone() {
+                            <span class="kw">for </span>root_name <span class="kw">in </span>aexpr_to_leaf_names(expr, expr_arena) {
+                                <span class="kw">let </span>node = expr_arena.add(AExpr::Column(root_name));
+                                <span class="kw">let </span>proj = expr_arena.add(AExpr::Alias(node, name.clone()));
+                                local_projection.push(proj)
                             }
-                            <span class="comment">// now we don&#39;t</span>
-                            <span class="ident">add_local</span> <span class="op">=</span> <span class="bool-val">false</span>;
+                            <span class="comment">// now we don&#39;t
+                            </span>add_local = <span class="bool-val">false</span>;
                         }
 
-                        <span class="comment">// Path for renamed columns due to the join. The column name of the left table</span>
-                        <span class="comment">// stays as is, the column of the right will have the &quot;_right&quot; suffix.</span>
-                        <span class="comment">// Thus joining two tables with both a foo column leads to [&quot;foo&quot;, &quot;foo_right&quot;]</span>
-                        <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">join_push_down</span>(
-                            <span class="kw-2">&amp;</span><span class="ident">schema_left</span>,
-                            <span class="kw-2">&amp;</span><span class="ident">schema_right</span>,
-                            <span class="ident">proj</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">pushdown_left</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">pushdown_right</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">names_left</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">names_right</span>,
-                            <span class="ident">expr_arena</span>,
+                        <span class="comment">// Path for renamed columns due to the join. The column name of the left table
+                        // stays as is, the column of the right will have the &quot;_right&quot; suffix.
+                        // Thus joining two tables with both a foo column leads to [&quot;foo&quot;, &quot;foo_right&quot;]
+                        </span><span class="kw">if </span>!<span class="self">self</span>.join_push_down(
+                            <span class="kw-2">&amp;</span>schema_left,
+                            <span class="kw-2">&amp;</span>schema_right,
+                            proj,
+                            <span class="kw-2">&amp;mut </span>pushdown_left,
+                            <span class="kw-2">&amp;mut </span>pushdown_right,
+                            <span class="kw-2">&amp;mut </span>names_left,
+                            <span class="kw-2">&amp;mut </span>names_right,
+                            expr_arena,
                         ) {
-                            <span class="comment">// Column name of the projection without any alias.</span>
-                            <span class="kw">let</span> <span class="ident">root_column_name</span> <span class="op">=</span>
-                                <span class="ident">aexpr_to_leaf_names</span>(<span class="ident">proj</span>, <span class="ident">expr_arena</span>).<span class="ident">pop</span>().<span class="ident">unwrap</span>();
+                            <span class="comment">// Column name of the projection without any alias.
+                            </span><span class="kw">let </span>root_column_name =
+                                aexpr_to_leaf_names(proj, expr_arena).pop().unwrap();
 
-                            <span class="kw">let</span> <span class="ident">suffix</span> <span class="op">=</span> <span class="ident">options</span>.<span class="ident">suffix</span>.<span class="ident">as_ref</span>();
-                            <span class="comment">// If _right suffix exists we need to push a projection down without this</span>
-                            <span class="comment">// suffix.</span>
-                            <span class="kw">if</span> <span class="ident">root_column_name</span>.<span class="ident">ends_with</span>(<span class="ident">suffix</span>) {
-                                <span class="comment">// downwards name is the name without the _right i.e. &quot;foo&quot;.</span>
-                                <span class="kw">let</span> (<span class="ident">downwards_name</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">root_column_name</span>
-                                    .<span class="ident">split_at</span>(<span class="ident">root_column_name</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="ident">suffix</span>.<span class="ident">len</span>());
+                            <span class="kw">let </span>suffix = options.suffix.as_ref();
+                            <span class="comment">// If _right suffix exists we need to push a projection down without this
+                            // suffix.
+                            </span><span class="kw">if </span>root_column_name.ends_with(suffix) {
+                                <span class="comment">// downwards name is the name without the _right i.e. &quot;foo&quot;.
+                                </span><span class="kw">let </span>(downwards_name, <span class="kw">_</span>) = root_column_name
+                                    .split_at(root_column_name.len() - suffix.len());
 
-                                <span class="kw">let</span> <span class="ident">downwards_name_column</span> <span class="op">=</span>
-                                    <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Column</span>(<span class="ident">Arc::from</span>(<span class="ident">downwards_name</span>)));
-                                <span class="comment">// project downwards and locally immediately alias to prevent wrong projections</span>
-                                <span class="kw">if</span> <span class="ident">names_right</span>.<span class="ident">insert</span>(<span class="ident">Arc::from</span>(<span class="ident">downwards_name</span>)) {
-                                    <span class="ident">pushdown_right</span>.<span class="ident">push</span>(<span class="ident">downwards_name_column</span>);
+                                <span class="kw">let </span>downwards_name_column =
+                                    expr_arena.add(AExpr::Column(Arc::from(downwards_name)));
+                                <span class="comment">// project downwards and locally immediately alias to prevent wrong projections
+                                </span><span class="kw">if </span>names_right.insert(Arc::from(downwards_name)) {
+                                    pushdown_right.push(downwards_name_column);
                                 }
-                                <span class="ident">local_projection</span>.<span class="ident">push</span>(<span class="ident">proj</span>);
+                                local_projection.push(proj);
                             }
-                        } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">add_local</span> {
-                            <span class="comment">// always also do the projection locally, because the join columns may not be</span>
-                            <span class="comment">// included in the projection.</span>
-                            <span class="comment">// for instance:</span>
-                            <span class="comment">//</span>
-                            <span class="comment">// SELECT [COLUMN temp]</span>
-                            <span class="comment">// FROM</span>
-                            <span class="comment">// JOIN ([&quot;days&quot;, &quot;temp&quot;]) WITH ([&quot;days&quot;, &quot;rain&quot;]) ON (left: days right: days)</span>
-                            <span class="comment">//</span>
-                            <span class="comment">// should drop the days column after the join.</span>
-                            <span class="ident">local_projection</span>.<span class="ident">push</span>(<span class="ident">proj</span>);
+                        } <span class="kw">else if </span>add_local {
+                            <span class="comment">// always also do the projection locally, because the join columns may not be
+                            // included in the projection.
+                            // for instance:
+                            //
+                            // SELECT [COLUMN temp]
+                            // FROM
+                            // JOIN ([&quot;days&quot;, &quot;temp&quot;]) WITH ([&quot;days&quot;, &quot;rain&quot;]) ON (left: days right: days)
+                            //
+                            // should drop the days column after the join.
+                            </span>local_projection.push(proj);
                         }
                     }
                 }
 
-                <span class="self">self</span>.<span class="ident">pushdown_and_assign</span>(
-                    <span class="ident">input_left</span>,
-                    <span class="ident">pushdown_left</span>,
-                    <span class="ident">names_left</span>,
-                    <span class="ident">projections_seen</span>,
-                    <span class="ident">lp_arena</span>,
-                    <span class="ident">expr_arena</span>,
+                <span class="self">self</span>.pushdown_and_assign(
+                    input_left,
+                    pushdown_left,
+                    names_left,
+                    projections_seen,
+                    lp_arena,
+                    expr_arena,
                 )<span class="question-mark">?</span>;
-                <span class="self">self</span>.<span class="ident">pushdown_and_assign</span>(
-                    <span class="ident">input_right</span>,
-                    <span class="ident">pushdown_right</span>,
-                    <span class="ident">names_right</span>,
-                    <span class="ident">projections_seen</span>,
-                    <span class="ident">lp_arena</span>,
-                    <span class="ident">expr_arena</span>,
+                <span class="self">self</span>.pushdown_and_assign(
+                    input_right,
+                    pushdown_right,
+                    names_right,
+                    projections_seen,
+                    lp_arena,
+                    expr_arena,
                 )<span class="question-mark">?</span>;
 
-                <span class="comment">// Because we do a projection pushdown</span>
-                <span class="comment">// We may influence the suffixes.</span>
-                <span class="comment">// For instance if a join would have created a schema</span>
-                <span class="comment">//</span>
-                <span class="comment">// &quot;foo&quot;, &quot;foo_right&quot;</span>
-                <span class="comment">//</span>
-                <span class="comment">// but we only project the &quot;foo_right&quot; column, the join will not produce</span>
-                <span class="comment">// a &quot;name_right&quot; because we did not project its left name duplicate &quot;foo&quot;</span>
-                <span class="comment">//</span>
-                <span class="comment">// The code below checks if can do the suffixed projections on the schema that</span>
-                <span class="comment">// we have after the join. If we cannot then we modify the projection:</span>
-                <span class="comment">//</span>
-                <span class="comment">// col(&quot;foo_right&quot;)  to col(&quot;foo&quot;).alias(&quot;foo_right&quot;)</span>
-                <span class="kw">let</span> <span class="ident">suffix</span> <span class="op">=</span> <span class="ident">options</span>.<span class="ident">suffix</span>.<span class="ident">clone</span>();
+                <span class="comment">// Because we do a projection pushdown
+                // We may influence the suffixes.
+                // For instance if a join would have created a schema
+                //
+                // &quot;foo&quot;, &quot;foo_right&quot;
+                //
+                // but we only project the &quot;foo_right&quot; column, the join will not produce
+                // a &quot;name_right&quot; because we did not project its left name duplicate &quot;foo&quot;
+                //
+                // The code below checks if can do the suffixed projections on the schema that
+                // we have after the join. If we cannot then we modify the projection:
+                //
+                // col(&quot;foo_right&quot;)  to col(&quot;foo&quot;).alias(&quot;foo_right&quot;)
+                </span><span class="kw">let </span>suffix = options.suffix.clone();
 
-                <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="ident">ALogicalPlanBuilder::new</span>(<span class="ident">input_left</span>, <span class="ident">expr_arena</span>, <span class="ident">lp_arena</span>)
-                    .<span class="ident">join</span>(<span class="ident">input_right</span>, <span class="ident">left_on</span>, <span class="ident">right_on</span>, <span class="ident">options</span>)
-                    .<span class="ident">build</span>();
-                <span class="kw">let</span> <span class="ident">schema_after_join</span> <span class="op">=</span> <span class="ident">alp</span>.<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
+                <span class="kw">let </span>alp = ALogicalPlanBuilder::new(input_left, expr_arena, lp_arena)
+                    .join(input_right, left_on, right_on, options)
+                    .build();
+                <span class="kw">let </span>schema_after_join = alp.schema(lp_arena);
 
-                <span class="kw">for</span> <span class="ident">proj</span> <span class="kw">in</span> <span class="kw-2">&amp;mut</span> <span class="ident">local_projection</span> {
-                    <span class="kw">for</span> <span class="ident">name</span> <span class="kw">in</span> <span class="ident">aexpr_to_leaf_names</span>(<span class="kw-2">*</span><span class="ident">proj</span>, <span class="ident">expr_arena</span>) {
-                        <span class="kw">if</span> <span class="ident">name</span>.<span class="ident">contains</span>(<span class="ident">suffix</span>.<span class="ident">as_ref</span>()) <span class="op">&amp;&amp;</span> <span class="ident">schema_after_join</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">name</span>).<span class="ident">is_none</span>()
+                <span class="kw">for </span>proj <span class="kw">in </span><span class="kw-2">&amp;mut </span>local_projection {
+                    <span class="kw">for </span>name <span class="kw">in </span>aexpr_to_leaf_names(<span class="kw-2">*</span>proj, expr_arena) {
+                        <span class="kw">if </span>name.contains(suffix.as_ref()) &amp;&amp; schema_after_join.get(<span class="kw-2">&amp;</span>name).is_none()
                         {
-                            <span class="kw">let</span> <span class="ident">new_name</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">name</span>.<span class="ident">as_ref</span>()[..<span class="ident">name</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="ident">suffix</span>.<span class="ident">len</span>()];
+                            <span class="kw">let </span>new_name = <span class="kw-2">&amp;</span>name.as_ref()[..name.len() - suffix.len()];
 
-                            <span class="kw">let</span> <span class="ident">renamed</span> <span class="op">=</span>
-                                <span class="ident">aexpr_assign_renamed_root</span>(<span class="kw-2">*</span><span class="ident">proj</span>, <span class="ident">expr_arena</span>, <span class="kw-2">&amp;</span><span class="ident">name</span>, <span class="ident">new_name</span>);
+                            <span class="kw">let </span>renamed =
+                                aexpr_assign_renamed_root(<span class="kw-2">*</span>proj, expr_arena, <span class="kw-2">&amp;</span>name, new_name);
 
-                            <span class="kw">let</span> <span class="ident">aliased</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Alias</span>(<span class="ident">renamed</span>, <span class="ident">name</span>));
-                            <span class="kw-2">*</span><span class="ident">proj</span> <span class="op">=</span> <span class="ident">aliased</span>;
+                            <span class="kw">let </span>aliased = expr_arena.add(AExpr::Alias(renamed, name));
+                            <span class="kw-2">*</span>proj = aliased;
                         }
                     }
                 }
-                <span class="kw">let</span> <span class="ident">root</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">add</span>(<span class="ident">alp</span>);
-                <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">ALogicalPlanBuilder::new</span>(<span class="ident">root</span>, <span class="ident">expr_arena</span>, <span class="ident">lp_arena</span>);
-                <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">finish_node</span>(<span class="ident">local_projection</span>, <span class="ident">builder</span>))
+                <span class="kw">let </span>root = lp_arena.add(alp);
+                <span class="kw">let </span>builder = ALogicalPlanBuilder::new(root, expr_arena, lp_arena);
+                <span class="prelude-val">Ok</span>(<span class="self">self</span>.finish_node(local_projection, builder))
             }
-            <span class="ident">HStack</span> {
-                <span class="ident">input</span>, <span class="kw-2">mut</span> <span class="ident">exprs</span>, ..
+            HStack {
+                input, <span class="kw-2">mut </span>exprs, ..
             } =&gt; {
-                <span class="kw">if</span> <span class="op">!</span><span class="ident">acc_projections</span>.<span class="ident">is_empty</span>() {
-                    <span class="kw">let</span> <span class="ident">input_schema</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">input</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pruned_with_cols</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">exprs</span>.<span class="ident">len</span>());
+                <span class="kw">if </span>!acc_projections.is_empty() {
+                    <span class="kw">let </span>input_schema = lp_arena.get(input).schema(lp_arena);
+                    <span class="kw">let </span><span class="kw-2">mut </span>pruned_with_cols = Vec::with_capacity(exprs.len());
 
-                    <span class="comment">// Check if output names are used upstream</span>
-                    <span class="comment">// if not, we can prune the `with_column` expression</span>
-                    <span class="comment">// as it is not used in the output.</span>
-                    <span class="kw">for</span> <span class="ident">node</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">exprs</span> {
-                        <span class="kw">let</span> <span class="ident">output_field</span> <span class="op">=</span> <span class="ident">expr_arena</span>
-                            .<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">node</span>)
-                            .<span class="ident">to_field</span>(<span class="ident">input_schema</span>.<span class="ident">as_ref</span>(), <span class="ident">Context::Default</span>, <span class="ident">expr_arena</span>)
-                            .<span class="ident">unwrap</span>();
-                        <span class="kw">let</span> <span class="ident">output_name</span> <span class="op">=</span> <span class="ident">output_field</span>.<span class="ident">name</span>();
+                    <span class="comment">// Check if output names are used upstream
+                    // if not, we can prune the `with_column` expression
+                    // as it is not used in the output.
+                    </span><span class="kw">for </span>node <span class="kw">in </span><span class="kw-2">&amp;</span>exprs {
+                        <span class="kw">let </span>output_field = expr_arena
+                            .get(<span class="kw-2">*</span>node)
+                            .to_field(input_schema.as_ref(), Context::Default, expr_arena)
+                            .unwrap();
+                        <span class="kw">let </span>output_name = output_field.name();
 
-                        <span class="kw">let</span> <span class="ident">is_used_upstream</span> <span class="op">=</span> <span class="ident">projected_names</span>.<span class="ident">contains</span>(<span class="ident">output_name</span>.<span class="ident">as_str</span>());
+                        <span class="kw">let </span>is_used_upstream = projected_names.contains(output_name.as_str());
 
-                        <span class="kw">if</span> <span class="ident">is_used_upstream</span> {
-                            <span class="ident">pruned_with_cols</span>.<span class="ident">push</span>(<span class="kw-2">*</span><span class="ident">node</span>);
+                        <span class="kw">if </span>is_used_upstream {
+                            pruned_with_cols.push(<span class="kw-2">*</span>node);
                         }
                     }
 
-                    <span class="kw">if</span> <span class="ident">pruned_with_cols</span>.<span class="ident">is_empty</span>() {
-                        <span class="self">self</span>.<span class="ident">pushdown_and_assign</span>(
-                            <span class="ident">input</span>,
-                            <span class="ident">acc_projections</span>,
-                            <span class="ident">projected_names</span>,
-                            <span class="ident">projections_seen</span>,
-                            <span class="ident">lp_arena</span>,
-                            <span class="ident">expr_arena</span>,
+                    <span class="kw">if </span>pruned_with_cols.is_empty() {
+                        <span class="self">self</span>.pushdown_and_assign(
+                            input,
+                            acc_projections,
+                            projected_names,
+                            projections_seen,
+                            lp_arena,
+                            expr_arena,
                         )<span class="question-mark">?</span>;
-                        <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">input</span>));
+                        <span class="kw">return </span><span class="prelude-val">Ok</span>(lp_arena.take(input));
                     }
 
-                    <span class="comment">// Make sure that columns selected with_columns are available</span>
-                    <span class="comment">// only if not empty. If empty we already select everything.</span>
-                    <span class="kw">for</span> <span class="ident">expression</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">pruned_with_cols</span> {
-                        <span class="ident">add_expr_to_accumulated</span>(
-                            <span class="kw-2">*</span><span class="ident">expression</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">projected_names</span>,
-                            <span class="ident">expr_arena</span>,
+                    <span class="comment">// Make sure that columns selected with_columns are available
+                    // only if not empty. If empty we already select everything.
+                    </span><span class="kw">for </span>expression <span class="kw">in </span><span class="kw-2">&amp;</span>pruned_with_cols {
+                        add_expr_to_accumulated(
+                            <span class="kw-2">*</span>expression,
+                            <span class="kw-2">&amp;mut </span>acc_projections,
+                            <span class="kw-2">&amp;mut </span>projected_names,
+                            expr_arena,
                         );
                     }
 
-                    <span class="ident">exprs</span> <span class="op">=</span> <span class="ident">pruned_with_cols</span>
+                    exprs = pruned_with_cols
                 }
-                <span class="comment">// projections that select columns added by</span>
-                <span class="comment">// this `with_column` operation can be dropped</span>
-                <span class="comment">// For instance in:</span>
-                <span class="comment">//</span>
-                <span class="comment">//  q</span>
-                <span class="comment">//  .with_column(col(&quot;a&quot;).alias(&quot;b&quot;)</span>
-                <span class="comment">//  .select([&quot;a&quot;, &quot;b&quot;])</span>
-                <span class="comment">//</span>
-                <span class="comment">// we can drop the &quot;b&quot; projection at this level</span>
-                <span class="kw">let</span> (<span class="ident">acc_projections</span>, <span class="kw">_</span>, <span class="ident">names</span>) <span class="op">=</span> <span class="ident">split_acc_projections</span>(
-                    <span class="ident">acc_projections</span>,
-                    <span class="kw-2">&amp;</span><span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">input</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>),
-                    <span class="ident">expr_arena</span>,
+                <span class="comment">// projections that select columns added by
+                // this `with_column` operation can be dropped
+                // For instance in:
+                //
+                //  q
+                //  .with_column(col(&quot;a&quot;).alias(&quot;b&quot;)
+                //  .select([&quot;a&quot;, &quot;b&quot;])
+                //
+                // we can drop the &quot;b&quot; projection at this level
+                </span><span class="kw">let </span>(acc_projections, <span class="kw">_</span>, names) = split_acc_projections(
+                    acc_projections,
+                    <span class="kw-2">&amp;</span>lp_arena.get(input).schema(lp_arena),
+                    expr_arena,
                 );
 
-                <span class="self">self</span>.<span class="ident">pushdown_and_assign</span>(
-                    <span class="ident">input</span>,
-                    <span class="ident">acc_projections</span>,
-                    <span class="ident">names</span>,
-                    <span class="ident">projections_seen</span>,
-                    <span class="ident">lp_arena</span>,
-                    <span class="ident">expr_arena</span>,
+                <span class="self">self</span>.pushdown_and_assign(
+                    input,
+                    acc_projections,
+                    names,
+                    projections_seen,
+                    lp_arena,
+                    expr_arena,
                 )<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">ALogicalPlanBuilder::new</span>(<span class="ident">input</span>, <span class="ident">expr_arena</span>, <span class="ident">lp_arena</span>)
-                    .<span class="ident">with_columns</span>(<span class="ident">exprs</span>)
-                    .<span class="ident">build</span>();
-                <span class="prelude-val">Ok</span>(<span class="ident">lp</span>)
+                <span class="kw">let </span>lp = ALogicalPlanBuilder::new(input, expr_arena, lp_arena)
+                    .with_columns(exprs)
+                    .build();
+                <span class="prelude-val">Ok</span>(lp)
             }
-            <span class="ident">ExtContext</span> {
-                <span class="ident">input</span>, <span class="ident">contexts</span>, ..
+            ExtContext {
+                input, contexts, ..
             } =&gt; {
-                <span class="comment">// local projections are ignored. These are just root nodes</span>
-                <span class="comment">// complex expression will still be done later</span>
-                <span class="kw">let</span> <span class="ident">_local_projections</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">pushdown_and_assign_check_schema</span>(
-                    <span class="ident">input</span>,
-                    <span class="ident">acc_projections</span>,
-                    <span class="ident">projections_seen</span>,
-                    <span class="ident">lp_arena</span>,
-                    <span class="ident">expr_arena</span>,
+                <span class="comment">// local projections are ignored. These are just root nodes
+                // complex expression will still be done later
+                </span><span class="kw">let </span>_local_projections = <span class="self">self</span>.pushdown_and_assign_check_schema(
+                    input,
+                    acc_projections,
+                    projections_seen,
+                    lp_arena,
+                    expr_arena,
                 )<span class="question-mark">?</span>;
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_schema</span> <span class="op">=</span> <span class="ident">lp_arena</span>
-                    .<span class="ident">get</span>(<span class="ident">input</span>)
-                    .<span class="ident">schema</span>(<span class="ident">lp_arena</span>)
-                    .<span class="ident">as_ref</span>()
-                    .<span class="ident">as_ref</span>()
-                    .<span class="ident">clone</span>();
+                <span class="kw">let </span><span class="kw-2">mut </span>new_schema = lp_arena
+                    .get(input)
+                    .schema(lp_arena)
+                    .as_ref()
+                    .as_ref()
+                    .clone();
 
-                <span class="kw">for</span> <span class="ident">node</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">contexts</span> {
-                    <span class="kw">let</span> <span class="ident">other_schema</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">node</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
-                    <span class="kw">for</span> <span class="ident">fld</span> <span class="kw">in</span> <span class="ident">other_schema</span>.<span class="ident">iter_fields</span>() {
-                        <span class="kw">if</span> <span class="ident">new_schema</span>.<span class="ident">get</span>(<span class="ident">fld</span>.<span class="ident">name</span>()).<span class="ident">is_none</span>() {
-                            <span class="ident">new_schema</span>.<span class="ident">with_column</span>(<span class="ident">fld</span>.<span class="ident">name</span>, <span class="ident">fld</span>.<span class="ident">dtype</span>)
+                <span class="kw">for </span>node <span class="kw">in </span><span class="kw-2">&amp;</span>contexts {
+                    <span class="kw">let </span>other_schema = lp_arena.get(<span class="kw-2">*</span>node).schema(lp_arena);
+                    <span class="kw">for </span>fld <span class="kw">in </span>other_schema.iter_fields() {
+                        <span class="kw">if </span>new_schema.get(fld.name()).is_none() {
+                            new_schema.with_column(fld.name, fld.dtype)
                         }
                     }
                 }
 
-                <span class="prelude-val">Ok</span>(<span class="ident">ExtContext</span> {
-                    <span class="ident">input</span>,
-                    <span class="ident">contexts</span>,
-                    <span class="ident">schema</span>: <span class="ident">Arc::new</span>(<span class="ident">new_schema</span>),
+                <span class="prelude-val">Ok</span>(ExtContext {
+                    input,
+                    contexts,
+                    schema: Arc::new(new_schema),
                 })
             }
-            <span class="ident">MapFunction</span> {
-                <span class="ident">input</span>,
-                <span class="kw-2">ref</span> <span class="ident">function</span>,
+            MapFunction {
+                input,
+                <span class="kw-2">ref </span>function,
             } =&gt; {
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">MapFunction</span> {
-                    <span class="ident">input</span>,
-                    <span class="ident">function</span>: <span class="ident">function</span>.<span class="ident">clone</span>(),
+                <span class="kw">let </span>lp = MapFunction {
+                    input,
+                    function: function.clone(),
                 };
-                <span class="kw">if</span> <span class="ident">function</span>.<span class="ident">allow_projection_pd</span>() <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="ident">acc_projections</span>.<span class="ident">is_empty</span>() {
-                    <span class="kw">for</span> <span class="ident">name</span> <span class="kw">in</span> <span class="ident">function</span>.<span class="ident">additional_projection_pd_columns</span>() {
-                        <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Column</span>(<span class="ident">name</span>.<span class="ident">clone</span>()));
-                        <span class="ident">add_expr_to_accumulated</span>(
-                            <span class="ident">node</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">acc_projections</span>,
-                            <span class="kw-2">&amp;mut</span> <span class="ident">projected_names</span>,
-                            <span class="ident">expr_arena</span>,
+                <span class="kw">if </span>function.allow_projection_pd() &amp;&amp; !acc_projections.is_empty() {
+                    <span class="kw">for </span>name <span class="kw">in </span>function.additional_projection_pd_columns() {
+                        <span class="kw">let </span>node = expr_arena.add(AExpr::Column(name.clone()));
+                        add_expr_to_accumulated(
+                            node,
+                            <span class="kw-2">&amp;mut </span>acc_projections,
+                            <span class="kw-2">&amp;mut </span>projected_names,
+                            expr_arena,
                         )
                     }
 
-                    <span class="kw">let</span> <span class="ident">acc_projection_len</span> <span class="op">=</span> <span class="ident">acc_projections</span>.<span class="ident">len</span>();
-                    <span class="kw">let</span> <span class="ident">local_projections</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">pushdown_and_assign_check_schema</span>(
-                        <span class="ident">input</span>,
-                        <span class="ident">acc_projections</span>,
-                        <span class="ident">projections_seen</span>,
-                        <span class="ident">lp_arena</span>,
-                        <span class="ident">expr_arena</span>,
+                    <span class="kw">let </span>acc_projection_len = acc_projections.len();
+                    <span class="kw">let </span>local_projections = <span class="self">self</span>.pushdown_and_assign_check_schema(
+                        input,
+                        acc_projections,
+                        projections_seen,
+                        lp_arena,
+                        expr_arena,
                     )<span class="question-mark">?</span>;
-                    <span class="kw">if</span> <span class="ident">local_projections</span>.<span class="ident">is_empty</span>() {
-                        <span class="prelude-val">Ok</span>(<span class="ident">lp</span>)
-                    } <span class="kw">else</span> {
-                        <span class="comment">// if we would project, we would remove pushed down predicates</span>
-                        <span class="kw">if</span> <span class="ident">local_projections</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="ident">acc_projection_len</span> {
-                            <span class="prelude-val">Ok</span>(<span class="ident">ALogicalPlanBuilder::from_lp</span>(<span class="ident">lp</span>, <span class="ident">expr_arena</span>, <span class="ident">lp_arena</span>)
-                                .<span class="ident">with_columns</span>(<span class="ident">local_projections</span>)
-                                .<span class="ident">build</span>())
-                        <span class="comment">// all projections are local</span>
-                        } <span class="kw">else</span> {
-                            <span class="prelude-val">Ok</span>(<span class="ident">ALogicalPlanBuilder::from_lp</span>(<span class="ident">lp</span>, <span class="ident">expr_arena</span>, <span class="ident">lp_arena</span>)
-                                .<span class="ident">project</span>(<span class="ident">local_projections</span>)
-                                .<span class="ident">build</span>())
+                    <span class="kw">if </span>local_projections.is_empty() {
+                        <span class="prelude-val">Ok</span>(lp)
+                    } <span class="kw">else </span>{
+                        <span class="comment">// if we would project, we would remove pushed down predicates
+                        </span><span class="kw">if </span>local_projections.len() &lt; acc_projection_len {
+                            <span class="prelude-val">Ok</span>(ALogicalPlanBuilder::from_lp(lp, expr_arena, lp_arena)
+                                .with_columns(local_projections)
+                                .build())
+                        <span class="comment">// all projections are local
+                        </span>} <span class="kw">else </span>{
+                            <span class="prelude-val">Ok</span>(ALogicalPlanBuilder::from_lp(lp, expr_arena, lp_arena)
+                                .project(local_projections)
+                                .build())
                         }
                     }
-                } <span class="kw">else</span> {
-                    <span class="comment">// restart projection pushdown</span>
-                    <span class="self">self</span>.<span class="ident">no_pushdown_restart_opt</span>(
-                        <span class="ident">lp</span>,
-                        <span class="ident">acc_projections</span>,
-                        <span class="ident">projections_seen</span>,
-                        <span class="ident">lp_arena</span>,
-                        <span class="ident">expr_arena</span>,
+                } <span class="kw">else </span>{
+                    <span class="comment">// restart projection pushdown
+                    </span><span class="self">self</span>.no_pushdown_restart_opt(
+                        lp,
+                        acc_projections,
+                        projections_seen,
+                        lp_arena,
+                        expr_arena,
                     )
                 }
             }
-            <span class="comment">// Slice and Unions have only inputs and exprs, so we can use same logic.</span>
-            <span class="ident">lp</span> @ <span class="ident">Slice</span> { .. } <span class="op">|</span> <span class="ident">lp</span> @ <span class="ident">Union</span> { .. } =&gt; {
-                <span class="kw">let</span> <span class="ident">inputs</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">get_inputs</span>();
-                <span class="kw">let</span> <span class="ident">exprs</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">get_exprs</span>();
+            <span class="comment">// Slice and Unions have only inputs and exprs, so we can use same logic.
+            </span>lp @ Slice { .. } | lp @ Union { .. } =&gt; {
+                <span class="kw">let </span>inputs = lp.get_inputs();
+                <span class="kw">let </span>exprs = lp.get_exprs();
 
-                <span class="kw">let</span> <span class="ident">new_inputs</span> <span class="op">=</span> <span class="ident">inputs</span>
-                    .<span class="ident">iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">node</span><span class="op">|</span> {
-                        <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">node</span>);
-                        <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">push_down</span>(
-                            <span class="ident">alp</span>,
-                            <span class="ident">acc_projections</span>.<span class="ident">clone</span>(),
-                            <span class="ident">projected_names</span>.<span class="ident">clone</span>(),
-                            <span class="ident">projections_seen</span>,
-                            <span class="ident">lp_arena</span>,
-                            <span class="ident">expr_arena</span>,
+                <span class="kw">let </span>new_inputs = inputs
+                    .iter()
+                    .map(|<span class="kw-2">&amp;</span>node| {
+                        <span class="kw">let </span>alp = lp_arena.take(node);
+                        <span class="kw">let </span>alp = <span class="self">self</span>.push_down(
+                            alp,
+                            acc_projections.clone(),
+                            projected_names.clone(),
+                            projections_seen,
+                            lp_arena,
+                            expr_arena,
                         )<span class="question-mark">?</span>;
-                        <span class="ident">lp_arena</span>.<span class="ident">replace</span>(<span class="ident">node</span>, <span class="ident">alp</span>);
-                        <span class="prelude-val">Ok</span>(<span class="ident">node</span>)
+                        lp_arena.replace(node, alp);
+                        <span class="prelude-val">Ok</span>(node)
                     })
-                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+                    .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
 
-                <span class="prelude-val">Ok</span>(<span class="ident">lp</span>.<span class="ident">with_exprs_and_input</span>(<span class="ident">exprs</span>, <span class="ident">new_inputs</span>))
+                <span class="prelude-val">Ok</span>(lp.with_exprs_and_input(exprs, new_inputs))
             }
-            <span class="ident">Cache</span> { .. } =&gt; {
-                <span class="comment">// projections above this cache will be accumulated and pushed down</span>
-                <span class="comment">// later</span>
-                <span class="comment">// the redundant projection will be cleaned in the fast projection optimization</span>
-                <span class="comment">// phase.</span>
-                <span class="kw">if</span> <span class="ident">acc_projections</span>.<span class="ident">is_empty</span>() {
-                    <span class="prelude-val">Ok</span>(<span class="ident">logical_plan</span>)
-                } <span class="kw">else</span> {
+            Cache { .. } =&gt; {
+                <span class="comment">// projections above this cache will be accumulated and pushed down
+                // later
+                // the redundant projection will be cleaned in the fast projection optimization
+                // phase.
+                </span><span class="kw">if </span>acc_projections.is_empty() {
+                    <span class="prelude-val">Ok</span>(logical_plan)
+                } <span class="kw">else </span>{
                     <span class="prelude-val">Ok</span>(
-                        <span class="ident">ALogicalPlanBuilder::from_lp</span>(<span class="ident">logical_plan</span>, <span class="ident">expr_arena</span>, <span class="ident">lp_arena</span>)
-                            .<span class="ident">project</span>(<span class="ident">acc_projections</span>)
-                            .<span class="ident">build</span>(),
+                        ALogicalPlanBuilder::from_lp(logical_plan, expr_arena, lp_arena)
+                            .project(acc_projections)
+                            .build(),
                     )
                 }
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">optimize</span>(
+    <span class="kw">pub fn </span>optimize(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">logical_plan</span>: <span class="ident">ALogicalPlan</span>,
-        <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">acc_projections</span> <span class="op">=</span> <span class="ident">init_vec</span>();
-        <span class="kw">let</span> <span class="ident">names</span> <span class="op">=</span> <span class="ident">init_set</span>();
-        <span class="self">self</span>.<span class="ident">push_down</span>(
-            <span class="ident">logical_plan</span>,
-            <span class="ident">acc_projections</span>,
-            <span class="ident">names</span>,
+        logical_plan: ALogicalPlan,
+        lp_arena: <span class="kw-2">&amp;mut </span>Arena&lt;ALogicalPlan&gt;,
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+    ) -&gt; PolarsResult&lt;ALogicalPlan&gt; {
+        <span class="kw">let </span>acc_projections = init_vec();
+        <span class="kw">let </span>names = init_set();
+        <span class="self">self</span>.push_down(
+            logical_plan,
+            acc_projections,
+            names,
             <span class="number">0</span>,
-            <span class="ident">lp_arena</span>,
-            <span class="ident">expr_arena</span>,
+            lp_arena,
+            expr_arena,
         )
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_plan" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_plan" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

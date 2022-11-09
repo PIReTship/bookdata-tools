@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.14.2/src/io/parquet/write/dictionary.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>dictionary.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../arrow2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../arrow2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../arrow2/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.14.2/src/io/parquet/write/dictionary.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>dictionary.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../normalize.css"><link rel="stylesheet" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../arrow2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../arrow2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../arrow2/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -243,250 +243,250 @@
 <span id="243">243</span>
 <span id="244">244</span>
 <span id="245">245</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">parquet2</span>::{
-    <span class="ident">encoding</span>::{<span class="ident">hybrid_rle::encode_u32</span>, <span class="ident">Encoding</span>},
-    <span class="ident">page</span>::{<span class="ident">DictPage</span>, <span class="ident">EncodedPage</span>},
-    <span class="ident">schema::types::PrimitiveType</span>,
-    <span class="ident">statistics</span>::{<span class="ident">serialize_statistics</span>, <span class="ident">ParquetStatistics</span>},
-    <span class="ident">write::DynIter</span>,
+</pre><pre class="rust"><code><span class="kw">use </span>parquet2::{
+    encoding::{hybrid_rle::encode_u32, Encoding},
+    page::{DictPage, EncodedPage},
+    schema::types::PrimitiveType,
+    statistics::{serialize_statistics, ParquetStatistics},
+    write::DynIter,
 };
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::io::parquet::write::utils</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">array</span>::{<span class="ident">Array</span>, <span class="ident">DictionaryArray</span>, <span class="ident">DictionaryKey</span>},
-    <span class="ident">io::parquet::read::schema::is_nullable</span>,
+<span class="kw">use </span><span class="kw">crate</span>::io::parquet::write::utils;
+<span class="kw">use crate</span>::{
+    array::{Array, DictionaryArray, DictionaryKey},
+    io::parquet::read::schema::is_nullable,
 };
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">bitmap::Bitmap</span>, <span class="ident">datatypes::DataType</span>};
-<span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">bitmap::MutableBitmap</span>,
-    <span class="ident">error</span>::{<span class="ident">Error</span>, <span class="prelude-ty">Result</span>},
+<span class="kw">use crate</span>::{bitmap::Bitmap, datatypes::DataType};
+<span class="kw">use crate</span>::{
+    bitmap::MutableBitmap,
+    error::{Error, <span class="prelude-ty">Result</span>},
 };
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::fixed_len_bytes::build_statistics</span> <span class="kw">as</span> <span class="ident">fixed_binary_build_statistics</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::fixed_len_bytes::encode_plain</span> <span class="kw">as</span> <span class="ident">fixed_binary_encode_plain</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::primitive::build_statistics</span> <span class="kw">as</span> <span class="ident">primitive_build_statistics</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::primitive::encode_plain</span> <span class="kw">as</span> <span class="ident">primitive_encode_plain</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::utf8::build_statistics</span> <span class="kw">as</span> <span class="ident">utf8_build_statistics</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::utf8::encode_plain</span> <span class="kw">as</span> <span class="ident">utf8_encode_plain</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::WriteOptions</span>;
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">binary::build_statistics</span> <span class="kw">as</span> <span class="ident">binary_build_statistics</span>, <span class="ident">Nested</span>};
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">binary::encode_plain</span> <span class="kw">as</span> <span class="ident">binary_encode_plain</span>, <span class="ident">nested</span>};
+<span class="kw">use </span><span class="kw">super</span>::fixed_len_bytes::build_statistics <span class="kw">as </span>fixed_binary_build_statistics;
+<span class="kw">use </span><span class="kw">super</span>::fixed_len_bytes::encode_plain <span class="kw">as </span>fixed_binary_encode_plain;
+<span class="kw">use </span><span class="kw">super</span>::primitive::build_statistics <span class="kw">as </span>primitive_build_statistics;
+<span class="kw">use </span><span class="kw">super</span>::primitive::encode_plain <span class="kw">as </span>primitive_encode_plain;
+<span class="kw">use </span><span class="kw">super</span>::utf8::build_statistics <span class="kw">as </span>utf8_build_statistics;
+<span class="kw">use </span><span class="kw">super</span>::utf8::encode_plain <span class="kw">as </span>utf8_encode_plain;
+<span class="kw">use </span><span class="kw">super</span>::WriteOptions;
+<span class="kw">use super</span>::{binary::build_statistics <span class="kw">as </span>binary_build_statistics, Nested};
+<span class="kw">use super</span>::{binary::encode_plain <span class="kw">as </span>binary_encode_plain, nested};
 
-<span class="kw">fn</span> <span class="ident">serialize_def_levels_simple</span>(
-    <span class="ident">validity</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Bitmap</span><span class="op">&gt;</span>,
-    <span class="ident">length</span>: <span class="ident">usize</span>,
-    <span class="ident">is_optional</span>: <span class="ident">bool</span>,
-    <span class="ident">options</span>: <span class="ident">WriteOptions</span>,
-    <span class="ident">buffer</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="ident">utils::write_def_levels</span>(<span class="ident">buffer</span>, <span class="ident">is_optional</span>, <span class="ident">validity</span>, <span class="ident">length</span>, <span class="ident">options</span>.<span class="ident">version</span>)
+<span class="kw">fn </span>serialize_def_levels_simple(
+    validity: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Bitmap&gt;,
+    length: usize,
+    is_optional: bool,
+    options: WriteOptions,
+    buffer: <span class="kw-2">&amp;mut </span>Vec&lt;u8&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    utils::write_def_levels(buffer, is_optional, validity, length, options.version)
 }
 
-<span class="kw">fn</span> <span class="ident">serialize_keys_values</span><span class="op">&lt;</span><span class="ident">K</span>: <span class="ident">DictionaryKey</span><span class="op">&gt;</span>(
-    <span class="ident">array</span>: <span class="kw-2">&amp;</span><span class="ident">DictionaryArray</span><span class="op">&lt;</span><span class="ident">K</span><span class="op">&gt;</span>,
-    <span class="ident">validity</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Bitmap</span><span class="op">&gt;</span>,
-    <span class="ident">buffer</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">keys_values_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span> <span class="kw">as</span> <span class="ident">u32</span>);
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">validity</span>) <span class="op">=</span> <span class="ident">validity</span> {
-        <span class="comment">// discard indices whose values are null.</span>
-        <span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">keys</span>
-            .<span class="ident">zip</span>(<span class="ident">validity</span>.<span class="ident">iter</span>())
-            .<span class="ident">filter_map</span>(<span class="op">|</span>(<span class="ident">key</span>, <span class="ident">is_valid</span>)<span class="op">|</span> <span class="ident">is_valid</span>.<span class="ident">then</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">key</span>));
-        <span class="kw">let</span> <span class="ident">num_bits</span> <span class="op">=</span> <span class="ident">utils::get_bit_width</span>(<span class="ident">keys</span>.<span class="ident">clone</span>().<span class="ident">max</span>().<span class="ident">unwrap_or</span>(<span class="number">0</span>) <span class="kw">as</span> <span class="ident">u64</span>);
+<span class="kw">fn </span>serialize_keys_values&lt;K: DictionaryKey&gt;(
+    array: <span class="kw-2">&amp;</span>DictionaryArray&lt;K&gt;,
+    validity: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Bitmap&gt;,
+    buffer: <span class="kw-2">&amp;mut </span>Vec&lt;u8&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>keys = array.keys_values_iter().map(|x| x <span class="kw">as </span>u32);
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(validity) = validity {
+        <span class="comment">// discard indices whose values are null.
+        </span><span class="kw">let </span>keys = keys
+            .zip(validity.iter())
+            .filter_map(|(key, is_valid)| is_valid.then(|| key));
+        <span class="kw">let </span>num_bits = utils::get_bit_width(keys.clone().max().unwrap_or(<span class="number">0</span>) <span class="kw">as </span>u64);
 
-        <span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">utils::ExactSizedIter::new</span>(<span class="ident">keys</span>, <span class="ident">array</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="ident">validity</span>.<span class="ident">unset_bits</span>());
+        <span class="kw">let </span>keys = utils::ExactSizedIter::new(keys, array.len() - validity.unset_bits());
 
-        <span class="comment">// num_bits as a single byte</span>
-        <span class="ident">buffer</span>.<span class="ident">push</span>(<span class="ident">num_bits</span> <span class="kw">as</span> <span class="ident">u8</span>);
+        <span class="comment">// num_bits as a single byte
+        </span>buffer.push(num_bits <span class="kw">as </span>u8);
 
-        <span class="comment">// followed by the encoded indices.</span>
-        <span class="prelude-val">Ok</span>(<span class="ident">encode_u32</span>(<span class="ident">buffer</span>, <span class="ident">keys</span>, <span class="ident">num_bits</span>)<span class="question-mark">?</span>)
-    } <span class="kw">else</span> {
-        <span class="kw">let</span> <span class="ident">num_bits</span> <span class="op">=</span> <span class="ident">utils::get_bit_width</span>(<span class="ident">keys</span>.<span class="ident">clone</span>().<span class="ident">max</span>().<span class="ident">unwrap_or</span>(<span class="number">0</span>) <span class="kw">as</span> <span class="ident">u64</span>);
+        <span class="comment">// followed by the encoded indices.
+        </span><span class="prelude-val">Ok</span>(encode_u32(buffer, keys, num_bits)<span class="question-mark">?</span>)
+    } <span class="kw">else </span>{
+        <span class="kw">let </span>num_bits = utils::get_bit_width(keys.clone().max().unwrap_or(<span class="number">0</span>) <span class="kw">as </span>u64);
 
-        <span class="comment">// num_bits as a single byte</span>
-        <span class="ident">buffer</span>.<span class="ident">push</span>(<span class="ident">num_bits</span> <span class="kw">as</span> <span class="ident">u8</span>);
+        <span class="comment">// num_bits as a single byte
+        </span>buffer.push(num_bits <span class="kw">as </span>u8);
 
-        <span class="comment">// followed by the encoded indices.</span>
-        <span class="prelude-val">Ok</span>(<span class="ident">encode_u32</span>(<span class="ident">buffer</span>, <span class="ident">keys</span>, <span class="ident">num_bits</span>)<span class="question-mark">?</span>)
+        <span class="comment">// followed by the encoded indices.
+        </span><span class="prelude-val">Ok</span>(encode_u32(buffer, keys, num_bits)<span class="question-mark">?</span>)
     }
 }
 
-<span class="kw">fn</span> <span class="ident">serialize_levels</span>(
-    <span class="ident">validity</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Bitmap</span><span class="op">&gt;</span>,
-    <span class="ident">length</span>: <span class="ident">usize</span>,
-    <span class="ident">type_</span>: <span class="kw-2">&amp;</span><span class="ident">PrimitiveType</span>,
-    <span class="ident">nested</span>: <span class="kw-2">&amp;</span>[<span class="ident">Nested</span>],
-    <span class="ident">options</span>: <span class="ident">WriteOptions</span>,
-    <span class="ident">buffer</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">usize</span>, <span class="ident">usize</span>)<span class="op">&gt;</span> {
-    <span class="kw">if</span> <span class="ident">nested</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="number">1</span> {
-        <span class="kw">let</span> <span class="ident">is_optional</span> <span class="op">=</span> <span class="ident">is_nullable</span>(<span class="kw-2">&amp;</span><span class="ident">type_</span>.<span class="ident">field_info</span>);
-        <span class="ident">serialize_def_levels_simple</span>(<span class="ident">validity</span>, <span class="ident">length</span>, <span class="ident">is_optional</span>, <span class="ident">options</span>, <span class="ident">buffer</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">definition_levels_byte_length</span> <span class="op">=</span> <span class="ident">buffer</span>.<span class="ident">len</span>();
-        <span class="prelude-val">Ok</span>((<span class="number">0</span>, <span class="ident">definition_levels_byte_length</span>))
-    } <span class="kw">else</span> {
-        <span class="ident">nested::write_rep_and_def</span>(<span class="ident">options</span>.<span class="ident">version</span>, <span class="ident">nested</span>, <span class="ident">buffer</span>)
+<span class="kw">fn </span>serialize_levels(
+    validity: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Bitmap&gt;,
+    length: usize,
+    type_: <span class="kw-2">&amp;</span>PrimitiveType,
+    nested: <span class="kw-2">&amp;</span>[Nested],
+    options: WriteOptions,
+    buffer: <span class="kw-2">&amp;mut </span>Vec&lt;u8&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(usize, usize)&gt; {
+    <span class="kw">if </span>nested.len() == <span class="number">1 </span>{
+        <span class="kw">let </span>is_optional = is_nullable(<span class="kw-2">&amp;</span>type_.field_info);
+        serialize_def_levels_simple(validity, length, is_optional, options, buffer)<span class="question-mark">?</span>;
+        <span class="kw">let </span>definition_levels_byte_length = buffer.len();
+        <span class="prelude-val">Ok</span>((<span class="number">0</span>, definition_levels_byte_length))
+    } <span class="kw">else </span>{
+        nested::write_rep_and_def(options.version, nested, buffer)
     }
 }
 
-<span class="kw">fn</span> <span class="ident">normalized_validity</span><span class="op">&lt;</span><span class="ident">K</span>: <span class="ident">DictionaryKey</span><span class="op">&gt;</span>(<span class="ident">array</span>: <span class="kw-2">&amp;</span><span class="ident">DictionaryArray</span><span class="op">&lt;</span><span class="ident">K</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Bitmap</span><span class="op">&gt;</span> {
-    <span class="kw">match</span> (<span class="ident">array</span>.<span class="ident">keys</span>().<span class="ident">validity</span>(), <span class="ident">array</span>.<span class="ident">values</span>().<span class="ident">validity</span>()) {
+<span class="kw">fn </span>normalized_validity&lt;K: DictionaryKey&gt;(array: <span class="kw-2">&amp;</span>DictionaryArray&lt;K&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;Bitmap&gt; {
+    <span class="kw">match </span>(array.keys().validity(), array.values().validity()) {
         (<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; <span class="prelude-val">None</span>,
-        (<span class="prelude-val">None</span>, <span class="ident">rhs</span>) =&gt; <span class="ident">rhs</span>.<span class="ident">cloned</span>(),
-        (<span class="ident">lhs</span>, <span class="prelude-val">None</span>) =&gt; <span class="ident">lhs</span>.<span class="ident">cloned</span>(),
-        (<span class="prelude-val">Some</span>(<span class="kw">_</span>), <span class="prelude-val">Some</span>(<span class="ident">rhs</span>)) =&gt; {
-            <span class="kw">let</span> <span class="ident">projected_validity</span> <span class="op">=</span> <span class="ident">array</span>
-                .<span class="ident">keys_iter</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">rhs</span>.<span class="ident">get_bit</span>(<span class="ident">x</span>)).<span class="ident">unwrap_or</span>(<span class="bool-val">false</span>));
-            <span class="ident">MutableBitmap::from_trusted_len_iter</span>(<span class="ident">projected_validity</span>).<span class="ident">into</span>()
+        (<span class="prelude-val">None</span>, rhs) =&gt; rhs.cloned(),
+        (lhs, <span class="prelude-val">None</span>) =&gt; lhs.cloned(),
+        (<span class="prelude-val">Some</span>(<span class="kw">_</span>), <span class="prelude-val">Some</span>(rhs)) =&gt; {
+            <span class="kw">let </span>projected_validity = array
+                .keys_iter()
+                .map(|x| x.map(|x| rhs.get_bit(x)).unwrap_or(<span class="bool-val">false</span>));
+            MutableBitmap::from_trusted_len_iter(projected_validity).into()
         }
     }
 }
 
-<span class="kw">fn</span> <span class="ident">serialize_keys</span><span class="op">&lt;</span><span class="ident">K</span>: <span class="ident">DictionaryKey</span><span class="op">&gt;</span>(
-    <span class="ident">array</span>: <span class="kw-2">&amp;</span><span class="ident">DictionaryArray</span><span class="op">&lt;</span><span class="ident">K</span><span class="op">&gt;</span>,
-    <span class="ident">type_</span>: <span class="ident">PrimitiveType</span>,
-    <span class="ident">nested</span>: <span class="kw-2">&amp;</span>[<span class="ident">Nested</span>],
-    <span class="ident">statistics</span>: <span class="ident">ParquetStatistics</span>,
-    <span class="ident">options</span>: <span class="ident">WriteOptions</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">EncodedPage</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buffer</span> <span class="op">=</span> <span class="macro">vec!</span>[];
+<span class="kw">fn </span>serialize_keys&lt;K: DictionaryKey&gt;(
+    array: <span class="kw-2">&amp;</span>DictionaryArray&lt;K&gt;,
+    type_: PrimitiveType,
+    nested: <span class="kw-2">&amp;</span>[Nested],
+    statistics: ParquetStatistics,
+    options: WriteOptions,
+) -&gt; <span class="prelude-ty">Result</span>&lt;EncodedPage&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[];
 
-    <span class="comment">// parquet only accepts a single validity - we &quot;&amp;&quot; the validities into a single one</span>
-    <span class="comment">// and ignore keys whole _value_ is null.</span>
-    <span class="kw">let</span> <span class="ident">validity</span> <span class="op">=</span> <span class="ident">normalized_validity</span>(<span class="ident">array</span>);
+    <span class="comment">// parquet only accepts a single validity - we &quot;&amp;&quot; the validities into a single one
+    // and ignore keys whole _value_ is null.
+    </span><span class="kw">let </span>validity = normalized_validity(array);
 
-    <span class="kw">let</span> (<span class="ident">repetition_levels_byte_length</span>, <span class="ident">definition_levels_byte_length</span>) <span class="op">=</span> <span class="ident">serialize_levels</span>(
-        <span class="ident">validity</span>.<span class="ident">as_ref</span>(),
-        <span class="ident">array</span>.<span class="ident">len</span>(),
-        <span class="kw-2">&amp;</span><span class="ident">type_</span>,
-        <span class="ident">nested</span>,
-        <span class="ident">options</span>,
-        <span class="kw-2">&amp;mut</span> <span class="ident">buffer</span>,
+    <span class="kw">let </span>(repetition_levels_byte_length, definition_levels_byte_length) = serialize_levels(
+        validity.as_ref(),
+        array.len(),
+        <span class="kw-2">&amp;</span>type_,
+        nested,
+        options,
+        <span class="kw-2">&amp;mut </span>buffer,
     )<span class="question-mark">?</span>;
 
-    <span class="ident">serialize_keys_values</span>(<span class="ident">array</span>, <span class="ident">validity</span>.<span class="ident">as_ref</span>(), <span class="kw-2">&amp;mut</span> <span class="ident">buffer</span>)<span class="question-mark">?</span>;
+    serialize_keys_values(array, validity.as_ref(), <span class="kw-2">&amp;mut </span>buffer)<span class="question-mark">?</span>;
 
-    <span class="kw">let</span> (<span class="ident">num_values</span>, <span class="ident">num_rows</span>) <span class="op">=</span> <span class="kw">if</span> <span class="ident">nested</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="number">1</span> {
-        (<span class="ident">array</span>.<span class="ident">len</span>(), <span class="ident">array</span>.<span class="ident">len</span>())
-    } <span class="kw">else</span> {
-        (<span class="ident">nested::num_values</span>(<span class="ident">nested</span>), <span class="ident">nested</span>[<span class="number">0</span>].<span class="ident">len</span>())
+    <span class="kw">let </span>(num_values, num_rows) = <span class="kw">if </span>nested.len() == <span class="number">1 </span>{
+        (array.len(), array.len())
+    } <span class="kw">else </span>{
+        (nested::num_values(nested), nested[<span class="number">0</span>].len())
     };
 
-    <span class="ident">utils::build_plain_page</span>(
-        <span class="ident">buffer</span>,
-        <span class="ident">num_values</span>,
-        <span class="ident">num_rows</span>,
-        <span class="ident">array</span>.<span class="ident">null_count</span>(),
-        <span class="ident">repetition_levels_byte_length</span>,
-        <span class="ident">definition_levels_byte_length</span>,
-        <span class="prelude-val">Some</span>(<span class="ident">statistics</span>),
-        <span class="ident">type_</span>,
-        <span class="ident">options</span>,
-        <span class="ident">Encoding::RleDictionary</span>,
+    utils::build_plain_page(
+        buffer,
+        num_values,
+        num_rows,
+        array.null_count(),
+        repetition_levels_byte_length,
+        definition_levels_byte_length,
+        <span class="prelude-val">Some</span>(statistics),
+        type_,
+        options,
+        Encoding::RleDictionary,
     )
-    .<span class="ident">map</span>(<span class="ident">EncodedPage::Data</span>)
+    .map(EncodedPage::Data)
 }
 
-<span class="macro">macro_rules!</span> <span class="ident">dyn_prim</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">from</span>:<span class="ident">ty</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">to</span>:<span class="ident">ty</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">array</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">options</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">type_</span>:<span class="ident">expr</span>) =&gt; {{
-        <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">array</span>.<span class="ident">values</span>().<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>().<span class="ident">unwrap</span>();
+<span class="macro">macro_rules! </span>dyn_prim {
+    (<span class="macro-nonterminal">$from</span>:ty, <span class="macro-nonterminal">$to</span>:ty, <span class="macro-nonterminal">$array</span>:expr, <span class="macro-nonterminal">$options</span>:expr, <span class="macro-nonterminal">$type_</span>:expr) =&gt; {{
+        <span class="kw">let </span>values = <span class="macro-nonterminal">$array</span>.values().as_any().downcast_ref().unwrap();
 
-        <span class="kw">let</span> <span class="ident">buffer</span> <span class="op">=</span> <span class="ident">primitive_encode_plain</span>::<span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">from</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">to</span><span class="op">&gt;</span>(<span class="ident">values</span>, <span class="bool-val">false</span>, <span class="macro">vec!</span>[]);
-        <span class="kw">let</span> <span class="ident">stats</span> <span class="op">=</span> <span class="ident">primitive_build_statistics</span>::<span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">from</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">to</span><span class="op">&gt;</span>(<span class="ident">values</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">type_</span>.<span class="ident">clone</span>());
-        <span class="kw">let</span> <span class="ident">stats</span> <span class="op">=</span> <span class="ident">serialize_statistics</span>(<span class="kw-2">&amp;</span><span class="ident">stats</span>);
-        (<span class="ident">DictPage::new</span>(<span class="ident">buffer</span>, <span class="ident">values</span>.<span class="ident">len</span>(), <span class="bool-val">false</span>), <span class="ident">stats</span>)
+        <span class="kw">let </span>buffer = primitive_encode_plain::&lt;<span class="macro-nonterminal">$from</span>, <span class="macro-nonterminal">$to</span>&gt;(values, <span class="bool-val">false</span>, <span class="macro">vec!</span>[]);
+        <span class="kw">let </span>stats = primitive_build_statistics::&lt;<span class="macro-nonterminal">$from</span>, <span class="macro-nonterminal">$to</span>&gt;(values, <span class="macro-nonterminal">$type_</span>.clone());
+        <span class="kw">let </span>stats = serialize_statistics(<span class="kw-2">&amp;</span>stats);
+        (DictPage::new(buffer, values.len(), <span class="bool-val">false</span>), stats)
     }};
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">array_to_pages</span><span class="op">&lt;</span><span class="ident">K</span>: <span class="ident">DictionaryKey</span><span class="op">&gt;</span>(
-    <span class="ident">array</span>: <span class="kw-2">&amp;</span><span class="ident">DictionaryArray</span><span class="op">&lt;</span><span class="ident">K</span><span class="op">&gt;</span>,
-    <span class="ident">type_</span>: <span class="ident">PrimitiveType</span>,
-    <span class="ident">nested</span>: <span class="kw-2">&amp;</span>[<span class="ident">Nested</span>],
-    <span class="ident">options</span>: <span class="ident">WriteOptions</span>,
-    <span class="ident">encoding</span>: <span class="ident">Encoding</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">DynIter</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">EncodedPage</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">match</span> <span class="ident">encoding</span> {
-        <span class="ident">Encoding::PlainDictionary</span> <span class="op">|</span> <span class="ident">Encoding::RleDictionary</span> =&gt; {
-            <span class="comment">// write DictPage</span>
-            <span class="kw">let</span> (<span class="ident">dict_page</span>, <span class="ident">statistics</span>) <span class="op">=</span> <span class="kw">match</span> <span class="ident">array</span>.<span class="ident">values</span>().<span class="ident">data_type</span>().<span class="ident">to_logical_type</span>() {
-                <span class="ident">DataType::Int8</span> =&gt; <span class="macro">dyn_prim!</span>(<span class="ident">i8</span>, <span class="ident">i32</span>, <span class="ident">array</span>, <span class="ident">options</span>, <span class="ident">type_</span>),
-                <span class="ident">DataType::Int16</span> =&gt; <span class="macro">dyn_prim!</span>(<span class="ident">i16</span>, <span class="ident">i32</span>, <span class="ident">array</span>, <span class="ident">options</span>, <span class="ident">type_</span>),
-                <span class="ident">DataType::Int32</span> <span class="op">|</span> <span class="ident">DataType::Date32</span> <span class="op">|</span> <span class="ident">DataType::Time32</span>(<span class="kw">_</span>) =&gt; {
-                    <span class="macro">dyn_prim!</span>(<span class="ident">i32</span>, <span class="ident">i32</span>, <span class="ident">array</span>, <span class="ident">options</span>, <span class="ident">type_</span>)
+<span class="kw">pub fn </span>array_to_pages&lt;K: DictionaryKey&gt;(
+    array: <span class="kw-2">&amp;</span>DictionaryArray&lt;K&gt;,
+    type_: PrimitiveType,
+    nested: <span class="kw-2">&amp;</span>[Nested],
+    options: WriteOptions,
+    encoding: Encoding,
+) -&gt; <span class="prelude-ty">Result</span>&lt;DynIter&lt;<span class="lifetime">&#39;static</span>, <span class="prelude-ty">Result</span>&lt;EncodedPage&gt;&gt;&gt; {
+    <span class="kw">match </span>encoding {
+        Encoding::PlainDictionary | Encoding::RleDictionary =&gt; {
+            <span class="comment">// write DictPage
+            </span><span class="kw">let </span>(dict_page, statistics) = <span class="kw">match </span>array.values().data_type().to_logical_type() {
+                DataType::Int8 =&gt; <span class="macro">dyn_prim!</span>(i8, i32, array, options, type_),
+                DataType::Int16 =&gt; <span class="macro">dyn_prim!</span>(i16, i32, array, options, type_),
+                DataType::Int32 | DataType::Date32 | DataType::Time32(<span class="kw">_</span>) =&gt; {
+                    <span class="macro">dyn_prim!</span>(i32, i32, array, options, type_)
                 }
-                <span class="ident">DataType::Int64</span>
-                <span class="op">|</span> <span class="ident">DataType::Date64</span>
-                <span class="op">|</span> <span class="ident">DataType::Time64</span>(<span class="kw">_</span>)
-                <span class="op">|</span> <span class="ident">DataType::Timestamp</span>(<span class="kw">_</span>, <span class="kw">_</span>)
-                <span class="op">|</span> <span class="ident">DataType::Duration</span>(<span class="kw">_</span>) =&gt; <span class="macro">dyn_prim!</span>(<span class="ident">i64</span>, <span class="ident">i64</span>, <span class="ident">array</span>, <span class="ident">options</span>, <span class="ident">type_</span>),
-                <span class="ident">DataType::UInt8</span> =&gt; <span class="macro">dyn_prim!</span>(<span class="ident">u8</span>, <span class="ident">i32</span>, <span class="ident">array</span>, <span class="ident">options</span>, <span class="ident">type_</span>),
-                <span class="ident">DataType::UInt16</span> =&gt; <span class="macro">dyn_prim!</span>(<span class="ident">u16</span>, <span class="ident">i32</span>, <span class="ident">array</span>, <span class="ident">options</span>, <span class="ident">type_</span>),
-                <span class="ident">DataType::UInt32</span> =&gt; <span class="macro">dyn_prim!</span>(<span class="ident">u32</span>, <span class="ident">i32</span>, <span class="ident">array</span>, <span class="ident">options</span>, <span class="ident">type_</span>),
-                <span class="ident">DataType::UInt64</span> =&gt; <span class="macro">dyn_prim!</span>(<span class="ident">u64</span>, <span class="ident">i64</span>, <span class="ident">array</span>, <span class="ident">options</span>, <span class="ident">type_</span>),
-                <span class="ident">DataType::Float32</span> =&gt; <span class="macro">dyn_prim!</span>(<span class="ident">f32</span>, <span class="ident">f32</span>, <span class="ident">array</span>, <span class="ident">options</span>, <span class="ident">type_</span>),
-                <span class="ident">DataType::Float64</span> =&gt; <span class="macro">dyn_prim!</span>(<span class="ident">f64</span>, <span class="ident">f64</span>, <span class="ident">array</span>, <span class="ident">options</span>, <span class="ident">type_</span>),
-                <span class="ident">DataType::Utf8</span> =&gt; {
-                    <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">values</span>().<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>().<span class="ident">unwrap</span>();
+                DataType::Int64
+                | DataType::Date64
+                | DataType::Time64(<span class="kw">_</span>)
+                | DataType::Timestamp(<span class="kw">_</span>, <span class="kw">_</span>)
+                | DataType::Duration(<span class="kw">_</span>) =&gt; <span class="macro">dyn_prim!</span>(i64, i64, array, options, type_),
+                DataType::UInt8 =&gt; <span class="macro">dyn_prim!</span>(u8, i32, array, options, type_),
+                DataType::UInt16 =&gt; <span class="macro">dyn_prim!</span>(u16, i32, array, options, type_),
+                DataType::UInt32 =&gt; <span class="macro">dyn_prim!</span>(u32, i32, array, options, type_),
+                DataType::UInt64 =&gt; <span class="macro">dyn_prim!</span>(u64, i64, array, options, type_),
+                DataType::Float32 =&gt; <span class="macro">dyn_prim!</span>(f32, f32, array, options, type_),
+                DataType::Float64 =&gt; <span class="macro">dyn_prim!</span>(f64, f64, array, options, type_),
+                DataType::Utf8 =&gt; {
+                    <span class="kw">let </span>array = array.values().as_any().downcast_ref().unwrap();
 
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buffer</span> <span class="op">=</span> <span class="macro">vec!</span>[];
-                    <span class="ident">utf8_encode_plain</span>::<span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span>(<span class="ident">array</span>, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut</span> <span class="ident">buffer</span>);
-                    <span class="kw">let</span> <span class="ident">stats</span> <span class="op">=</span> <span class="ident">utf8_build_statistics</span>(<span class="ident">array</span>, <span class="ident">type_</span>.<span class="ident">clone</span>());
-                    (<span class="ident">DictPage::new</span>(<span class="ident">buffer</span>, <span class="ident">array</span>.<span class="ident">len</span>(), <span class="bool-val">false</span>), <span class="ident">stats</span>)
+                    <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[];
+                    utf8_encode_plain::&lt;i32&gt;(array, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut </span>buffer);
+                    <span class="kw">let </span>stats = utf8_build_statistics(array, type_.clone());
+                    (DictPage::new(buffer, array.len(), <span class="bool-val">false</span>), stats)
                 }
-                <span class="ident">DataType::LargeUtf8</span> =&gt; {
-                    <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">values</span>().<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>().<span class="ident">unwrap</span>();
+                DataType::LargeUtf8 =&gt; {
+                    <span class="kw">let </span>array = array.values().as_any().downcast_ref().unwrap();
 
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buffer</span> <span class="op">=</span> <span class="macro">vec!</span>[];
-                    <span class="ident">utf8_encode_plain</span>::<span class="op">&lt;</span><span class="ident">i64</span><span class="op">&gt;</span>(<span class="ident">array</span>, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut</span> <span class="ident">buffer</span>);
-                    <span class="kw">let</span> <span class="ident">stats</span> <span class="op">=</span> <span class="ident">utf8_build_statistics</span>(<span class="ident">array</span>, <span class="ident">type_</span>.<span class="ident">clone</span>());
-                    (<span class="ident">DictPage::new</span>(<span class="ident">buffer</span>, <span class="ident">array</span>.<span class="ident">len</span>(), <span class="bool-val">false</span>), <span class="ident">stats</span>)
+                    <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[];
+                    utf8_encode_plain::&lt;i64&gt;(array, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut </span>buffer);
+                    <span class="kw">let </span>stats = utf8_build_statistics(array, type_.clone());
+                    (DictPage::new(buffer, array.len(), <span class="bool-val">false</span>), stats)
                 }
-                <span class="ident">DataType::Binary</span> =&gt; {
-                    <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">values</span>().<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>().<span class="ident">unwrap</span>();
+                DataType::Binary =&gt; {
+                    <span class="kw">let </span>array = array.values().as_any().downcast_ref().unwrap();
 
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buffer</span> <span class="op">=</span> <span class="macro">vec!</span>[];
-                    <span class="ident">binary_encode_plain</span>::<span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span>(<span class="ident">array</span>, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut</span> <span class="ident">buffer</span>);
-                    <span class="kw">let</span> <span class="ident">stats</span> <span class="op">=</span> <span class="ident">binary_build_statistics</span>(<span class="ident">array</span>, <span class="ident">type_</span>.<span class="ident">clone</span>());
-                    (<span class="ident">DictPage::new</span>(<span class="ident">buffer</span>, <span class="ident">array</span>.<span class="ident">len</span>(), <span class="bool-val">false</span>), <span class="ident">stats</span>)
+                    <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[];
+                    binary_encode_plain::&lt;i32&gt;(array, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut </span>buffer);
+                    <span class="kw">let </span>stats = binary_build_statistics(array, type_.clone());
+                    (DictPage::new(buffer, array.len(), <span class="bool-val">false</span>), stats)
                 }
-                <span class="ident">DataType::LargeBinary</span> =&gt; {
-                    <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">values</span>().<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>().<span class="ident">unwrap</span>();
+                DataType::LargeBinary =&gt; {
+                    <span class="kw">let </span>array = array.values().as_any().downcast_ref().unwrap();
 
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buffer</span> <span class="op">=</span> <span class="macro">vec!</span>[];
-                    <span class="ident">binary_encode_plain</span>::<span class="op">&lt;</span><span class="ident">i64</span><span class="op">&gt;</span>(<span class="ident">array</span>, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut</span> <span class="ident">buffer</span>);
-                    <span class="kw">let</span> <span class="ident">stats</span> <span class="op">=</span> <span class="ident">binary_build_statistics</span>(<span class="ident">array</span>, <span class="ident">type_</span>.<span class="ident">clone</span>());
-                    (<span class="ident">DictPage::new</span>(<span class="ident">buffer</span>, <span class="ident">array</span>.<span class="ident">len</span>(), <span class="bool-val">false</span>), <span class="ident">stats</span>)
+                    <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[];
+                    binary_encode_plain::&lt;i64&gt;(array, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut </span>buffer);
+                    <span class="kw">let </span>stats = binary_build_statistics(array, type_.clone());
+                    (DictPage::new(buffer, array.len(), <span class="bool-val">false</span>), stats)
                 }
-                <span class="ident">DataType::FixedSizeBinary</span>(<span class="kw">_</span>) =&gt; {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buffer</span> <span class="op">=</span> <span class="macro">vec!</span>[];
-                    <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">values</span>().<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>().<span class="ident">unwrap</span>();
-                    <span class="ident">fixed_binary_encode_plain</span>(<span class="ident">array</span>, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut</span> <span class="ident">buffer</span>);
-                    <span class="kw">let</span> <span class="ident">stats</span> <span class="op">=</span> <span class="ident">fixed_binary_build_statistics</span>(<span class="ident">array</span>, <span class="ident">type_</span>.<span class="ident">clone</span>());
-                    <span class="kw">let</span> <span class="ident">stats</span> <span class="op">=</span> <span class="ident">serialize_statistics</span>(<span class="kw-2">&amp;</span><span class="ident">stats</span>);
-                    (<span class="ident">DictPage::new</span>(<span class="ident">buffer</span>, <span class="ident">array</span>.<span class="ident">len</span>(), <span class="bool-val">false</span>), <span class="ident">stats</span>)
+                DataType::FixedSizeBinary(<span class="kw">_</span>) =&gt; {
+                    <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[];
+                    <span class="kw">let </span>array = array.values().as_any().downcast_ref().unwrap();
+                    fixed_binary_encode_plain(array, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut </span>buffer);
+                    <span class="kw">let </span>stats = fixed_binary_build_statistics(array, type_.clone());
+                    <span class="kw">let </span>stats = serialize_statistics(<span class="kw-2">&amp;</span>stats);
+                    (DictPage::new(buffer, array.len(), <span class="bool-val">false</span>), stats)
                 }
-                <span class="ident">other</span> =&gt; {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::NotYetImplemented</span>(<span class="macro">format!</span>(
+                other =&gt; {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::NotYetImplemented(<span class="macro">format!</span>(
                         <span class="string">&quot;Writing dictionary arrays to parquet only support data type {:?}&quot;</span>,
-                        <span class="ident">other</span>
+                        other
                     )))
                 }
             };
-            <span class="kw">let</span> <span class="ident">dict_page</span> <span class="op">=</span> <span class="ident">EncodedPage::Dict</span>(<span class="ident">dict_page</span>);
+            <span class="kw">let </span>dict_page = EncodedPage::Dict(dict_page);
 
-            <span class="comment">// write DataPage pointing to DictPage</span>
-            <span class="kw">let</span> <span class="ident">data_page</span> <span class="op">=</span> <span class="ident">serialize_keys</span>(<span class="ident">array</span>, <span class="ident">type_</span>, <span class="ident">nested</span>, <span class="ident">statistics</span>, <span class="ident">options</span>)<span class="question-mark">?</span>;
+            <span class="comment">// write DataPage pointing to DictPage
+            </span><span class="kw">let </span>data_page = serialize_keys(array, type_, nested, statistics, options)<span class="question-mark">?</span>;
 
-            <span class="kw">let</span> <span class="ident">iter</span> <span class="op">=</span> <span class="ident">std::iter::once</span>(<span class="prelude-val">Ok</span>(<span class="ident">dict_page</span>)).<span class="ident">chain</span>(<span class="ident">std::iter::once</span>(<span class="prelude-val">Ok</span>(<span class="ident">data_page</span>)));
-            <span class="prelude-val">Ok</span>(<span class="ident">DynIter::new</span>(<span class="ident">Box::new</span>(<span class="ident">iter</span>)))
+            <span class="kw">let </span>iter = std::iter::once(<span class="prelude-val">Ok</span>(dict_page)).chain(std::iter::once(<span class="prelude-val">Ok</span>(data_page)));
+            <span class="prelude-val">Ok</span>(DynIter::new(Box::new(iter)))
         }
-        <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">Error::NotYetImplemented</span>(
-            <span class="string">&quot;Dictionary arrays only support dictionary encoding&quot;</span>.<span class="ident">to_string</span>(),
+        <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(Error::NotYetImplemented(
+            <span class="string">&quot;Dictionary arrays only support dictionary encoding&quot;</span>.to_string(),
         )),
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="arrow2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="arrow2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

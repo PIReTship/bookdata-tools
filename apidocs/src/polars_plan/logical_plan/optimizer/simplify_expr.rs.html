@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.25.1/src/logical_plan/optimizer/simplify_expr.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>simplify_expr.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.25.1/src/logical_plan/optimizer/simplify_expr.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>simplify_expr.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -751,758 +751,758 @@
 <span id="751">751</span>
 <span id="752">752</span>
 <span id="753">753</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">polars_core::export::chrono</span>;
-<span class="kw">use</span> <span class="ident">polars_utils::arena::Arena</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>polars_core::export::chrono;
+<span class="kw">use </span>polars_utils::arena::Arena;
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;strings&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dsl::function_expr::StringFunction</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::logical_plan::optimizer::stack_opt::OptimizationRule</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::logical_plan</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude::function_expr::FunctionExpr</span>;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;strings&quot;</span>)]
+</span><span class="kw">use </span><span class="kw">crate</span>::dsl::function_expr::StringFunction;
+<span class="kw">use </span><span class="kw">crate</span>::logical_plan::optimizer::stack_opt::OptimizationRule;
+<span class="kw">use </span><span class="kw">crate</span>::logical_plan::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::function_expr::FunctionExpr;
 
-<span class="macro">macro_rules!</span> <span class="ident">eval_binary_same_type</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">lhs</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span>: <span class="ident">tt</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rhs</span>:<span class="ident">expr</span>) =&gt; {{
-    <span class="kw">if</span> <span class="kw">let</span> (<span class="ident">AExpr::Literal</span>(<span class="ident">lit_left</span>), <span class="ident">AExpr::Literal</span>(<span class="ident">lit_right</span>)) <span class="op">=</span> (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">lhs</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rhs</span>) {
-        <span class="kw">return</span> <span class="kw">match</span> (<span class="ident">lit_left</span>, <span class="ident">lit_right</span>) {
-            (<span class="ident">LiteralValue::Float32</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Float32</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float32</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+<span class="macro">macro_rules! </span>eval_binary_same_type {
+    (<span class="macro-nonterminal">$lhs</span>:expr, <span class="macro-nonterminal">$operand</span>: tt, <span class="macro-nonterminal">$rhs</span>:expr) =&gt; {{
+    <span class="kw">if let </span>(AExpr::Literal(lit_left), AExpr::Literal(lit_right)) = (<span class="macro-nonterminal">$lhs</span>, <span class="macro-nonterminal">$rhs</span>) {
+        <span class="kw">return match </span>(lit_left, lit_right) {
+            (LiteralValue::Float32(x), LiteralValue::Float32(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            (<span class="ident">LiteralValue::Float64</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Float64</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            (LiteralValue::Float64(x), LiteralValue::Float64(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-i8&quot;</span>)]</span>
-            (<span class="ident">LiteralValue::Int8</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Int8</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int8</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-i8&quot;</span>)]
+            </span>(LiteralValue::Int8(x), LiteralValue::Int8(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Int8(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-i16&quot;</span>)]</span>
-            (<span class="ident">LiteralValue::Int16</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Int16</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int16</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-i16&quot;</span>)]
+            </span>(LiteralValue::Int16(x), LiteralValue::Int16(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Int16(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            (<span class="ident">LiteralValue::Int32</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Int32</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int32</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            (LiteralValue::Int32(x), LiteralValue::Int32(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Int32(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            (<span class="ident">LiteralValue::Int64</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Int64</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int64</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            (LiteralValue::Int64(x), LiteralValue::Int64(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Int64(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-u8&quot;</span>)]</span>
-            (<span class="ident">LiteralValue::UInt8</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::UInt8</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::UInt8</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-u8&quot;</span>)]
+            </span>(LiteralValue::UInt8(x), LiteralValue::UInt8(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::UInt8(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-u16&quot;</span>)]</span>
-            (<span class="ident">LiteralValue::UInt16</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::UInt16</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::UInt16</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-u16&quot;</span>)]
+            </span>(LiteralValue::UInt16(x), LiteralValue::UInt16(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::UInt16(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            (<span class="ident">LiteralValue::UInt32</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::UInt32</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::UInt32</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            (LiteralValue::UInt32(x), LiteralValue::UInt32(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::UInt32(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            (<span class="ident">LiteralValue::UInt64</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::UInt64</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::UInt64</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            (LiteralValue::UInt64(x), LiteralValue::UInt64(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::UInt64(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
         };
     }
-    <span class="prelude-val">None</span>
+    <span class="prelude-val">None
 
-    }}
+    </span>}}
 }
 
-<span class="macro">macro_rules!</span> <span class="ident">eval_binary_bool_type</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">lhs</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span>: <span class="ident">tt</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rhs</span>:<span class="ident">expr</span>) =&gt; {{
-    <span class="kw">if</span> <span class="kw">let</span> (<span class="ident">AExpr::Literal</span>(<span class="ident">lit_left</span>), <span class="ident">AExpr::Literal</span>(<span class="ident">lit_right</span>)) <span class="op">=</span> (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">lhs</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">rhs</span>) {
-        <span class="kw">return</span> <span class="kw">match</span> (<span class="ident">lit_left</span>, <span class="ident">lit_right</span>) {
-            (<span class="ident">LiteralValue::Float32</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Float32</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+<span class="macro">macro_rules! </span>eval_binary_bool_type {
+    (<span class="macro-nonterminal">$lhs</span>:expr, <span class="macro-nonterminal">$operand</span>: tt, <span class="macro-nonterminal">$rhs</span>:expr) =&gt; {{
+    <span class="kw">if let </span>(AExpr::Literal(lit_left), AExpr::Literal(lit_right)) = (<span class="macro-nonterminal">$lhs</span>, <span class="macro-nonterminal">$rhs</span>) {
+        <span class="kw">return match </span>(lit_left, lit_right) {
+            (LiteralValue::Float32(x), LiteralValue::Float32(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            (<span class="ident">LiteralValue::Float64</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Float64</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            (LiteralValue::Float64(x), LiteralValue::Float64(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-i8&quot;</span>)]</span>
-            (<span class="ident">LiteralValue::Int8</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Int8</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-i8&quot;</span>)]
+            </span>(LiteralValue::Int8(x), LiteralValue::Int8(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-i16&quot;</span>)]</span>
-            (<span class="ident">LiteralValue::Int16</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Int16</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-i16&quot;</span>)]
+            </span>(LiteralValue::Int16(x), LiteralValue::Int16(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            (<span class="ident">LiteralValue::Int32</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Int32</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            (LiteralValue::Int32(x), LiteralValue::Int32(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            (<span class="ident">LiteralValue::Int64</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Int64</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            (LiteralValue::Int64(x), LiteralValue::Int64(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-u8&quot;</span>)]</span>
-            (<span class="ident">LiteralValue::UInt8</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::UInt8</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-u8&quot;</span>)]
+            </span>(LiteralValue::UInt8(x), LiteralValue::UInt8(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-u16&quot;</span>)]</span>
-            (<span class="ident">LiteralValue::UInt16</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::UInt16</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-u16&quot;</span>)]
+            </span>(LiteralValue::UInt16(x), LiteralValue::UInt16(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            (<span class="ident">LiteralValue::UInt32</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::UInt32</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            (LiteralValue::UInt32(x), LiteralValue::UInt32(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            (<span class="ident">LiteralValue::UInt64</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::UInt64</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            (LiteralValue::UInt64(x), LiteralValue::UInt64(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            (<span class="ident">LiteralValue::Boolean</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Boolean</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="ident">x</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">operand</span> <span class="ident">y</span>)))
+            (LiteralValue::Boolean(x), LiteralValue::Boolean(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(x <span class="macro-nonterminal">$operand </span>y)))
             }
-            <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
         };
     }
-    <span class="prelude-val">None</span>
+    <span class="prelude-val">None
 
-    }}
+    </span>}}
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SimplifyBooleanRule</span> {}
+<span class="kw">pub struct </span>SimplifyBooleanRule {}
 
-<span class="kw">impl</span> <span class="ident">OptimizationRule</span> <span class="kw">for</span> <span class="ident">SimplifyBooleanRule</span> {
-    <span class="kw">fn</span> <span class="ident">optimize_expr</span>(
+<span class="kw">impl </span>OptimizationRule <span class="kw">for </span>SimplifyBooleanRule {
+    <span class="kw">fn </span>optimize_expr(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-        <span class="ident">expr_node</span>: <span class="ident">Node</span>,
-        <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="kw">_</span>: <span class="ident">Node</span>,
-    ) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">expr</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="ident">expr_node</span>);
-        <span class="kw">match</span> <span class="ident">expr</span> {
-            <span class="comment">// true AND x =&gt; x</span>
-            <span class="ident">AExpr::BinaryExpr</span> {
-                <span class="ident">left</span>,
-                <span class="ident">op</span>: <span class="ident">Operator::And</span>,
-                <span class="ident">right</span>,
-            } <span class="kw">if</span> <span class="macro">matches!</span>(
-                <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">left</span>),
-                <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="bool-val">true</span>))
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+        expr_node: Node,
+        <span class="kw">_</span>: <span class="kw-2">&amp;</span>Arena&lt;ALogicalPlan&gt;,
+        <span class="kw">_</span>: Node,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;AExpr&gt; {
+        <span class="kw">let </span>expr = expr_arena.get(expr_node);
+        <span class="kw">match </span>expr {
+            <span class="comment">// true AND x =&gt; x
+            </span>AExpr::BinaryExpr {
+                left,
+                op: Operator::And,
+                right,
+            } <span class="kw">if </span><span class="macro">matches!</span>(
+                expr_arena.get(<span class="kw-2">*</span>left),
+                AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">true</span>))
             ) =&gt;
             {
-                <span class="prelude-val">Some</span>(<span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">right</span>).<span class="ident">clone</span>())
+                <span class="prelude-val">Some</span>(expr_arena.get(<span class="kw-2">*</span>right).clone())
             }
-            <span class="comment">// x AND true =&gt; x</span>
-            <span class="ident">AExpr::BinaryExpr</span> {
-                <span class="ident">left</span>,
-                <span class="ident">op</span>: <span class="ident">Operator::And</span>,
-                <span class="ident">right</span>,
-            } <span class="kw">if</span> <span class="macro">matches!</span>(
-                <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">right</span>),
-                <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="bool-val">true</span>))
+            <span class="comment">// x AND true =&gt; x
+            </span>AExpr::BinaryExpr {
+                left,
+                op: Operator::And,
+                right,
+            } <span class="kw">if </span><span class="macro">matches!</span>(
+                expr_arena.get(<span class="kw-2">*</span>right),
+                AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">true</span>))
             ) =&gt;
             {
-                <span class="prelude-val">Some</span>(<span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">left</span>).<span class="ident">clone</span>())
+                <span class="prelude-val">Some</span>(expr_arena.get(<span class="kw-2">*</span>left).clone())
             }
-            <span class="comment">// x AND false -&gt; false</span>
-            <span class="ident">AExpr::BinaryExpr</span> {
-                <span class="ident">op</span>: <span class="ident">Operator::And</span>,
-                <span class="ident">right</span>,
+            <span class="comment">// x AND false -&gt; false
+            </span>AExpr::BinaryExpr {
+                op: Operator::And,
+                right,
                 ..
-            } <span class="kw">if</span> <span class="macro">matches!</span>(
-                <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">right</span>),
-                <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="bool-val">false</span>))
+            } <span class="kw">if </span><span class="macro">matches!</span>(
+                expr_arena.get(<span class="kw-2">*</span>right),
+                AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">false</span>))
             ) =&gt;
             {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="bool-val">false</span>)))
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">false</span>)))
             }
-            <span class="comment">// false AND x -&gt; false</span>
-            <span class="ident">AExpr::BinaryExpr</span> {
-                <span class="ident">left</span>,
-                <span class="ident">op</span>: <span class="ident">Operator::And</span>,
+            <span class="comment">// false AND x -&gt; false
+            </span>AExpr::BinaryExpr {
+                left,
+                op: Operator::And,
                 ..
-            } <span class="kw">if</span> <span class="macro">matches!</span>(
-                <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">left</span>),
-                <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="bool-val">false</span>))
+            } <span class="kw">if </span><span class="macro">matches!</span>(
+                expr_arena.get(<span class="kw-2">*</span>left),
+                AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">false</span>))
             ) =&gt;
             {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="bool-val">false</span>)))
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">false</span>)))
             }
-            <span class="comment">// false or x =&gt; x</span>
-            <span class="ident">AExpr::BinaryExpr</span> {
-                <span class="ident">left</span>,
-                <span class="ident">op</span>: <span class="ident">Operator::Or</span>,
-                <span class="ident">right</span>,
-            } <span class="kw">if</span> <span class="macro">matches!</span>(
-                <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">left</span>),
-                <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="bool-val">false</span>))
+            <span class="comment">// false or x =&gt; x
+            </span>AExpr::BinaryExpr {
+                left,
+                op: Operator::Or,
+                right,
+            } <span class="kw">if </span><span class="macro">matches!</span>(
+                expr_arena.get(<span class="kw-2">*</span>left),
+                AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">false</span>))
             ) =&gt;
             {
-                <span class="prelude-val">Some</span>(<span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">right</span>).<span class="ident">clone</span>())
+                <span class="prelude-val">Some</span>(expr_arena.get(<span class="kw-2">*</span>right).clone())
             }
-            <span class="comment">// x or false =&gt; x</span>
-            <span class="ident">AExpr::BinaryExpr</span> {
-                <span class="ident">op</span>: <span class="ident">Operator::Or</span>,
-                <span class="ident">right</span>,
+            <span class="comment">// x or false =&gt; x
+            </span>AExpr::BinaryExpr {
+                op: Operator::Or,
+                right,
                 ..
-            } <span class="kw">if</span> <span class="macro">matches!</span>(
-                <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">right</span>),
-                <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="bool-val">false</span>))
+            } <span class="kw">if </span><span class="macro">matches!</span>(
+                expr_arena.get(<span class="kw-2">*</span>right),
+                AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">false</span>))
             ) =&gt;
             {
-                <span class="prelude-val">Some</span>(<span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">right</span>).<span class="ident">clone</span>())
+                <span class="prelude-val">Some</span>(expr_arena.get(<span class="kw-2">*</span>right).clone())
             }
 
-            <span class="comment">// false OR x =&gt; x</span>
-            <span class="ident">AExpr::BinaryExpr</span> {
-                <span class="ident">left</span>,
-                <span class="ident">op</span>: <span class="ident">Operator::Or</span>,
-                <span class="ident">right</span>,
-            } <span class="kw">if</span> <span class="macro">matches!</span>(
-                <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">left</span>),
-                <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="bool-val">false</span>))
+            <span class="comment">// false OR x =&gt; x
+            </span>AExpr::BinaryExpr {
+                left,
+                op: Operator::Or,
+                right,
+            } <span class="kw">if </span><span class="macro">matches!</span>(
+                expr_arena.get(<span class="kw-2">*</span>left),
+                AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">false</span>))
             ) =&gt;
             {
-                <span class="prelude-val">Some</span>(<span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">right</span>).<span class="ident">clone</span>())
+                <span class="prelude-val">Some</span>(expr_arena.get(<span class="kw-2">*</span>right).clone())
             }
 
-            <span class="comment">// true OR x =&gt; true</span>
-            <span class="ident">AExpr::BinaryExpr</span> {
-                <span class="ident">op</span>: <span class="ident">Operator::Or</span>,
-                <span class="ident">right</span>,
+            <span class="comment">// true OR x =&gt; true
+            </span>AExpr::BinaryExpr {
+                op: Operator::Or,
+                right,
                 ..
-            } <span class="kw">if</span> <span class="macro">matches!</span>(
-                <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">right</span>),
-                <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="bool-val">true</span>))
+            } <span class="kw">if </span><span class="macro">matches!</span>(
+                expr_arena.get(<span class="kw-2">*</span>right),
+                AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">true</span>))
             ) =&gt;
             {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="bool-val">true</span>)))
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">true</span>)))
             }
 
-            <span class="comment">// x OR true =&gt; true</span>
-            <span class="ident">AExpr::BinaryExpr</span> {
-                <span class="ident">op</span>: <span class="ident">Operator::Or</span>,
-                <span class="ident">left</span>,
+            <span class="comment">// x OR true =&gt; true
+            </span>AExpr::BinaryExpr {
+                op: Operator::Or,
+                left,
                 ..
-            } <span class="kw">if</span> <span class="macro">matches!</span>(
-                <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">left</span>),
-                <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="bool-val">true</span>))
+            } <span class="kw">if </span><span class="macro">matches!</span>(
+                expr_arena.get(<span class="kw-2">*</span>left),
+                AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">true</span>))
             ) =&gt;
             {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="bool-val">true</span>)))
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">true</span>)))
             }
-            <span class="ident">AExpr::Ternary</span> {
-                <span class="ident">truthy</span>, <span class="ident">predicate</span>, ..
-            } <span class="kw">if</span> <span class="macro">matches!</span>(
-                <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">predicate</span>),
-                <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="bool-val">true</span>))
+            AExpr::Ternary {
+                truthy, predicate, ..
+            } <span class="kw">if </span><span class="macro">matches!</span>(
+                expr_arena.get(<span class="kw-2">*</span>predicate),
+                AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">true</span>))
             ) =&gt;
             {
-                <span class="prelude-val">Some</span>(<span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">truthy</span>).<span class="ident">clone</span>())
+                <span class="prelude-val">Some</span>(expr_arena.get(<span class="kw-2">*</span>truthy).clone())
             }
-            <span class="ident">AExpr::Ternary</span> {
-                <span class="ident">truthy</span>,
-                <span class="ident">falsy</span>,
-                <span class="ident">predicate</span>,
-            } <span class="kw">if</span> <span class="macro">matches!</span>(
-                <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">predicate</span>),
-                <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="bool-val">false</span>))
+            AExpr::Ternary {
+                truthy,
+                falsy,
+                predicate,
+            } <span class="kw">if </span><span class="macro">matches!</span>(
+                expr_arena.get(<span class="kw-2">*</span>predicate),
+                AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">false</span>))
             ) =&gt;
             {
-                <span class="kw">let</span> <span class="ident">names</span> <span class="op">=</span> <span class="ident">aexpr_to_leaf_names</span>(<span class="kw-2">*</span><span class="ident">truthy</span>, <span class="ident">expr_arena</span>);
-                <span class="kw">if</span> <span class="ident">names</span>.<span class="ident">is_empty</span>() {
-                    <span class="prelude-val">None</span>
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">Some</span>(<span class="ident">AExpr::Alias</span>(<span class="kw-2">*</span><span class="ident">falsy</span>, <span class="ident">names</span>[<span class="number">0</span>].<span class="ident">clone</span>()))
+                <span class="kw">let </span>names = aexpr_to_leaf_names(<span class="kw-2">*</span>truthy, expr_arena);
+                <span class="kw">if </span>names.is_empty() {
+                    <span class="prelude-val">None
+                </span>} <span class="kw">else </span>{
+                    <span class="prelude-val">Some</span>(AExpr::Alias(<span class="kw-2">*</span>falsy, names[<span class="number">0</span>].clone()))
                 }
             }
-            <span class="ident">AExpr::Function</span> {
-                <span class="ident">input</span>,
-                <span class="ident">function</span>: <span class="ident">FunctionExpr::Not</span>,
+            AExpr::Function {
+                input,
+                function: FunctionExpr::Not,
                 ..
             } =&gt; {
-                <span class="kw">let</span> <span class="ident">y</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="ident">input</span>[<span class="number">0</span>]);
+                <span class="kw">let </span>y = expr_arena.get(input[<span class="number">0</span>]);
 
-                <span class="kw">match</span> <span class="ident">y</span> {
-                    <span class="comment">// not(not x) =&gt; x</span>
-                    <span class="ident">AExpr::Function</span> {
-                        <span class="ident">input</span>,
-                        <span class="ident">function</span>: <span class="ident">FunctionExpr::Not</span>,
+                <span class="kw">match </span>y {
+                    <span class="comment">// not(not x) =&gt; x
+                    </span>AExpr::Function {
+                        input,
+                        function: FunctionExpr::Not,
                         ..
-                    } =&gt; <span class="prelude-val">Some</span>(<span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="ident">input</span>[<span class="number">0</span>]).<span class="ident">clone</span>()),
-                    <span class="comment">// not(lit x) =&gt; !x</span>
-                    <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="ident">b</span>)) =&gt; {
-                        <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="op">!</span><span class="ident">b</span>)))
+                    } =&gt; <span class="prelude-val">Some</span>(expr_arena.get(input[<span class="number">0</span>]).clone()),
+                    <span class="comment">// not(lit x) =&gt; !x
+                    </span>AExpr::Literal(LiteralValue::Boolean(b)) =&gt; {
+                        <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(!b)))
                     }
-                    <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
+                    <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
                 }
             }
-            <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
         }
     }
 }
 
-<span class="kw">fn</span> <span class="ident">eval_bitwise</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">left</span>: <span class="kw-2">&amp;</span><span class="ident">AExpr</span>, <span class="ident">right</span>: <span class="kw-2">&amp;</span><span class="ident">AExpr</span>, <span class="ident">operation</span>: <span class="ident">F</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="ident">bool</span>, <span class="ident">bool</span>) -&gt; <span class="ident">bool</span>,
+<span class="kw">fn </span>eval_bitwise&lt;F&gt;(left: <span class="kw-2">&amp;</span>AExpr, right: <span class="kw-2">&amp;</span>AExpr, operation: F) -&gt; <span class="prelude-ty">Option</span>&lt;AExpr&gt;
+<span class="kw">where
+    </span>F: Fn(bool, bool) -&gt; bool,
 {
-    <span class="kw">if</span> <span class="kw">let</span> (<span class="ident">AExpr::Literal</span>(<span class="ident">lit_left</span>), <span class="ident">AExpr::Literal</span>(<span class="ident">lit_right</span>)) <span class="op">=</span> (<span class="ident">left</span>, <span class="ident">right</span>) {
-        <span class="kw">return</span> <span class="kw">match</span> (<span class="ident">lit_left</span>, <span class="ident">lit_right</span>) {
-            (<span class="ident">LiteralValue::Boolean</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Boolean</span>(<span class="ident">y</span>)) =&gt; {
-                <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Boolean</span>(<span class="ident">operation</span>(<span class="kw-2">*</span><span class="ident">x</span>, <span class="kw-2">*</span><span class="ident">y</span>))))
+    <span class="kw">if let </span>(AExpr::Literal(lit_left), AExpr::Literal(lit_right)) = (left, right) {
+        <span class="kw">return match </span>(lit_left, lit_right) {
+            (LiteralValue::Boolean(x), LiteralValue::Boolean(y)) =&gt; {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(operation(<span class="kw-2">*</span>x, <span class="kw-2">*</span>y))))
             }
-            <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
         };
     }
-    <span class="prelude-val">None</span>
-}
+    <span class="prelude-val">None
+</span>}
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;strings&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;concat_str&quot;</span>))]</span>
-<span class="kw">fn</span> <span class="ident">string_addition_to_linear_concat</span>(
-    <span class="ident">lp_arena</span>: <span class="kw-2">&amp;</span><span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-    <span class="ident">lp_node</span>: <span class="ident">Node</span>,
-    <span class="ident">expr_arena</span>: <span class="kw-2">&amp;</span><span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-    <span class="ident">left_ae</span>: <span class="ident">Node</span>,
-    <span class="ident">right_ae</span>: <span class="ident">Node</span>,
-    <span class="ident">left_aexpr</span>: <span class="kw-2">&amp;</span><span class="ident">AExpr</span>,
-    <span class="ident">right_aexpr</span>: <span class="kw-2">&amp;</span><span class="ident">AExpr</span>,
-) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span> {
+<span class="attribute">#[cfg(all(feature = <span class="string">&quot;strings&quot;</span>, feature = <span class="string">&quot;concat_str&quot;</span>))]
+</span><span class="kw">fn </span>string_addition_to_linear_concat(
+    lp_arena: <span class="kw-2">&amp;</span>Arena&lt;ALogicalPlan&gt;,
+    lp_node: Node,
+    expr_arena: <span class="kw-2">&amp;</span>Arena&lt;AExpr&gt;,
+    left_ae: Node,
+    right_ae: Node,
+    left_aexpr: <span class="kw-2">&amp;</span>AExpr,
+    right_aexpr: <span class="kw-2">&amp;</span>AExpr,
+) -&gt; <span class="prelude-ty">Option</span>&lt;AExpr&gt; {
     {
-        <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">lp_node</span>);
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">get_input</span>()<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">input</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
+        <span class="kw">let </span>lp = lp_arena.get(lp_node);
+        <span class="kw">let </span>input = lp.get_input()<span class="question-mark">?</span>;
+        <span class="kw">let </span>schema = lp_arena.get(input).schema(lp_arena);
 
-        <span class="kw">let</span> <span class="ident">get_type</span> <span class="op">=</span> <span class="op">|</span><span class="ident">ae</span>: <span class="kw-2">&amp;</span><span class="ident">AExpr</span><span class="op">|</span> <span class="ident">ae</span>.<span class="ident">get_type</span>(<span class="kw-2">&amp;</span><span class="ident">schema</span>, <span class="ident">Context::Default</span>, <span class="ident">expr_arena</span>).<span class="ident">ok</span>();
-        <span class="kw">let</span> <span class="ident">addition_type</span> <span class="op">=</span> <span class="ident">get_type</span>(<span class="ident">left_aexpr</span>)
-            .<span class="ident">or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">get_type</span>(<span class="ident">right_aexpr</span>))
-            .<span class="ident">unwrap</span>();
+        <span class="kw">let </span>get_type = |ae: <span class="kw-2">&amp;</span>AExpr| ae.get_type(<span class="kw-2">&amp;</span>schema, Context::Default, expr_arena).ok();
+        <span class="kw">let </span>addition_type = get_type(left_aexpr)
+            .or_else(|| get_type(right_aexpr))
+            .unwrap();
 
-        <span class="kw">if</span> <span class="ident">addition_type</span> <span class="op">==</span> <span class="ident">DataType::Utf8</span> {
-            <span class="kw">match</span> (<span class="ident">left_aexpr</span>, <span class="ident">right_aexpr</span>) {
-                <span class="comment">// concat + concat</span>
-                (
-                    <span class="ident">AExpr::Function</span> {
-                        <span class="ident">input</span>: <span class="ident">input_left</span>,
-                        <span class="ident">function</span>:
-                            <span class="kw-2">ref</span>
-                            <span class="ident">fun_l</span> @ <span class="ident">FunctionExpr::StringExpr</span>(<span class="ident">StringFunction::ConcatHorizontal</span>(<span class="ident">sep_l</span>)),
-                        <span class="ident">options</span>,
+        <span class="kw">if </span>addition_type == DataType::Utf8 {
+            <span class="kw">match </span>(left_aexpr, right_aexpr) {
+                <span class="comment">// concat + concat
+                </span>(
+                    AExpr::Function {
+                        input: input_left,
+                        function:
+                            <span class="kw-2">ref
+                            </span>fun_l @ FunctionExpr::StringExpr(StringFunction::ConcatHorizontal(sep_l)),
+                        options,
                     },
-                    <span class="ident">AExpr::Function</span> {
-                        <span class="ident">input</span>: <span class="ident">input_right</span>,
-                        <span class="ident">function</span>: <span class="ident">FunctionExpr::StringExpr</span>(<span class="ident">StringFunction::ConcatHorizontal</span>(<span class="ident">sep_r</span>)),
+                    AExpr::Function {
+                        input: input_right,
+                        function: FunctionExpr::StringExpr(StringFunction::ConcatHorizontal(sep_r)),
                         ..
                     },
                 ) =&gt; {
-                    <span class="kw">if</span> <span class="ident">sep_l</span>.<span class="ident">is_empty</span>() <span class="op">&amp;&amp;</span> <span class="ident">sep_r</span>.<span class="ident">is_empty</span>() {
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">input_left</span>.<span class="ident">len</span>() <span class="op">+</span> <span class="ident">input_right</span>.<span class="ident">len</span>());
-                        <span class="ident">input</span>.<span class="ident">extend_from_slice</span>(<span class="ident">input_left</span>);
-                        <span class="ident">input</span>.<span class="ident">extend_from_slice</span>(<span class="ident">input_right</span>);
-                        <span class="prelude-val">Some</span>(<span class="ident">AExpr::Function</span> {
-                            <span class="ident">input</span>,
-                            <span class="ident">function</span>: <span class="ident">fun_l</span>.<span class="ident">clone</span>(),
-                            <span class="ident">options</span>: <span class="kw-2">*</span><span class="ident">options</span>,
+                    <span class="kw">if </span>sep_l.is_empty() &amp;&amp; sep_r.is_empty() {
+                        <span class="kw">let </span><span class="kw-2">mut </span>input = Vec::with_capacity(input_left.len() + input_right.len());
+                        input.extend_from_slice(input_left);
+                        input.extend_from_slice(input_right);
+                        <span class="prelude-val">Some</span>(AExpr::Function {
+                            input,
+                            function: fun_l.clone(),
+                            options: <span class="kw-2">*</span>options,
                         })
-                    } <span class="kw">else</span> {
-                        <span class="prelude-val">None</span>
-                    }
+                    } <span class="kw">else </span>{
+                        <span class="prelude-val">None
+                    </span>}
                 }
-                <span class="comment">// concat + str</span>
-                (
-                    <span class="ident">AExpr::Function</span> {
-                        <span class="ident">input</span>,
-                        <span class="ident">function</span>:
-                            <span class="kw-2">ref</span> <span class="ident">fun</span> @ <span class="ident">FunctionExpr::StringExpr</span>(<span class="ident">StringFunction::ConcatHorizontal</span>(<span class="ident">sep</span>)),
-                        <span class="ident">options</span>,
+                <span class="comment">// concat + str
+                </span>(
+                    AExpr::Function {
+                        input,
+                        function:
+                            <span class="kw-2">ref </span>fun @ FunctionExpr::StringExpr(StringFunction::ConcatHorizontal(sep)),
+                        options,
                     },
                     <span class="kw">_</span>,
                 ) =&gt; {
-                    <span class="kw">if</span> <span class="ident">sep</span>.<span class="ident">is_empty</span>() {
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">clone</span>();
-                        <span class="ident">input</span>.<span class="ident">push</span>(<span class="ident">right_ae</span>);
-                        <span class="prelude-val">Some</span>(<span class="ident">AExpr::Function</span> {
-                            <span class="ident">input</span>,
-                            <span class="ident">function</span>: <span class="ident">fun</span>.<span class="ident">clone</span>(),
-                            <span class="ident">options</span>: <span class="kw-2">*</span><span class="ident">options</span>,
+                    <span class="kw">if </span>sep.is_empty() {
+                        <span class="kw">let </span><span class="kw-2">mut </span>input = input.clone();
+                        input.push(right_ae);
+                        <span class="prelude-val">Some</span>(AExpr::Function {
+                            input,
+                            function: fun.clone(),
+                            options: <span class="kw-2">*</span>options,
                         })
-                    } <span class="kw">else</span> {
-                        <span class="prelude-val">None</span>
-                    }
+                    } <span class="kw">else </span>{
+                        <span class="prelude-val">None
+                    </span>}
                 }
-                <span class="comment">// str + concat</span>
-                (
+                <span class="comment">// str + concat
+                </span>(
                     <span class="kw">_</span>,
-                    <span class="ident">AExpr::Function</span> {
-                        <span class="ident">input</span>: <span class="ident">input_right</span>,
-                        <span class="ident">function</span>:
-                            <span class="kw-2">ref</span> <span class="ident">fun</span> @ <span class="ident">FunctionExpr::StringExpr</span>(<span class="ident">StringFunction::ConcatHorizontal</span>(<span class="ident">sep</span>)),
-                        <span class="ident">options</span>,
+                    AExpr::Function {
+                        input: input_right,
+                        function:
+                            <span class="kw-2">ref </span>fun @ FunctionExpr::StringExpr(StringFunction::ConcatHorizontal(sep)),
+                        options,
                     },
                 ) =&gt; {
-                    <span class="kw">if</span> <span class="ident">sep</span>.<span class="ident">is_empty</span>() {
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="number">1</span> <span class="op">+</span> <span class="ident">input_right</span>.<span class="ident">len</span>());
-                        <span class="ident">input</span>.<span class="ident">push</span>(<span class="ident">left_ae</span>);
-                        <span class="ident">input</span>.<span class="ident">extend_from_slice</span>(<span class="ident">input_right</span>);
-                        <span class="prelude-val">Some</span>(<span class="ident">AExpr::Function</span> {
-                            <span class="ident">input</span>,
-                            <span class="ident">function</span>: <span class="ident">fun</span>.<span class="ident">clone</span>(),
-                            <span class="ident">options</span>: <span class="kw-2">*</span><span class="ident">options</span>,
+                    <span class="kw">if </span>sep.is_empty() {
+                        <span class="kw">let </span><span class="kw-2">mut </span>input = Vec::with_capacity(<span class="number">1 </span>+ input_right.len());
+                        input.push(left_ae);
+                        input.extend_from_slice(input_right);
+                        <span class="prelude-val">Some</span>(AExpr::Function {
+                            input,
+                            function: fun.clone(),
+                            options: <span class="kw-2">*</span>options,
                         })
-                    } <span class="kw">else</span> {
-                        <span class="prelude-val">None</span>
-                    }
+                    } <span class="kw">else </span>{
+                        <span class="prelude-val">None
+                    </span>}
                 }
-                <span class="kw">_</span> =&gt; <span class="prelude-val">Some</span>(<span class="ident">AExpr::Function</span> {
-                    <span class="ident">input</span>: <span class="macro">vec!</span>[<span class="ident">left_ae</span>, <span class="ident">right_ae</span>],
-                    <span class="ident">function</span>: <span class="ident">StringFunction::ConcatHorizontal</span>(<span class="string">&quot;&quot;</span>.<span class="ident">to_string</span>()).<span class="ident">into</span>(),
-                    <span class="ident">options</span>: <span class="ident">FunctionOptions</span> {
-                        <span class="ident">collect_groups</span>: <span class="ident">ApplyOptions::ApplyGroups</span>,
-                        <span class="ident">input_wildcard_expansion</span>: <span class="bool-val">true</span>,
-                        <span class="ident">auto_explode</span>: <span class="bool-val">true</span>,
-                        ..<span class="ident">Default::default</span>()
+                <span class="kw">_ </span>=&gt; <span class="prelude-val">Some</span>(AExpr::Function {
+                    input: <span class="macro">vec!</span>[left_ae, right_ae],
+                    function: StringFunction::ConcatHorizontal(<span class="string">&quot;&quot;</span>.to_string()).into(),
+                    options: FunctionOptions {
+                        collect_groups: ApplyOptions::ApplyGroups,
+                        input_wildcard_expansion: <span class="bool-val">true</span>,
+                        auto_explode: <span class="bool-val">true</span>,
+                        ..Default::default()
                     },
                 }),
             }
-        } <span class="kw">else</span> {
-            <span class="prelude-val">None</span>
-        }
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>}
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;strings&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;concat_str&quot;</span>))]</span>
-<span class="kw">fn</span> <span class="ident">is_string_concat</span>(<span class="ident">ae</span>: <span class="kw-2">&amp;</span><span class="ident">AExpr</span>) -&gt; <span class="ident">bool</span> {
-    <span class="macro">matches!</span>(<span class="ident">ae</span>, <span class="ident">AExpr::Function</span> {
-                <span class="ident">function</span>:<span class="ident">FunctionExpr::StringExpr</span>(
-                    <span class="ident">StringFunction::ConcatHorizontal</span>(<span class="ident">sep</span>),
+<span class="attribute">#[cfg(all(feature = <span class="string">&quot;strings&quot;</span>, feature = <span class="string">&quot;concat_str&quot;</span>))]
+</span><span class="kw">fn </span>is_string_concat(ae: <span class="kw-2">&amp;</span>AExpr) -&gt; bool {
+    <span class="macro">matches!</span>(ae, AExpr::Function {
+                function:FunctionExpr::StringExpr(
+                    StringFunction::ConcatHorizontal(sep),
                 ),
                 ..
-            } <span class="kw">if</span> <span class="ident">sep</span>.<span class="ident">is_empty</span>())
+            } <span class="kw">if </span>sep.is_empty())
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;strings&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;concat_str&quot;</span>))]</span>
-<span class="kw">fn</span> <span class="ident">get_string_concat_input</span>(<span class="ident">node</span>: <span class="ident">Node</span>, <span class="ident">expr_arena</span>: <span class="kw-2">&amp;</span><span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">Node</span>]<span class="op">&gt;</span> {
-    <span class="kw">match</span> <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="ident">node</span>) {
-        <span class="ident">AExpr::Function</span> {
-            <span class="ident">input</span>,
-            <span class="ident">function</span>: <span class="ident">FunctionExpr::StringExpr</span>(<span class="ident">StringFunction::ConcatHorizontal</span>(<span class="ident">sep</span>)),
+<span class="attribute">#[cfg(all(feature = <span class="string">&quot;strings&quot;</span>, feature = <span class="string">&quot;concat_str&quot;</span>))]
+</span><span class="kw">fn </span>get_string_concat_input(node: Node, expr_arena: <span class="kw-2">&amp;</span>Arena&lt;AExpr&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[Node]&gt; {
+    <span class="kw">match </span>expr_arena.get(node) {
+        AExpr::Function {
+            input,
+            function: FunctionExpr::StringExpr(StringFunction::ConcatHorizontal(sep)),
             ..
-        } <span class="kw">if</span> <span class="ident">sep</span>.<span class="ident">is_empty</span>() =&gt; <span class="prelude-val">Some</span>(<span class="ident">input</span>),
-        <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
+        } <span class="kw">if </span>sep.is_empty() =&gt; <span class="prelude-val">Some</span>(input),
+        <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SimplifyExprRule</span> {}
+<span class="kw">pub struct </span>SimplifyExprRule {}
 
-<span class="kw">impl</span> <span class="ident">OptimizationRule</span> <span class="kw">for</span> <span class="ident">SimplifyExprRule</span> {
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::float_cmp</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">optimize_expr</span>(
+<span class="kw">impl </span>OptimizationRule <span class="kw">for </span>SimplifyExprRule {
+    <span class="attribute">#[allow(clippy::float_cmp)]
+    </span><span class="kw">fn </span>optimize_expr(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-        <span class="ident">expr_node</span>: <span class="ident">Node</span>,
-        <span class="ident">_lp_arena</span>: <span class="kw-2">&amp;</span><span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="ident">_lp_node</span>: <span class="ident">Node</span>,
-    ) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">expr</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="ident">expr_node</span>);
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+        expr_node: Node,
+        _lp_arena: <span class="kw-2">&amp;</span>Arena&lt;ALogicalPlan&gt;,
+        _lp_node: Node,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;AExpr&gt; {
+        <span class="kw">let </span>expr = expr_arena.get(expr_node);
 
-        <span class="kw">match</span> <span class="ident">expr</span> {
-            <span class="comment">// lit(left) + lit(right) =&gt; lit(left + right)</span>
-            <span class="comment">// and null propagation</span>
-            <span class="ident">AExpr::BinaryExpr</span> { <span class="ident">left</span>, <span class="ident">op</span>, <span class="ident">right</span> } =&gt; {
-                <span class="kw">let</span> <span class="ident">left_aexpr</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">left</span>);
-                <span class="kw">let</span> <span class="ident">right_aexpr</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">right</span>);
+        <span class="kw">match </span>expr {
+            <span class="comment">// lit(left) + lit(right) =&gt; lit(left + right)
+            // and null propagation
+            </span>AExpr::BinaryExpr { left, op, right } =&gt; {
+                <span class="kw">let </span>left_aexpr = expr_arena.get(<span class="kw-2">*</span>left);
+                <span class="kw">let </span>right_aexpr = expr_arena.get(<span class="kw-2">*</span>right);
 
-                <span class="comment">// lit(left) + lit(right) =&gt; lit(left + right)</span>
-                <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::manual_map</span>)]</span>
-                <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">op</span> {
-                    <span class="ident">Operator::Plus</span> =&gt; <span class="kw">match</span> <span class="macro">eval_binary_same_type!</span>(<span class="ident">left_aexpr</span>, <span class="op">+</span>, <span class="ident">right_aexpr</span>) {
-                        <span class="prelude-val">Some</span>(<span class="ident">new</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">new</span>),
-                        <span class="prelude-val">None</span> =&gt; {
-                            <span class="comment">// try to replace addition of string columns with `concat_str`</span>
-                            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;strings&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;concat_str&quot;</span>))]</span>
-                            {
-                                <span class="ident">string_addition_to_linear_concat</span>(
-                                    <span class="ident">_lp_arena</span>,
-                                    <span class="ident">_lp_node</span>,
-                                    <span class="ident">expr_arena</span>,
-                                    <span class="kw-2">*</span><span class="ident">left</span>,
-                                    <span class="kw-2">*</span><span class="ident">right</span>,
-                                    <span class="ident">left_aexpr</span>,
-                                    <span class="ident">right_aexpr</span>,
+                <span class="comment">// lit(left) + lit(right) =&gt; lit(left + right)
+                </span><span class="attribute">#[allow(clippy::manual_map)]
+                </span><span class="kw">let </span>out = <span class="kw">match </span>op {
+                    Operator::Plus =&gt; <span class="kw">match </span><span class="macro">eval_binary_same_type!</span>(left_aexpr, +, right_aexpr) {
+                        <span class="prelude-val">Some</span>(new) =&gt; <span class="prelude-val">Some</span>(new),
+                        <span class="prelude-val">None </span>=&gt; {
+                            <span class="comment">// try to replace addition of string columns with `concat_str`
+                            </span><span class="attribute">#[cfg(all(feature = <span class="string">&quot;strings&quot;</span>, feature = <span class="string">&quot;concat_str&quot;</span>))]
+                            </span>{
+                                string_addition_to_linear_concat(
+                                    _lp_arena,
+                                    _lp_node,
+                                    expr_arena,
+                                    <span class="kw-2">*</span>left,
+                                    <span class="kw-2">*</span>right,
+                                    left_aexpr,
+                                    right_aexpr,
                                 )
                             }
-                            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">all</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;strings&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;concat_str&quot;</span>)))]</span>
-                            {
-                                <span class="prelude-val">None</span>
-                            }
+                            <span class="attribute">#[cfg(not(all(feature = <span class="string">&quot;strings&quot;</span>, feature = <span class="string">&quot;concat_str&quot;</span>)))]
+                            </span>{
+                                <span class="prelude-val">None
+                            </span>}
                         }
                     },
-                    <span class="ident">Operator::Minus</span> =&gt; <span class="macro">eval_binary_same_type!</span>(<span class="ident">left_aexpr</span>, <span class="op">-</span>, <span class="ident">right_aexpr</span>),
-                    <span class="ident">Operator::Multiply</span> =&gt; <span class="macro">eval_binary_same_type!</span>(<span class="ident">left_aexpr</span>, <span class="kw-2">*</span>, <span class="ident">right_aexpr</span>),
-                    <span class="ident">Operator::Divide</span> =&gt; <span class="macro">eval_binary_same_type!</span>(<span class="ident">left_aexpr</span>, <span class="op">/</span>, <span class="ident">right_aexpr</span>),
-                    <span class="ident">Operator::TrueDivide</span> =&gt; {
-                        <span class="kw">if</span> <span class="kw">let</span> (<span class="ident">AExpr::Literal</span>(<span class="ident">lit_left</span>), <span class="ident">AExpr::Literal</span>(<span class="ident">lit_right</span>)) <span class="op">=</span>
-                            (<span class="ident">left_aexpr</span>, <span class="ident">right_aexpr</span>)
+                    Operator::Minus =&gt; <span class="macro">eval_binary_same_type!</span>(left_aexpr, -, right_aexpr),
+                    Operator::Multiply =&gt; <span class="macro">eval_binary_same_type!</span>(left_aexpr, <span class="kw-2">*</span>, right_aexpr),
+                    Operator::Divide =&gt; <span class="macro">eval_binary_same_type!</span>(left_aexpr, /, right_aexpr),
+                    Operator::TrueDivide =&gt; {
+                        <span class="kw">if let </span>(AExpr::Literal(lit_left), AExpr::Literal(lit_right)) =
+                            (left_aexpr, right_aexpr)
                         {
-                            <span class="kw">return</span> <span class="kw">match</span> (<span class="ident">lit_left</span>, <span class="ident">lit_right</span>) {
-                                (<span class="ident">LiteralValue::Float32</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Float32</span>(<span class="ident">y</span>)) =&gt; {
-                                    <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float32</span>(<span class="ident">x</span> <span class="op">/</span> <span class="ident">y</span>)))
+                            <span class="kw">return match </span>(lit_left, lit_right) {
+                                (LiteralValue::Float32(x), LiteralValue::Float32(y)) =&gt; {
+                                    <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(x / y)))
                                 }
-                                (<span class="ident">LiteralValue::Float64</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Float64</span>(<span class="ident">y</span>)) =&gt; {
-                                    <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="ident">x</span> <span class="op">/</span> <span class="ident">y</span>)))
+                                (LiteralValue::Float64(x), LiteralValue::Float64(y)) =&gt; {
+                                    <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(x / y)))
                                 }
-                                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-i8&quot;</span>)]</span>
-                                (<span class="ident">LiteralValue::Int8</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Int8</span>(<span class="ident">y</span>)) =&gt; <span class="prelude-val">Some</span>(
-                                    <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="kw-2">*</span><span class="ident">x</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">/</span> <span class="kw-2">*</span><span class="ident">y</span> <span class="kw">as</span> <span class="ident">f64</span>)),
+                                <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-i8&quot;</span>)]
+                                </span>(LiteralValue::Int8(x), LiteralValue::Int8(y)) =&gt; <span class="prelude-val">Some</span>(
+                                    AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>x <span class="kw">as </span>f64 / <span class="kw-2">*</span>y <span class="kw">as </span>f64)),
                                 ),
-                                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-i16&quot;</span>)]</span>
-                                (<span class="ident">LiteralValue::Int16</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Int16</span>(<span class="ident">y</span>)) =&gt; <span class="prelude-val">Some</span>(
-                                    <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="kw-2">*</span><span class="ident">x</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">/</span> <span class="kw-2">*</span><span class="ident">y</span> <span class="kw">as</span> <span class="ident">f64</span>)),
+                                <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-i16&quot;</span>)]
+                                </span>(LiteralValue::Int16(x), LiteralValue::Int16(y)) =&gt; <span class="prelude-val">Some</span>(
+                                    AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>x <span class="kw">as </span>f64 / <span class="kw-2">*</span>y <span class="kw">as </span>f64)),
                                 ),
-                                (<span class="ident">LiteralValue::Int32</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Int32</span>(<span class="ident">y</span>)) =&gt; <span class="prelude-val">Some</span>(
-                                    <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="kw-2">*</span><span class="ident">x</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">/</span> <span class="kw-2">*</span><span class="ident">y</span> <span class="kw">as</span> <span class="ident">f64</span>)),
+                                (LiteralValue::Int32(x), LiteralValue::Int32(y)) =&gt; <span class="prelude-val">Some</span>(
+                                    AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>x <span class="kw">as </span>f64 / <span class="kw-2">*</span>y <span class="kw">as </span>f64)),
                                 ),
-                                (<span class="ident">LiteralValue::Int64</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::Int64</span>(<span class="ident">y</span>)) =&gt; <span class="prelude-val">Some</span>(
-                                    <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="kw-2">*</span><span class="ident">x</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">/</span> <span class="kw-2">*</span><span class="ident">y</span> <span class="kw">as</span> <span class="ident">f64</span>)),
+                                (LiteralValue::Int64(x), LiteralValue::Int64(y)) =&gt; <span class="prelude-val">Some</span>(
+                                    AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>x <span class="kw">as </span>f64 / <span class="kw-2">*</span>y <span class="kw">as </span>f64)),
                                 ),
-                                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-u8&quot;</span>)]</span>
-                                (<span class="ident">LiteralValue::UInt8</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::UInt8</span>(<span class="ident">y</span>)) =&gt; <span class="prelude-val">Some</span>(
-                                    <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="kw-2">*</span><span class="ident">x</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">/</span> <span class="kw-2">*</span><span class="ident">y</span> <span class="kw">as</span> <span class="ident">f64</span>)),
+                                <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-u8&quot;</span>)]
+                                </span>(LiteralValue::UInt8(x), LiteralValue::UInt8(y)) =&gt; <span class="prelude-val">Some</span>(
+                                    AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>x <span class="kw">as </span>f64 / <span class="kw-2">*</span>y <span class="kw">as </span>f64)),
                                 ),
-                                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-u16&quot;</span>)]</span>
-                                (<span class="ident">LiteralValue::UInt16</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::UInt16</span>(<span class="ident">y</span>)) =&gt; <span class="prelude-val">Some</span>(
-                                    <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="kw-2">*</span><span class="ident">x</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">/</span> <span class="kw-2">*</span><span class="ident">y</span> <span class="kw">as</span> <span class="ident">f64</span>)),
+                                <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-u16&quot;</span>)]
+                                </span>(LiteralValue::UInt16(x), LiteralValue::UInt16(y)) =&gt; <span class="prelude-val">Some</span>(
+                                    AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>x <span class="kw">as </span>f64 / <span class="kw-2">*</span>y <span class="kw">as </span>f64)),
                                 ),
-                                (<span class="ident">LiteralValue::UInt32</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::UInt32</span>(<span class="ident">y</span>)) =&gt; <span class="prelude-val">Some</span>(
-                                    <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="kw-2">*</span><span class="ident">x</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">/</span> <span class="kw-2">*</span><span class="ident">y</span> <span class="kw">as</span> <span class="ident">f64</span>)),
+                                (LiteralValue::UInt32(x), LiteralValue::UInt32(y)) =&gt; <span class="prelude-val">Some</span>(
+                                    AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>x <span class="kw">as </span>f64 / <span class="kw-2">*</span>y <span class="kw">as </span>f64)),
                                 ),
-                                (<span class="ident">LiteralValue::UInt64</span>(<span class="ident">x</span>), <span class="ident">LiteralValue::UInt64</span>(<span class="ident">y</span>)) =&gt; <span class="prelude-val">Some</span>(
-                                    <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="kw-2">*</span><span class="ident">x</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">/</span> <span class="kw-2">*</span><span class="ident">y</span> <span class="kw">as</span> <span class="ident">f64</span>)),
+                                (LiteralValue::UInt64(x), LiteralValue::UInt64(y)) =&gt; <span class="prelude-val">Some</span>(
+                                    AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>x <span class="kw">as </span>f64 / <span class="kw-2">*</span>y <span class="kw">as </span>f64)),
                                 ),
-                                <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
+                                <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
                             };
                         }
-                        <span class="prelude-val">None</span>
-                    }
-                    <span class="ident">Operator::FloorDivide</span> =&gt; <span class="prelude-val">None</span>,
-                    <span class="ident">Operator::Modulus</span> =&gt; <span class="macro">eval_binary_same_type!</span>(<span class="ident">left_aexpr</span>, <span class="op">%</span>, <span class="ident">right_aexpr</span>),
-                    <span class="ident">Operator::Lt</span> =&gt; <span class="macro">eval_binary_bool_type!</span>(<span class="ident">left_aexpr</span>, <span class="op">&lt;</span>, <span class="ident">right_aexpr</span>),
-                    <span class="ident">Operator::Gt</span> =&gt; <span class="macro">eval_binary_bool_type!</span>(<span class="ident">left_aexpr</span>, <span class="op">&gt;</span>, <span class="ident">right_aexpr</span>),
-                    <span class="ident">Operator::Eq</span> =&gt; <span class="macro">eval_binary_bool_type!</span>(<span class="ident">left_aexpr</span>, <span class="op">==</span>, <span class="ident">right_aexpr</span>),
-                    <span class="ident">Operator::NotEq</span> =&gt; <span class="macro">eval_binary_bool_type!</span>(<span class="ident">left_aexpr</span>, <span class="op">!</span><span class="op">=</span>, <span class="ident">right_aexpr</span>),
-                    <span class="ident">Operator::GtEq</span> =&gt; <span class="macro">eval_binary_bool_type!</span>(<span class="ident">left_aexpr</span>, <span class="op">&gt;</span><span class="op">=</span>, <span class="ident">right_aexpr</span>),
-                    <span class="ident">Operator::LtEq</span> =&gt; <span class="macro">eval_binary_bool_type!</span>(<span class="ident">left_aexpr</span>, <span class="op">&lt;</span><span class="op">=</span>, <span class="ident">right_aexpr</span>),
-                    <span class="ident">Operator::And</span> =&gt; <span class="ident">eval_bitwise</span>(<span class="ident">left_aexpr</span>, <span class="ident">right_aexpr</span>, <span class="op">|</span><span class="ident">l</span>, <span class="ident">r</span><span class="op">|</span> <span class="ident">l</span> <span class="op">&amp;</span> <span class="ident">r</span>),
-                    <span class="ident">Operator::Or</span> =&gt; <span class="ident">eval_bitwise</span>(<span class="ident">left_aexpr</span>, <span class="ident">right_aexpr</span>, <span class="op">|</span><span class="ident">l</span>, <span class="ident">r</span><span class="op">|</span> <span class="ident">l</span> <span class="op">|</span> <span class="ident">r</span>),
-                    <span class="ident">Operator::Xor</span> =&gt; <span class="ident">eval_bitwise</span>(<span class="ident">left_aexpr</span>, <span class="ident">right_aexpr</span>, <span class="op">|</span><span class="ident">l</span>, <span class="ident">r</span><span class="op">|</span> <span class="ident">l</span> <span class="op">^</span> <span class="ident">r</span>),
+                        <span class="prelude-val">None
+                    </span>}
+                    Operator::FloorDivide =&gt; <span class="prelude-val">None</span>,
+                    Operator::Modulus =&gt; <span class="macro">eval_binary_same_type!</span>(left_aexpr, %, right_aexpr),
+                    Operator::Lt =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, &lt;, right_aexpr),
+                    Operator::Gt =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, &gt;, right_aexpr),
+                    Operator::Eq =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, ==, right_aexpr),
+                    Operator::NotEq =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, !=, right_aexpr),
+                    Operator::GtEq =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, &gt;=, right_aexpr),
+                    Operator::LtEq =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, &lt;=, right_aexpr),
+                    Operator::And =&gt; eval_bitwise(left_aexpr, right_aexpr, |l, r| l &amp; r),
+                    Operator::Or =&gt; eval_bitwise(left_aexpr, right_aexpr, |l, r| l | r),
+                    Operator::Xor =&gt; eval_bitwise(left_aexpr, right_aexpr, |l, r| l ^ r),
                 };
-                <span class="kw">if</span> <span class="ident">out</span>.<span class="ident">is_some</span>() {
-                    <span class="kw">return</span> <span class="ident">out</span>;
+                <span class="kw">if </span>out.is_some() {
+                    <span class="kw">return </span>out;
                 }
 
-                <span class="comment">// Null propagation.</span>
-                <span class="kw">let</span> <span class="ident">left_is_null</span> <span class="op">=</span> <span class="macro">matches!</span>(<span class="ident">left_aexpr</span>, <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Null</span>));
-                <span class="kw">let</span> <span class="ident">right_is_null</span> <span class="op">=</span> <span class="macro">matches!</span>(<span class="ident">right_aexpr</span>, <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Null</span>));
-                <span class="kw">use</span> <span class="ident">Operator</span>::<span class="kw-2">*</span>;
-                <span class="kw">match</span> (<span class="ident">left_is_null</span>, <span class="ident">op</span>, <span class="ident">right_is_null</span>) {
-                    <span class="comment">// all null operation null -&gt; null</span>
-                    (<span class="bool-val">true</span>, <span class="kw">_</span>, <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Null</span>)),
-                    <span class="comment">// null == column -&gt; column.is_null()</span>
-                    (<span class="bool-val">true</span>, <span class="ident">Eq</span>, <span class="bool-val">false</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">AExpr::Function</span> {
-                        <span class="ident">input</span>: <span class="macro">vec!</span>[<span class="kw-2">*</span><span class="ident">right</span>],
-                        <span class="ident">function</span>: <span class="ident">FunctionExpr::IsNull</span>,
-                        <span class="ident">options</span>: <span class="ident">FunctionOptions</span> {
-                            <span class="ident">collect_groups</span>: <span class="ident">ApplyOptions::ApplyGroups</span>,
-                            ..<span class="ident">Default::default</span>()
+                <span class="comment">// Null propagation.
+                </span><span class="kw">let </span>left_is_null = <span class="macro">matches!</span>(left_aexpr, AExpr::Literal(LiteralValue::Null));
+                <span class="kw">let </span>right_is_null = <span class="macro">matches!</span>(right_aexpr, AExpr::Literal(LiteralValue::Null));
+                <span class="kw">use </span>Operator::<span class="kw-2">*</span>;
+                <span class="kw">match </span>(left_is_null, op, right_is_null) {
+                    <span class="comment">// all null operation null -&gt; null
+                    </span>(<span class="bool-val">true</span>, <span class="kw">_</span>, <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Null)),
+                    <span class="comment">// null == column -&gt; column.is_null()
+                    </span>(<span class="bool-val">true</span>, Eq, <span class="bool-val">false</span>) =&gt; <span class="prelude-val">Some</span>(AExpr::Function {
+                        input: <span class="macro">vec!</span>[<span class="kw-2">*</span>right],
+                        function: FunctionExpr::IsNull,
+                        options: FunctionOptions {
+                            collect_groups: ApplyOptions::ApplyGroups,
+                            ..Default::default()
                         },
                     }),
-                    <span class="comment">// column == null -&gt; column.is_null()</span>
-                    (<span class="bool-val">false</span>, <span class="ident">Eq</span>, <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">AExpr::Function</span> {
-                        <span class="ident">input</span>: <span class="macro">vec!</span>[<span class="kw-2">*</span><span class="ident">left</span>],
-                        <span class="ident">function</span>: <span class="ident">FunctionExpr::IsNull</span>,
-                        <span class="ident">options</span>: <span class="ident">FunctionOptions</span> {
-                            <span class="ident">collect_groups</span>: <span class="ident">ApplyOptions::ApplyGroups</span>,
-                            ..<span class="ident">Default::default</span>()
+                    <span class="comment">// column == null -&gt; column.is_null()
+                    </span>(<span class="bool-val">false</span>, Eq, <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Some</span>(AExpr::Function {
+                        input: <span class="macro">vec!</span>[<span class="kw-2">*</span>left],
+                        function: FunctionExpr::IsNull,
+                        options: FunctionOptions {
+                            collect_groups: ApplyOptions::ApplyGroups,
+                            ..Default::default()
                         },
                     }),
-                    <span class="comment">// null != column -&gt; column.is_not_null()</span>
-                    (<span class="bool-val">true</span>, <span class="ident">NotEq</span>, <span class="bool-val">false</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">AExpr::Function</span> {
-                        <span class="ident">input</span>: <span class="macro">vec!</span>[<span class="kw-2">*</span><span class="ident">right</span>],
-                        <span class="ident">function</span>: <span class="ident">FunctionExpr::IsNotNull</span>,
-                        <span class="ident">options</span>: <span class="ident">FunctionOptions</span> {
-                            <span class="ident">collect_groups</span>: <span class="ident">ApplyOptions::ApplyGroups</span>,
-                            ..<span class="ident">Default::default</span>()
+                    <span class="comment">// null != column -&gt; column.is_not_null()
+                    </span>(<span class="bool-val">true</span>, NotEq, <span class="bool-val">false</span>) =&gt; <span class="prelude-val">Some</span>(AExpr::Function {
+                        input: <span class="macro">vec!</span>[<span class="kw-2">*</span>right],
+                        function: FunctionExpr::IsNotNull,
+                        options: FunctionOptions {
+                            collect_groups: ApplyOptions::ApplyGroups,
+                            ..Default::default()
                         },
                     }),
-                    <span class="comment">// column != null -&gt; column.is_not_null()</span>
-                    (<span class="bool-val">false</span>, <span class="ident">NotEq</span>, <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">AExpr::Function</span> {
-                        <span class="ident">input</span>: <span class="macro">vec!</span>[<span class="kw-2">*</span><span class="ident">left</span>],
-                        <span class="ident">function</span>: <span class="ident">FunctionExpr::IsNotNull</span>,
-                        <span class="ident">options</span>: <span class="ident">FunctionOptions</span> {
-                            <span class="ident">collect_groups</span>: <span class="ident">ApplyOptions::ApplyGroups</span>,
-                            ..<span class="ident">Default::default</span>()
+                    <span class="comment">// column != null -&gt; column.is_not_null()
+                    </span>(<span class="bool-val">false</span>, NotEq, <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Some</span>(AExpr::Function {
+                        input: <span class="macro">vec!</span>[<span class="kw-2">*</span>left],
+                        function: FunctionExpr::IsNotNull,
+                        options: FunctionOptions {
+                            collect_groups: ApplyOptions::ApplyGroups,
+                            ..Default::default()
                         },
                     }),
-                    <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
+                    <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
                 }
             }
-            <span class="comment">// sort().reverse() -&gt; sort(reverse)</span>
-            <span class="comment">// sort_by().reverse() -&gt; sort_by(reverse)</span>
-            <span class="ident">AExpr::Function</span> {
-                <span class="ident">input</span>,
-                <span class="ident">function</span>: <span class="ident">FunctionExpr::Reverse</span>,
+            <span class="comment">// sort().reverse() -&gt; sort(reverse)
+            // sort_by().reverse() -&gt; sort_by(reverse)
+            </span>AExpr::Function {
+                input,
+                function: FunctionExpr::Reverse,
                 ..
             } =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="ident">input</span>[<span class="number">0</span>]);
-                <span class="kw">match</span> <span class="ident">input</span> {
-                    <span class="ident">AExpr::Sort</span> { <span class="ident">expr</span>, <span class="ident">options</span> } =&gt; {
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">options</span> <span class="op">=</span> <span class="kw-2">*</span><span class="ident">options</span>;
-                        <span class="ident">options</span>.<span class="ident">descending</span> <span class="op">=</span> <span class="op">!</span><span class="ident">options</span>.<span class="ident">descending</span>;
-                        <span class="prelude-val">Some</span>(<span class="ident">AExpr::Sort</span> {
-                            <span class="ident">expr</span>: <span class="kw-2">*</span><span class="ident">expr</span>,
-                            <span class="ident">options</span>,
+                <span class="kw">let </span>input = expr_arena.get(input[<span class="number">0</span>]);
+                <span class="kw">match </span>input {
+                    AExpr::Sort { expr, options } =&gt; {
+                        <span class="kw">let </span><span class="kw-2">mut </span>options = <span class="kw-2">*</span>options;
+                        options.descending = !options.descending;
+                        <span class="prelude-val">Some</span>(AExpr::Sort {
+                            expr: <span class="kw-2">*</span>expr,
+                            options,
                         })
                     }
-                    <span class="ident">AExpr::SortBy</span> { <span class="ident">expr</span>, <span class="ident">by</span>, <span class="ident">reverse</span> } =&gt; <span class="prelude-val">Some</span>(<span class="ident">AExpr::SortBy</span> {
-                        <span class="ident">expr</span>: <span class="kw-2">*</span><span class="ident">expr</span>,
-                        <span class="ident">by</span>: <span class="ident">by</span>.<span class="ident">clone</span>(),
-                        <span class="ident">reverse</span>: <span class="ident">reverse</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">r</span><span class="op">|</span> <span class="op">!</span><span class="kw-2">*</span><span class="ident">r</span>).<span class="ident">collect</span>(),
+                    AExpr::SortBy { expr, by, reverse } =&gt; <span class="prelude-val">Some</span>(AExpr::SortBy {
+                        expr: <span class="kw-2">*</span>expr,
+                        by: by.clone(),
+                        reverse: reverse.iter().map(|r| !<span class="kw-2">*</span>r).collect(),
                     }),
-                    <span class="comment">// TODO: add support for cumsum and other operation that allow reversing.</span>
-                    <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
+                    <span class="comment">// TODO: add support for cumsum and other operation that allow reversing.
+                    </span><span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
                 }
             }
-            <span class="ident">AExpr::Cast</span> {
-                <span class="ident">expr</span>, <span class="ident">data_type</span>, ..
+            AExpr::Cast {
+                expr, data_type, ..
             } =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">expr</span>);
-                <span class="comment">// faster casts (we only do strict casts)</span>
-                <span class="ident">inline_cast</span>(<span class="ident">input</span>, <span class="ident">data_type</span>)
+                <span class="kw">let </span>input = expr_arena.get(<span class="kw-2">*</span>expr);
+                <span class="comment">// faster casts (we only do strict casts)
+                </span>inline_cast(input, data_type)
             }
-            <span class="comment">// flatten nested concat_str calls</span>
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;strings&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;concat_str&quot;</span>))]</span>
-            <span class="ident">AExpr::Function</span> {
-                <span class="ident">input</span>,
-                <span class="ident">function</span>:
-                    <span class="kw-2">ref</span> <span class="ident">function</span> @ <span class="ident">FunctionExpr::StringExpr</span>(<span class="ident">StringFunction::ConcatHorizontal</span>(<span class="ident">sep</span>)),
-                <span class="ident">options</span>,
-            } <span class="kw">if</span> <span class="ident">sep</span>.<span class="ident">is_empty</span>() =&gt; {
-                <span class="kw">if</span> <span class="ident">input</span>
-                    .<span class="ident">iter</span>()
-                    .<span class="ident">any</span>(<span class="op">|</span><span class="ident">node</span><span class="op">|</span> <span class="ident">is_string_concat</span>(<span class="ident">expr_arena</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">node</span>)))
+            <span class="comment">// flatten nested concat_str calls
+            </span><span class="attribute">#[cfg(all(feature = <span class="string">&quot;strings&quot;</span>, feature = <span class="string">&quot;concat_str&quot;</span>))]
+            </span>AExpr::Function {
+                input,
+                function:
+                    <span class="kw-2">ref </span>function @ FunctionExpr::StringExpr(StringFunction::ConcatHorizontal(sep)),
+                options,
+            } <span class="kw">if </span>sep.is_empty() =&gt; {
+                <span class="kw">if </span>input
+                    .iter()
+                    .any(|node| is_string_concat(expr_arena.get(<span class="kw-2">*</span>node)))
                 {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_inputs</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">input</span>.<span class="ident">len</span>() <span class="op">*</span> <span class="number">2</span>);
+                    <span class="kw">let </span><span class="kw-2">mut </span>new_inputs = Vec::with_capacity(input.len() * <span class="number">2</span>);
 
-                    <span class="kw">for</span> <span class="ident">node</span> <span class="kw">in</span> <span class="ident">input</span> {
-                        <span class="kw">match</span> <span class="ident">get_string_concat_input</span>(<span class="kw-2">*</span><span class="ident">node</span>, <span class="ident">expr_arena</span>) {
-                            <span class="prelude-val">Some</span>(<span class="ident">inp</span>) =&gt; <span class="ident">new_inputs</span>.<span class="ident">extend_from_slice</span>(<span class="ident">inp</span>),
-                            <span class="prelude-val">None</span> =&gt; <span class="ident">new_inputs</span>.<span class="ident">push</span>(<span class="kw-2">*</span><span class="ident">node</span>),
+                    <span class="kw">for </span>node <span class="kw">in </span>input {
+                        <span class="kw">match </span>get_string_concat_input(<span class="kw-2">*</span>node, expr_arena) {
+                            <span class="prelude-val">Some</span>(inp) =&gt; new_inputs.extend_from_slice(inp),
+                            <span class="prelude-val">None </span>=&gt; new_inputs.push(<span class="kw-2">*</span>node),
                         }
                     }
-                    <span class="prelude-val">Some</span>(<span class="ident">AExpr::Function</span> {
-                        <span class="ident">input</span>: <span class="ident">new_inputs</span>,
-                        <span class="ident">function</span>: <span class="ident">function</span>.<span class="ident">clone</span>(),
-                        <span class="ident">options</span>: <span class="kw-2">*</span><span class="ident">options</span>,
+                    <span class="prelude-val">Some</span>(AExpr::Function {
+                        input: new_inputs,
+                        function: function.clone(),
+                        options: <span class="kw-2">*</span>options,
                     })
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">None</span>
-                }
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">None
+                </span>}
             }
 
-            <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
         }
     }
 }
 
-<span class="kw">fn</span> <span class="ident">inline_cast</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="ident">AExpr</span>, <span class="ident">dtype</span>: <span class="kw-2">&amp;</span><span class="ident">DataType</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span> {
-    <span class="kw">match</span> (<span class="ident">input</span>, <span class="ident">dtype</span>) {
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-i8&quot;</span>)]</span>
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int8</span>(<span class="ident">v</span>)), <span class="ident">DataType::Int64</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int64</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">i64</span>)))
+<span class="kw">fn </span>inline_cast(input: <span class="kw-2">&amp;</span>AExpr, dtype: <span class="kw-2">&amp;</span>DataType) -&gt; <span class="prelude-ty">Option</span>&lt;AExpr&gt; {
+    <span class="kw">match </span>(input, dtype) {
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-i8&quot;</span>)]
+        </span>(AExpr::Literal(LiteralValue::Int8(v)), DataType::Int64) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Int64(<span class="kw-2">*</span>v <span class="kw">as </span>i64)))
         }
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-i16&quot;</span>)]</span>
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int16</span>(<span class="ident">v</span>)), <span class="ident">DataType::Int64</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int64</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">i64</span>)))
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-i16&quot;</span>)]
+        </span>(AExpr::Literal(LiteralValue::Int16(v)), DataType::Int64) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Int64(<span class="kw-2">*</span>v <span class="kw">as </span>i64)))
         }
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int32</span>(<span class="ident">v</span>)), <span class="ident">DataType::Int64</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int64</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">i64</span>)))
+        (AExpr::Literal(LiteralValue::Int32(v)), DataType::Int64) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Int64(<span class="kw-2">*</span>v <span class="kw">as </span>i64)))
         }
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::UInt32</span>(<span class="ident">v</span>)), <span class="ident">DataType::Int64</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int64</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">i64</span>)))
+        (AExpr::Literal(LiteralValue::UInt32(v)), DataType::Int64) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Int64(<span class="kw-2">*</span>v <span class="kw">as </span>i64)))
         }
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float32</span>(<span class="ident">v</span>)), <span class="ident">DataType::Float64</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">f64</span>)))
-        }
-
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-i8&quot;</span>)]</span>
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int8</span>(<span class="ident">v</span>)), <span class="ident">DataType::Float64</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">f64</span>)))
-        }
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-i16&quot;</span>)]</span>
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int16</span>(<span class="ident">v</span>)), <span class="ident">DataType::Float64</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">f64</span>)))
-        }
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int32</span>(<span class="ident">v</span>)), <span class="ident">DataType::Float64</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">f64</span>)))
-        }
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int64</span>(<span class="ident">v</span>)), <span class="ident">DataType::Float64</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">f64</span>)))
-        }
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-u8&quot;</span>)]</span>
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::UInt8</span>(<span class="ident">v</span>)), <span class="ident">DataType::Float64</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">f64</span>)))
-        }
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-u16&quot;</span>)]</span>
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::UInt16</span>(<span class="ident">v</span>)), <span class="ident">DataType::Float64</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">f64</span>)))
-        }
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::UInt32</span>(<span class="ident">v</span>)), <span class="ident">DataType::Float64</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">f64</span>)))
-        }
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::UInt64</span>(<span class="ident">v</span>)), <span class="ident">DataType::Float64</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float64</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">f64</span>)))
+        (AExpr::Literal(LiteralValue::Float32(v)), DataType::Float64) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>v <span class="kw">as </span>f64)))
         }
 
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-i8&quot;</span>)]</span>
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int8</span>(<span class="ident">v</span>)), <span class="ident">DataType::Float32</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float32</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">f32</span>)))
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-i8&quot;</span>)]
+        </span>(AExpr::Literal(LiteralValue::Int8(v)), DataType::Float64) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>v <span class="kw">as </span>f64)))
         }
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-i16&quot;</span>)]</span>
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int16</span>(<span class="ident">v</span>)), <span class="ident">DataType::Float32</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float32</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">f32</span>)))
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-i16&quot;</span>)]
+        </span>(AExpr::Literal(LiteralValue::Int16(v)), DataType::Float64) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>v <span class="kw">as </span>f64)))
         }
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int32</span>(<span class="ident">v</span>)), <span class="ident">DataType::Float32</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float32</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">f32</span>)))
+        (AExpr::Literal(LiteralValue::Int32(v)), DataType::Float64) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>v <span class="kw">as </span>f64)))
         }
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int64</span>(<span class="ident">v</span>)), <span class="ident">DataType::Float32</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float32</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">f32</span>)))
+        (AExpr::Literal(LiteralValue::Int64(v)), DataType::Float64) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>v <span class="kw">as </span>f64)))
         }
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-u8&quot;</span>)]</span>
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::UInt8</span>(<span class="ident">v</span>)), <span class="ident">DataType::Float32</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float32</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">f32</span>)))
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-u8&quot;</span>)]
+        </span>(AExpr::Literal(LiteralValue::UInt8(v)), DataType::Float64) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>v <span class="kw">as </span>f64)))
         }
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-u16&quot;</span>)]</span>
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::UInt16</span>(<span class="ident">v</span>)), <span class="ident">DataType::Float32</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float32</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">f32</span>)))
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-u16&quot;</span>)]
+        </span>(AExpr::Literal(LiteralValue::UInt16(v)), DataType::Float64) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>v <span class="kw">as </span>f64)))
         }
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::UInt32</span>(<span class="ident">v</span>)), <span class="ident">DataType::Float32</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float32</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">f32</span>)))
+        (AExpr::Literal(LiteralValue::UInt32(v)), DataType::Float64) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>v <span class="kw">as </span>f64)))
         }
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::UInt64</span>(<span class="ident">v</span>)), <span class="ident">DataType::Float32</span>) =&gt; {
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Float32</span>(<span class="kw-2">*</span><span class="ident">v</span> <span class="kw">as</span> <span class="ident">f32</span>)))
+        (AExpr::Literal(LiteralValue::UInt64(v)), DataType::Float64) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>v <span class="kw">as </span>f64)))
         }
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-duration&quot;</span>)]</span>
-        (<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int64</span>(<span class="ident">v</span>)), <span class="ident">DataType::Duration</span>(<span class="ident">tu</span>)) =&gt; {
-            <span class="kw">let</span> <span class="ident">dur</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">tu</span> {
-                <span class="ident">TimeUnit::Nanoseconds</span> =&gt; <span class="ident">chrono::Duration::nanoseconds</span>(<span class="kw-2">*</span><span class="ident">v</span>),
-                <span class="ident">TimeUnit::Microseconds</span> =&gt; <span class="ident">chrono::Duration::microseconds</span>(<span class="kw-2">*</span><span class="ident">v</span>),
-                <span class="ident">TimeUnit::Milliseconds</span> =&gt; <span class="ident">chrono::Duration::milliseconds</span>(<span class="kw-2">*</span><span class="ident">v</span>),
+
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-i8&quot;</span>)]
+        </span>(AExpr::Literal(LiteralValue::Int8(v)), DataType::Float32) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(<span class="kw-2">*</span>v <span class="kw">as </span>f32)))
+        }
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-i16&quot;</span>)]
+        </span>(AExpr::Literal(LiteralValue::Int16(v)), DataType::Float32) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(<span class="kw-2">*</span>v <span class="kw">as </span>f32)))
+        }
+        (AExpr::Literal(LiteralValue::Int32(v)), DataType::Float32) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(<span class="kw-2">*</span>v <span class="kw">as </span>f32)))
+        }
+        (AExpr::Literal(LiteralValue::Int64(v)), DataType::Float32) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(<span class="kw-2">*</span>v <span class="kw">as </span>f32)))
+        }
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-u8&quot;</span>)]
+        </span>(AExpr::Literal(LiteralValue::UInt8(v)), DataType::Float32) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(<span class="kw-2">*</span>v <span class="kw">as </span>f32)))
+        }
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-u16&quot;</span>)]
+        </span>(AExpr::Literal(LiteralValue::UInt16(v)), DataType::Float32) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(<span class="kw-2">*</span>v <span class="kw">as </span>f32)))
+        }
+        (AExpr::Literal(LiteralValue::UInt32(v)), DataType::Float32) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(<span class="kw-2">*</span>v <span class="kw">as </span>f32)))
+        }
+        (AExpr::Literal(LiteralValue::UInt64(v)), DataType::Float32) =&gt; {
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(<span class="kw-2">*</span>v <span class="kw">as </span>f32)))
+        }
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-duration&quot;</span>)]
+        </span>(AExpr::Literal(LiteralValue::Int64(v)), DataType::Duration(tu)) =&gt; {
+            <span class="kw">let </span>dur = <span class="kw">match </span>tu {
+                TimeUnit::Nanoseconds =&gt; chrono::Duration::nanoseconds(<span class="kw-2">*</span>v),
+                TimeUnit::Microseconds =&gt; chrono::Duration::microseconds(<span class="kw-2">*</span>v),
+                TimeUnit::Milliseconds =&gt; chrono::Duration::milliseconds(<span class="kw-2">*</span>v),
             };
-            <span class="prelude-val">Some</span>(<span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Duration</span>(<span class="ident">dur</span>, <span class="kw-2">*</span><span class="ident">tu</span>)))
+            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Duration(dur, <span class="kw-2">*</span>tu)))
         }
-        <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
+        <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
     }
 }
 
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-i8&quot;</span>)]</span>
-<span class="kw">fn</span> <span class="ident">test_expr_to_aexp</span>() {
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[test]
+#[cfg(feature = <span class="string">&quot;dtype-i8&quot;</span>)]
+</span><span class="kw">fn </span>test_expr_to_aexp() {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="kw">let</span> <span class="ident">expr</span> <span class="op">=</span> <span class="ident">Expr::Literal</span>(<span class="ident">LiteralValue::Int8</span>(<span class="number">0</span>));
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">arena</span> <span class="op">=</span> <span class="ident">Arena::new</span>();
-    <span class="kw">let</span> <span class="ident">aexpr</span> <span class="op">=</span> <span class="ident">to_aexpr</span>(<span class="ident">expr</span>, <span class="kw-2">&amp;mut</span> <span class="ident">arena</span>);
-    <span class="macro">assert_eq!</span>(<span class="ident">aexpr</span>, <span class="ident">Node</span>(<span class="number">0</span>));
+    <span class="kw">let </span>expr = Expr::Literal(LiteralValue::Int8(<span class="number">0</span>));
+    <span class="kw">let </span><span class="kw-2">mut </span>arena = Arena::new();
+    <span class="kw">let </span>aexpr = to_aexpr(expr, <span class="kw-2">&amp;mut </span>arena);
+    <span class="macro">assert_eq!</span>(aexpr, Node(<span class="number">0</span>));
     <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-        <span class="ident">arena</span>.<span class="ident">get</span>(<span class="ident">aexpr</span>),
-        <span class="ident">AExpr::Literal</span>(<span class="ident">LiteralValue::Int8</span>(<span class="number">0</span>))
+        arena.get(aexpr),
+        AExpr::Literal(LiteralValue::Int8(<span class="number">0</span>))
     ))
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_plan" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_plan" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

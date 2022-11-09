@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.25.1/src/physical_plan/executors/groupby.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>groupby.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.25.1/src/physical_plan/executors/groupby.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>groupby.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -147,154 +147,154 @@
 <span id="147">147</span>
 <span id="148">148</span>
 <span id="149">149</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">rayon::prelude</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>rayon::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+<span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-<span class="doccomment">/// Take an input Executor and a multiple expressions</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">GroupByExec</span> {
-    <span class="ident">input</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Executor</span><span class="op">&gt;</span>,
-    <span class="ident">keys</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">aggs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">apply</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">DataFrameUdf</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">maintain_order</span>: <span class="ident">bool</span>,
-    <span class="ident">input_schema</span>: <span class="ident">SchemaRef</span>,
-    <span class="ident">slice</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">i64</span>, <span class="ident">usize</span>)<span class="op">&gt;</span>,
+<span class="doccomment">/// Take an input Executor and a multiple expressions
+</span><span class="kw">pub struct </span>GroupByExec {
+    input: Box&lt;<span class="kw">dyn </span>Executor&gt;,
+    keys: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
+    aggs: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
+    apply: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>DataFrameUdf&gt;&gt;,
+    maintain_order: bool,
+    input_schema: SchemaRef,
+    slice: <span class="prelude-ty">Option</span>&lt;(i64, usize)&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">GroupByExec</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">input</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Executor</span><span class="op">&gt;</span>,
-        <span class="ident">keys</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">aggs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">apply</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">DataFrameUdf</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">maintain_order</span>: <span class="ident">bool</span>,
-        <span class="ident">input_schema</span>: <span class="ident">SchemaRef</span>,
-        <span class="ident">slice</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">i64</span>, <span class="ident">usize</span>)<span class="op">&gt;</span>,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">input</span>,
-            <span class="ident">keys</span>,
-            <span class="ident">aggs</span>,
-            <span class="ident">apply</span>,
-            <span class="ident">maintain_order</span>,
-            <span class="ident">input_schema</span>,
-            <span class="ident">slice</span>,
+<span class="kw">impl </span>GroupByExec {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(
+        input: Box&lt;<span class="kw">dyn </span>Executor&gt;,
+        keys: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
+        aggs: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
+        apply: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>DataFrameUdf&gt;&gt;,
+        maintain_order: bool,
+        input_schema: SchemaRef,
+        slice: <span class="prelude-ty">Option</span>&lt;(i64, usize)&gt;,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            input,
+            keys,
+            aggs,
+            apply,
+            maintain_order,
+            input_schema,
+            slice,
         }
     }
 }
 
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">groupby_helper</span>(
-    <span class="kw-2">mut</span> <span class="ident">df</span>: <span class="ident">DataFrame</span>,
-    <span class="ident">keys</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span>,
-    <span class="ident">aggs</span>: <span class="kw-2">&amp;</span>[<span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span>],
-    <span class="ident">apply</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">DataFrameUdf</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">state</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ExecutionState</span>,
-    <span class="ident">maintain_order</span>: <span class="ident">bool</span>,
-    <span class="ident">slice</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">i64</span>, <span class="ident">usize</span>)<span class="op">&gt;</span>,
-) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span> {
-    <span class="ident">df</span>.<span class="ident">as_single_chunk_par</span>();
-    <span class="kw">let</span> <span class="ident">gb</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">groupby_with_series</span>(<span class="ident">keys</span>, <span class="bool-val">true</span>, <span class="ident">maintain_order</span>)<span class="question-mark">?</span>;
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>groupby_helper(
+    <span class="kw-2">mut </span>df: DataFrame,
+    keys: Vec&lt;Series&gt;,
+    aggs: <span class="kw-2">&amp;</span>[Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;],
+    apply: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>DataFrameUdf&gt;&gt;,
+    state: <span class="kw-2">&amp;mut </span>ExecutionState,
+    maintain_order: bool,
+    slice: <span class="prelude-ty">Option</span>&lt;(i64, usize)&gt;,
+) -&gt; PolarsResult&lt;DataFrame&gt; {
+    df.as_single_chunk_par();
+    <span class="kw">let </span>gb = df.groupby_with_series(keys, <span class="bool-val">true</span>, maintain_order)<span class="question-mark">?</span>;
 
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">f</span>) <span class="op">=</span> <span class="ident">apply</span> {
-        <span class="ident">state</span>.<span class="ident">clear_schema_cache</span>();
-        <span class="kw">return</span> <span class="ident">gb</span>.<span class="ident">apply</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">df</span><span class="op">|</span> <span class="ident">f</span>.<span class="ident">call_udf</span>(<span class="ident">df</span>));
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(f) = apply {
+        state.clear_schema_cache();
+        <span class="kw">return </span>gb.apply(<span class="kw">move </span>|df| f.call_udf(df));
     }
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">groups</span> <span class="op">=</span> <span class="ident">gb</span>.<span class="ident">get_groups</span>();
+    <span class="kw">let </span><span class="kw-2">mut </span>groups = gb.get_groups();
 
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_assignments</span>)]</span>
-    <span class="comment">// it is unused because we only use it to keep the lifetime of sliced_group valid</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sliced_groups</span> <span class="op">=</span> <span class="prelude-val">None</span>;
+    <span class="attribute">#[allow(unused_assignments)]
+    </span><span class="comment">// it is unused because we only use it to keep the lifetime of sliced_group valid
+    </span><span class="kw">let </span><span class="kw-2">mut </span>sliced_groups = <span class="prelude-val">None</span>;
 
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="ident">offset</span>, <span class="ident">len</span>)) <span class="op">=</span> <span class="ident">slice</span> {
-        <span class="ident">sliced_groups</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">groups</span>.<span class="ident">slice</span>(<span class="ident">offset</span>, <span class="ident">len</span>));
-        <span class="ident">groups</span> <span class="op">=</span> <span class="ident">sliced_groups</span>.<span class="ident">as_deref</span>().<span class="ident">unwrap</span>();
+    <span class="kw">if let </span><span class="prelude-val">Some</span>((offset, len)) = slice {
+        sliced_groups = <span class="prelude-val">Some</span>(groups.slice(offset, len));
+        groups = sliced_groups.as_deref().unwrap();
     }
 
-    <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">columns</span>, <span class="ident">agg_columns</span>) <span class="op">=</span> <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
-        <span class="kw">let</span> <span class="ident">get_columns</span> <span class="op">=</span> <span class="op">|</span><span class="op">|</span> <span class="ident">gb</span>.<span class="ident">keys_sliced</span>(<span class="ident">slice</span>);
+    <span class="kw">let </span>(<span class="kw-2">mut </span>columns, agg_columns) = POOL.install(|| {
+        <span class="kw">let </span>get_columns = || gb.keys_sliced(slice);
 
-        <span class="kw">let</span> <span class="ident">get_agg</span> <span class="op">=</span> <span class="op">|</span><span class="op">|</span> <span class="ident">aggs</span>
-            .<span class="ident">par_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">expr</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">agg</span> <span class="op">=</span> <span class="ident">expr</span>.<span class="ident">evaluate_on_groups</span>(<span class="kw-2">&amp;</span><span class="ident">df</span>, <span class="ident">groups</span>, <span class="ident">state</span>)<span class="question-mark">?</span>.<span class="ident">finalize</span>();
-                <span class="kw">if</span> <span class="ident">agg</span>.<span class="ident">len</span>() <span class="op">!</span><span class="op">=</span> <span class="ident">groups</span>.<span class="ident">len</span>() {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">PolarsError::ComputeError</span>(
+        <span class="kw">let </span>get_agg = || aggs
+            .par_iter()
+            .map(|expr| {
+                <span class="kw">let </span>agg = expr.evaluate_on_groups(<span class="kw-2">&amp;</span>df, groups, state)<span class="question-mark">?</span>.finalize();
+                <span class="kw">if </span>agg.len() != groups.len() {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(PolarsError::ComputeError(
                         <span class="macro">format!</span>(<span class="string">&quot;returned aggregation is a different length: {} than the group lengths: {}&quot;</span>,
-                                <span class="ident">agg</span>.<span class="ident">len</span>(),
-                                <span class="ident">groups</span>.<span class="ident">len</span>()).<span class="ident">into</span>()
+                                agg.len(),
+                                groups.len()).into()
                     ))
                 }
-                <span class="prelude-val">Ok</span>(<span class="ident">agg</span>)
+                <span class="prelude-val">Ok</span>(agg)
             })
-            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+            .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;();
 
-        <span class="ident">rayon::join</span>(<span class="ident">get_columns</span>, <span class="ident">get_agg</span>)
+        rayon::join(get_columns, get_agg)
     });
-    <span class="kw">let</span> <span class="ident">agg_columns</span> <span class="op">=</span> <span class="ident">agg_columns</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>agg_columns = agg_columns<span class="question-mark">?</span>;
 
-    <span class="ident">columns</span>.<span class="ident">extend_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">agg_columns</span>);
-    <span class="ident">state</span>.<span class="ident">clear_schema_cache</span>();
-    <span class="ident">DataFrame::new</span>(<span class="ident">columns</span>)
+    columns.extend_from_slice(<span class="kw-2">&amp;</span>agg_columns);
+    state.clear_schema_cache();
+    DataFrame::new(columns)
 }
 
-<span class="kw">impl</span> <span class="ident">GroupByExec</span> {
-    <span class="kw">fn</span> <span class="ident">execute_impl</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">state</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ExecutionState</span>,
-        <span class="ident">df</span>: <span class="ident">DataFrame</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span> {
-        <span class="ident">state</span>.<span class="ident">set_schema</span>(<span class="self">self</span>.<span class="ident">input_schema</span>.<span class="ident">clone</span>());
-        <span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">keys</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">evaluate</span>(<span class="kw-2">&amp;</span><span class="ident">df</span>, <span class="ident">state</span>))
-            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
-        <span class="ident">groupby_helper</span>(
-            <span class="ident">df</span>,
-            <span class="ident">keys</span>,
-            <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">aggs</span>,
-            <span class="self">self</span>.<span class="ident">apply</span>.<span class="ident">take</span>(),
-            <span class="ident">state</span>,
-            <span class="self">self</span>.<span class="ident">maintain_order</span>,
-            <span class="self">self</span>.<span class="ident">slice</span>,
+<span class="kw">impl </span>GroupByExec {
+    <span class="kw">fn </span>execute_impl(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        state: <span class="kw-2">&amp;mut </span>ExecutionState,
+        df: DataFrame,
+    ) -&gt; PolarsResult&lt;DataFrame&gt; {
+        state.set_schema(<span class="self">self</span>.input_schema.clone());
+        <span class="kw">let </span>keys = <span class="self">self
+            </span>.keys
+            .iter()
+            .map(|e| e.evaluate(<span class="kw-2">&amp;</span>df, state))
+            .collect::&lt;PolarsResult&lt;<span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
+        groupby_helper(
+            df,
+            keys,
+            <span class="kw-2">&amp;</span><span class="self">self</span>.aggs,
+            <span class="self">self</span>.apply.take(),
+            state,
+            <span class="self">self</span>.maintain_order,
+            <span class="self">self</span>.slice,
         )
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Executor</span> <span class="kw">for</span> <span class="ident">GroupByExec</span> {
-    <span class="kw">fn</span> <span class="ident">execute</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">state</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ExecutionState</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span> {
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">debug_assertions</span>)]</span>
-        {
-            <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">verbose</span>() {
+<span class="kw">impl </span>Executor <span class="kw">for </span>GroupByExec {
+    <span class="kw">fn </span>execute(<span class="kw-2">&amp;mut </span><span class="self">self</span>, state: <span class="kw-2">&amp;mut </span>ExecutionState) -&gt; PolarsResult&lt;DataFrame&gt; {
+        <span class="attribute">#[cfg(debug_assertions)]
+        </span>{
+            <span class="kw">if </span>state.verbose() {
                 <span class="macro">println!</span>(<span class="string">&quot;run GroupbyExec&quot;</span>)
             }
         }
-        <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">verbose</span>() {
+        <span class="kw">if </span>state.verbose() {
             <span class="macro">eprintln!</span>(<span class="string">&quot;keys/aggregates are not partitionable: running default HASH AGGREGATION&quot;</span>)
         }
-        <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">execute</span>(<span class="ident">state</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>df = <span class="self">self</span>.input.execute(state)<span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="ident">profile_name</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">has_node_timer</span>() {
-            <span class="kw">let</span> <span class="ident">by</span> <span class="op">=</span> <span class="self">self</span>
-                .<span class="ident">keys</span>
-                .<span class="ident">iter</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="prelude-val">Ok</span>(<span class="ident">s</span>.<span class="ident">to_field</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">input_schema</span>)<span class="question-mark">?</span>.<span class="ident">name</span>))
-                .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
-            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">column_delimited</span>(<span class="string">&quot;groupby&quot;</span>.<span class="ident">to_string</span>(), <span class="kw-2">&amp;</span><span class="ident">by</span>);
-            <span class="ident">Cow::Owned</span>(<span class="ident">name</span>)
-        } <span class="kw">else</span> {
-            <span class="ident">Cow::Borrowed</span>(<span class="string">&quot;&quot;</span>)
+        <span class="kw">let </span>profile_name = <span class="kw">if </span>state.has_node_timer() {
+            <span class="kw">let </span>by = <span class="self">self
+                </span>.keys
+                .iter()
+                .map(|s| <span class="prelude-val">Ok</span>(s.to_field(<span class="kw-2">&amp;</span><span class="self">self</span>.input_schema)<span class="question-mark">?</span>.name))
+                .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
+            <span class="kw">let </span>name = column_delimited(<span class="string">&quot;groupby&quot;</span>.to_string(), <span class="kw-2">&amp;</span>by);
+            Cow::Owned(name)
+        } <span class="kw">else </span>{
+            Cow::Borrowed(<span class="string">&quot;&quot;</span>)
         };
 
-        <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">has_node_timer</span>() {
-            <span class="kw">let</span> <span class="ident">new_state</span> <span class="op">=</span> <span class="ident">state</span>.<span class="ident">clone</span>();
-            <span class="ident">new_state</span>.<span class="ident">record</span>(<span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">execute_impl</span>(<span class="ident">state</span>, <span class="ident">df</span>), <span class="ident">profile_name</span>)
-        } <span class="kw">else</span> {
-            <span class="self">self</span>.<span class="ident">execute_impl</span>(<span class="ident">state</span>, <span class="ident">df</span>)
+        <span class="kw">if </span>state.has_node_timer() {
+            <span class="kw">let </span>new_state = state.clone();
+            new_state.record(|| <span class="self">self</span>.execute_impl(state, df), profile_name)
+        } <span class="kw">else </span>{
+            <span class="self">self</span>.execute_impl(state, df)
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_lazy" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_lazy" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

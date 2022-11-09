@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.25.1/src/logical_plan/iterator.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>iterator.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../polars_plan/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.25.1/src/logical_plan/iterator.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>iterator.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../polars_plan/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -345,352 +345,352 @@
 <span id="345">345</span>
 <span id="346">346</span>
 <span id="347">347</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
-<span class="macro">macro_rules!</span> <span class="ident">push_expr</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">current_expr</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">iter</span>:<span class="ident">ident</span>) =&gt; {{
-        <span class="kw">use</span> <span class="ident">Expr</span>::<span class="kw-2">*</span>;
-        <span class="kw">match</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">current_expr</span> {
-            <span class="ident">Nth</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Column</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Literal</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Wildcard</span> <span class="op">|</span> <span class="ident">Columns</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">DtypeColumn</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Count</span> =&gt; {}
-            <span class="ident">Alias</span>(<span class="ident">e</span>, <span class="kw">_</span>) =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>),
-            <span class="ident">BinaryExpr</span> { <span class="ident">left</span>, <span class="ident">op</span>: <span class="kw">_</span>, <span class="ident">right</span> } =&gt; {
-                <span class="comment">// reverse order so that left is popped first</span>
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">right</span>);
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">left</span>);
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
+<span class="macro">macro_rules! </span>push_expr {
+    (<span class="macro-nonterminal">$current_expr</span>:expr, <span class="macro-nonterminal">$push</span>:ident, <span class="macro-nonterminal">$iter</span>:ident) =&gt; {{
+        <span class="kw">use </span>Expr::<span class="kw-2">*</span>;
+        <span class="kw">match </span><span class="macro-nonterminal">$current_expr </span>{
+            Nth(<span class="kw">_</span>) | Column(<span class="kw">_</span>) | Literal(<span class="kw">_</span>) | Wildcard | Columns(<span class="kw">_</span>) | DtypeColumn(<span class="kw">_</span>) | Count =&gt; {}
+            Alias(e, <span class="kw">_</span>) =&gt; <span class="macro-nonterminal">$push</span>(e),
+            BinaryExpr { left, op: <span class="kw">_</span>, right } =&gt; {
+                <span class="comment">// reverse order so that left is popped first
+                </span><span class="macro-nonterminal">$push</span>(right);
+                <span class="macro-nonterminal">$push</span>(left);
             }
-            <span class="ident">Cast</span> { <span class="ident">expr</span>, .. } =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">expr</span>),
-            <span class="ident">Sort</span> { <span class="ident">expr</span>, .. } =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">expr</span>),
-            <span class="ident">Take</span> { <span class="ident">expr</span>, <span class="ident">idx</span> } =&gt; {
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">idx</span>);
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">expr</span>);
+            Cast { expr, .. } =&gt; <span class="macro-nonterminal">$push</span>(expr),
+            Sort { expr, .. } =&gt; <span class="macro-nonterminal">$push</span>(expr),
+            Take { expr, idx } =&gt; {
+                <span class="macro-nonterminal">$push</span>(idx);
+                <span class="macro-nonterminal">$push</span>(expr);
             }
-            <span class="ident">Filter</span> { <span class="ident">input</span>, <span class="ident">by</span> } =&gt; {
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">by</span>);
-                <span class="comment">// latest, so that it is popped first</span>
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">input</span>);
+            Filter { input, by } =&gt; {
+                <span class="macro-nonterminal">$push</span>(by);
+                <span class="comment">// latest, so that it is popped first
+                </span><span class="macro-nonterminal">$push</span>(input);
             }
-            <span class="ident">SortBy</span> { <span class="ident">expr</span>, <span class="ident">by</span>, .. } =&gt; {
-                <span class="kw">for</span> <span class="ident">e</span> <span class="kw">in</span> <span class="ident">by</span> {
-                    <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>)
+            SortBy { expr, by, .. } =&gt; {
+                <span class="kw">for </span>e <span class="kw">in </span>by {
+                    <span class="macro-nonterminal">$push</span>(e)
                 }
-                <span class="comment">// latest, so that it is popped first</span>
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">expr</span>);
+                <span class="comment">// latest, so that it is popped first
+                </span><span class="macro-nonterminal">$push</span>(expr);
             }
-            <span class="ident">Agg</span>(<span class="ident">agg_e</span>) =&gt; {
-                <span class="kw">use</span> <span class="ident">AggExpr</span>::<span class="kw-2">*</span>;
-                <span class="kw">match</span> <span class="ident">agg_e</span> {
-                    <span class="ident">Max</span> { <span class="ident">input</span>, .. } =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">input</span>),
-                    <span class="ident">Min</span> { <span class="ident">input</span>, .. } =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">input</span>),
-                    <span class="ident">Mean</span>(<span class="ident">e</span>) =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>),
-                    <span class="ident">Median</span>(<span class="ident">e</span>) =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>),
-                    <span class="ident">NUnique</span>(<span class="ident">e</span>) =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>),
-                    <span class="ident">First</span>(<span class="ident">e</span>) =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>),
-                    <span class="ident">Last</span>(<span class="ident">e</span>) =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>),
-                    <span class="ident">List</span>(<span class="ident">e</span>) =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>),
-                    <span class="ident">Count</span>(<span class="ident">e</span>) =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>),
-                    <span class="ident">Quantile</span> { <span class="ident">expr</span>, .. } =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">expr</span>),
-                    <span class="ident">Sum</span>(<span class="ident">e</span>) =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>),
-                    <span class="ident">AggGroups</span>(<span class="ident">e</span>) =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>),
-                    <span class="ident">Std</span>(<span class="ident">e</span>, <span class="kw">_</span>) =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>),
-                    <span class="ident">Var</span>(<span class="ident">e</span>, <span class="kw">_</span>) =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>),
+            Agg(agg_e) =&gt; {
+                <span class="kw">use </span>AggExpr::<span class="kw-2">*</span>;
+                <span class="kw">match </span>agg_e {
+                    Max { input, .. } =&gt; <span class="macro-nonterminal">$push</span>(input),
+                    Min { input, .. } =&gt; <span class="macro-nonterminal">$push</span>(input),
+                    Mean(e) =&gt; <span class="macro-nonterminal">$push</span>(e),
+                    Median(e) =&gt; <span class="macro-nonterminal">$push</span>(e),
+                    NUnique(e) =&gt; <span class="macro-nonterminal">$push</span>(e),
+                    First(e) =&gt; <span class="macro-nonterminal">$push</span>(e),
+                    Last(e) =&gt; <span class="macro-nonterminal">$push</span>(e),
+                    List(e) =&gt; <span class="macro-nonterminal">$push</span>(e),
+                    Count(e) =&gt; <span class="macro-nonterminal">$push</span>(e),
+                    Quantile { expr, .. } =&gt; <span class="macro-nonterminal">$push</span>(expr),
+                    Sum(e) =&gt; <span class="macro-nonterminal">$push</span>(e),
+                    AggGroups(e) =&gt; <span class="macro-nonterminal">$push</span>(e),
+                    Std(e, <span class="kw">_</span>) =&gt; <span class="macro-nonterminal">$push</span>(e),
+                    Var(e, <span class="kw">_</span>) =&gt; <span class="macro-nonterminal">$push</span>(e),
                 }
             }
-            <span class="ident">Ternary</span> {
-                <span class="ident">truthy</span>,
-                <span class="ident">falsy</span>,
-                <span class="ident">predicate</span>,
+            Ternary {
+                truthy,
+                falsy,
+                predicate,
             } =&gt; {
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">predicate</span>);
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">falsy</span>);
-                <span class="comment">// latest, so that it is popped first</span>
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">truthy</span>);
+                <span class="macro-nonterminal">$push</span>(predicate);
+                <span class="macro-nonterminal">$push</span>(falsy);
+                <span class="comment">// latest, so that it is popped first
+                </span><span class="macro-nonterminal">$push</span>(truthy);
             }
-            <span class="comment">// we iterate in reverse order, so that the lhs is popped first and will be found</span>
-            <span class="comment">// as the root columns/ input columns by `_suffix` and `_keep_name` etc.</span>
-            <span class="ident">AnonymousFunction</span> { <span class="ident">input</span>, .. } =&gt; <span class="ident">input</span>.<span class="macro-nonterminal">$</span><span class="macro-nonterminal">iter</span>().<span class="ident">rev</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>)),
-            <span class="ident">Function</span> { <span class="ident">input</span>, .. } =&gt; <span class="ident">input</span>.<span class="macro-nonterminal">$</span><span class="macro-nonterminal">iter</span>().<span class="ident">rev</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>)),
-            <span class="ident">Explode</span>(<span class="ident">e</span>) =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>),
-            <span class="ident">Window</span> {
-                <span class="ident">function</span>,
-                <span class="ident">partition_by</span>,
-                <span class="ident">order_by</span>,
+            <span class="comment">// we iterate in reverse order, so that the lhs is popped first and will be found
+            // as the root columns/ input columns by `_suffix` and `_keep_name` etc.
+            </span>AnonymousFunction { input, .. } =&gt; input.<span class="macro-nonterminal">$iter</span>().rev().for_each(|e| <span class="macro-nonterminal">$push</span>(e)),
+            Function { input, .. } =&gt; input.<span class="macro-nonterminal">$iter</span>().rev().for_each(|e| <span class="macro-nonterminal">$push</span>(e)),
+            Explode(e) =&gt; <span class="macro-nonterminal">$push</span>(e),
+            Window {
+                function,
+                partition_by,
+                order_by,
                 ..
             } =&gt; {
-                <span class="kw">for</span> <span class="ident">e</span> <span class="kw">in</span> <span class="ident">partition_by</span>.<span class="ident">into_iter</span>().<span class="ident">rev</span>() {
-                    <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>)
+                <span class="kw">for </span>e <span class="kw">in </span>partition_by.into_iter().rev() {
+                    <span class="macro-nonterminal">$push</span>(e)
                 }
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">order_by</span> {
-                    <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>);
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(e) = order_by {
+                    <span class="macro-nonterminal">$push</span>(e);
                 }
-                <span class="comment">// latest so that it is popped first</span>
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">function</span>);
+                <span class="comment">// latest so that it is popped first
+                </span><span class="macro-nonterminal">$push</span>(function);
             }
-            <span class="ident">Slice</span> {
-                <span class="ident">input</span>,
-                <span class="ident">offset</span>,
-                <span class="ident">length</span>,
+            Slice {
+                input,
+                offset,
+                length,
             } =&gt; {
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">length</span>);
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">offset</span>);
-                <span class="comment">// latest, so that it is popped first</span>
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">input</span>);
+                <span class="macro-nonterminal">$push</span>(length);
+                <span class="macro-nonterminal">$push</span>(offset);
+                <span class="comment">// latest, so that it is popped first
+                </span><span class="macro-nonterminal">$push</span>(input);
             }
-            <span class="ident">Exclude</span>(<span class="ident">e</span>, <span class="kw">_</span>) =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>),
-            <span class="ident">KeepName</span>(<span class="ident">e</span>) =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">e</span>),
-            <span class="ident">RenameAlias</span> { <span class="ident">expr</span>, .. } =&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">push</span>(<span class="ident">expr</span>),
+            Exclude(e, <span class="kw">_</span>) =&gt; <span class="macro-nonterminal">$push</span>(e),
+            KeepName(e) =&gt; <span class="macro-nonterminal">$push</span>(e),
+            RenameAlias { expr, .. } =&gt; <span class="macro-nonterminal">$push</span>(expr),
         }
     }};
 }
 
-<span class="kw">impl</span> <span class="ident">Expr</span> {
-    <span class="doccomment">/// Expr::mutate().apply(fn())</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">mutate</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">ExprMut</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">stack</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="number">8</span>);
-        <span class="ident">stack</span>.<span class="ident">push</span>(<span class="self">self</span>);
-        <span class="ident">ExprMut</span> { <span class="ident">stack</span> }
+<span class="kw">impl </span>Expr {
+    <span class="doccomment">/// Expr::mutate().apply(fn())
+    </span><span class="kw">pub fn </span>mutate(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; ExprMut {
+        <span class="kw">let </span><span class="kw-2">mut </span>stack = Vec::with_capacity(<span class="number">8</span>);
+        stack.push(<span class="self">self</span>);
+        ExprMut { stack }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ExprMut</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="ident">stack</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Expr</span><span class="op">&gt;</span>,
+<span class="kw">pub struct </span>ExprMut&lt;<span class="lifetime">&#39;a</span>&gt; {
+    stack: Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Expr&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">ExprMut</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Arguments</span>
-    <span class="doccomment">/// * `f` - A function that may mutate an expression. If the function returns `true` iteration</span>
-    <span class="doccomment">/// continues.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">apply</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">f</span>: <span class="ident">F</span>)
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;mut</span> <span class="ident">Expr</span>) -&gt; <span class="ident">bool</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; ExprMut&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="doccomment">///
+    /// # Arguments
+    /// * `f` - A function that may mutate an expression. If the function returns `true` iteration
+    /// continues.
+    </span><span class="kw">pub fn </span>apply&lt;F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>f: F)
+    <span class="kw">where
+        </span>F: FnMut(<span class="kw-2">&amp;mut </span>Expr) -&gt; bool,
     {
-        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">current_expr</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">stack</span>.<span class="ident">pop</span>() {
-            <span class="comment">// the order is important, we first modify the Expr</span>
-            <span class="comment">// before we push its children on the stack.</span>
-            <span class="comment">// The modification can make the children invalid.</span>
-            <span class="kw">if</span> <span class="op">!</span><span class="ident">f</span>(<span class="ident">current_expr</span>) {
+        <span class="kw">while let </span><span class="prelude-val">Some</span>(current_expr) = <span class="self">self</span>.stack.pop() {
+            <span class="comment">// the order is important, we first modify the Expr
+            // before we push its children on the stack.
+            // The modification can make the children invalid.
+            </span><span class="kw">if </span>!f(current_expr) {
                 <span class="kw">break</span>;
             }
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">push</span> <span class="op">=</span> <span class="op">|</span><span class="ident">e</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Expr</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">stack</span>.<span class="ident">push</span>(<span class="ident">e</span>);
-            <span class="macro">push_expr!</span>(<span class="ident">current_expr</span>, <span class="ident">push</span>, <span class="ident">iter_mut</span>);
+            <span class="kw">let </span><span class="kw-2">mut </span>push = |e: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Expr| <span class="self">self</span>.stack.push(e);
+            <span class="macro">push_expr!</span>(current_expr, push, iter_mut);
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ExprIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="ident">stack</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Expr</span><span class="op">&gt;</span>,
+<span class="kw">pub struct </span>ExprIter&lt;<span class="lifetime">&#39;a</span>&gt; {
+    stack: Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Expr&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">ExprIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Expr</span>;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Iterator <span class="kw">for </span>ExprIter&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Expr;
 
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">stack</span>.<span class="ident">pop</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">current_expr</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">push</span> <span class="op">=</span> <span class="op">|</span><span class="ident">e</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Expr</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">stack</span>.<span class="ident">push</span>(<span class="ident">e</span>);
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
+        <span class="self">self</span>.stack.pop().map(|current_expr| {
+            <span class="kw">let </span><span class="kw-2">mut </span>push = |e: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Expr| <span class="self">self</span>.stack.push(e);
 
-            <span class="macro">push_expr!</span>(<span class="ident">current_expr</span>, <span class="ident">push</span>, <span class="ident">iter</span>);
-            <span class="ident">current_expr</span>
+            <span class="macro">push_expr!</span>(current_expr, push, iter);
+            current_expr
         })
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">IntoIterator</span> <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Expr</span> {
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Expr</span>;
-    <span class="kw">type</span> <span class="ident">IntoIter</span> <span class="op">=</span> <span class="ident">ExprIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; IntoIterator <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Expr {
+    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Expr;
+    <span class="kw">type </span>IntoIter = ExprIter&lt;<span class="lifetime">&#39;a</span>&gt;;
 
-    <span class="kw">fn</span> <span class="ident">into_iter</span>(<span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::IntoIter</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">stack</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="number">8</span>);
-        <span class="ident">stack</span>.<span class="ident">push</span>(<span class="self">self</span>);
-        <span class="ident">ExprIter</span> { <span class="ident">stack</span> }
+    <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; <span class="self">Self</span>::IntoIter {
+        <span class="kw">let </span><span class="kw-2">mut </span>stack = Vec::with_capacity(<span class="number">8</span>);
+        stack.push(<span class="self">self</span>);
+        ExprIter { stack }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">AExpr</span> {
-    <span class="doccomment">/// Push nodes at this level to a pre-allocated stack</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">nodes</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">container</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">push</span> <span class="op">=</span> <span class="op">|</span><span class="ident">e</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Node</span><span class="op">|</span> <span class="ident">container</span>.<span class="ident">push</span>(<span class="kw-2">*</span><span class="ident">e</span>);
-        <span class="kw">use</span> <span class="ident">AExpr</span>::<span class="kw-2">*</span>;
+<span class="kw">impl </span>AExpr {
+    <span class="doccomment">/// Push nodes at this level to a pre-allocated stack
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>nodes&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, container: <span class="kw-2">&amp;mut </span>Vec&lt;Node&gt;) {
+        <span class="kw">let </span><span class="kw-2">mut </span>push = |e: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Node| container.push(<span class="kw-2">*</span>e);
+        <span class="kw">use </span>AExpr::<span class="kw-2">*</span>;
 
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">Nth</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Column</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Literal</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Wildcard</span> <span class="op">|</span> <span class="ident">Count</span> =&gt; {}
-            <span class="ident">Alias</span>(<span class="ident">e</span>, <span class="kw">_</span>) =&gt; <span class="ident">push</span>(<span class="ident">e</span>),
-            <span class="ident">BinaryExpr</span> { <span class="ident">left</span>, <span class="ident">op</span>: <span class="kw">_</span>, <span class="ident">right</span> } =&gt; {
-                <span class="comment">// reverse order so that left is popped first</span>
-                <span class="ident">push</span>(<span class="ident">right</span>);
-                <span class="ident">push</span>(<span class="ident">left</span>);
+        <span class="kw">match </span><span class="self">self </span>{
+            Nth(<span class="kw">_</span>) | Column(<span class="kw">_</span>) | Literal(<span class="kw">_</span>) | Wildcard | Count =&gt; {}
+            Alias(e, <span class="kw">_</span>) =&gt; push(e),
+            BinaryExpr { left, op: <span class="kw">_</span>, right } =&gt; {
+                <span class="comment">// reverse order so that left is popped first
+                </span>push(right);
+                push(left);
             }
-            <span class="ident">Cast</span> { <span class="ident">expr</span>, .. } =&gt; <span class="ident">push</span>(<span class="ident">expr</span>),
-            <span class="ident">Sort</span> { <span class="ident">expr</span>, .. } =&gt; <span class="ident">push</span>(<span class="ident">expr</span>),
-            <span class="ident">Take</span> { <span class="ident">expr</span>, <span class="ident">idx</span> } =&gt; {
-                <span class="ident">push</span>(<span class="ident">idx</span>);
-                <span class="comment">// latest, so that it is popped first</span>
-                <span class="ident">push</span>(<span class="ident">expr</span>);
+            Cast { expr, .. } =&gt; push(expr),
+            Sort { expr, .. } =&gt; push(expr),
+            Take { expr, idx } =&gt; {
+                push(idx);
+                <span class="comment">// latest, so that it is popped first
+                </span>push(expr);
             }
-            <span class="ident">SortBy</span> { <span class="ident">expr</span>, <span class="ident">by</span>, .. } =&gt; {
-                <span class="kw">for</span> <span class="ident">node</span> <span class="kw">in</span> <span class="ident">by</span> {
-                    <span class="ident">push</span>(<span class="ident">node</span>)
+            SortBy { expr, by, .. } =&gt; {
+                <span class="kw">for </span>node <span class="kw">in </span>by {
+                    push(node)
                 }
-                <span class="comment">// latest, so that it is popped first</span>
-                <span class="ident">push</span>(<span class="ident">expr</span>);
+                <span class="comment">// latest, so that it is popped first
+                </span>push(expr);
             }
-            <span class="ident">Filter</span> { <span class="ident">input</span>, <span class="ident">by</span> } =&gt; {
-                <span class="ident">push</span>(<span class="ident">by</span>);
-                <span class="comment">// latest, so that it is popped first</span>
-                <span class="ident">push</span>(<span class="ident">input</span>);
+            Filter { input, by } =&gt; {
+                push(by);
+                <span class="comment">// latest, so that it is popped first
+                </span>push(input);
             }
-            <span class="ident">Agg</span>(<span class="ident">agg_e</span>) =&gt; {
-                <span class="kw">use</span> <span class="ident">AAggExpr</span>::<span class="kw-2">*</span>;
-                <span class="kw">match</span> <span class="ident">agg_e</span> {
-                    <span class="ident">Max</span> { <span class="ident">input</span>, .. } =&gt; <span class="ident">push</span>(<span class="ident">input</span>),
-                    <span class="ident">Min</span> { <span class="ident">input</span>, .. } =&gt; <span class="ident">push</span>(<span class="ident">input</span>),
-                    <span class="ident">Mean</span>(<span class="ident">e</span>) =&gt; <span class="ident">push</span>(<span class="ident">e</span>),
-                    <span class="ident">Median</span>(<span class="ident">e</span>) =&gt; <span class="ident">push</span>(<span class="ident">e</span>),
-                    <span class="ident">NUnique</span>(<span class="ident">e</span>) =&gt; <span class="ident">push</span>(<span class="ident">e</span>),
-                    <span class="ident">First</span>(<span class="ident">e</span>) =&gt; <span class="ident">push</span>(<span class="ident">e</span>),
-                    <span class="ident">Last</span>(<span class="ident">e</span>) =&gt; <span class="ident">push</span>(<span class="ident">e</span>),
-                    <span class="ident">List</span>(<span class="ident">e</span>) =&gt; <span class="ident">push</span>(<span class="ident">e</span>),
-                    <span class="ident">Count</span>(<span class="ident">e</span>) =&gt; <span class="ident">push</span>(<span class="ident">e</span>),
-                    <span class="ident">Quantile</span> { <span class="ident">expr</span>, .. } =&gt; <span class="ident">push</span>(<span class="ident">expr</span>),
-                    <span class="ident">Sum</span>(<span class="ident">e</span>) =&gt; <span class="ident">push</span>(<span class="ident">e</span>),
-                    <span class="ident">AggGroups</span>(<span class="ident">e</span>) =&gt; <span class="ident">push</span>(<span class="ident">e</span>),
-                    <span class="ident">Std</span>(<span class="ident">e</span>, <span class="kw">_</span>) =&gt; <span class="ident">push</span>(<span class="ident">e</span>),
-                    <span class="ident">Var</span>(<span class="ident">e</span>, <span class="kw">_</span>) =&gt; <span class="ident">push</span>(<span class="ident">e</span>),
+            Agg(agg_e) =&gt; {
+                <span class="kw">use </span>AAggExpr::<span class="kw-2">*</span>;
+                <span class="kw">match </span>agg_e {
+                    Max { input, .. } =&gt; push(input),
+                    Min { input, .. } =&gt; push(input),
+                    Mean(e) =&gt; push(e),
+                    Median(e) =&gt; push(e),
+                    NUnique(e) =&gt; push(e),
+                    First(e) =&gt; push(e),
+                    Last(e) =&gt; push(e),
+                    List(e) =&gt; push(e),
+                    Count(e) =&gt; push(e),
+                    Quantile { expr, .. } =&gt; push(expr),
+                    Sum(e) =&gt; push(e),
+                    AggGroups(e) =&gt; push(e),
+                    Std(e, <span class="kw">_</span>) =&gt; push(e),
+                    Var(e, <span class="kw">_</span>) =&gt; push(e),
                 }
             }
-            <span class="ident">Ternary</span> {
-                <span class="ident">truthy</span>,
-                <span class="ident">falsy</span>,
-                <span class="ident">predicate</span>,
+            Ternary {
+                truthy,
+                falsy,
+                predicate,
             } =&gt; {
-                <span class="ident">push</span>(<span class="ident">predicate</span>);
-                <span class="ident">push</span>(<span class="ident">falsy</span>);
-                <span class="comment">// latest, so that it is popped first</span>
-                <span class="ident">push</span>(<span class="ident">truthy</span>);
+                push(predicate);
+                push(falsy);
+                <span class="comment">// latest, so that it is popped first
+                </span>push(truthy);
             }
-            <span class="ident">AnonymousFunction</span> { <span class="ident">input</span>, .. } <span class="op">|</span> <span class="ident">Function</span> { <span class="ident">input</span>, .. } =&gt;
-            <span class="comment">// we iterate in reverse order, so that the lhs is popped first and will be found</span>
-            <span class="comment">// as the root columns/ input columns by `_suffix` and `_keep_name` etc.</span>
-            {
-                <span class="ident">input</span>.<span class="ident">iter</span>().<span class="ident">rev</span>().<span class="ident">for_each</span>(<span class="ident">push</span>)
+            AnonymousFunction { input, .. } | Function { input, .. } =&gt;
+            <span class="comment">// we iterate in reverse order, so that the lhs is popped first and will be found
+            // as the root columns/ input columns by `_suffix` and `_keep_name` etc.
+            </span>{
+                input.iter().rev().for_each(push)
             }
-            <span class="ident">Explode</span>(<span class="ident">e</span>) =&gt; <span class="ident">push</span>(<span class="ident">e</span>),
-            <span class="ident">Window</span> {
-                <span class="ident">function</span>,
-                <span class="ident">partition_by</span>,
-                <span class="ident">order_by</span>,
-                <span class="ident">options</span>: <span class="kw">_</span>,
+            Explode(e) =&gt; push(e),
+            Window {
+                function,
+                partition_by,
+                order_by,
+                options: <span class="kw">_</span>,
             } =&gt; {
-                <span class="kw">for</span> <span class="ident">e</span> <span class="kw">in</span> <span class="ident">partition_by</span>.<span class="ident">iter</span>().<span class="ident">rev</span>() {
-                    <span class="ident">push</span>(<span class="ident">e</span>);
+                <span class="kw">for </span>e <span class="kw">in </span>partition_by.iter().rev() {
+                    push(e);
                 }
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">order_by</span> {
-                    <span class="ident">push</span>(<span class="ident">e</span>);
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(e) = order_by {
+                    push(e);
                 }
-                <span class="comment">// latest so that it is popped first</span>
-                <span class="ident">push</span>(<span class="ident">function</span>);
+                <span class="comment">// latest so that it is popped first
+                </span>push(function);
             }
-            <span class="ident">Slice</span> {
-                <span class="ident">input</span>,
-                <span class="ident">offset</span>,
-                <span class="ident">length</span>,
+            Slice {
+                input,
+                offset,
+                length,
             } =&gt; {
-                <span class="ident">push</span>(<span class="ident">length</span>);
-                <span class="ident">push</span>(<span class="ident">offset</span>);
-                <span class="comment">// latest so that it is popped first</span>
-                <span class="ident">push</span>(<span class="ident">input</span>);
+                push(length);
+                push(offset);
+                <span class="comment">// latest so that it is popped first
+                </span>push(input);
             }
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AExprIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="ident">stack</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
-    <span class="ident">arena</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="kw">pub struct </span>AExprIter&lt;<span class="lifetime">&#39;a</span>&gt; {
+    stack: Vec&lt;Node&gt;,
+    arena: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Arena&lt;AExpr&gt;&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">AExprIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> (<span class="ident">Node</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">AExpr</span>);
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Iterator <span class="kw">for </span>AExprIter&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">type </span>Item = (Node, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>AExpr);
 
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">stack</span>.<span class="ident">pop</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">node</span><span class="op">|</span> {
-            <span class="comment">// take the arena because the bchk doesn&#39;t allow a mutable borrow to the field.</span>
-            <span class="kw">let</span> <span class="ident">arena</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">arena</span>.<span class="ident">unwrap</span>();
-            <span class="kw">let</span> <span class="ident">current_expr</span> <span class="op">=</span> <span class="ident">arena</span>.<span class="ident">get</span>(<span class="ident">node</span>);
-            <span class="ident">current_expr</span>.<span class="ident">nodes</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">stack</span>);
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
+        <span class="self">self</span>.stack.pop().map(|node| {
+            <span class="comment">// take the arena because the bchk doesn&#39;t allow a mutable borrow to the field.
+            </span><span class="kw">let </span>arena = <span class="self">self</span>.arena.unwrap();
+            <span class="kw">let </span>current_expr = arena.get(node);
+            current_expr.nodes(<span class="kw-2">&amp;mut </span><span class="self">self</span>.stack);
 
-            <span class="self">self</span>.<span class="ident">arena</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">arena</span>);
-            (<span class="ident">node</span>, <span class="ident">current_expr</span>)
+            <span class="self">self</span>.arena = <span class="prelude-val">Some</span>(arena);
+            (node, current_expr)
         })
     }
 }
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ArenaExprIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">iter</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">root</span>: <span class="ident">Node</span>) -&gt; <span class="ident">AExprIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>;
+<span class="kw">pub trait </span>ArenaExprIter&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>, root: Node) -&gt; AExprIter&lt;<span class="lifetime">&#39;a</span>&gt;;
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">ArenaExprIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">iter</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">root</span>: <span class="ident">Node</span>) -&gt; <span class="ident">AExprIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">stack</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="number">8</span>);
-        <span class="ident">stack</span>.<span class="ident">push</span>(<span class="ident">root</span>);
-        <span class="ident">AExprIter</span> {
-            <span class="ident">stack</span>,
-            <span class="ident">arena</span>: <span class="prelude-val">Some</span>(<span class="self">self</span>),
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; ArenaExprIter&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Arena&lt;AExpr&gt; {
+    <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>, root: Node) -&gt; AExprIter&lt;<span class="lifetime">&#39;a</span>&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>stack = Vec::with_capacity(<span class="number">8</span>);
+        stack.push(root);
+        AExprIter {
+            stack,
+            arena: <span class="prelude-val">Some</span>(<span class="self">self</span>),
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AlpIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="ident">stack</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
-    <span class="ident">arena</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
+<span class="kw">pub struct </span>AlpIter&lt;<span class="lifetime">&#39;a</span>&gt; {
+    stack: Vec&lt;Node&gt;,
+    arena: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Arena&lt;ALogicalPlan&gt;,
 }
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ArenaLpIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">iter</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">root</span>: <span class="ident">Node</span>) -&gt; <span class="ident">AlpIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>;
+<span class="kw">pub trait </span>ArenaLpIter&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>, root: Node) -&gt; AlpIter&lt;<span class="lifetime">&#39;a</span>&gt;;
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">ArenaLpIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">iter</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">root</span>: <span class="ident">Node</span>) -&gt; <span class="ident">AlpIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">stack</span> <span class="op">=</span> <span class="macro">vec!</span>[<span class="ident">root</span>];
-        <span class="ident">AlpIter</span> { <span class="ident">stack</span>, <span class="ident">arena</span>: <span class="self">self</span> }
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; ArenaLpIter&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Arena&lt;ALogicalPlan&gt; {
+    <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>, root: Node) -&gt; AlpIter&lt;<span class="lifetime">&#39;a</span>&gt; {
+        <span class="kw">let </span>stack = <span class="macro">vec!</span>[root];
+        AlpIter { stack, arena: <span class="self">self </span>}
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">AlpIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> (<span class="ident">Node</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">ALogicalPlan</span>);
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Iterator <span class="kw">for </span>AlpIter&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">type </span>Item = (Node, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ALogicalPlan);
 
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">stack</span>.<span class="ident">pop</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">node</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">arena</span>.<span class="ident">get</span>(<span class="ident">node</span>);
-            <span class="ident">lp</span>.<span class="ident">copy_inputs</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">stack</span>);
-            (<span class="ident">node</span>, <span class="ident">lp</span>)
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
+        <span class="self">self</span>.stack.pop().map(|node| {
+            <span class="kw">let </span>lp = <span class="self">self</span>.arena.get(node);
+            lp.copy_inputs(<span class="kw-2">&amp;mut </span><span class="self">self</span>.stack);
+            (node, lp)
         })
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">test</span> {
-    <span class="kw">use</span> <span class="ident">polars_core::df</span>;
-    <span class="kw">use</span> <span class="ident">polars_core::prelude</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>test {
+    <span class="kw">use </span>polars_core::df;
+    <span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
 
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_lp_iter</span>() -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="macro">df!</span> {
-            <span class="string">&quot;a&quot;</span> =&gt; [<span class="number">1</span>, <span class="number">2</span>]
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_lp_iter() -&gt; PolarsResult&lt;()&gt; {
+        <span class="kw">let </span>df = <span class="macro">df! </span>{
+            <span class="string">&quot;a&quot; </span>=&gt; [<span class="number">1</span>, <span class="number">2</span>]
         }<span class="question-mark">?</span>;
 
-        <span class="kw">let</span> (<span class="ident">root</span>, <span class="ident">lp_arena</span>, <span class="ident">_expr_arena</span>) <span class="op">=</span> <span class="ident">df</span>
-            .<span class="ident">lazy</span>()
-            .<span class="ident">sort</span>(<span class="string">&quot;a&quot;</span>, <span class="ident">Default::default</span>())
-            .<span class="ident">groupby</span>([<span class="ident">col</span>(<span class="string">&quot;a&quot;</span>)])
-            .<span class="ident">agg</span>([<span class="ident">col</span>(<span class="string">&quot;a&quot;</span>).<span class="ident">first</span>()])
-            .<span class="ident">logical_plan</span>
-            .<span class="ident">into_alp</span>();
+        <span class="kw">let </span>(root, lp_arena, _expr_arena) = df
+            .lazy()
+            .sort(<span class="string">&quot;a&quot;</span>, Default::default())
+            .groupby([col(<span class="string">&quot;a&quot;</span>)])
+            .agg([col(<span class="string">&quot;a&quot;</span>).first()])
+            .logical_plan
+            .into_alp();
 
-        <span class="kw">let</span> <span class="ident">cnt</span> <span class="op">=</span> (<span class="kw-2">&amp;</span><span class="ident">lp_arena</span>).<span class="ident">iter</span>(<span class="ident">root</span>).<span class="ident">count</span>();
-        <span class="macro">assert_eq!</span>(<span class="ident">cnt</span>, <span class="number">3</span>);
+        <span class="kw">let </span>cnt = (<span class="kw-2">&amp;</span>lp_arena).iter(root).count();
+        <span class="macro">assert_eq!</span>(cnt, <span class="number">3</span>);
         <span class="prelude-val">Ok</span>(())
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="polars_plan" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="polars_plan" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

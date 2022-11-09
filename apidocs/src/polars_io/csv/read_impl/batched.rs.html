@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-io-0.25.1/src/csv/read_impl/batched.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>batched.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_io/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_io/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_io/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-io-0.25.1/src/csv/read_impl/batched.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>batched.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_io/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_io/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_io/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -206,213 +206,213 @@
 <span id="206">206</span>
 <span id="207">207</span>
 <span id="208">208</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::csv::CsvReader</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::mmap::MmapBytesReader</span>;
+</pre><pre class="rust"><code><span class="kw">use super</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::csv::CsvReader;
+<span class="kw">use </span><span class="kw">crate</span>::mmap::MmapBytesReader;
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">CoreReader</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">batched</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">_has_cat</span>: <span class="ident">bool</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">BatchedCsvReader</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">n_threads</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">n_threads</span>.<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">POOL</span>.<span class="ident">current_num_threads</span>());
-        <span class="kw">let</span> <span class="ident">reader_bytes</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">reader_bytes</span>.<span class="ident">take</span>().<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">logging</span> <span class="op">=</span> <span class="ident">std::env::var</span>(<span class="string">&quot;POLARS_VERBOSE&quot;</span>).<span class="ident">as_deref</span>().<span class="ident">unwrap_or</span>(<span class="string">&quot;0&quot;</span>) <span class="op">==</span> <span class="string">&quot;1&quot;</span>;
-        <span class="kw">let</span> (<span class="ident">file_chunks</span>, <span class="ident">chunk_size</span>, <span class="ident">_total_rows</span>, <span class="ident">starting_point_offset</span>, <span class="ident">_bytes</span>) <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">determine_file_chunks_and_statistics</span>(<span class="kw-2">&amp;mut</span> <span class="ident">n_threads</span>, <span class="kw-2">&amp;</span><span class="ident">reader_bytes</span>, <span class="ident">logging</span>, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">projection</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_projection</span>();
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; CoreReader&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">pub fn </span>batched(<span class="kw-2">mut </span><span class="self">self</span>, _has_cat: bool) -&gt; PolarsResult&lt;BatchedCsvReader&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>n_threads = <span class="self">self</span>.n_threads.unwrap_or_else(|| POOL.current_num_threads());
+        <span class="kw">let </span>reader_bytes = <span class="self">self</span>.reader_bytes.take().unwrap();
+        <span class="kw">let </span>logging = std::env::var(<span class="string">&quot;POLARS_VERBOSE&quot;</span>).as_deref().unwrap_or(<span class="string">&quot;0&quot;</span>) == <span class="string">&quot;1&quot;</span>;
+        <span class="kw">let </span>(file_chunks, chunk_size, _total_rows, starting_point_offset, _bytes) = <span class="self">self
+            </span>.determine_file_chunks_and_statistics(<span class="kw-2">&amp;mut </span>n_threads, <span class="kw-2">&amp;</span>reader_bytes, logging, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>projection = <span class="self">self</span>.get_projection();
 
-        <span class="comment">// safety</span>
-        <span class="comment">// we extend the lifetime because we are sure they are bound</span>
-        <span class="comment">// to &#39;a, as the &amp;str refer to the &amp;schema which is bound by &#39;a</span>
-        <span class="kw">let</span> <span class="ident">str_columns</span> <span class="op">=</span> <span class="kw">unsafe</span> {
-            <span class="ident">std::mem::transmute</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="self">self</span>.<span class="ident">get_string_columns</span>(<span class="kw-2">&amp;</span><span class="ident">projection</span>)<span class="question-mark">?</span>)
+        <span class="comment">// safety
+        // we extend the lifetime because we are sure they are bound
+        // to &#39;a, as the &amp;str refer to the &amp;schema which is bound by &#39;a
+        </span><span class="kw">let </span>str_columns = <span class="kw">unsafe </span>{
+            std::mem::transmute::&lt;Vec&lt;<span class="kw-2">&amp;</span>str&gt;, Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt;&gt;(<span class="self">self</span>.get_string_columns(<span class="kw-2">&amp;</span>projection)<span class="question-mark">?</span>)
         };
 
-        <span class="comment">// RAII structure that will ensure we maintain a global stringcache</span>
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-categorical&quot;</span>)]</span>
-        <span class="kw">let</span> <span class="ident">_cat_lock</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">_has_cat</span> {
-            <span class="prelude-val">Some</span>(<span class="ident">polars_core::IUseStringCache::new</span>())
-        } <span class="kw">else</span> {
-            <span class="prelude-val">None</span>
-        };
+        <span class="comment">// RAII structure that will ensure we maintain a global stringcache
+        </span><span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-categorical&quot;</span>)]
+        </span><span class="kw">let </span>_cat_lock = <span class="kw">if </span>_has_cat {
+            <span class="prelude-val">Some</span>(polars_core::IUseStringCache::new())
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>};
 
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-categorical&quot;</span>))]</span>
-        <span class="kw">let</span> <span class="ident">_cat_lock</span> <span class="op">=</span> <span class="prelude-val">None</span>;
+        <span class="attribute">#[cfg(not(feature = <span class="string">&quot;dtype-categorical&quot;</span>))]
+        </span><span class="kw">let </span>_cat_lock = <span class="prelude-val">None</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="ident">BatchedCsvReader</span> {
-            <span class="ident">reader_bytes</span>,
-            <span class="ident">chunk_size</span>,
-            <span class="ident">file_chunks</span>,
-            <span class="ident">chunk_offset</span>: <span class="number">0</span>,
-            <span class="ident">str_capacities</span>: <span class="self">self</span>.<span class="ident">init_string_size_stats</span>(<span class="kw-2">&amp;</span><span class="ident">str_columns</span>, <span class="ident">chunk_size</span>),
-            <span class="ident">str_columns</span>,
-            <span class="ident">projection</span>,
-            <span class="ident">starting_point_offset</span>,
-            <span class="ident">row_count</span>: <span class="self">self</span>.<span class="ident">row_count</span>,
-            <span class="ident">comment_char</span>: <span class="self">self</span>.<span class="ident">comment_char</span>,
-            <span class="ident">quote_char</span>: <span class="self">self</span>.<span class="ident">quote_char</span>,
-            <span class="ident">eol_char</span>: <span class="self">self</span>.<span class="ident">eol_char</span>,
-            <span class="ident">null_values</span>: <span class="self">self</span>.<span class="ident">null_values</span>,
-            <span class="ident">to_cast</span>: <span class="self">self</span>.<span class="ident">to_cast</span>,
-            <span class="ident">ignore_parser_errors</span>: <span class="self">self</span>.<span class="ident">ignore_parser_errors</span>,
-            <span class="ident">n_rows</span>: <span class="self">self</span>.<span class="ident">n_rows</span>,
-            <span class="ident">encoding</span>: <span class="self">self</span>.<span class="ident">encoding</span>,
-            <span class="ident">delimiter</span>: <span class="self">self</span>.<span class="ident">delimiter</span>,
-            <span class="ident">schema</span>: <span class="self">self</span>.<span class="ident">schema</span>,
-            <span class="ident">rows_read</span>: <span class="number">0</span>,
-            <span class="ident">_cat_lock</span>,
+        <span class="prelude-val">Ok</span>(BatchedCsvReader {
+            reader_bytes,
+            chunk_size,
+            file_chunks,
+            chunk_offset: <span class="number">0</span>,
+            str_capacities: <span class="self">self</span>.init_string_size_stats(<span class="kw-2">&amp;</span>str_columns, chunk_size),
+            str_columns,
+            projection,
+            starting_point_offset,
+            row_count: <span class="self">self</span>.row_count,
+            comment_char: <span class="self">self</span>.comment_char,
+            quote_char: <span class="self">self</span>.quote_char,
+            eol_char: <span class="self">self</span>.eol_char,
+            null_values: <span class="self">self</span>.null_values,
+            to_cast: <span class="self">self</span>.to_cast,
+            ignore_parser_errors: <span class="self">self</span>.ignore_parser_errors,
+            n_rows: <span class="self">self</span>.n_rows,
+            encoding: <span class="self">self</span>.encoding,
+            delimiter: <span class="self">self</span>.delimiter,
+            schema: <span class="self">self</span>.schema,
+            rows_read: <span class="number">0</span>,
+            _cat_lock,
         })
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BatchedCsvReader</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="ident">reader_bytes</span>: <span class="ident">ReaderBytes</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>,
-    <span class="ident">chunk_size</span>: <span class="ident">usize</span>,
-    <span class="ident">file_chunks</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">usize</span>, <span class="ident">usize</span>)<span class="op">&gt;</span>,
-    <span class="ident">chunk_offset</span>: <span class="ident">IdxSize</span>,
-    <span class="ident">str_capacities</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">RunningSize</span><span class="op">&gt;</span>,
-    <span class="ident">str_columns</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span><span class="op">&gt;</span>,
-    <span class="ident">projection</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
-    <span class="ident">starting_point_offset</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
-    <span class="ident">row_count</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">RowCount</span><span class="op">&gt;</span>,
-    <span class="ident">comment_char</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-    <span class="ident">quote_char</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-    <span class="ident">eol_char</span>: <span class="ident">u8</span>,
-    <span class="ident">null_values</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">NullValuesCompiled</span><span class="op">&gt;</span>,
-    <span class="ident">to_cast</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Field</span><span class="op">&gt;</span>,
-    <span class="ident">ignore_parser_errors</span>: <span class="ident">bool</span>,
-    <span class="ident">n_rows</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
-    <span class="ident">encoding</span>: <span class="ident">CsvEncoding</span>,
-    <span class="ident">delimiter</span>: <span class="ident">u8</span>,
-    <span class="ident">schema</span>: <span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">Schema</span><span class="op">&gt;</span>,
-    <span class="ident">rows_read</span>: <span class="ident">IdxSize</span>,
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-categorical&quot;</span>)]</span>
-    <span class="ident">_cat_lock</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">polars_core::IUseStringCache</span><span class="op">&gt;</span>,
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-categorical&quot;</span>))]</span>
-    <span class="ident">_cat_lock</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
+<span class="kw">pub struct </span>BatchedCsvReader&lt;<span class="lifetime">&#39;a</span>&gt; {
+    reader_bytes: ReaderBytes&lt;<span class="lifetime">&#39;a</span>&gt;,
+    chunk_size: usize,
+    file_chunks: Vec&lt;(usize, usize)&gt;,
+    chunk_offset: IdxSize,
+    str_capacities: Vec&lt;RunningSize&gt;,
+    str_columns: Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt;,
+    projection: Vec&lt;usize&gt;,
+    starting_point_offset: <span class="prelude-ty">Option</span>&lt;usize&gt;,
+    row_count: <span class="prelude-ty">Option</span>&lt;RowCount&gt;,
+    comment_char: <span class="prelude-ty">Option</span>&lt;u8&gt;,
+    quote_char: <span class="prelude-ty">Option</span>&lt;u8&gt;,
+    eol_char: u8,
+    null_values: <span class="prelude-ty">Option</span>&lt;NullValuesCompiled&gt;,
+    to_cast: Vec&lt;Field&gt;,
+    ignore_parser_errors: bool,
+    n_rows: <span class="prelude-ty">Option</span>&lt;usize&gt;,
+    encoding: CsvEncoding,
+    delimiter: u8,
+    schema: Cow&lt;<span class="lifetime">&#39;a</span>, Schema&gt;,
+    rows_read: IdxSize,
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-categorical&quot;</span>)]
+    </span>_cat_lock: <span class="prelude-ty">Option</span>&lt;polars_core::IUseStringCache&gt;,
+    <span class="attribute">#[cfg(not(feature = <span class="string">&quot;dtype-categorical&quot;</span>))]
+    </span>_cat_lock: <span class="prelude-ty">Option</span>&lt;u8&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">BatchedCsvReader</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">next_batches</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">n</span>: <span class="ident">usize</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">IdxSize</span>, <span class="ident">DataFrame</span>)<span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">chunk_offset</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">file_chunks</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">IdxSize</span> {
-            <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; BatchedCsvReader&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">pub fn </span>next_batches(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: usize) -&gt; PolarsResult&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;(IdxSize, DataFrame)&gt;&gt;&gt; {
+        <span class="kw">if </span><span class="self">self</span>.chunk_offset == <span class="self">self</span>.file_chunks.len() <span class="kw">as </span>IdxSize {
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
         }
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">n_rows</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">n_rows</span> {
-            <span class="kw">if</span> <span class="ident">n_rows</span> <span class="kw">as</span> <span class="ident">IdxSize</span> <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">rows_read</span> {
-                <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(n_rows) = <span class="self">self</span>.n_rows {
+            <span class="kw">if </span>n_rows <span class="kw">as </span>IdxSize &gt;= <span class="self">self</span>.rows_read {
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
             }
         }
-        <span class="kw">let</span> <span class="ident">end</span> <span class="op">=</span> <span class="ident">std::cmp::min</span>(<span class="self">self</span>.<span class="ident">chunk_offset</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">+</span> <span class="ident">n</span>, <span class="self">self</span>.<span class="ident">file_chunks</span>.<span class="ident">len</span>());
+        <span class="kw">let </span>end = std::cmp::min(<span class="self">self</span>.chunk_offset <span class="kw">as </span>usize + n, <span class="self">self</span>.file_chunks.len());
 
-        <span class="kw">let</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">file_chunks</span>[<span class="self">self</span>.<span class="ident">chunk_offset</span> <span class="kw">as</span> <span class="ident">usize</span>..<span class="ident">end</span>];
-        <span class="self">self</span>.<span class="ident">chunk_offset</span> <span class="op">=</span> <span class="ident">end</span> <span class="kw">as</span> <span class="ident">IdxSize</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">reader_bytes</span>.<span class="ident">deref</span>();
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pos</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">starting_point_offset</span> {
-            <span class="ident">bytes</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">bytes</span>[<span class="ident">pos</span>..];
+        <span class="kw">let </span>chunks = <span class="kw-2">&amp;</span><span class="self">self</span>.file_chunks[<span class="self">self</span>.chunk_offset <span class="kw">as </span>usize..end];
+        <span class="self">self</span>.chunk_offset = end <span class="kw">as </span>IdxSize;
+        <span class="kw">let </span><span class="kw-2">mut </span>bytes = <span class="self">self</span>.reader_bytes.deref();
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(pos) = <span class="self">self</span>.starting_point_offset {
+            bytes = <span class="kw-2">&amp;</span>bytes[pos..];
         }
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
-            <span class="ident">chunks</span>
-                .<span class="ident">into_par_iter</span>()
-                .<span class="ident">copied</span>()
-                .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">bytes_offset_thread</span>, <span class="ident">stop_at_nbytes</span>)<span class="op">|</span> {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">read_chunk</span>(
-                        <span class="ident">bytes</span>,
-                        <span class="self">self</span>.<span class="ident">delimiter</span>,
-                        <span class="self">self</span>.<span class="ident">schema</span>.<span class="ident">as_ref</span>(),
-                        <span class="self">self</span>.<span class="ident">ignore_parser_errors</span>,
-                        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">projection</span>,
-                        <span class="ident">bytes_offset_thread</span>,
-                        <span class="self">self</span>.<span class="ident">quote_char</span>,
-                        <span class="self">self</span>.<span class="ident">eol_char</span>,
-                        <span class="self">self</span>.<span class="ident">comment_char</span>,
-                        <span class="self">self</span>.<span class="ident">chunk_size</span>,
-                        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">str_capacities</span>,
-                        <span class="self">self</span>.<span class="ident">encoding</span>,
-                        <span class="self">self</span>.<span class="ident">null_values</span>.<span class="ident">as_ref</span>(),
-                        <span class="self">self</span>.<span class="ident">chunk_size</span>,
-                        <span class="ident">stop_at_nbytes</span>,
-                        <span class="self">self</span>.<span class="ident">starting_point_offset</span>,
+        <span class="kw">let </span><span class="kw-2">mut </span>chunks = POOL.install(|| {
+            chunks
+                .into_par_iter()
+                .copied()
+                .map(|(bytes_offset_thread, stop_at_nbytes)| {
+                    <span class="kw">let </span><span class="kw-2">mut </span>df = read_chunk(
+                        bytes,
+                        <span class="self">self</span>.delimiter,
+                        <span class="self">self</span>.schema.as_ref(),
+                        <span class="self">self</span>.ignore_parser_errors,
+                        <span class="kw-2">&amp;</span><span class="self">self</span>.projection,
+                        bytes_offset_thread,
+                        <span class="self">self</span>.quote_char,
+                        <span class="self">self</span>.eol_char,
+                        <span class="self">self</span>.comment_char,
+                        <span class="self">self</span>.chunk_size,
+                        <span class="kw-2">&amp;</span><span class="self">self</span>.str_capacities,
+                        <span class="self">self</span>.encoding,
+                        <span class="self">self</span>.null_values.as_ref(),
+                        <span class="self">self</span>.chunk_size,
+                        stop_at_nbytes,
+                        <span class="self">self</span>.starting_point_offset,
                     )<span class="question-mark">?</span>;
 
-                    <span class="ident">cast_columns</span>(<span class="kw-2">&amp;mut</span> <span class="ident">df</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">to_cast</span>, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
+                    cast_columns(<span class="kw-2">&amp;mut </span>df, <span class="kw-2">&amp;</span><span class="self">self</span>.to_cast, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
 
-                    <span class="ident">update_string_stats</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">str_capacities</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">str_columns</span>, <span class="kw-2">&amp;</span><span class="ident">df</span>)<span class="question-mark">?</span>;
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">rc</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">row_count</span> {
-                        <span class="ident">df</span>.<span class="ident">with_row_count_mut</span>(<span class="kw-2">&amp;</span><span class="ident">rc</span>.<span class="ident">name</span>, <span class="prelude-val">Some</span>(<span class="ident">rc</span>.<span class="ident">offset</span>));
+                    update_string_stats(<span class="kw-2">&amp;</span><span class="self">self</span>.str_capacities, <span class="kw-2">&amp;</span><span class="self">self</span>.str_columns, <span class="kw-2">&amp;</span>df)<span class="question-mark">?</span>;
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(rc) = <span class="kw-2">&amp;</span><span class="self">self</span>.row_count {
+                        df.with_row_count_mut(<span class="kw-2">&amp;</span>rc.name, <span class="prelude-val">Some</span>(rc.offset));
                     }
-                    <span class="kw">let</span> <span class="ident">n_read</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">height</span>() <span class="kw">as</span> <span class="ident">IdxSize</span>;
-                    <span class="prelude-val">Ok</span>((<span class="ident">df</span>, <span class="ident">n_read</span>))
+                    <span class="kw">let </span>n_read = df.height() <span class="kw">as </span>IdxSize;
+                    <span class="prelude-val">Ok</span>((df, n_read))
                 })
-                .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()
+                .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()
         })<span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">row_count</span>.<span class="ident">is_some</span>() {
-            <span class="ident">update_row_counts</span>(<span class="kw-2">&amp;mut</span> <span class="ident">chunks</span>, <span class="self">self</span>.<span class="ident">rows_read</span>)
+        <span class="kw">if </span><span class="self">self</span>.row_count.is_some() {
+            update_row_counts(<span class="kw-2">&amp;mut </span>chunks, <span class="self">self</span>.rows_read)
         }
-        <span class="self">self</span>.<span class="ident">rows_read</span> <span class="op">+</span><span class="op">=</span> <span class="ident">chunks</span>[<span class="ident">chunks</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>].<span class="number">1</span>;
+        <span class="self">self</span>.rows_read += chunks[chunks.len() - <span class="number">1</span>].<span class="number">1</span>;
         <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(
-            <span class="ident">chunks</span>
-                .<span class="ident">into_iter</span>()
-                .<span class="ident">enumerate</span>()
-                .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">i</span>, <span class="ident">t</span>)<span class="op">|</span> (<span class="ident">i</span> <span class="kw">as</span> <span class="ident">IdxSize</span> <span class="op">+</span> <span class="self">self</span>.<span class="ident">chunk_offset</span>, <span class="ident">t</span>.<span class="number">0</span>))
-                .<span class="ident">collect</span>(),
+            chunks
+                .into_iter()
+                .enumerate()
+                .map(|(i, t)| (i <span class="kw">as </span>IdxSize + <span class="self">self</span>.chunk_offset, t.<span class="number">0</span>))
+                .collect(),
         ))
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">OwnedBatchedCsvReader</span> {
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
-    <span class="comment">// this exist because we need to keep ownership</span>
-    <span class="ident">schema</span>: <span class="ident">SchemaRef</span>,
-    <span class="ident">reader</span>: <span class="kw-2">*mut</span> <span class="ident">CsvReader</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">MmapBytesReader</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">batched_reader</span>: <span class="kw-2">*mut</span> <span class="ident">BatchedCsvReader</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+<span class="kw">pub struct </span>OwnedBatchedCsvReader {
+    <span class="attribute">#[allow(dead_code)]
+    </span><span class="comment">// this exist because we need to keep ownership
+    </span>schema: SchemaRef,
+    reader: <span class="kw-2">*mut </span>CsvReader&lt;<span class="lifetime">&#39;static</span>, Box&lt;<span class="kw">dyn </span>MmapBytesReader&gt;&gt;,
+    batched_reader: <span class="kw-2">*mut </span>BatchedCsvReader&lt;<span class="lifetime">&#39;static</span>&gt;,
 }
 
-<span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">OwnedBatchedCsvReader</span> {}
-<span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Sync</span> <span class="kw">for</span> <span class="ident">OwnedBatchedCsvReader</span> {}
+<span class="kw">unsafe impl </span>Send <span class="kw">for </span>OwnedBatchedCsvReader {}
+<span class="kw">unsafe impl </span>Sync <span class="kw">for </span>OwnedBatchedCsvReader {}
 
-<span class="kw">impl</span> <span class="ident">OwnedBatchedCsvReader</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">next_batches</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">n</span>: <span class="ident">usize</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">IdxSize</span>, <span class="ident">DataFrame</span>)<span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">reader</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">batched_reader</span> };
-        <span class="ident">reader</span>.<span class="ident">next_batches</span>(<span class="ident">n</span>)
+<span class="kw">impl </span>OwnedBatchedCsvReader {
+    <span class="kw">pub fn </span>next_batches(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: usize) -&gt; PolarsResult&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;(IdxSize, DataFrame)&gt;&gt;&gt; {
+        <span class="kw">let </span>reader = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span><span class="self">self</span>.batched_reader };
+        reader.next_batches(n)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">OwnedBatchedCsvReader</span> {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="comment">// release heap allocated</span>
-        <span class="kw">unsafe</span> {
-            <span class="kw">let</span> <span class="ident">_to_drop</span> <span class="op">=</span> <span class="ident">Box::from_raw</span>(<span class="self">self</span>.<span class="ident">batched_reader</span>);
-            <span class="kw">let</span> <span class="ident">_to_drop</span> <span class="op">=</span> <span class="ident">Box::from_raw</span>(<span class="self">self</span>.<span class="ident">reader</span>);
+<span class="kw">impl </span>Drop <span class="kw">for </span>OwnedBatchedCsvReader {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="comment">// release heap allocated
+        </span><span class="kw">unsafe </span>{
+            <span class="kw">let </span>_to_drop = Box::from_raw(<span class="self">self</span>.batched_reader);
+            <span class="kw">let </span>_to_drop = Box::from_raw(<span class="self">self</span>.reader);
         };
     }
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_batched_owned</span>(
-    <span class="ident">reader</span>: <span class="ident">CsvReader</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">MmapBytesReader</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">schema</span>: <span class="ident">SchemaRef</span>,
-) -&gt; <span class="ident">OwnedBatchedCsvReader</span> {
-    <span class="comment">// make sure that the schema is bound to the schema we have</span>
-    <span class="comment">// we will keep ownership of the schema so that the lifetime remains bound to ourselves</span>
-    <span class="kw">let</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">reader</span>.<span class="ident">with_schema</span>(<span class="ident">schema</span>.<span class="ident">as_ref</span>());
-    <span class="comment">// extend the lifetime</span>
-    <span class="comment">// the lifetime was bound to schema, which we own and will store on the heap</span>
-    <span class="kw">let</span> <span class="ident">reader</span> <span class="op">=</span> <span class="kw">unsafe</span> {
-        <span class="ident">std::mem::transmute</span>::<span class="op">&lt;</span>
-            <span class="ident">CsvReader</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">MmapBytesReader</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-            <span class="ident">CsvReader</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">MmapBytesReader</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="op">&gt;</span>(<span class="ident">reader</span>)
+<span class="kw">pub fn </span>to_batched_owned(
+    reader: CsvReader&lt;<span class="lifetime">&#39;_</span>, Box&lt;<span class="kw">dyn </span>MmapBytesReader&gt;&gt;,
+    schema: SchemaRef,
+) -&gt; OwnedBatchedCsvReader {
+    <span class="comment">// make sure that the schema is bound to the schema we have
+    // we will keep ownership of the schema so that the lifetime remains bound to ourselves
+    </span><span class="kw">let </span>reader = reader.with_schema(schema.as_ref());
+    <span class="comment">// extend the lifetime
+    // the lifetime was bound to schema, which we own and will store on the heap
+    </span><span class="kw">let </span>reader = <span class="kw">unsafe </span>{
+        std::mem::transmute::&lt;
+            CsvReader&lt;<span class="lifetime">&#39;_</span>, Box&lt;<span class="kw">dyn </span>MmapBytesReader&gt;&gt;,
+            CsvReader&lt;<span class="lifetime">&#39;static</span>, Box&lt;<span class="kw">dyn </span>MmapBytesReader&gt;&gt;,
+        &gt;(reader)
     };
-    <span class="kw">let</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">Box::new</span>(<span class="ident">reader</span>);
+    <span class="kw">let </span>reader = Box::new(reader);
 
-    <span class="kw">let</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">Box::leak</span>(<span class="ident">reader</span>) <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">CsvReader</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">MmapBytesReader</span><span class="op">&gt;</span><span class="op">&gt;</span>;
-    <span class="kw">let</span> <span class="ident">batched_reader</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">Box::new</span>((<span class="kw-2">*</span><span class="ident">reader</span>).<span class="ident">batched_borrowed</span>().<span class="ident">unwrap</span>()) };
-    <span class="kw">let</span> <span class="ident">batched_reader</span> <span class="op">=</span> <span class="ident">Box::leak</span>(<span class="ident">batched_reader</span>) <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">BatchedCsvReader</span>;
+    <span class="kw">let </span>reader = Box::leak(reader) <span class="kw">as </span><span class="kw-2">*mut </span>CsvReader&lt;<span class="lifetime">&#39;static</span>, Box&lt;<span class="kw">dyn </span>MmapBytesReader&gt;&gt;;
+    <span class="kw">let </span>batched_reader = <span class="kw">unsafe </span>{ Box::new((<span class="kw-2">*</span>reader).batched_borrowed().unwrap()) };
+    <span class="kw">let </span>batched_reader = Box::leak(batched_reader) <span class="kw">as </span><span class="kw-2">*mut </span>BatchedCsvReader;
 
-    <span class="ident">OwnedBatchedCsvReader</span> {
-        <span class="ident">schema</span>,
-        <span class="ident">reader</span>,
-        <span class="ident">batched_reader</span>,
+    OwnedBatchedCsvReader {
+        schema,
+        reader,
+        batched_reader,
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_io" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_io" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

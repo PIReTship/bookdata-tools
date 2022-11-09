@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.25.1/src/physical_plan/expressions/aggregation.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>aggregation.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.25.1/src/physical_plan/expressions/aggregation.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>aggregation.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -514,521 +514,521 @@
 <span id="514">514</span>
 <span id="515">515</span>
 <span id="516">516</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::borrow::Cow</span>;
-<span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
+<span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use</span> <span class="ident">polars_arrow::export::arrow::array</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">polars_arrow::export::arrow::compute::concatenate::concatenate</span>;
-<span class="kw">use</span> <span class="ident">polars_arrow::prelude::QuantileInterpolOptions</span>;
-<span class="kw">use</span> <span class="ident">polars_arrow::utils::CustomIterTools</span>;
-<span class="kw">use</span> <span class="ident">polars_core::frame::groupby</span>::{<span class="ident">GroupByMethod</span>, <span class="ident">GroupsProxy</span>};
-<span class="kw">use</span> <span class="ident">polars_core::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">polars_core::utils::NoNull</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-struct&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident">polars_core::POOL</span>;
+<span class="kw">use </span>polars_arrow::export::arrow::array::<span class="kw-2">*</span>;
+<span class="kw">use </span>polars_arrow::export::arrow::compute::concatenate::concatenate;
+<span class="kw">use </span>polars_arrow::prelude::QuantileInterpolOptions;
+<span class="kw">use </span>polars_arrow::utils::CustomIterTools;
+<span class="kw">use </span>polars_core::frame::groupby::{GroupByMethod, GroupsProxy};
+<span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>polars_core::utils::NoNull;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-struct&quot;</span>)]
+</span><span class="kw">use </span>polars_core::POOL;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::physical_plan::state::ExecutionState</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::physical_plan::PartitionedAggregation</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::physical_plan::state::ExecutionState;
+<span class="kw">use </span><span class="kw">crate</span>::physical_plan::PartitionedAggregation;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">AggregationExpr</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">input</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">agg_type</span>: <span class="ident">GroupByMethod</span>,
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>AggregationExpr {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) input: Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) agg_type: GroupByMethod,
 }
 
-<span class="kw">impl</span> <span class="ident">AggregationExpr</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">expr</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span>, <span class="ident">agg_type</span>: <span class="ident">GroupByMethod</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">input</span>: <span class="ident">expr</span>,
-            <span class="ident">agg_type</span>,
+<span class="kw">impl </span>AggregationExpr {
+    <span class="kw">pub fn </span>new(expr: Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;, agg_type: GroupByMethod) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            input: expr,
+            agg_type,
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">PhysicalExpr</span> <span class="kw">for</span> <span class="ident">AggregationExpr</span> {
-    <span class="kw">fn</span> <span class="ident">as_expression</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Expr</span><span class="op">&gt;</span> {
-        <span class="prelude-val">None</span>
-    }
+<span class="kw">impl </span>PhysicalExpr <span class="kw">for </span>AggregationExpr {
+    <span class="kw">fn </span>as_expression(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Expr&gt; {
+        <span class="prelude-val">None
+    </span>}
 
-    <span class="kw">fn</span> <span class="ident">evaluate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">_df</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>, <span class="ident">_state</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionState</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span> {
+    <span class="kw">fn </span>evaluate(<span class="kw-2">&amp;</span><span class="self">self</span>, _df: <span class="kw-2">&amp;</span>DataFrame, _state: <span class="kw-2">&amp;</span>ExecutionState) -&gt; PolarsResult&lt;Series&gt; {
         <span class="macro">unimplemented!</span>()
     }
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::ptr_arg</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">evaluate_on_groups</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
+    <span class="attribute">#[allow(clippy::ptr_arg)]
+    </span><span class="kw">fn </span>evaluate_on_groups&lt;<span class="lifetime">&#39;a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">df</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-        <span class="ident">groups</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">GroupsProxy</span>,
-        <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionState</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">AggregationContext</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ac</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">evaluate_on_groups</span>(<span class="ident">df</span>, <span class="ident">groups</span>, <span class="ident">state</span>)<span class="question-mark">?</span>;
-        <span class="comment">// don&#39;t change names by aggregations as is done in polars-core</span>
-        <span class="kw">let</span> <span class="ident">keep_name</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">series</span>().<span class="ident">name</span>().<span class="ident">to_string</span>();
+        df: <span class="kw-2">&amp;</span>DataFrame,
+        groups: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GroupsProxy,
+        state: <span class="kw-2">&amp;</span>ExecutionState,
+    ) -&gt; PolarsResult&lt;AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>ac = <span class="self">self</span>.input.evaluate_on_groups(df, groups, state)<span class="question-mark">?</span>;
+        <span class="comment">// don&#39;t change names by aggregations as is done in polars-core
+        </span><span class="kw">let </span>keep_name = ac.series().name().to_string();
 
-        <span class="kw">let</span> <span class="ident">check_flat</span> <span class="op">=</span> <span class="op">|</span><span class="op">|</span> {
-            <span class="kw">if</span> <span class="macro">matches!</span>(<span class="ident">ac</span>.<span class="ident">agg_state</span>(), <span class="ident">AggState::AggregatedFlat</span>(<span class="kw">_</span>)) {
-                <span class="prelude-val">Err</span>(<span class="ident">PolarsError::ComputeError</span>(
+        <span class="kw">let </span>check_flat = || {
+            <span class="kw">if </span><span class="macro">matches!</span>(ac.agg_state(), AggState::AggregatedFlat(<span class="kw">_</span>)) {
+                <span class="prelude-val">Err</span>(PolarsError::ComputeError(
                     <span class="macro">format!</span>(
                         <span class="string">&quot;Cannot aggregate as {}. The column is already aggregated.&quot;</span>,
-                        <span class="self">self</span>.<span class="ident">agg_type</span>
+                        <span class="self">self</span>.agg_type
                     )
-                    .<span class="ident">into</span>(),
+                    .into(),
                 ))
-            } <span class="kw">else</span> {
+            } <span class="kw">else </span>{
                 <span class="prelude-val">Ok</span>(())
             }
         };
 
-        <span class="comment">// Safety:</span>
-        <span class="comment">// groups must always be in bounds.</span>
-        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="kw">unsafe</span> {
-            <span class="kw">match</span> <span class="self">self</span>.<span class="ident">agg_type</span> {
-                <span class="ident">GroupByMethod::Min</span> =&gt; {
-                    <span class="ident">check_flat</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="ident">agg_s</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">flat_naive</span>().<span class="ident">into_owned</span>().<span class="ident">agg_min</span>(<span class="ident">ac</span>.<span class="ident">groups</span>());
-                    <span class="ident">rename_series</span>(<span class="ident">agg_s</span>, <span class="kw-2">&amp;</span><span class="ident">keep_name</span>)
+        <span class="comment">// Safety:
+        // groups must always be in bounds.
+        </span><span class="kw">let </span>out = <span class="kw">unsafe </span>{
+            <span class="kw">match </span><span class="self">self</span>.agg_type {
+                GroupByMethod::Min =&gt; {
+                    check_flat()<span class="question-mark">?</span>;
+                    <span class="kw">let </span>agg_s = ac.flat_naive().into_owned().agg_min(ac.groups());
+                    rename_series(agg_s, <span class="kw-2">&amp;</span>keep_name)
                 }
-                <span class="ident">GroupByMethod::Max</span> =&gt; {
-                    <span class="ident">check_flat</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="ident">agg_s</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">flat_naive</span>().<span class="ident">into_owned</span>().<span class="ident">agg_max</span>(<span class="ident">ac</span>.<span class="ident">groups</span>());
-                    <span class="ident">rename_series</span>(<span class="ident">agg_s</span>, <span class="kw-2">&amp;</span><span class="ident">keep_name</span>)
+                GroupByMethod::Max =&gt; {
+                    check_flat()<span class="question-mark">?</span>;
+                    <span class="kw">let </span>agg_s = ac.flat_naive().into_owned().agg_max(ac.groups());
+                    rename_series(agg_s, <span class="kw-2">&amp;</span>keep_name)
                 }
-                <span class="ident">GroupByMethod::Median</span> =&gt; {
-                    <span class="ident">check_flat</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="ident">agg_s</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">flat_naive</span>().<span class="ident">into_owned</span>().<span class="ident">agg_median</span>(<span class="ident">ac</span>.<span class="ident">groups</span>());
-                    <span class="ident">rename_series</span>(<span class="ident">agg_s</span>, <span class="kw-2">&amp;</span><span class="ident">keep_name</span>)
+                GroupByMethod::Median =&gt; {
+                    check_flat()<span class="question-mark">?</span>;
+                    <span class="kw">let </span>agg_s = ac.flat_naive().into_owned().agg_median(ac.groups());
+                    rename_series(agg_s, <span class="kw-2">&amp;</span>keep_name)
                 }
-                <span class="ident">GroupByMethod::Mean</span> =&gt; {
-                    <span class="ident">check_flat</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="ident">agg_s</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">flat_naive</span>().<span class="ident">into_owned</span>().<span class="ident">agg_mean</span>(<span class="ident">ac</span>.<span class="ident">groups</span>());
-                    <span class="ident">rename_series</span>(<span class="ident">agg_s</span>, <span class="kw-2">&amp;</span><span class="ident">keep_name</span>)
+                GroupByMethod::Mean =&gt; {
+                    check_flat()<span class="question-mark">?</span>;
+                    <span class="kw">let </span>agg_s = ac.flat_naive().into_owned().agg_mean(ac.groups());
+                    rename_series(agg_s, <span class="kw-2">&amp;</span>keep_name)
                 }
-                <span class="ident">GroupByMethod::Sum</span> =&gt; {
-                    <span class="ident">check_flat</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="ident">agg_s</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">flat_naive</span>().<span class="ident">into_owned</span>().<span class="ident">agg_sum</span>(<span class="ident">ac</span>.<span class="ident">groups</span>());
-                    <span class="ident">rename_series</span>(<span class="ident">agg_s</span>, <span class="kw-2">&amp;</span><span class="ident">keep_name</span>)
+                GroupByMethod::Sum =&gt; {
+                    check_flat()<span class="question-mark">?</span>;
+                    <span class="kw">let </span>agg_s = ac.flat_naive().into_owned().agg_sum(ac.groups());
+                    rename_series(agg_s, <span class="kw-2">&amp;</span>keep_name)
                 }
-                <span class="ident">GroupByMethod::Count</span> =&gt; {
-                    <span class="comment">// a few fast paths that prevent materializing new groups</span>
-                    <span class="kw">match</span> <span class="ident">ac</span>.<span class="ident">update_groups</span> {
-                        <span class="ident">UpdateGroups::WithSeriesLen</span> =&gt; {
-                            <span class="kw">let</span> <span class="ident">list</span> <span class="op">=</span> <span class="ident">ac</span>
-                                .<span class="ident">series</span>()
-                                .<span class="ident">list</span>()
-                                .<span class="ident">expect</span>(<span class="string">&quot;impl error, should be a list at this point&quot;</span>);
+                GroupByMethod::Count =&gt; {
+                    <span class="comment">// a few fast paths that prevent materializing new groups
+                    </span><span class="kw">match </span>ac.update_groups {
+                        UpdateGroups::WithSeriesLen =&gt; {
+                            <span class="kw">let </span>list = ac
+                                .series()
+                                .list()
+                                .expect(<span class="string">&quot;impl error, should be a list at this point&quot;</span>);
 
-                            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">s</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">list</span>.<span class="ident">chunks</span>().<span class="ident">len</span>() {
-                                <span class="number">1</span> =&gt; {
-                                    <span class="kw">let</span> <span class="ident">arr</span> <span class="op">=</span> <span class="ident">list</span>.<span class="ident">downcast_iter</span>().<span class="ident">next</span>().<span class="ident">unwrap</span>();
-                                    <span class="kw">let</span> <span class="ident">offsets</span> <span class="op">=</span> <span class="ident">arr</span>.<span class="ident">offsets</span>().<span class="ident">as_slice</span>();
+                            <span class="kw">let </span><span class="kw-2">mut </span>s = <span class="kw">match </span>list.chunks().len() {
+                                <span class="number">1 </span>=&gt; {
+                                    <span class="kw">let </span>arr = list.downcast_iter().next().unwrap();
+                                    <span class="kw">let </span>offsets = arr.offsets().as_slice();
 
-                                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">previous</span> <span class="op">=</span> <span class="number">0i64</span>;
-                                    <span class="kw">let</span> <span class="ident">counts</span>: <span class="ident">NoNull</span><span class="op">&lt;</span><span class="ident">IdxCa</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">offsets</span>[<span class="number">1</span>..]
-                                        .<span class="ident">iter</span>()
-                                        .<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">o</span><span class="op">|</span> {
-                                            <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> (<span class="ident">o</span> <span class="op">-</span> <span class="ident">previous</span>) <span class="kw">as</span> <span class="ident">IdxSize</span>;
-                                            <span class="ident">previous</span> <span class="op">=</span> <span class="ident">o</span>;
-                                            <span class="ident">len</span>
+                                    <span class="kw">let </span><span class="kw-2">mut </span>previous = <span class="number">0i64</span>;
+                                    <span class="kw">let </span>counts: NoNull&lt;IdxCa&gt; = offsets[<span class="number">1</span>..]
+                                        .iter()
+                                        .map(|<span class="kw-2">&amp;</span>o| {
+                                            <span class="kw">let </span>len = (o - previous) <span class="kw">as </span>IdxSize;
+                                            previous = o;
+                                            len
                                         })
-                                        .<span class="ident">collect_trusted</span>();
-                                    <span class="ident">counts</span>.<span class="ident">into_inner</span>()
+                                        .collect_trusted();
+                                    counts.into_inner()
                                 }
-                                <span class="kw">_</span> =&gt; {
-                                    <span class="kw">let</span> <span class="ident">counts</span>: <span class="ident">NoNull</span><span class="op">&lt;</span><span class="ident">IdxCa</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">list</span>
-                                        .<span class="ident">amortized_iter</span>()
-                                        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> {
-                                            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">s</span>) <span class="op">=</span> <span class="ident">s</span> {
-                                                <span class="ident">s</span>.<span class="ident">as_ref</span>().<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">IdxSize</span>
-                                            } <span class="kw">else</span> {
-                                                <span class="number">1</span>
-                                            }
+                                <span class="kw">_ </span>=&gt; {
+                                    <span class="kw">let </span>counts: NoNull&lt;IdxCa&gt; = list
+                                        .amortized_iter()
+                                        .map(|s| {
+                                            <span class="kw">if let </span><span class="prelude-val">Some</span>(s) = s {
+                                                s.as_ref().len() <span class="kw">as </span>IdxSize
+                                            } <span class="kw">else </span>{
+                                                <span class="number">1
+                                            </span>}
                                         })
-                                        .<span class="ident">collect_trusted</span>();
-                                    <span class="ident">counts</span>.<span class="ident">into_inner</span>()
+                                        .collect_trusted();
+                                    counts.into_inner()
                                 }
                             };
-                            <span class="ident">s</span>.<span class="ident">rename</span>(<span class="kw-2">&amp;</span><span class="ident">keep_name</span>);
-                            <span class="ident">s</span>.<span class="ident">into_series</span>()
+                            s.rename(<span class="kw-2">&amp;</span>keep_name);
+                            s.into_series()
                         }
-                        <span class="ident">UpdateGroups::WithGroupsLen</span> =&gt; {
-                            <span class="comment">// no need to update the groups</span>
-                            <span class="comment">// we can just get the attribute, because we only need the length,</span>
-                            <span class="comment">// not the correct order</span>
-                            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ca</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">groups</span>.<span class="ident">group_count</span>();
-                            <span class="ident">ca</span>.<span class="ident">rename</span>(<span class="kw-2">&amp;</span><span class="ident">keep_name</span>);
-                            <span class="ident">ca</span>.<span class="ident">into_series</span>()
+                        UpdateGroups::WithGroupsLen =&gt; {
+                            <span class="comment">// no need to update the groups
+                            // we can just get the attribute, because we only need the length,
+                            // not the correct order
+                            </span><span class="kw">let </span><span class="kw-2">mut </span>ca = ac.groups.group_count();
+                            ca.rename(<span class="kw-2">&amp;</span>keep_name);
+                            ca.into_series()
                         }
-                        <span class="comment">// materialize groups</span>
-                        <span class="kw">_</span> =&gt; {
-                            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ca</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">groups</span>().<span class="ident">group_count</span>();
-                            <span class="ident">ca</span>.<span class="ident">rename</span>(<span class="kw-2">&amp;</span><span class="ident">keep_name</span>);
-                            <span class="ident">ca</span>.<span class="ident">into_series</span>()
+                        <span class="comment">// materialize groups
+                        </span><span class="kw">_ </span>=&gt; {
+                            <span class="kw">let </span><span class="kw-2">mut </span>ca = ac.groups().group_count();
+                            ca.rename(<span class="kw-2">&amp;</span>keep_name);
+                            ca.into_series()
                         }
                     }
                 }
-                <span class="ident">GroupByMethod::First</span> =&gt; {
-                    <span class="ident">check_flat</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">agg_s</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">flat_naive</span>().<span class="ident">into_owned</span>().<span class="ident">agg_first</span>(<span class="ident">ac</span>.<span class="ident">groups</span>());
-                    <span class="ident">agg_s</span>.<span class="ident">rename</span>(<span class="kw-2">&amp;</span><span class="ident">keep_name</span>);
-                    <span class="ident">agg_s</span>
+                GroupByMethod::First =&gt; {
+                    check_flat()<span class="question-mark">?</span>;
+                    <span class="kw">let </span><span class="kw-2">mut </span>agg_s = ac.flat_naive().into_owned().agg_first(ac.groups());
+                    agg_s.rename(<span class="kw-2">&amp;</span>keep_name);
+                    agg_s
                 }
-                <span class="ident">GroupByMethod::Last</span> =&gt; {
-                    <span class="ident">check_flat</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">agg_s</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">flat_naive</span>().<span class="ident">into_owned</span>().<span class="ident">agg_last</span>(<span class="ident">ac</span>.<span class="ident">groups</span>());
-                    <span class="ident">agg_s</span>.<span class="ident">rename</span>(<span class="kw-2">&amp;</span><span class="ident">keep_name</span>);
-                    <span class="ident">agg_s</span>
+                GroupByMethod::Last =&gt; {
+                    check_flat()<span class="question-mark">?</span>;
+                    <span class="kw">let </span><span class="kw-2">mut </span>agg_s = ac.flat_naive().into_owned().agg_last(ac.groups());
+                    agg_s.rename(<span class="kw-2">&amp;</span>keep_name);
+                    agg_s
                 }
-                <span class="ident">GroupByMethod::NUnique</span> =&gt; {
-                    <span class="ident">check_flat</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="ident">agg_s</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">flat_naive</span>().<span class="ident">into_owned</span>().<span class="ident">agg_n_unique</span>(<span class="ident">ac</span>.<span class="ident">groups</span>());
-                    <span class="ident">rename_series</span>(<span class="ident">agg_s</span>, <span class="kw-2">&amp;</span><span class="ident">keep_name</span>)
+                GroupByMethod::NUnique =&gt; {
+                    check_flat()<span class="question-mark">?</span>;
+                    <span class="kw">let </span>agg_s = ac.flat_naive().into_owned().agg_n_unique(ac.groups());
+                    rename_series(agg_s, <span class="kw-2">&amp;</span>keep_name)
                 }
-                <span class="ident">GroupByMethod::List</span> =&gt; {
-                    <span class="kw">let</span> <span class="ident">agg</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">aggregated</span>();
-                    <span class="ident">rename_series</span>(<span class="ident">agg</span>, <span class="kw-2">&amp;</span><span class="ident">keep_name</span>)
+                GroupByMethod::List =&gt; {
+                    <span class="kw">let </span>agg = ac.aggregated();
+                    rename_series(agg, <span class="kw-2">&amp;</span>keep_name)
                 }
-                <span class="ident">GroupByMethod::Groups</span> =&gt; {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">column</span>: <span class="ident">ListChunked</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">groups</span>().<span class="ident">as_list_chunked</span>();
-                    <span class="ident">column</span>.<span class="ident">rename</span>(<span class="kw-2">&amp;</span><span class="ident">keep_name</span>);
-                    <span class="ident">column</span>.<span class="ident">into_series</span>()
+                GroupByMethod::Groups =&gt; {
+                    <span class="kw">let </span><span class="kw-2">mut </span>column: ListChunked = ac.groups().as_list_chunked();
+                    column.rename(<span class="kw-2">&amp;</span>keep_name);
+                    column.into_series()
                 }
-                <span class="ident">GroupByMethod::Std</span>(<span class="ident">ddof</span>) =&gt; {
-                    <span class="ident">check_flat</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="ident">agg_s</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">flat_naive</span>().<span class="ident">into_owned</span>().<span class="ident">agg_std</span>(<span class="ident">ac</span>.<span class="ident">groups</span>(), <span class="ident">ddof</span>);
-                    <span class="ident">rename_series</span>(<span class="ident">agg_s</span>, <span class="kw-2">&amp;</span><span class="ident">keep_name</span>)
+                GroupByMethod::Std(ddof) =&gt; {
+                    check_flat()<span class="question-mark">?</span>;
+                    <span class="kw">let </span>agg_s = ac.flat_naive().into_owned().agg_std(ac.groups(), ddof);
+                    rename_series(agg_s, <span class="kw-2">&amp;</span>keep_name)
                 }
-                <span class="ident">GroupByMethod::Var</span>(<span class="ident">ddof</span>) =&gt; {
-                    <span class="ident">check_flat</span>()<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="ident">agg_s</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">flat_naive</span>().<span class="ident">into_owned</span>().<span class="ident">agg_var</span>(<span class="ident">ac</span>.<span class="ident">groups</span>(), <span class="ident">ddof</span>);
-                    <span class="ident">rename_series</span>(<span class="ident">agg_s</span>, <span class="kw-2">&amp;</span><span class="ident">keep_name</span>)
+                GroupByMethod::Var(ddof) =&gt; {
+                    check_flat()<span class="question-mark">?</span>;
+                    <span class="kw">let </span>agg_s = ac.flat_naive().into_owned().agg_var(ac.groups(), ddof);
+                    rename_series(agg_s, <span class="kw-2">&amp;</span>keep_name)
                 }
-                <span class="ident">GroupByMethod::Quantile</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
-                    <span class="comment">// implemented explicitly in AggQuantile struct</span>
-                    <span class="macro">unimplemented!</span>()
+                GroupByMethod::Quantile(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
+                    <span class="comment">// implemented explicitly in AggQuantile struct
+                    </span><span class="macro">unimplemented!</span>()
                 }
-                <span class="ident">GroupByMethod::NanMin</span> =&gt; {
-                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;propagate_nans&quot;</span>)]</span>
-                    {
-                        <span class="ident">check_flat</span>()<span class="question-mark">?</span>;
-                        <span class="kw">let</span> <span class="ident">agg_s</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">flat_naive</span>().<span class="ident">into_owned</span>();
-                        <span class="kw">let</span> <span class="ident">groups</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">groups</span>();
-                        <span class="kw">let</span> <span class="ident">agg_s</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">agg_s</span>.<span class="ident">dtype</span>().<span class="ident">is_float</span>() {
-                            <span class="ident">nan_propagating_aggregate::group_agg_nan_min_s</span>(<span class="kw-2">&amp;</span><span class="ident">agg_s</span>, <span class="ident">groups</span>)
-                        } <span class="kw">else</span> {
-                            <span class="ident">agg_s</span>.<span class="ident">agg_min</span>(<span class="ident">groups</span>)
+                GroupByMethod::NanMin =&gt; {
+                    <span class="attribute">#[cfg(feature = <span class="string">&quot;propagate_nans&quot;</span>)]
+                    </span>{
+                        check_flat()<span class="question-mark">?</span>;
+                        <span class="kw">let </span>agg_s = ac.flat_naive().into_owned();
+                        <span class="kw">let </span>groups = ac.groups();
+                        <span class="kw">let </span>agg_s = <span class="kw">if </span>agg_s.dtype().is_float() {
+                            nan_propagating_aggregate::group_agg_nan_min_s(<span class="kw-2">&amp;</span>agg_s, groups)
+                        } <span class="kw">else </span>{
+                            agg_s.agg_min(groups)
                         };
-                        <span class="ident">rename_series</span>(<span class="ident">agg_s</span>, <span class="kw-2">&amp;</span><span class="ident">keep_name</span>)
+                        rename_series(agg_s, <span class="kw-2">&amp;</span>keep_name)
                     }
-                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;propagate_nans&quot;</span>))]</span>
-                    {
+                    <span class="attribute">#[cfg(not(feature = <span class="string">&quot;propagate_nans&quot;</span>))]
+                    </span>{
                         <span class="macro">panic!</span>(<span class="string">&quot;activate &#39;propagate_nans&#39; feature&quot;</span>)
                     }
                 }
-                <span class="ident">GroupByMethod::NanMax</span> =&gt; {
-                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;propagate_nans&quot;</span>)]</span>
-                    {
-                        <span class="ident">check_flat</span>()<span class="question-mark">?</span>;
-                        <span class="kw">let</span> <span class="ident">agg_s</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">flat_naive</span>().<span class="ident">into_owned</span>();
-                        <span class="kw">let</span> <span class="ident">groups</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">groups</span>();
-                        <span class="kw">let</span> <span class="ident">agg_s</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">agg_s</span>.<span class="ident">dtype</span>().<span class="ident">is_float</span>() {
-                            <span class="ident">nan_propagating_aggregate::group_agg_nan_max_s</span>(<span class="kw-2">&amp;</span><span class="ident">agg_s</span>, <span class="ident">groups</span>)
-                        } <span class="kw">else</span> {
-                            <span class="ident">agg_s</span>.<span class="ident">agg_max</span>(<span class="ident">groups</span>)
+                GroupByMethod::NanMax =&gt; {
+                    <span class="attribute">#[cfg(feature = <span class="string">&quot;propagate_nans&quot;</span>)]
+                    </span>{
+                        check_flat()<span class="question-mark">?</span>;
+                        <span class="kw">let </span>agg_s = ac.flat_naive().into_owned();
+                        <span class="kw">let </span>groups = ac.groups();
+                        <span class="kw">let </span>agg_s = <span class="kw">if </span>agg_s.dtype().is_float() {
+                            nan_propagating_aggregate::group_agg_nan_max_s(<span class="kw-2">&amp;</span>agg_s, groups)
+                        } <span class="kw">else </span>{
+                            agg_s.agg_max(groups)
                         };
-                        <span class="ident">rename_series</span>(<span class="ident">agg_s</span>, <span class="kw-2">&amp;</span><span class="ident">keep_name</span>)
+                        rename_series(agg_s, <span class="kw-2">&amp;</span>keep_name)
                     }
-                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;propagate_nans&quot;</span>))]</span>
-                    {
+                    <span class="attribute">#[cfg(not(feature = <span class="string">&quot;propagate_nans&quot;</span>))]
+                    </span>{
                         <span class="macro">panic!</span>(<span class="string">&quot;activate &#39;propagate_nans&#39; feature&quot;</span>)
                     }
                 }
             }
         };
 
-        <span class="prelude-val">Ok</span>(<span class="ident">AggregationContext::new</span>(<span class="ident">out</span>, <span class="ident">Cow::Borrowed</span>(<span class="ident">groups</span>), <span class="bool-val">true</span>))
+        <span class="prelude-val">Ok</span>(AggregationContext::new(out, Cow::Borrowed(groups), <span class="bool-val">true</span>))
     }
 
-    <span class="kw">fn</span> <span class="ident">to_field</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">input_schema</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Field</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">to_field</span>(<span class="ident">input_schema</span>)
+    <span class="kw">fn </span>to_field(<span class="kw-2">&amp;</span><span class="self">self</span>, input_schema: <span class="kw-2">&amp;</span>Schema) -&gt; PolarsResult&lt;Field&gt; {
+        <span class="self">self</span>.input.to_field(input_schema)
     }
 
-    <span class="kw">fn</span> <span class="ident">as_partitioned_aggregator</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">PartitionedAggregation</span><span class="op">&gt;</span> {
+    <span class="kw">fn </span>as_partitioned_aggregator(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>PartitionedAggregation&gt; {
         <span class="prelude-val">Some</span>(<span class="self">self</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">is_valid_aggregation</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="bool-val">true</span>
-    }
+    <span class="kw">fn </span>is_valid_aggregation(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="bool-val">true
+    </span>}
 }
 
-<span class="kw">fn</span> <span class="ident">rename_series</span>(<span class="kw-2">mut</span> <span class="ident">s</span>: <span class="ident">Series</span>, <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">Series</span> {
-    <span class="ident">s</span>.<span class="ident">rename</span>(<span class="ident">name</span>);
-    <span class="ident">s</span>
+<span class="kw">fn </span>rename_series(<span class="kw-2">mut </span>s: Series, name: <span class="kw-2">&amp;</span>str) -&gt; Series {
+    s.rename(name);
+    s
 }
 
-<span class="kw">impl</span> <span class="ident">PartitionedAggregation</span> <span class="kw">for</span> <span class="ident">AggregationExpr</span> {
-    <span class="kw">fn</span> <span class="ident">evaluate_partitioned</span>(
+<span class="kw">impl </span>PartitionedAggregation <span class="kw">for </span>AggregationExpr {
+    <span class="kw">fn </span>evaluate_partitioned(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">df</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-        <span class="ident">groups</span>: <span class="kw-2">&amp;</span><span class="ident">GroupsProxy</span>,
-        <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionState</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">expr</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">as_partitioned_aggregator</span>().<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">series</span> <span class="op">=</span> <span class="ident">expr</span>.<span class="ident">evaluate_partitioned</span>(<span class="ident">df</span>, <span class="ident">groups</span>, <span class="ident">state</span>)<span class="question-mark">?</span>;
+        df: <span class="kw-2">&amp;</span>DataFrame,
+        groups: <span class="kw-2">&amp;</span>GroupsProxy,
+        state: <span class="kw-2">&amp;</span>ExecutionState,
+    ) -&gt; PolarsResult&lt;Series&gt; {
+        <span class="kw">let </span>expr = <span class="self">self</span>.input.as_partitioned_aggregator().unwrap();
+        <span class="kw">let </span>series = expr.evaluate_partitioned(df, groups, state)<span class="question-mark">?</span>;
 
-        <span class="comment">// Safety:</span>
-        <span class="comment">// groups are in bounds</span>
-        <span class="kw">unsafe</span> {
-            <span class="kw">match</span> <span class="self">self</span>.<span class="ident">agg_type</span> {
-                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-struct&quot;</span>)]</span>
-                <span class="ident">GroupByMethod::Mean</span> =&gt; {
-                    <span class="kw">let</span> <span class="ident">new_name</span> <span class="op">=</span> <span class="ident">series</span>.<span class="ident">name</span>().<span class="ident">to_string</span>();
+        <span class="comment">// Safety:
+        // groups are in bounds
+        </span><span class="kw">unsafe </span>{
+            <span class="kw">match </span><span class="self">self</span>.agg_type {
+                <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-struct&quot;</span>)]
+                </span>GroupByMethod::Mean =&gt; {
+                    <span class="kw">let </span>new_name = series.name().to_string();
 
-                    <span class="comment">// ensure we don&#39;t overflow</span>
-                    <span class="comment">// the all 8 and 16 bits integers are already upcasted to int16 on `agg_sum`</span>
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">agg_s</span> <span class="op">=</span> <span class="kw">if</span> <span class="macro">matches!</span>(<span class="ident">series</span>.<span class="ident">dtype</span>(), <span class="ident">DataType::Int32</span> <span class="op">|</span> <span class="ident">DataType::UInt32</span>)
+                    <span class="comment">// ensure we don&#39;t overflow
+                    // the all 8 and 16 bits integers are already upcasted to int16 on `agg_sum`
+                    </span><span class="kw">let </span><span class="kw-2">mut </span>agg_s = <span class="kw">if </span><span class="macro">matches!</span>(series.dtype(), DataType::Int32 | DataType::UInt32)
                     {
-                        <span class="ident">series</span>.<span class="ident">cast</span>(<span class="kw-2">&amp;</span><span class="ident">DataType::Int64</span>).<span class="ident">unwrap</span>().<span class="ident">agg_sum</span>(<span class="ident">groups</span>)
-                    } <span class="kw">else</span> {
-                        <span class="ident">series</span>.<span class="ident">agg_sum</span>(<span class="ident">groups</span>)
+                        series.cast(<span class="kw-2">&amp;</span>DataType::Int64).unwrap().agg_sum(groups)
+                    } <span class="kw">else </span>{
+                        series.agg_sum(groups)
                     };
-                    <span class="ident">agg_s</span>.<span class="ident">rename</span>(<span class="kw-2">&amp;</span><span class="ident">new_name</span>);
+                    agg_s.rename(<span class="kw-2">&amp;</span>new_name);
 
-                    <span class="kw">if</span> <span class="op">!</span><span class="ident">agg_s</span>.<span class="ident">dtype</span>().<span class="ident">is_numeric</span>() {
-                        <span class="prelude-val">Ok</span>(<span class="ident">agg_s</span>)
-                    } <span class="kw">else</span> {
-                        <span class="kw">let</span> <span class="ident">agg_s</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">agg_s</span>.<span class="ident">dtype</span>() {
-                            <span class="ident">DataType::Float32</span> =&gt; <span class="ident">agg_s</span>,
-                            <span class="kw">_</span> =&gt; <span class="ident">agg_s</span>.<span class="ident">cast</span>(<span class="kw-2">&amp;</span><span class="ident">DataType::Float64</span>).<span class="ident">unwrap</span>(),
+                    <span class="kw">if </span>!agg_s.dtype().is_numeric() {
+                        <span class="prelude-val">Ok</span>(agg_s)
+                    } <span class="kw">else </span>{
+                        <span class="kw">let </span>agg_s = <span class="kw">match </span>agg_s.dtype() {
+                            DataType::Float32 =&gt; agg_s,
+                            <span class="kw">_ </span>=&gt; agg_s.cast(<span class="kw-2">&amp;</span>DataType::Float64).unwrap(),
                         };
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">count_s</span> <span class="op">=</span> <span class="ident">series</span>.<span class="ident">agg_valid_count</span>(<span class="ident">groups</span>);
-                        <span class="ident">count_s</span>.<span class="ident">rename</span>(<span class="string">&quot;count&quot;</span>);
-                        <span class="prelude-val">Ok</span>(<span class="ident">StructChunked::new</span>(<span class="kw-2">&amp;</span><span class="ident">new_name</span>, <span class="kw-2">&amp;</span>[<span class="ident">agg_s</span>, <span class="ident">count_s</span>])
-                            .<span class="ident">unwrap</span>()
-                            .<span class="ident">into_series</span>())
+                        <span class="kw">let </span><span class="kw-2">mut </span>count_s = series.agg_valid_count(groups);
+                        count_s.rename(<span class="string">&quot;count&quot;</span>);
+                        <span class="prelude-val">Ok</span>(StructChunked::new(<span class="kw-2">&amp;</span>new_name, <span class="kw-2">&amp;</span>[agg_s, count_s])
+                            .unwrap()
+                            .into_series())
                     }
                 }
-                <span class="ident">GroupByMethod::List</span> =&gt; {
-                    <span class="kw">let</span> <span class="ident">new_name</span> <span class="op">=</span> <span class="ident">series</span>.<span class="ident">name</span>();
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">agg</span> <span class="op">=</span> <span class="ident">series</span>.<span class="ident">agg_list</span>(<span class="ident">groups</span>);
-                    <span class="ident">agg</span>.<span class="ident">rename</span>(<span class="ident">new_name</span>);
-                    <span class="prelude-val">Ok</span>(<span class="ident">agg</span>)
+                GroupByMethod::List =&gt; {
+                    <span class="kw">let </span>new_name = series.name();
+                    <span class="kw">let </span><span class="kw-2">mut </span>agg = series.agg_list(groups);
+                    agg.rename(new_name);
+                    <span class="prelude-val">Ok</span>(agg)
                 }
-                <span class="ident">GroupByMethod::First</span> =&gt; {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">agg</span> <span class="op">=</span> <span class="ident">series</span>.<span class="ident">agg_first</span>(<span class="ident">groups</span>);
-                    <span class="ident">agg</span>.<span class="ident">rename</span>(<span class="ident">series</span>.<span class="ident">name</span>());
-                    <span class="prelude-val">Ok</span>(<span class="ident">agg</span>)
+                GroupByMethod::First =&gt; {
+                    <span class="kw">let </span><span class="kw-2">mut </span>agg = series.agg_first(groups);
+                    agg.rename(series.name());
+                    <span class="prelude-val">Ok</span>(agg)
                 }
-                <span class="ident">GroupByMethod::Last</span> =&gt; {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">agg</span> <span class="op">=</span> <span class="ident">series</span>.<span class="ident">agg_last</span>(<span class="ident">groups</span>);
-                    <span class="ident">agg</span>.<span class="ident">rename</span>(<span class="ident">series</span>.<span class="ident">name</span>());
-                    <span class="prelude-val">Ok</span>(<span class="ident">agg</span>)
+                GroupByMethod::Last =&gt; {
+                    <span class="kw">let </span><span class="kw-2">mut </span>agg = series.agg_last(groups);
+                    agg.rename(series.name());
+                    <span class="prelude-val">Ok</span>(agg)
                 }
-                <span class="ident">GroupByMethod::Max</span> =&gt; {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">agg</span> <span class="op">=</span> <span class="ident">series</span>.<span class="ident">agg_max</span>(<span class="ident">groups</span>);
-                    <span class="ident">agg</span>.<span class="ident">rename</span>(<span class="ident">series</span>.<span class="ident">name</span>());
-                    <span class="prelude-val">Ok</span>(<span class="ident">agg</span>)
+                GroupByMethod::Max =&gt; {
+                    <span class="kw">let </span><span class="kw-2">mut </span>agg = series.agg_max(groups);
+                    agg.rename(series.name());
+                    <span class="prelude-val">Ok</span>(agg)
                 }
-                <span class="ident">GroupByMethod::Min</span> =&gt; {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">agg</span> <span class="op">=</span> <span class="ident">series</span>.<span class="ident">agg_min</span>(<span class="ident">groups</span>);
-                    <span class="ident">agg</span>.<span class="ident">rename</span>(<span class="ident">series</span>.<span class="ident">name</span>());
-                    <span class="prelude-val">Ok</span>(<span class="ident">agg</span>)
+                GroupByMethod::Min =&gt; {
+                    <span class="kw">let </span><span class="kw-2">mut </span>agg = series.agg_min(groups);
+                    agg.rename(series.name());
+                    <span class="prelude-val">Ok</span>(agg)
                 }
-                <span class="ident">GroupByMethod::Sum</span> =&gt; {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">agg</span> <span class="op">=</span> <span class="ident">series</span>.<span class="ident">agg_sum</span>(<span class="ident">groups</span>);
-                    <span class="ident">agg</span>.<span class="ident">rename</span>(<span class="ident">series</span>.<span class="ident">name</span>());
-                    <span class="prelude-val">Ok</span>(<span class="ident">agg</span>)
+                GroupByMethod::Sum =&gt; {
+                    <span class="kw">let </span><span class="kw-2">mut </span>agg = series.agg_sum(groups);
+                    agg.rename(series.name());
+                    <span class="prelude-val">Ok</span>(agg)
                 }
-                <span class="ident">GroupByMethod::Count</span> =&gt; {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ca</span> <span class="op">=</span> <span class="ident">groups</span>.<span class="ident">group_count</span>();
-                    <span class="ident">ca</span>.<span class="ident">rename</span>(<span class="ident">series</span>.<span class="ident">name</span>());
-                    <span class="prelude-val">Ok</span>(<span class="ident">ca</span>.<span class="ident">into_series</span>())
+                GroupByMethod::Count =&gt; {
+                    <span class="kw">let </span><span class="kw-2">mut </span>ca = groups.group_count();
+                    ca.rename(series.name());
+                    <span class="prelude-val">Ok</span>(ca.into_series())
                 }
-                <span class="kw">_</span> =&gt; {
+                <span class="kw">_ </span>=&gt; {
                     <span class="macro">unimplemented!</span>()
                 }
             }
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">finalize</span>(
+    <span class="kw">fn </span>finalize(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">partitioned</span>: <span class="ident">Series</span>,
-        <span class="ident">groups</span>: <span class="kw-2">&amp;</span><span class="ident">GroupsProxy</span>,
-        <span class="ident">_state</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionState</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">agg_type</span> {
-            <span class="ident">GroupByMethod::Count</span> <span class="op">|</span> <span class="ident">GroupByMethod::Sum</span> =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">agg</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">partitioned</span>.<span class="ident">agg_sum</span>(<span class="ident">groups</span>) };
-                <span class="ident">agg</span>.<span class="ident">rename</span>(<span class="ident">partitioned</span>.<span class="ident">name</span>());
-                <span class="prelude-val">Ok</span>(<span class="ident">agg</span>)
+        partitioned: Series,
+        groups: <span class="kw-2">&amp;</span>GroupsProxy,
+        _state: <span class="kw-2">&amp;</span>ExecutionState,
+    ) -&gt; PolarsResult&lt;Series&gt; {
+        <span class="kw">match </span><span class="self">self</span>.agg_type {
+            GroupByMethod::Count | GroupByMethod::Sum =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>agg = <span class="kw">unsafe </span>{ partitioned.agg_sum(groups) };
+                agg.rename(partitioned.name());
+                <span class="prelude-val">Ok</span>(agg)
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-struct&quot;</span>)]</span>
-            <span class="ident">GroupByMethod::Mean</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">new_name</span> <span class="op">=</span> <span class="ident">partitioned</span>.<span class="ident">name</span>();
-                <span class="kw">match</span> <span class="ident">partitioned</span>.<span class="ident">dtype</span>() {
-                    <span class="ident">DataType::Struct</span>(<span class="kw">_</span>) =&gt; {
-                        <span class="kw">let</span> <span class="ident">ca</span> <span class="op">=</span> <span class="ident">partitioned</span>.<span class="ident">struct_</span>().<span class="ident">unwrap</span>();
-                        <span class="kw">let</span> <span class="ident">sum</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">ca</span>.<span class="ident">fields</span>()[<span class="number">0</span>];
-                        <span class="kw">let</span> <span class="ident">count</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">ca</span>.<span class="ident">fields</span>()[<span class="number">1</span>];
-                        <span class="kw">let</span> (<span class="ident">agg_count</span>, <span class="ident">agg_s</span>) <span class="op">=</span>
-                            <span class="kw">unsafe</span> { <span class="ident">POOL</span>.<span class="ident">join</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">count</span>.<span class="ident">agg_sum</span>(<span class="ident">groups</span>), <span class="op">|</span><span class="op">|</span> <span class="ident">sum</span>.<span class="ident">agg_sum</span>(<span class="ident">groups</span>)) };
-                        <span class="kw">let</span> <span class="ident">agg_s</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">agg_s</span> <span class="op">/</span> <span class="kw-2">&amp;</span><span class="ident">agg_count</span>;
-                        <span class="prelude-val">Ok</span>(<span class="ident">rename_series</span>(<span class="ident">agg_s</span>, <span class="ident">new_name</span>))
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-struct&quot;</span>)]
+            </span>GroupByMethod::Mean =&gt; {
+                <span class="kw">let </span>new_name = partitioned.name();
+                <span class="kw">match </span>partitioned.dtype() {
+                    DataType::Struct(<span class="kw">_</span>) =&gt; {
+                        <span class="kw">let </span>ca = partitioned.struct_().unwrap();
+                        <span class="kw">let </span>sum = <span class="kw-2">&amp;</span>ca.fields()[<span class="number">0</span>];
+                        <span class="kw">let </span>count = <span class="kw-2">&amp;</span>ca.fields()[<span class="number">1</span>];
+                        <span class="kw">let </span>(agg_count, agg_s) =
+                            <span class="kw">unsafe </span>{ POOL.join(|| count.agg_sum(groups), || sum.agg_sum(groups)) };
+                        <span class="kw">let </span>agg_s = <span class="kw-2">&amp;</span>agg_s / <span class="kw-2">&amp;</span>agg_count;
+                        <span class="prelude-val">Ok</span>(rename_series(agg_s, new_name))
                     }
-                    <span class="kw">_</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Series::full_null</span>(
-                        <span class="ident">new_name</span>,
-                        <span class="ident">groups</span>.<span class="ident">len</span>(),
-                        <span class="ident">partitioned</span>.<span class="ident">dtype</span>(),
+                    <span class="kw">_ </span>=&gt; <span class="prelude-val">Ok</span>(Series::full_null(
+                        new_name,
+                        groups.len(),
+                        partitioned.dtype(),
                     )),
                 }
             }
-            <span class="ident">GroupByMethod::List</span> =&gt; {
-                <span class="comment">// the groups are scattered over multiple groups/sub dataframes.</span>
-                <span class="comment">// we now must collect them into a single group</span>
-                <span class="kw">let</span> <span class="ident">ca</span> <span class="op">=</span> <span class="ident">partitioned</span>.<span class="ident">list</span>().<span class="ident">unwrap</span>();
-                <span class="kw">let</span> <span class="ident">new_name</span> <span class="op">=</span> <span class="ident">partitioned</span>.<span class="ident">name</span>().<span class="ident">to_string</span>();
+            GroupByMethod::List =&gt; {
+                <span class="comment">// the groups are scattered over multiple groups/sub dataframes.
+                // we now must collect them into a single group
+                </span><span class="kw">let </span>ca = partitioned.list().unwrap();
+                <span class="kw">let </span>new_name = partitioned.name().to_string();
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">groups</span>.<span class="ident">len</span>());
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">can_fast_explode</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>values = Vec::with_capacity(groups.len());
+                <span class="kw">let </span><span class="kw-2">mut </span>can_fast_explode = <span class="bool-val">true</span>;
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">offsets</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="ident">i64</span><span class="op">&gt;</span><span class="ident">::with_capacity</span>(<span class="ident">groups</span>.<span class="ident">len</span>() <span class="op">+</span> <span class="number">1</span>);
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">length_so_far</span> <span class="op">=</span> <span class="number">0i64</span>;
-                <span class="ident">offsets</span>.<span class="ident">push</span>(<span class="ident">length_so_far</span>);
+                <span class="kw">let </span><span class="kw-2">mut </span>offsets = Vec::&lt;i64&gt;::with_capacity(groups.len() + <span class="number">1</span>);
+                <span class="kw">let </span><span class="kw-2">mut </span>length_so_far = <span class="number">0i64</span>;
+                offsets.push(length_so_far);
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">process_group</span> <span class="op">=</span> <span class="op">|</span><span class="ident">ca</span>: <span class="ident">ListChunked</span><span class="op">|</span> -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-                    <span class="kw">let</span> <span class="ident">s</span> <span class="op">=</span> <span class="ident">ca</span>.<span class="ident">explode</span>()<span class="question-mark">?</span>;
-                    <span class="ident">length_so_far</span> <span class="op">+</span><span class="op">=</span> <span class="ident">s</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">i64</span>;
-                    <span class="ident">offsets</span>.<span class="ident">push</span>(<span class="ident">length_so_far</span>);
-                    <span class="ident">values</span>.<span class="ident">push</span>(<span class="ident">s</span>.<span class="ident">chunks</span>()[<span class="number">0</span>].<span class="ident">clone</span>());
+                <span class="kw">let </span><span class="kw-2">mut </span>process_group = |ca: ListChunked| -&gt; PolarsResult&lt;()&gt; {
+                    <span class="kw">let </span>s = ca.explode()<span class="question-mark">?</span>;
+                    length_so_far += s.len() <span class="kw">as </span>i64;
+                    offsets.push(length_so_far);
+                    values.push(s.chunks()[<span class="number">0</span>].clone());
 
-                    <span class="kw">if</span> <span class="ident">s</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="number">0</span> {
-                        <span class="ident">can_fast_explode</span> <span class="op">=</span> <span class="bool-val">false</span>;
+                    <span class="kw">if </span>s.len() == <span class="number">0 </span>{
+                        can_fast_explode = <span class="bool-val">false</span>;
                     }
                     <span class="prelude-val">Ok</span>(())
                 };
 
-                <span class="kw">match</span> <span class="ident">groups</span> {
-                    <span class="ident">GroupsProxy::Idx</span>(<span class="ident">groups</span>) =&gt; {
-                        <span class="kw">for</span> (<span class="kw">_</span>, <span class="ident">idx</span>) <span class="kw">in</span> <span class="ident">groups</span> {
-                            <span class="kw">let</span> <span class="ident">ca</span> <span class="op">=</span> <span class="kw">unsafe</span> {
-                                <span class="comment">// Safety</span>
-                                <span class="comment">// The indexes of the groupby operation are never out of bounds</span>
-                                <span class="ident">ca</span>.<span class="ident">take_unchecked</span>(<span class="ident">idx</span>.<span class="ident">into</span>())
+                <span class="kw">match </span>groups {
+                    GroupsProxy::Idx(groups) =&gt; {
+                        <span class="kw">for </span>(<span class="kw">_</span>, idx) <span class="kw">in </span>groups {
+                            <span class="kw">let </span>ca = <span class="kw">unsafe </span>{
+                                <span class="comment">// Safety
+                                // The indexes of the groupby operation are never out of bounds
+                                </span>ca.take_unchecked(idx.into())
                             };
-                            <span class="ident">process_group</span>(<span class="ident">ca</span>)<span class="question-mark">?</span>;
+                            process_group(ca)<span class="question-mark">?</span>;
                         }
                     }
-                    <span class="ident">GroupsProxy::Slice</span> { <span class="ident">groups</span>, .. } =&gt; {
-                        <span class="kw">for</span> [<span class="ident">first</span>, <span class="ident">len</span>] <span class="kw">in</span> <span class="ident">groups</span> {
-                            <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="kw-2">*</span><span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span>;
-                            <span class="kw">let</span> <span class="ident">ca</span> <span class="op">=</span> <span class="ident">ca</span>.<span class="ident">slice</span>(<span class="kw-2">*</span><span class="ident">first</span> <span class="kw">as</span> <span class="ident">i64</span>, <span class="ident">len</span>);
-                            <span class="ident">process_group</span>(<span class="ident">ca</span>)<span class="question-mark">?</span>;
+                    GroupsProxy::Slice { groups, .. } =&gt; {
+                        <span class="kw">for </span>[first, len] <span class="kw">in </span>groups {
+                            <span class="kw">let </span>len = <span class="kw-2">*</span>len <span class="kw">as </span>usize;
+                            <span class="kw">let </span>ca = ca.slice(<span class="kw-2">*</span>first <span class="kw">as </span>i64, len);
+                            process_group(ca)<span class="question-mark">?</span>;
                         }
                     }
                 }
 
-                <span class="kw">let</span> <span class="ident">vals</span> <span class="op">=</span> <span class="ident">values</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">arr</span><span class="op">|</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">arr</span>).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-                <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">concatenate</span>(<span class="kw-2">&amp;</span><span class="ident">vals</span>).<span class="ident">unwrap</span>();
+                <span class="kw">let </span>vals = values.iter().map(|arr| <span class="kw-2">&amp;**</span>arr).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                <span class="kw">let </span>values = concatenate(<span class="kw-2">&amp;</span>vals).unwrap();
 
-                <span class="kw">let</span> <span class="ident">data_type</span> <span class="op">=</span> <span class="ident">ListArray</span>::<span class="op">&lt;</span><span class="ident">i64</span><span class="op">&gt;</span><span class="ident">::default_datatype</span>(<span class="ident">values</span>.<span class="ident">data_type</span>().<span class="ident">clone</span>());
-                <span class="comment">// Safety:</span>
-                <span class="comment">// offsets are monotonically increasing</span>
-                <span class="kw">let</span> <span class="ident">arr</span> <span class="op">=</span> <span class="kw">unsafe</span> {
-                    <span class="ident">Box::new</span>(<span class="ident">ListArray</span>::<span class="op">&lt;</span><span class="ident">i64</span><span class="op">&gt;</span><span class="ident">::new_unchecked</span>(
-                        <span class="ident">data_type</span>,
-                        <span class="ident">offsets</span>.<span class="ident">into</span>(),
-                        <span class="ident">values</span>,
+                <span class="kw">let </span>data_type = ListArray::&lt;i64&gt;::default_datatype(values.data_type().clone());
+                <span class="comment">// Safety:
+                // offsets are monotonically increasing
+                </span><span class="kw">let </span>arr = <span class="kw">unsafe </span>{
+                    Box::new(ListArray::&lt;i64&gt;::new_unchecked(
+                        data_type,
+                        offsets.into(),
+                        values,
                         <span class="prelude-val">None</span>,
-                    )) <span class="kw">as</span> <span class="ident">ArrayRef</span>
+                    )) <span class="kw">as </span>ArrayRef
                 };
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ca</span> <span class="op">=</span> <span class="ident">ListChunked::from_chunks</span>(<span class="kw-2">&amp;</span><span class="ident">new_name</span>, <span class="macro">vec!</span>[<span class="ident">arr</span>]);
-                <span class="kw">if</span> <span class="ident">can_fast_explode</span> {
-                    <span class="ident">ca</span>.<span class="ident">set_fast_explode</span>()
+                <span class="kw">let </span><span class="kw-2">mut </span>ca = ListChunked::from_chunks(<span class="kw-2">&amp;</span>new_name, <span class="macro">vec!</span>[arr]);
+                <span class="kw">if </span>can_fast_explode {
+                    ca.set_fast_explode()
                 }
-                <span class="prelude-val">Ok</span>(<span class="ident">ca</span>.<span class="ident">into_series</span>())
+                <span class="prelude-val">Ok</span>(ca.into_series())
             }
-            <span class="ident">GroupByMethod::First</span> =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">agg</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">partitioned</span>.<span class="ident">agg_first</span>(<span class="ident">groups</span>) };
-                <span class="ident">agg</span>.<span class="ident">rename</span>(<span class="ident">partitioned</span>.<span class="ident">name</span>());
-                <span class="prelude-val">Ok</span>(<span class="ident">agg</span>)
+            GroupByMethod::First =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>agg = <span class="kw">unsafe </span>{ partitioned.agg_first(groups) };
+                agg.rename(partitioned.name());
+                <span class="prelude-val">Ok</span>(agg)
             }
-            <span class="ident">GroupByMethod::Last</span> =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">agg</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">partitioned</span>.<span class="ident">agg_last</span>(<span class="ident">groups</span>) };
-                <span class="ident">agg</span>.<span class="ident">rename</span>(<span class="ident">partitioned</span>.<span class="ident">name</span>());
-                <span class="prelude-val">Ok</span>(<span class="ident">agg</span>)
+            GroupByMethod::Last =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>agg = <span class="kw">unsafe </span>{ partitioned.agg_last(groups) };
+                agg.rename(partitioned.name());
+                <span class="prelude-val">Ok</span>(agg)
             }
-            <span class="ident">GroupByMethod::Max</span> =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">agg</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">partitioned</span>.<span class="ident">agg_max</span>(<span class="ident">groups</span>) };
-                <span class="ident">agg</span>.<span class="ident">rename</span>(<span class="ident">partitioned</span>.<span class="ident">name</span>());
-                <span class="prelude-val">Ok</span>(<span class="ident">agg</span>)
+            GroupByMethod::Max =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>agg = <span class="kw">unsafe </span>{ partitioned.agg_max(groups) };
+                agg.rename(partitioned.name());
+                <span class="prelude-val">Ok</span>(agg)
             }
-            <span class="ident">GroupByMethod::Min</span> =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">agg</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">partitioned</span>.<span class="ident">agg_min</span>(<span class="ident">groups</span>) };
-                <span class="ident">agg</span>.<span class="ident">rename</span>(<span class="ident">partitioned</span>.<span class="ident">name</span>());
-                <span class="prelude-val">Ok</span>(<span class="ident">agg</span>)
+            GroupByMethod::Min =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>agg = <span class="kw">unsafe </span>{ partitioned.agg_min(groups) };
+                agg.rename(partitioned.name());
+                <span class="prelude-val">Ok</span>(agg)
             }
-            <span class="kw">_</span> =&gt; <span class="macro">unimplemented!</span>(),
+            <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(),
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AggQuantileExpr</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">expr</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">quantile</span>: <span class="ident">f64</span>,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">interpol</span>: <span class="ident">QuantileInterpolOptions</span>,
+<span class="kw">pub struct </span>AggQuantileExpr {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) expr: Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) quantile: f64,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) interpol: QuantileInterpolOptions,
 }
 
-<span class="kw">impl</span> <span class="ident">AggQuantileExpr</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">expr</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span>,
-        <span class="ident">quantile</span>: <span class="ident">f64</span>,
-        <span class="ident">interpol</span>: <span class="ident">QuantileInterpolOptions</span>,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">expr</span>,
-            <span class="ident">quantile</span>,
-            <span class="ident">interpol</span>,
+<span class="kw">impl </span>AggQuantileExpr {
+    <span class="kw">pub fn </span>new(
+        expr: Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;,
+        quantile: f64,
+        interpol: QuantileInterpolOptions,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            expr,
+            quantile,
+            interpol,
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">PhysicalExpr</span> <span class="kw">for</span> <span class="ident">AggQuantileExpr</span> {
-    <span class="kw">fn</span> <span class="ident">as_expression</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Expr</span><span class="op">&gt;</span> {
-        <span class="prelude-val">None</span>
-    }
+<span class="kw">impl </span>PhysicalExpr <span class="kw">for </span>AggQuantileExpr {
+    <span class="kw">fn </span>as_expression(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Expr&gt; {
+        <span class="prelude-val">None
+    </span>}
 
-    <span class="kw">fn</span> <span class="ident">evaluate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">_df</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>, <span class="ident">_state</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionState</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span> {
+    <span class="kw">fn </span>evaluate(<span class="kw-2">&amp;</span><span class="self">self</span>, _df: <span class="kw-2">&amp;</span>DataFrame, _state: <span class="kw-2">&amp;</span>ExecutionState) -&gt; PolarsResult&lt;Series&gt; {
         <span class="macro">unimplemented!</span>()
     }
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::ptr_arg</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">evaluate_on_groups</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
+    <span class="attribute">#[allow(clippy::ptr_arg)]
+    </span><span class="kw">fn </span>evaluate_on_groups&lt;<span class="lifetime">&#39;a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">df</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-        <span class="ident">groups</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">GroupsProxy</span>,
-        <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionState</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">AggregationContext</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ac</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">expr</span>.<span class="ident">evaluate_on_groups</span>(<span class="ident">df</span>, <span class="ident">groups</span>, <span class="ident">state</span>)<span class="question-mark">?</span>;
-        <span class="comment">// don&#39;t change names by aggregations as is done in polars-core</span>
-        <span class="kw">let</span> <span class="ident">keep_name</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">series</span>().<span class="ident">name</span>().<span class="ident">to_string</span>();
+        df: <span class="kw-2">&amp;</span>DataFrame,
+        groups: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GroupsProxy,
+        state: <span class="kw-2">&amp;</span>ExecutionState,
+    ) -&gt; PolarsResult&lt;AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>ac = <span class="self">self</span>.expr.evaluate_on_groups(df, groups, state)<span class="question-mark">?</span>;
+        <span class="comment">// don&#39;t change names by aggregations as is done in polars-core
+        </span><span class="kw">let </span>keep_name = ac.series().name().to_string();
 
-        <span class="comment">// safety:</span>
-        <span class="comment">// groups are in bounds</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">agg</span> <span class="op">=</span> <span class="kw">unsafe</span> {
-            <span class="ident">ac</span>.<span class="ident">flat_naive</span>()
-                .<span class="ident">into_owned</span>()
-                .<span class="ident">agg_quantile</span>(<span class="ident">ac</span>.<span class="ident">groups</span>(), <span class="self">self</span>.<span class="ident">quantile</span>, <span class="self">self</span>.<span class="ident">interpol</span>)
+        <span class="comment">// safety:
+        // groups are in bounds
+        </span><span class="kw">let </span><span class="kw-2">mut </span>agg = <span class="kw">unsafe </span>{
+            ac.flat_naive()
+                .into_owned()
+                .agg_quantile(ac.groups(), <span class="self">self</span>.quantile, <span class="self">self</span>.interpol)
         };
-        <span class="ident">agg</span>.<span class="ident">rename</span>(<span class="kw-2">&amp;</span><span class="ident">keep_name</span>);
-        <span class="prelude-val">Ok</span>(<span class="ident">AggregationContext::new</span>(<span class="ident">agg</span>, <span class="ident">Cow::Borrowed</span>(<span class="ident">groups</span>), <span class="bool-val">true</span>))
+        agg.rename(<span class="kw-2">&amp;</span>keep_name);
+        <span class="prelude-val">Ok</span>(AggregationContext::new(agg, Cow::Borrowed(groups), <span class="bool-val">true</span>))
     }
 
-    <span class="kw">fn</span> <span class="ident">to_field</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">input_schema</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Field</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">expr</span>.<span class="ident">to_field</span>(<span class="ident">input_schema</span>)
+    <span class="kw">fn </span>to_field(<span class="kw-2">&amp;</span><span class="self">self</span>, input_schema: <span class="kw-2">&amp;</span>Schema) -&gt; PolarsResult&lt;Field&gt; {
+        <span class="self">self</span>.expr.to_field(input_schema)
     }
 
-    <span class="kw">fn</span> <span class="ident">is_valid_aggregation</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="bool-val">true</span>
-    }
+    <span class="kw">fn </span>is_valid_aggregation(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="bool-val">true
+    </span>}
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_lazy" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_lazy" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

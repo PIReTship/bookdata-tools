@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.25.1/src/chunked_array/ops/rolling_window.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>rolling_window.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.25.1/src/chunked_array/ops/rolling_window.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>rolling_window.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -253,260 +253,260 @@
 <span id="253">253</span>
 <span id="254">254</span>
 <span id="255">255</span>
-</pre><pre class="rust"><code><span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RollingOptionsFixedWindow</span> {
-    <span class="doccomment">/// The length of the window.</span>
-    <span class="kw">pub</span> <span class="ident">window_size</span>: <span class="ident">usize</span>,
-    <span class="doccomment">/// Amount of elements in the window that should be filled before computing a result.</span>
-    <span class="kw">pub</span> <span class="ident">min_periods</span>: <span class="ident">usize</span>,
-    <span class="doccomment">/// An optional slice with the same length as the window that will be multiplied</span>
-    <span class="doccomment">///              elementwise with the values in the window.</span>
-    <span class="kw">pub</span> <span class="ident">weights</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">f64</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="doccomment">/// Set the labels at the center of the window.</span>
-    <span class="kw">pub</span> <span class="ident">center</span>: <span class="ident">bool</span>,
+</pre><pre class="rust"><code><span class="attribute">#[derive(Clone)]
+</span><span class="kw">pub struct </span>RollingOptionsFixedWindow {
+    <span class="doccomment">/// The length of the window.
+    </span><span class="kw">pub </span>window_size: usize,
+    <span class="doccomment">/// Amount of elements in the window that should be filled before computing a result.
+    </span><span class="kw">pub </span>min_periods: usize,
+    <span class="doccomment">/// An optional slice with the same length as the window that will be multiplied
+    ///              elementwise with the values in the window.
+    </span><span class="kw">pub </span>weights: <span class="prelude-ty">Option</span>&lt;Vec&lt;f64&gt;&gt;,
+    <span class="doccomment">/// Set the labels at the center of the window.
+    </span><span class="kw">pub </span>center: bool,
 }
 
-<span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">RollingOptionsFixedWindow</span> {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">RollingOptionsFixedWindow</span> {
-            <span class="ident">window_size</span>: <span class="number">3</span>,
-            <span class="ident">min_periods</span>: <span class="number">1</span>,
-            <span class="ident">weights</span>: <span class="prelude-val">None</span>,
-            <span class="ident">center</span>: <span class="bool-val">false</span>,
+<span class="kw">impl </span>Default <span class="kw">for </span>RollingOptionsFixedWindow {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        RollingOptionsFixedWindow {
+            window_size: <span class="number">3</span>,
+            min_periods: <span class="number">1</span>,
+            weights: <span class="prelude-val">None</span>,
+            center: <span class="bool-val">false</span>,
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;rolling_window&quot;</span>)]</span>
-<span class="kw">mod</span> <span class="ident">inner_mod</span> {
-    <span class="kw">use</span> <span class="ident">std::ops::SubAssign</span>;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;rolling_window&quot;</span>)]
+</span><span class="kw">mod </span>inner_mod {
+    <span class="kw">use </span>std::ops::SubAssign;
 
-    <span class="kw">use</span> <span class="ident">arrow::array</span>::{<span class="ident">Array</span>, <span class="ident">PrimitiveArray</span>};
-    <span class="kw">use</span> <span class="ident">arrow::bitmap::MutableBitmap</span>;
-    <span class="kw">use</span> <span class="ident">num</span>::{<span class="ident">Float</span>, <span class="ident">Zero</span>};
-    <span class="kw">use</span> <span class="ident">polars_arrow::bit_util::unset_bit_raw</span>;
-    <span class="kw">use</span> <span class="ident">polars_arrow::data_types::IsFloat</span>;
-    <span class="kw">use</span> <span class="ident">polars_arrow::trusted_len::PushUnchecked</span>;
+    <span class="kw">use </span>arrow::array::{Array, PrimitiveArray};
+    <span class="kw">use </span>arrow::bitmap::MutableBitmap;
+    <span class="kw">use </span>num::{Float, Zero};
+    <span class="kw">use </span>polars_arrow::bit_util::unset_bit_raw;
+    <span class="kw">use </span>polars_arrow::data_types::IsFloat;
+    <span class="kw">use </span>polars_arrow::trusted_len::PushUnchecked;
 
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 
-    <span class="doccomment">/// utility</span>
-    <span class="kw">fn</span> <span class="ident">check_input</span>(<span class="ident">window_size</span>: <span class="ident">usize</span>, <span class="ident">min_periods</span>: <span class="ident">usize</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="ident">min_periods</span> <span class="op">&gt;</span> <span class="ident">window_size</span> {
-            <span class="prelude-val">Err</span>(<span class="ident">PolarsError::ComputeError</span>(
-                <span class="string">&quot;`windows_size` should be &gt;= `min_periods`&quot;</span>.<span class="ident">into</span>(),
+    <span class="doccomment">/// utility
+    </span><span class="kw">fn </span>check_input(window_size: usize, min_periods: usize) -&gt; PolarsResult&lt;()&gt; {
+        <span class="kw">if </span>min_periods &gt; window_size {
+            <span class="prelude-val">Err</span>(PolarsError::ComputeError(
+                <span class="string">&quot;`windows_size` should be &gt;= `min_periods`&quot;</span>.into(),
             ))
-        } <span class="kw">else</span> {
+        } <span class="kw">else </span>{
             <span class="prelude-val">Ok</span>(())
         }
     }
 
-    <span class="doccomment">/// utility</span>
-    <span class="kw">fn</span> <span class="ident">window_edges</span>(<span class="ident">idx</span>: <span class="ident">usize</span>, <span class="ident">len</span>: <span class="ident">usize</span>, <span class="ident">window_size</span>: <span class="ident">usize</span>, <span class="ident">center</span>: <span class="ident">bool</span>) -&gt; (<span class="ident">usize</span>, <span class="ident">usize</span>) {
-        <span class="kw">let</span> (<span class="ident">start</span>, <span class="ident">end</span>) <span class="op">=</span> <span class="kw">if</span> <span class="ident">center</span> {
-            <span class="kw">let</span> <span class="ident">right_window</span> <span class="op">=</span> (<span class="ident">window_size</span> <span class="op">+</span> <span class="number">1</span>) <span class="op">/</span> <span class="number">2</span>;
+    <span class="doccomment">/// utility
+    </span><span class="kw">fn </span>window_edges(idx: usize, len: usize, window_size: usize, center: bool) -&gt; (usize, usize) {
+        <span class="kw">let </span>(start, end) = <span class="kw">if </span>center {
+            <span class="kw">let </span>right_window = (window_size + <span class="number">1</span>) / <span class="number">2</span>;
             (
-                <span class="ident">idx</span>.<span class="ident">saturating_sub</span>(<span class="ident">window_size</span> <span class="op">-</span> <span class="ident">right_window</span>),
-                <span class="ident">std::cmp::min</span>(<span class="ident">len</span>, <span class="ident">idx</span> <span class="op">+</span> <span class="ident">right_window</span>),
+                idx.saturating_sub(window_size - right_window),
+                std::cmp::min(len, idx + right_window),
             )
-        } <span class="kw">else</span> {
-            (<span class="ident">idx</span>.<span class="ident">saturating_sub</span>(<span class="ident">window_size</span> <span class="op">-</span> <span class="number">1</span>), <span class="ident">idx</span> <span class="op">+</span> <span class="number">1</span>)
+        } <span class="kw">else </span>{
+            (idx.saturating_sub(window_size - <span class="number">1</span>), idx + <span class="number">1</span>)
         };
 
-        (<span class="ident">start</span>, <span class="ident">end</span> <span class="op">-</span> <span class="ident">start</span>)
+        (start, end - start)
     }
 
-    <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">ChunkRollApply</span> <span class="kw">for</span> <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">PolarsNumericType</span>,
-        <span class="self">Self</span>: <span class="ident">IntoSeries</span>,
+    <span class="kw">impl</span>&lt;T&gt; ChunkRollApply <span class="kw">for </span>ChunkedArray&lt;T&gt;
+    <span class="kw">where
+        </span>T: PolarsNumericType,
+        <span class="self">Self</span>: IntoSeries,
     {
-        <span class="doccomment">/// Apply a rolling custom function. This is pretty slow because of dynamic dispatch.</span>
-        <span class="kw">fn</span> <span class="ident">rolling_apply</span>(
+        <span class="doccomment">/// Apply a rolling custom function. This is pretty slow because of dynamic dispatch.
+        </span><span class="kw">fn </span>rolling_apply(
             <span class="kw-2">&amp;</span><span class="self">self</span>,
-            <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="ident">Series</span>) -&gt; <span class="ident">Series</span>,
-            <span class="ident">options</span>: <span class="ident">RollingOptionsFixedWindow</span>,
-        ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span> {
-            <span class="ident">check_input</span>(<span class="ident">options</span>.<span class="ident">window_size</span>, <span class="ident">options</span>.<span class="ident">min_periods</span>)<span class="question-mark">?</span>;
+            f: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>Series) -&gt; Series,
+            options: RollingOptionsFixedWindow,
+        ) -&gt; PolarsResult&lt;Series&gt; {
+            check_input(options.window_size, options.min_periods)<span class="question-mark">?</span>;
 
-            <span class="kw">let</span> <span class="ident">ca</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">rechunk</span>();
-            <span class="kw">if</span> <span class="ident">options</span>.<span class="ident">weights</span>.<span class="ident">is_some</span>()
-                <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="macro">matches!</span>(<span class="self">self</span>.<span class="ident">dtype</span>(), <span class="ident">DataType::Float64</span> <span class="op">|</span> <span class="ident">DataType::Float32</span>)
+            <span class="kw">let </span>ca = <span class="self">self</span>.rechunk();
+            <span class="kw">if </span>options.weights.is_some()
+                &amp;&amp; !<span class="macro">matches!</span>(<span class="self">self</span>.dtype(), DataType::Float64 | DataType::Float32)
             {
-                <span class="kw">let</span> <span class="ident">s</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">cast</span>(<span class="kw-2">&amp;</span><span class="ident">DataType::Float64</span>)<span class="question-mark">?</span>;
-                <span class="kw">return</span> <span class="ident">s</span>.<span class="ident">rolling_apply</span>(<span class="ident">f</span>, <span class="ident">options</span>);
+                <span class="kw">let </span>s = <span class="self">self</span>.cast(<span class="kw-2">&amp;</span>DataType::Float64)<span class="question-mark">?</span>;
+                <span class="kw">return </span>s.rolling_apply(f, options);
             }
 
-            <span class="kw">if</span> <span class="ident">options</span>.<span class="ident">window_size</span> <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">len</span>() {
-                <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::full_null</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="self">self</span>.<span class="ident">len</span>()).<span class="ident">into_series</span>());
+            <span class="kw">if </span>options.window_size &gt;= <span class="self">self</span>.len() {
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="self">Self</span>::full_null(<span class="self">self</span>.name(), <span class="self">self</span>.len()).into_series());
             }
 
-            <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">len</span>();
-            <span class="kw">let</span> <span class="ident">arr</span> <span class="op">=</span> <span class="ident">ca</span>.<span class="ident">downcast_iter</span>().<span class="ident">next</span>().<span class="ident">unwrap</span>();
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">series_container</span> <span class="op">=</span>
-                <span class="ident">ChunkedArray</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::from_slice</span>(<span class="string">&quot;&quot;</span>, <span class="kw-2">&amp;</span>[<span class="ident">T::Native::zero</span>()]).<span class="ident">into_series</span>();
-            <span class="kw">let</span> <span class="ident">array_ptr</span> <span class="op">=</span> <span class="ident">series_container</span>.<span class="ident">array_ref</span>(<span class="number">0</span>);
-            <span class="kw">let</span> <span class="ident">ptr</span> <span class="op">=</span> <span class="ident">array_ptr</span>.<span class="ident">as_ref</span>() <span class="kw">as</span> <span class="kw-2">*const</span> <span class="kw">dyn</span> <span class="ident">Array</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">dyn</span> <span class="ident">Array</span>
-                <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">T::Native</span><span class="op">&gt;</span>;
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PrimitiveChunkedBuilder</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::new</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="self">self</span>.<span class="ident">len</span>());
+            <span class="kw">let </span>len = <span class="self">self</span>.len();
+            <span class="kw">let </span>arr = ca.downcast_iter().next().unwrap();
+            <span class="kw">let </span><span class="kw-2">mut </span>series_container =
+                ChunkedArray::&lt;T&gt;::from_slice(<span class="string">&quot;&quot;</span>, <span class="kw-2">&amp;</span>[T::Native::zero()]).into_series();
+            <span class="kw">let </span>array_ptr = series_container.array_ref(<span class="number">0</span>);
+            <span class="kw">let </span>ptr = array_ptr.as_ref() <span class="kw">as </span><span class="kw-2">*const </span><span class="kw">dyn </span>Array <span class="kw">as </span><span class="kw-2">*mut </span><span class="kw">dyn </span>Array
+                <span class="kw">as </span><span class="kw-2">*mut </span>PrimitiveArray&lt;T::Native&gt;;
+            <span class="kw">let </span><span class="kw-2">mut </span>builder = PrimitiveChunkedBuilder::&lt;T&gt;::new(<span class="self">self</span>.name(), <span class="self">self</span>.len());
 
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">weights</span>) <span class="op">=</span> <span class="ident">options</span>.<span class="ident">weights</span> {
-                <span class="kw">let</span> <span class="ident">weights_series</span> <span class="op">=</span> <span class="ident">Float64Chunked::new</span>(<span class="string">&quot;weights&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">weights</span>).<span class="ident">into_series</span>();
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(weights) = options.weights {
+                <span class="kw">let </span>weights_series = Float64Chunked::new(<span class="string">&quot;weights&quot;</span>, <span class="kw-2">&amp;</span>weights).into_series();
 
-                <span class="kw">let</span> <span class="ident">weights_series</span> <span class="op">=</span> <span class="ident">weights_series</span>.<span class="ident">cast</span>(<span class="self">self</span>.<span class="ident">dtype</span>()).<span class="ident">unwrap</span>();
+                <span class="kw">let </span>weights_series = weights_series.cast(<span class="self">self</span>.dtype()).unwrap();
 
-                <span class="kw">for</span> <span class="ident">idx</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">len</span> {
-                    <span class="kw">let</span> (<span class="ident">start</span>, <span class="ident">size</span>) <span class="op">=</span> <span class="ident">window_edges</span>(<span class="ident">idx</span>, <span class="ident">len</span>, <span class="ident">options</span>.<span class="ident">window_size</span>, <span class="ident">options</span>.<span class="ident">center</span>);
+                <span class="kw">for </span>idx <span class="kw">in </span><span class="number">0</span>..len {
+                    <span class="kw">let </span>(start, size) = window_edges(idx, len, options.window_size, options.center);
 
-                    <span class="kw">if</span> <span class="ident">size</span> <span class="op">&lt;</span> <span class="ident">options</span>.<span class="ident">min_periods</span> {
-                        <span class="ident">builder</span>.<span class="ident">append_null</span>();
-                    } <span class="kw">else</span> {
-                        <span class="comment">// safety:</span>
-                        <span class="comment">// we are in bounds</span>
-                        <span class="kw">let</span> <span class="ident">arr_window</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">arr</span>.<span class="ident">slice_unchecked</span>(<span class="ident">start</span>, <span class="ident">size</span>) };
+                    <span class="kw">if </span>size &lt; options.min_periods {
+                        builder.append_null();
+                    } <span class="kw">else </span>{
+                        <span class="comment">// safety:
+                        // we are in bounds
+                        </span><span class="kw">let </span>arr_window = <span class="kw">unsafe </span>{ arr.slice_unchecked(start, size) };
 
-                        <span class="comment">// Safety.</span>
-                        <span class="comment">// ptr is not dropped as we are in scope</span>
-                        <span class="comment">// We are also the only owner of the contents of the Arc</span>
-                        <span class="comment">// we do this to reduce heap allocs.</span>
-                        <span class="kw">unsafe</span> {
-                            <span class="kw-2">*</span><span class="ident">ptr</span> <span class="op">=</span> <span class="ident">arr_window</span>;
+                        <span class="comment">// Safety.
+                        // ptr is not dropped as we are in scope
+                        // We are also the only owner of the contents of the Arc
+                        // we do this to reduce heap allocs.
+                        </span><span class="kw">unsafe </span>{
+                            <span class="kw-2">*</span>ptr = arr_window;
                         }
-                        <span class="comment">// ensure the length is correct</span>
-                        <span class="ident">series_container</span>.<span class="ident">_get_inner_mut</span>().<span class="ident">compute_len</span>();
+                        <span class="comment">// ensure the length is correct
+                        </span>series_container._get_inner_mut().compute_len();
 
-                        <span class="kw">let</span> <span class="ident">s</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">size</span> <span class="op">==</span> <span class="ident">options</span>.<span class="ident">window_size</span> {
-                            <span class="ident">f</span>(<span class="kw-2">&amp;</span><span class="ident">series_container</span>.<span class="ident">multiply</span>(<span class="kw-2">&amp;</span><span class="ident">weights_series</span>).<span class="ident">unwrap</span>())
-                        } <span class="kw">else</span> {
-                            <span class="kw">let</span> <span class="ident">weights_cutoff</span>: <span class="ident">Series</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span>.<span class="ident">dtype</span>() {
-                                <span class="ident">DataType::Float64</span> =&gt; <span class="ident">weights_series</span>
-                                    .<span class="ident">f64</span>()
-                                    .<span class="ident">unwrap</span>()
-                                    .<span class="ident">into_iter</span>()
-                                    .<span class="ident">take</span>(<span class="ident">series_container</span>.<span class="ident">len</span>())
-                                    .<span class="ident">collect</span>(),
-                                <span class="kw">_</span> =&gt; <span class="ident">weights_series</span> <span class="comment">// Float32 case</span>
-                                    .<span class="ident">f32</span>()
-                                    .<span class="ident">unwrap</span>()
-                                    .<span class="ident">into_iter</span>()
-                                    .<span class="ident">take</span>(<span class="ident">series_container</span>.<span class="ident">len</span>())
-                                    .<span class="ident">collect</span>(),
+                        <span class="kw">let </span>s = <span class="kw">if </span>size == options.window_size {
+                            f(<span class="kw-2">&amp;</span>series_container.multiply(<span class="kw-2">&amp;</span>weights_series).unwrap())
+                        } <span class="kw">else </span>{
+                            <span class="kw">let </span>weights_cutoff: Series = <span class="kw">match </span><span class="self">self</span>.dtype() {
+                                DataType::Float64 =&gt; weights_series
+                                    .f64()
+                                    .unwrap()
+                                    .into_iter()
+                                    .take(series_container.len())
+                                    .collect(),
+                                <span class="kw">_ </span>=&gt; weights_series <span class="comment">// Float32 case
+                                    </span>.f32()
+                                    .unwrap()
+                                    .into_iter()
+                                    .take(series_container.len())
+                                    .collect(),
                             };
-                            <span class="ident">f</span>(<span class="kw-2">&amp;</span><span class="ident">series_container</span>.<span class="ident">multiply</span>(<span class="kw-2">&amp;</span><span class="ident">weights_cutoff</span>).<span class="ident">unwrap</span>())
+                            f(<span class="kw-2">&amp;</span>series_container.multiply(<span class="kw-2">&amp;</span>weights_cutoff).unwrap())
                         };
 
-                        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">unpack_series_matching_type</span>(<span class="kw-2">&amp;</span><span class="ident">s</span>)<span class="question-mark">?</span>;
-                        <span class="ident">builder</span>.<span class="ident">append_option</span>(<span class="ident">out</span>.<span class="ident">get</span>(<span class="number">0</span>));
+                        <span class="kw">let </span>out = <span class="self">self</span>.unpack_series_matching_type(<span class="kw-2">&amp;</span>s)<span class="question-mark">?</span>;
+                        builder.append_option(out.get(<span class="number">0</span>));
                     }
                 }
 
-                <span class="prelude-val">Ok</span>(<span class="ident">builder</span>.<span class="ident">finish</span>().<span class="ident">into_series</span>())
-            } <span class="kw">else</span> {
-                <span class="kw">for</span> <span class="ident">idx</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">len</span> {
-                    <span class="kw">let</span> (<span class="ident">start</span>, <span class="ident">size</span>) <span class="op">=</span> <span class="ident">window_edges</span>(<span class="ident">idx</span>, <span class="ident">len</span>, <span class="ident">options</span>.<span class="ident">window_size</span>, <span class="ident">options</span>.<span class="ident">center</span>);
+                <span class="prelude-val">Ok</span>(builder.finish().into_series())
+            } <span class="kw">else </span>{
+                <span class="kw">for </span>idx <span class="kw">in </span><span class="number">0</span>..len {
+                    <span class="kw">let </span>(start, size) = window_edges(idx, len, options.window_size, options.center);
 
-                    <span class="kw">if</span> <span class="ident">size</span> <span class="op">&lt;</span> <span class="ident">options</span>.<span class="ident">min_periods</span> {
-                        <span class="ident">builder</span>.<span class="ident">append_null</span>();
-                    } <span class="kw">else</span> {
-                        <span class="comment">// safety:</span>
-                        <span class="comment">// we are in bounds</span>
-                        <span class="kw">let</span> <span class="ident">arr_window</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">arr</span>.<span class="ident">slice_unchecked</span>(<span class="ident">start</span>, <span class="ident">size</span>) };
+                    <span class="kw">if </span>size &lt; options.min_periods {
+                        builder.append_null();
+                    } <span class="kw">else </span>{
+                        <span class="comment">// safety:
+                        // we are in bounds
+                        </span><span class="kw">let </span>arr_window = <span class="kw">unsafe </span>{ arr.slice_unchecked(start, size) };
 
-                        <span class="comment">// Safety.</span>
-                        <span class="comment">// ptr is not dropped as we are in scope</span>
-                        <span class="comment">// We are also the only owner of the contents of the Arc</span>
-                        <span class="comment">// we do this to reduce heap allocs.</span>
-                        <span class="kw">unsafe</span> {
-                            <span class="kw-2">*</span><span class="ident">ptr</span> <span class="op">=</span> <span class="ident">arr_window</span>;
+                        <span class="comment">// Safety.
+                        // ptr is not dropped as we are in scope
+                        // We are also the only owner of the contents of the Arc
+                        // we do this to reduce heap allocs.
+                        </span><span class="kw">unsafe </span>{
+                            <span class="kw-2">*</span>ptr = arr_window;
                         }
-                        <span class="comment">// ensure the length is correct</span>
-                        <span class="ident">series_container</span>.<span class="ident">_get_inner_mut</span>().<span class="ident">compute_len</span>();
+                        <span class="comment">// ensure the length is correct
+                        </span>series_container._get_inner_mut().compute_len();
 
-                        <span class="kw">let</span> <span class="ident">s</span> <span class="op">=</span> <span class="ident">f</span>(<span class="kw-2">&amp;</span><span class="ident">series_container</span>);
-                        <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">unpack_series_matching_type</span>(<span class="kw-2">&amp;</span><span class="ident">s</span>)<span class="question-mark">?</span>;
-                        <span class="ident">builder</span>.<span class="ident">append_option</span>(<span class="ident">out</span>.<span class="ident">get</span>(<span class="number">0</span>));
+                        <span class="kw">let </span>s = f(<span class="kw-2">&amp;</span>series_container);
+                        <span class="kw">let </span>out = <span class="self">self</span>.unpack_series_matching_type(<span class="kw-2">&amp;</span>s)<span class="question-mark">?</span>;
+                        builder.append_option(out.get(<span class="number">0</span>));
                     }
                 }
 
-                <span class="prelude-val">Ok</span>(<span class="ident">builder</span>.<span class="ident">finish</span>().<span class="ident">into_series</span>())
+                <span class="prelude-val">Ok</span>(builder.finish().into_series())
             }
         }
     }
 
-    <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>: <span class="ident">IntoSeries</span>,
-        <span class="ident">T</span>: <span class="ident">PolarsFloatType</span>,
-        <span class="ident">T::Native</span>: <span class="ident">Float</span> <span class="op">+</span> <span class="ident">IsFloat</span> <span class="op">+</span> <span class="ident">SubAssign</span> <span class="op">+</span> <span class="ident">num::pow::Pow</span><span class="op">&lt;</span><span class="ident">T::Native</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">T::Native</span><span class="op">&gt;</span>,
+    <span class="kw">impl</span>&lt;T&gt; ChunkedArray&lt;T&gt;
+    <span class="kw">where
+        </span>ChunkedArray&lt;T&gt;: IntoSeries,
+        T: PolarsFloatType,
+        T::Native: Float + IsFloat + SubAssign + num::pow::Pow&lt;T::Native, Output = T::Native&gt;,
     {
-        <span class="doccomment">/// Apply a rolling custom function. This is pretty slow because of dynamic dispatch.</span>
-        <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">rolling_apply_float</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">window_size</span>: <span class="ident">usize</span>, <span class="kw-2">mut</span> <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>
-        <span class="kw">where</span>
-            <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;mut</span> <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T::Native</span><span class="op">&gt;</span>,
+        <span class="doccomment">/// Apply a rolling custom function. This is pretty slow because of dynamic dispatch.
+        </span><span class="kw">pub fn </span>rolling_apply_float&lt;F&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, window_size: usize, <span class="kw-2">mut </span>f: F) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt;
+        <span class="kw">where
+            </span>F: FnMut(<span class="kw-2">&amp;mut </span>ChunkedArray&lt;T&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;T::Native&gt;,
         {
-            <span class="kw">if</span> <span class="ident">window_size</span> <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">len</span>() {
-                <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::full_null</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="self">self</span>.<span class="ident">len</span>()));
+            <span class="kw">if </span>window_size &gt;= <span class="self">self</span>.len() {
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="self">Self</span>::full_null(<span class="self">self</span>.name(), <span class="self">self</span>.len()));
             }
-            <span class="kw">let</span> <span class="ident">ca</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">rechunk</span>();
-            <span class="kw">let</span> <span class="ident">arr</span> <span class="op">=</span> <span class="ident">ca</span>.<span class="ident">downcast_iter</span>().<span class="ident">next</span>().<span class="ident">unwrap</span>();
+            <span class="kw">let </span>ca = <span class="self">self</span>.rechunk();
+            <span class="kw">let </span>arr = ca.downcast_iter().next().unwrap();
 
-            <span class="comment">// we create a temporary dummy ChunkedArray</span>
-            <span class="comment">// this will be a container where we swap the window contents every iteration</span>
-            <span class="comment">// doing so will save a lot of heap allocations.</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">heap_container</span> <span class="op">=</span> <span class="ident">ChunkedArray</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::from_slice</span>(<span class="string">&quot;&quot;</span>, <span class="kw-2">&amp;</span>[<span class="ident">T::Native::zero</span>()]);
-            <span class="kw">let</span> <span class="ident">array_ptr</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">heap_container</span>.<span class="ident">chunks</span>()[<span class="number">0</span>];
-            <span class="kw">let</span> <span class="ident">ptr</span> <span class="op">=</span> <span class="ident">array_ptr</span>.<span class="ident">as_ref</span>() <span class="kw">as</span> <span class="kw-2">*const</span> <span class="kw">dyn</span> <span class="ident">Array</span> <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="kw">dyn</span> <span class="ident">Array</span>
-                <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">T::Native</span><span class="op">&gt;</span>;
+            <span class="comment">// we create a temporary dummy ChunkedArray
+            // this will be a container where we swap the window contents every iteration
+            // doing so will save a lot of heap allocations.
+            </span><span class="kw">let </span><span class="kw-2">mut </span>heap_container = ChunkedArray::&lt;T&gt;::from_slice(<span class="string">&quot;&quot;</span>, <span class="kw-2">&amp;</span>[T::Native::zero()]);
+            <span class="kw">let </span>array_ptr = <span class="kw-2">&amp;</span>heap_container.chunks()[<span class="number">0</span>];
+            <span class="kw">let </span>ptr = array_ptr.as_ref() <span class="kw">as </span><span class="kw-2">*const </span><span class="kw">dyn </span>Array <span class="kw">as </span><span class="kw-2">*mut </span><span class="kw">dyn </span>Array
+                <span class="kw">as </span><span class="kw-2">*mut </span>PrimitiveArray&lt;T::Native&gt;;
 
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">validity</span> <span class="op">=</span> <span class="ident">MutableBitmap::with_capacity</span>(<span class="ident">ca</span>.<span class="ident">len</span>());
-            <span class="ident">validity</span>.<span class="ident">extend_constant</span>(<span class="ident">window_size</span> <span class="op">-</span> <span class="number">1</span>, <span class="bool-val">false</span>);
-            <span class="ident">validity</span>.<span class="ident">extend_constant</span>(<span class="ident">ca</span>.<span class="ident">len</span>() <span class="op">-</span> (<span class="ident">window_size</span> <span class="op">-</span> <span class="number">1</span>), <span class="bool-val">true</span>);
-            <span class="kw">let</span> <span class="ident">validity_ptr</span> <span class="op">=</span> <span class="ident">validity</span>.<span class="ident">as_slice</span>().<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">u8</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>validity = MutableBitmap::with_capacity(ca.len());
+            validity.extend_constant(window_size - <span class="number">1</span>, <span class="bool-val">false</span>);
+            validity.extend_constant(ca.len() - (window_size - <span class="number">1</span>), <span class="bool-val">true</span>);
+            <span class="kw">let </span>validity_ptr = validity.as_slice().as_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>u8;
 
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">ca</span>.<span class="ident">len</span>());
-            <span class="ident">values</span>.<span class="ident">extend</span>(<span class="ident">std::iter::repeat</span>(<span class="ident">T::Native::default</span>()).<span class="ident">take</span>(<span class="ident">window_size</span> <span class="op">-</span> <span class="number">1</span>));
+            <span class="kw">let </span><span class="kw-2">mut </span>values = Vec::with_capacity(ca.len());
+            values.extend(std::iter::repeat(T::Native::default()).take(window_size - <span class="number">1</span>));
 
-            <span class="kw">for</span> <span class="ident">offset</span> <span class="kw">in</span> <span class="number">0</span>..<span class="self">self</span>.<span class="ident">len</span>() <span class="op">+</span> <span class="number">1</span> <span class="op">-</span> <span class="ident">window_size</span> {
-                <span class="macro">debug_assert!</span>(<span class="ident">offset</span> <span class="op">+</span> <span class="ident">window_size</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">arr</span>.<span class="ident">len</span>());
-                <span class="kw">let</span> <span class="ident">arr_window</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">arr</span>.<span class="ident">slice_unchecked</span>(<span class="ident">offset</span>, <span class="ident">window_size</span>) };
-                <span class="comment">// the lengths are cached, so we must update them</span>
-                <span class="ident">heap_container</span>.<span class="ident">length</span> <span class="op">=</span> <span class="ident">arr_window</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">IdxSize</span>;
+            <span class="kw">for </span>offset <span class="kw">in </span><span class="number">0</span>..<span class="self">self</span>.len() + <span class="number">1 </span>- window_size {
+                <span class="macro">debug_assert!</span>(offset + window_size &lt;= arr.len());
+                <span class="kw">let </span>arr_window = <span class="kw">unsafe </span>{ arr.slice_unchecked(offset, window_size) };
+                <span class="comment">// the lengths are cached, so we must update them
+                </span>heap_container.length = arr_window.len() <span class="kw">as </span>IdxSize;
 
-                <span class="comment">// Safety.</span>
-                <span class="comment">// ptr is not dropped as we are in scope</span>
-                <span class="comment">// We are also the only owner of the contents of the Arc</span>
-                <span class="comment">// we do this to reduce heap allocs.</span>
-                <span class="kw">unsafe</span> {
-                    <span class="kw-2">*</span><span class="ident">ptr</span> <span class="op">=</span> <span class="ident">arr_window</span>;
+                <span class="comment">// Safety.
+                // ptr is not dropped as we are in scope
+                // We are also the only owner of the contents of the Arc
+                // we do this to reduce heap allocs.
+                </span><span class="kw">unsafe </span>{
+                    <span class="kw-2">*</span>ptr = arr_window;
                 }
 
-                <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">f</span>(<span class="kw-2">&amp;mut</span> <span class="ident">heap_container</span>);
-                <span class="kw">match</span> <span class="ident">out</span> {
-                    <span class="prelude-val">Some</span>(<span class="ident">v</span>) =&gt; {
-                        <span class="comment">// Safety: we have pre-allocated</span>
-                        <span class="kw">unsafe</span> { <span class="ident">values</span>.<span class="ident">push_unchecked</span>(<span class="ident">v</span>) }
+                <span class="kw">let </span>out = f(<span class="kw-2">&amp;mut </span>heap_container);
+                <span class="kw">match </span>out {
+                    <span class="prelude-val">Some</span>(v) =&gt; {
+                        <span class="comment">// Safety: we have pre-allocated
+                        </span><span class="kw">unsafe </span>{ values.push_unchecked(v) }
                     }
-                    <span class="prelude-val">None</span> =&gt; {
-                        <span class="comment">// safety: we allocated enough for both the `values` vec</span>
-                        <span class="comment">// and the `validity_ptr`</span>
-                        <span class="kw">unsafe</span> {
-                            <span class="ident">values</span>.<span class="ident">push_unchecked</span>(<span class="ident">T::Native::default</span>());
-                            <span class="ident">unset_bit_raw</span>(<span class="ident">validity_ptr</span>, <span class="ident">offset</span> <span class="op">+</span> <span class="ident">window_size</span> <span class="op">-</span> <span class="number">1</span>);
+                    <span class="prelude-val">None </span>=&gt; {
+                        <span class="comment">// safety: we allocated enough for both the `values` vec
+                        // and the `validity_ptr`
+                        </span><span class="kw">unsafe </span>{
+                            values.push_unchecked(T::Native::default());
+                            unset_bit_raw(validity_ptr, offset + window_size - <span class="number">1</span>);
                         }
                     }
                 }
             }
-            <span class="kw">let</span> <span class="ident">arr</span> <span class="op">=</span> <span class="ident">PrimitiveArray::from_data</span>(
-                <span class="ident">T::get_dtype</span>().<span class="ident">to_arrow</span>(),
-                <span class="ident">values</span>.<span class="ident">into</span>(),
-                <span class="prelude-val">Some</span>(<span class="ident">validity</span>.<span class="ident">into</span>()),
+            <span class="kw">let </span>arr = PrimitiveArray::from_data(
+                T::get_dtype().to_arrow(),
+                values.into(),
+                <span class="prelude-val">Some</span>(validity.into()),
             );
-            <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::from_chunks</span>(<span class="self">self</span>.<span class="ident">name</span>(), <span class="macro">vec!</span>[<span class="ident">Box::new</span>(<span class="ident">arr</span>)]))
+            <span class="prelude-val">Ok</span>(<span class="self">Self</span>::from_chunks(<span class="self">self</span>.name(), <span class="macro">vec!</span>[Box::new(arr)]))
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;rolling_window&quot;</span>)]</span>
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">inner_mod</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;rolling_window&quot;</span>)]
+</span><span class="kw">pub use </span>inner_mod::<span class="kw-2">*</span>;
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

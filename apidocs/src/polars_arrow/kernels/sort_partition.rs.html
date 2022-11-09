@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-arrow-0.25.1/src/kernels/sort_partition.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>sort_partition.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../polars_arrow/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../polars_arrow/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../polars_arrow/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-arrow-0.25.1/src/kernels/sort_partition.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>sort_partition.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../polars_arrow/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../polars_arrow/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../polars_arrow/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -147,154 +147,154 @@
 <span id="147">147</span>
 <span id="148">148</span>
 <span id="149">149</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::fmt::Debug</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::fmt::Debug;
 
-<span class="kw">use</span> <span class="ident">arrow::types::NativeType</span>;
+<span class="kw">use </span>arrow::types::NativeType;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::index::IdxSize</span>;
+<span class="kw">use </span><span class="kw">crate</span>::index::IdxSize;
 
-<span class="doccomment">/// Find partition indexes such that every partition contains unique groups.</span>
-<span class="kw">fn</span> <span class="ident">find_partition_points</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">values</span>: <span class="kw-2">&amp;</span>[<span class="ident">T</span>], <span class="ident">n</span>: <span class="ident">usize</span>, <span class="ident">reverse</span>: <span class="ident">bool</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Debug</span> <span class="op">+</span> <span class="ident">NativeType</span> <span class="op">+</span> <span class="ident">PartialOrd</span>,
+<span class="doccomment">/// Find partition indexes such that every partition contains unique groups.
+</span><span class="kw">fn </span>find_partition_points&lt;T&gt;(values: <span class="kw-2">&amp;</span>[T], n: usize, reverse: bool) -&gt; Vec&lt;usize&gt;
+<span class="kw">where
+    </span>T: Debug + NativeType + PartialOrd,
 {
-    <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">values</span>.<span class="ident">len</span>();
-    <span class="kw">if</span> <span class="ident">n</span> <span class="op">&gt;</span> <span class="ident">len</span> {
-        <span class="kw">return</span> <span class="ident">find_partition_points</span>(<span class="ident">values</span>, <span class="ident">len</span> <span class="op">/</span> <span class="number">2</span>, <span class="ident">reverse</span>);
+    <span class="kw">let </span>len = values.len();
+    <span class="kw">if </span>n &gt; len {
+        <span class="kw">return </span>find_partition_points(values, len / <span class="number">2</span>, reverse);
     }
-    <span class="kw">if</span> <span class="ident">n</span> <span class="op">&lt;</span> <span class="number">2</span> {
-        <span class="kw">return</span> <span class="macro">vec!</span>[];
+    <span class="kw">if </span>n &lt; <span class="number">2 </span>{
+        <span class="kw">return </span><span class="macro">vec!</span>[];
     }
-    <span class="kw">let</span> <span class="ident">chunk_size</span> <span class="op">=</span> <span class="ident">len</span> <span class="op">/</span> <span class="ident">n</span>;
+    <span class="kw">let </span>chunk_size = len / n;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">partition_points</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">n</span> <span class="op">+</span> <span class="number">1</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>partition_points = Vec::with_capacity(n + <span class="number">1</span>);
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">start_idx</span> <span class="op">=</span> <span class="number">0</span>;
-    <span class="kw">loop</span> {
-        <span class="kw">let</span> <span class="ident">end_idx</span> <span class="op">=</span> <span class="ident">start_idx</span> <span class="op">+</span> <span class="ident">chunk_size</span>;
-        <span class="kw">if</span> <span class="ident">end_idx</span> <span class="op">&gt;</span><span class="op">=</span> <span class="ident">len</span> {
+    <span class="kw">let </span><span class="kw-2">mut </span>start_idx = <span class="number">0</span>;
+    <span class="kw">loop </span>{
+        <span class="kw">let </span>end_idx = start_idx + chunk_size;
+        <span class="kw">if </span>end_idx &gt;= len {
             <span class="kw">break</span>;
         }
-        <span class="comment">// first take that partition as a slice</span>
-        <span class="comment">// and then find the location where the group of the latest value starts</span>
-        <span class="kw">let</span> <span class="ident">part</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">values</span>[<span class="ident">start_idx</span>..<span class="ident">end_idx</span>];
+        <span class="comment">// first take that partition as a slice
+        // and then find the location where the group of the latest value starts
+        </span><span class="kw">let </span>part = <span class="kw-2">&amp;</span>values[start_idx..end_idx];
 
-        <span class="kw">let</span> <span class="ident">latest_val</span> <span class="op">=</span> <span class="ident">values</span>[<span class="ident">end_idx</span>];
-        <span class="kw">let</span> <span class="ident">idx</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">reverse</span> {
-            <span class="ident">part</span>.<span class="ident">partition_point</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="kw-2">*</span><span class="ident">v</span> <span class="op">&gt;</span> <span class="ident">latest_val</span>)
-        } <span class="kw">else</span> {
-            <span class="ident">part</span>.<span class="ident">partition_point</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="kw-2">*</span><span class="ident">v</span> <span class="op">&lt;</span> <span class="ident">latest_val</span>)
+        <span class="kw">let </span>latest_val = values[end_idx];
+        <span class="kw">let </span>idx = <span class="kw">if </span>reverse {
+            part.partition_point(|v| <span class="kw-2">*</span>v &gt; latest_val)
+        } <span class="kw">else </span>{
+            part.partition_point(|v| <span class="kw-2">*</span>v &lt; latest_val)
         };
 
-        <span class="kw">if</span> <span class="ident">idx</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span> {
-            <span class="ident">partition_points</span>.<span class="ident">push</span>(<span class="ident">idx</span> <span class="op">+</span> <span class="ident">start_idx</span>)
+        <span class="kw">if </span>idx != <span class="number">0 </span>{
+            partition_points.push(idx + start_idx)
         }
 
-        <span class="ident">start_idx</span> <span class="op">+</span><span class="op">=</span> <span class="ident">chunk_size</span>;
+        start_idx += chunk_size;
     }
-    <span class="ident">partition_points</span>
+    partition_points
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">create_clean_partitions</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">values</span>: <span class="kw-2">&amp;</span>[<span class="ident">T</span>], <span class="ident">n</span>: <span class="ident">usize</span>, <span class="ident">reverse</span>: <span class="ident">bool</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">T</span>]<span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Debug</span> <span class="op">+</span> <span class="ident">NativeType</span> <span class="op">+</span> <span class="ident">PartialOrd</span>,
+<span class="kw">pub fn </span>create_clean_partitions&lt;T&gt;(values: <span class="kw-2">&amp;</span>[T], n: usize, reverse: bool) -&gt; Vec&lt;<span class="kw-2">&amp;</span>[T]&gt;
+<span class="kw">where
+    </span>T: Debug + NativeType + PartialOrd,
 {
-    <span class="kw">let</span> <span class="ident">part_idx</span> <span class="op">=</span> <span class="ident">find_partition_points</span>(<span class="ident">values</span>, <span class="ident">n</span>, <span class="ident">reverse</span>);
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">n</span> <span class="op">+</span> <span class="number">1</span>);
+    <span class="kw">let </span>part_idx = find_partition_points(values, n, reverse);
+    <span class="kw">let </span><span class="kw-2">mut </span>out = Vec::with_capacity(n + <span class="number">1</span>);
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">start_idx</span> <span class="op">=</span> <span class="number">0_usize</span>;
-    <span class="kw">for</span> <span class="ident">end_idx</span> <span class="kw">in</span> <span class="ident">part_idx</span> {
-        <span class="kw">if</span> <span class="ident">end_idx</span> <span class="op">!</span><span class="op">=</span> <span class="ident">start_idx</span> {
-            <span class="ident">out</span>.<span class="ident">push</span>(<span class="kw-2">&amp;</span><span class="ident">values</span>[<span class="ident">start_idx</span>..<span class="ident">end_idx</span>]);
-            <span class="ident">start_idx</span> <span class="op">=</span> <span class="ident">end_idx</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>start_idx = <span class="number">0_usize</span>;
+    <span class="kw">for </span>end_idx <span class="kw">in </span>part_idx {
+        <span class="kw">if </span>end_idx != start_idx {
+            out.push(<span class="kw-2">&amp;</span>values[start_idx..end_idx]);
+            start_idx = end_idx;
         }
     }
-    <span class="kw">let</span> <span class="ident">latest</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">values</span>[<span class="ident">start_idx</span>..];
-    <span class="kw">if</span> <span class="op">!</span><span class="ident">latest</span>.<span class="ident">is_empty</span>() {
-        <span class="ident">out</span>.<span class="ident">push</span>(<span class="ident">latest</span>)
+    <span class="kw">let </span>latest = <span class="kw-2">&amp;</span>values[start_idx..];
+    <span class="kw">if </span>!latest.is_empty() {
+        out.push(latest)
     }
 
-    <span class="ident">out</span>
+    out
 }
 
-<span class="doccomment">/// Take a clean-partitioned slice and return the groups slices</span>
-<span class="doccomment">/// With clean-partitioned we mean that the slice contains all groups and are not spilled to another partition.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// `first_group_offset` can be used to add insert the `null` values group.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">partition_to_groups</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
-    <span class="ident">values</span>: <span class="kw-2">&amp;</span>[<span class="ident">T</span>],
-    <span class="ident">first_group_offset</span>: <span class="ident">IdxSize</span>,
-    <span class="ident">nulls_first</span>: <span class="ident">bool</span>,
-    <span class="ident">offset</span>: <span class="ident">IdxSize</span>,
-) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span>[<span class="ident">IdxSize</span>; <span class="number">2</span>]<span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Debug</span> <span class="op">+</span> <span class="ident">NativeType</span> <span class="op">+</span> <span class="ident">PartialOrd</span>,
+<span class="doccomment">/// Take a clean-partitioned slice and return the groups slices
+/// With clean-partitioned we mean that the slice contains all groups and are not spilled to another partition.
+///
+/// `first_group_offset` can be used to add insert the `null` values group.
+</span><span class="kw">pub fn </span>partition_to_groups&lt;T&gt;(
+    values: <span class="kw-2">&amp;</span>[T],
+    first_group_offset: IdxSize,
+    nulls_first: bool,
+    offset: IdxSize,
+) -&gt; Vec&lt;[IdxSize; <span class="number">2</span>]&gt;
+<span class="kw">where
+    </span>T: Debug + NativeType + PartialOrd,
 {
-    <span class="kw">if</span> <span class="ident">values</span>.<span class="ident">is_empty</span>() {
-        <span class="kw">return</span> <span class="macro">vec!</span>[];
+    <span class="kw">if </span>values.is_empty() {
+        <span class="kw">return </span><span class="macro">vec!</span>[];
     }
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">first</span> <span class="op">=</span> <span class="ident">values</span>.<span class="ident">get</span>(<span class="number">0</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">values</span>.<span class="ident">len</span>() <span class="op">/</span> <span class="number">10</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>first = values.get(<span class="number">0</span>).unwrap();
+    <span class="kw">let </span><span class="kw-2">mut </span>out = Vec::with_capacity(values.len() / <span class="number">10</span>);
 
-    <span class="kw">if</span> <span class="ident">nulls_first</span> <span class="op">&amp;&amp;</span> <span class="ident">first_group_offset</span> <span class="op">&gt;</span> <span class="number">0</span> {
-        <span class="ident">out</span>.<span class="ident">push</span>([<span class="number">0</span>, <span class="ident">first_group_offset</span>])
+    <span class="kw">if </span>nulls_first &amp;&amp; first_group_offset &gt; <span class="number">0 </span>{
+        out.push([<span class="number">0</span>, first_group_offset])
     }
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">first_idx</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">nulls_first</span> { <span class="ident">first_group_offset</span> } <span class="kw">else</span> { <span class="number">0</span> } <span class="op">+</span> <span class="ident">offset</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>first_idx = <span class="kw">if </span>nulls_first { first_group_offset } <span class="kw">else </span>{ <span class="number">0 </span>} + offset;
 
-    <span class="kw">for</span> <span class="ident">val</span> <span class="kw">in</span> <span class="ident">values</span> {
-        <span class="comment">// new group reached</span>
-        <span class="kw">if</span> <span class="ident">val</span> <span class="op">!</span><span class="op">=</span> <span class="ident">first</span> {
-            <span class="kw">let</span> <span class="ident">val_ptr</span> <span class="op">=</span> <span class="ident">val</span> <span class="kw">as</span> <span class="kw-2">*const</span> <span class="ident">T</span>;
-            <span class="kw">let</span> <span class="ident">first_ptr</span> <span class="op">=</span> <span class="ident">first</span> <span class="kw">as</span> <span class="kw-2">*const</span> <span class="ident">T</span>;
+    <span class="kw">for </span>val <span class="kw">in </span>values {
+        <span class="comment">// new group reached
+        </span><span class="kw">if </span>val != first {
+            <span class="kw">let </span>val_ptr = val <span class="kw">as </span><span class="kw-2">*const </span>T;
+            <span class="kw">let </span>first_ptr = first <span class="kw">as </span><span class="kw-2">*const </span>T;
 
-            <span class="comment">// Safety</span>
-            <span class="comment">// all pointers suffice the invariants</span>
-            <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">val_ptr</span>.<span class="ident">offset_from</span>(<span class="ident">first_ptr</span>) } <span class="kw">as</span> <span class="ident">IdxSize</span>;
-            <span class="ident">out</span>.<span class="ident">push</span>([<span class="ident">first_idx</span>, <span class="ident">len</span>]);
-            <span class="ident">first_idx</span> <span class="op">+</span><span class="op">=</span> <span class="ident">len</span>;
-            <span class="ident">first</span> <span class="op">=</span> <span class="ident">val</span>;
+            <span class="comment">// Safety
+            // all pointers suffice the invariants
+            </span><span class="kw">let </span>len = <span class="kw">unsafe </span>{ val_ptr.offset_from(first_ptr) } <span class="kw">as </span>IdxSize;
+            out.push([first_idx, len]);
+            first_idx += len;
+            first = val;
         }
     }
-    <span class="comment">// add last group</span>
-    <span class="kw">if</span> <span class="ident">nulls_first</span> {
-        <span class="ident">out</span>.<span class="ident">push</span>([
-            <span class="ident">first_idx</span>,
-            <span class="ident">values</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">IdxSize</span> <span class="op">+</span> <span class="ident">first_group_offset</span> <span class="op">-</span> <span class="ident">first_idx</span>,
+    <span class="comment">// add last group
+    </span><span class="kw">if </span>nulls_first {
+        out.push([
+            first_idx,
+            values.len() <span class="kw">as </span>IdxSize + first_group_offset - first_idx,
         ]);
-    } <span class="kw">else</span> {
-        <span class="ident">out</span>.<span class="ident">push</span>([<span class="ident">first_idx</span>, <span class="ident">values</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">IdxSize</span> <span class="op">-</span> (<span class="ident">first_idx</span> <span class="op">-</span> <span class="ident">offset</span>)]);
+    } <span class="kw">else </span>{
+        out.push([first_idx, values.len() <span class="kw">as </span>IdxSize - (first_idx - offset)]);
     }
 
-    <span class="kw">if</span> <span class="op">!</span><span class="ident">nulls_first</span> <span class="op">&amp;&amp;</span> <span class="ident">first_group_offset</span> <span class="op">&gt;</span> <span class="number">0</span> {
-        <span class="ident">out</span>.<span class="ident">push</span>([<span class="ident">values</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">IdxSize</span> <span class="op">+</span> <span class="ident">offset</span>, <span class="ident">first_group_offset</span>])
+    <span class="kw">if </span>!nulls_first &amp;&amp; first_group_offset &gt; <span class="number">0 </span>{
+        out.push([values.len() <span class="kw">as </span>IdxSize + offset, first_group_offset])
     }
 
-    <span class="ident">out</span>
+    out
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">test</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>test {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_partition_points</span>() {
-        <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="kw-2">&amp;</span>[<span class="number">1</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">5</span>, <span class="number">5</span>, <span class="number">9</span>, <span class="number">9</span>, <span class="number">10</span>];
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_partition_points() {
+        <span class="kw">let </span>values = <span class="kw-2">&amp;</span>[<span class="number">1</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">5</span>, <span class="number">5</span>, <span class="number">9</span>, <span class="number">9</span>, <span class="number">10</span>];
 
-        <span class="macro">assert_eq!</span>(<span class="ident">find_partition_points</span>(<span class="ident">values</span>, <span class="number">4</span>, <span class="bool-val">false</span>), <span class="kw-2">&amp;</span>[<span class="number">1</span>, <span class="number">5</span>, <span class="number">8</span>, <span class="number">10</span>]);
+        <span class="macro">assert_eq!</span>(find_partition_points(values, <span class="number">4</span>, <span class="bool-val">false</span>), <span class="kw-2">&amp;</span>[<span class="number">1</span>, <span class="number">5</span>, <span class="number">8</span>, <span class="number">10</span>]);
         <span class="macro">assert_eq!</span>(
-            <span class="ident">partition_to_groups</span>(<span class="ident">values</span>, <span class="number">0</span>, <span class="bool-val">true</span>, <span class="number">0</span>),
+            partition_to_groups(values, <span class="number">0</span>, <span class="bool-val">true</span>, <span class="number">0</span>),
             <span class="kw-2">&amp;</span>[[<span class="number">0</span>, <span class="number">1</span>], [<span class="number">1</span>, <span class="number">4</span>], [<span class="number">5</span>, <span class="number">3</span>], [<span class="number">8</span>, <span class="number">2</span>], [<span class="number">10</span>, <span class="number">1</span>]]
         );
         <span class="macro">assert_eq!</span>(
-            <span class="ident">partition_to_groups</span>(<span class="ident">values</span>, <span class="number">5</span>, <span class="bool-val">true</span>, <span class="number">0</span>),
+            partition_to_groups(values, <span class="number">5</span>, <span class="bool-val">true</span>, <span class="number">0</span>),
             <span class="kw-2">&amp;</span>[[<span class="number">0</span>, <span class="number">5</span>], [<span class="number">5</span>, <span class="number">1</span>], [<span class="number">6</span>, <span class="number">4</span>], [<span class="number">10</span>, <span class="number">3</span>], [<span class="number">13</span>, <span class="number">2</span>], [<span class="number">15</span>, <span class="number">1</span>]]
         );
         <span class="macro">assert_eq!</span>(
-            <span class="ident">partition_to_groups</span>(<span class="ident">values</span>, <span class="number">5</span>, <span class="bool-val">false</span>, <span class="number">0</span>),
+            partition_to_groups(values, <span class="number">5</span>, <span class="bool-val">false</span>, <span class="number">0</span>),
             <span class="kw-2">&amp;</span>[[<span class="number">0</span>, <span class="number">1</span>], [<span class="number">1</span>, <span class="number">4</span>], [<span class="number">5</span>, <span class="number">3</span>], [<span class="number">8</span>, <span class="number">2</span>], [<span class="number">10</span>, <span class="number">1</span>], [<span class="number">11</span>, <span class="number">5</span>]]
         );
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="polars_arrow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="polars_arrow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.14.2/src/io/parquet/read/row_group.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>row_group.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../arrow2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../arrow2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../arrow2/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.14.2/src/io/parquet/read/row_group.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>row_group.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../normalize.css"><link rel="stylesheet" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../arrow2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../arrow2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../arrow2/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -345,352 +345,352 @@
 <span id="345">345</span>
 <span id="346">346</span>
 <span id="347">347</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::io</span>::{<span class="ident">Read</span>, <span class="ident">Seek</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>std::io::{Read, Seek};
 
-<span class="kw">use</span> <span class="ident">futures</span>::{
-    <span class="ident">future</span>::{<span class="ident">try_join_all</span>, <span class="ident">BoxFuture</span>},
-    <span class="ident">AsyncRead</span>, <span class="ident">AsyncReadExt</span>, <span class="ident">AsyncSeek</span>, <span class="ident">AsyncSeekExt</span>,
+<span class="kw">use </span>futures::{
+    future::{try_join_all, BoxFuture},
+    AsyncRead, AsyncReadExt, AsyncSeek, AsyncSeekExt,
 };
-<span class="kw">use</span> <span class="ident">parquet2</span>::{
-    <span class="ident">indexes::FilteredPage</span>,
-    <span class="ident">metadata::ColumnChunkMetaData</span>,
-    <span class="ident">read</span>::{<span class="ident">BasicDecompressor</span>, <span class="ident">IndexedPageReader</span>, <span class="ident">PageMetaData</span>, <span class="ident">PageReader</span>},
-};
-
-<span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">array::Array</span>, <span class="ident">chunk::Chunk</span>, <span class="ident">datatypes::Field</span>, <span class="ident">error::Result</span>,
-    <span class="ident">io::parquet::read::column_iter_to_arrays</span>,
+<span class="kw">use </span>parquet2::{
+    indexes::FilteredPage,
+    metadata::ColumnChunkMetaData,
+    read::{BasicDecompressor, IndexedPageReader, PageMetaData, PageReader},
 };
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::ArrayIter</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::RowGroupMetaData</span>;
+<span class="kw">use crate</span>::{
+    array::Array, chunk::Chunk, datatypes::Field, error::Result,
+    io::parquet::read::column_iter_to_arrays,
+};
 
-<span class="doccomment">/// An [`Iterator`] of [`Chunk`] that (dynamically) adapts a vector of iterators of [`Array`] into</span>
-<span class="doccomment">/// an iterator of [`Chunk`].</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This struct tracks advances each of the iterators individually and combines the</span>
-<span class="doccomment">/// result in a single [`Chunk`].</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Implementation</span>
-<span class="doccomment">/// This iterator is single-threaded and advancing it is CPU-bounded.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RowGroupDeserializer</span> {
-    <span class="ident">num_rows</span>: <span class="ident">usize</span>,
-    <span class="ident">remaining_rows</span>: <span class="ident">usize</span>,
-    <span class="ident">column_chunks</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ArrayIter</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="kw">use </span><span class="kw">super</span>::ArrayIter;
+<span class="kw">use </span><span class="kw">super</span>::RowGroupMetaData;
+
+<span class="doccomment">/// An [`Iterator`] of [`Chunk`] that (dynamically) adapts a vector of iterators of [`Array`] into
+/// an iterator of [`Chunk`].
+///
+/// This struct tracks advances each of the iterators individually and combines the
+/// result in a single [`Chunk`].
+///
+/// # Implementation
+/// This iterator is single-threaded and advancing it is CPU-bounded.
+</span><span class="kw">pub struct </span>RowGroupDeserializer {
+    num_rows: usize,
+    remaining_rows: usize,
+    column_chunks: Vec&lt;ArrayIter&lt;<span class="lifetime">&#39;static</span>&gt;&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">RowGroupDeserializer</span> {
-    <span class="doccomment">/// Creates a new [`RowGroupDeserializer`].</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Panic</span>
-    <span class="doccomment">/// This function panics iff any of the `column_chunks`</span>
-    <span class="doccomment">/// do not return an array with an equal length.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">column_chunks</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ArrayIter</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">num_rows</span>: <span class="ident">usize</span>,
-        <span class="ident">limit</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">num_rows</span>,
-            <span class="ident">remaining_rows</span>: <span class="ident">limit</span>.<span class="ident">unwrap_or</span>(<span class="ident">usize::MAX</span>).<span class="ident">min</span>(<span class="ident">num_rows</span>),
-            <span class="ident">column_chunks</span>,
+<span class="kw">impl </span>RowGroupDeserializer {
+    <span class="doccomment">/// Creates a new [`RowGroupDeserializer`].
+    ///
+    /// # Panic
+    /// This function panics iff any of the `column_chunks`
+    /// do not return an array with an equal length.
+    </span><span class="kw">pub fn </span>new(
+        column_chunks: Vec&lt;ArrayIter&lt;<span class="lifetime">&#39;static</span>&gt;&gt;,
+        num_rows: usize,
+        limit: <span class="prelude-ty">Option</span>&lt;usize&gt;,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            num_rows,
+            remaining_rows: limit.unwrap_or(usize::MAX).min(num_rows),
+            column_chunks,
         }
     }
 
-    <span class="doccomment">/// Returns the number of rows on this row group</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">num_rows</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">num_rows</span>
+    <span class="doccomment">/// Returns the number of rows on this row group
+    </span><span class="kw">pub fn </span>num_rows(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.num_rows
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">RowGroupDeserializer</span> {
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Chunk</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Array</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+<span class="kw">impl </span>Iterator <span class="kw">for </span>RowGroupDeserializer {
+    <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;Chunk&lt;Box&lt;<span class="kw">dyn </span>Array&gt;&gt;&gt;;
 
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">remaining_rows</span> <span class="op">==</span> <span class="number">0</span> {
-            <span class="kw">return</span> <span class="prelude-val">None</span>;
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
+        <span class="kw">if </span><span class="self">self</span>.remaining_rows == <span class="number">0 </span>{
+            <span class="kw">return </span><span class="prelude-val">None</span>;
         }
-        <span class="kw">let</span> <span class="ident">chunk</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">column_chunks</span>
-            .<span class="ident">iter_mut</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">iter</span><span class="op">|</span> <span class="ident">iter</span>.<span class="ident">next</span>().<span class="ident">unwrap</span>())
-            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()
-            .<span class="ident">and_then</span>(<span class="ident">Chunk::try_new</span>);
-        <span class="self">self</span>.<span class="ident">remaining_rows</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">remaining_rows</span>.<span class="ident">saturating_sub</span>(
-            <span class="ident">chunk</span>
-                .<span class="ident">as_ref</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">len</span>())
-                .<span class="ident">unwrap_or</span>(<span class="self">self</span>.<span class="ident">remaining_rows</span>),
+        <span class="kw">let </span>chunk = <span class="self">self
+            </span>.column_chunks
+            .iter_mut()
+            .map(|iter| iter.next().unwrap())
+            .collect::&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()
+            .and_then(Chunk::try_new);
+        <span class="self">self</span>.remaining_rows = <span class="self">self</span>.remaining_rows.saturating_sub(
+            chunk
+                .as_ref()
+                .map(|x| x.len())
+                .unwrap_or(<span class="self">self</span>.remaining_rows),
         );
 
-        <span class="prelude-val">Some</span>(<span class="ident">chunk</span>)
+        <span class="prelude-val">Some</span>(chunk)
     }
 }
 
-<span class="doccomment">/// Returns all [`ColumnChunkMetaData`] associated to `field_name`.</span>
-<span class="doccomment">/// For non-nested parquet types, this returns a single column</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_field_columns</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
-    <span class="ident">columns</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">ColumnChunkMetaData</span>],
-    <span class="ident">field_name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
-) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">ColumnChunkMetaData</span><span class="op">&gt;</span> {
-    <span class="ident">columns</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">descriptor</span>().<span class="ident">path_in_schema</span>[<span class="number">0</span>] <span class="op">==</span> <span class="ident">field_name</span>)
-        .<span class="ident">collect</span>()
+<span class="doccomment">/// Returns all [`ColumnChunkMetaData`] associated to `field_name`.
+/// For non-nested parquet types, this returns a single column
+</span><span class="kw">pub fn </span>get_field_columns&lt;<span class="lifetime">&#39;a</span>&gt;(
+    columns: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[ColumnChunkMetaData],
+    field_name: <span class="kw-2">&amp;</span>str,
+) -&gt; Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ColumnChunkMetaData&gt; {
+    columns
+        .iter()
+        .filter(|x| x.descriptor().path_in_schema[<span class="number">0</span>] == field_name)
+        .collect()
 }
 
-<span class="doccomment">/// Returns all [`ColumnChunkMetaData`] associated to `field_name`.</span>
-<span class="doccomment">/// For non-nested parquet types, this returns a single column</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_field_pages</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span>(
-    <span class="ident">columns</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">ColumnChunkMetaData</span>],
-    <span class="ident">items</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">T</span>],
-    <span class="ident">field_name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
-) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="ident">columns</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">zip</span>(<span class="ident">items</span>)
-        .<span class="ident">filter</span>(<span class="op">|</span>(<span class="ident">metadata</span>, <span class="kw">_</span>)<span class="op">|</span> <span class="ident">metadata</span>.<span class="ident">descriptor</span>().<span class="ident">path_in_schema</span>[<span class="number">0</span>] <span class="op">==</span> <span class="ident">field_name</span>)
-        .<span class="ident">map</span>(<span class="op">|</span>(<span class="kw">_</span>, <span class="ident">item</span>)<span class="op">|</span> <span class="ident">item</span>)
-        .<span class="ident">collect</span>()
+<span class="doccomment">/// Returns all [`ColumnChunkMetaData`] associated to `field_name`.
+/// For non-nested parquet types, this returns a single column
+</span><span class="kw">pub fn </span>get_field_pages&lt;<span class="lifetime">&#39;a</span>, T&gt;(
+    columns: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[ColumnChunkMetaData],
+    items: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[T],
+    field_name: <span class="kw-2">&amp;</span>str,
+) -&gt; Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>T&gt; {
+    columns
+        .iter()
+        .zip(items)
+        .filter(|(metadata, <span class="kw">_</span>)| metadata.descriptor().path_in_schema[<span class="number">0</span>] == field_name)
+        .map(|(<span class="kw">_</span>, item)| item)
+        .collect()
 }
 
-<span class="doccomment">/// Reads all columns that are part of the parquet field `field_name`</span>
-<span class="doccomment">/// # Implementation</span>
-<span class="doccomment">/// This operation is IO-bounded `O(C)` where C is the number of columns associated to</span>
-<span class="doccomment">/// the field (one for non-nested types)</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_columns</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">Read</span> <span class="op">+</span> <span class="ident">Seek</span><span class="op">&gt;</span>(
-    <span class="ident">reader</span>: <span class="kw-2">&amp;mut</span> <span class="ident">R</span>,
-    <span class="ident">columns</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">ColumnChunkMetaData</span>],
-    <span class="ident">field_name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">ColumnChunkMetaData</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>)<span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="ident">get_field_columns</span>(<span class="ident">columns</span>, <span class="ident">field_name</span>)
-        .<span class="ident">into_iter</span>()
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">meta</span><span class="op">|</span> <span class="ident">_read_single_column</span>(<span class="ident">reader</span>, <span class="ident">meta</span>))
-        .<span class="ident">collect</span>()
+<span class="doccomment">/// Reads all columns that are part of the parquet field `field_name`
+/// # Implementation
+/// This operation is IO-bounded `O(C)` where C is the number of columns associated to
+/// the field (one for non-nested types)
+</span><span class="kw">pub fn </span>read_columns&lt;<span class="lifetime">&#39;a</span>, R: Read + Seek&gt;(
+    reader: <span class="kw-2">&amp;mut </span>R,
+    columns: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[ColumnChunkMetaData],
+    field_name: <span class="kw-2">&amp;</span>str,
+) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ColumnChunkMetaData, Vec&lt;u8&gt;)&gt;&gt; {
+    get_field_columns(columns, field_name)
+        .into_iter()
+        .map(|meta| _read_single_column(reader, meta))
+        .collect()
 }
 
-<span class="kw">fn</span> <span class="ident">_read_single_column</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span><span class="op">&gt;</span>(
-    <span class="ident">reader</span>: <span class="kw-2">&amp;mut</span> <span class="ident">R</span>,
-    <span class="ident">meta</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">ColumnChunkMetaData</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">ColumnChunkMetaData</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>)<span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">Read</span> <span class="op">+</span> <span class="ident">Seek</span>,
+<span class="kw">fn </span>_read_single_column&lt;<span class="lifetime">&#39;a</span>, R&gt;(
+    reader: <span class="kw-2">&amp;mut </span>R,
+    meta: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ColumnChunkMetaData,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ColumnChunkMetaData, Vec&lt;u8&gt;)&gt;
+<span class="kw">where
+    </span>R: Read + Seek,
 {
-    <span class="kw">let</span> (<span class="ident">start</span>, <span class="ident">length</span>) <span class="op">=</span> <span class="ident">meta</span>.<span class="ident">byte_range</span>();
-    <span class="ident">reader</span>.<span class="ident">seek</span>(<span class="ident">std::io::SeekFrom::Start</span>(<span class="ident">start</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span>(start, length) = meta.byte_range();
+    reader.seek(std::io::SeekFrom::Start(start))<span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chunk</span> <span class="op">=</span> <span class="macro">vec!</span>[];
-    <span class="ident">chunk</span>.<span class="ident">try_reserve</span>(<span class="ident">length</span> <span class="kw">as</span> <span class="ident">usize</span>)<span class="question-mark">?</span>;
-    <span class="ident">reader</span>
-        .<span class="ident">by_ref</span>()
-        .<span class="ident">take</span>(<span class="ident">length</span> <span class="kw">as</span> <span class="ident">u64</span>)
-        .<span class="ident">read_to_end</span>(<span class="kw-2">&amp;mut</span> <span class="ident">chunk</span>)<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>((<span class="ident">meta</span>, <span class="ident">chunk</span>))
+    <span class="kw">let </span><span class="kw-2">mut </span>chunk = <span class="macro">vec!</span>[];
+    chunk.try_reserve(length <span class="kw">as </span>usize)<span class="question-mark">?</span>;
+    reader
+        .by_ref()
+        .take(length <span class="kw">as </span>u64)
+        .read_to_end(<span class="kw-2">&amp;mut </span>chunk)<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>((meta, chunk))
 }
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">_read_single_column_async</span><span class="op">&lt;</span><span class="lifetime">&#39;b</span>, <span class="ident">R</span>, <span class="ident">F</span><span class="op">&gt;</span>(
-    <span class="ident">factory</span>: <span class="ident">F</span>,
-    <span class="ident">meta</span>: <span class="kw-2">&amp;</span><span class="ident">ColumnChunkMetaData</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="ident">ColumnChunkMetaData</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>)<span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">AsyncRead</span> <span class="op">+</span> <span class="ident">AsyncSeek</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Unpin</span>,
-    <span class="ident">F</span>: <span class="ident">Fn</span>() -&gt; <span class="ident">BoxFuture</span><span class="op">&lt;</span><span class="lifetime">&#39;b</span>, <span class="ident">std::io::Result</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="kw">async fn </span>_read_single_column_async&lt;<span class="lifetime">&#39;b</span>, R, F&gt;(
+    factory: F,
+    meta: <span class="kw-2">&amp;</span>ColumnChunkMetaData,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="kw-2">&amp;</span>ColumnChunkMetaData, Vec&lt;u8&gt;)&gt;
+<span class="kw">where
+    </span>R: AsyncRead + AsyncSeek + Send + Unpin,
+    F: Fn() -&gt; BoxFuture&lt;<span class="lifetime">&#39;b</span>, std::io::Result&lt;R&gt;&gt;,
 {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">factory</span>().<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> (<span class="ident">start</span>, <span class="ident">length</span>) <span class="op">=</span> <span class="ident">meta</span>.<span class="ident">byte_range</span>();
-    <span class="ident">reader</span>.<span class="ident">seek</span>(<span class="ident">std::io::SeekFrom::Start</span>(<span class="ident">start</span>)).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>reader = factory().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>(start, length) = meta.byte_range();
+    reader.seek(std::io::SeekFrom::Start(start)).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chunk</span> <span class="op">=</span> <span class="macro">vec!</span>[];
-    <span class="ident">chunk</span>.<span class="ident">try_reserve</span>(<span class="ident">length</span> <span class="kw">as</span> <span class="ident">usize</span>)<span class="question-mark">?</span>;
-    <span class="ident">reader</span>.<span class="ident">take</span>(<span class="ident">length</span> <span class="kw">as</span> <span class="ident">u64</span>).<span class="ident">read_to_end</span>(<span class="kw-2">&amp;mut</span> <span class="ident">chunk</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="ident">Result::Ok</span>((<span class="ident">meta</span>, <span class="ident">chunk</span>))
+    <span class="kw">let </span><span class="kw-2">mut </span>chunk = <span class="macro">vec!</span>[];
+    chunk.try_reserve(length <span class="kw">as </span>usize)<span class="question-mark">?</span>;
+    reader.take(length <span class="kw">as </span>u64).read_to_end(<span class="kw-2">&amp;mut </span>chunk).<span class="kw">await</span><span class="question-mark">?</span>;
+    Result::Ok((meta, chunk))
 }
 
-<span class="doccomment">/// Reads all columns that are part of the parquet field `field_name`</span>
-<span class="doccomment">/// # Implementation</span>
-<span class="doccomment">/// This operation is IO-bounded `O(C)` where C is the number of columns associated to</span>
-<span class="doccomment">/// the field (one for non-nested types)</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// It does so asynchronously via a single `join_all` over all the necessary columns for</span>
-<span class="doccomment">/// `field_name`.</span>
-<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_columns_async</span><span class="op">&lt;</span>
+<span class="doccomment">/// Reads all columns that are part of the parquet field `field_name`
+/// # Implementation
+/// This operation is IO-bounded `O(C)` where C is the number of columns associated to
+/// the field (one for non-nested types)
+///
+/// It does so asynchronously via a single `join_all` over all the necessary columns for
+/// `field_name`.
+</span><span class="kw">pub async fn </span>read_columns_async&lt;
     <span class="lifetime">&#39;a</span>,
     <span class="lifetime">&#39;b</span>,
-    <span class="ident">R</span>: <span class="ident">AsyncRead</span> <span class="op">+</span> <span class="ident">AsyncSeek</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Unpin</span>,
-    <span class="ident">F</span>: <span class="ident">Fn</span>() -&gt; <span class="ident">BoxFuture</span><span class="op">&lt;</span><span class="lifetime">&#39;b</span>, <span class="ident">std::io::Result</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Clone</span>,
-<span class="op">&gt;</span>(
-    <span class="ident">factory</span>: <span class="ident">F</span>,
-    <span class="ident">columns</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">ColumnChunkMetaData</span>],
-    <span class="ident">field_name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">ColumnChunkMetaData</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>)<span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">futures</span> <span class="op">=</span> <span class="ident">get_field_columns</span>(<span class="ident">columns</span>, <span class="ident">field_name</span>)
-        .<span class="ident">into_iter</span>()
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">meta</span><span class="op">|</span> <span class="kw">async</span> { <span class="ident">_read_single_column_async</span>(<span class="ident">factory</span>.<span class="ident">clone</span>(), <span class="ident">meta</span>).<span class="kw">await</span> });
+    R: AsyncRead + AsyncSeek + Send + Unpin,
+    F: Fn() -&gt; BoxFuture&lt;<span class="lifetime">&#39;b</span>, std::io::Result&lt;R&gt;&gt; + Clone,
+&gt;(
+    factory: F,
+    columns: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[ColumnChunkMetaData],
+    field_name: <span class="kw-2">&amp;</span>str,
+) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ColumnChunkMetaData, Vec&lt;u8&gt;)&gt;&gt; {
+    <span class="kw">let </span>futures = get_field_columns(columns, field_name)
+        .into_iter()
+        .map(|meta| <span class="kw">async </span>{ _read_single_column_async(factory.clone(), meta).<span class="kw">await </span>});
 
-    <span class="ident">try_join_all</span>(<span class="ident">futures</span>).<span class="kw">await</span>
-}
+    try_join_all(futures).<span class="kw">await
+</span>}
 
-<span class="kw">type</span> <span class="ident">Pages</span> <span class="op">=</span> <span class="ident">Box</span><span class="op">&lt;</span>
-    <span class="kw">dyn</span> <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">std::result::Result</span><span class="op">&lt;</span><span class="ident">parquet2::page::CompressedPage</span>, <span class="ident">parquet2::error::Error</span><span class="op">&gt;</span><span class="op">&gt;</span>
-        <span class="op">+</span> <span class="ident">Sync</span>
-        <span class="op">+</span> <span class="ident">Send</span>,
-<span class="op">&gt;</span>;
+<span class="kw">type </span>Pages = Box&lt;
+    <span class="kw">dyn </span>Iterator&lt;Item = std::result::Result&lt;parquet2::page::CompressedPage, parquet2::error::Error&gt;&gt;
+        + Sync
+        + Send,
+&gt;;
 
-<span class="doccomment">/// Converts a vector of columns associated with the parquet field whose name is [`Field`]</span>
-<span class="doccomment">/// to an iterator of [`Array`], [`ArrayIter`] of chunk size `chunk_size`.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_deserializer</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
-    <span class="ident">columns</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="ident">ColumnChunkMetaData</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>)<span class="op">&gt;</span>,
-    <span class="ident">field</span>: <span class="ident">Field</span>,
-    <span class="ident">num_rows</span>: <span class="ident">usize</span>,
-    <span class="ident">chunk_size</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
-    <span class="ident">pages</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">FilteredPage</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ArrayIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">chunk_size</span> <span class="op">=</span> <span class="ident">chunk_size</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">c</span><span class="op">|</span> <span class="ident">c</span>.<span class="ident">min</span>(<span class="ident">num_rows</span>));
+<span class="doccomment">/// Converts a vector of columns associated with the parquet field whose name is [`Field`]
+/// to an iterator of [`Array`], [`ArrayIter`] of chunk size `chunk_size`.
+</span><span class="kw">pub fn </span>to_deserializer&lt;<span class="lifetime">&#39;a</span>&gt;(
+    columns: Vec&lt;(<span class="kw-2">&amp;</span>ColumnChunkMetaData, Vec&lt;u8&gt;)&gt;,
+    field: Field,
+    num_rows: usize,
+    chunk_size: <span class="prelude-ty">Option</span>&lt;usize&gt;,
+    pages: <span class="prelude-ty">Option</span>&lt;Vec&lt;Vec&lt;FilteredPage&gt;&gt;&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;ArrayIter&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+    <span class="kw">let </span>chunk_size = chunk_size.map(|c| c.min(num_rows));
 
-    <span class="kw">let</span> (<span class="ident">columns</span>, <span class="ident">types</span>) <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pages</span>) <span class="op">=</span> <span class="ident">pages</span> {
-        <span class="kw">let</span> (<span class="ident">columns</span>, <span class="ident">types</span>): (<span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span>) <span class="op">=</span> <span class="ident">columns</span>
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">zip</span>(<span class="ident">pages</span>.<span class="ident">into_iter</span>())
-            .<span class="ident">map</span>(<span class="op">|</span>((<span class="ident">column_meta</span>, <span class="ident">chunk</span>), <span class="kw-2">mut</span> <span class="ident">pages</span>)<span class="op">|</span> {
-                <span class="comment">// de-offset the start, since we read in chunks (and offset is from start of file)</span>
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">meta</span>: <span class="ident">PageMetaData</span> <span class="op">=</span> <span class="ident">column_meta</span>.<span class="ident">into</span>();
-                <span class="ident">pages</span>
-                    .<span class="ident">iter_mut</span>()
-                    .<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">page</span><span class="op">|</span> <span class="ident">page</span>.<span class="ident">start</span> <span class="op">-</span><span class="op">=</span> <span class="ident">meta</span>.<span class="ident">column_start</span>);
-                <span class="ident">meta</span>.<span class="ident">column_start</span> <span class="op">=</span> <span class="number">0</span>;
-                <span class="kw">let</span> <span class="ident">pages</span> <span class="op">=</span> <span class="ident">IndexedPageReader::new_with_page_meta</span>(
-                    <span class="ident">std::io::Cursor::new</span>(<span class="ident">chunk</span>),
-                    <span class="ident">meta</span>,
-                    <span class="ident">pages</span>,
+    <span class="kw">let </span>(columns, types) = <span class="kw">if let </span><span class="prelude-val">Some</span>(pages) = pages {
+        <span class="kw">let </span>(columns, types): (Vec&lt;<span class="kw">_</span>&gt;, Vec&lt;<span class="kw">_</span>&gt;) = columns
+            .into_iter()
+            .zip(pages.into_iter())
+            .map(|((column_meta, chunk), <span class="kw-2">mut </span>pages)| {
+                <span class="comment">// de-offset the start, since we read in chunks (and offset is from start of file)
+                </span><span class="kw">let </span><span class="kw-2">mut </span>meta: PageMetaData = column_meta.into();
+                pages
+                    .iter_mut()
+                    .for_each(|page| page.start -= meta.column_start);
+                meta.column_start = <span class="number">0</span>;
+                <span class="kw">let </span>pages = IndexedPageReader::new_with_page_meta(
+                    std::io::Cursor::new(chunk),
+                    meta,
+                    pages,
                     <span class="macro">vec!</span>[],
                     <span class="macro">vec!</span>[],
                 );
-                <span class="kw">let</span> <span class="ident">pages</span> <span class="op">=</span> <span class="ident">Box::new</span>(<span class="ident">pages</span>) <span class="kw">as</span> <span class="ident">Pages</span>;
+                <span class="kw">let </span>pages = Box::new(pages) <span class="kw">as </span>Pages;
                 (
-                    <span class="ident">BasicDecompressor::new</span>(<span class="ident">pages</span>, <span class="macro">vec!</span>[]),
-                    <span class="kw-2">&amp;</span><span class="ident">column_meta</span>.<span class="ident">descriptor</span>().<span class="ident">descriptor</span>.<span class="ident">primitive_type</span>,
+                    BasicDecompressor::new(pages, <span class="macro">vec!</span>[]),
+                    <span class="kw-2">&amp;</span>column_meta.descriptor().descriptor.primitive_type,
                 )
             })
-            .<span class="ident">unzip</span>();
+            .unzip();
 
-        (<span class="ident">columns</span>, <span class="ident">types</span>)
-    } <span class="kw">else</span> {
-        <span class="kw">let</span> (<span class="ident">columns</span>, <span class="ident">types</span>): (<span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span>) <span class="op">=</span> <span class="ident">columns</span>
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">column_meta</span>, <span class="ident">chunk</span>)<span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">chunk</span>.<span class="ident">len</span>();
-                <span class="kw">let</span> <span class="ident">pages</span> <span class="op">=</span> <span class="ident">PageReader::new</span>(
-                    <span class="ident">std::io::Cursor::new</span>(<span class="ident">chunk</span>),
-                    <span class="ident">column_meta</span>,
-                    <span class="ident">std::sync::Arc::new</span>(<span class="op">|</span><span class="kw">_</span>, <span class="kw">_</span><span class="op">|</span> <span class="bool-val">true</span>),
+        (columns, types)
+    } <span class="kw">else </span>{
+        <span class="kw">let </span>(columns, types): (Vec&lt;<span class="kw">_</span>&gt;, Vec&lt;<span class="kw">_</span>&gt;) = columns
+            .into_iter()
+            .map(|(column_meta, chunk)| {
+                <span class="kw">let </span>len = chunk.len();
+                <span class="kw">let </span>pages = PageReader::new(
+                    std::io::Cursor::new(chunk),
+                    column_meta,
+                    std::sync::Arc::new(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="bool-val">true</span>),
                     <span class="macro">vec!</span>[],
-                    <span class="ident">len</span> <span class="op">*</span> <span class="number">2</span> <span class="op">+</span> <span class="number">1024</span>,
+                    len * <span class="number">2 </span>+ <span class="number">1024</span>,
                 );
-                <span class="kw">let</span> <span class="ident">pages</span> <span class="op">=</span> <span class="ident">Box::new</span>(<span class="ident">pages</span>) <span class="kw">as</span> <span class="ident">Pages</span>;
+                <span class="kw">let </span>pages = Box::new(pages) <span class="kw">as </span>Pages;
                 (
-                    <span class="ident">BasicDecompressor::new</span>(<span class="ident">pages</span>, <span class="macro">vec!</span>[]),
-                    <span class="kw-2">&amp;</span><span class="ident">column_meta</span>.<span class="ident">descriptor</span>().<span class="ident">descriptor</span>.<span class="ident">primitive_type</span>,
+                    BasicDecompressor::new(pages, <span class="macro">vec!</span>[]),
+                    <span class="kw-2">&amp;</span>column_meta.descriptor().descriptor.primitive_type,
                 )
             })
-            .<span class="ident">unzip</span>();
+            .unzip();
 
-        (<span class="ident">columns</span>, <span class="ident">types</span>)
+        (columns, types)
     };
 
-    <span class="ident">column_iter_to_arrays</span>(<span class="ident">columns</span>, <span class="ident">types</span>, <span class="ident">field</span>, <span class="ident">chunk_size</span>, <span class="ident">num_rows</span>)
+    column_iter_to_arrays(columns, types, field, chunk_size, num_rows)
 }
 
-<span class="doccomment">/// Returns a vector of iterators of [`Array`] ([`ArrayIter`]) corresponding to the top</span>
-<span class="doccomment">/// level parquet fields whose name matches `fields`&#39;s names.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Implementation</span>
-<span class="doccomment">/// This operation is IO-bounded `O(C)` where C is the number of columns in the row group -</span>
-<span class="doccomment">/// it reads all the columns to memory from the row group associated to the requested fields.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This operation is single-threaded. For readers with stronger invariants</span>
-<span class="doccomment">/// (e.g. implement [`Clone`]) you can use [`read_columns`] to read multiple columns at once</span>
-<span class="doccomment">/// and convert them to [`ArrayIter`] via [`to_deserializer`].</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_columns_many</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">R</span>: <span class="ident">Read</span> <span class="op">+</span> <span class="ident">Seek</span><span class="op">&gt;</span>(
-    <span class="ident">reader</span>: <span class="kw-2">&amp;mut</span> <span class="ident">R</span>,
-    <span class="ident">row_group</span>: <span class="kw-2">&amp;</span><span class="ident">RowGroupMetaData</span>,
-    <span class="ident">fields</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Field</span><span class="op">&gt;</span>,
-    <span class="ident">chunk_size</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
-    <span class="ident">limit</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
-    <span class="ident">pages</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">FilteredPage</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ArrayIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">num_rows</span> <span class="op">=</span> <span class="ident">row_group</span>.<span class="ident">num_rows</span>();
-    <span class="kw">let</span> <span class="ident">num_rows</span> <span class="op">=</span> <span class="ident">limit</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">limit</span><span class="op">|</span> <span class="ident">limit</span>.<span class="ident">min</span>(<span class="ident">num_rows</span>)).<span class="ident">unwrap_or</span>(<span class="ident">num_rows</span>);
+<span class="doccomment">/// Returns a vector of iterators of [`Array`] ([`ArrayIter`]) corresponding to the top
+/// level parquet fields whose name matches `fields`&#39;s names.
+///
+/// # Implementation
+/// This operation is IO-bounded `O(C)` where C is the number of columns in the row group -
+/// it reads all the columns to memory from the row group associated to the requested fields.
+///
+/// This operation is single-threaded. For readers with stronger invariants
+/// (e.g. implement [`Clone`]) you can use [`read_columns`] to read multiple columns at once
+/// and convert them to [`ArrayIter`] via [`to_deserializer`].
+</span><span class="kw">pub fn </span>read_columns_many&lt;<span class="lifetime">&#39;a</span>, R: Read + Seek&gt;(
+    reader: <span class="kw-2">&amp;mut </span>R,
+    row_group: <span class="kw-2">&amp;</span>RowGroupMetaData,
+    fields: Vec&lt;Field&gt;,
+    chunk_size: <span class="prelude-ty">Option</span>&lt;usize&gt;,
+    limit: <span class="prelude-ty">Option</span>&lt;usize&gt;,
+    pages: <span class="prelude-ty">Option</span>&lt;Vec&lt;Vec&lt;Vec&lt;FilteredPage&gt;&gt;&gt;&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;ArrayIter&lt;<span class="lifetime">&#39;a</span>&gt;&gt;&gt; {
+    <span class="kw">let </span>num_rows = row_group.num_rows();
+    <span class="kw">let </span>num_rows = limit.map(|limit| limit.min(num_rows)).unwrap_or(num_rows);
 
-    <span class="comment">// reads all the necessary columns for all fields from the row group</span>
-    <span class="comment">// This operation is IO-bounded `O(C)` where C is the number of columns in the row group</span>
-    <span class="kw">let</span> <span class="ident">field_columns</span> <span class="op">=</span> <span class="ident">fields</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">field</span><span class="op">|</span> <span class="ident">read_columns</span>(<span class="ident">reader</span>, <span class="ident">row_group</span>.<span class="ident">columns</span>(), <span class="kw-2">&amp;</span><span class="ident">field</span>.<span class="ident">name</span>))
-        .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+    <span class="comment">// reads all the necessary columns for all fields from the row group
+    // This operation is IO-bounded `O(C)` where C is the number of columns in the row group
+    </span><span class="kw">let </span>field_columns = fields
+        .iter()
+        .map(|field| read_columns(reader, row_group.columns(), <span class="kw-2">&amp;</span>field.name))
+        .collect::&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
 
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pages</span>) <span class="op">=</span> <span class="ident">pages</span> {
-        <span class="ident">field_columns</span>
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">zip</span>(<span class="ident">fields</span>)
-            .<span class="ident">zip</span>(<span class="ident">pages</span>)
-            .<span class="ident">map</span>(<span class="op">|</span>((<span class="ident">columns</span>, <span class="ident">field</span>), <span class="ident">pages</span>)<span class="op">|</span> {
-                <span class="ident">to_deserializer</span>(<span class="ident">columns</span>, <span class="ident">field</span>, <span class="ident">num_rows</span>, <span class="ident">chunk_size</span>, <span class="prelude-val">Some</span>(<span class="ident">pages</span>))
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(pages) = pages {
+        field_columns
+            .into_iter()
+            .zip(fields)
+            .zip(pages)
+            .map(|((columns, field), pages)| {
+                to_deserializer(columns, field, num_rows, chunk_size, <span class="prelude-val">Some</span>(pages))
             })
-            .<span class="ident">collect</span>()
-    } <span class="kw">else</span> {
-        <span class="ident">field_columns</span>
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">zip</span>(<span class="ident">fields</span>.<span class="ident">into_iter</span>())
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">columns</span>, <span class="ident">field</span>)<span class="op">|</span> <span class="ident">to_deserializer</span>(<span class="ident">columns</span>, <span class="ident">field</span>, <span class="ident">num_rows</span>, <span class="ident">chunk_size</span>, <span class="prelude-val">None</span>))
-            .<span class="ident">collect</span>()
+            .collect()
+    } <span class="kw">else </span>{
+        field_columns
+            .into_iter()
+            .zip(fields.into_iter())
+            .map(|(columns, field)| to_deserializer(columns, field, num_rows, chunk_size, <span class="prelude-val">None</span>))
+            .collect()
     }
 }
 
-<span class="doccomment">/// Returns a vector of iterators of [`Array`] corresponding to the top level parquet fields whose</span>
-<span class="doccomment">/// name matches `fields`&#39;s names.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Implementation</span>
-<span class="doccomment">/// This operation is IO-bounded `O(C)` where C is the number of columns in the row group -</span>
-<span class="doccomment">/// it reads all the columns to memory from the row group associated to the requested fields.</span>
-<span class="doccomment">/// It does so asynchronously via `join_all`</span>
-<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_columns_many_async</span><span class="op">&lt;</span>
+<span class="doccomment">/// Returns a vector of iterators of [`Array`] corresponding to the top level parquet fields whose
+/// name matches `fields`&#39;s names.
+///
+/// # Implementation
+/// This operation is IO-bounded `O(C)` where C is the number of columns in the row group -
+/// it reads all the columns to memory from the row group associated to the requested fields.
+/// It does so asynchronously via `join_all`
+</span><span class="kw">pub async fn </span>read_columns_many_async&lt;
     <span class="lifetime">&#39;a</span>,
     <span class="lifetime">&#39;b</span>,
-    <span class="ident">R</span>: <span class="ident">AsyncRead</span> <span class="op">+</span> <span class="ident">AsyncSeek</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Unpin</span>,
-    <span class="ident">F</span>: <span class="ident">Fn</span>() -&gt; <span class="ident">BoxFuture</span><span class="op">&lt;</span><span class="lifetime">&#39;b</span>, <span class="ident">std::io::Result</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Clone</span>,
-<span class="op">&gt;</span>(
-    <span class="ident">factory</span>: <span class="ident">F</span>,
-    <span class="ident">row_group</span>: <span class="kw-2">&amp;</span><span class="ident">RowGroupMetaData</span>,
-    <span class="ident">fields</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Field</span><span class="op">&gt;</span>,
-    <span class="ident">chunk_size</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
-    <span class="ident">limit</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
-    <span class="ident">pages</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">FilteredPage</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ArrayIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">num_rows</span> <span class="op">=</span> <span class="ident">row_group</span>.<span class="ident">num_rows</span>();
-    <span class="kw">let</span> <span class="ident">num_rows</span> <span class="op">=</span> <span class="ident">limit</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">limit</span><span class="op">|</span> <span class="ident">limit</span>.<span class="ident">min</span>(<span class="ident">num_rows</span>)).<span class="ident">unwrap_or</span>(<span class="ident">num_rows</span>);
+    R: AsyncRead + AsyncSeek + Send + Unpin,
+    F: Fn() -&gt; BoxFuture&lt;<span class="lifetime">&#39;b</span>, std::io::Result&lt;R&gt;&gt; + Clone,
+&gt;(
+    factory: F,
+    row_group: <span class="kw-2">&amp;</span>RowGroupMetaData,
+    fields: Vec&lt;Field&gt;,
+    chunk_size: <span class="prelude-ty">Option</span>&lt;usize&gt;,
+    limit: <span class="prelude-ty">Option</span>&lt;usize&gt;,
+    pages: <span class="prelude-ty">Option</span>&lt;Vec&lt;Vec&lt;Vec&lt;FilteredPage&gt;&gt;&gt;&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;ArrayIter&lt;<span class="lifetime">&#39;a</span>&gt;&gt;&gt; {
+    <span class="kw">let </span>num_rows = row_group.num_rows();
+    <span class="kw">let </span>num_rows = limit.map(|limit| limit.min(num_rows)).unwrap_or(num_rows);
 
-    <span class="kw">let</span> <span class="ident">futures</span> <span class="op">=</span> <span class="ident">fields</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">field</span><span class="op">|</span> <span class="ident">read_columns_async</span>(<span class="ident">factory</span>.<span class="ident">clone</span>(), <span class="ident">row_group</span>.<span class="ident">columns</span>(), <span class="kw-2">&amp;</span><span class="ident">field</span>.<span class="ident">name</span>));
+    <span class="kw">let </span>futures = fields
+        .iter()
+        .map(|field| read_columns_async(factory.clone(), row_group.columns(), <span class="kw-2">&amp;</span>field.name));
 
-    <span class="kw">let</span> <span class="ident">field_columns</span> <span class="op">=</span> <span class="ident">try_join_all</span>(<span class="ident">futures</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>field_columns = try_join_all(futures).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pages</span>) <span class="op">=</span> <span class="ident">pages</span> {
-        <span class="ident">field_columns</span>
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">zip</span>(<span class="ident">fields</span>)
-            .<span class="ident">zip</span>(<span class="ident">pages</span>)
-            .<span class="ident">map</span>(<span class="op">|</span>((<span class="ident">columns</span>, <span class="ident">field</span>), <span class="ident">pages</span>)<span class="op">|</span> {
-                <span class="ident">to_deserializer</span>(<span class="ident">columns</span>, <span class="ident">field</span>, <span class="ident">num_rows</span>, <span class="ident">chunk_size</span>, <span class="prelude-val">Some</span>(<span class="ident">pages</span>))
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(pages) = pages {
+        field_columns
+            .into_iter()
+            .zip(fields)
+            .zip(pages)
+            .map(|((columns, field), pages)| {
+                to_deserializer(columns, field, num_rows, chunk_size, <span class="prelude-val">Some</span>(pages))
             })
-            .<span class="ident">collect</span>()
-    } <span class="kw">else</span> {
-        <span class="ident">field_columns</span>
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">zip</span>(<span class="ident">fields</span>.<span class="ident">into_iter</span>())
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">columns</span>, <span class="ident">field</span>)<span class="op">|</span> <span class="ident">to_deserializer</span>(<span class="ident">columns</span>, <span class="ident">field</span>, <span class="ident">num_rows</span>, <span class="ident">chunk_size</span>, <span class="prelude-val">None</span>))
-            .<span class="ident">collect</span>()
+            .collect()
+    } <span class="kw">else </span>{
+        field_columns
+            .into_iter()
+            .zip(fields.into_iter())
+            .map(|(columns, field)| to_deserializer(columns, field, num_rows, chunk_size, <span class="prelude-val">None</span>))
+            .collect()
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="arrow2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="arrow2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

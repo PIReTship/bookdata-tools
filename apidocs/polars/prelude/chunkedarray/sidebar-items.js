@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["unix_time",""]],"trait":[["DateMethods",""],["DatetimeMethods",""],["DurationMethods",""],["RollingAgg",""],["TimeMethods",""],["Utf8Methods",""]]};

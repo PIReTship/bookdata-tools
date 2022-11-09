@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.25.1/src/physical_plan/executors/groupby_partitioned.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>groupby_partitioned.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.25.1/src/physical_plan/executors/groupby_partitioned.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>groupby_partitioned.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -321,328 +321,328 @@
 <span id="321">321</span>
 <span id="322">322</span>
 <span id="323">323</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">polars_core::utils</span>::{<span class="ident">accumulate_dataframes_vertical</span>, <span class="ident">split_df</span>};
-<span class="kw">use</span> <span class="ident">polars_core::POOL</span>;
-<span class="kw">use</span> <span class="ident">rayon::prelude</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>polars_core::utils::{accumulate_dataframes_vertical, split_df};
+<span class="kw">use </span>polars_core::POOL;
+<span class="kw">use </span>rayon::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+<span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-<span class="doccomment">/// Take an input Executor and a multiple expressions</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PartitionGroupByExec</span> {
-    <span class="ident">input</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Executor</span><span class="op">&gt;</span>,
-    <span class="ident">keys</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">phys_aggs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">maintain_order</span>: <span class="ident">bool</span>,
-    <span class="ident">slice</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">i64</span>, <span class="ident">usize</span>)<span class="op">&gt;</span>,
-    <span class="ident">input_schema</span>: <span class="ident">SchemaRef</span>,
+<span class="doccomment">/// Take an input Executor and a multiple expressions
+</span><span class="kw">pub struct </span>PartitionGroupByExec {
+    input: Box&lt;<span class="kw">dyn </span>Executor&gt;,
+    keys: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
+    phys_aggs: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
+    maintain_order: bool,
+    slice: <span class="prelude-ty">Option</span>&lt;(i64, usize)&gt;,
+    input_schema: SchemaRef,
 }
 
-<span class="kw">impl</span> <span class="ident">PartitionGroupByExec</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">input</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Executor</span><span class="op">&gt;</span>,
-        <span class="ident">keys</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">phys_aggs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">maintain_order</span>: <span class="ident">bool</span>,
-        <span class="ident">slice</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">i64</span>, <span class="ident">usize</span>)<span class="op">&gt;</span>,
-        <span class="ident">input_schema</span>: <span class="ident">SchemaRef</span>,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">input</span>,
-            <span class="ident">keys</span>,
-            <span class="ident">phys_aggs</span>,
-            <span class="ident">maintain_order</span>,
-            <span class="ident">slice</span>,
-            <span class="ident">input_schema</span>,
+<span class="kw">impl </span>PartitionGroupByExec {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(
+        input: Box&lt;<span class="kw">dyn </span>Executor&gt;,
+        keys: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
+        phys_aggs: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
+        maintain_order: bool,
+        slice: <span class="prelude-ty">Option</span>&lt;(i64, usize)&gt;,
+        input_schema: SchemaRef,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            input,
+            keys,
+            phys_aggs,
+            maintain_order,
+            slice,
+            input_schema,
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">df</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>, <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionState</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="ident">compute_keys</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">keys</span>, <span class="ident">df</span>, <span class="ident">state</span>)
+    <span class="kw">fn </span>keys(<span class="kw-2">&amp;</span><span class="self">self</span>, df: <span class="kw-2">&amp;</span>DataFrame, state: <span class="kw-2">&amp;</span>ExecutionState) -&gt; PolarsResult&lt;Vec&lt;Series&gt;&gt; {
+        compute_keys(<span class="kw-2">&amp;</span><span class="self">self</span>.keys, df, state)
     }
 }
 
-<span class="kw">fn</span> <span class="ident">compute_keys</span>(
-    <span class="ident">keys</span>: <span class="kw-2">&amp;</span>[<span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span>],
-    <span class="ident">df</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-    <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionState</span>,
-) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="ident">keys</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">evaluate</span>(<span class="ident">df</span>, <span class="ident">state</span>)).<span class="ident">collect</span>()
+<span class="kw">fn </span>compute_keys(
+    keys: <span class="kw-2">&amp;</span>[Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;],
+    df: <span class="kw-2">&amp;</span>DataFrame,
+    state: <span class="kw-2">&amp;</span>ExecutionState,
+) -&gt; PolarsResult&lt;Vec&lt;Series&gt;&gt; {
+    keys.iter().map(|s| s.evaluate(df, state)).collect()
 }
 
-<span class="kw">fn</span> <span class="ident">run_partitions</span>(
-    <span class="ident">df</span>: <span class="kw-2">&amp;mut</span> <span class="ident">DataFrame</span>,
-    <span class="ident">exec</span>: <span class="kw-2">&amp;</span><span class="ident">PartitionGroupByExec</span>,
-    <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionState</span>,
-    <span class="ident">n_threads</span>: <span class="ident">usize</span>,
-    <span class="ident">maintain_order</span>: <span class="ident">bool</span>,
-) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="comment">// We do a partitioned groupby.</span>
-    <span class="comment">// Meaning that we first do the groupby operation arbitrarily</span>
-    <span class="comment">// split on several threads. Than the final result we apply the same groupby again.</span>
-    <span class="kw">let</span> <span class="ident">dfs</span> <span class="op">=</span> <span class="ident">split_df</span>(<span class="ident">df</span>, <span class="ident">n_threads</span>)<span class="question-mark">?</span>;
+<span class="kw">fn </span>run_partitions(
+    df: <span class="kw-2">&amp;mut </span>DataFrame,
+    exec: <span class="kw-2">&amp;</span>PartitionGroupByExec,
+    state: <span class="kw-2">&amp;</span>ExecutionState,
+    n_threads: usize,
+    maintain_order: bool,
+) -&gt; PolarsResult&lt;Vec&lt;DataFrame&gt;&gt; {
+    <span class="comment">// We do a partitioned groupby.
+    // Meaning that we first do the groupby operation arbitrarily
+    // split on several threads. Than the final result we apply the same groupby again.
+    </span><span class="kw">let </span>dfs = split_df(df, n_threads)<span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">phys_aggs</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">exec</span>.<span class="ident">phys_aggs</span>;
-    <span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">exec</span>.<span class="ident">keys</span>;
-    <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
-        <span class="ident">dfs</span>.<span class="ident">into_par_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">df</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">compute_keys</span>(<span class="ident">keys</span>, <span class="kw-2">&amp;</span><span class="ident">df</span>, <span class="ident">state</span>)<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">gb</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">groupby_with_series</span>(<span class="ident">keys</span>, <span class="bool-val">false</span>, <span class="ident">maintain_order</span>)<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">groups</span> <span class="op">=</span> <span class="ident">gb</span>.<span class="ident">get_groups</span>();
+    <span class="kw">let </span>phys_aggs = <span class="kw-2">&amp;</span>exec.phys_aggs;
+    <span class="kw">let </span>keys = <span class="kw-2">&amp;</span>exec.keys;
+    POOL.install(|| {
+        dfs.into_par_iter()
+            .map(|df| {
+                <span class="kw">let </span>keys = compute_keys(keys, <span class="kw-2">&amp;</span>df, state)<span class="question-mark">?</span>;
+                <span class="kw">let </span>gb = df.groupby_with_series(keys, <span class="bool-val">false</span>, maintain_order)<span class="question-mark">?</span>;
+                <span class="kw">let </span>groups = gb.get_groups();
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">columns</span> <span class="op">=</span> <span class="ident">gb</span>.<span class="ident">keys</span>();
-                <span class="comment">// don&#39;t naively call par_iter here, it will segfault in rayon</span>
-                <span class="comment">// if you do, throw it on the POOL threadpool.</span>
-                <span class="kw">let</span> <span class="ident">agg_columns</span> <span class="op">=</span> <span class="ident">phys_aggs</span>
-                    .<span class="ident">iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">expr</span><span class="op">|</span> {
-                        <span class="kw">let</span> <span class="ident">agg_expr</span> <span class="op">=</span> <span class="ident">expr</span>.<span class="ident">as_partitioned_aggregator</span>().<span class="ident">unwrap</span>();
-                        <span class="kw">let</span> <span class="ident">agg</span> <span class="op">=</span> <span class="ident">agg_expr</span>.<span class="ident">evaluate_partitioned</span>(<span class="kw-2">&amp;</span><span class="ident">df</span>, <span class="ident">groups</span>, <span class="ident">state</span>)<span class="question-mark">?</span>;
-                        <span class="kw">if</span> <span class="ident">agg</span>.<span class="ident">len</span>() <span class="op">!</span><span class="op">=</span> <span class="ident">groups</span>.<span class="ident">len</span>() {
+                <span class="kw">let </span><span class="kw-2">mut </span>columns = gb.keys();
+                <span class="comment">// don&#39;t naively call par_iter here, it will segfault in rayon
+                // if you do, throw it on the POOL threadpool.
+                </span><span class="kw">let </span>agg_columns = phys_aggs
+                    .iter()
+                    .map(|expr| {
+                        <span class="kw">let </span>agg_expr = expr.as_partitioned_aggregator().unwrap();
+                        <span class="kw">let </span>agg = agg_expr.evaluate_partitioned(<span class="kw-2">&amp;</span>df, groups, state)<span class="question-mark">?</span>;
+                        <span class="kw">if </span>agg.len() != groups.len() {
 
-                            <span class="kw">if</span> <span class="ident">agg</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="number">1</span> {
-                                <span class="prelude-val">Ok</span>(<span class="kw">match</span> <span class="ident">groups</span>.<span class="ident">len</span>()  {
-                                    <span class="number">0</span> =&gt; <span class="ident">agg</span>.<span class="ident">slice</span>(<span class="number">0</span>, <span class="number">0</span>),
-                                    <span class="ident">len</span> =&gt; <span class="ident">agg</span>.<span class="ident">new_from_index</span>(<span class="number">0</span>, <span class="ident">len</span>)
+                            <span class="kw">if </span>agg.len() == <span class="number">1 </span>{
+                                <span class="prelude-val">Ok</span>(<span class="kw">match </span>groups.len()  {
+                                    <span class="number">0 </span>=&gt; agg.slice(<span class="number">0</span>, <span class="number">0</span>),
+                                    len =&gt; agg.new_from_index(<span class="number">0</span>, len)
                                 })
-                            } <span class="kw">else</span> {
-                                <span class="prelude-val">Err</span>(<span class="ident">PolarsError::ComputeError</span>(
+                            } <span class="kw">else </span>{
+                                <span class="prelude-val">Err</span>(PolarsError::ComputeError(
                                     <span class="macro">format!</span>(<span class="string">&quot;returned aggregation is a different length: {} than the group lengths: {}&quot;</span>,
-                                            <span class="ident">agg</span>.<span class="ident">len</span>(),
-                                            <span class="ident">groups</span>.<span class="ident">len</span>()).<span class="ident">into</span>()
+                                            agg.len(),
+                                            groups.len()).into()
                                 ))
                             }
 
-                        } <span class="kw">else</span> {
-                            <span class="prelude-val">Ok</span>(<span class="ident">agg</span>)
+                        } <span class="kw">else </span>{
+                            <span class="prelude-val">Ok</span>(agg)
                         }
-                    }).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+                    }).collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
 
-                <span class="ident">columns</span>.<span class="ident">extend_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">agg_columns</span>);
+                columns.extend_from_slice(<span class="kw-2">&amp;</span>agg_columns);
 
-                <span class="ident">DataFrame::new</span>(<span class="ident">columns</span>)
+                DataFrame::new(columns)
             })
-    }).<span class="ident">collect</span>()
+    }).collect()
 }
 
-<span class="kw">fn</span> <span class="ident">estimate_unique_count</span>(<span class="ident">keys</span>: <span class="kw-2">&amp;</span>[<span class="ident">Series</span>], <span class="kw-2">mut</span> <span class="ident">sample_size</span>: <span class="ident">usize</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
-    <span class="comment">// https://stats.stackexchange.com/a/19090/147321</span>
-    <span class="comment">// estimated unique size</span>
-    <span class="comment">// u + ui / m (s - m)</span>
-    <span class="comment">// s: set_size</span>
-    <span class="comment">// m: sample_size</span>
-    <span class="comment">// u: total unique groups counted in sample</span>
-    <span class="comment">// ui: groups with single unique value counted in sample</span>
-    <span class="kw">let</span> <span class="ident">set_size</span> <span class="op">=</span> <span class="ident">keys</span>[<span class="number">0</span>].<span class="ident">len</span>();
-    <span class="kw">let</span> <span class="ident">offset</span> <span class="op">=</span> (<span class="ident">keys</span>[<span class="number">0</span>].<span class="ident">len</span>() <span class="op">/</span> <span class="number">2</span>) <span class="kw">as</span> <span class="ident">i64</span>;
-    <span class="kw">if</span> <span class="ident">set_size</span> <span class="op">&lt;</span> <span class="ident">sample_size</span> {
-        <span class="ident">sample_size</span> <span class="op">=</span> <span class="ident">set_size</span>;
+<span class="kw">fn </span>estimate_unique_count(keys: <span class="kw-2">&amp;</span>[Series], <span class="kw-2">mut </span>sample_size: usize) -&gt; PolarsResult&lt;usize&gt; {
+    <span class="comment">// https://stats.stackexchange.com/a/19090/147321
+    // estimated unique size
+    // u + ui / m (s - m)
+    // s: set_size
+    // m: sample_size
+    // u: total unique groups counted in sample
+    // ui: groups with single unique value counted in sample
+    </span><span class="kw">let </span>set_size = keys[<span class="number">0</span>].len();
+    <span class="kw">let </span>offset = (keys[<span class="number">0</span>].len() / <span class="number">2</span>) <span class="kw">as </span>i64;
+    <span class="kw">if </span>set_size &lt; sample_size {
+        sample_size = set_size;
     }
 
-    <span class="kw">let</span> <span class="ident">finish</span> <span class="op">=</span> <span class="op">|</span><span class="ident">groups</span>: <span class="kw-2">&amp;</span><span class="ident">GroupsProxy</span><span class="op">|</span> {
-        <span class="kw">let</span> <span class="ident">u</span> <span class="op">=</span> <span class="ident">groups</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">f32</span>;
-        <span class="kw">let</span> <span class="ident">ui</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">groups</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="ident">sample_size</span> {
-            <span class="ident">u</span>
-        } <span class="kw">else</span> {
-            <span class="ident">groups</span>.<span class="ident">iter</span>().<span class="ident">filter</span>(<span class="op">|</span><span class="ident">g</span><span class="op">|</span> <span class="ident">g</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="number">1</span>).<span class="ident">count</span>() <span class="kw">as</span> <span class="ident">f32</span>
+    <span class="kw">let </span>finish = |groups: <span class="kw-2">&amp;</span>GroupsProxy| {
+        <span class="kw">let </span>u = groups.len() <span class="kw">as </span>f32;
+        <span class="kw">let </span>ui = <span class="kw">if </span>groups.len() == sample_size {
+            u
+        } <span class="kw">else </span>{
+            groups.iter().filter(|g| g.len() == <span class="number">1</span>).count() <span class="kw">as </span>f32
         };
 
-        (<span class="ident">u</span> <span class="op">+</span> (<span class="ident">ui</span> <span class="op">/</span> <span class="ident">sample_size</span> <span class="kw">as</span> <span class="ident">f32</span>) <span class="op">*</span> (<span class="ident">set_size</span> <span class="op">-</span> <span class="ident">sample_size</span>) <span class="kw">as</span> <span class="ident">f32</span>) <span class="kw">as</span> <span class="ident">usize</span>
+        (u + (ui / sample_size <span class="kw">as </span>f32) * (set_size - sample_size) <span class="kw">as </span>f32) <span class="kw">as </span>usize
     };
 
-    <span class="kw">if</span> <span class="ident">keys</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="number">1</span> {
-        <span class="comment">// we sample as that will work also with sorted data.</span>
-        <span class="comment">// not that sampling without replacement is very very expensive. don&#39;t do that.</span>
-        <span class="kw">let</span> <span class="ident">s</span> <span class="op">=</span> <span class="ident">keys</span>[<span class="number">0</span>].<span class="ident">sample_n</span>(<span class="ident">sample_size</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="prelude-val">None</span>).<span class="ident">unwrap</span>();
-        <span class="comment">// fast multi-threaded way to get unique.</span>
-        <span class="kw">let</span> <span class="ident">groups</span> <span class="op">=</span> <span class="ident">s</span>.<span class="ident">group_tuples</span>(<span class="bool-val">true</span>, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">finish</span>(<span class="kw-2">&amp;</span><span class="ident">groups</span>))
-    } <span class="kw">else</span> {
-        <span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">keys</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">slice</span>(<span class="ident">offset</span>, <span class="ident">sample_size</span>))
-            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-        <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">DataFrame::new_no_checks</span>(<span class="ident">keys</span>);
-        <span class="kw">let</span> <span class="ident">names</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">get_column_names</span>();
-        <span class="kw">let</span> <span class="ident">gb</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">groupby</span>(<span class="ident">names</span>).<span class="ident">unwrap</span>();
-        <span class="prelude-val">Ok</span>(<span class="ident">finish</span>(<span class="ident">gb</span>.<span class="ident">get_groups</span>()))
+    <span class="kw">if </span>keys.len() == <span class="number">1 </span>{
+        <span class="comment">// we sample as that will work also with sorted data.
+        // not that sampling without replacement is very very expensive. don&#39;t do that.
+        </span><span class="kw">let </span>s = keys[<span class="number">0</span>].sample_n(sample_size, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="prelude-val">None</span>).unwrap();
+        <span class="comment">// fast multi-threaded way to get unique.
+        </span><span class="kw">let </span>groups = s.group_tuples(<span class="bool-val">true</span>, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(finish(<span class="kw-2">&amp;</span>groups))
+    } <span class="kw">else </span>{
+        <span class="kw">let </span>keys = keys
+            .iter()
+            .map(|s| s.slice(offset, sample_size))
+            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="kw">let </span>df = DataFrame::new_no_checks(keys);
+        <span class="kw">let </span>names = df.get_column_names();
+        <span class="kw">let </span>gb = df.groupby(names).unwrap();
+        <span class="prelude-val">Ok</span>(finish(gb.get_groups()))
     }
 }
 
-<span class="comment">// Checks if we should run normal or default aggregation</span>
-<span class="comment">// by sampling data.</span>
-<span class="kw">fn</span> <span class="ident">can_run_partitioned</span>(
-    <span class="ident">keys</span>: <span class="kw-2">&amp;</span>[<span class="ident">Series</span>],
-    <span class="ident">original_df</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-    <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionState</span>,
-) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span> {
-    <span class="kw">if</span> <span class="ident">std::env::var</span>(<span class="string">&quot;POLARS_NO_PARTITION&quot;</span>).<span class="ident">is_ok</span>() {
-        <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">verbose</span>() {
+<span class="comment">// Checks if we should run normal or default aggregation
+// by sampling data.
+</span><span class="kw">fn </span>can_run_partitioned(
+    keys: <span class="kw-2">&amp;</span>[Series],
+    original_df: <span class="kw-2">&amp;</span>DataFrame,
+    state: <span class="kw-2">&amp;</span>ExecutionState,
+) -&gt; PolarsResult&lt;bool&gt; {
+    <span class="kw">if </span>std::env::var(<span class="string">&quot;POLARS_NO_PARTITION&quot;</span>).is_ok() {
+        <span class="kw">if </span>state.verbose() {
             <span class="macro">eprintln!</span>(<span class="string">&quot;POLARS_NO_PARTITION set: running default HASH AGGREGATION&quot;</span>)
         }
         <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
-    } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">std::env::var</span>(<span class="string">&quot;POLARS_FORCE_PARTITION&quot;</span>).<span class="ident">is_ok</span>() {
-        <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">verbose</span>() {
+    } <span class="kw">else if </span>std::env::var(<span class="string">&quot;POLARS_FORCE_PARTITION&quot;</span>).is_ok() {
+        <span class="kw">if </span>state.verbose() {
             <span class="macro">eprintln!</span>(<span class="string">&quot;POLARS_FORCE_PARTITION set: running partitioned HASH AGGREGATION&quot;</span>)
         }
         <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
-    } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">original_df</span>.<span class="ident">height</span>() <span class="op">&lt;</span> <span class="number">1000</span> <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="macro">cfg!</span>(<span class="ident">test</span>) {
-        <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">verbose</span>() {
+    } <span class="kw">else if </span>original_df.height() &lt; <span class="number">1000 </span>&amp;&amp; !<span class="macro">cfg!</span>(test) {
+        <span class="kw">if </span>state.verbose() {
             <span class="macro">eprintln!</span>(<span class="string">&quot;DATAFRAME &lt; 1000 rows: running default HASH AGGREGATION&quot;</span>)
         }
         <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
-    } <span class="kw">else</span> {
-        <span class="comment">// below this boundary we assume the partitioned groupby will be faster</span>
-        <span class="kw">let</span> <span class="ident">unique_count_boundary</span> <span class="op">=</span> <span class="ident">std::env::var</span>(<span class="string">&quot;POLARS_PARTITION_UNIQUE_COUNT&quot;</span>)
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>())
-            .<span class="ident">unwrap_or</span>(<span class="number">1000</span>);
+    } <span class="kw">else </span>{
+        <span class="comment">// below this boundary we assume the partitioned groupby will be faster
+        </span><span class="kw">let </span>unique_count_boundary = std::env::var(<span class="string">&quot;POLARS_PARTITION_UNIQUE_COUNT&quot;</span>)
+            .map(|s| s.parse::&lt;usize&gt;().unwrap())
+            .unwrap_or(<span class="number">1000</span>);
 
-        <span class="kw">let</span> (<span class="ident">unique_estimate</span>, <span class="ident">sampled_method</span>) <span class="op">=</span> <span class="kw">match</span> (<span class="ident">keys</span>.<span class="ident">len</span>(), <span class="ident">keys</span>[<span class="number">0</span>].<span class="ident">dtype</span>()) {
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-categorical&quot;</span>)]</span>
-            (<span class="number">1</span>, <span class="ident">DataType::Categorical</span>(<span class="prelude-val">Some</span>(<span class="ident">rev_map</span>))) =&gt; (<span class="ident">rev_map</span>.<span class="ident">len</span>(), <span class="string">&quot;known&quot;</span>),
-            <span class="kw">_</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">sample_frac</span> <span class="op">=</span> <span class="ident">std::env::var</span>(<span class="string">&quot;POLARS_PARTITION_SAMPLE_FRAC&quot;</span>)
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">f32</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>())
-                    .<span class="ident">unwrap_or</span>(<span class="number">0.001</span>);
-                <span class="kw">let</span> <span class="ident">sample_size</span> <span class="op">=</span> (<span class="ident">original_df</span>.<span class="ident">height</span>() <span class="kw">as</span> <span class="ident">f32</span> <span class="op">*</span> <span class="ident">sample_frac</span>) <span class="kw">as</span> <span class="ident">usize</span>;
+        <span class="kw">let </span>(unique_estimate, sampled_method) = <span class="kw">match </span>(keys.len(), keys[<span class="number">0</span>].dtype()) {
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-categorical&quot;</span>)]
+            </span>(<span class="number">1</span>, DataType::Categorical(<span class="prelude-val">Some</span>(rev_map))) =&gt; (rev_map.len(), <span class="string">&quot;known&quot;</span>),
+            <span class="kw">_ </span>=&gt; {
+                <span class="kw">let </span>sample_frac = std::env::var(<span class="string">&quot;POLARS_PARTITION_SAMPLE_FRAC&quot;</span>)
+                    .map(|s| s.parse::&lt;f32&gt;().unwrap())
+                    .unwrap_or(<span class="number">0.001</span>);
+                <span class="kw">let </span>sample_size = (original_df.height() <span class="kw">as </span>f32 * sample_frac) <span class="kw">as </span>usize;
 
-                <span class="comment">// we never sample more than 1k data points</span>
-                <span class="kw">let</span> <span class="ident">sample_size</span> <span class="op">=</span> <span class="ident">std::cmp::min</span>(<span class="ident">sample_size</span>, <span class="number">1_000</span>);
-                <span class="comment">// we never sample less than 100 data points.</span>
-                <span class="kw">let</span> <span class="ident">sample_size</span> <span class="op">=</span> <span class="ident">std::cmp::max</span>(<span class="number">100</span>, <span class="ident">sample_size</span>);
-                (<span class="ident">estimate_unique_count</span>(<span class="ident">keys</span>, <span class="ident">sample_size</span>)<span class="question-mark">?</span>, <span class="string">&quot;estimated&quot;</span>)
+                <span class="comment">// we never sample more than 1k data points
+                </span><span class="kw">let </span>sample_size = std::cmp::min(sample_size, <span class="number">1_000</span>);
+                <span class="comment">// we never sample less than 100 data points.
+                </span><span class="kw">let </span>sample_size = std::cmp::max(<span class="number">100</span>, sample_size);
+                (estimate_unique_count(keys, sample_size)<span class="question-mark">?</span>, <span class="string">&quot;estimated&quot;</span>)
             }
         };
-        <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">verbose</span>() {
-            <span class="macro">eprintln!</span>(<span class="string">&quot;{} unique values: {}&quot;</span>, <span class="ident">sampled_method</span>, <span class="ident">unique_estimate</span>);
+        <span class="kw">if </span>state.verbose() {
+            <span class="macro">eprintln!</span>(<span class="string">&quot;{} unique values: {}&quot;</span>, sampled_method, unique_estimate);
         }
 
-        <span class="kw">if</span> <span class="ident">unique_estimate</span> <span class="op">&gt;</span> <span class="ident">unique_count_boundary</span> {
-            <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">verbose</span>() {
-                <span class="macro">eprintln!</span>(<span class="string">&quot;estimated unique count: {} exceeded the boundary: {}, running default HASH AGGREGATION&quot;</span>,<span class="ident">unique_estimate</span>, <span class="ident">unique_count_boundary</span>)
+        <span class="kw">if </span>unique_estimate &gt; unique_count_boundary {
+            <span class="kw">if </span>state.verbose() {
+                <span class="macro">eprintln!</span>(<span class="string">&quot;estimated unique count: {} exceeded the boundary: {}, running default HASH AGGREGATION&quot;</span>,unique_estimate, unique_count_boundary)
             }
             <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
-        } <span class="kw">else</span> {
+        } <span class="kw">else </span>{
             <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">PartitionGroupByExec</span> {
-    <span class="kw">fn</span> <span class="ident">execute_impl</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">state</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ExecutionState</span>,
-        <span class="kw-2">mut</span> <span class="ident">original_df</span>: <span class="ident">DataFrame</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">dfs</span> <span class="op">=</span> {
-            <span class="comment">// already get the keys. This is the very last minute decision which groupby method we choose.</span>
-            <span class="comment">// If the column is a categorical, we know the number of groups we have and can decide to continue</span>
-            <span class="comment">// partitioned or go for the standard groupby. The partitioned is likely to be faster on a small number</span>
-            <span class="comment">// of groups.</span>
-            <span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">keys</span>(<span class="kw-2">&amp;</span><span class="ident">original_df</span>, <span class="ident">state</span>)<span class="question-mark">?</span>;
+<span class="kw">impl </span>PartitionGroupByExec {
+    <span class="kw">fn </span>execute_impl(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        state: <span class="kw-2">&amp;mut </span>ExecutionState,
+        <span class="kw-2">mut </span>original_df: DataFrame,
+    ) -&gt; PolarsResult&lt;DataFrame&gt; {
+        <span class="kw">let </span>dfs = {
+            <span class="comment">// already get the keys. This is the very last minute decision which groupby method we choose.
+            // If the column is a categorical, we know the number of groups we have and can decide to continue
+            // partitioned or go for the standard groupby. The partitioned is likely to be faster on a small number
+            // of groups.
+            </span><span class="kw">let </span>keys = <span class="self">self</span>.keys(<span class="kw-2">&amp;</span>original_df, state)<span class="question-mark">?</span>;
 
-            <span class="kw">if</span> <span class="op">!</span><span class="ident">can_run_partitioned</span>(<span class="kw-2">&amp;</span><span class="ident">keys</span>, <span class="kw-2">&amp;</span><span class="ident">original_df</span>, <span class="ident">state</span>)<span class="question-mark">?</span> {
-                <span class="kw">return</span> <span class="ident">groupby_helper</span>(
-                    <span class="ident">original_df</span>,
-                    <span class="ident">keys</span>,
-                    <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">phys_aggs</span>,
+            <span class="kw">if </span>!can_run_partitioned(<span class="kw-2">&amp;</span>keys, <span class="kw-2">&amp;</span>original_df, state)<span class="question-mark">? </span>{
+                <span class="kw">return </span>groupby_helper(
+                    original_df,
+                    keys,
+                    <span class="kw-2">&amp;</span><span class="self">self</span>.phys_aggs,
                     <span class="prelude-val">None</span>,
-                    <span class="ident">state</span>,
-                    <span class="self">self</span>.<span class="ident">maintain_order</span>,
-                    <span class="self">self</span>.<span class="ident">slice</span>,
+                    state,
+                    <span class="self">self</span>.maintain_order,
+                    <span class="self">self</span>.slice,
                 );
             }
-            <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">verbose</span>() {
+            <span class="kw">if </span>state.verbose() {
                 <span class="macro">eprintln!</span>(<span class="string">&quot;run PARTITIONED HASH AGGREGATION&quot;</span>)
             }
 
-            <span class="comment">// Run the partitioned aggregations</span>
-            <span class="kw">let</span> <span class="ident">n_threads</span> <span class="op">=</span> <span class="ident">POOL</span>.<span class="ident">current_num_threads</span>();
+            <span class="comment">// Run the partitioned aggregations
+            </span><span class="kw">let </span>n_threads = POOL.current_num_threads();
 
-            <span class="comment">// set it here, because `self.input.execute` will clear the schema cache.</span>
-            <span class="ident">state</span>.<span class="ident">set_schema</span>(<span class="self">self</span>.<span class="ident">input_schema</span>.<span class="ident">clone</span>());
-            <span class="ident">run_partitions</span>(
-                <span class="kw-2">&amp;mut</span> <span class="ident">original_df</span>,
+            <span class="comment">// set it here, because `self.input.execute` will clear the schema cache.
+            </span>state.set_schema(<span class="self">self</span>.input_schema.clone());
+            run_partitions(
+                <span class="kw-2">&amp;mut </span>original_df,
                 <span class="self">self</span>,
-                <span class="ident">state</span>,
-                <span class="ident">n_threads</span>,
-                <span class="self">self</span>.<span class="ident">maintain_order</span>,
-            )<span class="question-mark">?</span>
-        };
-        <span class="ident">state</span>.<span class="ident">clear_schema_cache</span>();
+                state,
+                n_threads,
+                <span class="self">self</span>.maintain_order,
+            )<span class="question-mark">?
+        </span>};
+        state.clear_schema_cache();
 
-        <span class="comment">// MERGE phase</span>
-        <span class="comment">// merge and hash aggregate again</span>
-        <span class="kw">let</span> <span class="ident">df</span> <span class="op">=</span> <span class="ident">accumulate_dataframes_vertical</span>(<span class="ident">dfs</span>)<span class="question-mark">?</span>;
-        <span class="comment">// the partitioned groupby has added columns so we must update the schema.</span>
-        <span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">keys</span>(<span class="kw-2">&amp;</span><span class="ident">df</span>, <span class="ident">state</span>)<span class="question-mark">?</span>;
+        <span class="comment">// MERGE phase
+        // merge and hash aggregate again
+        </span><span class="kw">let </span>df = accumulate_dataframes_vertical(dfs)<span class="question-mark">?</span>;
+        <span class="comment">// the partitioned groupby has added columns so we must update the schema.
+        </span><span class="kw">let </span>keys = <span class="self">self</span>.keys(<span class="kw-2">&amp;</span>df, state)<span class="question-mark">?</span>;
 
-        <span class="comment">// first get mutable access and optionally sort</span>
-        <span class="kw">let</span> <span class="ident">gb</span> <span class="op">=</span> <span class="ident">df</span>.<span class="ident">groupby_with_series</span>(<span class="ident">keys</span>, <span class="bool-val">true</span>, <span class="self">self</span>.<span class="ident">maintain_order</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">groups</span> <span class="op">=</span> <span class="ident">gb</span>.<span class="ident">get_groups</span>();
+        <span class="comment">// first get mutable access and optionally sort
+        </span><span class="kw">let </span>gb = df.groupby_with_series(keys, <span class="bool-val">true</span>, <span class="self">self</span>.maintain_order)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>groups = gb.get_groups();
 
-        <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_assignments</span>)]</span>
-        <span class="comment">// it is unused because we only use it to keep the lifetime of sliced_group valid</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sliced_groups</span> <span class="op">=</span> <span class="prelude-val">None</span>;
+        <span class="attribute">#[allow(unused_assignments)]
+        </span><span class="comment">// it is unused because we only use it to keep the lifetime of sliced_group valid
+        </span><span class="kw">let </span><span class="kw-2">mut </span>sliced_groups = <span class="prelude-val">None</span>;
 
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="ident">offset</span>, <span class="ident">len</span>)) <span class="op">=</span> <span class="self">self</span>.<span class="ident">slice</span> {
-            <span class="ident">sliced_groups</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">groups</span>.<span class="ident">slice</span>(<span class="ident">offset</span>, <span class="ident">len</span>));
-            <span class="ident">groups</span> <span class="op">=</span> <span class="ident">sliced_groups</span>.<span class="ident">as_deref</span>().<span class="ident">unwrap</span>();
+        <span class="kw">if let </span><span class="prelude-val">Some</span>((offset, len)) = <span class="self">self</span>.slice {
+            sliced_groups = <span class="prelude-val">Some</span>(groups.slice(offset, len));
+            groups = sliced_groups.as_deref().unwrap();
         }
 
-        <span class="kw">let</span> <span class="ident">get_columns</span> <span class="op">=</span> <span class="op">|</span><span class="op">|</span> <span class="ident">gb</span>.<span class="ident">keys_sliced</span>(<span class="self">self</span>.<span class="ident">slice</span>);
-        <span class="kw">let</span> <span class="ident">get_agg</span> <span class="op">=</span> <span class="op">|</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">out</span>: <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="self">self</span>
-                .<span class="ident">phys_aggs</span>
-                .<span class="ident">par_iter</span>()
-                <span class="comment">// we slice the keys off and finalize every aggregation</span>
-                .<span class="ident">zip</span>(<span class="kw-2">&amp;</span><span class="ident">df</span>.<span class="ident">get_columns</span>()[<span class="self">self</span>.<span class="ident">keys</span>.<span class="ident">len</span>()..])
-                .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">expr</span>, <span class="ident">partitioned_s</span>)<span class="op">|</span> {
-                    <span class="kw">let</span> <span class="ident">agg_expr</span> <span class="op">=</span> <span class="ident">expr</span>.<span class="ident">as_partitioned_aggregator</span>().<span class="ident">unwrap</span>();
-                    <span class="ident">agg_expr</span>.<span class="ident">finalize</span>(<span class="ident">partitioned_s</span>.<span class="ident">clone</span>(), <span class="ident">groups</span>, <span class="ident">state</span>)
+        <span class="kw">let </span>get_columns = || gb.keys_sliced(<span class="self">self</span>.slice);
+        <span class="kw">let </span>get_agg = || {
+            <span class="kw">let </span>out: PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt; = <span class="self">self
+                </span>.phys_aggs
+                .par_iter()
+                <span class="comment">// we slice the keys off and finalize every aggregation
+                </span>.zip(<span class="kw-2">&amp;</span>df.get_columns()[<span class="self">self</span>.keys.len()..])
+                .map(|(expr, partitioned_s)| {
+                    <span class="kw">let </span>agg_expr = expr.as_partitioned_aggregator().unwrap();
+                    agg_expr.finalize(partitioned_s.clone(), groups, state)
                 })
-                .<span class="ident">collect</span>();
+                .collect();
 
-            <span class="ident">out</span>
+            out
         };
-        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">columns</span>, <span class="ident">agg_columns</span>): (<span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span>, <span class="kw">_</span>) <span class="op">=</span>
-            <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">rayon::join</span>(<span class="ident">get_columns</span>, <span class="ident">get_agg</span>));
+        <span class="kw">let </span>(<span class="kw-2">mut </span>columns, agg_columns): (Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>) =
+            POOL.install(|| rayon::join(get_columns, get_agg));
 
-        <span class="ident">columns</span>.<span class="ident">extend</span>(<span class="ident">agg_columns</span><span class="question-mark">?</span>);
-        <span class="ident">state</span>.<span class="ident">clear_schema_cache</span>();
+        columns.extend(agg_columns<span class="question-mark">?</span>);
+        state.clear_schema_cache();
 
-        <span class="prelude-val">Ok</span>(<span class="ident">DataFrame::new</span>(<span class="ident">columns</span>).<span class="ident">unwrap</span>())
+        <span class="prelude-val">Ok</span>(DataFrame::new(columns).unwrap())
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Executor</span> <span class="kw">for</span> <span class="ident">PartitionGroupByExec</span> {
-    <span class="kw">fn</span> <span class="ident">execute</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">state</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ExecutionState</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span> {
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">debug_assertions</span>)]</span>
-        {
-            <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">verbose</span>() {
+<span class="kw">impl </span>Executor <span class="kw">for </span>PartitionGroupByExec {
+    <span class="kw">fn </span>execute(<span class="kw-2">&amp;mut </span><span class="self">self</span>, state: <span class="kw-2">&amp;mut </span>ExecutionState) -&gt; PolarsResult&lt;DataFrame&gt; {
+        <span class="attribute">#[cfg(debug_assertions)]
+        </span>{
+            <span class="kw">if </span>state.verbose() {
                 <span class="macro">println!</span>(<span class="string">&quot;run PartitionGroupbyExec&quot;</span>)
             }
         }
-        <span class="kw">let</span> <span class="ident">original_df</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">input</span>.<span class="ident">execute</span>(<span class="ident">state</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>original_df = <span class="self">self</span>.input.execute(state)<span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="ident">profile_name</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">has_node_timer</span>() {
-            <span class="kw">let</span> <span class="ident">by</span> <span class="op">=</span> <span class="self">self</span>
-                .<span class="ident">keys</span>
-                .<span class="ident">iter</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="prelude-val">Ok</span>(<span class="ident">s</span>.<span class="ident">to_field</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">input_schema</span>)<span class="question-mark">?</span>.<span class="ident">name</span>))
-                .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
-            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">column_delimited</span>(<span class="string">&quot;groupby_partitioned&quot;</span>.<span class="ident">to_string</span>(), <span class="kw-2">&amp;</span><span class="ident">by</span>);
-            <span class="ident">Cow::Owned</span>(<span class="ident">name</span>)
-        } <span class="kw">else</span> {
-            <span class="ident">Cow::Borrowed</span>(<span class="string">&quot;&quot;</span>)
+        <span class="kw">let </span>profile_name = <span class="kw">if </span>state.has_node_timer() {
+            <span class="kw">let </span>by = <span class="self">self
+                </span>.keys
+                .iter()
+                .map(|s| <span class="prelude-val">Ok</span>(s.to_field(<span class="kw-2">&amp;</span><span class="self">self</span>.input_schema)<span class="question-mark">?</span>.name))
+                .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
+            <span class="kw">let </span>name = column_delimited(<span class="string">&quot;groupby_partitioned&quot;</span>.to_string(), <span class="kw-2">&amp;</span>by);
+            Cow::Owned(name)
+        } <span class="kw">else </span>{
+            Cow::Borrowed(<span class="string">&quot;&quot;</span>)
         };
-        <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">has_node_timer</span>() {
-            <span class="kw">let</span> <span class="ident">new_state</span> <span class="op">=</span> <span class="ident">state</span>.<span class="ident">clone</span>();
-            <span class="ident">new_state</span>.<span class="ident">record</span>(<span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">execute_impl</span>(<span class="ident">state</span>, <span class="ident">original_df</span>), <span class="ident">profile_name</span>)
-        } <span class="kw">else</span> {
-            <span class="self">self</span>.<span class="ident">execute_impl</span>(<span class="ident">state</span>, <span class="ident">original_df</span>)
+        <span class="kw">if </span>state.has_node_timer() {
+            <span class="kw">let </span>new_state = state.clone();
+            new_state.record(|| <span class="self">self</span>.execute_impl(state, original_df), profile_name)
+        } <span class="kw">else </span>{
+            <span class="self">self</span>.execute_impl(state, original_df)
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_lazy" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_lazy" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

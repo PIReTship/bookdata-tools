@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.25.1/src/logical_plan/optimizer/predicate_pushdown/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.25.1/src/logical_plan/optimizer/predicate_pushdown/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../normalize.css"><link rel="stylesheet" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -580,587 +580,587 @@
 <span id="580">580</span>
 <span id="581">581</span>
 <span id="582">582</span>
-</pre><pre class="rust"><code><span class="kw">mod</span> <span class="ident">utils</span>;
+</pre><pre class="rust"><code><span class="kw">mod </span>utils;
 
-<span class="kw">use</span> <span class="ident">polars_core::datatypes::PlHashMap</span>;
-<span class="kw">use</span> <span class="ident">polars_core::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">utils</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span>polars_core::datatypes::PlHashMap;
+<span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>utils::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dsl::function_expr::FunctionExpr</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::logical_plan</span>::{<span class="ident">optimizer</span>, <span class="ident">Context</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils</span>::{<span class="ident">aexprs_to_schema</span>, <span class="ident">check_input_node</span>, <span class="ident">has_aexpr</span>};
+<span class="kw">use super</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::dsl::function_expr::FunctionExpr;
+<span class="kw">use </span><span class="kw">crate</span>::logical_plan::{optimizer, Context};
+<span class="kw">use </span><span class="kw">crate</span>::utils::{aexprs_to_schema, check_input_node, has_aexpr};
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PredicatePushDown</span> {}
+<span class="attribute">#[derive(Default)]
+</span><span class="kw">pub struct </span>PredicatePushDown {}
 
-<span class="kw">fn</span> <span class="ident">join_produces_null</span>(<span class="ident">how</span>: <span class="kw-2">&amp;</span><span class="ident">JoinType</span>) -&gt; <span class="ident">bool</span> {
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;asof_join&quot;</span>)]</span>
-    {
+<span class="kw">fn </span>join_produces_null(how: <span class="kw-2">&amp;</span>JoinType) -&gt; bool {
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;asof_join&quot;</span>)]
+    </span>{
         <span class="macro">matches!</span>(
-            <span class="ident">how</span>,
-            <span class="ident">JoinType::Left</span> <span class="op">|</span> <span class="ident">JoinType::Outer</span> <span class="op">|</span> <span class="ident">JoinType::Cross</span> <span class="op">|</span> <span class="ident">JoinType::AsOf</span>(<span class="kw">_</span>)
+            how,
+            JoinType::Left | JoinType::Outer | JoinType::Cross | JoinType::AsOf(<span class="kw">_</span>)
         )
     }
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;asof_join&quot;</span>))]</span>
-    {
-        <span class="macro">matches!</span>(<span class="ident">how</span>, <span class="ident">JoinType::Left</span> <span class="op">|</span> <span class="ident">JoinType::Outer</span> <span class="op">|</span> <span class="ident">JoinType::Cross</span>)
+    <span class="attribute">#[cfg(not(feature = <span class="string">&quot;asof_join&quot;</span>))]
+    </span>{
+        <span class="macro">matches!</span>(how, JoinType::Left | JoinType::Outer | JoinType::Cross)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">PredicatePushDown</span> {
-    <span class="kw">fn</span> <span class="ident">optional_apply_predicate</span>(
+<span class="kw">impl </span>PredicatePushDown {
+    <span class="kw">fn </span>optional_apply_predicate(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">lp</span>: <span class="ident">ALogicalPlan</span>,
-        <span class="ident">local_predicates</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
-        <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">ALogicalPlan</span> {
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">local_predicates</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">let</span> <span class="ident">predicate</span> <span class="op">=</span> <span class="ident">combine_predicates</span>(<span class="ident">local_predicates</span>.<span class="ident">into_iter</span>(), <span class="ident">expr_arena</span>);
-            <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">add</span>(<span class="ident">lp</span>);
+        lp: ALogicalPlan,
+        local_predicates: Vec&lt;Node&gt;,
+        lp_arena: <span class="kw-2">&amp;mut </span>Arena&lt;ALogicalPlan&gt;,
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+    ) -&gt; ALogicalPlan {
+        <span class="kw">if </span>!local_predicates.is_empty() {
+            <span class="kw">let </span>predicate = combine_predicates(local_predicates.into_iter(), expr_arena);
+            <span class="kw">let </span>input = lp_arena.add(lp);
 
-            <span class="ident">ALogicalPlan::Selection</span> { <span class="ident">input</span>, <span class="ident">predicate</span> }
-        } <span class="kw">else</span> {
-            <span class="ident">lp</span>
+            ALogicalPlan::Selection { input, predicate }
+        } <span class="kw">else </span>{
+            lp
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">pushdown_and_assign</span>(
+    <span class="kw">fn </span>pushdown_and_assign(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">input</span>: <span class="ident">Node</span>,
-        <span class="ident">acc_predicates</span>: <span class="ident">PlHashMap</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>, <span class="ident">Node</span><span class="op">&gt;</span>,
-        <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">input</span>);
-        <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">push_down</span>(<span class="ident">alp</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)<span class="question-mark">?</span>;
-        <span class="ident">lp_arena</span>.<span class="ident">replace</span>(<span class="ident">input</span>, <span class="ident">lp</span>);
+        input: Node,
+        acc_predicates: PlHashMap&lt;Arc&lt;str&gt;, Node&gt;,
+        lp_arena: <span class="kw-2">&amp;mut </span>Arena&lt;ALogicalPlan&gt;,
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+    ) -&gt; PolarsResult&lt;()&gt; {
+        <span class="kw">let </span>alp = lp_arena.take(input);
+        <span class="kw">let </span>lp = <span class="self">self</span>.push_down(alp, acc_predicates, lp_arena, expr_arena)<span class="question-mark">?</span>;
+        lp_arena.replace(input, lp);
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Filter will be pushed down.</span>
-    <span class="kw">fn</span> <span class="ident">pushdown_and_continue</span>(
+    <span class="doccomment">/// Filter will be pushed down.
+    </span><span class="kw">fn </span>pushdown_and_continue(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">lp</span>: <span class="ident">ALogicalPlan</span>,
-        <span class="kw-2">mut</span> <span class="ident">acc_predicates</span>: <span class="ident">PlHashMap</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>, <span class="ident">Node</span><span class="op">&gt;</span>,
-        <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-        <span class="ident">has_projections</span>: <span class="ident">bool</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">inputs</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">get_inputs</span>();
-        <span class="kw">let</span> <span class="ident">exprs</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">get_exprs</span>();
+        lp: ALogicalPlan,
+        <span class="kw-2">mut </span>acc_predicates: PlHashMap&lt;Arc&lt;str&gt;, Node&gt;,
+        lp_arena: <span class="kw-2">&amp;mut </span>Arena&lt;ALogicalPlan&gt;,
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+        has_projections: bool,
+    ) -&gt; PolarsResult&lt;ALogicalPlan&gt; {
+        <span class="kw">let </span>inputs = lp.get_inputs();
+        <span class="kw">let </span>exprs = lp.get_exprs();
 
-        <span class="kw">if</span> <span class="ident">has_projections</span> {
-            <span class="comment">// we should not pass these projections</span>
-            <span class="kw">if</span> <span class="ident">exprs</span>
-                .<span class="ident">iter</span>()
-                .<span class="ident">any</span>(<span class="op">|</span><span class="ident">e_n</span><span class="op">|</span> <span class="ident">project_other_column_is_predicate_pushdown_boundary</span>(<span class="kw-2">*</span><span class="ident">e_n</span>, <span class="ident">expr_arena</span>))
+        <span class="kw">if </span>has_projections {
+            <span class="comment">// we should not pass these projections
+            </span><span class="kw">if </span>exprs
+                .iter()
+                .any(|e_n| project_other_column_is_predicate_pushdown_boundary(<span class="kw-2">*</span>e_n, expr_arena))
             {
-                <span class="kw">return</span> <span class="self">self</span>.<span class="ident">no_pushdown_restart_opt</span>(<span class="ident">lp</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>);
+                <span class="kw">return </span><span class="self">self</span>.no_pushdown_restart_opt(lp, acc_predicates, lp_arena, expr_arena);
             }
 
-            <span class="comment">// projections should only have a single input.</span>
-            <span class="kw">if</span> <span class="ident">inputs</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="number">1</span> {
-                <span class="comment">// except for ExtContext</span>
-                <span class="macro">assert!</span>(<span class="macro">matches!</span>(<span class="ident">lp</span>, <span class="ident">ALogicalPlan::ExtContext</span> { .. }));
+            <span class="comment">// projections should only have a single input.
+            </span><span class="kw">if </span>inputs.len() &gt; <span class="number">1 </span>{
+                <span class="comment">// except for ExtContext
+                </span><span class="macro">assert!</span>(<span class="macro">matches!</span>(lp, ALogicalPlan::ExtContext { .. }));
             }
-            <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">inputs</span>[<span class="ident">inputs</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>];
-            <span class="kw">let</span> (<span class="ident">local_predicates</span>, <span class="ident">projections</span>) <span class="op">=</span>
-                <span class="ident">rewrite_projection_node</span>(<span class="ident">expr_arena</span>, <span class="ident">lp_arena</span>, <span class="kw-2">&amp;mut</span> <span class="ident">acc_predicates</span>, <span class="ident">exprs</span>, <span class="ident">input</span>);
+            <span class="kw">let </span>input = inputs[inputs.len() - <span class="number">1</span>];
+            <span class="kw">let </span>(local_predicates, projections) =
+                rewrite_projection_node(expr_arena, lp_arena, <span class="kw-2">&amp;mut </span>acc_predicates, exprs, input);
 
-            <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">input</span>);
-            <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">push_down</span>(<span class="ident">alp</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)<span class="question-mark">?</span>;
-            <span class="ident">lp_arena</span>.<span class="ident">replace</span>(<span class="ident">input</span>, <span class="ident">alp</span>);
+            <span class="kw">let </span>alp = lp_arena.take(input);
+            <span class="kw">let </span>alp = <span class="self">self</span>.push_down(alp, acc_predicates, lp_arena, expr_arena)<span class="question-mark">?</span>;
+            lp_arena.replace(input, alp);
 
-            <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">with_exprs_and_input</span>(<span class="ident">projections</span>, <span class="ident">inputs</span>);
-            <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">optional_apply_predicate</span>(<span class="ident">lp</span>, <span class="ident">local_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>))
-        } <span class="kw">else</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">local_predicates</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">acc_predicates</span>.<span class="ident">len</span>());
+            <span class="kw">let </span>lp = lp.with_exprs_and_input(projections, inputs);
+            <span class="prelude-val">Ok</span>(<span class="self">self</span>.optional_apply_predicate(lp, local_predicates, lp_arena, expr_arena))
+        } <span class="kw">else </span>{
+            <span class="kw">let </span><span class="kw-2">mut </span>local_predicates = Vec::with_capacity(acc_predicates.len());
 
-            <span class="comment">// determine new inputs by pushing down predicates</span>
-            <span class="kw">let</span> <span class="ident">new_inputs</span> <span class="op">=</span> <span class="ident">inputs</span>
-                .<span class="ident">iter</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">node</span><span class="op">|</span> {
-                    <span class="comment">// first we check if we are able to push down the predicate passed this node</span>
-                    <span class="comment">// it could be that this node just added the column where we base the predicate on</span>
-                    <span class="kw">let</span> <span class="ident">input_schema</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">node</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pushdown_predicates</span> <span class="op">=</span>
-                        <span class="ident">optimizer::init_hashmap</span>(<span class="prelude-val">Some</span>(<span class="ident">acc_predicates</span>.<span class="ident">len</span>()));
-                    <span class="kw">for</span> (<span class="kw">_</span>, <span class="kw-2">&amp;</span><span class="ident">predicate</span>) <span class="kw">in</span> <span class="ident">acc_predicates</span>.<span class="ident">iter</span>() {
-                        <span class="comment">// we can pushdown the predicate</span>
-                        <span class="kw">if</span> <span class="ident">check_input_node</span>(<span class="ident">predicate</span>, <span class="kw-2">&amp;</span><span class="ident">input_schema</span>, <span class="ident">expr_arena</span>) {
-                            <span class="ident">insert_and_combine_predicate</span>(
-                                <span class="kw-2">&amp;mut</span> <span class="ident">pushdown_predicates</span>,
-                                <span class="ident">predicate</span>,
-                                <span class="ident">expr_arena</span>,
+            <span class="comment">// determine new inputs by pushing down predicates
+            </span><span class="kw">let </span>new_inputs = inputs
+                .iter()
+                .map(|<span class="kw-2">&amp;</span>node| {
+                    <span class="comment">// first we check if we are able to push down the predicate passed this node
+                    // it could be that this node just added the column where we base the predicate on
+                    </span><span class="kw">let </span>input_schema = lp_arena.get(node).schema(lp_arena);
+                    <span class="kw">let </span><span class="kw-2">mut </span>pushdown_predicates =
+                        optimizer::init_hashmap(<span class="prelude-val">Some</span>(acc_predicates.len()));
+                    <span class="kw">for </span>(<span class="kw">_</span>, <span class="kw-2">&amp;</span>predicate) <span class="kw">in </span>acc_predicates.iter() {
+                        <span class="comment">// we can pushdown the predicate
+                        </span><span class="kw">if </span>check_input_node(predicate, <span class="kw-2">&amp;</span>input_schema, expr_arena) {
+                            insert_and_combine_predicate(
+                                <span class="kw-2">&amp;mut </span>pushdown_predicates,
+                                predicate,
+                                expr_arena,
                             )
                         }
-                        <span class="comment">// we cannot pushdown the predicate we do it here</span>
-                        <span class="kw">else</span> {
-                            <span class="ident">local_predicates</span>.<span class="ident">push</span>(<span class="ident">predicate</span>);
+                        <span class="comment">// we cannot pushdown the predicate we do it here
+                        </span><span class="kw">else </span>{
+                            local_predicates.push(predicate);
                         }
                     }
 
-                    <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">node</span>);
-                    <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">push_down</span>(<span class="ident">alp</span>, <span class="ident">pushdown_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)<span class="question-mark">?</span>;
-                    <span class="ident">lp_arena</span>.<span class="ident">replace</span>(<span class="ident">node</span>, <span class="ident">alp</span>);
-                    <span class="prelude-val">Ok</span>(<span class="ident">node</span>)
+                    <span class="kw">let </span>alp = lp_arena.take(node);
+                    <span class="kw">let </span>alp = <span class="self">self</span>.push_down(alp, pushdown_predicates, lp_arena, expr_arena)<span class="question-mark">?</span>;
+                    lp_arena.replace(node, alp);
+                    <span class="prelude-val">Ok</span>(node)
                 })
-                .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+                .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
 
-            <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">with_exprs_and_input</span>(<span class="ident">exprs</span>, <span class="ident">new_inputs</span>);
-            <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">optional_apply_predicate</span>(<span class="ident">lp</span>, <span class="ident">local_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>))
+            <span class="kw">let </span>lp = lp.with_exprs_and_input(exprs, new_inputs);
+            <span class="prelude-val">Ok</span>(<span class="self">self</span>.optional_apply_predicate(lp, local_predicates, lp_arena, expr_arena))
         }
     }
 
-    <span class="doccomment">/// Filter will be done at this node, but we continue optimization</span>
-    <span class="kw">fn</span> <span class="ident">no_pushdown_restart_opt</span>(
+    <span class="doccomment">/// Filter will be done at this node, but we continue optimization
+    </span><span class="kw">fn </span>no_pushdown_restart_opt(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">lp</span>: <span class="ident">ALogicalPlan</span>,
-        <span class="ident">acc_predicates</span>: <span class="ident">PlHashMap</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>, <span class="ident">Node</span><span class="op">&gt;</span>,
-        <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">inputs</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">get_inputs</span>();
-        <span class="kw">let</span> <span class="ident">exprs</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">get_exprs</span>();
+        lp: ALogicalPlan,
+        acc_predicates: PlHashMap&lt;Arc&lt;str&gt;, Node&gt;,
+        lp_arena: <span class="kw-2">&amp;mut </span>Arena&lt;ALogicalPlan&gt;,
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+    ) -&gt; PolarsResult&lt;ALogicalPlan&gt; {
+        <span class="kw">let </span>inputs = lp.get_inputs();
+        <span class="kw">let </span>exprs = lp.get_exprs();
 
-        <span class="kw">let</span> <span class="ident">new_inputs</span> <span class="op">=</span> <span class="ident">inputs</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">node</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">node</span>);
-                <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">push_down</span>(
-                    <span class="ident">alp</span>,
-                    <span class="ident">init_hashmap</span>(<span class="prelude-val">Some</span>(<span class="ident">acc_predicates</span>.<span class="ident">len</span>())),
-                    <span class="ident">lp_arena</span>,
-                    <span class="ident">expr_arena</span>,
+        <span class="kw">let </span>new_inputs = inputs
+            .iter()
+            .map(|<span class="kw-2">&amp;</span>node| {
+                <span class="kw">let </span>alp = lp_arena.take(node);
+                <span class="kw">let </span>alp = <span class="self">self</span>.push_down(
+                    alp,
+                    init_hashmap(<span class="prelude-val">Some</span>(acc_predicates.len())),
+                    lp_arena,
+                    expr_arena,
                 )<span class="question-mark">?</span>;
-                <span class="ident">lp_arena</span>.<span class="ident">replace</span>(<span class="ident">node</span>, <span class="ident">alp</span>);
-                <span class="prelude-val">Ok</span>(<span class="ident">node</span>)
+                lp_arena.replace(node, alp);
+                <span class="prelude-val">Ok</span>(node)
             })
-            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">with_exprs_and_input</span>(<span class="ident">exprs</span>, <span class="ident">new_inputs</span>);
+            .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
+        <span class="kw">let </span>lp = lp.with_exprs_and_input(exprs, new_inputs);
 
-        <span class="comment">// all predicates are done locally</span>
-        <span class="kw">let</span> <span class="ident">local_predicates</span> <span class="op">=</span> <span class="ident">acc_predicates</span>.<span class="ident">values</span>().<span class="ident">copied</span>().<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">optional_apply_predicate</span>(<span class="ident">lp</span>, <span class="ident">local_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>))
+        <span class="comment">// all predicates are done locally
+        </span><span class="kw">let </span>local_predicates = acc_predicates.values().copied().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.optional_apply_predicate(lp, local_predicates, lp_arena, expr_arena))
     }
 
-    <span class="doccomment">/// Predicate pushdown optimizer</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Arguments</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// * `AlogicalPlan` - Arena based logical plan tree representing the query.</span>
-    <span class="doccomment">/// * `acc_predicates` - The predicates we accumulate during tree traversal.</span>
-    <span class="doccomment">///                      The hashmap maps from leaf-column name to predicates on that column.</span>
-    <span class="doccomment">///                      If the key is already taken we combine the predicate with a bitand operation.</span>
-    <span class="doccomment">///                      The `Node`s are indexes in the `expr_arena`</span>
-    <span class="doccomment">/// * `lp_arena` - The local memory arena for the logical plan.</span>
-    <span class="doccomment">/// * `expr_arena` - The local memory arena for the expressions.</span>
-    <span class="kw">fn</span> <span class="ident">push_down</span>(
+    <span class="doccomment">/// Predicate pushdown optimizer
+    ///
+    /// # Arguments
+    ///
+    /// * `AlogicalPlan` - Arena based logical plan tree representing the query.
+    /// * `acc_predicates` - The predicates we accumulate during tree traversal.
+    ///                      The hashmap maps from leaf-column name to predicates on that column.
+    ///                      If the key is already taken we combine the predicate with a bitand operation.
+    ///                      The `Node`s are indexes in the `expr_arena`
+    /// * `lp_arena` - The local memory arena for the logical plan.
+    /// * `expr_arena` - The local memory arena for the expressions.
+    </span><span class="kw">fn </span>push_down(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">lp</span>: <span class="ident">ALogicalPlan</span>,
-        <span class="kw-2">mut</span> <span class="ident">acc_predicates</span>: <span class="ident">PlHashMap</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>, <span class="ident">Node</span><span class="op">&gt;</span>,
-        <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span> {
-        <span class="kw">use</span> <span class="ident">ALogicalPlan</span>::<span class="kw-2">*</span>;
+        lp: ALogicalPlan,
+        <span class="kw-2">mut </span>acc_predicates: PlHashMap&lt;Arc&lt;str&gt;, Node&gt;,
+        lp_arena: <span class="kw-2">&amp;mut </span>Arena&lt;ALogicalPlan&gt;,
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+    ) -&gt; PolarsResult&lt;ALogicalPlan&gt; {
+        <span class="kw">use </span>ALogicalPlan::<span class="kw-2">*</span>;
 
-        <span class="kw">match</span> <span class="ident">lp</span> {
-            <span class="ident">Selection</span> { <span class="ident">predicate</span>, <span class="ident">input</span> } =&gt; {
+        <span class="kw">match </span>lp {
+            Selection { predicate, input } =&gt; {
 
-                <span class="comment">// If a predicates result would be influenced by earlier applied filter</span>
-                <span class="comment">// we remove it and apply it locally</span>
-                <span class="kw">let</span> <span class="ident">local_predicates</span> <span class="op">=</span> <span class="ident">transfer_to_local_by_node</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc_predicates</span>, <span class="op">|</span><span class="ident">node</span><span class="op">|</span> <span class="ident">predicate_is_pushdown_boundary</span>(<span class="ident">node</span>, <span class="ident">expr_arena</span>));
+                <span class="comment">// If a predicates result would be influenced by earlier applied filter
+                // we remove it and apply it locally
+                </span><span class="kw">let </span>local_predicates = transfer_to_local_by_node(<span class="kw-2">&amp;mut </span>acc_predicates, |node| predicate_is_pushdown_boundary(node, expr_arena));
 
-                <span class="ident">insert_and_combine_predicate</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc_predicates</span>, <span class="ident">predicate</span>, <span class="ident">expr_arena</span>);
-                <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">input</span>);
-                <span class="kw">let</span> <span class="ident">new_input</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">push_down</span>(<span class="ident">alp</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)<span class="question-mark">?</span>;
+                insert_and_combine_predicate(<span class="kw-2">&amp;mut </span>acc_predicates, predicate, expr_arena);
+                <span class="kw">let </span>alp = lp_arena.take(input);
+                <span class="kw">let </span>new_input = <span class="self">self</span>.push_down(alp, acc_predicates, lp_arena, expr_arena)<span class="question-mark">?</span>;
 
-                <span class="comment">// TODO!</span>
-                <span class="comment">// If a predicates result would be influenced by earlier applied</span>
-                <span class="comment">// predicates, we simply don&#39;t pushdown this one passed this node</span>
-                <span class="comment">// However, we can do better and let it pass but store the order of the predicates</span>
-                <span class="comment">// so that we can apply them in correct order at the deepest level</span>
-                <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">optional_apply_predicate</span>(<span class="ident">new_input</span>, <span class="ident">local_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>))
+                <span class="comment">// TODO!
+                // If a predicates result would be influenced by earlier applied
+                // predicates, we simply don&#39;t pushdown this one passed this node
+                // However, we can do better and let it pass but store the order of the predicates
+                // so that we can apply them in correct order at the deepest level
+                </span><span class="prelude-val">Ok</span>(<span class="self">self</span>.optional_apply_predicate(new_input, local_predicates, lp_arena, expr_arena))
             }
-            <span class="ident">DataFrameScan</span> {
-                <span class="ident">df</span>,
-                <span class="ident">schema</span>,
-                <span class="ident">output_schema</span>,
-                <span class="ident">projection</span>,
-                <span class="ident">selection</span>,
+            DataFrameScan {
+                df,
+                schema,
+                output_schema,
+                projection,
+                selection,
             } =&gt; {
-                <span class="kw">let</span> <span class="ident">selection</span> <span class="op">=</span> <span class="ident">predicate_at_scan</span>(<span class="ident">acc_predicates</span>, <span class="ident">selection</span>, <span class="ident">expr_arena</span>);
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">DataFrameScan</span> {
-                    <span class="ident">df</span>,
-                    <span class="ident">schema</span>,
-                    <span class="ident">output_schema</span>,
-                    <span class="ident">projection</span>,
-                    <span class="ident">selection</span>,
+                <span class="kw">let </span>selection = predicate_at_scan(acc_predicates, selection, expr_arena);
+                <span class="kw">let </span>lp = DataFrameScan {
+                    df,
+                    schema,
+                    output_schema,
+                    projection,
+                    selection,
                 };
-                <span class="prelude-val">Ok</span>(<span class="ident">lp</span>)
+                <span class="prelude-val">Ok</span>(lp)
             }
 
-            <span class="ident">Melt</span> {
-                <span class="ident">input</span>,
-                <span class="ident">args</span>,
-                <span class="ident">schema</span>,
+            Melt {
+                input,
+                args,
+                schema,
             } =&gt; {
-                <span class="kw">let</span> <span class="ident">variable_name</span> <span class="op">=</span> <span class="ident">args</span>.<span class="ident">variable_name</span>.<span class="ident">as_deref</span>().<span class="ident">unwrap_or</span>(<span class="string">&quot;variable&quot;</span>);
-                <span class="kw">let</span> <span class="ident">value_name</span> <span class="op">=</span> <span class="ident">args</span>.<span class="ident">value_name</span>.<span class="ident">as_deref</span>().<span class="ident">unwrap_or</span>(<span class="string">&quot;value&quot;</span>);
+                <span class="kw">let </span>variable_name = args.variable_name.as_deref().unwrap_or(<span class="string">&quot;variable&quot;</span>);
+                <span class="kw">let </span>value_name = args.value_name.as_deref().unwrap_or(<span class="string">&quot;value&quot;</span>);
 
-                <span class="comment">// predicates that will be done at this level</span>
-                <span class="kw">let</span> <span class="ident">condition</span> <span class="op">=</span> <span class="op">|</span><span class="ident">name</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">|</span> {
-                    <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">name</span>;
-                    <span class="ident">name</span> <span class="op">==</span> <span class="ident">variable_name</span>
-                        <span class="op">|</span><span class="op">|</span> <span class="ident">name</span> <span class="op">==</span> <span class="ident">value_name</span>
-                        <span class="op">|</span><span class="op">|</span> <span class="ident">args</span>.<span class="ident">value_vars</span>.<span class="ident">iter</span>().<span class="ident">any</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">as_str</span>() <span class="op">==</span> <span class="ident">name</span>)
+                <span class="comment">// predicates that will be done at this level
+                </span><span class="kw">let </span>condition = |name: Arc&lt;str&gt;| {
+                    <span class="kw">let </span>name = <span class="kw-2">&amp;*</span>name;
+                    name == variable_name
+                        || name == value_name
+                        || args.value_vars.iter().any(|s| s.as_str() == name)
                 };
-                <span class="kw">let</span> <span class="ident">local_predicates</span> <span class="op">=</span>
-                    <span class="ident">transfer_to_local_by_name</span>(<span class="ident">expr_arena</span>, <span class="kw-2">&amp;mut</span> <span class="ident">acc_predicates</span>, <span class="ident">condition</span>);
+                <span class="kw">let </span>local_predicates =
+                    transfer_to_local_by_name(expr_arena, <span class="kw-2">&amp;mut </span>acc_predicates, condition);
 
-                <span class="self">self</span>.<span class="ident">pushdown_and_assign</span>(<span class="ident">input</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)<span class="question-mark">?</span>;
+                <span class="self">self</span>.pushdown_and_assign(input, acc_predicates, lp_arena, expr_arena)<span class="question-mark">?</span>;
 
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">ALogicalPlan::Melt</span> {
-                    <span class="ident">input</span>,
-                    <span class="ident">args</span>,
-                    <span class="ident">schema</span>,
+                <span class="kw">let </span>lp = ALogicalPlan::Melt {
+                    input,
+                    args,
+                    schema,
                 };
-                <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">optional_apply_predicate</span>(<span class="ident">lp</span>, <span class="ident">local_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>))
+                <span class="prelude-val">Ok</span>(<span class="self">self</span>.optional_apply_predicate(lp, local_predicates, lp_arena, expr_arena))
             }
-            <span class="ident">LocalProjection</span> { <span class="ident">expr</span>, <span class="ident">input</span>, .. } =&gt; {
-                <span class="self">self</span>.<span class="ident">pushdown_and_assign</span>(<span class="ident">input</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)<span class="question-mark">?</span>;
+            LocalProjection { expr, input, .. } =&gt; {
+                <span class="self">self</span>.pushdown_and_assign(input, acc_predicates, lp_arena, expr_arena)<span class="question-mark">?</span>;
 
-                <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">input</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
-                <span class="comment">// projection from a wildcard may be dropped if the schema changes due to the optimization</span>
-                <span class="kw">let</span> <span class="ident">expr</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">expr</span>
-                    .<span class="ident">into_iter</span>()
-                    .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">check_input_node</span>(<span class="kw-2">*</span><span class="ident">e</span>, <span class="kw-2">&amp;</span><span class="ident">schema</span>, <span class="ident">expr_arena</span>))
-                    .<span class="ident">collect</span>();
+                <span class="kw">let </span>schema = lp_arena.get(input).schema(lp_arena);
+                <span class="comment">// projection from a wildcard may be dropped if the schema changes due to the optimization
+                </span><span class="kw">let </span>expr: Vec&lt;<span class="kw">_</span>&gt; = expr
+                    .into_iter()
+                    .filter(|e| check_input_node(<span class="kw-2">*</span>e, <span class="kw-2">&amp;</span>schema, expr_arena))
+                    .collect();
 
-                <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="ident">aexprs_to_schema</span>(<span class="kw-2">&amp;</span><span class="ident">expr</span>, <span class="kw-2">&amp;</span><span class="ident">schema</span>, <span class="ident">Context::Default</span>, <span class="ident">expr_arena</span>);
-                <span class="prelude-val">Ok</span>(<span class="ident">ALogicalPlan::LocalProjection</span> {
-                    <span class="ident">expr</span>,
-                    <span class="ident">input</span>,
-                    <span class="ident">schema</span>: <span class="ident">Arc::new</span>(<span class="ident">schema</span>),
+                <span class="kw">let </span>schema = aexprs_to_schema(<span class="kw-2">&amp;</span>expr, <span class="kw-2">&amp;</span>schema, Context::Default, expr_arena);
+                <span class="prelude-val">Ok</span>(ALogicalPlan::LocalProjection {
+                    expr,
+                    input,
+                    schema: Arc::new(schema),
                 })
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ipc&quot;</span>)]</span>
-            <span class="ident">IpcScan</span> {
-                <span class="ident">path</span>,
-                <span class="ident">schema</span>,
-                <span class="ident">output_schema</span>,
-                <span class="ident">predicate</span>,
-                <span class="ident">options</span>,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
+            </span>IpcScan {
+                path,
+                schema,
+                output_schema,
+                predicate,
+                options,
             } =&gt; {
-                <span class="kw">let</span> <span class="ident">local_predicates</span> <span class="op">=</span> <span class="ident">partition_by_full_context</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc_predicates</span>, <span class="ident">expr_arena</span>);
-                <span class="kw">let</span> <span class="ident">predicate</span> <span class="op">=</span> <span class="ident">predicate_at_scan</span>(<span class="ident">acc_predicates</span>, <span class="ident">predicate</span>, <span class="ident">expr_arena</span>);
+                <span class="kw">let </span>local_predicates = partition_by_full_context(<span class="kw-2">&amp;mut </span>acc_predicates, expr_arena);
+                <span class="kw">let </span>predicate = predicate_at_scan(acc_predicates, predicate, expr_arena);
 
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">IpcScan</span> {
-                    <span class="ident">path</span>,
-                    <span class="ident">schema</span>,
-                    <span class="ident">output_schema</span>,
-                    <span class="ident">predicate</span>,
-                    <span class="ident">options</span>,
+                <span class="kw">let </span>lp = IpcScan {
+                    path,
+                    schema,
+                    output_schema,
+                    predicate,
+                    options,
                 };
-                <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">optional_apply_predicate</span>(<span class="ident">lp</span>, <span class="ident">local_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>))
+                <span class="prelude-val">Ok</span>(<span class="self">self</span>.optional_apply_predicate(lp, local_predicates, lp_arena, expr_arena))
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>)]</span>
-            <span class="ident">ParquetScan</span> {
-                <span class="ident">path</span>,
-                <span class="ident">schema</span>,
-                <span class="ident">output_schema</span>,
-                <span class="ident">predicate</span>,
-                <span class="ident">options</span>,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
+            </span>ParquetScan {
+                path,
+                schema,
+                output_schema,
+                predicate,
+                options,
             } =&gt; {
-                <span class="kw">let</span> <span class="ident">local_predicates</span> <span class="op">=</span> <span class="ident">partition_by_full_context</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc_predicates</span>, <span class="ident">expr_arena</span>);
+                <span class="kw">let </span>local_predicates = partition_by_full_context(<span class="kw-2">&amp;mut </span>acc_predicates, expr_arena);
 
-                <span class="kw">let</span> <span class="ident">predicate</span> <span class="op">=</span> <span class="ident">predicate_at_scan</span>(<span class="ident">acc_predicates</span>, <span class="ident">predicate</span>, <span class="ident">expr_arena</span>);
+                <span class="kw">let </span>predicate = predicate_at_scan(acc_predicates, predicate, expr_arena);
 
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">ParquetScan</span> {
-                    <span class="ident">path</span>,
-                    <span class="ident">schema</span>,
-                    <span class="ident">output_schema</span>,
-                    <span class="ident">predicate</span>,
-                    <span class="ident">options</span>,
+                <span class="kw">let </span>lp = ParquetScan {
+                    path,
+                    schema,
+                    output_schema,
+                    predicate,
+                    options,
                 };
-                <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">optional_apply_predicate</span>(<span class="ident">lp</span>, <span class="ident">local_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>))
+                <span class="prelude-val">Ok</span>(<span class="self">self</span>.optional_apply_predicate(lp, local_predicates, lp_arena, expr_arena))
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;csv-file&quot;</span>)]</span>
-            <span class="ident">CsvScan</span> {
-                <span class="ident">path</span>,
-                <span class="ident">schema</span>,
-                <span class="ident">output_schema</span>,
-                <span class="ident">options</span>,
-                <span class="ident">predicate</span>,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;csv-file&quot;</span>)]
+            </span>CsvScan {
+                path,
+                schema,
+                output_schema,
+                options,
+                predicate,
             } =&gt; {
-                <span class="kw">let</span> <span class="ident">local_predicates</span> <span class="op">=</span> <span class="ident">partition_by_full_context</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc_predicates</span>, <span class="ident">expr_arena</span>);
-                <span class="kw">let</span> <span class="ident">predicate</span> <span class="op">=</span> <span class="ident">predicate_at_scan</span>(<span class="ident">acc_predicates</span>, <span class="ident">predicate</span>, <span class="ident">expr_arena</span>);
+                <span class="kw">let </span>local_predicates = partition_by_full_context(<span class="kw-2">&amp;mut </span>acc_predicates, expr_arena);
+                <span class="kw">let </span>predicate = predicate_at_scan(acc_predicates, predicate, expr_arena);
 
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> (<span class="prelude-val">Some</span>(<span class="ident">predicate</span>), <span class="prelude-val">Some</span>(<span class="kw">_</span>)) <span class="op">=</span> (<span class="ident">predicate</span>, <span class="ident">options</span>.<span class="ident">n_rows</span>) {
-                    <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">CsvScan</span> {
-                        <span class="ident">path</span>,
-                        <span class="ident">schema</span>,
-                        <span class="ident">output_schema</span>,
-                        <span class="ident">options</span>,
-                        <span class="ident">predicate</span>: <span class="prelude-val">None</span>,
+                <span class="kw">let </span>lp = <span class="kw">if let </span>(<span class="prelude-val">Some</span>(predicate), <span class="prelude-val">Some</span>(<span class="kw">_</span>)) = (predicate, options.n_rows) {
+                    <span class="kw">let </span>lp = CsvScan {
+                        path,
+                        schema,
+                        output_schema,
+                        options,
+                        predicate: <span class="prelude-val">None</span>,
                     };
-                    <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">add</span>(<span class="ident">lp</span>);
-                    <span class="ident">Selection</span> {
-                        <span class="ident">input</span>,
-                        <span class="ident">predicate</span>
+                    <span class="kw">let </span>input = lp_arena.add(lp);
+                    Selection {
+                        input,
+                        predicate
                     }
-                } <span class="kw">else</span> {
-                    <span class="ident">CsvScan</span> {
-                        <span class="ident">path</span>,
-                        <span class="ident">schema</span>,
-                        <span class="ident">output_schema</span>,
-                        <span class="ident">options</span>,
-                        <span class="ident">predicate</span>,
+                } <span class="kw">else </span>{
+                    CsvScan {
+                        path,
+                        schema,
+                        output_schema,
+                        options,
+                        predicate,
                     }
                 };
 
-                <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">optional_apply_predicate</span>(<span class="ident">lp</span>, <span class="ident">local_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>))
+                <span class="prelude-val">Ok</span>(<span class="self">self</span>.optional_apply_predicate(lp, local_predicates, lp_arena, expr_arena))
             }
-            <span class="ident">AnonymousScan</span> {
-                <span class="ident">function</span>,
-                <span class="ident">schema</span>,
-                <span class="ident">output_schema</span>,
-                <span class="ident">options</span>,
-                <span class="ident">predicate</span>,
+            AnonymousScan {
+                function,
+                schema,
+                output_schema,
+                options,
+                predicate,
             } =&gt; {
-                <span class="kw">if</span> <span class="ident">function</span>.<span class="ident">allows_predicate_pushdown</span>() {
-                    <span class="kw">let</span> <span class="ident">local_predicates</span> <span class="op">=</span> <span class="ident">partition_by_full_context</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc_predicates</span>, <span class="ident">expr_arena</span>);
-                    <span class="kw">let</span> <span class="ident">predicate</span> <span class="op">=</span> <span class="ident">predicate_at_scan</span>(<span class="ident">acc_predicates</span>, <span class="ident">predicate</span>, <span class="ident">expr_arena</span>);
-                    <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">AnonymousScan</span> {
-                        <span class="ident">function</span>,
-                        <span class="ident">schema</span>,
-                        <span class="ident">output_schema</span>,
-                        <span class="ident">options</span>,
-                        <span class="ident">predicate</span>,
+                <span class="kw">if </span>function.allows_predicate_pushdown() {
+                    <span class="kw">let </span>local_predicates = partition_by_full_context(<span class="kw-2">&amp;mut </span>acc_predicates, expr_arena);
+                    <span class="kw">let </span>predicate = predicate_at_scan(acc_predicates, predicate, expr_arena);
+                    <span class="kw">let </span>lp = AnonymousScan {
+                        function,
+                        schema,
+                        output_schema,
+                        options,
+                        predicate,
                     };
-                    <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">optional_apply_predicate</span>(<span class="ident">lp</span>, <span class="ident">local_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>))
-                } <span class="kw">else</span> {
-                    <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">AnonymousScan</span> {
-                        <span class="ident">function</span>,
-                        <span class="ident">schema</span>,
-                        <span class="ident">output_schema</span>,
-                        <span class="ident">options</span>,
-                        <span class="ident">predicate</span>,
+                    <span class="prelude-val">Ok</span>(<span class="self">self</span>.optional_apply_predicate(lp, local_predicates, lp_arena, expr_arena))
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span>lp = AnonymousScan {
+                        function,
+                        schema,
+                        output_schema,
+                        options,
+                        predicate,
                     };
-                    <span class="self">self</span>.<span class="ident">no_pushdown_restart_opt</span>(<span class="ident">lp</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)
+                    <span class="self">self</span>.no_pushdown_restart_opt(lp, acc_predicates, lp_arena, expr_arena)
                 }
             }
 
-            <span class="ident">Explode</span> { <span class="ident">input</span>, <span class="ident">columns</span>, <span class="ident">schema</span> } =&gt; {
-                <span class="kw">let</span> <span class="ident">condition</span> <span class="op">=</span> <span class="op">|</span><span class="ident">name</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">|</span> <span class="ident">columns</span>.<span class="ident">iter</span>().<span class="ident">any</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">as_str</span>() <span class="op">==</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">name</span>);
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">local_predicates</span> <span class="op">=</span>
-                    <span class="ident">transfer_to_local_by_name</span>(<span class="ident">expr_arena</span>, <span class="kw-2">&amp;mut</span> <span class="ident">acc_predicates</span>, <span class="ident">condition</span>);
-                <span class="ident">local_predicates</span>.<span class="ident">extend_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">transfer_to_local_by_node</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc_predicates</span>, <span class="op">|</span><span class="ident">node</span><span class="op">|</span> <span class="ident">predicate_is_pushdown_boundary</span>(<span class="ident">node</span>, <span class="ident">expr_arena</span>)));
+            Explode { input, columns, schema } =&gt; {
+                <span class="kw">let </span>condition = |name: Arc&lt;str&gt;| columns.iter().any(|s| s.as_str() == <span class="kw-2">&amp;*</span>name);
+                <span class="kw">let </span><span class="kw-2">mut </span>local_predicates =
+                    transfer_to_local_by_name(expr_arena, <span class="kw-2">&amp;mut </span>acc_predicates, condition);
+                local_predicates.extend_from_slice(<span class="kw-2">&amp;</span>transfer_to_local_by_node(<span class="kw-2">&amp;mut </span>acc_predicates, |node| predicate_is_pushdown_boundary(node, expr_arena)));
 
-                <span class="self">self</span>.<span class="ident">pushdown_and_assign</span>(<span class="ident">input</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">Explode</span> { <span class="ident">input</span>, <span class="ident">columns</span>, <span class="ident">schema</span> };
-                <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">optional_apply_predicate</span>(<span class="ident">lp</span>, <span class="ident">local_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>))
+                <span class="self">self</span>.pushdown_and_assign(input, acc_predicates, lp_arena, expr_arena)<span class="question-mark">?</span>;
+                <span class="kw">let </span>lp = Explode { input, columns, schema };
+                <span class="prelude-val">Ok</span>(<span class="self">self</span>.optional_apply_predicate(lp, local_predicates, lp_arena, expr_arena))
             }
-            <span class="ident">Distinct</span> {
-                <span class="ident">input</span>,
-                <span class="ident">options</span>
+            Distinct {
+                input,
+                options
             } =&gt; {
-                <span class="comment">// currently the distinct operation only keeps the first occurrences.</span>
-                <span class="comment">// this may have influence on the pushed down predicates. If the pushed down predicates</span>
-                <span class="comment">// contain a binary expression (thus depending on values in multiple columns)</span>
-                <span class="comment">// the final result may differ if it is pushed down.</span>
+                <span class="comment">// currently the distinct operation only keeps the first occurrences.
+                // this may have influence on the pushed down predicates. If the pushed down predicates
+                // contain a binary expression (thus depending on values in multiple columns)
+                // the final result may differ if it is pushed down.
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">root_count</span> <span class="op">=</span> <span class="number">0</span>;
+                </span><span class="kw">let </span><span class="kw-2">mut </span>root_count = <span class="number">0</span>;
 
-                <span class="comment">// if this condition is called more than once, its a binary or ternary operation.</span>
-                <span class="kw">let</span> <span class="ident">condition</span> <span class="op">=</span> <span class="op">|</span><span class="kw">_</span><span class="op">|</span> {
-                    <span class="kw">if</span> <span class="ident">root_count</span> <span class="op">==</span> <span class="number">0</span> {
-                        <span class="ident">root_count</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-                        <span class="bool-val">false</span>
-                    } <span class="kw">else</span> {
-                        <span class="bool-val">true</span>
-                    }
+                <span class="comment">// if this condition is called more than once, its a binary or ternary operation.
+                </span><span class="kw">let </span>condition = |<span class="kw">_</span>| {
+                    <span class="kw">if </span>root_count == <span class="number">0 </span>{
+                        root_count += <span class="number">1</span>;
+                        <span class="bool-val">false
+                    </span>} <span class="kw">else </span>{
+                        <span class="bool-val">true
+                    </span>}
                 };
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">local_predicates</span> <span class="op">=</span>
-                    <span class="ident">transfer_to_local_by_name</span>(<span class="ident">expr_arena</span>, <span class="kw-2">&amp;mut</span> <span class="ident">acc_predicates</span>, <span class="ident">condition</span>);
-                <span class="ident">local_predicates</span>.<span class="ident">extend_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">transfer_to_local_by_node</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc_predicates</span>, <span class="op">|</span><span class="ident">node</span><span class="op">|</span> <span class="ident">predicate_is_pushdown_boundary</span>(<span class="ident">node</span>, <span class="ident">expr_arena</span>)));
+                <span class="kw">let </span><span class="kw-2">mut </span>local_predicates =
+                    transfer_to_local_by_name(expr_arena, <span class="kw-2">&amp;mut </span>acc_predicates, condition);
+                local_predicates.extend_from_slice(<span class="kw-2">&amp;</span>transfer_to_local_by_node(<span class="kw-2">&amp;mut </span>acc_predicates, |node| predicate_is_pushdown_boundary(node, expr_arena)));
 
-                <span class="self">self</span>.<span class="ident">pushdown_and_assign</span>(<span class="ident">input</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">Distinct</span> {
-                    <span class="ident">input</span>,
-                    <span class="ident">options</span>
+                <span class="self">self</span>.pushdown_and_assign(input, acc_predicates, lp_arena, expr_arena)<span class="question-mark">?</span>;
+                <span class="kw">let </span>lp = Distinct {
+                    input,
+                    options
                 };
-                <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">optional_apply_predicate</span>(<span class="ident">lp</span>, <span class="ident">local_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>))
+                <span class="prelude-val">Ok</span>(<span class="self">self</span>.optional_apply_predicate(lp, local_predicates, lp_arena, expr_arena))
             }
-            <span class="ident">Join</span> {
-                <span class="ident">input_left</span>,
-                <span class="ident">input_right</span>,
-                <span class="ident">left_on</span>,
-                <span class="ident">right_on</span>,
-                <span class="ident">schema</span>,
-                <span class="ident">options</span>,
+            Join {
+                input_left,
+                input_right,
+                left_on,
+                right_on,
+                schema,
+                options,
             } =&gt; {
-                <span class="kw">let</span> <span class="ident">schema_left</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">input_left</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
-                <span class="kw">let</span> <span class="ident">schema_right</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">input_right</span>).<span class="ident">schema</span>(<span class="ident">lp_arena</span>);
+                <span class="kw">let </span>schema_left = lp_arena.get(input_left).schema(lp_arena);
+                <span class="kw">let </span>schema_right = lp_arena.get(input_right).schema(lp_arena);
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pushdown_left</span> <span class="op">=</span> <span class="ident">optimizer::init_hashmap</span>(<span class="prelude-val">Some</span>(<span class="ident">acc_predicates</span>.<span class="ident">len</span>()));
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pushdown_right</span> <span class="op">=</span> <span class="ident">optimizer::init_hashmap</span>(<span class="prelude-val">Some</span>(<span class="ident">acc_predicates</span>.<span class="ident">len</span>()));
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">local_predicates</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">acc_predicates</span>.<span class="ident">len</span>());
+                <span class="kw">let </span><span class="kw-2">mut </span>pushdown_left = optimizer::init_hashmap(<span class="prelude-val">Some</span>(acc_predicates.len()));
+                <span class="kw">let </span><span class="kw-2">mut </span>pushdown_right = optimizer::init_hashmap(<span class="prelude-val">Some</span>(acc_predicates.len()));
+                <span class="kw">let </span><span class="kw-2">mut </span>local_predicates = Vec::with_capacity(acc_predicates.len());
 
-                <span class="kw">for</span> (<span class="kw">_</span>, <span class="ident">predicate</span>) <span class="kw">in</span> <span class="ident">acc_predicates</span> {
-                    <span class="comment">// unique and duplicated can be caused by joins</span>
-                    <span class="kw">let</span> <span class="ident">matches</span> <span class="op">=</span>
-                        <span class="op">|</span><span class="ident">e</span>: <span class="kw-2">&amp;</span><span class="ident">AExpr</span><span class="op">|</span> <span class="macro">matches!</span>(<span class="ident">e</span>, <span class="ident">AExpr::Function</span>{<span class="ident">function</span>: <span class="ident">FunctionExpr::IsDuplicated</span> <span class="op">|</span> <span class="ident">FunctionExpr::IsUnique</span>, ..});
+                <span class="kw">for </span>(<span class="kw">_</span>, predicate) <span class="kw">in </span>acc_predicates {
+                    <span class="comment">// unique and duplicated can be caused by joins
+                    </span><span class="kw">let </span>matches =
+                        |e: <span class="kw-2">&amp;</span>AExpr| <span class="macro">matches!</span>(e, AExpr::Function{function: FunctionExpr::IsDuplicated | FunctionExpr::IsUnique, ..});
 
-                    <span class="kw">let</span> <span class="ident">checks_nulls</span> <span class="op">=</span>
-                        <span class="op">|</span><span class="ident">e</span>: <span class="kw-2">&amp;</span><span class="ident">AExpr</span><span class="op">|</span> <span class="macro">matches!</span>(<span class="ident">e</span>, <span class="ident">AExpr::Function</span>{<span class="ident">function</span>: <span class="ident">FunctionExpr::IsNotNull</span> <span class="op">|</span> <span class="ident">FunctionExpr::IsNull</span>, ..} ) <span class="op">|</span><span class="op">|</span>
-                            <span class="comment">// any operation that checks for equality or ordering can be wrong because</span>
-                            <span class="comment">// the join can produce null values</span>
-                            <span class="macro">matches!</span>(<span class="ident">e</span>, <span class="ident">AExpr::BinaryExpr</span> {<span class="ident">op</span>, ..} <span class="kw">if</span> <span class="op">!</span><span class="macro">matches!</span>(<span class="ident">op</span>, <span class="ident">Operator::NotEq</span>));
-                    <span class="kw">if</span> <span class="ident">has_aexpr</span>(<span class="ident">predicate</span>, <span class="ident">expr_arena</span>, <span class="ident">matches</span>)
-                        <span class="comment">// join might create null values.</span>
-                        <span class="op">|</span><span class="op">|</span> <span class="ident">has_aexpr</span>(<span class="ident">predicate</span>, <span class="ident">expr_arena</span>, <span class="ident">checks_nulls</span>)
-                        <span class="comment">// only these join types produce null values</span>
-                        <span class="op">&amp;&amp;</span> <span class="ident">join_produces_null</span>(<span class="kw-2">&amp;</span><span class="ident">options</span>.<span class="ident">how</span>) {
-                        <span class="ident">local_predicates</span>.<span class="ident">push</span>(<span class="ident">predicate</span>);
+                    <span class="kw">let </span>checks_nulls =
+                        |e: <span class="kw-2">&amp;</span>AExpr| <span class="macro">matches!</span>(e, AExpr::Function{function: FunctionExpr::IsNotNull | FunctionExpr::IsNull, ..} ) ||
+                            <span class="comment">// any operation that checks for equality or ordering can be wrong because
+                            // the join can produce null values
+                            </span><span class="macro">matches!</span>(e, AExpr::BinaryExpr {op, ..} <span class="kw">if </span>!<span class="macro">matches!</span>(op, Operator::NotEq));
+                    <span class="kw">if </span>has_aexpr(predicate, expr_arena, matches)
+                        <span class="comment">// join might create null values.
+                        </span>|| has_aexpr(predicate, expr_arena, checks_nulls)
+                        <span class="comment">// only these join types produce null values
+                        </span>&amp;&amp; join_produces_null(<span class="kw-2">&amp;</span>options.how) {
+                        local_predicates.push(predicate);
                         <span class="kw">continue</span>;
                     }
-                    <span class="comment">// these indicate to which tables we are going to push down the predicate</span>
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">filter_left</span> <span class="op">=</span> <span class="bool-val">false</span>;
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">filter_right</span> <span class="op">=</span> <span class="bool-val">false</span>;
+                    <span class="comment">// these indicate to which tables we are going to push down the predicate
+                    </span><span class="kw">let </span><span class="kw-2">mut </span>filter_left = <span class="bool-val">false</span>;
+                    <span class="kw">let </span><span class="kw-2">mut </span>filter_right = <span class="bool-val">false</span>;
 
-                    <span class="comment">// predicate should not have an aggregation or window function as that would</span>
-                    <span class="comment">// be influenced by join</span>
-                    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::suspicious_else_formatting</span>)]</span>
-                    <span class="kw">if</span> <span class="op">!</span><span class="ident">predicate_is_pushdown_boundary</span>(<span class="ident">predicate</span>, <span class="ident">expr_arena</span>) {
-                        <span class="kw">if</span> <span class="ident">check_input_node</span>(<span class="ident">predicate</span>, <span class="kw-2">&amp;</span><span class="ident">schema_left</span>, <span class="ident">expr_arena</span>) {
-                            <span class="ident">insert_and_combine_predicate</span>(
-                                <span class="kw-2">&amp;mut</span> <span class="ident">pushdown_left</span>,
-                                <span class="ident">predicate</span>,
-                                <span class="ident">expr_arena</span>,
+                    <span class="comment">// predicate should not have an aggregation or window function as that would
+                    // be influenced by join
+                    </span><span class="attribute">#[allow(clippy::suspicious_else_formatting)]
+                    </span><span class="kw">if </span>!predicate_is_pushdown_boundary(predicate, expr_arena) {
+                        <span class="kw">if </span>check_input_node(predicate, <span class="kw-2">&amp;</span>schema_left, expr_arena) {
+                            insert_and_combine_predicate(
+                                <span class="kw-2">&amp;mut </span>pushdown_left,
+                                predicate,
+                                expr_arena,
                             );
-                            <span class="ident">filter_left</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                            filter_left = <span class="bool-val">true</span>;
                         }
-                        <span class="comment">// this is `else if` because if the predicate is in the left hand side</span>
-                        <span class="comment">// the right hand side should be renamed with the suffix.</span>
-                        <span class="comment">// in that case we should not push down as the user wants to filter on `x`</span>
-                        <span class="comment">// not on `x_rhs`.</span>
-                        <span class="kw">else</span> <span class="kw">if</span> <span class="ident">check_input_node</span>(<span class="ident">predicate</span>, <span class="kw-2">&amp;</span><span class="ident">schema_right</span>, <span class="ident">expr_arena</span>)  {
-                            <span class="ident">insert_and_combine_predicate</span>(
-                                <span class="kw-2">&amp;mut</span> <span class="ident">pushdown_right</span>,
-                                <span class="ident">predicate</span>,
-                                <span class="ident">expr_arena</span>,
+                        <span class="comment">// this is `else if` because if the predicate is in the left hand side
+                        // the right hand side should be renamed with the suffix.
+                        // in that case we should not push down as the user wants to filter on `x`
+                        // not on `x_rhs`.
+                        </span><span class="kw">else if </span>check_input_node(predicate, <span class="kw-2">&amp;</span>schema_right, expr_arena)  {
+                            insert_and_combine_predicate(
+                                <span class="kw-2">&amp;mut </span>pushdown_right,
+                                predicate,
+                                expr_arena,
                             );
-                            <span class="ident">filter_right</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                            filter_right = <span class="bool-val">true</span>;
                         }
                     }
-                    <span class="kw">match</span> (<span class="ident">filter_left</span>, <span class="ident">filter_right</span>, <span class="kw-2">&amp;</span><span class="ident">options</span>.<span class="ident">how</span>) {
-                        <span class="comment">// if not pushed down on one of the tables we have to do it locally.</span>
-                        (<span class="bool-val">false</span>, <span class="bool-val">false</span>, <span class="kw">_</span>) <span class="op">|</span>
-                        <span class="comment">// if left join and predicate only available in right table,</span>
-                        <span class="comment">// &#39;we should not filter right, because that would lead to</span>
-                        <span class="comment">// invalid results.</span>
-                        <span class="comment">// see: #2057</span>
-                        (<span class="bool-val">false</span>, <span class="bool-val">true</span>, <span class="ident">JoinType::Left</span>)
+                    <span class="kw">match </span>(filter_left, filter_right, <span class="kw-2">&amp;</span>options.how) {
+                        <span class="comment">// if not pushed down on one of the tables we have to do it locally.
+                        </span>(<span class="bool-val">false</span>, <span class="bool-val">false</span>, <span class="kw">_</span>) |
+                        <span class="comment">// if left join and predicate only available in right table,
+                        // &#39;we should not filter right, because that would lead to
+                        // invalid results.
+                        // see: #2057
+                        </span>(<span class="bool-val">false</span>, <span class="bool-val">true</span>, JoinType::Left)
                         =&gt; {
-                            <span class="ident">local_predicates</span>.<span class="ident">push</span>(<span class="ident">predicate</span>);
+                            local_predicates.push(predicate);
                             <span class="kw">continue</span>;
                         },
-                        <span class="comment">// business as usual</span>
-                        <span class="kw">_</span> =&gt; {}
+                        <span class="comment">// business as usual
+                        </span><span class="kw">_ </span>=&gt; {}
                     }
                 }
 
-                <span class="self">self</span>.<span class="ident">pushdown_and_assign</span>(<span class="ident">input_left</span>, <span class="ident">pushdown_left</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)<span class="question-mark">?</span>;
-                <span class="self">self</span>.<span class="ident">pushdown_and_assign</span>(<span class="ident">input_right</span>, <span class="ident">pushdown_right</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)<span class="question-mark">?</span>;
+                <span class="self">self</span>.pushdown_and_assign(input_left, pushdown_left, lp_arena, expr_arena)<span class="question-mark">?</span>;
+                <span class="self">self</span>.pushdown_and_assign(input_right, pushdown_right, lp_arena, expr_arena)<span class="question-mark">?</span>;
 
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">Join</span> {
-                    <span class="ident">input_left</span>,
-                    <span class="ident">input_right</span>,
-                    <span class="ident">left_on</span>,
-                    <span class="ident">right_on</span>,
-                    <span class="ident">schema</span>,
-                    <span class="ident">options</span>,
+                <span class="kw">let </span>lp = Join {
+                    input_left,
+                    input_right,
+                    left_on,
+                    right_on,
+                    schema,
+                    options,
                 };
-                <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">optional_apply_predicate</span>(<span class="ident">lp</span>, <span class="ident">local_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>))
+                <span class="prelude-val">Ok</span>(<span class="self">self</span>.optional_apply_predicate(lp, local_predicates, lp_arena, expr_arena))
             }
-            <span class="ident">MapFunction</span> { <span class="kw-2">ref</span> <span class="ident">function</span>, .. } =&gt; {
-                <span class="kw">if</span> <span class="ident">function</span>.<span class="ident">allow_predicate_pd</span>()
+            MapFunction { <span class="kw-2">ref </span>function, .. } =&gt; {
+                <span class="kw">if </span>function.allow_predicate_pd()
                 {
-                    <span class="self">self</span>.<span class="ident">pushdown_and_continue</span>(<span class="ident">lp</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>, <span class="bool-val">false</span>)
-                } <span class="kw">else</span> {
-                    <span class="self">self</span>.<span class="ident">no_pushdown_restart_opt</span>(<span class="ident">lp</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)
+                    <span class="self">self</span>.pushdown_and_continue(lp, acc_predicates, lp_arena, expr_arena, <span class="bool-val">false</span>)
+                } <span class="kw">else </span>{
+                    <span class="self">self</span>.no_pushdown_restart_opt(lp, acc_predicates, lp_arena, expr_arena)
                 }
             }
-            <span class="ident">lp</span> @ <span class="ident">Union</span> {..} =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">local_predicates</span> <span class="op">=</span> <span class="macro">vec!</span>[];
+            lp @ Union {..} =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>local_predicates = <span class="macro">vec!</span>[];
 
-                <span class="comment">// a count is influenced by a Union/Vstack</span>
-                <span class="ident">acc_predicates</span>.<span class="ident">retain</span>(<span class="op">|</span><span class="kw">_</span>, <span class="ident">predicate</span><span class="op">|</span> {
-                    <span class="kw">if</span> <span class="ident">has_aexpr</span>(<span class="kw-2">*</span><span class="ident">predicate</span>, <span class="ident">expr_arena</span>, <span class="op">|</span><span class="ident">ae</span><span class="op">|</span> <span class="macro">matches!</span>(<span class="ident">ae</span>, <span class="ident">AExpr::Count</span>)) {
-                        <span class="ident">local_predicates</span>.<span class="ident">push</span>(<span class="kw-2">*</span><span class="ident">predicate</span>);
-                        <span class="bool-val">false</span>
-                    } <span class="kw">else</span> {
-                        <span class="bool-val">true</span>
-                    }
+                <span class="comment">// a count is influenced by a Union/Vstack
+                </span>acc_predicates.retain(|<span class="kw">_</span>, predicate| {
+                    <span class="kw">if </span>has_aexpr(<span class="kw-2">*</span>predicate, expr_arena, |ae| <span class="macro">matches!</span>(ae, AExpr::Count)) {
+                        local_predicates.push(<span class="kw-2">*</span>predicate);
+                        <span class="bool-val">false
+                    </span>} <span class="kw">else </span>{
+                        <span class="bool-val">true
+                    </span>}
                 });
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">pushdown_and_continue</span>(<span class="ident">lp</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">optional_apply_predicate</span>(<span class="ident">lp</span>, <span class="ident">local_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>))
+                <span class="kw">let </span>lp = <span class="self">self</span>.pushdown_and_continue(lp, acc_predicates, lp_arena, expr_arena, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(<span class="self">self</span>.optional_apply_predicate(lp, local_predicates, lp_arena, expr_arena))
             }
-            <span class="comment">// Pushed down passed these nodes</span>
-            <span class="ident">lp</span> @ <span class="ident">Sort</span> { .. } =&gt; {
-                <span class="self">self</span>.<span class="ident">pushdown_and_continue</span>(<span class="ident">lp</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>, <span class="bool-val">false</span>)
+            <span class="comment">// Pushed down passed these nodes
+            </span>lp @ Sort { .. } =&gt; {
+                <span class="self">self</span>.pushdown_and_continue(lp, acc_predicates, lp_arena, expr_arena, <span class="bool-val">false</span>)
             }
-            <span class="ident">lp</span> @ <span class="ident">HStack</span> {..} <span class="op">|</span> <span class="ident">lp</span> @ <span class="ident">Projection</span> {..} <span class="op">|</span> <span class="ident">lp</span> @ <span class="ident">ExtContext</span> {..} =&gt; {
-                <span class="self">self</span>.<span class="ident">pushdown_and_continue</span>(<span class="ident">lp</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>, <span class="bool-val">true</span>)
+            lp @ HStack {..} | lp @ Projection {..} | lp @ ExtContext {..} =&gt; {
+                <span class="self">self</span>.pushdown_and_continue(lp, acc_predicates, lp_arena, expr_arena, <span class="bool-val">true</span>)
             }
-            <span class="comment">// NOT Pushed down passed these nodes</span>
-            <span class="comment">// predicates influence slice sizes</span>
-            <span class="ident">lp</span> @ <span class="ident">Slice</span> { .. }
-            <span class="comment">// caches will be different</span>
-            <span class="op">|</span> <span class="ident">lp</span> @ <span class="ident">Cache</span> { .. }
-            <span class="comment">// dont push down predicates. An aggregation needs all rows</span>
-            <span class="op">|</span> <span class="ident">lp</span> @ <span class="ident">Aggregate</span> {..} =&gt; {
-                <span class="self">self</span>.<span class="ident">no_pushdown_restart_opt</span>(<span class="ident">lp</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)
+            <span class="comment">// NOT Pushed down passed these nodes
+            // predicates influence slice sizes
+            </span>lp @ Slice { .. }
+            <span class="comment">// caches will be different
+            </span>| lp @ Cache { .. }
+            <span class="comment">// dont push down predicates. An aggregation needs all rows
+            </span>| lp @ Aggregate {..} =&gt; {
+                <span class="self">self</span>.no_pushdown_restart_opt(lp, acc_predicates, lp_arena, expr_arena)
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;python&quot;</span>)]</span>
-            <span class="comment">// python node does not yet support predicates</span>
-             <span class="ident">lp</span> @ <span class="ident">PythonScan</span> {..} =&gt; {
-                <span class="self">self</span>.<span class="ident">no_pushdown_restart_opt</span>(<span class="ident">lp</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;python&quot;</span>)]
+            </span><span class="comment">// python node does not yet support predicates
+             </span>lp @ PythonScan {..} =&gt; {
+                <span class="self">self</span>.no_pushdown_restart_opt(lp, acc_predicates, lp_arena, expr_arena)
             }
 
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">optimize</span>(
+    <span class="kw">pub fn </span>optimize(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">logical_plan</span>: <span class="ident">ALogicalPlan</span>,
-        <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">acc_predicates</span> <span class="op">=</span> <span class="ident">PlHashMap::new</span>();
-        <span class="self">self</span>.<span class="ident">push_down</span>(<span class="ident">logical_plan</span>, <span class="ident">acc_predicates</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)
+        logical_plan: ALogicalPlan,
+        lp_arena: <span class="kw-2">&amp;mut </span>Arena&lt;ALogicalPlan&gt;,
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+    ) -&gt; PolarsResult&lt;ALogicalPlan&gt; {
+        <span class="kw">let </span>acc_predicates = PlHashMap::new();
+        <span class="self">self</span>.push_down(logical_plan, acc_predicates, lp_arena, expr_arena)
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">test</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>test {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_insert_and_combine_predicate</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">acc_predicates</span> <span class="op">=</span> <span class="ident">PlHashMap::with_capacity</span>(<span class="number">32</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">expr_arena</span> <span class="op">=</span> <span class="ident">Arena::new</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_insert_and_combine_predicate() {
+        <span class="kw">let </span><span class="kw-2">mut </span>acc_predicates = PlHashMap::with_capacity(<span class="number">32</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>expr_arena = Arena::new();
 
-        <span class="kw">let</span> <span class="ident">predicate_expr</span> <span class="op">=</span> <span class="ident">col</span>(<span class="string">&quot;foo&quot;</span>).<span class="ident">gt</span>(<span class="ident">col</span>(<span class="string">&quot;bar&quot;</span>));
-        <span class="kw">let</span> <span class="ident">predicate</span> <span class="op">=</span> <span class="ident">to_aexpr</span>(<span class="ident">predicate_expr</span>.<span class="ident">clone</span>(), <span class="kw-2">&amp;mut</span> <span class="ident">expr_arena</span>);
-        <span class="ident">insert_and_combine_predicate</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc_predicates</span>, <span class="ident">predicate</span>, <span class="kw-2">&amp;mut</span> <span class="ident">expr_arena</span>);
-        <span class="kw">let</span> <span class="ident">root</span> <span class="op">=</span> <span class="kw-2">*</span><span class="ident">acc_predicates</span>.<span class="ident">get</span>(<span class="string">&quot;foo&quot;</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">expr</span> <span class="op">=</span> <span class="ident">node_to_expr</span>(<span class="ident">root</span>, <span class="kw-2">&amp;</span><span class="ident">expr_arena</span>);
-        <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">expr</span>), <span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">predicate_expr</span>));
+        <span class="kw">let </span>predicate_expr = col(<span class="string">&quot;foo&quot;</span>).gt(col(<span class="string">&quot;bar&quot;</span>));
+        <span class="kw">let </span>predicate = to_aexpr(predicate_expr.clone(), <span class="kw-2">&amp;mut </span>expr_arena);
+        insert_and_combine_predicate(<span class="kw-2">&amp;mut </span>acc_predicates, predicate, <span class="kw-2">&amp;mut </span>expr_arena);
+        <span class="kw">let </span>root = <span class="kw-2">*</span>acc_predicates.get(<span class="string">&quot;foo&quot;</span>).unwrap();
+        <span class="kw">let </span>expr = node_to_expr(root, <span class="kw-2">&amp;</span>expr_arena);
+        <span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="kw-2">&amp;</span>expr), <span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, predicate_expr));
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="polars_plan" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="polars_plan" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

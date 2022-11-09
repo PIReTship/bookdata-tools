@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.25.1/src/logical_plan/optimizer/file_caching.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>file_caching.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.25.1/src/logical_plan/optimizer/file_caching.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>file_caching.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -416,423 +416,423 @@
 <span id="416">416</span>
 <span id="417">417</span>
 <span id="418">418</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::path</span>::{<span class="ident">Path</span>, <span class="ident">PathBuf</span>};
-<span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::path::{Path, PathBuf};
+<span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use</span> <span class="ident">polars_core::datatypes::PlHashMap</span>;
-<span class="kw">use</span> <span class="ident">polars_core::prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span>polars_core::datatypes::PlHashMap;
+<span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::logical_plan::ALogicalPlanBuilder</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::logical_plan::ALogicalPlanBuilder;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Hash</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FileFingerPrint</span> {
-    <span class="kw">pub</span> <span class="ident">path</span>: <span class="ident">PathBuf</span>,
-    <span class="kw">pub</span> <span class="ident">predicate</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">slice</span>: (<span class="ident">usize</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>),
+<span class="attribute">#[derive(Hash, Eq, PartialEq, Clone, Debug)]
+</span><span class="kw">pub struct </span>FileFingerPrint {
+    <span class="kw">pub </span>path: PathBuf,
+    <span class="kw">pub </span>predicate: <span class="prelude-ty">Option</span>&lt;Expr&gt;,
+    <span class="kw">pub </span>slice: (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;),
 }
 
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::type_complexity</span>)]</span>
-<span class="kw">fn</span> <span class="ident">process_with_columns</span>(
-    <span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>,
-    <span class="ident">with_columns</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">predicate</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>,
-    <span class="ident">slice</span>: (<span class="ident">usize</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>),
-    <span class="ident">file_count_and_column_union</span>: <span class="kw-2">&amp;mut</span> <span class="ident">PlHashMap</span><span class="op">&lt;</span><span class="ident">FileFingerPrint</span>, (<span class="ident">FileCount</span>, <span class="ident">PlIndexSet</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>)<span class="op">&gt;</span>,
-    <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>,
+<span class="attribute">#[allow(clippy::type_complexity)]
+</span><span class="kw">fn </span>process_with_columns(
+    path: <span class="kw-2">&amp;</span>Path,
+    with_columns: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Vec&lt;String&gt;&gt;,
+    predicate: <span class="prelude-ty">Option</span>&lt;Expr&gt;,
+    slice: (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;),
+    file_count_and_column_union: <span class="kw-2">&amp;mut </span>PlHashMap&lt;FileFingerPrint, (FileCount, PlIndexSet&lt;String&gt;)&gt;,
+    schema: <span class="kw-2">&amp;</span>Schema,
 ) {
-    <span class="kw">let</span> <span class="ident">cols</span> <span class="op">=</span> <span class="ident">file_count_and_column_union</span>
-        .<span class="ident">entry</span>(<span class="ident">FileFingerPrint</span> {
-            <span class="ident">path</span>: <span class="ident">path</span>.<span class="ident">into</span>(),
-            <span class="ident">predicate</span>,
-            <span class="ident">slice</span>,
+    <span class="kw">let </span>cols = file_count_and_column_union
+        .entry(FileFingerPrint {
+            path: path.into(),
+            predicate,
+            slice,
         })
-        .<span class="ident">or_insert_with</span>(<span class="op">|</span><span class="op">|</span> {
+        .or_insert_with(|| {
             (
                 <span class="number">0</span>,
-                <span class="ident">PlIndexSet::with_capacity_and_hasher</span>(<span class="number">32</span>, <span class="ident">Default::default</span>()),
+                PlIndexSet::with_capacity_and_hasher(<span class="number">32</span>, Default::default()),
             )
         });
 
-    <span class="comment">// increment file count</span>
-    <span class="ident">cols</span>.<span class="number">0</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+    <span class="comment">// increment file count
+    </span>cols.<span class="number">0 </span>+= <span class="number">1</span>;
 
-    <span class="kw">match</span> <span class="ident">with_columns</span> {
-        <span class="comment">// add only the projected columns</span>
-        <span class="prelude-val">Some</span>(<span class="ident">with_columns</span>) =&gt; <span class="ident">cols</span>.<span class="number">1</span>.<span class="ident">extend</span>(<span class="ident">with_columns</span>.<span class="ident">iter</span>().<span class="ident">cloned</span>()),
-        <span class="comment">// no projection, so we must take all columns</span>
-        <span class="prelude-val">None</span> =&gt; {
-            <span class="ident">cols</span>.<span class="number">1</span>.<span class="ident">extend</span>(<span class="ident">schema</span>.<span class="ident">iter_names</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> <span class="ident">t</span>.<span class="ident">to_string</span>()));
+    <span class="kw">match </span>with_columns {
+        <span class="comment">// add only the projected columns
+        </span><span class="prelude-val">Some</span>(with_columns) =&gt; cols.<span class="number">1</span>.extend(with_columns.iter().cloned()),
+        <span class="comment">// no projection, so we must take all columns
+        </span><span class="prelude-val">None </span>=&gt; {
+            cols.<span class="number">1</span>.extend(schema.iter_names().map(|t| t.to_string()));
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::type_complexity</span>)]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">collect_fingerprints</span>(
-    <span class="ident">root</span>: <span class="ident">Node</span>,
-    <span class="ident">fps</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">FileFingerPrint</span><span class="op">&gt;</span>,
-    <span class="ident">lp_arena</span>: <span class="kw-2">&amp;</span><span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-    <span class="ident">expr_arena</span>: <span class="kw-2">&amp;</span><span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
+<span class="attribute">#[allow(clippy::type_complexity)]
+</span><span class="kw">pub fn </span>collect_fingerprints(
+    root: Node,
+    fps: <span class="kw-2">&amp;mut </span>Vec&lt;FileFingerPrint&gt;,
+    lp_arena: <span class="kw-2">&amp;</span>Arena&lt;ALogicalPlan&gt;,
+    expr_arena: <span class="kw-2">&amp;</span>Arena&lt;AExpr&gt;,
 ) {
-    <span class="kw">use</span> <span class="ident">ALogicalPlan</span>::<span class="kw-2">*</span>;
-    <span class="kw">match</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">root</span>) {
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;csv-file&quot;</span>)]</span>
-        <span class="ident">CsvScan</span> {
-            <span class="ident">path</span>,
-            <span class="ident">options</span>,
-            <span class="ident">predicate</span>,
+    <span class="kw">use </span>ALogicalPlan::<span class="kw-2">*</span>;
+    <span class="kw">match </span>lp_arena.get(root) {
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;csv-file&quot;</span>)]
+        </span>CsvScan {
+            path,
+            options,
+            predicate,
             ..
         } =&gt; {
-            <span class="kw">let</span> <span class="ident">slice</span> <span class="op">=</span> (<span class="ident">options</span>.<span class="ident">skip_rows</span>, <span class="ident">options</span>.<span class="ident">n_rows</span>);
-            <span class="kw">let</span> <span class="ident">predicate</span> <span class="op">=</span> <span class="ident">predicate</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">node</span><span class="op">|</span> <span class="ident">node_to_expr</span>(<span class="ident">node</span>, <span class="ident">expr_arena</span>));
-            <span class="kw">let</span> <span class="ident">fp</span> <span class="op">=</span> <span class="ident">FileFingerPrint</span> {
-                <span class="ident">path</span>: <span class="ident">path</span>.<span class="ident">clone</span>(),
-                <span class="ident">predicate</span>,
-                <span class="ident">slice</span>,
+            <span class="kw">let </span>slice = (options.skip_rows, options.n_rows);
+            <span class="kw">let </span>predicate = predicate.map(|node| node_to_expr(node, expr_arena));
+            <span class="kw">let </span>fp = FileFingerPrint {
+                path: path.clone(),
+                predicate,
+                slice,
             };
-            <span class="ident">fps</span>.<span class="ident">push</span>(<span class="ident">fp</span>);
+            fps.push(fp);
         }
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>)]</span>
-        <span class="ident">ParquetScan</span> {
-            <span class="ident">path</span>,
-            <span class="ident">options</span>,
-            <span class="ident">predicate</span>,
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
+        </span>ParquetScan {
+            path,
+            options,
+            predicate,
             ..
         } =&gt; {
-            <span class="kw">let</span> <span class="ident">slice</span> <span class="op">=</span> (<span class="number">0</span>, <span class="ident">options</span>.<span class="ident">n_rows</span>);
-            <span class="kw">let</span> <span class="ident">predicate</span> <span class="op">=</span> <span class="ident">predicate</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">node</span><span class="op">|</span> <span class="ident">node_to_expr</span>(<span class="ident">node</span>, <span class="ident">expr_arena</span>));
-            <span class="kw">let</span> <span class="ident">fp</span> <span class="op">=</span> <span class="ident">FileFingerPrint</span> {
-                <span class="ident">path</span>: <span class="ident">path</span>.<span class="ident">clone</span>(),
-                <span class="ident">predicate</span>,
-                <span class="ident">slice</span>,
+            <span class="kw">let </span>slice = (<span class="number">0</span>, options.n_rows);
+            <span class="kw">let </span>predicate = predicate.map(|node| node_to_expr(node, expr_arena));
+            <span class="kw">let </span>fp = FileFingerPrint {
+                path: path.clone(),
+                predicate,
+                slice,
             };
-            <span class="ident">fps</span>.<span class="ident">push</span>(<span class="ident">fp</span>);
+            fps.push(fp);
         }
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ipc&quot;</span>)]</span>
-        <span class="ident">IpcScan</span> {
-            <span class="ident">path</span>,
-            <span class="ident">options</span>,
-            <span class="ident">predicate</span>,
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
+        </span>IpcScan {
+            path,
+            options,
+            predicate,
             ..
         } =&gt; {
-            <span class="kw">let</span> <span class="ident">slice</span> <span class="op">=</span> (<span class="number">0</span>, <span class="ident">options</span>.<span class="ident">n_rows</span>);
-            <span class="kw">let</span> <span class="ident">predicate</span> <span class="op">=</span> <span class="ident">predicate</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">node</span><span class="op">|</span> <span class="ident">node_to_expr</span>(<span class="ident">node</span>, <span class="ident">expr_arena</span>));
-            <span class="kw">let</span> <span class="ident">fp</span> <span class="op">=</span> <span class="ident">FileFingerPrint</span> {
-                <span class="ident">path</span>: <span class="ident">path</span>.<span class="ident">clone</span>(),
-                <span class="ident">predicate</span>,
-                <span class="ident">slice</span>,
+            <span class="kw">let </span>slice = (<span class="number">0</span>, options.n_rows);
+            <span class="kw">let </span>predicate = predicate.map(|node| node_to_expr(node, expr_arena));
+            <span class="kw">let </span>fp = FileFingerPrint {
+                path: path.clone(),
+                predicate,
+                slice,
             };
-            <span class="ident">fps</span>.<span class="ident">push</span>(<span class="ident">fp</span>);
+            fps.push(fp);
         }
-        <span class="ident">lp</span> =&gt; {
-            <span class="kw">for</span> <span class="ident">input</span> <span class="kw">in</span> <span class="ident">lp</span>.<span class="ident">get_inputs</span>() {
-                <span class="ident">collect_fingerprints</span>(<span class="ident">input</span>, <span class="ident">fps</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)
+        lp =&gt; {
+            <span class="kw">for </span>input <span class="kw">in </span>lp.get_inputs() {
+                collect_fingerprints(input, fps, lp_arena, expr_arena)
             }
         }
     }
 }
 
-<span class="doccomment">/// Find the union between the columns per unique IO operation.</span>
-<span class="doccomment">/// A unique IO operation is the file + the predicates pushed down to that file</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::type_complexity</span>)]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">find_column_union_and_fingerprints</span>(
-    <span class="ident">root</span>: <span class="ident">Node</span>,
-    <span class="comment">// The hashmap maps files to a hashset over column names.</span>
-    <span class="comment">// we also keep track of how often a needs file needs to be read so we can cache until last read</span>
-    <span class="ident">columns</span>: <span class="kw-2">&amp;mut</span> <span class="ident">PlHashMap</span><span class="op">&lt;</span><span class="ident">FileFingerPrint</span>, (<span class="ident">FileCount</span>, <span class="ident">PlIndexSet</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>)<span class="op">&gt;</span>,
-    <span class="ident">lp_arena</span>: <span class="kw-2">&amp;</span><span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-    <span class="ident">expr_arena</span>: <span class="kw-2">&amp;</span><span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
+<span class="doccomment">/// Find the union between the columns per unique IO operation.
+/// A unique IO operation is the file + the predicates pushed down to that file
+</span><span class="attribute">#[allow(clippy::type_complexity)]
+</span><span class="kw">pub fn </span>find_column_union_and_fingerprints(
+    root: Node,
+    <span class="comment">// The hashmap maps files to a hashset over column names.
+    // we also keep track of how often a needs file needs to be read so we can cache until last read
+    </span>columns: <span class="kw-2">&amp;mut </span>PlHashMap&lt;FileFingerPrint, (FileCount, PlIndexSet&lt;String&gt;)&gt;,
+    lp_arena: <span class="kw-2">&amp;</span>Arena&lt;ALogicalPlan&gt;,
+    expr_arena: <span class="kw-2">&amp;</span>Arena&lt;AExpr&gt;,
 ) {
-    <span class="kw">use</span> <span class="ident">ALogicalPlan</span>::<span class="kw-2">*</span>;
-    <span class="kw">match</span> <span class="ident">lp_arena</span>.<span class="ident">get</span>(<span class="ident">root</span>) {
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;csv-file&quot;</span>)]</span>
-        <span class="ident">CsvScan</span> {
-            <span class="ident">path</span>,
-            <span class="ident">options</span>,
-            <span class="ident">predicate</span>,
-            <span class="ident">schema</span>,
+    <span class="kw">use </span>ALogicalPlan::<span class="kw-2">*</span>;
+    <span class="kw">match </span>lp_arena.get(root) {
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;csv-file&quot;</span>)]
+        </span>CsvScan {
+            path,
+            options,
+            predicate,
+            schema,
             ..
         } =&gt; {
-            <span class="kw">let</span> <span class="ident">slice</span> <span class="op">=</span> (<span class="ident">options</span>.<span class="ident">skip_rows</span>, <span class="ident">options</span>.<span class="ident">n_rows</span>);
-            <span class="kw">let</span> <span class="ident">predicate</span> <span class="op">=</span> <span class="ident">predicate</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">node</span><span class="op">|</span> <span class="ident">node_to_expr</span>(<span class="ident">node</span>, <span class="ident">expr_arena</span>));
-            <span class="ident">process_with_columns</span>(
-                <span class="ident">path</span>,
-                <span class="ident">options</span>.<span class="ident">with_columns</span>.<span class="ident">as_deref</span>(),
-                <span class="ident">predicate</span>,
-                <span class="ident">slice</span>,
-                <span class="ident">columns</span>,
-                <span class="ident">schema</span>,
+            <span class="kw">let </span>slice = (options.skip_rows, options.n_rows);
+            <span class="kw">let </span>predicate = predicate.map(|node| node_to_expr(node, expr_arena));
+            process_with_columns(
+                path,
+                options.with_columns.as_deref(),
+                predicate,
+                slice,
+                columns,
+                schema,
             );
         }
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>)]</span>
-        <span class="ident">ParquetScan</span> {
-            <span class="ident">path</span>,
-            <span class="ident">options</span>,
-            <span class="ident">schema</span>,
-            <span class="ident">predicate</span>,
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
+        </span>ParquetScan {
+            path,
+            options,
+            schema,
+            predicate,
             ..
         } =&gt; {
-            <span class="kw">let</span> <span class="ident">slice</span> <span class="op">=</span> (<span class="number">0</span>, <span class="ident">options</span>.<span class="ident">n_rows</span>);
-            <span class="kw">let</span> <span class="ident">predicate</span> <span class="op">=</span> <span class="ident">predicate</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">node</span><span class="op">|</span> <span class="ident">node_to_expr</span>(<span class="ident">node</span>, <span class="ident">expr_arena</span>));
-            <span class="ident">process_with_columns</span>(
-                <span class="ident">path</span>,
-                <span class="ident">options</span>.<span class="ident">with_columns</span>.<span class="ident">as_deref</span>(),
-                <span class="ident">predicate</span>,
-                <span class="ident">slice</span>,
-                <span class="ident">columns</span>,
-                <span class="ident">schema</span>,
+            <span class="kw">let </span>slice = (<span class="number">0</span>, options.n_rows);
+            <span class="kw">let </span>predicate = predicate.map(|node| node_to_expr(node, expr_arena));
+            process_with_columns(
+                path,
+                options.with_columns.as_deref(),
+                predicate,
+                slice,
+                columns,
+                schema,
             );
         }
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ipc&quot;</span>)]</span>
-        <span class="ident">IpcScan</span> {
-            <span class="ident">path</span>,
-            <span class="ident">options</span>,
-            <span class="ident">schema</span>,
-            <span class="ident">predicate</span>,
+        <span class="attribute">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
+        </span>IpcScan {
+            path,
+            options,
+            schema,
+            predicate,
             ..
         } =&gt; {
-            <span class="kw">let</span> <span class="ident">slice</span> <span class="op">=</span> (<span class="number">0</span>, <span class="ident">options</span>.<span class="ident">n_rows</span>);
-            <span class="kw">let</span> <span class="ident">predicate</span> <span class="op">=</span> <span class="ident">predicate</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">node</span><span class="op">|</span> <span class="ident">node_to_expr</span>(<span class="ident">node</span>, <span class="ident">expr_arena</span>));
-            <span class="ident">process_with_columns</span>(
-                <span class="ident">path</span>,
-                <span class="ident">options</span>.<span class="ident">with_columns</span>.<span class="ident">as_deref</span>(),
-                <span class="ident">predicate</span>,
-                <span class="ident">slice</span>,
-                <span class="ident">columns</span>,
-                <span class="ident">schema</span>,
+            <span class="kw">let </span>slice = (<span class="number">0</span>, options.n_rows);
+            <span class="kw">let </span>predicate = predicate.map(|node| node_to_expr(node, expr_arena));
+            process_with_columns(
+                path,
+                options.with_columns.as_deref(),
+                predicate,
+                slice,
+                columns,
+                schema,
             );
         }
-        <span class="ident">lp</span> =&gt; {
-            <span class="kw">for</span> <span class="ident">input</span> <span class="kw">in</span> <span class="ident">lp</span>.<span class="ident">get_inputs</span>() {
-                <span class="ident">find_column_union_and_fingerprints</span>(<span class="ident">input</span>, <span class="ident">columns</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)
+        lp =&gt; {
+            <span class="kw">for </span>input <span class="kw">in </span>lp.get_inputs() {
+                find_column_union_and_fingerprints(input, columns, lp_arena, expr_arena)
             }
         }
     }
 }
 
-<span class="doccomment">/// Aggregate all the columns used in csv scans and make sure that all columns are scanned in one go.</span>
-<span class="doccomment">/// Due to self joins there can be multiple Scans of the same file in a LP. We already cache the scans</span>
-<span class="doccomment">/// in the PhysicalPlan, but we need to make sure that the first scan has all the columns needed.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FileCacher</span> {
-    <span class="ident">file_count_and_column_union</span>: <span class="ident">PlHashMap</span><span class="op">&lt;</span><span class="ident">FileFingerPrint</span>, (<span class="ident">FileCount</span>, <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span>)<span class="op">&gt;</span>,
+<span class="doccomment">/// Aggregate all the columns used in csv scans and make sure that all columns are scanned in one go.
+/// Due to self joins there can be multiple Scans of the same file in a LP. We already cache the scans
+/// in the PhysicalPlan, but we need to make sure that the first scan has all the columns needed.
+</span><span class="kw">pub struct </span>FileCacher {
+    file_count_and_column_union: PlHashMap&lt;FileFingerPrint, (FileCount, Arc&lt;Vec&lt;String&gt;&gt;)&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">FileCacher</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">columns</span>: <span class="ident">PlHashMap</span><span class="op">&lt;</span><span class="ident">FileFingerPrint</span>, (<span class="ident">FileCount</span>, <span class="ident">PlIndexSet</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>)<span class="op">&gt;</span>,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">new_columns_mapping</span> <span class="op">=</span> <span class="ident">columns</span>
-            .<span class="ident">into_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">k</span>, <span class="ident">agg</span>)<span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">file_count</span> <span class="op">=</span> <span class="ident">agg</span>.<span class="number">0</span>;
-                <span class="kw">let</span> <span class="ident">columns</span> <span class="op">=</span> <span class="ident">agg</span>.<span class="number">1</span>.<span class="ident">iter</span>().<span class="ident">cloned</span>().<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-                (<span class="ident">k</span>, (<span class="ident">file_count</span>, <span class="ident">Arc::new</span>(<span class="ident">columns</span>)))
+<span class="kw">impl </span>FileCacher {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(
+        columns: PlHashMap&lt;FileFingerPrint, (FileCount, PlIndexSet&lt;String&gt;)&gt;,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>new_columns_mapping = columns
+            .into_iter()
+            .map(|(k, agg)| {
+                <span class="kw">let </span>file_count = agg.<span class="number">0</span>;
+                <span class="kw">let </span>columns = agg.<span class="number">1</span>.iter().cloned().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                (k, (file_count, Arc::new(columns)))
             })
-            .<span class="ident">collect</span>();
-        <span class="self">Self</span> {
-            <span class="ident">file_count_and_column_union</span>: <span class="ident">new_columns_mapping</span>,
+            .collect();
+        <span class="self">Self </span>{
+            file_count_and_column_union: new_columns_mapping,
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">finish_rewrite</span>(
+    <span class="kw">fn </span>finish_rewrite(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="kw-2">mut</span> <span class="ident">lp</span>: <span class="ident">ALogicalPlan</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-        <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="ident">finger_print</span>: <span class="kw-2">&amp;</span><span class="ident">FileFingerPrint</span>,
-        <span class="ident">with_columns</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">behind_cache</span>: <span class="ident">bool</span>,
-    ) -&gt; <span class="ident">ALogicalPlan</span> {
-        <span class="comment">// if the original projection is less than the new one. Also project locally</span>
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">with_columns</span>) <span class="op">=</span> <span class="ident">with_columns</span> {
-            <span class="comment">// we cannot always find the predicates, because some have `SpecialEq` functions so for those</span>
-            <span class="comment">// cases we may read the file twice and/or do an extra projection</span>
-            <span class="kw">let</span> <span class="ident">do_projection</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span>.<span class="ident">file_count_and_column_union</span>.<span class="ident">get</span>(<span class="ident">finger_print</span>) {
-                <span class="prelude-val">Some</span>((<span class="ident">_file_count</span>, <span class="ident">agg_columns</span>)) =&gt; <span class="ident">with_columns</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="ident">agg_columns</span>.<span class="ident">len</span>(),
-                <span class="prelude-val">None</span> =&gt; <span class="bool-val">true</span>,
+        <span class="kw-2">mut </span>lp: ALogicalPlan,
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+        lp_arena: <span class="kw-2">&amp;mut </span>Arena&lt;ALogicalPlan&gt;,
+        finger_print: <span class="kw-2">&amp;</span>FileFingerPrint,
+        with_columns: <span class="prelude-ty">Option</span>&lt;Arc&lt;Vec&lt;String&gt;&gt;&gt;,
+        behind_cache: bool,
+    ) -&gt; ALogicalPlan {
+        <span class="comment">// if the original projection is less than the new one. Also project locally
+        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>with_columns) = with_columns {
+            <span class="comment">// we cannot always find the predicates, because some have `SpecialEq` functions so for those
+            // cases we may read the file twice and/or do an extra projection
+            </span><span class="kw">let </span>do_projection = <span class="kw">match </span><span class="self">self</span>.file_count_and_column_union.get(finger_print) {
+                <span class="prelude-val">Some</span>((_file_count, agg_columns)) =&gt; with_columns.len() &lt; agg_columns.len(),
+                <span class="prelude-val">None </span>=&gt; <span class="bool-val">true</span>,
             };
-            <span class="kw">if</span> <span class="op">!</span><span class="ident">behind_cache</span> <span class="op">&amp;&amp;</span> <span class="ident">do_projection</span> {
-                <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">add</span>(<span class="ident">lp</span>);
+            <span class="kw">if </span>!behind_cache &amp;&amp; do_projection {
+                <span class="kw">let </span>node = lp_arena.add(lp);
 
-                <span class="kw">let</span> <span class="ident">projections</span> <span class="op">=</span> <span class="ident">std::mem::take</span>(<span class="ident">Arc::make_mut</span>(<span class="kw-2">&amp;mut</span> <span class="ident">with_columns</span>))
-                    .<span class="ident">into_iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">AExpr::Column</span>(<span class="ident">Arc::from</span>(<span class="ident">s</span>))))
-                    .<span class="ident">collect</span>();
+                <span class="kw">let </span>projections = std::mem::take(Arc::make_mut(<span class="kw-2">&amp;mut </span>with_columns))
+                    .into_iter()
+                    .map(|s| expr_arena.add(AExpr::Column(Arc::from(s))))
+                    .collect();
 
-                <span class="ident">lp</span> <span class="op">=</span> <span class="ident">ALogicalPlanBuilder::new</span>(<span class="ident">node</span>, <span class="ident">expr_arena</span>, <span class="ident">lp_arena</span>)
-                    .<span class="ident">project</span>(<span class="ident">projections</span>)
-                    .<span class="ident">build</span>();
+                lp = ALogicalPlanBuilder::new(node, expr_arena, lp_arena)
+                    .project(projections)
+                    .build();
             }
         }
-        <span class="ident">lp</span>
+        lp
     }
 
-    <span class="kw">fn</span> <span class="ident">extract_columns_and_count</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">finger_print</span>: <span class="kw-2">&amp;</span><span class="ident">FileFingerPrint</span>,
-    ) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">FileCount</span>, <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span>)<span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">file_count_and_column_union</span>.<span class="ident">get</span>(<span class="ident">finger_print</span>).<span class="ident">cloned</span>()
+    <span class="kw">fn </span>extract_columns_and_count(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        finger_print: <span class="kw-2">&amp;</span>FileFingerPrint,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;(FileCount, Arc&lt;Vec&lt;String&gt;&gt;)&gt; {
+        <span class="self">self</span>.file_count_and_column_union.get(finger_print).cloned()
     }
 
-    <span class="comment">// This will ensure that all read files have the amount of columns needed for the cache.</span>
-    <span class="comment">// In case of CSE, it will ensure that the union projected nodes are available.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">assign_unions</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">root</span>: <span class="ident">Node</span>,
-        <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-        <span class="ident">scratch</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&gt;</span>,
+    <span class="comment">// This will ensure that all read files have the amount of columns needed for the cache.
+    // In case of CSE, it will ensure that the union projected nodes are available.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>assign_unions(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        root: Node,
+        lp_arena: <span class="kw-2">&amp;mut </span>Arena&lt;ALogicalPlan&gt;,
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+        scratch: <span class="kw-2">&amp;mut </span>Vec&lt;Node&gt;,
     ) {
-        <span class="ident">scratch</span>.<span class="ident">clear</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">stack</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">lp_arena</span>.<span class="ident">len</span>() <span class="op">/</span> <span class="number">3</span> <span class="op">+</span> <span class="number">1</span>);
-        <span class="ident">stack</span>.<span class="ident">push</span>((<span class="ident">root</span>, <span class="bool-val">false</span>));
+        scratch.clear();
+        <span class="kw">let </span><span class="kw-2">mut </span>stack = Vec::with_capacity(lp_arena.len() / <span class="number">3 </span>+ <span class="number">1</span>);
+        stack.push((root, <span class="bool-val">false</span>));
 
-        <span class="comment">// if behind cache we should not add a projection</span>
-        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>((<span class="ident">root</span>, <span class="ident">behind_cache</span>)) <span class="op">=</span> <span class="ident">stack</span>.<span class="ident">pop</span>() {
-            <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">root</span>);
-            <span class="kw">match</span> <span class="ident">lp</span> {
-                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>)]</span>
-                <span class="ident">ALogicalPlan::ParquetScan</span> {
-                    <span class="ident">path</span>,
-                    <span class="ident">schema</span>,
-                    <span class="ident">output_schema</span>,
-                    <span class="ident">predicate</span>,
-                    <span class="kw-2">mut</span> <span class="ident">options</span>,
+        <span class="comment">// if behind cache we should not add a projection
+        </span><span class="kw">while let </span><span class="prelude-val">Some</span>((root, behind_cache)) = stack.pop() {
+            <span class="kw">let </span>lp = lp_arena.take(root);
+            <span class="kw">match </span>lp {
+                <span class="attribute">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
+                </span>ALogicalPlan::ParquetScan {
+                    path,
+                    schema,
+                    output_schema,
+                    predicate,
+                    <span class="kw-2">mut </span>options,
                 } =&gt; {
-                    <span class="kw">let</span> <span class="ident">predicate_expr</span> <span class="op">=</span> <span class="ident">predicate</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">node</span><span class="op">|</span> <span class="ident">node_to_expr</span>(<span class="ident">node</span>, <span class="ident">expr_arena</span>));
-                    <span class="kw">let</span> <span class="ident">finger_print</span> <span class="op">=</span> <span class="ident">FileFingerPrint</span> {
-                        <span class="ident">path</span>,
-                        <span class="ident">predicate</span>: <span class="ident">predicate_expr</span>,
-                        <span class="ident">slice</span>: (<span class="number">0</span>, <span class="ident">options</span>.<span class="ident">n_rows</span>),
+                    <span class="kw">let </span>predicate_expr = predicate.map(|node| node_to_expr(node, expr_arena));
+                    <span class="kw">let </span>finger_print = FileFingerPrint {
+                        path,
+                        predicate: predicate_expr,
+                        slice: (<span class="number">0</span>, options.n_rows),
                     };
 
-                    <span class="kw">let</span> <span class="ident">with_columns</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">extract_columns_and_count</span>(<span class="kw-2">&amp;</span><span class="ident">finger_print</span>);
-                    <span class="ident">options</span>.<span class="ident">file_counter</span> <span class="op">=</span> <span class="ident">with_columns</span>.<span class="ident">as_ref</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> <span class="ident">t</span>.<span class="number">0</span>).<span class="ident">unwrap_or</span>(<span class="number">0</span>);
-                    <span class="kw">let</span> <span class="ident">with_columns</span> <span class="op">=</span> <span class="ident">with_columns</span>.<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> {
-                        <span class="kw">if</span> <span class="ident">t</span>.<span class="number">1</span>.<span class="ident">len</span>() <span class="op">!</span><span class="op">=</span> <span class="ident">schema</span>.<span class="ident">len</span>() {
-                            <span class="prelude-val">Some</span>(<span class="ident">t</span>.<span class="number">1</span>)
-                        } <span class="kw">else</span> {
-                            <span class="prelude-val">None</span>
-                        }
+                    <span class="kw">let </span>with_columns = <span class="self">self</span>.extract_columns_and_count(<span class="kw-2">&amp;</span>finger_print);
+                    options.file_counter = with_columns.as_ref().map(|t| t.<span class="number">0</span>).unwrap_or(<span class="number">0</span>);
+                    <span class="kw">let </span>with_columns = with_columns.and_then(|t| {
+                        <span class="kw">if </span>t.<span class="number">1</span>.len() != schema.len() {
+                            <span class="prelude-val">Some</span>(t.<span class="number">1</span>)
+                        } <span class="kw">else </span>{
+                            <span class="prelude-val">None
+                        </span>}
                     });
 
-                    <span class="ident">options</span>.<span class="ident">with_columns</span> <span class="op">=</span> <span class="ident">with_columns</span>;
-                    <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">ALogicalPlan::ParquetScan</span> {
-                        <span class="ident">path</span>: <span class="ident">finger_print</span>.<span class="ident">path</span>.<span class="ident">clone</span>(),
-                        <span class="ident">schema</span>,
-                        <span class="ident">output_schema</span>,
-                        <span class="ident">predicate</span>,
-                        <span class="ident">options</span>: <span class="ident">options</span>.<span class="ident">clone</span>(),
+                    options.with_columns = with_columns;
+                    <span class="kw">let </span>lp = ALogicalPlan::ParquetScan {
+                        path: finger_print.path.clone(),
+                        schema,
+                        output_schema,
+                        predicate,
+                        options: options.clone(),
                     };
-                    <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">finish_rewrite</span>(
-                        <span class="ident">lp</span>,
-                        <span class="ident">expr_arena</span>,
-                        <span class="ident">lp_arena</span>,
-                        <span class="kw-2">&amp;</span><span class="ident">finger_print</span>,
-                        <span class="ident">options</span>.<span class="ident">with_columns</span>,
-                        <span class="ident">behind_cache</span>,
+                    <span class="kw">let </span>lp = <span class="self">self</span>.finish_rewrite(
+                        lp,
+                        expr_arena,
+                        lp_arena,
+                        <span class="kw-2">&amp;</span>finger_print,
+                        options.with_columns,
+                        behind_cache,
                     );
-                    <span class="ident">lp_arena</span>.<span class="ident">replace</span>(<span class="ident">root</span>, <span class="ident">lp</span>);
+                    lp_arena.replace(root, lp);
                 }
-                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;csv-file&quot;</span>)]</span>
-                <span class="ident">ALogicalPlan::CsvScan</span> {
-                    <span class="ident">path</span>,
-                    <span class="ident">schema</span>,
-                    <span class="ident">output_schema</span>,
-                    <span class="ident">predicate</span>,
-                    <span class="kw-2">mut</span> <span class="ident">options</span>,
+                <span class="attribute">#[cfg(feature = <span class="string">&quot;csv-file&quot;</span>)]
+                </span>ALogicalPlan::CsvScan {
+                    path,
+                    schema,
+                    output_schema,
+                    predicate,
+                    <span class="kw-2">mut </span>options,
                 } =&gt; {
-                    <span class="kw">let</span> <span class="ident">predicate_expr</span> <span class="op">=</span> <span class="ident">predicate</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">node</span><span class="op">|</span> <span class="ident">node_to_expr</span>(<span class="ident">node</span>, <span class="ident">expr_arena</span>));
-                    <span class="kw">let</span> <span class="ident">finger_print</span> <span class="op">=</span> <span class="ident">FileFingerPrint</span> {
-                        <span class="ident">path</span>,
-                        <span class="ident">predicate</span>: <span class="ident">predicate_expr</span>,
-                        <span class="ident">slice</span>: (<span class="ident">options</span>.<span class="ident">skip_rows</span>, <span class="ident">options</span>.<span class="ident">n_rows</span>),
+                    <span class="kw">let </span>predicate_expr = predicate.map(|node| node_to_expr(node, expr_arena));
+                    <span class="kw">let </span>finger_print = FileFingerPrint {
+                        path,
+                        predicate: predicate_expr,
+                        slice: (options.skip_rows, options.n_rows),
                     };
 
-                    <span class="kw">let</span> <span class="ident">with_columns</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">extract_columns_and_count</span>(<span class="kw-2">&amp;</span><span class="ident">finger_print</span>);
-                    <span class="ident">options</span>.<span class="ident">file_counter</span> <span class="op">=</span> <span class="ident">with_columns</span>.<span class="ident">as_ref</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> <span class="ident">t</span>.<span class="number">0</span>).<span class="ident">unwrap_or</span>(<span class="number">0</span>);
-                    <span class="kw">let</span> <span class="ident">with_columns</span> <span class="op">=</span> <span class="ident">with_columns</span>.<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> {
-                        <span class="kw">if</span> <span class="ident">t</span>.<span class="number">1</span>.<span class="ident">len</span>() <span class="op">!</span><span class="op">=</span> <span class="ident">schema</span>.<span class="ident">len</span>() {
-                            <span class="prelude-val">Some</span>(<span class="ident">t</span>.<span class="number">1</span>)
-                        } <span class="kw">else</span> {
-                            <span class="prelude-val">None</span>
-                        }
+                    <span class="kw">let </span>with_columns = <span class="self">self</span>.extract_columns_and_count(<span class="kw-2">&amp;</span>finger_print);
+                    options.file_counter = with_columns.as_ref().map(|t| t.<span class="number">0</span>).unwrap_or(<span class="number">0</span>);
+                    <span class="kw">let </span>with_columns = with_columns.and_then(|t| {
+                        <span class="kw">if </span>t.<span class="number">1</span>.len() != schema.len() {
+                            <span class="prelude-val">Some</span>(t.<span class="number">1</span>)
+                        } <span class="kw">else </span>{
+                            <span class="prelude-val">None
+                        </span>}
                     });
 
-                    <span class="ident">options</span>.<span class="ident">with_columns</span> <span class="op">=</span> <span class="ident">with_columns</span>;
-                    <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">ALogicalPlan::CsvScan</span> {
-                        <span class="ident">path</span>: <span class="ident">finger_print</span>.<span class="ident">path</span>.<span class="ident">clone</span>(),
-                        <span class="ident">schema</span>,
-                        <span class="ident">output_schema</span>,
-                        <span class="ident">predicate</span>,
-                        <span class="ident">options</span>: <span class="ident">options</span>.<span class="ident">clone</span>(),
+                    options.with_columns = with_columns;
+                    <span class="kw">let </span>lp = ALogicalPlan::CsvScan {
+                        path: finger_print.path.clone(),
+                        schema,
+                        output_schema,
+                        predicate,
+                        options: options.clone(),
                     };
-                    <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">finish_rewrite</span>(
-                        <span class="ident">lp</span>,
-                        <span class="ident">expr_arena</span>,
-                        <span class="ident">lp_arena</span>,
-                        <span class="kw-2">&amp;</span><span class="ident">finger_print</span>,
-                        <span class="ident">options</span>.<span class="ident">with_columns</span>,
-                        <span class="ident">behind_cache</span>,
+                    <span class="kw">let </span>lp = <span class="self">self</span>.finish_rewrite(
+                        lp,
+                        expr_arena,
+                        lp_arena,
+                        <span class="kw-2">&amp;</span>finger_print,
+                        options.with_columns,
+                        behind_cache,
                     );
-                    <span class="ident">lp_arena</span>.<span class="ident">replace</span>(<span class="ident">root</span>, <span class="ident">lp</span>);
+                    lp_arena.replace(root, lp);
                 }
-                <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ipc&quot;</span>)]</span>
-                <span class="ident">ALogicalPlan::IpcScan</span> {
-                    <span class="ident">path</span>,
-                    <span class="ident">schema</span>,
-                    <span class="ident">output_schema</span>,
-                    <span class="ident">predicate</span>,
-                    <span class="kw-2">mut</span> <span class="ident">options</span>,
+                <span class="attribute">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
+                </span>ALogicalPlan::IpcScan {
+                    path,
+                    schema,
+                    output_schema,
+                    predicate,
+                    <span class="kw-2">mut </span>options,
                 } =&gt; {
-                    <span class="kw">let</span> <span class="ident">predicate_expr</span> <span class="op">=</span> <span class="ident">predicate</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">node</span><span class="op">|</span> <span class="ident">node_to_expr</span>(<span class="ident">node</span>, <span class="ident">expr_arena</span>));
-                    <span class="kw">let</span> <span class="ident">finger_print</span> <span class="op">=</span> <span class="ident">FileFingerPrint</span> {
-                        <span class="ident">path</span>,
-                        <span class="ident">predicate</span>: <span class="ident">predicate_expr</span>,
-                        <span class="ident">slice</span>: (<span class="number">0</span>, <span class="ident">options</span>.<span class="ident">n_rows</span>),
+                    <span class="kw">let </span>predicate_expr = predicate.map(|node| node_to_expr(node, expr_arena));
+                    <span class="kw">let </span>finger_print = FileFingerPrint {
+                        path,
+                        predicate: predicate_expr,
+                        slice: (<span class="number">0</span>, options.n_rows),
                     };
 
-                    <span class="kw">let</span> <span class="ident">with_columns</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">extract_columns_and_count</span>(<span class="kw-2">&amp;</span><span class="ident">finger_print</span>);
-                    <span class="ident">options</span>.<span class="ident">file_counter</span> <span class="op">=</span> <span class="ident">with_columns</span>.<span class="ident">as_ref</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> <span class="ident">t</span>.<span class="number">0</span>).<span class="ident">unwrap_or</span>(<span class="number">0</span>);
-                    <span class="kw">let</span> <span class="ident">with_columns</span> <span class="op">=</span> <span class="ident">with_columns</span>.<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">t</span><span class="op">|</span> {
-                        <span class="kw">if</span> <span class="ident">t</span>.<span class="number">1</span>.<span class="ident">len</span>() <span class="op">!</span><span class="op">=</span> <span class="ident">schema</span>.<span class="ident">len</span>() {
-                            <span class="prelude-val">Some</span>(<span class="ident">t</span>.<span class="number">1</span>)
-                        } <span class="kw">else</span> {
-                            <span class="prelude-val">None</span>
-                        }
+                    <span class="kw">let </span>with_columns = <span class="self">self</span>.extract_columns_and_count(<span class="kw-2">&amp;</span>finger_print);
+                    options.file_counter = with_columns.as_ref().map(|t| t.<span class="number">0</span>).unwrap_or(<span class="number">0</span>);
+                    <span class="kw">let </span>with_columns = with_columns.and_then(|t| {
+                        <span class="kw">if </span>t.<span class="number">1</span>.len() != schema.len() {
+                            <span class="prelude-val">Some</span>(t.<span class="number">1</span>)
+                        } <span class="kw">else </span>{
+                            <span class="prelude-val">None
+                        </span>}
                     });
 
-                    <span class="ident">options</span>.<span class="ident">with_columns</span> <span class="op">=</span> <span class="ident">with_columns</span>;
-                    <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">ALogicalPlan::IpcScan</span> {
-                        <span class="ident">path</span>: <span class="ident">finger_print</span>.<span class="ident">path</span>.<span class="ident">clone</span>(),
-                        <span class="ident">schema</span>,
-                        <span class="ident">output_schema</span>,
-                        <span class="ident">predicate</span>,
-                        <span class="ident">options</span>: <span class="ident">options</span>.<span class="ident">clone</span>(),
+                    options.with_columns = with_columns;
+                    <span class="kw">let </span>lp = ALogicalPlan::IpcScan {
+                        path: finger_print.path.clone(),
+                        schema,
+                        output_schema,
+                        predicate,
+                        options: options.clone(),
                     };
-                    <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">finish_rewrite</span>(
-                        <span class="ident">lp</span>,
-                        <span class="ident">expr_arena</span>,
-                        <span class="ident">lp_arena</span>,
-                        <span class="kw-2">&amp;</span><span class="ident">finger_print</span>,
-                        <span class="ident">options</span>.<span class="ident">with_columns</span>,
-                        <span class="ident">behind_cache</span>,
+                    <span class="kw">let </span>lp = <span class="self">self</span>.finish_rewrite(
+                        lp,
+                        expr_arena,
+                        lp_arena,
+                        <span class="kw-2">&amp;</span>finger_print,
+                        options.with_columns,
+                        behind_cache,
                     );
-                    <span class="ident">lp_arena</span>.<span class="ident">replace</span>(<span class="ident">root</span>, <span class="ident">lp</span>);
+                    lp_arena.replace(root, lp);
                 }
-                <span class="ident">lp</span> =&gt; {
-                    <span class="kw">let</span> <span class="ident">behind_cache</span> <span class="op">=</span> <span class="ident">behind_cache</span> <span class="op">|</span><span class="op">|</span> <span class="macro">matches!</span>(<span class="kw-2">&amp;</span><span class="ident">lp</span>, <span class="ident">ALogicalPlan::Cache</span> { .. });
+                lp =&gt; {
+                    <span class="kw">let </span>behind_cache = behind_cache || <span class="macro">matches!</span>(<span class="kw-2">&amp;</span>lp, ALogicalPlan::Cache { .. });
 
-                    <span class="ident">lp</span>.<span class="ident">copy_inputs</span>(<span class="ident">scratch</span>);
-                    <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">input</span>) <span class="op">=</span> <span class="ident">scratch</span>.<span class="ident">pop</span>() {
-                        <span class="ident">stack</span>.<span class="ident">push</span>((<span class="ident">input</span>, <span class="ident">behind_cache</span>))
+                    lp.copy_inputs(scratch);
+                    <span class="kw">while let </span><span class="prelude-val">Some</span>(input) = scratch.pop() {
+                        stack.push((input, behind_cache))
                     }
-                    <span class="ident">lp_arena</span>.<span class="ident">replace</span>(<span class="ident">root</span>, <span class="ident">lp</span>);
+                    lp_arena.replace(root, lp);
                 }
             }
         }
-        <span class="ident">scratch</span>.<span class="ident">clear</span>();
+        scratch.clear();
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_plan" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_plan" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

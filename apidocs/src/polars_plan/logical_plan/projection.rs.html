@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.25.1/src/logical_plan/projection.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>projection.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../polars_plan/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.25.1/src/logical_plan/projection.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>projection.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../polars_plan/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -406,232 +406,232 @@
 <span id="406">406</span>
 <span id="407">407</span>
 <span id="408">408</span>
-</pre><pre class="rust"><code><span class="doccomment">//! this contains code used for rewriting projections, expanding wildcards, regex selection etc.</span>
-<span class="kw">use</span> <span class="ident">polars_arrow::index::IndexToUsize</span>;
-<span class="kw">use</span> <span class="ident">polars_core::utils::get_supertype</span>;
+</pre><pre class="rust"><code><span class="doccomment">//! this contains code used for rewriting projections, expanding wildcards, regex selection etc.
+</span><span class="kw">use </span>polars_arrow::index::IndexToUsize;
+<span class="kw">use </span>polars_core::utils::get_supertype;
 
-<span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude::function_expr::FunctionExpr</span>;
+<span class="kw">use super</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::function_expr::FunctionExpr;
 
-<span class="doccomment">/// This replace the wildcard Expr with a Column Expr. It also removes the Exclude Expr from the</span>
-<span class="doccomment">/// expression chain.</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">replace_wildcard_with_column</span>(<span class="kw-2">mut</span> <span class="ident">expr</span>: <span class="ident">Expr</span>, <span class="ident">column_name</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>) -&gt; <span class="ident">Expr</span> {
-    <span class="ident">expr</span>.<span class="ident">mutate</span>().<span class="ident">apply</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-        <span class="kw">match</span> <span class="ident">e</span> {
-            <span class="ident">Expr::Wildcard</span> =&gt; {
-                <span class="kw-2">*</span><span class="ident">e</span> <span class="op">=</span> <span class="ident">Expr::Column</span>(<span class="ident">column_name</span>.<span class="ident">clone</span>());
+<span class="doccomment">/// This replace the wildcard Expr with a Column Expr. It also removes the Exclude Expr from the
+/// expression chain.
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>replace_wildcard_with_column(<span class="kw-2">mut </span>expr: Expr, column_name: Arc&lt;str&gt;) -&gt; Expr {
+    expr.mutate().apply(|e| {
+        <span class="kw">match </span>e {
+            Expr::Wildcard =&gt; {
+                <span class="kw-2">*</span>e = Expr::Column(column_name.clone());
             }
-            <span class="ident">Expr::Exclude</span>(<span class="ident">input</span>, <span class="kw">_</span>) =&gt; {
-                <span class="kw-2">*</span><span class="ident">e</span> <span class="op">=</span> <span class="ident">replace_wildcard_with_column</span>(<span class="ident">std::mem::take</span>(<span class="ident">input</span>), <span class="ident">column_name</span>.<span class="ident">clone</span>());
+            Expr::Exclude(input, <span class="kw">_</span>) =&gt; {
+                <span class="kw-2">*</span>e = replace_wildcard_with_column(std::mem::take(input), column_name.clone());
             }
-            <span class="kw">_</span> =&gt; {}
+            <span class="kw">_ </span>=&gt; {}
         }
-        <span class="comment">// always keep iterating all inputs</span>
-        <span class="bool-val">true</span>
-    });
-    <span class="ident">expr</span>
+        <span class="comment">// always keep iterating all inputs
+        </span><span class="bool-val">true
+    </span>});
+    expr
 }
 
-<span class="kw">fn</span> <span class="ident">rewrite_special_aliases</span>(<span class="ident">expr</span>: <span class="ident">Expr</span>) -&gt; <span class="ident">Expr</span> {
-    <span class="comment">// the blocks are added by cargo fmt</span>
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::blocks_in_if_conditions</span>)]</span>
-    <span class="kw">if</span> <span class="ident">has_expr</span>(<span class="kw-2">&amp;</span><span class="ident">expr</span>, <span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-        <span class="macro">matches!</span>(<span class="ident">e</span>, <span class="ident">Expr::KeepName</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Expr::RenameAlias</span> { .. })
+<span class="kw">fn </span>rewrite_special_aliases(expr: Expr) -&gt; Expr {
+    <span class="comment">// the blocks are added by cargo fmt
+    </span><span class="attribute">#[allow(clippy::blocks_in_if_conditions)]
+    </span><span class="kw">if </span>has_expr(<span class="kw-2">&amp;</span>expr, |e| {
+        <span class="macro">matches!</span>(e, Expr::KeepName(<span class="kw">_</span>) | Expr::RenameAlias { .. })
     }) {
-        <span class="kw">match</span> <span class="ident">expr</span> {
-            <span class="ident">Expr::KeepName</span>(<span class="ident">expr</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">roots</span> <span class="op">=</span> <span class="ident">expr_to_leaf_column_names</span>(<span class="kw-2">&amp;</span><span class="ident">expr</span>);
-                <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">roots</span>
-                    .<span class="ident">get</span>(<span class="number">0</span>)
-                    .<span class="ident">expect</span>(<span class="string">&quot;expected root column to keep expression name&quot;</span>);
-                <span class="ident">Expr::Alias</span>(<span class="ident">expr</span>, <span class="ident">name</span>.<span class="ident">clone</span>())
+        <span class="kw">match </span>expr {
+            Expr::KeepName(expr) =&gt; {
+                <span class="kw">let </span>roots = expr_to_leaf_column_names(<span class="kw-2">&amp;</span>expr);
+                <span class="kw">let </span>name = roots
+                    .get(<span class="number">0</span>)
+                    .expect(<span class="string">&quot;expected root column to keep expression name&quot;</span>);
+                Expr::Alias(expr, name.clone())
             }
-            <span class="ident">Expr::RenameAlias</span> { <span class="ident">expr</span>, <span class="ident">function</span> } =&gt; {
-                <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">get_single_leaf</span>(<span class="kw-2">&amp;</span><span class="ident">expr</span>).<span class="ident">unwrap</span>();
-                <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">function</span>.<span class="ident">call</span>(<span class="kw-2">&amp;</span><span class="ident">name</span>);
-                <span class="ident">Expr::Alias</span>(<span class="ident">expr</span>, <span class="ident">Arc::from</span>(<span class="ident">name</span>))
+            Expr::RenameAlias { expr, function } =&gt; {
+                <span class="kw">let </span>name = get_single_leaf(<span class="kw-2">&amp;</span>expr).unwrap();
+                <span class="kw">let </span>name = function.call(<span class="kw-2">&amp;</span>name);
+                Expr::Alias(expr, Arc::from(name))
             }
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;`keep_name`, `suffix`, `prefix` should be last expression&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;`keep_name`, `suffix`, `prefix` should be last expression&quot;</span>),
         }
-    } <span class="kw">else</span> {
-        <span class="ident">expr</span>
+    } <span class="kw">else </span>{
+        expr
     }
 }
 
-<span class="doccomment">/// Take an expression with a root: col(&quot;*&quot;) and copies that expression for all columns in the schema,</span>
-<span class="doccomment">/// with the exclusion of the `names` in the exclude expression.</span>
-<span class="doccomment">/// The resulting expressions are written to result.</span>
-<span class="kw">fn</span> <span class="ident">replace_wildcard</span>(<span class="ident">expr</span>: <span class="kw-2">&amp;</span><span class="ident">Expr</span>, <span class="ident">result</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>, <span class="ident">exclude</span>: <span class="kw-2">&amp;</span>[<span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>], <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>) {
-    <span class="kw">for</span> <span class="ident">name</span> <span class="kw">in</span> <span class="ident">schema</span>.<span class="ident">iter_names</span>() {
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">exclude</span>.<span class="ident">iter</span>().<span class="ident">any</span>(<span class="op">|</span><span class="ident">excluded</span><span class="op">|</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">excluded</span> <span class="op">==</span> <span class="ident">name</span>) {
-            <span class="kw">let</span> <span class="ident">new_expr</span> <span class="op">=</span> <span class="ident">replace_wildcard_with_column</span>(<span class="ident">expr</span>.<span class="ident">clone</span>(), <span class="ident">Arc::from</span>(<span class="ident">name</span>.<span class="ident">as_str</span>()));
-            <span class="kw">let</span> <span class="ident">new_expr</span> <span class="op">=</span> <span class="ident">rewrite_special_aliases</span>(<span class="ident">new_expr</span>);
-            <span class="ident">result</span>.<span class="ident">push</span>(<span class="ident">new_expr</span>)
+<span class="doccomment">/// Take an expression with a root: col(&quot;*&quot;) and copies that expression for all columns in the schema,
+/// with the exclusion of the `names` in the exclude expression.
+/// The resulting expressions are written to result.
+</span><span class="kw">fn </span>replace_wildcard(expr: <span class="kw-2">&amp;</span>Expr, result: <span class="kw-2">&amp;mut </span>Vec&lt;Expr&gt;, exclude: <span class="kw-2">&amp;</span>[Arc&lt;str&gt;], schema: <span class="kw-2">&amp;</span>Schema) {
+    <span class="kw">for </span>name <span class="kw">in </span>schema.iter_names() {
+        <span class="kw">if </span>!exclude.iter().any(|excluded| <span class="kw-2">&amp;**</span>excluded == name) {
+            <span class="kw">let </span>new_expr = replace_wildcard_with_column(expr.clone(), Arc::from(name.as_str()));
+            <span class="kw">let </span>new_expr = rewrite_special_aliases(new_expr);
+            result.push(new_expr)
         }
     }
 }
 
-<span class="kw">fn</span> <span class="ident">replace_nth</span>(<span class="ident">expr</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Expr</span>, <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>) {
-    <span class="ident">expr</span>.<span class="ident">mutate</span>().<span class="ident">apply</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="kw">match</span> <span class="ident">e</span> {
-        <span class="ident">Expr::Nth</span>(<span class="ident">i</span>) =&gt; {
-            <span class="kw">match</span> <span class="ident">i</span>.<span class="ident">negative_to_usize</span>(<span class="ident">schema</span>.<span class="ident">len</span>()) {
-                <span class="prelude-val">None</span> =&gt; {
-                    <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw-2">*</span><span class="ident">i</span> <span class="op">==</span> <span class="number">0</span> { <span class="string">&quot;first&quot;</span> } <span class="kw">else</span> { <span class="string">&quot;last&quot;</span> };
-                    <span class="kw-2">*</span><span class="ident">e</span> <span class="op">=</span> <span class="ident">Expr::Column</span>(<span class="ident">Arc::from</span>(<span class="ident">name</span>));
+<span class="kw">fn </span>replace_nth(expr: <span class="kw-2">&amp;mut </span>Expr, schema: <span class="kw-2">&amp;</span>Schema) {
+    expr.mutate().apply(|e| <span class="kw">match </span>e {
+        Expr::Nth(i) =&gt; {
+            <span class="kw">match </span>i.negative_to_usize(schema.len()) {
+                <span class="prelude-val">None </span>=&gt; {
+                    <span class="kw">let </span>name = <span class="kw">if </span><span class="kw-2">*</span>i == <span class="number">0 </span>{ <span class="string">&quot;first&quot; </span>} <span class="kw">else </span>{ <span class="string">&quot;last&quot; </span>};
+                    <span class="kw-2">*</span>e = Expr::Column(Arc::from(name));
                 }
-                <span class="prelude-val">Some</span>(<span class="ident">idx</span>) =&gt; {
-                    <span class="kw">let</span> (<span class="ident">name</span>, <span class="ident">_dtype</span>) <span class="op">=</span> <span class="ident">schema</span>.<span class="ident">get_index</span>(<span class="ident">idx</span>).<span class="ident">unwrap</span>();
-                    <span class="kw-2">*</span><span class="ident">e</span> <span class="op">=</span> <span class="ident">Expr::Column</span>(<span class="ident">Arc::from</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">name</span>))
+                <span class="prelude-val">Some</span>(idx) =&gt; {
+                    <span class="kw">let </span>(name, _dtype) = schema.get_index(idx).unwrap();
+                    <span class="kw-2">*</span>e = Expr::Column(Arc::from(<span class="kw-2">&amp;**</span>name))
                 }
             }
-            <span class="bool-val">true</span>
-        }
-        <span class="kw">_</span> =&gt; <span class="bool-val">true</span>,
+            <span class="bool-val">true
+        </span>}
+        <span class="kw">_ </span>=&gt; <span class="bool-val">true</span>,
     })
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;regex&quot;</span>)]</span>
-<span class="doccomment">/// This function takes an expression containing a regex in `col(&quot;..&quot;)` and expands the columns</span>
-<span class="doccomment">/// that are selected by that regex in `result`.</span>
-<span class="kw">fn</span> <span class="ident">expand_regex</span>(<span class="ident">expr</span>: <span class="kw-2">&amp;</span><span class="ident">Expr</span>, <span class="ident">result</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>, <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>, <span class="ident">pattern</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) {
-    <span class="kw">let</span> <span class="ident">re</span> <span class="op">=</span> <span class="ident">regex::Regex::new</span>(<span class="ident">pattern</span>)
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;invalid regular expression in column: {}&quot;</span>, <span class="ident">pattern</span>));
-    <span class="kw">for</span> <span class="ident">name</span> <span class="kw">in</span> <span class="ident">schema</span>.<span class="ident">iter_names</span>() {
-        <span class="kw">if</span> <span class="ident">re</span>.<span class="ident">is_match</span>(<span class="ident">name</span>) {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_expr</span> <span class="op">=</span> <span class="ident">expr</span>.<span class="ident">clone</span>();
+<span class="attribute">#[cfg(feature = <span class="string">&quot;regex&quot;</span>)]
+</span><span class="doccomment">/// This function takes an expression containing a regex in `col(&quot;..&quot;)` and expands the columns
+/// that are selected by that regex in `result`.
+</span><span class="kw">fn </span>expand_regex(expr: <span class="kw-2">&amp;</span>Expr, result: <span class="kw-2">&amp;mut </span>Vec&lt;Expr&gt;, schema: <span class="kw-2">&amp;</span>Schema, pattern: <span class="kw-2">&amp;</span>str) {
+    <span class="kw">let </span>re = regex::Regex::new(pattern)
+        .unwrap_or_else(|<span class="kw">_</span>| <span class="macro">panic!</span>(<span class="string">&quot;invalid regular expression in column: {}&quot;</span>, pattern));
+    <span class="kw">for </span>name <span class="kw">in </span>schema.iter_names() {
+        <span class="kw">if </span>re.is_match(name) {
+            <span class="kw">let </span><span class="kw-2">mut </span>new_expr = expr.clone();
 
-            <span class="ident">new_expr</span>.<span class="ident">mutate</span>().<span class="ident">apply</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">e</span> {
-                <span class="ident">Expr::Column</span>(<span class="ident">pat</span>) <span class="kw">if</span> <span class="ident">pat</span>.<span class="ident">as_ref</span>() <span class="op">==</span> <span class="ident">pattern</span> =&gt; {
-                    <span class="kw-2">*</span><span class="ident">e</span> <span class="op">=</span> <span class="ident">Expr::Column</span>(<span class="ident">Arc::from</span>(<span class="ident">name</span>.<span class="ident">as_str</span>()));
-                    <span class="bool-val">true</span>
-                }
-                <span class="kw">_</span> =&gt; <span class="bool-val">true</span>,
+            new_expr.mutate().apply(|e| <span class="kw">match </span><span class="kw-2">&amp;</span>e {
+                Expr::Column(pat) <span class="kw">if </span>pat.as_ref() == pattern =&gt; {
+                    <span class="kw-2">*</span>e = Expr::Column(Arc::from(name.as_str()));
+                    <span class="bool-val">true
+                </span>}
+                <span class="kw">_ </span>=&gt; <span class="bool-val">true</span>,
             });
 
-            <span class="kw">let</span> <span class="ident">new_expr</span> <span class="op">=</span> <span class="ident">rewrite_special_aliases</span>(<span class="ident">new_expr</span>);
-            <span class="ident">result</span>.<span class="ident">push</span>(<span class="ident">new_expr</span>)
+            <span class="kw">let </span>new_expr = rewrite_special_aliases(new_expr);
+            result.push(new_expr)
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;regex&quot;</span>)]</span>
-<span class="doccomment">/// This function searches for a regex expression in `col(&quot;..&quot;)` and expands the columns</span>
-<span class="doccomment">/// that are selected by that regex in `result`. The regex should start with `^` and end with `$`.</span>
-<span class="kw">fn</span> <span class="ident">replace_regex</span>(<span class="ident">expr</span>: <span class="kw-2">&amp;</span><span class="ident">Expr</span>, <span class="ident">result</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>, <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>) {
-    <span class="kw">let</span> <span class="ident">roots</span> <span class="op">=</span> <span class="ident">expr_to_leaf_column_names</span>(<span class="ident">expr</span>);
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">regex</span> <span class="op">=</span> <span class="prelude-val">None</span>;
-    <span class="kw">for</span> <span class="ident">name</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">roots</span> {
-        <span class="kw">if</span> <span class="ident">name</span>.<span class="ident">starts_with</span>(<span class="string">&#39;^&#39;</span>) <span class="op">&amp;&amp;</span> <span class="ident">name</span>.<span class="ident">ends_with</span>(<span class="string">&#39;$&#39;</span>) {
-            <span class="kw">match</span> <span class="ident">regex</span> {
-                <span class="prelude-val">None</span> =&gt; {
-                    <span class="ident">regex</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">name</span>);
-                    <span class="ident">expand_regex</span>(<span class="ident">expr</span>, <span class="ident">result</span>, <span class="ident">schema</span>, <span class="ident">name</span>)
+<span class="attribute">#[cfg(feature = <span class="string">&quot;regex&quot;</span>)]
+</span><span class="doccomment">/// This function searches for a regex expression in `col(&quot;..&quot;)` and expands the columns
+/// that are selected by that regex in `result`. The regex should start with `^` and end with `$`.
+</span><span class="kw">fn </span>replace_regex(expr: <span class="kw-2">&amp;</span>Expr, result: <span class="kw-2">&amp;mut </span>Vec&lt;Expr&gt;, schema: <span class="kw-2">&amp;</span>Schema) {
+    <span class="kw">let </span>roots = expr_to_leaf_column_names(expr);
+    <span class="kw">let </span><span class="kw-2">mut </span>regex = <span class="prelude-val">None</span>;
+    <span class="kw">for </span>name <span class="kw">in </span><span class="kw-2">&amp;</span>roots {
+        <span class="kw">if </span>name.starts_with(<span class="string">&#39;^&#39;</span>) &amp;&amp; name.ends_with(<span class="string">&#39;$&#39;</span>) {
+            <span class="kw">match </span>regex {
+                <span class="prelude-val">None </span>=&gt; {
+                    regex = <span class="prelude-val">Some</span>(name);
+                    expand_regex(expr, result, schema, name)
                 }
-                <span class="prelude-val">Some</span>(<span class="ident">r</span>) =&gt; {
+                <span class="prelude-val">Some</span>(r) =&gt; {
                     <span class="macro">assert_eq!</span>(
-                        <span class="ident">r</span>, <span class="ident">name</span>,
-                        <span class="string">&quot;an expression is not allowed to have different regexes&quot;</span>
-                    )
+                        r, name,
+                        <span class="string">&quot;an expression is not allowed to have different regexes&quot;
+                    </span>)
                 }
             }
         }
     }
-    <span class="kw">if</span> <span class="ident">regex</span>.<span class="ident">is_none</span>() {
-        <span class="kw">let</span> <span class="ident">expr</span> <span class="op">=</span> <span class="ident">rewrite_special_aliases</span>(<span class="ident">expr</span>.<span class="ident">clone</span>());
-        <span class="ident">result</span>.<span class="ident">push</span>(<span class="ident">expr</span>)
+    <span class="kw">if </span>regex.is_none() {
+        <span class="kw">let </span>expr = rewrite_special_aliases(expr.clone());
+        result.push(expr)
     }
 }
 
-<span class="doccomment">/// replace `columns([&quot;A&quot;, &quot;B&quot;])..` with `col(&quot;A&quot;)..`, `col(&quot;B&quot;)..`</span>
-<span class="kw">fn</span> <span class="ident">expand_columns</span>(<span class="ident">expr</span>: <span class="kw-2">&amp;</span><span class="ident">Expr</span>, <span class="ident">result</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>, <span class="ident">names</span>: <span class="kw-2">&amp;</span>[<span class="ident">String</span>]) {
-    <span class="kw">for</span> <span class="ident">name</span> <span class="kw">in</span> <span class="ident">names</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_expr</span> <span class="op">=</span> <span class="ident">expr</span>.<span class="ident">clone</span>();
-        <span class="ident">new_expr</span>.<span class="ident">mutate</span>().<span class="ident">apply</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Expr::Columns</span>(<span class="kw">_</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">e</span> {
-                <span class="kw-2">*</span><span class="ident">e</span> <span class="op">=</span> <span class="ident">Expr::Column</span>(<span class="ident">Arc::from</span>(<span class="ident">name</span>.<span class="ident">as_str</span>()));
+<span class="doccomment">/// replace `columns([&quot;A&quot;, &quot;B&quot;])..` with `col(&quot;A&quot;)..`, `col(&quot;B&quot;)..`
+</span><span class="kw">fn </span>expand_columns(expr: <span class="kw-2">&amp;</span>Expr, result: <span class="kw-2">&amp;mut </span>Vec&lt;Expr&gt;, names: <span class="kw-2">&amp;</span>[String]) {
+    <span class="kw">for </span>name <span class="kw">in </span>names {
+        <span class="kw">let </span><span class="kw-2">mut </span>new_expr = expr.clone();
+        new_expr.mutate().apply(|e| {
+            <span class="kw">if let </span>Expr::Columns(<span class="kw">_</span>) = <span class="kw-2">&amp;</span>e {
+                <span class="kw-2">*</span>e = Expr::Column(Arc::from(name.as_str()));
             }
-            <span class="comment">// always keep iterating all inputs</span>
-            <span class="bool-val">true</span>
-        });
+            <span class="comment">// always keep iterating all inputs
+            </span><span class="bool-val">true
+        </span>});
 
-        <span class="kw">let</span> <span class="ident">new_expr</span> <span class="op">=</span> <span class="ident">rewrite_special_aliases</span>(<span class="ident">new_expr</span>);
-        <span class="ident">result</span>.<span class="ident">push</span>(<span class="ident">new_expr</span>)
+        <span class="kw">let </span>new_expr = rewrite_special_aliases(new_expr);
+        result.push(new_expr)
     }
 }
 
-<span class="doccomment">/// This replaces the dtypes Expr with a Column Expr. It also removes the Exclude Expr from the</span>
-<span class="doccomment">/// expression chain.</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">replace_dtype_with_column</span>(<span class="kw-2">mut</span> <span class="ident">expr</span>: <span class="ident">Expr</span>, <span class="ident">column_name</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>) -&gt; <span class="ident">Expr</span> {
-    <span class="ident">expr</span>.<span class="ident">mutate</span>().<span class="ident">apply</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-        <span class="kw">match</span> <span class="ident">e</span> {
-            <span class="ident">Expr::DtypeColumn</span>(<span class="kw">_</span>) =&gt; {
-                <span class="kw-2">*</span><span class="ident">e</span> <span class="op">=</span> <span class="ident">Expr::Column</span>(<span class="ident">column_name</span>.<span class="ident">clone</span>());
+<span class="doccomment">/// This replaces the dtypes Expr with a Column Expr. It also removes the Exclude Expr from the
+/// expression chain.
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>replace_dtype_with_column(<span class="kw-2">mut </span>expr: Expr, column_name: Arc&lt;str&gt;) -&gt; Expr {
+    expr.mutate().apply(|e| {
+        <span class="kw">match </span>e {
+            Expr::DtypeColumn(<span class="kw">_</span>) =&gt; {
+                <span class="kw-2">*</span>e = Expr::Column(column_name.clone());
             }
-            <span class="ident">Expr::Exclude</span>(<span class="ident">input</span>, <span class="kw">_</span>) =&gt; {
-                <span class="kw-2">*</span><span class="ident">e</span> <span class="op">=</span> <span class="ident">replace_dtype_with_column</span>(<span class="ident">std::mem::take</span>(<span class="ident">input</span>), <span class="ident">column_name</span>.<span class="ident">clone</span>());
+            Expr::Exclude(input, <span class="kw">_</span>) =&gt; {
+                <span class="kw-2">*</span>e = replace_dtype_with_column(std::mem::take(input), column_name.clone());
             }
-            <span class="kw">_</span> =&gt; {}
+            <span class="kw">_ </span>=&gt; {}
         }
-        <span class="comment">// always keep iterating all inputs</span>
-        <span class="bool-val">true</span>
-    });
-    <span class="ident">expr</span>
+        <span class="comment">// always keep iterating all inputs
+        </span><span class="bool-val">true
+    </span>});
+    expr
 }
 
-<span class="doccomment">/// replace `DtypeColumn` with `col(&quot;foo&quot;)..col(&quot;bar&quot;)`</span>
-<span class="kw">fn</span> <span class="ident">expand_dtypes</span>(
-    <span class="ident">expr</span>: <span class="kw-2">&amp;</span><span class="ident">Expr</span>,
-    <span class="ident">result</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>,
-    <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>,
-    <span class="ident">dtypes</span>: <span class="kw-2">&amp;</span>[<span class="ident">DataType</span>],
-    <span class="ident">exclude</span>: <span class="kw-2">&amp;</span>[<span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>],
+<span class="doccomment">/// replace `DtypeColumn` with `col(&quot;foo&quot;)..col(&quot;bar&quot;)`
+</span><span class="kw">fn </span>expand_dtypes(
+    expr: <span class="kw-2">&amp;</span>Expr,
+    result: <span class="kw-2">&amp;mut </span>Vec&lt;Expr&gt;,
+    schema: <span class="kw-2">&amp;</span>Schema,
+    dtypes: <span class="kw-2">&amp;</span>[DataType],
+    exclude: <span class="kw-2">&amp;</span>[Arc&lt;str&gt;],
 ) {
-    <span class="kw">for</span> <span class="ident">dtype</span> <span class="kw">in</span> <span class="ident">dtypes</span> {
-        <span class="kw">for</span> <span class="ident">field</span> <span class="kw">in</span> <span class="ident">schema</span>.<span class="ident">iter_fields</span>().<span class="ident">filter</span>(<span class="op">|</span><span class="ident">f</span><span class="op">|</span> <span class="ident">f</span>.<span class="ident">data_type</span>() <span class="op">==</span> <span class="ident">dtype</span>) {
-            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">field</span>.<span class="ident">name</span>();
+    <span class="kw">for </span>dtype <span class="kw">in </span>dtypes {
+        <span class="kw">for </span>field <span class="kw">in </span>schema.iter_fields().filter(|f| f.data_type() == dtype) {
+            <span class="kw">let </span>name = field.name();
 
-            <span class="comment">// skip excluded names</span>
-            <span class="kw">if</span> <span class="ident">exclude</span>.<span class="ident">iter</span>().<span class="ident">any</span>(<span class="op">|</span><span class="ident">excl</span><span class="op">|</span> <span class="ident">excl</span>.<span class="ident">as_ref</span>() <span class="op">==</span> <span class="ident">name</span>.<span class="ident">as_str</span>()) {
+            <span class="comment">// skip excluded names
+            </span><span class="kw">if </span>exclude.iter().any(|excl| excl.as_ref() == name.as_str()) {
                 <span class="kw">continue</span>;
             }
 
-            <span class="kw">let</span> <span class="ident">new_expr</span> <span class="op">=</span> <span class="ident">expr</span>.<span class="ident">clone</span>();
-            <span class="kw">let</span> <span class="ident">new_expr</span> <span class="op">=</span> <span class="ident">replace_dtype_with_column</span>(<span class="ident">new_expr</span>, <span class="ident">Arc::from</span>(<span class="ident">name</span>.<span class="ident">as_str</span>()));
-            <span class="kw">let</span> <span class="ident">new_expr</span> <span class="op">=</span> <span class="ident">rewrite_special_aliases</span>(<span class="ident">new_expr</span>);
-            <span class="ident">result</span>.<span class="ident">push</span>(<span class="ident">new_expr</span>)
+            <span class="kw">let </span>new_expr = expr.clone();
+            <span class="kw">let </span>new_expr = replace_dtype_with_column(new_expr, Arc::from(name.as_str()));
+            <span class="kw">let </span>new_expr = rewrite_special_aliases(new_expr);
+            result.push(new_expr)
         }
     }
 }
 
-<span class="comment">// schema is not used if regex not activated</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
-<span class="kw">fn</span> <span class="ident">prepare_excluded</span>(<span class="ident">expr</span>: <span class="kw-2">&amp;</span><span class="ident">Expr</span>, <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>, <span class="ident">keys</span>: <span class="kw-2">&amp;</span>[<span class="ident">Expr</span>]) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">exclude</span> <span class="op">=</span> <span class="macro">vec!</span>[];
-    <span class="ident">expr</span>.<span class="ident">into_iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Expr::Exclude</span>(<span class="kw">_</span>, <span class="ident">to_exclude</span>) <span class="op">=</span> <span class="ident">e</span> {
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;regex&quot;</span>)]</span>
-            {
-                <span class="comment">// instead of matching the names for regex patterns</span>
-                <span class="comment">// and expanding the matches in the schema we</span>
-                <span class="comment">// reuse the `replace_regex` function. This is a bit</span>
-                <span class="comment">// slower but DRY.</span>
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="macro">vec!</span>[];
-                <span class="kw">for</span> <span class="ident">to_exclude_single</span> <span class="kw">in</span> <span class="ident">to_exclude</span> {
-                    <span class="kw">match</span> <span class="ident">to_exclude_single</span> {
-                        <span class="ident">Excluded::Name</span>(<span class="ident">name</span>) =&gt; {
-                            <span class="kw">let</span> <span class="ident">e</span> <span class="op">=</span> <span class="ident">Expr::Column</span>(<span class="ident">name</span>.<span class="ident">clone</span>());
-                            <span class="ident">replace_regex</span>(<span class="kw-2">&amp;</span><span class="ident">e</span>, <span class="kw-2">&amp;mut</span> <span class="ident">buf</span>, <span class="ident">schema</span>);
-                            <span class="comment">// we cannot loop because of bchck</span>
-                            <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">col</span>) <span class="op">=</span> <span class="ident">buf</span>.<span class="ident">pop</span>() {
-                                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Expr::Column</span>(<span class="ident">name</span>) <span class="op">=</span> <span class="ident">col</span> {
-                                    <span class="ident">exclude</span>.<span class="ident">push</span>(<span class="ident">name</span>)
+<span class="comment">// schema is not used if regex not activated
+</span><span class="attribute">#[allow(unused_variables)]
+</span><span class="kw">fn </span>prepare_excluded(expr: <span class="kw-2">&amp;</span>Expr, schema: <span class="kw-2">&amp;</span>Schema, keys: <span class="kw-2">&amp;</span>[Expr]) -&gt; Vec&lt;Arc&lt;str&gt;&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>exclude = <span class="macro">vec!</span>[];
+    expr.into_iter().for_each(|e| {
+        <span class="kw">if let </span>Expr::Exclude(<span class="kw">_</span>, to_exclude) = e {
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;regex&quot;</span>)]
+            </span>{
+                <span class="comment">// instead of matching the names for regex patterns
+                // and expanding the matches in the schema we
+                // reuse the `replace_regex` function. This is a bit
+                // slower but DRY.
+                </span><span class="kw">let </span><span class="kw-2">mut </span>buf = <span class="macro">vec!</span>[];
+                <span class="kw">for </span>to_exclude_single <span class="kw">in </span>to_exclude {
+                    <span class="kw">match </span>to_exclude_single {
+                        Excluded::Name(name) =&gt; {
+                            <span class="kw">let </span>e = Expr::Column(name.clone());
+                            replace_regex(<span class="kw-2">&amp;</span>e, <span class="kw-2">&amp;mut </span>buf, schema);
+                            <span class="comment">// we cannot loop because of bchck
+                            </span><span class="kw">while let </span><span class="prelude-val">Some</span>(col) = buf.pop() {
+                                <span class="kw">if let </span>Expr::Column(name) = col {
+                                    exclude.push(name)
                                 }
                             }
                         }
-                        <span class="ident">Excluded::Dtype</span>(<span class="ident">dt</span>) =&gt; {
-                            <span class="kw">for</span> <span class="ident">fld</span> <span class="kw">in</span> <span class="ident">schema</span>.<span class="ident">iter_fields</span>() {
-                                <span class="kw">if</span> <span class="ident">fld</span>.<span class="ident">data_type</span>() <span class="op">==</span> <span class="ident">dt</span> {
-                                    <span class="ident">exclude</span>.<span class="ident">push</span>(<span class="ident">Arc::from</span>(<span class="ident">fld</span>.<span class="ident">name</span>().<span class="ident">as_ref</span>()))
+                        Excluded::Dtype(dt) =&gt; {
+                            <span class="kw">for </span>fld <span class="kw">in </span>schema.iter_fields() {
+                                <span class="kw">if </span>fld.data_type() == dt {
+                                    exclude.push(Arc::from(fld.name().as_ref()))
                                 }
                             }
                         }
@@ -639,15 +639,15 @@
                 }
             }
 
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;regex&quot;</span>))]</span>
-            {
-                <span class="kw">for</span> <span class="ident">to_exclude_single</span> <span class="kw">in</span> <span class="ident">to_exclude</span> {
-                    <span class="kw">match</span> <span class="ident">to_exclude_single</span> {
-                        <span class="ident">Excluded::Name</span>(<span class="ident">name</span>) =&gt; <span class="ident">exclude</span>.<span class="ident">push</span>(<span class="ident">name</span>.<span class="ident">clone</span>()),
-                        <span class="ident">Excluded::Dtype</span>(<span class="ident">dt</span>) =&gt; {
-                            <span class="kw">for</span> (<span class="ident">name</span>, <span class="ident">dtype</span>) <span class="kw">in</span> <span class="ident">schema</span>.<span class="ident">iter</span>() {
-                                <span class="kw">if</span> <span class="macro">matches!</span>(<span class="ident">dtype</span>, <span class="ident">dt</span>) {
-                                    <span class="ident">exclude</span>.<span class="ident">push</span>(<span class="ident">Arc::from</span>(<span class="ident">name</span>.<span class="ident">as_str</span>()))
+            <span class="attribute">#[cfg(not(feature = <span class="string">&quot;regex&quot;</span>))]
+            </span>{
+                <span class="kw">for </span>to_exclude_single <span class="kw">in </span>to_exclude {
+                    <span class="kw">match </span>to_exclude_single {
+                        Excluded::Name(name) =&gt; exclude.push(name.clone()),
+                        Excluded::Dtype(dt) =&gt; {
+                            <span class="kw">for </span>(name, dtype) <span class="kw">in </span>schema.iter() {
+                                <span class="kw">if </span><span class="macro">matches!</span>(dtype, dt) {
+                                    exclude.push(Arc::from(name.as_str()))
                                 }
                             }
                         }
@@ -656,163 +656,163 @@
             }
         }
     });
-    <span class="kw">for</span> <span class="kw-2">mut</span> <span class="ident">expr</span> <span class="kw">in</span> <span class="ident">keys</span>.<span class="ident">iter</span>() {
-        <span class="comment">// Allow a number of aliases of a column expression, still exclude column from aggregation</span>
-        <span class="kw">loop</span> {
-            <span class="kw">match</span> <span class="ident">expr</span> {
-                <span class="ident">Expr::Column</span>(<span class="ident">name</span>) =&gt; {
-                    <span class="ident">exclude</span>.<span class="ident">push</span>(<span class="ident">name</span>.<span class="ident">clone</span>());
+    <span class="kw">for </span><span class="kw-2">mut </span>expr <span class="kw">in </span>keys.iter() {
+        <span class="comment">// Allow a number of aliases of a column expression, still exclude column from aggregation
+        </span><span class="kw">loop </span>{
+            <span class="kw">match </span>expr {
+                Expr::Column(name) =&gt; {
+                    exclude.push(name.clone());
                     <span class="kw">break</span>;
                 }
-                <span class="ident">Expr::Alias</span>(<span class="ident">e</span>, <span class="kw">_</span>) =&gt; {
-                    <span class="ident">expr</span> <span class="op">=</span> <span class="ident">e</span>;
+                Expr::Alias(e, <span class="kw">_</span>) =&gt; {
+                    expr = e;
                 }
-                <span class="kw">_</span> =&gt; {
+                <span class="kw">_ </span>=&gt; {
                     <span class="kw">break</span>;
                 }
             }
         }
     }
-    <span class="ident">exclude</span>
+    exclude
 }
 
-<span class="comment">// functions can have col([&quot;a&quot;, &quot;b&quot;]) or col(Utf8) as inputs</span>
-<span class="kw">fn</span> <span class="ident">expand_function_inputs</span>(<span class="kw-2">mut</span> <span class="ident">expr</span>: <span class="ident">Expr</span>, <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>) -&gt; <span class="ident">Expr</span> {
-    <span class="ident">expr</span>.<span class="ident">mutate</span>().<span class="ident">apply</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="kw">match</span> <span class="ident">e</span> {
-        <span class="ident">Expr::AnonymousFunction</span> { <span class="ident">input</span>, <span class="ident">options</span>, .. } <span class="op">|</span> <span class="ident">Expr::Function</span> { <span class="ident">input</span>, <span class="ident">options</span>, .. }
-            <span class="kw">if</span> <span class="ident">options</span>.<span class="ident">input_wildcard_expansion</span> =&gt;
+<span class="comment">// functions can have col([&quot;a&quot;, &quot;b&quot;]) or col(Utf8) as inputs
+</span><span class="kw">fn </span>expand_function_inputs(<span class="kw-2">mut </span>expr: Expr, schema: <span class="kw-2">&amp;</span>Schema) -&gt; Expr {
+    expr.mutate().apply(|e| <span class="kw">match </span>e {
+        Expr::AnonymousFunction { input, options, .. } | Expr::Function { input, options, .. }
+            <span class="kw">if </span>options.input_wildcard_expansion =&gt;
         {
-            <span class="kw-2">*</span><span class="ident">input</span> <span class="op">=</span> <span class="ident">rewrite_projections</span>(<span class="ident">input</span>.<span class="ident">clone</span>(), <span class="ident">schema</span>, <span class="kw-2">&amp;</span>[]);
-            <span class="bool-val">false</span>
-        }
-        <span class="kw">_</span> =&gt; <span class="bool-val">true</span>,
+            <span class="kw-2">*</span>input = rewrite_projections(input.clone(), schema, <span class="kw-2">&amp;</span>[]);
+            <span class="bool-val">false
+        </span>}
+        <span class="kw">_ </span>=&gt; <span class="bool-val">true</span>,
     });
-    <span class="ident">expr</span>
+    expr
 }
 
-<span class="doccomment">/// this is determined in type coercion</span>
-<span class="doccomment">/// but checking a few types early can improve type stability (e.g. no need for unknown)</span>
-<span class="kw">fn</span> <span class="ident">early_supertype</span>(<span class="ident">inputs</span>: <span class="kw-2">&amp;</span>[<span class="ident">Expr</span>], <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">DataType</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">arena</span> <span class="op">=</span> <span class="ident">Arena::with_capacity</span>(<span class="number">8</span>);
+<span class="doccomment">/// this is determined in type coercion
+/// but checking a few types early can improve type stability (e.g. no need for unknown)
+</span><span class="kw">fn </span>early_supertype(inputs: <span class="kw-2">&amp;</span>[Expr], schema: <span class="kw-2">&amp;</span>Schema) -&gt; <span class="prelude-ty">Option</span>&lt;DataType&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>arena = Arena::with_capacity(<span class="number">8</span>);
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">st</span> <span class="op">=</span> <span class="prelude-val">None</span>;
-    <span class="kw">for</span> <span class="ident">e</span> <span class="kw">in</span> <span class="ident">inputs</span> {
-        <span class="kw">let</span> <span class="ident">dtype</span> <span class="op">=</span> <span class="ident">e</span>
-            .<span class="ident">to_field_amortized</span>(<span class="ident">schema</span>, <span class="ident">Context::Default</span>, <span class="kw-2">&amp;mut</span> <span class="ident">arena</span>)
-            .<span class="ident">ok</span>()<span class="question-mark">?</span>
-            .<span class="ident">dtype</span>;
-        <span class="ident">arena</span>.<span class="ident">clear</span>();
-        <span class="kw">match</span> <span class="ident">st</span> {
-            <span class="prelude-val">None</span> =&gt; {
-                <span class="ident">st</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">dtype</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>st = <span class="prelude-val">None</span>;
+    <span class="kw">for </span>e <span class="kw">in </span>inputs {
+        <span class="kw">let </span>dtype = e
+            .to_field_amortized(schema, Context::Default, <span class="kw-2">&amp;mut </span>arena)
+            .ok()<span class="question-mark">?
+            </span>.dtype;
+        arena.clear();
+        <span class="kw">match </span>st {
+            <span class="prelude-val">None </span>=&gt; {
+                st = <span class="prelude-val">Some</span>(dtype);
             }
-            <span class="prelude-val">Some</span>(<span class="ident">st_val</span>) =&gt; <span class="ident">st</span> <span class="op">=</span> <span class="ident">get_supertype</span>(<span class="kw-2">&amp;</span><span class="ident">st_val</span>, <span class="kw-2">&amp;</span><span class="ident">dtype</span>),
+            <span class="prelude-val">Some</span>(st_val) =&gt; st = get_supertype(<span class="kw-2">&amp;</span>st_val, <span class="kw-2">&amp;</span>dtype),
         }
     }
-    <span class="ident">st</span>
+    st
 }
 
-<span class="doccomment">/// In case of single col(*) -&gt; do nothing, no selection is the same as select all</span>
-<span class="doccomment">/// In other cases replace the wildcard with an expression with all columns</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">rewrite_projections</span>(<span class="ident">exprs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>, <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>, <span class="ident">keys</span>: <span class="kw-2">&amp;</span>[<span class="ident">Expr</span>]) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">exprs</span>.<span class="ident">len</span>() <span class="op">+</span> <span class="ident">schema</span>.<span class="ident">len</span>());
+<span class="doccomment">/// In case of single col(*) -&gt; do nothing, no selection is the same as select all
+/// In other cases replace the wildcard with an expression with all columns
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>rewrite_projections(exprs: Vec&lt;Expr&gt;, schema: <span class="kw-2">&amp;</span>Schema, keys: <span class="kw-2">&amp;</span>[Expr]) -&gt; Vec&lt;Expr&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>result = Vec::with_capacity(exprs.len() + schema.len());
 
-    <span class="kw">for</span> <span class="kw-2">mut</span> <span class="ident">expr</span> <span class="kw">in</span> <span class="ident">exprs</span> {
-        <span class="kw">let</span> <span class="ident">result_offset</span> <span class="op">=</span> <span class="ident">result</span>.<span class="ident">len</span>();
+    <span class="kw">for </span><span class="kw-2">mut </span>expr <span class="kw">in </span>exprs {
+        <span class="kw">let </span>result_offset = result.len();
 
-        <span class="comment">// functions can have col([&quot;a&quot;, &quot;b&quot;]) or col(Utf8) as inputs</span>
-        <span class="ident">expr</span> <span class="op">=</span> <span class="ident">expand_function_inputs</span>(<span class="ident">expr</span>, <span class="ident">schema</span>);
+        <span class="comment">// functions can have col([&quot;a&quot;, &quot;b&quot;]) or col(Utf8) as inputs
+        </span>expr = expand_function_inputs(expr, schema);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">multiple_columns</span> <span class="op">=</span> <span class="bool-val">false</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">has_nth</span> <span class="op">=</span> <span class="bool-val">false</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">has_wildcard</span> <span class="op">=</span> <span class="bool-val">false</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">replace_fill_null_type</span> <span class="op">=</span> <span class="bool-val">false</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>multiple_columns = <span class="bool-val">false</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>has_nth = <span class="bool-val">false</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>has_wildcard = <span class="bool-val">false</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>replace_fill_null_type = <span class="bool-val">false</span>;
 
-        <span class="comment">// do a single pass and collect all flags at once.</span>
-        <span class="comment">// supertypes/modification that can be done in place are also don e in that pass</span>
-        <span class="kw">for</span> <span class="ident">expr</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">expr</span> {
-            <span class="kw">match</span> <span class="ident">expr</span> {
-                <span class="ident">Expr::Columns</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Expr::DtypeColumn</span>(<span class="kw">_</span>) =&gt; <span class="ident">multiple_columns</span> <span class="op">=</span> <span class="bool-val">true</span>,
-                <span class="ident">Expr::Nth</span>(<span class="kw">_</span>) =&gt; <span class="ident">has_nth</span> <span class="op">=</span> <span class="bool-val">true</span>,
-                <span class="ident">Expr::Wildcard</span> =&gt; <span class="ident">has_wildcard</span> <span class="op">=</span> <span class="bool-val">true</span>,
-                <span class="ident">Expr::Function</span> {
-                    <span class="ident">function</span>: <span class="ident">FunctionExpr::FillNull</span> { .. },
+        <span class="comment">// do a single pass and collect all flags at once.
+        // supertypes/modification that can be done in place are also don e in that pass
+        </span><span class="kw">for </span>expr <span class="kw">in </span><span class="kw-2">&amp;</span>expr {
+            <span class="kw">match </span>expr {
+                Expr::Columns(<span class="kw">_</span>) | Expr::DtypeColumn(<span class="kw">_</span>) =&gt; multiple_columns = <span class="bool-val">true</span>,
+                Expr::Nth(<span class="kw">_</span>) =&gt; has_nth = <span class="bool-val">true</span>,
+                Expr::Wildcard =&gt; has_wildcard = <span class="bool-val">true</span>,
+                Expr::Function {
+                    function: FunctionExpr::FillNull { .. },
                     ..
-                } =&gt; <span class="ident">replace_fill_null_type</span> <span class="op">=</span> <span class="bool-val">true</span>,
-                <span class="kw">_</span> =&gt; {}
+                } =&gt; replace_fill_null_type = <span class="bool-val">true</span>,
+                <span class="kw">_ </span>=&gt; {}
             }
         }
 
-        <span class="kw">if</span> <span class="ident">has_nth</span> {
-            <span class="ident">replace_nth</span>(<span class="kw-2">&amp;mut</span> <span class="ident">expr</span>, <span class="ident">schema</span>);
+        <span class="kw">if </span>has_nth {
+            replace_nth(<span class="kw-2">&amp;mut </span>expr, schema);
         }
 
-        <span class="comment">// has multiple column names</span>
-        <span class="comment">// the expanded columns are added to the result</span>
-        <span class="kw">if</span> <span class="ident">multiple_columns</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">expr</span>
-                .<span class="ident">into_iter</span>()
-                .<span class="ident">find</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="macro">matches!</span>(<span class="ident">e</span>, <span class="ident">Expr::Columns</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Expr::DtypeColumn</span>(<span class="kw">_</span>)))
+        <span class="comment">// has multiple column names
+        // the expanded columns are added to the result
+        </span><span class="kw">if </span>multiple_columns {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(e) = expr
+                .into_iter()
+                .find(|e| <span class="macro">matches!</span>(e, Expr::Columns(<span class="kw">_</span>) | Expr::DtypeColumn(<span class="kw">_</span>)))
             {
-                <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">e</span> {
-                    <span class="ident">Expr::Columns</span>(<span class="ident">names</span>) =&gt; <span class="ident">expand_columns</span>(<span class="kw-2">&amp;</span><span class="ident">expr</span>, <span class="kw-2">&amp;mut</span> <span class="ident">result</span>, <span class="ident">names</span>),
-                    <span class="ident">Expr::DtypeColumn</span>(<span class="ident">dtypes</span>) =&gt; {
-                        <span class="comment">// keep track of column excluded from the dtypes</span>
-                        <span class="kw">let</span> <span class="ident">exclude</span> <span class="op">=</span> <span class="ident">prepare_excluded</span>(<span class="kw-2">&amp;</span><span class="ident">expr</span>, <span class="ident">schema</span>, <span class="ident">keys</span>);
-                        <span class="ident">expand_dtypes</span>(<span class="kw-2">&amp;</span><span class="ident">expr</span>, <span class="kw-2">&amp;mut</span> <span class="ident">result</span>, <span class="ident">schema</span>, <span class="ident">dtypes</span>, <span class="kw-2">&amp;</span><span class="ident">exclude</span>)
+                <span class="kw">match </span><span class="kw-2">&amp;</span>e {
+                    Expr::Columns(names) =&gt; expand_columns(<span class="kw-2">&amp;</span>expr, <span class="kw-2">&amp;mut </span>result, names),
+                    Expr::DtypeColumn(dtypes) =&gt; {
+                        <span class="comment">// keep track of column excluded from the dtypes
+                        </span><span class="kw">let </span>exclude = prepare_excluded(<span class="kw-2">&amp;</span>expr, schema, keys);
+                        expand_dtypes(<span class="kw-2">&amp;</span>expr, <span class="kw-2">&amp;mut </span>result, schema, dtypes, <span class="kw-2">&amp;</span>exclude)
                     }
-                    <span class="kw">_</span> =&gt; {}
+                    <span class="kw">_ </span>=&gt; {}
                 }
             }
         }
-        <span class="comment">// has multiple column names due to wildcards</span>
-        <span class="kw">else</span> <span class="kw">if</span> <span class="ident">has_wildcard</span> {
-            <span class="comment">// keep track of column excluded from the wildcard</span>
-            <span class="kw">let</span> <span class="ident">exclude</span> <span class="op">=</span> <span class="ident">prepare_excluded</span>(<span class="kw-2">&amp;</span><span class="ident">expr</span>, <span class="ident">schema</span>, <span class="ident">keys</span>);
-            <span class="comment">// this path prepares the wildcard as input for the Function Expr</span>
-            <span class="ident">replace_wildcard</span>(<span class="kw-2">&amp;</span><span class="ident">expr</span>, <span class="kw-2">&amp;mut</span> <span class="ident">result</span>, <span class="kw-2">&amp;</span><span class="ident">exclude</span>, <span class="ident">schema</span>);
+        <span class="comment">// has multiple column names due to wildcards
+        </span><span class="kw">else if </span>has_wildcard {
+            <span class="comment">// keep track of column excluded from the wildcard
+            </span><span class="kw">let </span>exclude = prepare_excluded(<span class="kw-2">&amp;</span>expr, schema, keys);
+            <span class="comment">// this path prepares the wildcard as input for the Function Expr
+            </span>replace_wildcard(<span class="kw-2">&amp;</span>expr, <span class="kw-2">&amp;mut </span>result, <span class="kw-2">&amp;</span>exclude, schema);
         }
-        <span class="comment">// can have multiple column names due to a regex</span>
-        <span class="kw">else</span> {
-            <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::collapsible_else_if</span>)]</span>
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;regex&quot;</span>)]</span>
-            {
-                <span class="ident">replace_regex</span>(<span class="kw-2">&amp;</span><span class="ident">expr</span>, <span class="kw-2">&amp;mut</span> <span class="ident">result</span>, <span class="ident">schema</span>)
+        <span class="comment">// can have multiple column names due to a regex
+        </span><span class="kw">else </span>{
+            <span class="attribute">#[allow(clippy::collapsible_else_if)]
+            #[cfg(feature = <span class="string">&quot;regex&quot;</span>)]
+            </span>{
+                replace_regex(<span class="kw-2">&amp;</span>expr, <span class="kw-2">&amp;mut </span>result, schema)
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;regex&quot;</span>))]</span>
-            {
-                <span class="kw">let</span> <span class="ident">expr</span> <span class="op">=</span> <span class="ident">rewrite_special_aliases</span>(<span class="ident">expr</span>);
-                <span class="ident">result</span>.<span class="ident">push</span>(<span class="ident">expr</span>)
+            <span class="attribute">#[cfg(not(feature = <span class="string">&quot;regex&quot;</span>))]
+            </span>{
+                <span class="kw">let </span>expr = rewrite_special_aliases(expr);
+                result.push(expr)
             }
         }
 
-        <span class="comment">// this is done after all expansion (wildcard, column, dtypes)</span>
-        <span class="comment">// have been done. This will ensure the conversion to aexpr does</span>
-        <span class="comment">// not panic because of an unexpected wildcard etc.</span>
+        <span class="comment">// this is done after all expansion (wildcard, column, dtypes)
+        // have been done. This will ensure the conversion to aexpr does
+        // not panic because of an unexpected wildcard etc.
 
-        <span class="comment">// the expanded expressions are written to result, so we pick</span>
-        <span class="comment">// them up there.</span>
-        <span class="kw">if</span> <span class="ident">replace_fill_null_type</span> {
-            <span class="kw">for</span> <span class="ident">e</span> <span class="kw">in</span> <span class="kw-2">&amp;mut</span> <span class="ident">result</span>[<span class="ident">result_offset</span>..] {
-                <span class="ident">e</span>.<span class="ident">mutate</span>().<span class="ident">apply</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Expr::Function</span> {
-                        <span class="ident">input</span>,
-                        <span class="ident">function</span>: <span class="ident">FunctionExpr::FillNull</span> { <span class="ident">super_type</span> },
+        // the expanded expressions are written to result, so we pick
+        // them up there.
+        </span><span class="kw">if </span>replace_fill_null_type {
+            <span class="kw">for </span>e <span class="kw">in </span><span class="kw-2">&amp;mut </span>result[result_offset..] {
+                e.mutate().apply(|e| {
+                    <span class="kw">if let </span>Expr::Function {
+                        input,
+                        function: FunctionExpr::FillNull { super_type },
                         ..
-                    } <span class="op">=</span> <span class="ident">e</span>
+                    } = e
                     {
-                        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">new_st</span>) <span class="op">=</span> <span class="ident">early_supertype</span>(<span class="ident">input</span>, <span class="ident">schema</span>) {
-                            <span class="kw-2">*</span><span class="ident">super_type</span> <span class="op">=</span> <span class="ident">new_st</span>;
+                        <span class="kw">if let </span><span class="prelude-val">Some</span>(new_st) = early_supertype(input, schema) {
+                            <span class="kw-2">*</span>super_type = new_st;
                         }
                     }
 
-                    <span class="comment">// continue iteration</span>
-                    <span class="bool-val">true</span>
-                })
+                    <span class="comment">// continue iteration
+                    </span><span class="bool-val">true
+                </span>})
             }
         }
     }
-    <span class="ident">result</span>
+    result
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="polars_plan" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="polars_plan" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

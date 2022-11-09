@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-arrow-0.25.1/src/kernels/rolling/nulls/min_max.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>min_max.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../polars_arrow/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../polars_arrow/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../polars_arrow/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-arrow-0.25.1/src/kernels/rolling/nulls/min_max.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>min_max.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../normalize.css"><link rel="stylesheet" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../polars_arrow/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../polars_arrow/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../polars_arrow/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -432,439 +432,439 @@
 <span id="432">432</span>
 <span id="433">433</span>
 <span id="434">434</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">arrow::bitmap::utils</span>::{<span class="ident">count_zeros</span>, <span class="ident">zip_validity</span>};
-<span class="kw">use</span> <span class="ident">nulls</span>;
-<span class="kw">use</span> <span class="ident">nulls</span>::{<span class="ident">rolling_apply_agg_window</span>, <span class="ident">RollingAggWindowNulls</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>arrow::bitmap::utils::{count_zeros, zip_validity};
+<span class="kw">use </span>nulls;
+<span class="kw">use </span>nulls::{rolling_apply_agg_window, RollingAggWindowNulls};
 
-<span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+<span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_reverse_sorted_max_nulls</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">NativeType</span> <span class="op">+</span> <span class="ident">PartialOrd</span> <span class="op">+</span> <span class="ident">IsFloat</span><span class="op">&gt;</span>(
-    <span class="ident">values</span>: <span class="kw-2">&amp;</span>[<span class="ident">T</span>],
-    <span class="ident">validity</span>: <span class="kw-2">&amp;</span><span class="ident">Bitmap</span>,
-) -&gt; <span class="ident">bool</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">current_max</span> <span class="op">=</span> <span class="prelude-val">None</span>;
-    <span class="kw">for</span> <span class="ident">opt_v</span> <span class="kw">in</span> <span class="ident">zip_validity</span>(<span class="ident">values</span>.<span class="ident">iter</span>(), <span class="prelude-val">Some</span>(<span class="ident">validity</span>.<span class="ident">iter</span>())) {
-        <span class="kw">match</span> (<span class="ident">current_max</span>, <span class="ident">opt_v</span>) {
-            <span class="comment">// do nothing</span>
-            (<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; {}
-            (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="ident">v</span>)) =&gt; <span class="ident">current_max</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="kw-2">*</span><span class="ident">v</span>),
-            (<span class="prelude-val">Some</span>(<span class="ident">current</span>), <span class="prelude-val">Some</span>(<span class="ident">val</span>)) =&gt; {
-                <span class="kw">match</span> <span class="ident">compare_fn_nan_min</span>(<span class="kw-2">&amp;</span><span class="ident">current</span>, <span class="ident">val</span>) {
-                    <span class="ident">Ordering::Greater</span> =&gt; {
-                        <span class="ident">current_max</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="kw-2">*</span><span class="ident">val</span>);
+<span class="kw">pub fn </span>is_reverse_sorted_max_nulls&lt;T: NativeType + PartialOrd + IsFloat&gt;(
+    values: <span class="kw-2">&amp;</span>[T],
+    validity: <span class="kw-2">&amp;</span>Bitmap,
+) -&gt; bool {
+    <span class="kw">let </span><span class="kw-2">mut </span>current_max = <span class="prelude-val">None</span>;
+    <span class="kw">for </span>opt_v <span class="kw">in </span>zip_validity(values.iter(), <span class="prelude-val">Some</span>(validity.iter())) {
+        <span class="kw">match </span>(current_max, opt_v) {
+            <span class="comment">// do nothing
+            </span>(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; {}
+            (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(v)) =&gt; current_max = <span class="prelude-val">Some</span>(<span class="kw-2">*</span>v),
+            (<span class="prelude-val">Some</span>(current), <span class="prelude-val">Some</span>(val)) =&gt; {
+                <span class="kw">match </span>compare_fn_nan_min(<span class="kw-2">&amp;</span>current, val) {
+                    Ordering::Greater =&gt; {
+                        current_max = <span class="prelude-val">Some</span>(<span class="kw-2">*</span>val);
                     }
-                    <span class="comment">// allowed</span>
-                    <span class="ident">Ordering::Equal</span> =&gt; {}
-                    <span class="comment">// not sorted</span>
-                    <span class="ident">Ordering::Less</span> =&gt; <span class="kw">return</span> <span class="bool-val">false</span>,
+                    <span class="comment">// allowed
+                    </span>Ordering::Equal =&gt; {}
+                    <span class="comment">// not sorted
+                    </span>Ordering::Less =&gt; <span class="kw">return </span><span class="bool-val">false</span>,
                 }
             }
-            (<span class="prelude-val">Some</span>(<span class="ident">_current</span>), <span class="prelude-val">None</span>) =&gt; {}
+            (<span class="prelude-val">Some</span>(_current), <span class="prelude-val">None</span>) =&gt; {}
         }
     }
 
-    <span class="bool-val">true</span>
+    <span class="bool-val">true
+</span>}
+
+<span class="kw">pub struct </span>SortedMinMax&lt;<span class="lifetime">&#39;a</span>, T: NativeType&gt; {
+    slice: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[T],
+    validity: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Bitmap,
+    last_start: usize,
+    last_end: usize,
+    null_count: usize,
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SortedMinMax</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">NativeType</span><span class="op">&gt;</span> {
-    <span class="ident">slice</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">T</span>],
-    <span class="ident">validity</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Bitmap</span>,
-    <span class="ident">last_start</span>: <span class="ident">usize</span>,
-    <span class="ident">last_end</span>: <span class="ident">usize</span>,
-    <span class="ident">null_count</span>: <span class="ident">usize</span>,
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">NativeType</span><span class="op">&gt;</span> <span class="ident">SortedMinMax</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">count_nulls</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">start</span>: <span class="ident">usize</span>, <span class="ident">end</span>: <span class="ident">usize</span>) -&gt; <span class="ident">usize</span> {
-        <span class="kw">let</span> (<span class="ident">bytes</span>, <span class="ident">offset</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">validity</span>.<span class="ident">as_slice</span>();
-        <span class="ident">count_zeros</span>(<span class="ident">bytes</span>, <span class="ident">offset</span> <span class="op">+</span> <span class="ident">start</span>, <span class="ident">end</span> <span class="op">-</span> <span class="ident">start</span>)
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: NativeType&gt; SortedMinMax&lt;<span class="lifetime">&#39;a</span>, T&gt; {
+    <span class="kw">fn </span>count_nulls(<span class="kw-2">&amp;</span><span class="self">self</span>, start: usize, end: usize) -&gt; usize {
+        <span class="kw">let </span>(bytes, offset, <span class="kw">_</span>) = <span class="self">self</span>.validity.as_slice();
+        count_zeros(bytes, offset + start, end - start)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">NativeType</span><span class="op">&gt;</span> <span class="ident">RollingAggWindowNulls</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SortedMinMax</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">slice</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">T</span>], <span class="ident">validity</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Bitmap</span>, <span class="ident">start</span>: <span class="ident">usize</span>, <span class="ident">end</span>: <span class="ident">usize</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> <span class="op">=</span> <span class="self">Self</span> {
-            <span class="ident">slice</span>,
-            <span class="ident">validity</span>,
-            <span class="ident">last_start</span>: <span class="ident">start</span>,
-            <span class="ident">last_end</span>: <span class="ident">end</span>,
-            <span class="ident">null_count</span>: <span class="number">0</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: NativeType&gt; RollingAggWindowNulls&lt;<span class="lifetime">&#39;a</span>, T&gt; <span class="kw">for </span>SortedMinMax&lt;<span class="lifetime">&#39;a</span>, T&gt; {
+    <span class="kw">unsafe fn </span>new(slice: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[T], validity: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Bitmap, start: usize, end: usize) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>out = <span class="self">Self </span>{
+            slice,
+            validity,
+            last_start: start,
+            last_end: end,
+            null_count: <span class="number">0</span>,
         };
-        <span class="kw">let</span> <span class="ident">nulls</span> <span class="op">=</span> <span class="ident">out</span>.<span class="ident">count_nulls</span>(<span class="ident">start</span>, <span class="ident">end</span>);
-        <span class="ident">out</span>.<span class="ident">null_count</span> <span class="op">=</span> <span class="ident">nulls</span>;
-        <span class="ident">out</span>
+        <span class="kw">let </span>nulls = out.count_nulls(start, end);
+        out.null_count = nulls;
+        out
     }
 
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">update</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">start</span>: <span class="ident">usize</span>, <span class="ident">end</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">null_count</span> <span class="op">-</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">count_nulls</span>(<span class="self">self</span>.<span class="ident">last_start</span>, <span class="ident">start</span>);
-        <span class="self">self</span>.<span class="ident">null_count</span> <span class="op">+</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">count_nulls</span>(<span class="self">self</span>.<span class="ident">last_end</span>, <span class="ident">end</span>);
+    <span class="kw">unsafe fn </span>update(<span class="kw-2">&amp;mut </span><span class="self">self</span>, start: usize, end: usize) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
+        <span class="self">self</span>.null_count -= <span class="self">self</span>.count_nulls(<span class="self">self</span>.last_start, start);
+        <span class="self">self</span>.null_count += <span class="self">self</span>.count_nulls(<span class="self">self</span>.last_end, end);
 
-        <span class="self">self</span>.<span class="ident">last_start</span> <span class="op">=</span> <span class="ident">start</span>;
-        <span class="self">self</span>.<span class="ident">last_end</span> <span class="op">=</span> <span class="ident">end</span>;
+        <span class="self">self</span>.last_start = start;
+        <span class="self">self</span>.last_end = end;
 
-        <span class="comment">// return first non null</span>
-        <span class="kw">for</span> <span class="ident">idx</span> <span class="kw">in</span> <span class="ident">start</span>..<span class="ident">end</span> {
-            <span class="kw">let</span> <span class="ident">valid</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">validity</span>.<span class="ident">get_bit_unchecked</span>(<span class="ident">idx</span>);
+        <span class="comment">// return first non null
+        </span><span class="kw">for </span>idx <span class="kw">in </span>start..end {
+            <span class="kw">let </span>valid = <span class="self">self</span>.validity.get_bit_unchecked(idx);
 
-            <span class="kw">if</span> <span class="ident">valid</span> {
-                <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="kw-2">*</span><span class="self">self</span>.<span class="ident">slice</span>.<span class="ident">get_unchecked</span>(<span class="ident">idx</span>));
+            <span class="kw">if </span>valid {
+                <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="kw-2">*</span><span class="self">self</span>.slice.get_unchecked(idx));
             }
         }
 
-        <span class="prelude-val">None</span>
-    }
+        <span class="prelude-val">None
+    </span>}
 
-    <span class="kw">fn</span> <span class="ident">is_valid</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">min_periods</span>: <span class="ident">usize</span>) -&gt; <span class="ident">bool</span> {
-        ((<span class="self">self</span>.<span class="ident">last_end</span> <span class="op">-</span> <span class="self">self</span>.<span class="ident">last_start</span>) <span class="op">-</span> <span class="self">self</span>.<span class="ident">null_count</span>) <span class="op">&gt;</span><span class="op">=</span> <span class="ident">min_periods</span>
+    <span class="kw">fn </span>is_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, min_periods: usize) -&gt; bool {
+        ((<span class="self">self</span>.last_end - <span class="self">self</span>.last_start) - <span class="self">self</span>.null_count) &gt;= min_periods
     }
 }
 
-<span class="doccomment">/// Generic `Min` / `Max` kernel.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MinMaxWindow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">NativeType</span> <span class="op">+</span> <span class="ident">PartialOrd</span> <span class="op">+</span> <span class="ident">IsFloat</span><span class="op">&gt;</span> {
-    <span class="ident">slice</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">T</span>],
-    <span class="ident">validity</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Bitmap</span>,
-    <span class="ident">extremum</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-    <span class="ident">last_start</span>: <span class="ident">usize</span>,
-    <span class="ident">last_end</span>: <span class="ident">usize</span>,
-    <span class="ident">null_count</span>: <span class="ident">usize</span>,
-    <span class="ident">compare_fn_nan</span>: <span class="kw">fn</span>(<span class="kw-2">&amp;</span><span class="ident">T</span>, <span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">Ordering</span>,
-    <span class="ident">take_extremum</span>: <span class="kw">fn</span>(<span class="ident">T</span>, <span class="ident">T</span>) -&gt; <span class="ident">T</span>,
-    <span class="comment">// ordering on which the window needs to act.</span>
-    <span class="comment">// for min kernel this is Less</span>
-    <span class="comment">// for max kernel this is Greater</span>
-    <span class="ident">agg_ordering</span>: <span class="ident">Ordering</span>,
+<span class="doccomment">/// Generic `Min` / `Max` kernel.
+</span><span class="kw">pub struct </span>MinMaxWindow&lt;<span class="lifetime">&#39;a</span>, T: NativeType + PartialOrd + IsFloat&gt; {
+    slice: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[T],
+    validity: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Bitmap,
+    extremum: <span class="prelude-ty">Option</span>&lt;T&gt;,
+    last_start: usize,
+    last_end: usize,
+    null_count: usize,
+    compare_fn_nan: <span class="kw">fn</span>(<span class="kw-2">&amp;</span>T, <span class="kw-2">&amp;</span>T) -&gt; Ordering,
+    take_extremum: <span class="kw">fn</span>(T, T) -&gt; T,
+    <span class="comment">// ordering on which the window needs to act.
+    // for min kernel this is Less
+    // for max kernel this is Greater
+    </span>agg_ordering: Ordering,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">NativeType</span> <span class="op">+</span> <span class="ident">IsFloat</span> <span class="op">+</span> <span class="ident">PartialOrd</span><span class="op">&gt;</span> <span class="ident">MinMaxWindow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">compute_extremum_in_between_leaving_and_entering</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">start</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-        <span class="comment">// check the values in between the window that remains e.g. is not leaving</span>
-        <span class="comment">// this between `start..last_end`</span>
-        <span class="comment">//</span>
-        <span class="comment">// because we know the current `min` (which might be leaving), we know we can stop</span>
-        <span class="comment">// searching if any value is equal to current `min`.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">extremum_in_between</span> <span class="op">=</span> <span class="prelude-val">None</span>;
-        <span class="kw">for</span> <span class="ident">idx</span> <span class="kw">in</span> <span class="ident">start</span>..<span class="self">self</span>.<span class="ident">last_end</span> {
-            <span class="kw">let</span> <span class="ident">valid</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">validity</span>.<span class="ident">get_bit_unchecked</span>(<span class="ident">idx</span>);
-            <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">slice</span>.<span class="ident">get_unchecked</span>(<span class="ident">idx</span>);
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: NativeType + IsFloat + PartialOrd&gt; MinMaxWindow&lt;<span class="lifetime">&#39;a</span>, T&gt; {
+    <span class="kw">unsafe fn </span>compute_extremum_in_between_leaving_and_entering(<span class="kw-2">&amp;</span><span class="self">self</span>, start: usize) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
+        <span class="comment">// check the values in between the window that remains e.g. is not leaving
+        // this between `start..last_end`
+        //
+        // because we know the current `min` (which might be leaving), we know we can stop
+        // searching if any value is equal to current `min`.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>extremum_in_between = <span class="prelude-val">None</span>;
+        <span class="kw">for </span>idx <span class="kw">in </span>start..<span class="self">self</span>.last_end {
+            <span class="kw">let </span>valid = <span class="self">self</span>.validity.get_bit_unchecked(idx);
+            <span class="kw">let </span>value = <span class="self">self</span>.slice.get_unchecked(idx);
 
-            <span class="kw">if</span> <span class="ident">valid</span> {
-                <span class="comment">// early return</span>
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">current_min</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">extremum</span> {
-                    <span class="kw">if</span> <span class="macro">matches!</span>(<span class="ident">compare_fn_nan_min</span>(<span class="ident">value</span>, <span class="kw-2">&amp;</span><span class="ident">current_min</span>), <span class="ident">Ordering::Equal</span>) {
-                        <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">current_min</span>);
+            <span class="kw">if </span>valid {
+                <span class="comment">// early return
+                </span><span class="kw">if let </span><span class="prelude-val">Some</span>(current_min) = <span class="self">self</span>.extremum {
+                    <span class="kw">if </span><span class="macro">matches!</span>(compare_fn_nan_min(value, <span class="kw-2">&amp;</span>current_min), Ordering::Equal) {
+                        <span class="kw">return </span><span class="prelude-val">Some</span>(current_min);
                     }
                 }
 
-                <span class="kw">match</span> <span class="ident">extremum_in_between</span> {
-                    <span class="prelude-val">None</span> =&gt; <span class="ident">extremum_in_between</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="kw-2">*</span><span class="ident">value</span>),
-                    <span class="prelude-val">Some</span>(<span class="ident">current</span>) =&gt; {
-                        <span class="ident">extremum_in_between</span> <span class="op">=</span> <span class="prelude-val">Some</span>((<span class="self">self</span>.<span class="ident">take_extremum</span>)(<span class="kw-2">*</span><span class="ident">value</span>, <span class="ident">current</span>))
+                <span class="kw">match </span>extremum_in_between {
+                    <span class="prelude-val">None </span>=&gt; extremum_in_between = <span class="prelude-val">Some</span>(<span class="kw-2">*</span>value),
+                    <span class="prelude-val">Some</span>(current) =&gt; {
+                        extremum_in_between = <span class="prelude-val">Some</span>((<span class="self">self</span>.take_extremum)(<span class="kw-2">*</span>value, current))
                     }
                 }
             }
         }
-        <span class="ident">extremum_in_between</span>
+        extremum_in_between
     }
 
-    <span class="comment">// compute min from the entire window</span>
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">compute_extremum_and_update_null_count</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">start</span>: <span class="ident">usize</span>,
-        <span class="ident">end</span>: <span class="ident">usize</span>,
-    ) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">extremum</span> <span class="op">=</span> <span class="prelude-val">None</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx</span> <span class="op">=</span> <span class="ident">start</span>;
-        <span class="kw">for</span> <span class="ident">value</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">slice</span>[<span class="ident">start</span>..<span class="ident">end</span>] {
-            <span class="kw">let</span> <span class="ident">valid</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">validity</span>.<span class="ident">get_bit_unchecked</span>(<span class="ident">idx</span>);
-            <span class="kw">if</span> <span class="ident">valid</span> {
-                <span class="kw">match</span> <span class="ident">extremum</span> {
-                    <span class="prelude-val">None</span> =&gt; <span class="ident">extremum</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="kw-2">*</span><span class="ident">value</span>),
-                    <span class="prelude-val">Some</span>(<span class="ident">current</span>) =&gt; <span class="ident">extremum</span> <span class="op">=</span> <span class="prelude-val">Some</span>((<span class="self">self</span>.<span class="ident">take_extremum</span>)(<span class="kw-2">*</span><span class="ident">value</span>, <span class="ident">current</span>)),
+    <span class="comment">// compute min from the entire window
+    </span><span class="kw">unsafe fn </span>compute_extremum_and_update_null_count(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        start: usize,
+        end: usize,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>extremum = <span class="prelude-val">None</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>idx = start;
+        <span class="kw">for </span>value <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.slice[start..end] {
+            <span class="kw">let </span>valid = <span class="self">self</span>.validity.get_bit_unchecked(idx);
+            <span class="kw">if </span>valid {
+                <span class="kw">match </span>extremum {
+                    <span class="prelude-val">None </span>=&gt; extremum = <span class="prelude-val">Some</span>(<span class="kw-2">*</span>value),
+                    <span class="prelude-val">Some</span>(current) =&gt; extremum = <span class="prelude-val">Some</span>((<span class="self">self</span>.take_extremum)(<span class="kw-2">*</span>value, current)),
                 }
-            } <span class="kw">else</span> {
-                <span class="self">self</span>.<span class="ident">null_count</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+            } <span class="kw">else </span>{
+                <span class="self">self</span>.null_count += <span class="number">1</span>;
             }
-            <span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+            idx += <span class="number">1</span>;
         }
-        <span class="ident">extremum</span>
+        extremum
     }
 
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">slice</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">T</span>],
-        <span class="ident">validity</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Bitmap</span>,
-        <span class="ident">start</span>: <span class="ident">usize</span>,
-        <span class="ident">end</span>: <span class="ident">usize</span>,
-        <span class="ident">compare_fn</span>: <span class="kw">fn</span>(<span class="kw-2">&amp;</span><span class="ident">T</span>, <span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="ident">Ordering</span>,
-        <span class="ident">take_extremum</span>: <span class="kw">fn</span>(<span class="ident">T</span>, <span class="ident">T</span>) -&gt; <span class="ident">T</span>,
-        <span class="ident">agg_ordering</span>: <span class="ident">Ordering</span>,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> <span class="op">=</span> <span class="self">Self</span> {
-            <span class="ident">slice</span>,
-            <span class="ident">validity</span>,
-            <span class="ident">extremum</span>: <span class="prelude-val">None</span>,
-            <span class="ident">last_start</span>: <span class="ident">start</span>,
-            <span class="ident">last_end</span>: <span class="ident">end</span>,
-            <span class="ident">null_count</span>: <span class="number">0</span>,
-            <span class="ident">compare_fn_nan</span>: <span class="ident">compare_fn</span>,
-            <span class="ident">take_extremum</span>,
-            <span class="ident">agg_ordering</span>,
+    <span class="kw">unsafe fn </span>new(
+        slice: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[T],
+        validity: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Bitmap,
+        start: usize,
+        end: usize,
+        compare_fn: <span class="kw">fn</span>(<span class="kw-2">&amp;</span>T, <span class="kw-2">&amp;</span>T) -&gt; Ordering,
+        take_extremum: <span class="kw">fn</span>(T, T) -&gt; T,
+        agg_ordering: Ordering,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>out = <span class="self">Self </span>{
+            slice,
+            validity,
+            extremum: <span class="prelude-val">None</span>,
+            last_start: start,
+            last_end: end,
+            null_count: <span class="number">0</span>,
+            compare_fn_nan: compare_fn,
+            take_extremum,
+            agg_ordering,
         };
-        <span class="kw">let</span> <span class="ident">extremum</span> <span class="op">=</span> <span class="ident">out</span>.<span class="ident">compute_extremum_and_update_null_count</span>(<span class="ident">start</span>, <span class="ident">end</span>);
-        <span class="ident">out</span>.<span class="ident">extremum</span> <span class="op">=</span> <span class="ident">extremum</span>;
-        <span class="ident">out</span>
+        <span class="kw">let </span>extremum = out.compute_extremum_and_update_null_count(start, end);
+        out.extremum = extremum;
+        out
     }
 
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">update</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">start</span>: <span class="ident">usize</span>, <span class="ident">end</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-        <span class="comment">// recompute min</span>
-        <span class="kw">if</span> <span class="ident">start</span> <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">last_end</span> {
-            <span class="self">self</span>.<span class="ident">extremum</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">compute_extremum_and_update_null_count</span>(<span class="ident">start</span>, <span class="ident">end</span>);
-            <span class="self">self</span>.<span class="ident">last_end</span> <span class="op">=</span> <span class="ident">end</span>;
-            <span class="self">self</span>.<span class="ident">last_start</span> <span class="op">=</span> <span class="ident">start</span>;
-            <span class="kw">return</span> <span class="self">self</span>.<span class="ident">extremum</span>;
+    <span class="kw">unsafe fn </span>update(<span class="kw-2">&amp;mut </span><span class="self">self</span>, start: usize, end: usize) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
+        <span class="comment">// recompute min
+        </span><span class="kw">if </span>start &gt;= <span class="self">self</span>.last_end {
+            <span class="self">self</span>.extremum = <span class="self">self</span>.compute_extremum_and_update_null_count(start, end);
+            <span class="self">self</span>.last_end = end;
+            <span class="self">self</span>.last_start = start;
+            <span class="kw">return </span><span class="self">self</span>.extremum;
         }
 
-        <span class="comment">// remove elements that should leave the window</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">recompute_extremum</span> <span class="op">=</span> <span class="bool-val">false</span>;
-        <span class="kw">for</span> <span class="ident">idx</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">last_start</span>..<span class="ident">start</span> {
-            <span class="comment">// safety</span>
-            <span class="comment">// we are in bounds</span>
-            <span class="kw">let</span> <span class="ident">valid</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">validity</span>.<span class="ident">get_bit_unchecked</span>(<span class="ident">idx</span>);
-            <span class="kw">if</span> <span class="ident">valid</span> {
-                <span class="kw">let</span> <span class="ident">leaving_value</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">slice</span>.<span class="ident">get_unchecked</span>(<span class="ident">idx</span>);
+        <span class="comment">// remove elements that should leave the window
+        </span><span class="kw">let </span><span class="kw-2">mut </span>recompute_extremum = <span class="bool-val">false</span>;
+        <span class="kw">for </span>idx <span class="kw">in </span><span class="self">self</span>.last_start..start {
+            <span class="comment">// safety
+            // we are in bounds
+            </span><span class="kw">let </span>valid = <span class="self">self</span>.validity.get_bit_unchecked(idx);
+            <span class="kw">if </span>valid {
+                <span class="kw">let </span>leaving_value = <span class="self">self</span>.slice.get_unchecked(idx);
 
-                <span class="comment">// if the leaving value is the</span>
-                <span class="comment">// min value, we need to recompute the min.</span>
-                <span class="kw">if</span> <span class="macro">matches!</span>(
-                    (<span class="self">self</span>.<span class="ident">compare_fn_nan</span>)(<span class="ident">leaving_value</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">extremum</span>.<span class="ident">unwrap</span>()),
-                    <span class="ident">Ordering::Equal</span>
+                <span class="comment">// if the leaving value is the
+                // min value, we need to recompute the min.
+                </span><span class="kw">if </span><span class="macro">matches!</span>(
+                    (<span class="self">self</span>.compare_fn_nan)(leaving_value, <span class="kw-2">&amp;</span><span class="self">self</span>.extremum.unwrap()),
+                    Ordering::Equal
                 ) {
-                    <span class="ident">recompute_extremum</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                    recompute_extremum = <span class="bool-val">true</span>;
                     <span class="kw">break</span>;
                 }
-            } <span class="kw">else</span> {
-                <span class="comment">// null value leaving the window</span>
-                <span class="self">self</span>.<span class="ident">null_count</span> <span class="op">-</span><span class="op">=</span> <span class="number">1</span>;
+            } <span class="kw">else </span>{
+                <span class="comment">// null value leaving the window
+                </span><span class="self">self</span>.null_count -= <span class="number">1</span>;
 
-                <span class="comment">// self.min is None and the leaving value is None</span>
-                <span class="comment">// if the entering value is valid, we might get a new min.</span>
-                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">extremum</span>.<span class="ident">is_none</span>() {
-                    <span class="ident">recompute_extremum</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                <span class="comment">// self.min is None and the leaving value is None
+                // if the entering value is valid, we might get a new min.
+                </span><span class="kw">if </span><span class="self">self</span>.extremum.is_none() {
+                    recompute_extremum = <span class="bool-val">true</span>;
                     <span class="kw">break</span>;
                 }
             }
         }
 
-        <span class="kw">let</span> <span class="ident">entering_extremum</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">compute_extremum_and_update_null_count</span>(<span class="self">self</span>.<span class="ident">last_end</span>, <span class="ident">end</span>);
+        <span class="kw">let </span>entering_extremum = <span class="self">self</span>.compute_extremum_and_update_null_count(<span class="self">self</span>.last_end, end);
 
-        <span class="kw">match</span> (<span class="self">self</span>.<span class="ident">extremum</span>, <span class="ident">entering_extremum</span>) {
-            <span class="comment">// all remains `None`</span>
-            (<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; {}
-            (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="ident">new_min</span>)) =&gt; <span class="self">self</span>.<span class="ident">extremum</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">new_min</span>),
-            <span class="comment">// entering min is `None` and the `min` is leaving, so the `in_between` min is the new</span>
-            <span class="comment">// minimum.</span>
-            <span class="comment">// if min is not leaving, we don&#39;t do anything</span>
-            (<span class="prelude-val">Some</span>(<span class="ident">_current_min</span>), <span class="prelude-val">None</span>) =&gt; {
-                <span class="kw">if</span> <span class="ident">recompute_extremum</span> {
-                    <span class="self">self</span>.<span class="ident">extremum</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">compute_extremum_in_between_leaving_and_entering</span>(<span class="ident">start</span>);
+        <span class="kw">match </span>(<span class="self">self</span>.extremum, entering_extremum) {
+            <span class="comment">// all remains `None`
+            </span>(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; {}
+            (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(new_min)) =&gt; <span class="self">self</span>.extremum = <span class="prelude-val">Some</span>(new_min),
+            <span class="comment">// entering min is `None` and the `min` is leaving, so the `in_between` min is the new
+            // minimum.
+            // if min is not leaving, we don&#39;t do anything
+            </span>(<span class="prelude-val">Some</span>(_current_min), <span class="prelude-val">None</span>) =&gt; {
+                <span class="kw">if </span>recompute_extremum {
+                    <span class="self">self</span>.extremum = <span class="self">self</span>.compute_extremum_in_between_leaving_and_entering(start);
                 }
             }
-            (<span class="prelude-val">Some</span>(<span class="ident">current_extremum</span>), <span class="prelude-val">Some</span>(<span class="ident">entering_extremum</span>)) =&gt; {
-                <span class="kw">if</span> <span class="ident">recompute_extremum</span> {
-                    <span class="kw">match</span> (<span class="self">self</span>.<span class="ident">compare_fn_nan</span>)(<span class="kw-2">&amp;</span><span class="ident">current_extremum</span>, <span class="kw-2">&amp;</span><span class="ident">entering_extremum</span>) {
-                        <span class="comment">// do nothing</span>
-                        <span class="ident">Ordering::Equal</span> =&gt; {}
-                        <span class="comment">// leaving &lt; entering</span>
-                        <span class="ident">ord</span> <span class="kw">if</span> <span class="ident">ord</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">agg_ordering</span> =&gt; {
-                            <span class="comment">// leaving value could be the smallest, we might need to recompute</span>
+            (<span class="prelude-val">Some</span>(current_extremum), <span class="prelude-val">Some</span>(entering_extremum)) =&gt; {
+                <span class="kw">if </span>recompute_extremum {
+                    <span class="kw">match </span>(<span class="self">self</span>.compare_fn_nan)(<span class="kw-2">&amp;</span>current_extremum, <span class="kw-2">&amp;</span>entering_extremum) {
+                        <span class="comment">// do nothing
+                        </span>Ordering::Equal =&gt; {}
+                        <span class="comment">// leaving &lt; entering
+                        </span>ord <span class="kw">if </span>ord == <span class="self">self</span>.agg_ordering =&gt; {
+                            <span class="comment">// leaving value could be the smallest, we might need to recompute
 
-                            <span class="kw">let</span> <span class="ident">min_in_between</span> <span class="op">=</span>
-                                <span class="self">self</span>.<span class="ident">compute_extremum_in_between_leaving_and_entering</span>(<span class="ident">start</span>);
-                            <span class="kw">match</span> <span class="ident">min_in_between</span> {
-                                <span class="prelude-val">None</span> =&gt; <span class="self">self</span>.<span class="ident">extremum</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">entering_extremum</span>),
-                                <span class="prelude-val">Some</span>(<span class="ident">extremum_in_between</span>) =&gt; {
-                                    <span class="kw">if</span> (<span class="self">self</span>.<span class="ident">compare_fn_nan</span>)(
-                                        <span class="kw-2">&amp;</span><span class="ident">extremum_in_between</span>,
-                                        <span class="kw-2">&amp;</span><span class="ident">entering_extremum</span>,
-                                    ) <span class="op">==</span> <span class="self">self</span>.<span class="ident">agg_ordering</span>
+                            </span><span class="kw">let </span>min_in_between =
+                                <span class="self">self</span>.compute_extremum_in_between_leaving_and_entering(start);
+                            <span class="kw">match </span>min_in_between {
+                                <span class="prelude-val">None </span>=&gt; <span class="self">self</span>.extremum = <span class="prelude-val">Some</span>(entering_extremum),
+                                <span class="prelude-val">Some</span>(extremum_in_between) =&gt; {
+                                    <span class="kw">if </span>(<span class="self">self</span>.compare_fn_nan)(
+                                        <span class="kw-2">&amp;</span>extremum_in_between,
+                                        <span class="kw-2">&amp;</span>entering_extremum,
+                                    ) == <span class="self">self</span>.agg_ordering
                                     {
-                                        <span class="self">self</span>.<span class="ident">extremum</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">extremum_in_between</span>)
-                                    } <span class="kw">else</span> {
-                                        <span class="self">self</span>.<span class="ident">extremum</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">entering_extremum</span>)
+                                        <span class="self">self</span>.extremum = <span class="prelude-val">Some</span>(extremum_in_between)
+                                    } <span class="kw">else </span>{
+                                        <span class="self">self</span>.extremum = <span class="prelude-val">Some</span>(entering_extremum)
                                     }
                                 }
                             }
                         }
-                        <span class="comment">// leaving &gt; entering</span>
-                        <span class="kw">_</span> =&gt; {
-                            <span class="kw">if</span> (<span class="self">self</span>.<span class="ident">compare_fn_nan</span>)(<span class="kw-2">&amp;</span><span class="ident">entering_extremum</span>, <span class="kw-2">&amp;</span><span class="ident">current_extremum</span>)
-                                <span class="op">==</span> <span class="self">self</span>.<span class="ident">agg_ordering</span>
+                        <span class="comment">// leaving &gt; entering
+                        </span><span class="kw">_ </span>=&gt; {
+                            <span class="kw">if </span>(<span class="self">self</span>.compare_fn_nan)(<span class="kw-2">&amp;</span>entering_extremum, <span class="kw-2">&amp;</span>current_extremum)
+                                == <span class="self">self</span>.agg_ordering
                             {
-                                <span class="self">self</span>.<span class="ident">extremum</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">entering_extremum</span>)
+                                <span class="self">self</span>.extremum = <span class="prelude-val">Some</span>(entering_extremum)
                             }
                         }
                     }
-                } <span class="kw">else</span> <span class="kw">if</span> (<span class="self">self</span>.<span class="ident">compare_fn_nan</span>)(<span class="kw-2">&amp;</span><span class="ident">entering_extremum</span>, <span class="kw-2">&amp;</span><span class="ident">current_extremum</span>)
-                    <span class="op">==</span> <span class="self">self</span>.<span class="ident">agg_ordering</span>
+                } <span class="kw">else if </span>(<span class="self">self</span>.compare_fn_nan)(<span class="kw-2">&amp;</span>entering_extremum, <span class="kw-2">&amp;</span>current_extremum)
+                    == <span class="self">self</span>.agg_ordering
                 {
-                    <span class="self">self</span>.<span class="ident">extremum</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">entering_extremum</span>)
+                    <span class="self">self</span>.extremum = <span class="prelude-val">Some</span>(entering_extremum)
                 }
             }
         }
-        <span class="self">self</span>.<span class="ident">last_start</span> <span class="op">=</span> <span class="ident">start</span>;
-        <span class="self">self</span>.<span class="ident">last_end</span> <span class="op">=</span> <span class="ident">end</span>;
-        <span class="self">self</span>.<span class="ident">extremum</span>
+        <span class="self">self</span>.last_start = start;
+        <span class="self">self</span>.last_end = end;
+        <span class="self">self</span>.extremum
     }
 
-    <span class="kw">fn</span> <span class="ident">is_valid</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">min_periods</span>: <span class="ident">usize</span>) -&gt; <span class="ident">bool</span> {
-        ((<span class="self">self</span>.<span class="ident">last_end</span> <span class="op">-</span> <span class="self">self</span>.<span class="ident">last_start</span>) <span class="op">-</span> <span class="self">self</span>.<span class="ident">null_count</span>) <span class="op">&gt;</span><span class="op">=</span> <span class="ident">min_periods</span>
+    <span class="kw">fn </span>is_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, min_periods: usize) -&gt; bool {
+        ((<span class="self">self</span>.last_end - <span class="self">self</span>.last_start) - <span class="self">self</span>.null_count) &gt;= min_periods
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MinWindow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">NativeType</span> <span class="op">+</span> <span class="ident">PartialOrd</span> <span class="op">+</span> <span class="ident">IsFloat</span><span class="op">&gt;</span> {
-    <span class="ident">inner</span>: <span class="ident">MinMaxWindow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span>,
+<span class="kw">pub struct </span>MinWindow&lt;<span class="lifetime">&#39;a</span>, T: NativeType + PartialOrd + IsFloat&gt; {
+    inner: MinMaxWindow&lt;<span class="lifetime">&#39;a</span>, T&gt;,
 }
 
-<span class="kw">fn</span> <span class="ident">take_min</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">NativeType</span> <span class="op">+</span> <span class="ident">IsFloat</span> <span class="op">+</span> <span class="ident">PartialOrd</span><span class="op">&gt;</span>(<span class="ident">a</span>: <span class="ident">T</span>, <span class="ident">b</span>: <span class="ident">T</span>) -&gt; <span class="ident">T</span> {
-    <span class="ident">std::cmp::min_by</span>(<span class="ident">a</span>, <span class="ident">b</span>, <span class="ident">compare_fn_nan_min</span>)
+<span class="kw">fn </span>take_min&lt;T: NativeType + IsFloat + PartialOrd&gt;(a: T, b: T) -&gt; T {
+    std::cmp::min_by(a, b, compare_fn_nan_min)
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">NativeType</span> <span class="op">+</span> <span class="ident">IsFloat</span> <span class="op">+</span> <span class="ident">PartialOrd</span><span class="op">&gt;</span> <span class="ident">RollingAggWindowNulls</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MinWindow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">slice</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">T</span>], <span class="ident">validity</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Bitmap</span>, <span class="ident">start</span>: <span class="ident">usize</span>, <span class="ident">end</span>: <span class="ident">usize</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">inner</span>: <span class="ident">MinMaxWindow::new</span>(
-                <span class="ident">slice</span>,
-                <span class="ident">validity</span>,
-                <span class="ident">start</span>,
-                <span class="ident">end</span>,
-                <span class="ident">compare_fn_nan_min</span>,
-                <span class="ident">take_min</span>,
-                <span class="ident">Ordering::Less</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: NativeType + IsFloat + PartialOrd&gt; RollingAggWindowNulls&lt;<span class="lifetime">&#39;a</span>, T&gt; <span class="kw">for </span>MinWindow&lt;<span class="lifetime">&#39;a</span>, T&gt; {
+    <span class="kw">unsafe fn </span>new(slice: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[T], validity: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Bitmap, start: usize, end: usize) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            inner: MinMaxWindow::new(
+                slice,
+                validity,
+                start,
+                end,
+                compare_fn_nan_min,
+                take_min,
+                Ordering::Less,
             ),
         }
     }
 
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">update</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">start</span>: <span class="ident">usize</span>, <span class="ident">end</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">update</span>(<span class="ident">start</span>, <span class="ident">end</span>)
+    <span class="kw">unsafe fn </span>update(<span class="kw-2">&amp;mut </span><span class="self">self</span>, start: usize, end: usize) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
+        <span class="self">self</span>.inner.update(start, end)
     }
 
-    <span class="kw">fn</span> <span class="ident">is_valid</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">min_periods</span>: <span class="ident">usize</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">is_valid</span>(<span class="ident">min_periods</span>)
+    <span class="kw">fn </span>is_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, min_periods: usize) -&gt; bool {
+        <span class="self">self</span>.inner.is_valid(min_periods)
     }
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">rolling_min</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
-    <span class="ident">arr</span>: <span class="kw-2">&amp;</span><span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-    <span class="ident">window_size</span>: <span class="ident">usize</span>,
-    <span class="ident">min_periods</span>: <span class="ident">usize</span>,
-    <span class="ident">center</span>: <span class="ident">bool</span>,
-    <span class="ident">weights</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">f64</span>]<span class="op">&gt;</span>,
-) -&gt; <span class="ident">ArrayRef</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">NativeType</span> <span class="op">+</span> <span class="ident">std::iter::Sum</span> <span class="op">+</span> <span class="ident">Zero</span> <span class="op">+</span> <span class="ident">AddAssign</span> <span class="op">+</span> <span class="ident">Copy</span> <span class="op">+</span> <span class="ident">PartialOrd</span> <span class="op">+</span> <span class="ident">Bounded</span> <span class="op">+</span> <span class="ident">IsFloat</span>,
+<span class="kw">pub fn </span>rolling_min&lt;T&gt;(
+    arr: <span class="kw-2">&amp;</span>PrimitiveArray&lt;T&gt;,
+    window_size: usize,
+    min_periods: usize,
+    center: bool,
+    weights: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[f64]&gt;,
+) -&gt; ArrayRef
+<span class="kw">where
+    </span>T: NativeType + std::iter::Sum + Zero + AddAssign + Copy + PartialOrd + Bounded + IsFloat,
 {
-    <span class="kw">if</span> <span class="ident">weights</span>.<span class="ident">is_some</span>() {
+    <span class="kw">if </span>weights.is_some() {
         <span class="macro">panic!</span>(<span class="string">&quot;weights not yet supported on array with null values&quot;</span>)
     }
-    <span class="kw">if</span> <span class="ident">center</span> {
-        <span class="ident">rolling_apply_agg_window</span>::<span class="op">&lt;</span><span class="ident">MinWindow</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span>(
-            <span class="ident">arr</span>.<span class="ident">values</span>().<span class="ident">as_slice</span>(),
-            <span class="ident">arr</span>.<span class="ident">validity</span>().<span class="ident">as_ref</span>().<span class="ident">unwrap</span>(),
-            <span class="ident">window_size</span>,
-            <span class="ident">min_periods</span>,
-            <span class="ident">det_offsets_center</span>,
+    <span class="kw">if </span>center {
+        rolling_apply_agg_window::&lt;MinWindow&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
+            arr.values().as_slice(),
+            arr.validity().as_ref().unwrap(),
+            window_size,
+            min_periods,
+            det_offsets_center,
         )
-    } <span class="kw">else</span> {
-        <span class="ident">rolling_apply_agg_window</span>::<span class="op">&lt;</span><span class="ident">MinWindow</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span>(
-            <span class="ident">arr</span>.<span class="ident">values</span>().<span class="ident">as_slice</span>(),
-            <span class="ident">arr</span>.<span class="ident">validity</span>().<span class="ident">as_ref</span>().<span class="ident">unwrap</span>(),
-            <span class="ident">window_size</span>,
-            <span class="ident">min_periods</span>,
-            <span class="ident">det_offsets</span>,
+    } <span class="kw">else </span>{
+        rolling_apply_agg_window::&lt;MinWindow&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
+            arr.values().as_slice(),
+            arr.validity().as_ref().unwrap(),
+            window_size,
+            min_periods,
+            det_offsets,
         )
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MaxWindow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">NativeType</span> <span class="op">+</span> <span class="ident">PartialOrd</span> <span class="op">+</span> <span class="ident">IsFloat</span><span class="op">&gt;</span> {
-    <span class="ident">inner</span>: <span class="ident">MinMaxWindow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span>,
+<span class="kw">pub struct </span>MaxWindow&lt;<span class="lifetime">&#39;a</span>, T: NativeType + PartialOrd + IsFloat&gt; {
+    inner: MinMaxWindow&lt;<span class="lifetime">&#39;a</span>, T&gt;,
 }
 
-<span class="kw">fn</span> <span class="ident">take_max</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">NativeType</span> <span class="op">+</span> <span class="ident">IsFloat</span> <span class="op">+</span> <span class="ident">PartialOrd</span><span class="op">&gt;</span>(<span class="ident">a</span>: <span class="ident">T</span>, <span class="ident">b</span>: <span class="ident">T</span>) -&gt; <span class="ident">T</span> {
-    <span class="ident">std::cmp::max_by</span>(<span class="ident">a</span>, <span class="ident">b</span>, <span class="ident">compare_fn_nan_max</span>)
+<span class="kw">fn </span>take_max&lt;T: NativeType + IsFloat + PartialOrd&gt;(a: T, b: T) -&gt; T {
+    std::cmp::max_by(a, b, compare_fn_nan_max)
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="ident">NativeType</span> <span class="op">+</span> <span class="ident">IsFloat</span> <span class="op">+</span> <span class="ident">PartialOrd</span><span class="op">&gt;</span> <span class="ident">RollingAggWindowNulls</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MaxWindow</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">slice</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">T</span>], <span class="ident">validity</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Bitmap</span>, <span class="ident">start</span>: <span class="ident">usize</span>, <span class="ident">end</span>: <span class="ident">usize</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">inner</span>: <span class="ident">MinMaxWindow::new</span>(
-                <span class="ident">slice</span>,
-                <span class="ident">validity</span>,
-                <span class="ident">start</span>,
-                <span class="ident">end</span>,
-                <span class="ident">compare_fn_nan_max</span>,
-                <span class="ident">take_max</span>,
-                <span class="ident">Ordering::Greater</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: NativeType + IsFloat + PartialOrd&gt; RollingAggWindowNulls&lt;<span class="lifetime">&#39;a</span>, T&gt; <span class="kw">for </span>MaxWindow&lt;<span class="lifetime">&#39;a</span>, T&gt; {
+    <span class="kw">unsafe fn </span>new(slice: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[T], validity: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Bitmap, start: usize, end: usize) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            inner: MinMaxWindow::new(
+                slice,
+                validity,
+                start,
+                end,
+                compare_fn_nan_max,
+                take_max,
+                Ordering::Greater,
             ),
         }
     }
 
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">update</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">start</span>: <span class="ident">usize</span>, <span class="ident">end</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">update</span>(<span class="ident">start</span>, <span class="ident">end</span>)
+    <span class="kw">unsafe fn </span>update(<span class="kw-2">&amp;mut </span><span class="self">self</span>, start: usize, end: usize) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
+        <span class="self">self</span>.inner.update(start, end)
     }
 
-    <span class="kw">fn</span> <span class="ident">is_valid</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">min_periods</span>: <span class="ident">usize</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">is_valid</span>(<span class="ident">min_periods</span>)
+    <span class="kw">fn </span>is_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, min_periods: usize) -&gt; bool {
+        <span class="self">self</span>.inner.is_valid(min_periods)
     }
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">rolling_max</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
-    <span class="ident">arr</span>: <span class="kw-2">&amp;</span><span class="ident">PrimitiveArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-    <span class="ident">window_size</span>: <span class="ident">usize</span>,
-    <span class="ident">min_periods</span>: <span class="ident">usize</span>,
-    <span class="ident">center</span>: <span class="ident">bool</span>,
-    <span class="ident">weights</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">f64</span>]<span class="op">&gt;</span>,
-) -&gt; <span class="ident">ArrayRef</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">NativeType</span> <span class="op">+</span> <span class="ident">std::iter::Sum</span> <span class="op">+</span> <span class="ident">Zero</span> <span class="op">+</span> <span class="ident">AddAssign</span> <span class="op">+</span> <span class="ident">Copy</span> <span class="op">+</span> <span class="ident">PartialOrd</span> <span class="op">+</span> <span class="ident">Bounded</span> <span class="op">+</span> <span class="ident">IsFloat</span>,
+<span class="kw">pub fn </span>rolling_max&lt;T&gt;(
+    arr: <span class="kw-2">&amp;</span>PrimitiveArray&lt;T&gt;,
+    window_size: usize,
+    min_periods: usize,
+    center: bool,
+    weights: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[f64]&gt;,
+) -&gt; ArrayRef
+<span class="kw">where
+    </span>T: NativeType + std::iter::Sum + Zero + AddAssign + Copy + PartialOrd + Bounded + IsFloat,
 {
-    <span class="kw">if</span> <span class="ident">weights</span>.<span class="ident">is_some</span>() {
+    <span class="kw">if </span>weights.is_some() {
         <span class="macro">panic!</span>(<span class="string">&quot;weights not yet supported on array with null values&quot;</span>)
     }
-    <span class="kw">if</span> <span class="ident">center</span> {
-        <span class="kw">if</span> <span class="ident">is_reverse_sorted_max_nulls</span>(<span class="ident">arr</span>.<span class="ident">values</span>().<span class="ident">as_slice</span>(), <span class="ident">arr</span>.<span class="ident">validity</span>().<span class="ident">as_ref</span>().<span class="ident">unwrap</span>()) {
-            <span class="ident">rolling_apply_agg_window</span>::<span class="op">&lt;</span><span class="ident">SortedMinMax</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span>(
-                <span class="ident">arr</span>.<span class="ident">values</span>().<span class="ident">as_slice</span>(),
-                <span class="ident">arr</span>.<span class="ident">validity</span>().<span class="ident">as_ref</span>().<span class="ident">unwrap</span>(),
-                <span class="ident">window_size</span>,
-                <span class="ident">min_periods</span>,
-                <span class="ident">det_offsets_center</span>,
+    <span class="kw">if </span>center {
+        <span class="kw">if </span>is_reverse_sorted_max_nulls(arr.values().as_slice(), arr.validity().as_ref().unwrap()) {
+            rolling_apply_agg_window::&lt;SortedMinMax&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
+                arr.values().as_slice(),
+                arr.validity().as_ref().unwrap(),
+                window_size,
+                min_periods,
+                det_offsets_center,
             )
-        } <span class="kw">else</span> {
-            <span class="ident">rolling_apply_agg_window</span>::<span class="op">&lt;</span><span class="ident">MaxWindow</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span>(
-                <span class="ident">arr</span>.<span class="ident">values</span>().<span class="ident">as_slice</span>(),
-                <span class="ident">arr</span>.<span class="ident">validity</span>().<span class="ident">as_ref</span>().<span class="ident">unwrap</span>(),
-                <span class="ident">window_size</span>,
-                <span class="ident">min_periods</span>,
-                <span class="ident">det_offsets_center</span>,
+        } <span class="kw">else </span>{
+            rolling_apply_agg_window::&lt;MaxWindow&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
+                arr.values().as_slice(),
+                arr.validity().as_ref().unwrap(),
+                window_size,
+                min_periods,
+                det_offsets_center,
             )
         }
-    } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">is_reverse_sorted_max_nulls</span>(<span class="ident">arr</span>.<span class="ident">values</span>().<span class="ident">as_slice</span>(), <span class="ident">arr</span>.<span class="ident">validity</span>().<span class="ident">as_ref</span>().<span class="ident">unwrap</span>())
+    } <span class="kw">else if </span>is_reverse_sorted_max_nulls(arr.values().as_slice(), arr.validity().as_ref().unwrap())
     {
-        <span class="ident">rolling_apply_agg_window</span>::<span class="op">&lt;</span><span class="ident">SortedMinMax</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span>(
-            <span class="ident">arr</span>.<span class="ident">values</span>().<span class="ident">as_slice</span>(),
-            <span class="ident">arr</span>.<span class="ident">validity</span>().<span class="ident">as_ref</span>().<span class="ident">unwrap</span>(),
-            <span class="ident">window_size</span>,
-            <span class="ident">min_periods</span>,
-            <span class="ident">det_offsets</span>,
+        rolling_apply_agg_window::&lt;SortedMinMax&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
+            arr.values().as_slice(),
+            arr.validity().as_ref().unwrap(),
+            window_size,
+            min_periods,
+            det_offsets,
         )
-    } <span class="kw">else</span> {
-        <span class="ident">rolling_apply_agg_window</span>::<span class="op">&lt;</span><span class="ident">MaxWindow</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span>(
-            <span class="ident">arr</span>.<span class="ident">values</span>().<span class="ident">as_slice</span>(),
-            <span class="ident">arr</span>.<span class="ident">validity</span>().<span class="ident">as_ref</span>().<span class="ident">unwrap</span>(),
-            <span class="ident">window_size</span>,
-            <span class="ident">min_periods</span>,
-            <span class="ident">det_offsets</span>,
+    } <span class="kw">else </span>{
+        rolling_apply_agg_window::&lt;MaxWindow&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
+            arr.values().as_slice(),
+            arr.validity().as_ref().unwrap(),
+            window_size,
+            min_periods,
+            det_offsets,
         )
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="polars_arrow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="polars_arrow" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

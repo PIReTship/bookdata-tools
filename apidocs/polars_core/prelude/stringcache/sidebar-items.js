@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["reset_string_cache","Reset the global string cache used for the Categorical Types."],["toggle_string_cache","Use a global string cache for the Categorical Types."],["using_string_cache","Check if string cache is set."],["with_string_cache",""]],"struct":[["IUseStringCache","RAII for the string cache"],["StrHashGlobal",""]]};

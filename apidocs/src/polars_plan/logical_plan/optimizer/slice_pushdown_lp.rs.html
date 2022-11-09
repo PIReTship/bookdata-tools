@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.25.1/src/logical_plan/optimizer/slice_pushdown_lp.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>slice_pushdown_lp.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.25.1/src/logical_plan/optimizer/slice_pushdown_lp.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>slice_pushdown_lp.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_plan/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -362,369 +362,369 @@
 <span id="362">362</span>
 <span id="363">363</span>
 <span id="364">364</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">polars_core::prelude</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::aexpr_is_simple_projection</span>;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::utils::aexpr_is_simple_projection;
 
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct</span> <span class="ident">SlicePushDown</span> {}
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>SlicePushDown {}
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">struct</span> <span class="ident">State</span> {
-    <span class="ident">offset</span>: <span class="ident">i64</span>,
-    <span class="ident">len</span>: <span class="ident">IdxSize</span>,
+<span class="attribute">#[derive(Copy, Clone)]
+</span><span class="kw">struct </span>State {
+    offset: i64,
+    len: IdxSize,
 }
 
-<span class="kw">impl</span> <span class="ident">SlicePushDown</span> {
-    <span class="comment">// slice will be done at this node if we found any</span>
-    <span class="comment">// we also stop optimization</span>
-    <span class="kw">fn</span> <span class="ident">no_pushdown_finish_opt</span>(
+<span class="kw">impl </span>SlicePushDown {
+    <span class="comment">// slice will be done at this node if we found any
+    // we also stop optimization
+    </span><span class="kw">fn </span>no_pushdown_finish_opt(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">lp</span>: <span class="ident">ALogicalPlan</span>,
-        <span class="ident">state</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">State</span><span class="op">&gt;</span>,
-        <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="ident">state</span> {
-            <span class="prelude-val">Some</span>(<span class="ident">state</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">add</span>(<span class="ident">lp</span>);
+        lp: ALogicalPlan,
+        state: <span class="prelude-ty">Option</span>&lt;State&gt;,
+        lp_arena: <span class="kw-2">&amp;mut </span>Arena&lt;ALogicalPlan&gt;,
+    ) -&gt; PolarsResult&lt;ALogicalPlan&gt; {
+        <span class="kw">match </span>state {
+            <span class="prelude-val">Some</span>(state) =&gt; {
+                <span class="kw">let </span>input = lp_arena.add(lp);
 
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">ALogicalPlan::Slice</span> {
-                    <span class="ident">input</span>,
-                    <span class="ident">offset</span>: <span class="ident">state</span>.<span class="ident">offset</span>,
-                    <span class="ident">len</span>: <span class="ident">state</span>.<span class="ident">len</span>,
+                <span class="kw">let </span>lp = ALogicalPlan::Slice {
+                    input,
+                    offset: state.offset,
+                    len: state.len,
                 };
-                <span class="prelude-val">Ok</span>(<span class="ident">lp</span>)
+                <span class="prelude-val">Ok</span>(lp)
             }
-            <span class="prelude-val">None</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">lp</span>),
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Ok</span>(lp),
         }
     }
 
-    <span class="doccomment">/// slice will be done at this node, but we continue optimization</span>
-    <span class="kw">fn</span> <span class="ident">no_pushdown_restart_opt</span>(
+    <span class="doccomment">/// slice will be done at this node, but we continue optimization
+    </span><span class="kw">fn </span>no_pushdown_restart_opt(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">lp</span>: <span class="ident">ALogicalPlan</span>,
-        <span class="ident">state</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">State</span><span class="op">&gt;</span>,
-        <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">inputs</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">get_inputs</span>();
-        <span class="kw">let</span> <span class="ident">exprs</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">get_exprs</span>();
+        lp: ALogicalPlan,
+        state: <span class="prelude-ty">Option</span>&lt;State&gt;,
+        lp_arena: <span class="kw-2">&amp;mut </span>Arena&lt;ALogicalPlan&gt;,
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+    ) -&gt; PolarsResult&lt;ALogicalPlan&gt; {
+        <span class="kw">let </span>inputs = lp.get_inputs();
+        <span class="kw">let </span>exprs = lp.get_exprs();
 
-        <span class="kw">let</span> <span class="ident">new_inputs</span> <span class="op">=</span> <span class="ident">inputs</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">node</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">node</span>);
-                <span class="comment">// No state, so we do not push down the slice here.</span>
-                <span class="kw">let</span> <span class="ident">state</span> <span class="op">=</span> <span class="prelude-val">None</span>;
-                <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">pushdown</span>(<span class="ident">alp</span>, <span class="ident">state</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)<span class="question-mark">?</span>;
-                <span class="ident">lp_arena</span>.<span class="ident">replace</span>(<span class="ident">node</span>, <span class="ident">alp</span>);
-                <span class="prelude-val">Ok</span>(<span class="ident">node</span>)
+        <span class="kw">let </span>new_inputs = inputs
+            .iter()
+            .map(|<span class="kw-2">&amp;</span>node| {
+                <span class="kw">let </span>alp = lp_arena.take(node);
+                <span class="comment">// No state, so we do not push down the slice here.
+                </span><span class="kw">let </span>state = <span class="prelude-val">None</span>;
+                <span class="kw">let </span>alp = <span class="self">self</span>.pushdown(alp, state, lp_arena, expr_arena)<span class="question-mark">?</span>;
+                lp_arena.replace(node, alp);
+                <span class="prelude-val">Ok</span>(node)
             })
-            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">with_exprs_and_input</span>(<span class="ident">exprs</span>, <span class="ident">new_inputs</span>);
+            .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
+        <span class="kw">let </span>lp = lp.with_exprs_and_input(exprs, new_inputs);
 
-        <span class="self">self</span>.<span class="ident">no_pushdown_finish_opt</span>(<span class="ident">lp</span>, <span class="ident">state</span>, <span class="ident">lp_arena</span>)
+        <span class="self">self</span>.no_pushdown_finish_opt(lp, state, lp_arena)
     }
 
-    <span class="doccomment">/// slice will be pushed down.</span>
-    <span class="kw">fn</span> <span class="ident">pushdown_and_continue</span>(
+    <span class="doccomment">/// slice will be pushed down.
+    </span><span class="kw">fn </span>pushdown_and_continue(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">lp</span>: <span class="ident">ALogicalPlan</span>,
-        <span class="ident">state</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">State</span><span class="op">&gt;</span>,
-        <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">inputs</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">get_inputs</span>();
-        <span class="kw">let</span> <span class="ident">exprs</span> <span class="op">=</span> <span class="ident">lp</span>.<span class="ident">get_exprs</span>();
+        lp: ALogicalPlan,
+        state: <span class="prelude-ty">Option</span>&lt;State&gt;,
+        lp_arena: <span class="kw-2">&amp;mut </span>Arena&lt;ALogicalPlan&gt;,
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+    ) -&gt; PolarsResult&lt;ALogicalPlan&gt; {
+        <span class="kw">let </span>inputs = lp.get_inputs();
+        <span class="kw">let </span>exprs = lp.get_exprs();
 
-        <span class="kw">let</span> <span class="ident">new_inputs</span> <span class="op">=</span> <span class="ident">inputs</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">node</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">node</span>);
-                <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">pushdown</span>(<span class="ident">alp</span>, <span class="ident">state</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)<span class="question-mark">?</span>;
-                <span class="ident">lp_arena</span>.<span class="ident">replace</span>(<span class="ident">node</span>, <span class="ident">alp</span>);
-                <span class="prelude-val">Ok</span>(<span class="ident">node</span>)
+        <span class="kw">let </span>new_inputs = inputs
+            .iter()
+            .map(|<span class="kw-2">&amp;</span>node| {
+                <span class="kw">let </span>alp = lp_arena.take(node);
+                <span class="kw">let </span>alp = <span class="self">self</span>.pushdown(alp, state, lp_arena, expr_arena)<span class="question-mark">?</span>;
+                lp_arena.replace(node, alp);
+                <span class="prelude-val">Ok</span>(node)
             })
-            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">lp</span>.<span class="ident">with_exprs_and_input</span>(<span class="ident">exprs</span>, <span class="ident">new_inputs</span>))
+            .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(lp.with_exprs_and_input(exprs, new_inputs))
     }
 
-    <span class="kw">fn</span> <span class="ident">pushdown</span>(
+    <span class="kw">fn </span>pushdown(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">lp</span>: <span class="ident">ALogicalPlan</span>,
-        <span class="ident">state</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">State</span><span class="op">&gt;</span>,
-        <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span> {
-        <span class="kw">use</span> <span class="ident">ALogicalPlan</span>::<span class="kw-2">*</span>;
+        lp: ALogicalPlan,
+        state: <span class="prelude-ty">Option</span>&lt;State&gt;,
+        lp_arena: <span class="kw-2">&amp;mut </span>Arena&lt;ALogicalPlan&gt;,
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+    ) -&gt; PolarsResult&lt;ALogicalPlan&gt; {
+        <span class="kw">use </span>ALogicalPlan::<span class="kw-2">*</span>;
 
-        <span class="kw">match</span> (<span class="ident">lp</span>, <span class="ident">state</span>) {
-            (<span class="ident">AnonymousScan</span> {
-                <span class="ident">function</span>,
-                <span class="ident">schema</span>,
-                <span class="ident">output_schema</span>,
-                <span class="ident">predicate</span>,
-                <span class="ident">options</span>,
+        <span class="kw">match </span>(lp, state) {
+            (AnonymousScan {
+                function,
+                schema,
+                output_schema,
+                predicate,
+                options,
             },
-                <span class="comment">// TODO! we currently skip slice pushdown if there is a predicate.</span>
-                <span class="comment">// we can modify the readers to only limit after predicates have been applied</span>
-                <span class="prelude-val">Some</span>(<span class="ident">state</span>)) <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">offset</span> <span class="op">==</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">predicate</span>.<span class="ident">is_none</span>() =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">options</span> <span class="op">=</span> <span class="ident">options</span>;
-                <span class="ident">options</span>.<span class="ident">n_rows</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">state</span>.<span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span>);
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">AnonymousScan</span> {
-                    <span class="ident">function</span>,
-                    <span class="ident">schema</span>,
-                    <span class="ident">output_schema</span>,
-                    <span class="ident">predicate</span>,
-                    <span class="ident">options</span>,
+                <span class="comment">// TODO! we currently skip slice pushdown if there is a predicate.
+                // we can modify the readers to only limit after predicates have been applied
+                </span><span class="prelude-val">Some</span>(state)) <span class="kw">if </span>state.offset == <span class="number">0 </span>&amp;&amp; predicate.is_none() =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>options = options;
+                options.n_rows = <span class="prelude-val">Some</span>(state.len <span class="kw">as </span>usize);
+                <span class="kw">let </span>lp = AnonymousScan {
+                    function,
+                    schema,
+                    output_schema,
+                    predicate,
+                    options,
                 };
 
-                <span class="prelude-val">Ok</span>(<span class="ident">lp</span>)
+                <span class="prelude-val">Ok</span>(lp)
             },
 
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>)]</span>
-            (<span class="ident">ParquetScan</span> {
-                <span class="ident">path</span>,
-                <span class="ident">schema</span>,
-                <span class="ident">output_schema</span>,
-                <span class="ident">predicate</span>,
-                <span class="ident">options</span>,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
+            </span>(ParquetScan {
+                path,
+                schema,
+                output_schema,
+                predicate,
+                options,
 
             },
-                <span class="comment">// TODO! we currently skip slice pushdown if there is a predicate.</span>
-                <span class="comment">// we can modify the readers to only limit after predicates have been applied</span>
-                <span class="prelude-val">Some</span>(<span class="ident">state</span>)) <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">offset</span> <span class="op">==</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">predicate</span>.<span class="ident">is_none</span>() =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">options</span> <span class="op">=</span> <span class="ident">options</span>;
-                <span class="ident">options</span>.<span class="ident">n_rows</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">state</span>.<span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span>);
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">ParquetScan</span> {
-                    <span class="ident">path</span>,
-                    <span class="ident">schema</span>,
-                    <span class="ident">output_schema</span>,
-                    <span class="ident">predicate</span>,
-                    <span class="ident">options</span>
+                <span class="comment">// TODO! we currently skip slice pushdown if there is a predicate.
+                // we can modify the readers to only limit after predicates have been applied
+                </span><span class="prelude-val">Some</span>(state)) <span class="kw">if </span>state.offset == <span class="number">0 </span>&amp;&amp; predicate.is_none() =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>options = options;
+                options.n_rows = <span class="prelude-val">Some</span>(state.len <span class="kw">as </span>usize);
+                <span class="kw">let </span>lp = ParquetScan {
+                    path,
+                    schema,
+                    output_schema,
+                    predicate,
+                    options
                 };
 
-                <span class="prelude-val">Ok</span>(<span class="ident">lp</span>)
+                <span class="prelude-val">Ok</span>(lp)
             },
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ipc&quot;</span>)]</span>
-            (<span class="ident">IpcScan</span> {<span class="ident">path</span>,
-            <span class="ident">schema</span>,
-                <span class="ident">output_schema</span>,
-                <span class="ident">predicate</span>,
-                <span class="ident">options</span>
-            }, <span class="prelude-val">Some</span>(<span class="ident">state</span>)) <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">offset</span> <span class="op">==</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">predicate</span>.<span class="ident">is_none</span>() =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">options</span> <span class="op">=</span> <span class="ident">options</span>;
-                <span class="ident">options</span>.<span class="ident">n_rows</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">state</span>.<span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span>);
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">IpcScan</span> {
-                    <span class="ident">path</span>,
-                    <span class="ident">schema</span>,
-                    <span class="ident">output_schema</span>,
-                    <span class="ident">predicate</span>,
-                    <span class="ident">options</span>
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
+            </span>(IpcScan {path,
+            schema,
+                output_schema,
+                predicate,
+                options
+            }, <span class="prelude-val">Some</span>(state)) <span class="kw">if </span>state.offset == <span class="number">0 </span>&amp;&amp; predicate.is_none() =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>options = options;
+                options.n_rows = <span class="prelude-val">Some</span>(state.len <span class="kw">as </span>usize);
+                <span class="kw">let </span>lp = IpcScan {
+                    path,
+                    schema,
+                    output_schema,
+                    predicate,
+                    options
                 };
 
-                <span class="prelude-val">Ok</span>(<span class="ident">lp</span>)
+                <span class="prelude-val">Ok</span>(lp)
 
             }
 
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;csv-file&quot;</span>)]</span>
-            (<span class="ident">CsvScan</span> {
-                <span class="ident">path</span>,
-                <span class="ident">schema</span>,
-                <span class="ident">output_schema</span>,
-                <span class="ident">options</span>,
-                <span class="ident">predicate</span>,
-            }, <span class="prelude-val">Some</span>(<span class="ident">state</span>)) <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">offset</span> <span class="op">&gt;</span><span class="op">=</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">predicate</span>.<span class="ident">is_none</span>() =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">options</span> <span class="op">=</span> <span class="ident">options</span>;
-                <span class="ident">options</span>.<span class="ident">skip_rows</span> <span class="op">+</span><span class="op">=</span> <span class="ident">state</span>.<span class="ident">offset</span> <span class="kw">as</span> <span class="ident">usize</span>;
-                <span class="ident">options</span>.<span class="ident">n_rows</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">state</span>.<span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span>);
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;csv-file&quot;</span>)]
+            </span>(CsvScan {
+                path,
+                schema,
+                output_schema,
+                options,
+                predicate,
+            }, <span class="prelude-val">Some</span>(state)) <span class="kw">if </span>state.offset &gt;= <span class="number">0 </span>&amp;&amp; predicate.is_none() =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>options = options;
+                options.skip_rows += state.offset <span class="kw">as </span>usize;
+                options.n_rows = <span class="prelude-val">Some</span>(state.len <span class="kw">as </span>usize);
 
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">CsvScan</span> {
-                    <span class="ident">path</span>,
-                    <span class="ident">schema</span>,
-                    <span class="ident">output_schema</span>,
-                    <span class="ident">options</span>,
-                    <span class="ident">predicate</span>,
+                <span class="kw">let </span>lp = CsvScan {
+                    path,
+                    schema,
+                    output_schema,
+                    options,
+                    predicate,
                 };
-                <span class="prelude-val">Ok</span>(<span class="ident">lp</span>)
+                <span class="prelude-val">Ok</span>(lp)
             }
 
-            (<span class="ident">Union</span> {<span class="ident">inputs</span>, <span class="kw-2">mut</span> <span class="ident">options</span> }, <span class="prelude-val">Some</span>(<span class="ident">state</span>)) =&gt; {
-                <span class="ident">options</span>.<span class="ident">slice</span> <span class="op">=</span> <span class="bool-val">true</span>;
-                <span class="ident">options</span>.<span class="ident">slice_offset</span> <span class="op">=</span> <span class="ident">state</span>.<span class="ident">offset</span>;
-                <span class="ident">options</span>.<span class="ident">slice_len</span> <span class="op">=</span> <span class="ident">state</span>.<span class="ident">len</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">Union</span> {<span class="ident">inputs</span>, <span class="ident">options</span>})
+            (Union {inputs, <span class="kw-2">mut </span>options }, <span class="prelude-val">Some</span>(state)) =&gt; {
+                options.slice = <span class="bool-val">true</span>;
+                options.slice_offset = state.offset;
+                options.slice_len = state.len;
+                <span class="prelude-val">Ok</span>(Union {inputs, options})
             },
-            (<span class="ident">Join</span> {
-                <span class="ident">input_left</span>,
-                <span class="ident">input_right</span>,
-                <span class="ident">schema</span>,
-                <span class="ident">left_on</span>,
-                <span class="ident">right_on</span>,
-                <span class="kw-2">mut</span> <span class="ident">options</span>
-            }, <span class="prelude-val">Some</span>(<span class="ident">state</span>)) =&gt; {
-                <span class="comment">// first restart optimization in both inputs and get the updated LP</span>
-                <span class="kw">let</span> <span class="ident">lp_left</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">input_left</span>);
-                <span class="kw">let</span> <span class="ident">lp_left</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">pushdown</span>(<span class="ident">lp_left</span>, <span class="prelude-val">None</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">input_left</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">add</span>(<span class="ident">lp_left</span>);
+            (Join {
+                input_left,
+                input_right,
+                schema,
+                left_on,
+                right_on,
+                <span class="kw-2">mut </span>options
+            }, <span class="prelude-val">Some</span>(state)) =&gt; {
+                <span class="comment">// first restart optimization in both inputs and get the updated LP
+                </span><span class="kw">let </span>lp_left = lp_arena.take(input_left);
+                <span class="kw">let </span>lp_left = <span class="self">self</span>.pushdown(lp_left, <span class="prelude-val">None</span>, lp_arena, expr_arena)<span class="question-mark">?</span>;
+                <span class="kw">let </span>input_left = lp_arena.add(lp_left);
 
-                <span class="kw">let</span> <span class="ident">lp_right</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">input_right</span>);
-                <span class="kw">let</span> <span class="ident">lp_right</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">pushdown</span>(<span class="ident">lp_right</span>, <span class="prelude-val">None</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">input_right</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">add</span>(<span class="ident">lp_right</span>);
+                <span class="kw">let </span>lp_right = lp_arena.take(input_right);
+                <span class="kw">let </span>lp_right = <span class="self">self</span>.pushdown(lp_right, <span class="prelude-val">None</span>, lp_arena, expr_arena)<span class="question-mark">?</span>;
+                <span class="kw">let </span>input_right = lp_arena.add(lp_right);
 
-                <span class="comment">// then assign the slice state to the join operation</span>
+                <span class="comment">// then assign the slice state to the join operation
 
-                <span class="ident">options</span>.<span class="ident">slice</span> <span class="op">=</span> <span class="prelude-val">Some</span>((<span class="ident">state</span>.<span class="ident">offset</span>, <span class="ident">state</span>.<span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span>));
+                </span>options.slice = <span class="prelude-val">Some</span>((state.offset, state.len <span class="kw">as </span>usize));
 
-                <span class="prelude-val">Ok</span>(<span class="ident">Join</span> {
-                    <span class="ident">input_left</span>,
-                    <span class="ident">input_right</span>,
-                    <span class="ident">schema</span>,
-                    <span class="ident">left_on</span>,
-                    <span class="ident">right_on</span>,
-                    <span class="ident">options</span>
+                <span class="prelude-val">Ok</span>(Join {
+                    input_left,
+                    input_right,
+                    schema,
+                    left_on,
+                    right_on,
+                    options
                 })
             }
-            (<span class="ident">Aggregate</span> { <span class="ident">input</span>, <span class="ident">keys</span>, <span class="ident">aggs</span>, <span class="ident">schema</span>, <span class="ident">apply</span>, <span class="ident">maintain_order</span>, <span class="kw-2">mut</span> <span class="ident">options</span> }, <span class="prelude-val">Some</span>(<span class="ident">state</span>)) =&gt; {
-                <span class="comment">// first restart optimization in inputs and get the updated LP</span>
-                <span class="kw">let</span> <span class="ident">input_lp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">input</span>);
-                <span class="kw">let</span> <span class="ident">input_lp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">pushdown</span>(<span class="ident">input_lp</span>, <span class="prelude-val">None</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">input</span><span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">add</span>(<span class="ident">input_lp</span>);
+            (Aggregate { input, keys, aggs, schema, apply, maintain_order, <span class="kw-2">mut </span>options }, <span class="prelude-val">Some</span>(state)) =&gt; {
+                <span class="comment">// first restart optimization in inputs and get the updated LP
+                </span><span class="kw">let </span>input_lp = lp_arena.take(input);
+                <span class="kw">let </span>input_lp = <span class="self">self</span>.pushdown(input_lp, <span class="prelude-val">None</span>, lp_arena, expr_arena)<span class="question-mark">?</span>;
+                <span class="kw">let </span>input= lp_arena.add(input_lp);
 
-                <span class="ident">options</span>.<span class="ident">slice</span> <span class="op">=</span> <span class="prelude-val">Some</span>((<span class="ident">state</span>.<span class="ident">offset</span>, <span class="ident">state</span>.<span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span>));
+                options.slice = <span class="prelude-val">Some</span>((state.offset, state.len <span class="kw">as </span>usize));
 
-                <span class="prelude-val">Ok</span>(<span class="ident">Aggregate</span> {
-                    <span class="ident">input</span>,
-                    <span class="ident">keys</span>,
-                    <span class="ident">aggs</span>,
-                    <span class="ident">schema</span>,
-                    <span class="ident">apply</span>,
-                    <span class="ident">maintain_order</span>,
-                    <span class="ident">options</span>
+                <span class="prelude-val">Ok</span>(Aggregate {
+                    input,
+                    keys,
+                    aggs,
+                    schema,
+                    apply,
+                    maintain_order,
+                    options
                 })
             }
-            (<span class="ident">Sort</span> {<span class="ident">input</span>, <span class="ident">by_column</span>, <span class="kw-2">mut</span> <span class="ident">args</span>}, <span class="prelude-val">Some</span>(<span class="ident">state</span>)) =&gt; {
-                <span class="comment">// first restart optimization in inputs and get the updated LP</span>
-                <span class="kw">let</span> <span class="ident">input_lp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">input</span>);
-                <span class="kw">let</span> <span class="ident">input_lp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">pushdown</span>(<span class="ident">input_lp</span>, <span class="prelude-val">None</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">input</span><span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">add</span>(<span class="ident">input_lp</span>);
+            (Sort {input, by_column, <span class="kw-2">mut </span>args}, <span class="prelude-val">Some</span>(state)) =&gt; {
+                <span class="comment">// first restart optimization in inputs and get the updated LP
+                </span><span class="kw">let </span>input_lp = lp_arena.take(input);
+                <span class="kw">let </span>input_lp = <span class="self">self</span>.pushdown(input_lp, <span class="prelude-val">None</span>, lp_arena, expr_arena)<span class="question-mark">?</span>;
+                <span class="kw">let </span>input= lp_arena.add(input_lp);
 
-                <span class="ident">args</span>.<span class="ident">slice</span> <span class="op">=</span> <span class="prelude-val">Some</span>((<span class="ident">state</span>.<span class="ident">offset</span>, <span class="ident">state</span>.<span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span>));
-                <span class="prelude-val">Ok</span>(<span class="ident">Sort</span> {
-                    <span class="ident">input</span>,
-                    <span class="ident">by_column</span>,
-                    <span class="ident">args</span>
+                args.slice = <span class="prelude-val">Some</span>((state.offset, state.len <span class="kw">as </span>usize));
+                <span class="prelude-val">Ok</span>(Sort {
+                    input,
+                    by_column,
+                    args
                 })
             }
-            (<span class="ident">Slice</span> {
-                <span class="ident">input</span>,
-                <span class="ident">offset</span>,
-                <span class="ident">len</span>
-            }, <span class="prelude-val">Some</span>(<span class="ident">previous_state</span>)) =&gt; {
-                <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">input</span>);
-                <span class="kw">let</span> <span class="ident">state</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">State</span> {
-                    <span class="ident">offset</span>,
-                    <span class="ident">len</span>
+            (Slice {
+                input,
+                offset,
+                len
+            }, <span class="prelude-val">Some</span>(previous_state)) =&gt; {
+                <span class="kw">let </span>alp = lp_arena.take(input);
+                <span class="kw">let </span>state = <span class="prelude-val">Some</span>(State {
+                    offset,
+                    len
                 });
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">pushdown</span>(<span class="ident">alp</span>, <span class="ident">state</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">add</span>(<span class="ident">lp</span>);
-                <span class="prelude-val">Ok</span>(<span class="ident">Slice</span> {
-                    <span class="ident">input</span>,
-                    <span class="ident">offset</span>: <span class="ident">previous_state</span>.<span class="ident">offset</span>,
-                    <span class="ident">len</span>: <span class="ident">previous_state</span>.<span class="ident">len</span>
+                <span class="kw">let </span>lp = <span class="self">self</span>.pushdown(alp, state, lp_arena, expr_arena)<span class="question-mark">?</span>;
+                <span class="kw">let </span>input = lp_arena.add(lp);
+                <span class="prelude-val">Ok</span>(Slice {
+                    input,
+                    offset: previous_state.offset,
+                    len: previous_state.len
                 })
             }
-            (<span class="ident">Slice</span> {
-                <span class="ident">input</span>,
-                <span class="ident">offset</span>,
-                <span class="ident">len</span>
+            (Slice {
+                input,
+                offset,
+                len
             }, <span class="prelude-val">None</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">alp</span> <span class="op">=</span> <span class="ident">lp_arena</span>.<span class="ident">take</span>(<span class="ident">input</span>);
-                <span class="kw">let</span> <span class="ident">state</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">State</span> {
-                    <span class="ident">offset</span>,
-                    <span class="ident">len</span>
+                <span class="kw">let </span>alp = lp_arena.take(input);
+                <span class="kw">let </span>state = <span class="prelude-val">Some</span>(State {
+                    offset,
+                    len
                 });
-                <span class="self">self</span>.<span class="ident">pushdown</span>(<span class="ident">alp</span>, <span class="ident">state</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)
+                <span class="self">self</span>.pushdown(alp, state, lp_arena, expr_arena)
             }
-            <span class="comment">// [Do not pushdown] boundary</span>
-            <span class="comment">// here we do not pushdown.</span>
-            <span class="comment">// we reset the state and then start the optimization again</span>
-            <span class="ident">m</span> @ (<span class="ident">Selection</span> { .. }, <span class="kw">_</span>)
-            <span class="comment">// let&#39;s be conservative. projections may do aggregations and a pushed down slice</span>
-            <span class="comment">// will lead to incorrect aggregations</span>
-            <span class="op">|</span> <span class="ident">m</span> @ (<span class="ident">LocalProjection</span> {..},<span class="kw">_</span>)
-            <span class="comment">// other blocking nodes</span>
-            <span class="op">|</span> <span class="ident">m</span> @ (<span class="ident">DataFrameScan</span> {..}, <span class="kw">_</span>)
-            <span class="op">|</span> <span class="ident">m</span> @ (<span class="ident">Sort</span> {..}, <span class="kw">_</span>)
-            <span class="op">|</span> <span class="ident">m</span> @ (<span class="ident">Explode</span> {..}, <span class="kw">_</span>)
-            <span class="op">|</span> <span class="ident">m</span> @ (<span class="ident">Melt</span> {..}, <span class="kw">_</span>)
-            <span class="op">|</span> <span class="ident">m</span> @ (<span class="ident">Cache</span> {..}, <span class="kw">_</span>)
-            <span class="op">|</span> <span class="ident">m</span> @ (<span class="ident">Distinct</span> {..}, <span class="kw">_</span>)
-            <span class="op">|</span> <span class="ident">m</span> @ (<span class="ident">HStack</span> {..},<span class="kw">_</span>)
-            <span class="op">|</span> <span class="ident">m</span> @ (<span class="ident">Aggregate</span>{..},<span class="kw">_</span>)
+            <span class="comment">// [Do not pushdown] boundary
+            // here we do not pushdown.
+            // we reset the state and then start the optimization again
+            </span>m @ (Selection { .. }, <span class="kw">_</span>)
+            <span class="comment">// let&#39;s be conservative. projections may do aggregations and a pushed down slice
+            // will lead to incorrect aggregations
+            </span>| m @ (LocalProjection {..},<span class="kw">_</span>)
+            <span class="comment">// other blocking nodes
+            </span>| m @ (DataFrameScan {..}, <span class="kw">_</span>)
+            | m @ (Sort {..}, <span class="kw">_</span>)
+            | m @ (Explode {..}, <span class="kw">_</span>)
+            | m @ (Melt {..}, <span class="kw">_</span>)
+            | m @ (Cache {..}, <span class="kw">_</span>)
+            | m @ (Distinct {..}, <span class="kw">_</span>)
+            | m @ (HStack {..},<span class="kw">_</span>)
+            | m @ (Aggregate{..},<span class="kw">_</span>)
             =&gt; {
-                <span class="kw">let</span> (<span class="ident">lp</span>, <span class="ident">state</span>) <span class="op">=</span> <span class="ident">m</span>;
-                <span class="self">self</span>.<span class="ident">no_pushdown_restart_opt</span>(<span class="ident">lp</span>, <span class="ident">state</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)
+                <span class="kw">let </span>(lp, state) = m;
+                <span class="self">self</span>.no_pushdown_restart_opt(lp, state, lp_arena, expr_arena)
             }
-            <span class="comment">// [Pushdown]</span>
-            (<span class="ident">MapFunction</span> {<span class="ident">input</span>, <span class="ident">function</span>}, <span class="kw">_</span>) <span class="kw">if</span> <span class="ident">function</span>.<span class="ident">allow_predicate_pd</span>() =&gt; {
-                <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">MapFunction</span> {<span class="ident">input</span>, <span class="ident">function</span>};
-                <span class="self">self</span>.<span class="ident">pushdown_and_continue</span>(<span class="ident">lp</span>, <span class="ident">state</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)
+            <span class="comment">// [Pushdown]
+            </span>(MapFunction {input, function}, <span class="kw">_</span>) <span class="kw">if </span>function.allow_predicate_pd() =&gt; {
+                <span class="kw">let </span>lp = MapFunction {input, function};
+                <span class="self">self</span>.pushdown_and_continue(lp, state, lp_arena, expr_arena)
             },
-            <span class="comment">// [NO Pushdown]</span>
-            <span class="ident">m</span> @ (<span class="ident">MapFunction</span> {..}, <span class="kw">_</span>) =&gt; {
-                <span class="kw">let</span> (<span class="ident">lp</span>, <span class="ident">state</span>) <span class="op">=</span> <span class="ident">m</span>;
-                <span class="self">self</span>.<span class="ident">no_pushdown_restart_opt</span>(<span class="ident">lp</span>, <span class="ident">state</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)
+            <span class="comment">// [NO Pushdown]
+            </span>m @ (MapFunction {..}, <span class="kw">_</span>) =&gt; {
+                <span class="kw">let </span>(lp, state) = m;
+                <span class="self">self</span>.no_pushdown_restart_opt(lp, state, lp_arena, expr_arena)
             }
-            <span class="comment">// [Pushdown]</span>
-            <span class="comment">// these nodes will be pushed down.</span>
-             <span class="comment">// State is None, we can continue</span>
-             <span class="ident">m</span> @(<span class="ident">Projection</span>{..}, <span class="prelude-val">None</span>)
+            <span class="comment">// [Pushdown]
+            // these nodes will be pushed down.
+             // State is None, we can continue
+             </span>m @(Projection{..}, <span class="prelude-val">None</span>)
             =&gt; {
-                <span class="kw">let</span> (<span class="ident">lp</span>, <span class="ident">state</span>) <span class="op">=</span> <span class="ident">m</span>;
-                <span class="self">self</span>.<span class="ident">pushdown_and_continue</span>(<span class="ident">lp</span>, <span class="ident">state</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)
+                <span class="kw">let </span>(lp, state) = m;
+                <span class="self">self</span>.pushdown_and_continue(lp, state, lp_arena, expr_arena)
             }
-            <span class="comment">// there is state, inspect the projection to determine how to deal with it</span>
-            (<span class="ident">Projection</span> {<span class="ident">input</span>, <span class="kw-2">mut</span> <span class="ident">expr</span>, <span class="ident">schema</span>}, <span class="prelude-val">Some</span>(<span class="ident">State</span>{<span class="ident">offset</span>, <span class="ident">len</span>})) =&gt; {
-                <span class="comment">// The slice operation may only pass on simple projections. col(&quot;foo&quot;).alias(&quot;bar&quot;)</span>
-                <span class="kw">if</span> <span class="ident">expr</span>.<span class="ident">iter</span>().<span class="ident">all</span>(<span class="op">|</span><span class="ident">root</span><span class="op">|</span>  {
-                    <span class="ident">aexpr_is_simple_projection</span>(<span class="kw-2">*</span><span class="ident">root</span>, <span class="ident">expr_arena</span>)
+            <span class="comment">// there is state, inspect the projection to determine how to deal with it
+            </span>(Projection {input, <span class="kw-2">mut </span>expr, schema}, <span class="prelude-val">Some</span>(State{offset, len})) =&gt; {
+                <span class="comment">// The slice operation may only pass on simple projections. col(&quot;foo&quot;).alias(&quot;bar&quot;)
+                </span><span class="kw">if </span>expr.iter().all(|root|  {
+                    aexpr_is_simple_projection(<span class="kw-2">*</span>root, expr_arena)
                 }) {
-                    <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">Projection</span> {<span class="ident">input</span>, <span class="ident">expr</span>, <span class="ident">schema</span>};
-                    <span class="self">self</span>.<span class="ident">pushdown_and_continue</span>(<span class="ident">lp</span>, <span class="ident">state</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)
+                    <span class="kw">let </span>lp = Projection {input, expr, schema};
+                    <span class="self">self</span>.pushdown_and_continue(lp, state, lp_arena, expr_arena)
                 }
-                <span class="comment">// we add a slice node to the projections</span>
-                <span class="kw">else</span> {
-                    <span class="kw">let</span> <span class="ident">offset_node</span> <span class="op">=</span> <span class="ident">to_aexpr</span>(<span class="ident">lit</span>(<span class="ident">offset</span>), <span class="ident">expr_arena</span>);
-                    <span class="kw">let</span> <span class="ident">length_node</span> <span class="op">=</span> <span class="ident">to_aexpr</span>(<span class="ident">lit</span>(<span class="ident">len</span>), <span class="ident">expr_arena</span>);
-                    <span class="ident">expr</span>.<span class="ident">iter_mut</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">node</span><span class="op">|</span> {
-                        <span class="kw">let</span> <span class="ident">aexpr</span> <span class="op">=</span> <span class="ident">AExpr::Slice</span> {
-                            <span class="ident">input</span>: <span class="kw-2">*</span><span class="ident">node</span>,
-                            <span class="ident">offset</span>: <span class="ident">offset_node</span>,
-                            <span class="ident">length</span>: <span class="ident">length_node</span>
+                <span class="comment">// we add a slice node to the projections
+                </span><span class="kw">else </span>{
+                    <span class="kw">let </span>offset_node = to_aexpr(lit(offset), expr_arena);
+                    <span class="kw">let </span>length_node = to_aexpr(lit(len), expr_arena);
+                    expr.iter_mut().for_each(|node| {
+                        <span class="kw">let </span>aexpr = AExpr::Slice {
+                            input: <span class="kw-2">*</span>node,
+                            offset: offset_node,
+                            length: length_node
                         };
-                        <span class="kw-2">*</span><span class="ident">node</span> <span class="op">=</span> <span class="ident">expr_arena</span>.<span class="ident">add</span>(<span class="ident">aexpr</span>)
+                        <span class="kw-2">*</span>node = expr_arena.add(aexpr)
                     });
-                    <span class="kw">let</span> <span class="ident">lp</span> <span class="op">=</span> <span class="ident">Projection</span> {<span class="ident">input</span>, <span class="ident">expr</span>, <span class="ident">schema</span>};
+                    <span class="kw">let </span>lp = Projection {input, expr, schema};
 
-                    <span class="self">self</span>.<span class="ident">pushdown_and_continue</span>(<span class="ident">lp</span>, <span class="prelude-val">None</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)
+                    <span class="self">self</span>.pushdown_and_continue(lp, <span class="prelude-val">None</span>, lp_arena, expr_arena)
                 }
             }
-            (<span class="ident">catch_all</span>, <span class="ident">state</span>) =&gt; {
-                <span class="self">self</span>.<span class="ident">no_pushdown_finish_opt</span>(<span class="ident">catch_all</span>, <span class="ident">state</span>, <span class="ident">lp_arena</span>)
+            (catch_all, state) =&gt; {
+                <span class="self">self</span>.no_pushdown_finish_opt(catch_all, state, lp_arena)
             }
 
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">optimize</span>(
+    <span class="kw">pub fn </span>optimize(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">logical_plan</span>: <span class="ident">ALogicalPlan</span>,
-        <span class="ident">lp_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span>,
-        <span class="ident">expr_arena</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Arena</span><span class="op">&lt;</span><span class="ident">AExpr</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">ALogicalPlan</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">pushdown</span>(<span class="ident">logical_plan</span>, <span class="prelude-val">None</span>, <span class="ident">lp_arena</span>, <span class="ident">expr_arena</span>)
+        logical_plan: ALogicalPlan,
+        lp_arena: <span class="kw-2">&amp;mut </span>Arena&lt;ALogicalPlan&gt;,
+        expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
+    ) -&gt; PolarsResult&lt;ALogicalPlan&gt; {
+        <span class="self">self</span>.pushdown(logical_plan, <span class="prelude-val">None</span>, lp_arena, expr_arena)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_plan" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_plan" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/parquet2-0.16.3/src/write/column_chunk.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>column_chunk.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../parquet2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../parquet2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../parquet2/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/parquet2-0.16.3/src/write/column_chunk.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>column_chunk.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../parquet2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../parquet2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../parquet2/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -213,220 +213,220 @@
 <span id="213">213</span>
 <span id="214">214</span>
 <span id="215">215</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::collections::HashSet</span>;
-<span class="kw">use</span> <span class="ident">std::io::Write</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::collections::HashSet;
+<span class="kw">use </span>std::io::Write;
 
-<span class="kw">use</span> <span class="ident">parquet_format_safe::thrift::protocol</span>::{<span class="ident">TCompactOutputProtocol</span>, <span class="ident">TOutputProtocol</span>};
-<span class="kw">use</span> <span class="ident">parquet_format_safe</span>::{<span class="ident">ColumnChunk</span>, <span class="ident">ColumnMetaData</span>, <span class="ident">Type</span>};
+<span class="kw">use </span>parquet_format_safe::thrift::protocol::{TCompactOutputProtocol, TOutputProtocol};
+<span class="kw">use </span>parquet_format_safe::{ColumnChunk, ColumnMetaData, Type};
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;async&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident">futures::AsyncWrite</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;async&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident">parquet_format_safe::thrift::protocol</span>::{<span class="ident">TCompactOutputStreamProtocol</span>, <span class="ident">TOutputStreamProtocol</span>};
+<span class="attribute">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+</span><span class="kw">use </span>futures::AsyncWrite;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+</span><span class="kw">use </span>parquet_format_safe::thrift::protocol::{TCompactOutputStreamProtocol, TOutputStreamProtocol};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::statistics::serialize_statistics</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::FallibleStreamingIterator</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">compression::Compression</span>,
-    <span class="ident">encoding::Encoding</span>,
-    <span class="ident">error</span>::{<span class="ident">Error</span>, <span class="prelude-ty">Result</span>},
-    <span class="ident">metadata::ColumnDescriptor</span>,
-    <span class="ident">page</span>::{<span class="ident">CompressedPage</span>, <span class="ident">PageType</span>},
+<span class="kw">use </span><span class="kw">crate</span>::statistics::serialize_statistics;
+<span class="kw">use </span><span class="kw">crate</span>::FallibleStreamingIterator;
+<span class="kw">use crate</span>::{
+    compression::Compression,
+    encoding::Encoding,
+    error::{Error, <span class="prelude-ty">Result</span>},
+    metadata::ColumnDescriptor,
+    page::{CompressedPage, PageType},
 };
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;async&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::page::write_page_async</span>;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+</span><span class="kw">use </span><span class="kw">super</span>::page::write_page_async;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::page</span>::{<span class="ident">write_page</span>, <span class="ident">PageWriteSpec</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::statistics::reduce</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::DynStreamingIterator</span>;
+<span class="kw">use </span><span class="kw">super</span>::page::{write_page, PageWriteSpec};
+<span class="kw">use </span><span class="kw">super</span>::statistics::reduce;
+<span class="kw">use </span><span class="kw">super</span>::DynStreamingIterator;
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_column_chunk</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">W</span>, <span class="ident">E</span><span class="op">&gt;</span>(
-    <span class="ident">writer</span>: <span class="kw-2">&amp;mut</span> <span class="ident">W</span>,
-    <span class="kw-2">mut</span> <span class="ident">offset</span>: <span class="ident">u64</span>,
-    <span class="ident">descriptor</span>: <span class="kw-2">&amp;</span><span class="ident">ColumnDescriptor</span>,
-    <span class="kw-2">mut</span> <span class="ident">compressed_pages</span>: <span class="ident">DynStreamingIterator</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">CompressedPage</span>, <span class="ident">E</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">ColumnChunk</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">PageWriteSpec</span><span class="op">&gt;</span>, <span class="ident">u64</span>)<span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">W</span>: <span class="ident">Write</span>,
-    <span class="ident">Error</span>: <span class="ident">From</span><span class="op">&lt;</span><span class="ident">E</span><span class="op">&gt;</span>,
-    <span class="ident">E</span>: <span class="ident">std::error::Error</span>,
+<span class="kw">pub fn </span>write_column_chunk&lt;<span class="lifetime">&#39;a</span>, W, E&gt;(
+    writer: <span class="kw-2">&amp;mut </span>W,
+    <span class="kw-2">mut </span>offset: u64,
+    descriptor: <span class="kw-2">&amp;</span>ColumnDescriptor,
+    <span class="kw-2">mut </span>compressed_pages: DynStreamingIterator&lt;<span class="lifetime">&#39;a</span>, CompressedPage, E&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(ColumnChunk, Vec&lt;PageWriteSpec&gt;, u64)&gt;
+<span class="kw">where
+    </span>W: Write,
+    Error: From&lt;E&gt;,
+    E: std::error::Error,
 {
-    <span class="comment">// write every page</span>
+    <span class="comment">// write every page
 
-    <span class="kw">let</span> <span class="ident">initial</span> <span class="op">=</span> <span class="ident">offset</span>;
+    </span><span class="kw">let </span>initial = offset;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">specs</span> <span class="op">=</span> <span class="macro">vec!</span>[];
-    <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">compressed_page</span>) <span class="op">=</span> <span class="ident">compressed_pages</span>.<span class="ident">next</span>()<span class="question-mark">?</span> {
-        <span class="kw">let</span> <span class="ident">spec</span> <span class="op">=</span> <span class="ident">write_page</span>(<span class="ident">writer</span>, <span class="ident">offset</span>, <span class="ident">compressed_page</span>)<span class="question-mark">?</span>;
-        <span class="ident">offset</span> <span class="op">+</span><span class="op">=</span> <span class="ident">spec</span>.<span class="ident">bytes_written</span>;
-        <span class="ident">specs</span>.<span class="ident">push</span>(<span class="ident">spec</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>specs = <span class="macro">vec!</span>[];
+    <span class="kw">while let </span><span class="prelude-val">Some</span>(compressed_page) = compressed_pages.next()<span class="question-mark">? </span>{
+        <span class="kw">let </span>spec = write_page(writer, offset, compressed_page)<span class="question-mark">?</span>;
+        offset += spec.bytes_written;
+        specs.push(spec);
     }
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bytes_written</span> <span class="op">=</span> <span class="ident">offset</span> <span class="op">-</span> <span class="ident">initial</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>bytes_written = offset - initial;
 
-    <span class="kw">let</span> <span class="ident">column_chunk</span> <span class="op">=</span> <span class="ident">build_column_chunk</span>(<span class="kw-2">&amp;</span><span class="ident">specs</span>, <span class="ident">descriptor</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>column_chunk = build_column_chunk(<span class="kw-2">&amp;</span>specs, descriptor)<span class="question-mark">?</span>;
 
-    <span class="comment">// write metadata</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">protocol</span> <span class="op">=</span> <span class="ident">TCompactOutputProtocol::new</span>(<span class="ident">writer</span>);
-    <span class="ident">bytes_written</span> <span class="op">+</span><span class="op">=</span> <span class="ident">column_chunk</span>
-        .<span class="ident">meta_data</span>
-        .<span class="ident">as_ref</span>()
-        .<span class="ident">unwrap</span>()
-        .<span class="ident">write_to_out_protocol</span>(<span class="kw-2">&amp;mut</span> <span class="ident">protocol</span>)<span class="question-mark">?</span> <span class="kw">as</span> <span class="ident">u64</span>;
-    <span class="ident">protocol</span>.<span class="ident">flush</span>()<span class="question-mark">?</span>;
+    <span class="comment">// write metadata
+    </span><span class="kw">let </span><span class="kw-2">mut </span>protocol = TCompactOutputProtocol::new(writer);
+    bytes_written += column_chunk
+        .meta_data
+        .as_ref()
+        .unwrap()
+        .write_to_out_protocol(<span class="kw-2">&amp;mut </span>protocol)<span class="question-mark">? </span><span class="kw">as </span>u64;
+    protocol.flush()<span class="question-mark">?</span>;
 
-    <span class="prelude-val">Ok</span>((<span class="ident">column_chunk</span>, <span class="ident">specs</span>, <span class="ident">bytes_written</span>))
+    <span class="prelude-val">Ok</span>((column_chunk, specs, bytes_written))
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;async&quot;</span>)]</span>
-<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">docsrs</span>, <span class="ident">doc</span>(<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;async&quot;</span>)))]</span>
-<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">write_column_chunk_async</span><span class="op">&lt;</span><span class="ident">W</span>, <span class="ident">E</span><span class="op">&gt;</span>(
-    <span class="ident">writer</span>: <span class="kw-2">&amp;mut</span> <span class="ident">W</span>,
-    <span class="kw-2">mut</span> <span class="ident">offset</span>: <span class="ident">u64</span>,
-    <span class="ident">descriptor</span>: <span class="kw-2">&amp;</span><span class="ident">ColumnDescriptor</span>,
-    <span class="kw-2">mut</span> <span class="ident">compressed_pages</span>: <span class="ident">DynStreamingIterator</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">CompressedPage</span>, <span class="ident">E</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">ColumnChunk</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">PageWriteSpec</span><span class="op">&gt;</span>, <span class="ident">u64</span>)<span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">W</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span> <span class="op">+</span> <span class="ident">Send</span>,
-    <span class="ident">Error</span>: <span class="ident">From</span><span class="op">&lt;</span><span class="ident">E</span><span class="op">&gt;</span>,
-    <span class="ident">E</span>: <span class="ident">std::error::Error</span>,
+<span class="attribute">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+#[cfg_attr(docsrs, doc(cfg(feature = <span class="string">&quot;async&quot;</span>)))]
+</span><span class="kw">pub async fn </span>write_column_chunk_async&lt;W, E&gt;(
+    writer: <span class="kw-2">&amp;mut </span>W,
+    <span class="kw-2">mut </span>offset: u64,
+    descriptor: <span class="kw-2">&amp;</span>ColumnDescriptor,
+    <span class="kw-2">mut </span>compressed_pages: DynStreamingIterator&lt;<span class="lifetime">&#39;_</span>, CompressedPage, E&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(ColumnChunk, Vec&lt;PageWriteSpec&gt;, u64)&gt;
+<span class="kw">where
+    </span>W: AsyncWrite + Unpin + Send,
+    Error: From&lt;E&gt;,
+    E: std::error::Error,
 {
-    <span class="kw">let</span> <span class="ident">initial</span> <span class="op">=</span> <span class="ident">offset</span>;
-    <span class="comment">// write every page</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">specs</span> <span class="op">=</span> <span class="macro">vec!</span>[];
-    <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">compressed_page</span>) <span class="op">=</span> <span class="ident">compressed_pages</span>.<span class="ident">next</span>()<span class="question-mark">?</span> {
-        <span class="kw">let</span> <span class="ident">spec</span> <span class="op">=</span> <span class="ident">write_page_async</span>(<span class="ident">writer</span>, <span class="ident">offset</span>, <span class="ident">compressed_page</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="ident">offset</span> <span class="op">+</span><span class="op">=</span> <span class="ident">spec</span>.<span class="ident">bytes_written</span>;
-        <span class="ident">specs</span>.<span class="ident">push</span>(<span class="ident">spec</span>);
+    <span class="kw">let </span>initial = offset;
+    <span class="comment">// write every page
+    </span><span class="kw">let </span><span class="kw-2">mut </span>specs = <span class="macro">vec!</span>[];
+    <span class="kw">while let </span><span class="prelude-val">Some</span>(compressed_page) = compressed_pages.next()<span class="question-mark">? </span>{
+        <span class="kw">let </span>spec = write_page_async(writer, offset, compressed_page).<span class="kw">await</span><span class="question-mark">?</span>;
+        offset += spec.bytes_written;
+        specs.push(spec);
     }
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bytes_written</span> <span class="op">=</span> <span class="ident">offset</span> <span class="op">-</span> <span class="ident">initial</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>bytes_written = offset - initial;
 
-    <span class="kw">let</span> <span class="ident">column_chunk</span> <span class="op">=</span> <span class="ident">build_column_chunk</span>(<span class="kw-2">&amp;</span><span class="ident">specs</span>, <span class="ident">descriptor</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>column_chunk = build_column_chunk(<span class="kw-2">&amp;</span>specs, descriptor)<span class="question-mark">?</span>;
 
-    <span class="comment">// write metadata</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">protocol</span> <span class="op">=</span> <span class="ident">TCompactOutputStreamProtocol::new</span>(<span class="ident">writer</span>);
-    <span class="ident">bytes_written</span> <span class="op">+</span><span class="op">=</span> <span class="ident">column_chunk</span>
-        .<span class="ident">meta_data</span>
-        .<span class="ident">as_ref</span>()
-        .<span class="ident">unwrap</span>()
-        .<span class="ident">write_to_out_stream_protocol</span>(<span class="kw-2">&amp;mut</span> <span class="ident">protocol</span>)
-        .<span class="kw">await</span><span class="question-mark">?</span> <span class="kw">as</span> <span class="ident">u64</span>;
-    <span class="ident">protocol</span>.<span class="ident">flush</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="comment">// write metadata
+    </span><span class="kw">let </span><span class="kw-2">mut </span>protocol = TCompactOutputStreamProtocol::new(writer);
+    bytes_written += column_chunk
+        .meta_data
+        .as_ref()
+        .unwrap()
+        .write_to_out_stream_protocol(<span class="kw-2">&amp;mut </span>protocol)
+        .<span class="kw">await</span><span class="question-mark">? </span><span class="kw">as </span>u64;
+    protocol.flush().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="prelude-val">Ok</span>((<span class="ident">column_chunk</span>, <span class="ident">specs</span>, <span class="ident">bytes_written</span>))
+    <span class="prelude-val">Ok</span>((column_chunk, specs, bytes_written))
 }
 
-<span class="kw">fn</span> <span class="ident">build_column_chunk</span>(
-    <span class="ident">specs</span>: <span class="kw-2">&amp;</span>[<span class="ident">PageWriteSpec</span>],
-    <span class="ident">descriptor</span>: <span class="kw-2">&amp;</span><span class="ident">ColumnDescriptor</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ColumnChunk</span><span class="op">&gt;</span> {
-    <span class="comment">// compute stats to build header at the end of the chunk</span>
+<span class="kw">fn </span>build_column_chunk(
+    specs: <span class="kw-2">&amp;</span>[PageWriteSpec],
+    descriptor: <span class="kw-2">&amp;</span>ColumnDescriptor,
+) -&gt; <span class="prelude-ty">Result</span>&lt;ColumnChunk&gt; {
+    <span class="comment">// compute stats to build header at the end of the chunk
 
-    <span class="kw">let</span> <span class="ident">compression</span> <span class="op">=</span> <span class="ident">specs</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">spec</span><span class="op">|</span> <span class="ident">spec</span>.<span class="ident">compression</span>)
-        .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">HashSet</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-    <span class="kw">if</span> <span class="ident">compression</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="number">1</span> {
-        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident"><span class="kw">crate</span>::error::Error::oos</span>(
+    </span><span class="kw">let </span>compression = specs
+        .iter()
+        .map(|spec| spec.compression)
+        .collect::&lt;HashSet&lt;<span class="kw">_</span>&gt;&gt;();
+    <span class="kw">if </span>compression.len() &gt; <span class="number">1 </span>{
+        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="kw">crate</span>::error::Error::oos(
             <span class="string">&quot;All pages within a column chunk must be compressed with the same codec&quot;</span>,
         ));
     }
-    <span class="kw">let</span> <span class="ident">compression</span> <span class="op">=</span> <span class="ident">compression</span>
-        .<span class="ident">into_iter</span>()
-        .<span class="ident">next</span>()
-        .<span class="ident">unwrap_or</span>(<span class="ident">Compression::Uncompressed</span>);
+    <span class="kw">let </span>compression = compression
+        .into_iter()
+        .next()
+        .unwrap_or(Compression::Uncompressed);
 
-    <span class="comment">// SPEC: the total compressed size is the total compressed size of each page + the header size</span>
-    <span class="kw">let</span> <span class="ident">total_compressed_size</span> <span class="op">=</span> <span class="ident">specs</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">header_size</span> <span class="kw">as</span> <span class="ident">i64</span> <span class="op">+</span> <span class="ident">x</span>.<span class="ident">header</span>.<span class="ident">compressed_page_size</span> <span class="kw">as</span> <span class="ident">i64</span>)
-        .<span class="ident">sum</span>();
-    <span class="comment">// SPEC: the total compressed size is the total compressed size of each page + the header size</span>
-    <span class="kw">let</span> <span class="ident">total_uncompressed_size</span> <span class="op">=</span> <span class="ident">specs</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">header_size</span> <span class="kw">as</span> <span class="ident">i64</span> <span class="op">+</span> <span class="ident">x</span>.<span class="ident">header</span>.<span class="ident">uncompressed_page_size</span> <span class="kw">as</span> <span class="ident">i64</span>)
-        .<span class="ident">sum</span>();
-    <span class="kw">let</span> <span class="ident">data_page_offset</span> <span class="op">=</span> <span class="ident">specs</span>.<span class="ident">first</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">spec</span><span class="op">|</span> <span class="ident">spec</span>.<span class="ident">offset</span>).<span class="ident">unwrap_or</span>(<span class="number">0</span>) <span class="kw">as</span> <span class="ident">i64</span>;
-    <span class="kw">let</span> <span class="ident">num_values</span> <span class="op">=</span> <span class="ident">specs</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">spec</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">type_</span> <span class="op">=</span> <span class="ident">spec</span>.<span class="ident">header</span>.<span class="ident">type_</span>.<span class="ident">try_into</span>().<span class="ident">unwrap</span>();
-            <span class="kw">match</span> <span class="ident">type_</span> {
-                <span class="ident">PageType::DataPage</span> =&gt; {
-                    <span class="ident">spec</span>.<span class="ident">header</span>.<span class="ident">data_page_header</span>.<span class="ident">as_ref</span>().<span class="ident">unwrap</span>().<span class="ident">num_values</span> <span class="kw">as</span> <span class="ident">i64</span>
+    <span class="comment">// SPEC: the total compressed size is the total compressed size of each page + the header size
+    </span><span class="kw">let </span>total_compressed_size = specs
+        .iter()
+        .map(|x| x.header_size <span class="kw">as </span>i64 + x.header.compressed_page_size <span class="kw">as </span>i64)
+        .sum();
+    <span class="comment">// SPEC: the total compressed size is the total compressed size of each page + the header size
+    </span><span class="kw">let </span>total_uncompressed_size = specs
+        .iter()
+        .map(|x| x.header_size <span class="kw">as </span>i64 + x.header.uncompressed_page_size <span class="kw">as </span>i64)
+        .sum();
+    <span class="kw">let </span>data_page_offset = specs.first().map(|spec| spec.offset).unwrap_or(<span class="number">0</span>) <span class="kw">as </span>i64;
+    <span class="kw">let </span>num_values = specs
+        .iter()
+        .map(|spec| {
+            <span class="kw">let </span>type_ = spec.header.type_.try_into().unwrap();
+            <span class="kw">match </span>type_ {
+                PageType::DataPage =&gt; {
+                    spec.header.data_page_header.as_ref().unwrap().num_values <span class="kw">as </span>i64
                 }
-                <span class="ident">PageType::DataPageV2</span> =&gt; {
-                    <span class="ident">spec</span>.<span class="ident">header</span>.<span class="ident">data_page_header_v2</span>.<span class="ident">as_ref</span>().<span class="ident">unwrap</span>().<span class="ident">num_values</span> <span class="kw">as</span> <span class="ident">i64</span>
+                PageType::DataPageV2 =&gt; {
+                    spec.header.data_page_header_v2.as_ref().unwrap().num_values <span class="kw">as </span>i64
                 }
-                <span class="kw">_</span> =&gt; <span class="number">0</span>, <span class="comment">// only data pages contribute</span>
-            }
+                <span class="kw">_ </span>=&gt; <span class="number">0</span>, <span class="comment">// only data pages contribute
+            </span>}
         })
-        .<span class="ident">sum</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">encodings</span> <span class="op">=</span> <span class="ident">specs</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">flat_map</span>(<span class="op">|</span><span class="ident">spec</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">type_</span> <span class="op">=</span> <span class="ident">spec</span>.<span class="ident">header</span>.<span class="ident">type_</span>.<span class="ident">try_into</span>().<span class="ident">unwrap</span>();
-            <span class="kw">match</span> <span class="ident">type_</span> {
-                <span class="ident">PageType::DataPage</span> =&gt; <span class="macro">vec!</span>[
-                    <span class="ident">spec</span>.<span class="ident">header</span>.<span class="ident">data_page_header</span>.<span class="ident">as_ref</span>().<span class="ident">unwrap</span>().<span class="ident">encoding</span>,
-                    <span class="ident">Encoding::Rle</span>.<span class="ident">into</span>(),
+        .sum();
+    <span class="kw">let </span><span class="kw-2">mut </span>encodings = specs
+        .iter()
+        .flat_map(|spec| {
+            <span class="kw">let </span>type_ = spec.header.type_.try_into().unwrap();
+            <span class="kw">match </span>type_ {
+                PageType::DataPage =&gt; <span class="macro">vec!</span>[
+                    spec.header.data_page_header.as_ref().unwrap().encoding,
+                    Encoding::Rle.into(),
                 ],
-                <span class="ident">PageType::DataPageV2</span> =&gt; {
+                PageType::DataPageV2 =&gt; {
                     <span class="macro">vec!</span>[
-                        <span class="ident">spec</span>.<span class="ident">header</span>.<span class="ident">data_page_header_v2</span>.<span class="ident">as_ref</span>().<span class="ident">unwrap</span>().<span class="ident">encoding</span>,
-                        <span class="ident">Encoding::Rle</span>.<span class="ident">into</span>(),
+                        spec.header.data_page_header_v2.as_ref().unwrap().encoding,
+                        Encoding::Rle.into(),
                     ]
                 }
-                <span class="ident">PageType::DictionaryPage</span> =&gt; <span class="macro">vec!</span>[
-                    <span class="ident">spec</span>.<span class="ident">header</span>
-                        .<span class="ident">dictionary_page_header</span>
-                        .<span class="ident">as_ref</span>()
-                        .<span class="ident">unwrap</span>()
-                        .<span class="ident">encoding</span>,
+                PageType::DictionaryPage =&gt; <span class="macro">vec!</span>[
+                    spec.header
+                        .dictionary_page_header
+                        .as_ref()
+                        .unwrap()
+                        .encoding,
                 ],
             }
         })
-        .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">HashSet</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>() <span class="comment">// unique</span>
-        .<span class="ident">into_iter</span>() <span class="comment">// to vec</span>
-        .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+        .collect::&lt;HashSet&lt;<span class="kw">_</span>&gt;&gt;() <span class="comment">// unique
+        </span>.into_iter() <span class="comment">// to vec
+        </span>.collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-    <span class="comment">// Sort the encodings to have deterministic metadata</span>
-    <span class="ident">encodings</span>.<span class="ident">sort</span>();
+    <span class="comment">// Sort the encodings to have deterministic metadata
+    </span>encodings.sort();
 
-    <span class="kw">let</span> <span class="ident">statistics</span> <span class="op">=</span> <span class="ident">specs</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="kw-2">&amp;</span><span class="ident">x</span>.<span class="ident">statistics</span>).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-    <span class="kw">let</span> <span class="ident">statistics</span> <span class="op">=</span> <span class="ident">reduce</span>(<span class="kw-2">&amp;</span><span class="ident">statistics</span>)<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">statistics</span> <span class="op">=</span> <span class="ident">statistics</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">serialize_statistics</span>(<span class="ident">x</span>.<span class="ident">as_ref</span>()));
+    <span class="kw">let </span>statistics = specs.iter().map(|x| <span class="kw-2">&amp;</span>x.statistics).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+    <span class="kw">let </span>statistics = reduce(<span class="kw-2">&amp;</span>statistics)<span class="question-mark">?</span>;
+    <span class="kw">let </span>statistics = statistics.map(|x| serialize_statistics(x.as_ref()));
 
-    <span class="kw">let</span> (<span class="ident">type_</span>, <span class="kw">_</span>): (<span class="ident">Type</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span>) <span class="op">=</span> <span class="ident">descriptor</span>.<span class="ident">descriptor</span>.<span class="ident">primitive_type</span>.<span class="ident">physical_type</span>.<span class="ident">into</span>();
+    <span class="kw">let </span>(type_, <span class="kw">_</span>): (Type, <span class="prelude-ty">Option</span>&lt;i32&gt;) = descriptor.descriptor.primitive_type.physical_type.into();
 
-    <span class="kw">let</span> <span class="ident">metadata</span> <span class="op">=</span> <span class="ident">ColumnMetaData</span> {
-        <span class="ident">type_</span>,
-        <span class="ident">encodings</span>,
-        <span class="ident">path_in_schema</span>: <span class="ident">descriptor</span>.<span class="ident">path_in_schema</span>.<span class="ident">clone</span>(),
-        <span class="ident">codec</span>: <span class="ident">compression</span>.<span class="ident">into</span>(),
-        <span class="ident">num_values</span>,
-        <span class="ident">total_uncompressed_size</span>,
-        <span class="ident">total_compressed_size</span>,
-        <span class="ident">key_value_metadata</span>: <span class="prelude-val">None</span>,
-        <span class="ident">data_page_offset</span>,
-        <span class="ident">index_page_offset</span>: <span class="prelude-val">None</span>,
-        <span class="ident">dictionary_page_offset</span>: <span class="prelude-val">None</span>,
-        <span class="ident">statistics</span>,
-        <span class="ident">encoding_stats</span>: <span class="prelude-val">None</span>,
-        <span class="ident">bloom_filter_offset</span>: <span class="prelude-val">None</span>,
+    <span class="kw">let </span>metadata = ColumnMetaData {
+        type_,
+        encodings,
+        path_in_schema: descriptor.path_in_schema.clone(),
+        codec: compression.into(),
+        num_values,
+        total_uncompressed_size,
+        total_compressed_size,
+        key_value_metadata: <span class="prelude-val">None</span>,
+        data_page_offset,
+        index_page_offset: <span class="prelude-val">None</span>,
+        dictionary_page_offset: <span class="prelude-val">None</span>,
+        statistics,
+        encoding_stats: <span class="prelude-val">None</span>,
+        bloom_filter_offset: <span class="prelude-val">None</span>,
     };
 
-    <span class="prelude-val">Ok</span>(<span class="ident">ColumnChunk</span> {
-        <span class="ident">file_path</span>: <span class="prelude-val">None</span>, <span class="comment">// same file for now.</span>
-        <span class="ident">file_offset</span>: <span class="ident">data_page_offset</span> <span class="op">+</span> <span class="ident">total_compressed_size</span>,
-        <span class="ident">meta_data</span>: <span class="prelude-val">Some</span>(<span class="ident">metadata</span>),
-        <span class="ident">offset_index_offset</span>: <span class="prelude-val">None</span>,
-        <span class="ident">offset_index_length</span>: <span class="prelude-val">None</span>,
-        <span class="ident">column_index_offset</span>: <span class="prelude-val">None</span>,
-        <span class="ident">column_index_length</span>: <span class="prelude-val">None</span>,
-        <span class="ident">crypto_metadata</span>: <span class="prelude-val">None</span>,
-        <span class="ident">encrypted_column_metadata</span>: <span class="prelude-val">None</span>,
+    <span class="prelude-val">Ok</span>(ColumnChunk {
+        file_path: <span class="prelude-val">None</span>, <span class="comment">// same file for now.
+        </span>file_offset: data_page_offset + total_compressed_size,
+        meta_data: <span class="prelude-val">Some</span>(metadata),
+        offset_index_offset: <span class="prelude-val">None</span>,
+        offset_index_length: <span class="prelude-val">None</span>,
+        column_index_offset: <span class="prelude-val">None</span>,
+        column_index_length: <span class="prelude-val">None</span>,
+        crypto_metadata: <span class="prelude-val">None</span>,
+        encrypted_column_metadata: <span class="prelude-val">None</span>,
     })
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="parquet2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="parquet2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

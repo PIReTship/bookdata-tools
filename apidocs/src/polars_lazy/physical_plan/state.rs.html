@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.25.1/src/physical_plan/state.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>state.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../polars_lazy/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.25.1/src/physical_plan/state.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>state.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../polars_lazy/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -229,236 +229,236 @@
 <span id="229">229</span>
 <span id="230">230</span>
 <span id="231">231</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::borrow::Cow</span>;
-<span class="kw">use</span> <span class="ident">std::sync::Mutex</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
+<span class="kw">use </span>std::sync::Mutex;
 
-<span class="kw">use</span> <span class="ident">bitflags::bitflags</span>;
-<span class="kw">use</span> <span class="ident">polars_core::frame::groupby::GroupsProxy</span>;
-<span class="kw">use</span> <span class="ident">polars_core::frame::hash_join::JoinOptIds</span>;
-<span class="kw">use</span> <span class="ident">polars_core::prelude</span>::<span class="kw-2">*</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;csv-file&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ipc&quot;</span>))]</span>
-<span class="kw">use</span> <span class="ident">polars_plan::logical_plan::FileFingerPrint</span>;
+<span class="kw">use </span>bitflags::bitflags;
+<span class="kw">use </span>polars_core::frame::groupby::GroupsProxy;
+<span class="kw">use </span>polars_core::frame::hash_join::JoinOptIds;
+<span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
+<span class="attribute">#[cfg(any(feature = <span class="string">&quot;parquet&quot;</span>, feature = <span class="string">&quot;csv-file&quot;</span>, feature = <span class="string">&quot;ipc&quot;</span>))]
+</span><span class="kw">use </span>polars_plan::logical_plan::FileFingerPrint;
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ipc&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;csv-file&quot;</span>))]</span>
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::file_cache::FileCache</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::physical_plan::node_timer::NodeTimer</span>;
+<span class="attribute">#[cfg(any(feature = <span class="string">&quot;ipc&quot;</span>, feature = <span class="string">&quot;parquet&quot;</span>, feature = <span class="string">&quot;csv-file&quot;</span>))]
+</span><span class="kw">use </span><span class="kw">super</span>::file_cache::FileCache;
+<span class="kw">use </span><span class="kw">crate</span>::physical_plan::node_timer::NodeTimer;
 
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">JoinTuplesCache</span> <span class="op">=</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">PlHashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">JoinOptIds</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>;
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">GroupsProxyCache</span> <span class="op">=</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">PlHashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">GroupsProxy</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+<span class="kw">pub type </span>JoinTuplesCache = Arc&lt;Mutex&lt;PlHashMap&lt;String, JoinOptIds&gt;&gt;&gt;;
+<span class="kw">pub type </span>GroupsProxyCache = Arc&lt;Mutex&lt;PlHashMap&lt;String, GroupsProxy&gt;&gt;&gt;;
 
-<span class="macro">bitflags!</span> {
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct</span> <span class="ident">StateFlags</span>: <span class="ident">u8</span> {
-        <span class="doccomment">/// More verbose logging</span>
-        <span class="kw">const</span> <span class="ident">VERBOSE</span> <span class="op">=</span> <span class="number">0x01</span>;
-        <span class="doccomment">/// Indicates that window expression&#39;s [`GroupTuples`] may be cached.</span>
-        <span class="kw">const</span> <span class="ident">CACHE_WINDOW_EXPR</span> <span class="op">=</span> <span class="number">0x02</span>;
-        <span class="doccomment">/// Indicates that a groupby operations groups may overlap.</span>
-        <span class="doccomment">/// If this is the case, an `explode` will yield more values than rows in original `df`,</span>
-        <span class="doccomment">/// this breaks some assumptions</span>
-        <span class="kw">const</span> <span class="ident">OVERLAPPING_GROUPS</span> <span class="op">=</span> <span class="number">0x04</span>;
+<span class="macro">bitflags! </span>{
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>StateFlags: u8 {
+        <span class="doccomment">/// More verbose logging
+        </span><span class="kw">const </span>VERBOSE = <span class="number">0x01</span>;
+        <span class="doccomment">/// Indicates that window expression&#39;s [`GroupTuples`] may be cached.
+        </span><span class="kw">const </span>CACHE_WINDOW_EXPR = <span class="number">0x02</span>;
+        <span class="doccomment">/// Indicates that a groupby operations groups may overlap.
+        /// If this is the case, an `explode` will yield more values than rows in original `df`,
+        /// this breaks some assumptions
+        </span><span class="kw">const </span>OVERLAPPING_GROUPS = <span class="number">0x04</span>;
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">StateFlags</span> {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">StateFlags::CACHE_WINDOW_EXPR</span>
+<span class="kw">impl </span>Default <span class="kw">for </span>StateFlags {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        StateFlags::CACHE_WINDOW_EXPR
     }
 }
 
-<span class="kw">impl</span> <span class="ident">StateFlags</span> {
-    <span class="kw">fn</span> <span class="ident">init</span>() -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">verbose</span> <span class="op">=</span> <span class="ident">std::env::var</span>(<span class="string">&quot;POLARS_VERBOSE&quot;</span>).<span class="ident">as_deref</span>().<span class="ident">unwrap_or</span>(<span class="string">&quot;0&quot;</span>) <span class="op">==</span> <span class="string">&quot;1&quot;</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">flags</span>: <span class="ident">StateFlags</span> <span class="op">=</span> <span class="ident">Default::default</span>();
-        <span class="kw">if</span> <span class="ident">verbose</span> {
-            <span class="ident">flags</span> <span class="op">|</span><span class="op">=</span> <span class="ident">StateFlags::VERBOSE</span>;
+<span class="kw">impl </span>StateFlags {
+    <span class="kw">fn </span>init() -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>verbose = std::env::var(<span class="string">&quot;POLARS_VERBOSE&quot;</span>).as_deref().unwrap_or(<span class="string">&quot;0&quot;</span>) == <span class="string">&quot;1&quot;</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>flags: StateFlags = Default::default();
+        <span class="kw">if </span>verbose {
+            flags |= StateFlags::VERBOSE;
         }
-        <span class="ident">flags</span>
+        flags
     }
 }
 
-<span class="doccomment">/// State/ cache that is maintained during the Execution of the physical plan.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ExecutionState</span> {
-    <span class="comment">// cached by a `.cache` call and kept in memory for the duration of the plan.</span>
-    <span class="ident">df_cache</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">PlHashMap</span><span class="op">&lt;</span><span class="ident">usize</span>, <span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="comment">// cache file reads until all branches got there file, then we delete it</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ipc&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;csv-file&quot;</span>))]</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">file_cache</span>: <span class="ident">FileCache</span>,
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">schema_cache</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">SchemaRef</span><span class="op">&gt;</span>,
-    <span class="doccomment">/// Used by Window Expression to prevent redundant grouping</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">group_tuples</span>: <span class="ident">GroupsProxyCache</span>,
-    <span class="doccomment">/// Used by Window Expression to prevent redundant joins</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">join_tuples</span>: <span class="ident">JoinTuplesCache</span>,
-    <span class="comment">// every join/union split gets an increment to distinguish between schema state</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">branch_idx</span>: <span class="ident">usize</span>,
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">flags</span>: <span class="ident">StateFlags</span>,
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="ident">ext_contexts</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">node_timer</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">NodeTimer</span><span class="op">&gt;</span>,
+<span class="doccomment">/// State/ cache that is maintained during the Execution of the physical plan.
+</span><span class="kw">pub struct </span>ExecutionState {
+    <span class="comment">// cached by a `.cache` call and kept in memory for the duration of the plan.
+    </span>df_cache: Arc&lt;Mutex&lt;PlHashMap&lt;usize, DataFrame&gt;&gt;&gt;,
+    <span class="comment">// cache file reads until all branches got there file, then we delete it
+    </span><span class="attribute">#[cfg(any(feature = <span class="string">&quot;ipc&quot;</span>, feature = <span class="string">&quot;parquet&quot;</span>, feature = <span class="string">&quot;csv-file&quot;</span>))]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) file_cache: FileCache,
+    <span class="kw">pub</span>(<span class="kw">super</span>) schema_cache: <span class="prelude-ty">Option</span>&lt;SchemaRef&gt;,
+    <span class="doccomment">/// Used by Window Expression to prevent redundant grouping
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) group_tuples: GroupsProxyCache,
+    <span class="doccomment">/// Used by Window Expression to prevent redundant joins
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) join_tuples: JoinTuplesCache,
+    <span class="comment">// every join/union split gets an increment to distinguish between schema state
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) branch_idx: usize,
+    <span class="kw">pub</span>(<span class="kw">super</span>) flags: StateFlags,
+    <span class="kw">pub</span>(<span class="kw">super</span>) ext_contexts: Arc&lt;Vec&lt;DataFrame&gt;&gt;,
+    node_timer: <span class="prelude-ty">Option</span>&lt;NodeTimer&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">ExecutionState</span> {
-    <span class="doccomment">/// Toggle this to measure execution times.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">time_nodes</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">node_timer</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">NodeTimer::new</span>())
+<span class="kw">impl </span>ExecutionState {
+    <span class="doccomment">/// Toggle this to measure execution times.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>time_nodes(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.node_timer = <span class="prelude-val">Some</span>(NodeTimer::new())
     }
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">has_node_timer</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">node_timer</span>.<span class="ident">is_some</span>()
-    }
-
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">finish_timer</span>(<span class="self">self</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">node_timer</span>.<span class="ident">unwrap</span>().<span class="ident">finish</span>()
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>has_node_timer(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.node_timer.is_some()
     }
 
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">record</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">F</span>: <span class="ident">FnOnce</span>() -&gt; <span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">func</span>: <span class="ident">F</span>, <span class="ident">name</span>: <span class="ident">Cow</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">str</span><span class="op">&gt;</span>) -&gt; <span class="ident">T</span> {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">node_timer</span> {
-            <span class="prelude-val">None</span> =&gt; <span class="ident">func</span>(),
-            <span class="prelude-val">Some</span>(<span class="ident">timer</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">start</span> <span class="op">=</span> <span class="ident">std::time::Instant::now</span>();
-                <span class="kw">let</span> <span class="ident">out</span> <span class="op">=</span> <span class="ident">func</span>();
-                <span class="kw">let</span> <span class="ident">end</span> <span class="op">=</span> <span class="ident">std::time::Instant::now</span>();
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>finish_timer(<span class="self">self</span>) -&gt; PolarsResult&lt;DataFrame&gt; {
+        <span class="self">self</span>.node_timer.unwrap().finish()
+    }
 
-                <span class="ident">timer</span>.<span class="ident">store</span>(<span class="ident">start</span>, <span class="ident">end</span>, <span class="ident">name</span>.<span class="ident">as_ref</span>().<span class="ident">to_string</span>());
-                <span class="ident">out</span>
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>record&lt;T, F: FnOnce() -&gt; T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, func: F, name: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;) -&gt; T {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.node_timer {
+            <span class="prelude-val">None </span>=&gt; func(),
+            <span class="prelude-val">Some</span>(timer) =&gt; {
+                <span class="kw">let </span>start = std::time::Instant::now();
+                <span class="kw">let </span>out = func();
+                <span class="kw">let </span>end = std::time::Instant::now();
+
+                timer.store(start, end, name.as_ref().to_string());
+                out
             }
         }
     }
 
-    <span class="doccomment">/// Partially clones and partially clears state</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">split</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">df_cache</span>: <span class="self">self</span>.<span class="ident">df_cache</span>.<span class="ident">clone</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ipc&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;csv-file&quot;</span>))]</span>
-            <span class="ident">file_cache</span>: <span class="self">self</span>.<span class="ident">file_cache</span>.<span class="ident">clone</span>(),
-            <span class="ident">schema_cache</span>: <span class="ident">Default::default</span>(),
-            <span class="ident">group_tuples</span>: <span class="ident">Default::default</span>(),
-            <span class="ident">join_tuples</span>: <span class="ident">Default::default</span>(),
-            <span class="ident">branch_idx</span>: <span class="self">self</span>.<span class="ident">branch_idx</span>,
-            <span class="ident">flags</span>: <span class="self">self</span>.<span class="ident">flags</span>,
-            <span class="ident">ext_contexts</span>: <span class="self">self</span>.<span class="ident">ext_contexts</span>.<span class="ident">clone</span>(),
-            <span class="ident">node_timer</span>: <span class="self">self</span>.<span class="ident">node_timer</span>.<span class="ident">clone</span>(),
+    <span class="doccomment">/// Partially clones and partially clears state
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>split(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            df_cache: <span class="self">self</span>.df_cache.clone(),
+            <span class="attribute">#[cfg(any(feature = <span class="string">&quot;ipc&quot;</span>, feature = <span class="string">&quot;parquet&quot;</span>, feature = <span class="string">&quot;csv-file&quot;</span>))]
+            </span>file_cache: <span class="self">self</span>.file_cache.clone(),
+            schema_cache: Default::default(),
+            group_tuples: Default::default(),
+            join_tuples: Default::default(),
+            branch_idx: <span class="self">self</span>.branch_idx,
+            flags: <span class="self">self</span>.flags,
+            ext_contexts: <span class="self">self</span>.ext_contexts.clone(),
+            node_timer: <span class="self">self</span>.node_timer.clone(),
         }
     }
 
-    <span class="doccomment">/// clones and partially clears state</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">df_cache</span>: <span class="self">self</span>.<span class="ident">df_cache</span>.<span class="ident">clone</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ipc&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;csv-file&quot;</span>))]</span>
-            <span class="ident">file_cache</span>: <span class="self">self</span>.<span class="ident">file_cache</span>.<span class="ident">clone</span>(),
-            <span class="ident">schema_cache</span>: <span class="self">self</span>.<span class="ident">schema_cache</span>.<span class="ident">clone</span>(),
-            <span class="ident">group_tuples</span>: <span class="self">self</span>.<span class="ident">group_tuples</span>.<span class="ident">clone</span>(),
-            <span class="ident">join_tuples</span>: <span class="self">self</span>.<span class="ident">join_tuples</span>.<span class="ident">clone</span>(),
-            <span class="ident">branch_idx</span>: <span class="self">self</span>.<span class="ident">branch_idx</span>,
-            <span class="ident">flags</span>: <span class="self">self</span>.<span class="ident">flags</span>,
-            <span class="ident">ext_contexts</span>: <span class="self">self</span>.<span class="ident">ext_contexts</span>.<span class="ident">clone</span>(),
-            <span class="ident">node_timer</span>: <span class="self">self</span>.<span class="ident">node_timer</span>.<span class="ident">clone</span>(),
+    <span class="doccomment">/// clones and partially clears state
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            df_cache: <span class="self">self</span>.df_cache.clone(),
+            <span class="attribute">#[cfg(any(feature = <span class="string">&quot;ipc&quot;</span>, feature = <span class="string">&quot;parquet&quot;</span>, feature = <span class="string">&quot;csv-file&quot;</span>))]
+            </span>file_cache: <span class="self">self</span>.file_cache.clone(),
+            schema_cache: <span class="self">self</span>.schema_cache.clone(),
+            group_tuples: <span class="self">self</span>.group_tuples.clone(),
+            join_tuples: <span class="self">self</span>.join_tuples.clone(),
+            branch_idx: <span class="self">self</span>.branch_idx,
+            flags: <span class="self">self</span>.flags,
+            ext_contexts: <span class="self">self</span>.ext_contexts.clone(),
+            node_timer: <span class="self">self</span>.node_timer.clone(),
         }
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;csv-file&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ipc&quot;</span>)))]</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">with_finger_prints</span>(<span class="ident">finger_prints</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::new</span>()
+    <span class="attribute">#[cfg(not(any(feature = <span class="string">&quot;parquet&quot;</span>, feature = <span class="string">&quot;csv-file&quot;</span>, feature = <span class="string">&quot;ipc&quot;</span>)))]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>with_finger_prints(finger_prints: <span class="prelude-ty">Option</span>&lt;usize&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::new()
     }
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;csv-file&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ipc&quot;</span>))]</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">with_finger_prints</span>(<span class="ident">finger_prints</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">FileFingerPrint</span><span class="op">&gt;</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">df_cache</span>: <span class="ident">Arc::new</span>(<span class="ident">Mutex::new</span>(<span class="ident">PlHashMap::default</span>())),
-            <span class="ident">schema_cache</span>: <span class="ident">Default::default</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ipc&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;csv-file&quot;</span>))]</span>
-            <span class="ident">file_cache</span>: <span class="ident">FileCache::new</span>(<span class="ident">finger_prints</span>),
-            <span class="ident">group_tuples</span>: <span class="ident">Arc::new</span>(<span class="ident">Mutex::new</span>(<span class="ident">PlHashMap::default</span>())),
-            <span class="ident">join_tuples</span>: <span class="ident">Arc::new</span>(<span class="ident">Mutex::new</span>(<span class="ident">PlHashMap::default</span>())),
-            <span class="ident">branch_idx</span>: <span class="number">0</span>,
-            <span class="ident">flags</span>: <span class="ident">StateFlags::init</span>(),
-            <span class="ident">ext_contexts</span>: <span class="ident">Default::default</span>(),
-            <span class="ident">node_timer</span>: <span class="prelude-val">None</span>,
+    <span class="attribute">#[cfg(any(feature = <span class="string">&quot;parquet&quot;</span>, feature = <span class="string">&quot;csv-file&quot;</span>, feature = <span class="string">&quot;ipc&quot;</span>))]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>with_finger_prints(finger_prints: <span class="prelude-ty">Option</span>&lt;Vec&lt;FileFingerPrint&gt;&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            df_cache: Arc::new(Mutex::new(PlHashMap::default())),
+            schema_cache: Default::default(),
+            <span class="attribute">#[cfg(any(feature = <span class="string">&quot;ipc&quot;</span>, feature = <span class="string">&quot;parquet&quot;</span>, feature = <span class="string">&quot;csv-file&quot;</span>))]
+            </span>file_cache: FileCache::new(finger_prints),
+            group_tuples: Arc::new(Mutex::new(PlHashMap::default())),
+            join_tuples: Arc::new(Mutex::new(PlHashMap::default())),
+            branch_idx: <span class="number">0</span>,
+            flags: StateFlags::init(),
+            ext_contexts: Default::default(),
+            node_timer: <span class="prelude-val">None</span>,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">verbose</span> <span class="op">=</span> <span class="ident">std::env::var</span>(<span class="string">&quot;POLARS_VERBOSE&quot;</span>).<span class="ident">as_deref</span>().<span class="ident">unwrap_or</span>(<span class="string">&quot;0&quot;</span>) <span class="op">==</span> <span class="string">&quot;1&quot;</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">flags</span>: <span class="ident">StateFlags</span> <span class="op">=</span> <span class="ident">Default::default</span>();
-        <span class="kw">if</span> <span class="ident">verbose</span> {
-            <span class="ident">flags</span> <span class="op">|</span><span class="op">=</span> <span class="ident">StateFlags::VERBOSE</span>;
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>verbose = std::env::var(<span class="string">&quot;POLARS_VERBOSE&quot;</span>).as_deref().unwrap_or(<span class="string">&quot;0&quot;</span>) == <span class="string">&quot;1&quot;</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>flags: StateFlags = Default::default();
+        <span class="kw">if </span>verbose {
+            flags |= StateFlags::VERBOSE;
         }
-        <span class="self">Self</span> {
-            <span class="ident">df_cache</span>: <span class="ident">Default::default</span>(),
-            <span class="ident">schema_cache</span>: <span class="ident">Default::default</span>(),
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ipc&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;csv-file&quot;</span>))]</span>
-            <span class="ident">file_cache</span>: <span class="ident">FileCache::new</span>(<span class="prelude-val">None</span>),
-            <span class="ident">group_tuples</span>: <span class="ident">Default::default</span>(),
-            <span class="ident">join_tuples</span>: <span class="ident">Default::default</span>(),
-            <span class="ident">branch_idx</span>: <span class="number">0</span>,
-            <span class="ident">flags</span>: <span class="ident">StateFlags::init</span>(),
-            <span class="ident">ext_contexts</span>: <span class="ident">Default::default</span>(),
-            <span class="ident">node_timer</span>: <span class="prelude-val">None</span>,
-        }
-    }
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">set_schema</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">schema</span>: <span class="ident">SchemaRef</span>) {
-        <span class="self">self</span>.<span class="ident">schema_cache</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">schema</span>);
-    }
-
-    <span class="doccomment">/// Set the schema. Typically at the start of a projection.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">may_set_schema</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">df</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>, <span class="ident">exprs_len</span>: <span class="ident">usize</span>) {
-        <span class="kw">if</span> <span class="ident">exprs_len</span> <span class="op">&gt;</span> <span class="number">1</span> <span class="op">&amp;&amp;</span> <span class="ident">df</span>.<span class="ident">get_columns</span>().<span class="ident">len</span>() <span class="op">&gt;</span> <span class="number">10</span> {
-            <span class="kw">let</span> <span class="ident">schema</span> <span class="op">=</span> <span class="ident">Arc::new</span>(<span class="ident">df</span>.<span class="ident">schema</span>());
-            <span class="self">self</span>.<span class="ident">set_schema</span>(<span class="ident">schema</span>);
+        <span class="self">Self </span>{
+            df_cache: Default::default(),
+            schema_cache: Default::default(),
+            <span class="attribute">#[cfg(any(feature = <span class="string">&quot;ipc&quot;</span>, feature = <span class="string">&quot;parquet&quot;</span>, feature = <span class="string">&quot;csv-file&quot;</span>))]
+            </span>file_cache: FileCache::new(<span class="prelude-val">None</span>),
+            group_tuples: Default::default(),
+            join_tuples: Default::default(),
+            branch_idx: <span class="number">0</span>,
+            flags: StateFlags::init(),
+            ext_contexts: Default::default(),
+            node_timer: <span class="prelude-val">None</span>,
         }
     }
-
-    <span class="doccomment">/// Clear the schema. Typically at the end of a projection.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">clear_schema_cache</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">schema_cache</span> <span class="op">=</span> <span class="prelude-val">None</span>;
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>set_schema(<span class="kw-2">&amp;mut </span><span class="self">self</span>, schema: SchemaRef) {
+        <span class="self">self</span>.schema_cache = <span class="prelude-val">Some</span>(schema);
     }
 
-    <span class="doccomment">/// Get the schema.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">get_schema</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">SchemaRef</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">schema_cache</span>.<span class="ident">clone</span>()
+    <span class="doccomment">/// Set the schema. Typically at the start of a projection.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>may_set_schema(<span class="kw-2">&amp;mut </span><span class="self">self</span>, df: <span class="kw-2">&amp;</span>DataFrame, exprs_len: usize) {
+        <span class="kw">if </span>exprs_len &gt; <span class="number">1 </span>&amp;&amp; df.get_columns().len() &gt; <span class="number">10 </span>{
+            <span class="kw">let </span>schema = Arc::new(df.schema());
+            <span class="self">self</span>.set_schema(schema);
+        }
     }
 
-    <span class="doccomment">/// Check if we have DataFrame in cache</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">cache_hit</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">DataFrame</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">guard</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">df_cache</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-        <span class="ident">guard</span>.<span class="ident">get</span>(<span class="ident">key</span>).<span class="ident">cloned</span>()
+    <span class="doccomment">/// Clear the schema. Typically at the end of a projection.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>clear_schema_cache(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.schema_cache = <span class="prelude-val">None</span>;
     }
 
-    <span class="doccomment">/// Store DataFrame in cache.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">store_cache</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="ident">usize</span>, <span class="ident">df</span>: <span class="ident">DataFrame</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">guard</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">df_cache</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-        <span class="ident">guard</span>.<span class="ident">insert</span>(<span class="ident">key</span>, <span class="ident">df</span>);
+    <span class="doccomment">/// Get the schema.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>get_schema(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;SchemaRef&gt; {
+        <span class="self">self</span>.schema_cache.clone()
     }
 
-    <span class="doccomment">/// Clear the cache used by the Window expressions</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">clear_expr_cache</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+    <span class="doccomment">/// Check if we have DataFrame in cache
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>cache_hit(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>usize) -&gt; <span class="prelude-ty">Option</span>&lt;DataFrame&gt; {
+        <span class="kw">let </span>guard = <span class="self">self</span>.df_cache.lock().unwrap();
+        guard.get(key).cloned()
+    }
+
+    <span class="doccomment">/// Store DataFrame in cache.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>store_cache(<span class="kw-2">&amp;</span><span class="self">self</span>, key: usize, df: DataFrame) {
+        <span class="kw">let </span><span class="kw-2">mut </span>guard = <span class="self">self</span>.df_cache.lock().unwrap();
+        guard.insert(key, df);
+    }
+
+    <span class="doccomment">/// Clear the cache used by the Window expressions
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>clear_expr_cache(<span class="kw-2">&amp;</span><span class="self">self</span>) {
         {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">lock</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">group_tuples</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-            <span class="ident">lock</span>.<span class="ident">clear</span>();
+            <span class="kw">let </span><span class="kw-2">mut </span>lock = <span class="self">self</span>.group_tuples.lock().unwrap();
+            lock.clear();
         }
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">lock</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">join_tuples</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-        <span class="ident">lock</span>.<span class="ident">clear</span>();
+        <span class="kw">let </span><span class="kw-2">mut </span>lock = <span class="self">self</span>.join_tuples.lock().unwrap();
+        lock.clear();
     }
 
-    <span class="doccomment">/// Indicates that window expression&#39;s [`GroupTuples`] may be cached.</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">cache_window</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">StateFlags::CACHE_WINDOW_EXPR</span>)
+    <span class="doccomment">/// Indicates that window expression&#39;s [`GroupTuples`] may be cached.
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>cache_window(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.flags.contains(StateFlags::CACHE_WINDOW_EXPR)
     }
 
-    <span class="doccomment">/// Indicates that a groupby operations groups may overlap.</span>
-    <span class="doccomment">/// If this is the case, an `explode` will yield more values than rows in original `df`,</span>
-    <span class="doccomment">/// this breaks some assumptions</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">overlapping_groups</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">StateFlags::OVERLAPPING_GROUPS</span>)
+    <span class="doccomment">/// Indicates that a groupby operations groups may overlap.
+    /// If this is the case, an `explode` will yield more values than rows in original `df`,
+    /// this breaks some assumptions
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>overlapping_groups(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.flags.contains(StateFlags::OVERLAPPING_GROUPS)
     }
 
-    <span class="doccomment">/// More verbose logging</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">verbose</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">StateFlags::VERBOSE</span>)
+    <span class="doccomment">/// More verbose logging
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>verbose(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.flags.contains(StateFlags::VERBOSE)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">ExecutionState</span> {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">ExecutionState::new</span>()
+<span class="kw">impl </span>Default <span class="kw">for </span>ExecutionState {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        ExecutionState::new()
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="polars_lazy" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="polars_lazy" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

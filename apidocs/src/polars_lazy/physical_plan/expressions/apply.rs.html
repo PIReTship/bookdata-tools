@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.25.1/src/physical_plan/expressions/apply.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>apply.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.25.1/src/physical_plan/expressions/apply.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>apply.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_lazy/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -393,400 +393,400 @@
 <span id="393">393</span>
 <span id="394">394</span>
 <span id="395">395</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use</span> <span class="ident">polars_arrow::utils::CustomIterTools</span>;
-<span class="kw">use</span> <span class="ident">polars_core::frame::groupby::GroupsProxy</span>;
-<span class="kw">use</span> <span class="ident">polars_core::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">polars_core::POOL</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident">polars_io::parquet::predicates::BatchStats</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident">polars_io::predicates::StatsEvaluator</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident">polars_plan::dsl::FunctionExpr</span>;
-<span class="kw">use</span> <span class="ident">rayon::prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span>polars_arrow::utils::CustomIterTools;
+<span class="kw">use </span>polars_core::frame::groupby::GroupsProxy;
+<span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>polars_core::POOL;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
+</span><span class="kw">use </span>polars_io::parquet::predicates::BatchStats;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
+</span><span class="kw">use </span>polars_io::predicates::StatsEvaluator;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
+</span><span class="kw">use </span>polars_plan::dsl::FunctionExpr;
+<span class="kw">use </span>rayon::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::physical_plan::expression_err</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::physical_plan::state::ExecutionState</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::physical_plan::expression_err;
+<span class="kw">use </span><span class="kw">crate</span>::physical_plan::state::ExecutionState;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ApplyExpr</span> {
-    <span class="kw">pub</span> <span class="ident">inputs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">function</span>: <span class="ident">SpecialEq</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">SeriesUdf</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">expr</span>: <span class="ident">Expr</span>,
-    <span class="kw">pub</span> <span class="ident">collect_groups</span>: <span class="ident">ApplyOptions</span>,
-    <span class="kw">pub</span> <span class="ident">auto_explode</span>: <span class="ident">bool</span>,
-    <span class="kw">pub</span> <span class="ident">allow_rename</span>: <span class="ident">bool</span>,
+<span class="kw">pub struct </span>ApplyExpr {
+    <span class="kw">pub </span>inputs: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
+    <span class="kw">pub </span>function: SpecialEq&lt;Arc&lt;<span class="kw">dyn </span>SeriesUdf&gt;&gt;,
+    <span class="kw">pub </span>expr: Expr,
+    <span class="kw">pub </span>collect_groups: ApplyOptions,
+    <span class="kw">pub </span>auto_explode: bool,
+    <span class="kw">pub </span>allow_rename: bool,
 }
 
-<span class="kw">impl</span> <span class="ident">ApplyExpr</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new_minimal</span>(
-        <span class="ident">inputs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">PhysicalExpr</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">function</span>: <span class="ident">SpecialEq</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">SeriesUdf</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">expr</span>: <span class="ident">Expr</span>,
-        <span class="ident">collect_groups</span>: <span class="ident">ApplyOptions</span>,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">inputs</span>,
-            <span class="ident">function</span>,
-            <span class="ident">expr</span>,
-            <span class="ident">collect_groups</span>,
-            <span class="ident">auto_explode</span>: <span class="bool-val">false</span>,
-            <span class="ident">allow_rename</span>: <span class="bool-val">false</span>,
+<span class="kw">impl </span>ApplyExpr {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new_minimal(
+        inputs: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
+        function: SpecialEq&lt;Arc&lt;<span class="kw">dyn </span>SeriesUdf&gt;&gt;,
+        expr: Expr,
+        collect_groups: ApplyOptions,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            inputs,
+            function,
+            expr,
+            collect_groups,
+            auto_explode: <span class="bool-val">false</span>,
+            allow_rename: <span class="bool-val">false</span>,
         }
     }
 
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::ptr_arg</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">prepare_multiple_inputs</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
+    <span class="attribute">#[allow(clippy::ptr_arg)]
+    </span><span class="kw">fn </span>prepare_multiple_inputs&lt;<span class="lifetime">&#39;a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">df</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-        <span class="ident">groups</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">GroupsProxy</span>,
-        <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionState</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">AggregationContext</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
-            <span class="self">self</span>.<span class="ident">inputs</span>
-                .<span class="ident">par_iter</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">evaluate_on_groups</span>(<span class="ident">df</span>, <span class="ident">groups</span>, <span class="ident">state</span>))
-                .<span class="ident">collect</span>()
+        df: <span class="kw-2">&amp;</span>DataFrame,
+        groups: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GroupsProxy,
+        state: <span class="kw-2">&amp;</span>ExecutionState,
+    ) -&gt; PolarsResult&lt;Vec&lt;AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt;&gt;&gt; {
+        POOL.install(|| {
+            <span class="self">self</span>.inputs
+                .par_iter()
+                .map(|e| e.evaluate_on_groups(df, groups, state))
+                .collect()
         })
     }
 
-    <span class="kw">fn</span> <span class="ident">finish_apply_groups</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
+    <span class="kw">fn </span>finish_apply_groups&lt;<span class="lifetime">&#39;a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="kw-2">mut</span> <span class="ident">ac</span>: <span class="ident">AggregationContext</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>,
-        <span class="ident">ca</span>: <span class="ident">ListChunked</span>,
-    ) -&gt; <span class="ident">AggregationContext</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">all_unit_len</span> <span class="op">=</span> <span class="ident">all_unit_length</span>(<span class="kw-2">&amp;</span><span class="ident">ca</span>);
-        <span class="kw">if</span> <span class="ident">all_unit_len</span> <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">auto_explode</span> {
-            <span class="ident">ac</span>.<span class="ident">with_series</span>(<span class="ident">ca</span>.<span class="ident">explode</span>().<span class="ident">unwrap</span>().<span class="ident">into_series</span>(), <span class="bool-val">true</span>);
-            <span class="ident">ac</span>.<span class="ident">update_groups</span> <span class="op">=</span> <span class="ident">UpdateGroups::No</span>;
-        } <span class="kw">else</span> {
-            <span class="ident">ac</span>.<span class="ident">with_series</span>(<span class="ident">ca</span>.<span class="ident">into_series</span>(), <span class="bool-val">true</span>);
-            <span class="ident">ac</span>.<span class="ident">with_update_groups</span>(<span class="ident">UpdateGroups::WithSeriesLen</span>);
+        <span class="kw-2">mut </span>ac: AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt;,
+        ca: ListChunked,
+    ) -&gt; AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt; {
+        <span class="kw">let </span>all_unit_len = all_unit_length(<span class="kw-2">&amp;</span>ca);
+        <span class="kw">if </span>all_unit_len &amp;&amp; <span class="self">self</span>.auto_explode {
+            ac.with_series(ca.explode().unwrap().into_series(), <span class="bool-val">true</span>);
+            ac.update_groups = UpdateGroups::No;
+        } <span class="kw">else </span>{
+            ac.with_series(ca.into_series(), <span class="bool-val">true</span>);
+            ac.with_update_groups(UpdateGroups::WithSeriesLen);
         }
-        <span class="ident">ac</span>
+        ac
     }
 }
 
-<span class="kw">fn</span> <span class="ident">all_unit_length</span>(<span class="ident">ca</span>: <span class="kw-2">&amp;</span><span class="ident">ListChunked</span>) -&gt; <span class="ident">bool</span> {
-    <span class="macro">assert_eq!</span>(<span class="ident">ca</span>.<span class="ident">chunks</span>().<span class="ident">len</span>(), <span class="number">1</span>);
-    <span class="kw">let</span> <span class="ident">list_arr</span> <span class="op">=</span> <span class="ident">ca</span>.<span class="ident">downcast_iter</span>().<span class="ident">next</span>().<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">offset</span> <span class="op">=</span> <span class="ident">list_arr</span>.<span class="ident">offsets</span>().<span class="ident">as_slice</span>();
-    (<span class="ident">offset</span>[<span class="ident">offset</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>] <span class="kw">as</span> <span class="ident">usize</span>) <span class="op">==</span> <span class="ident">list_arr</span>.<span class="ident">len</span>()
+<span class="kw">fn </span>all_unit_length(ca: <span class="kw-2">&amp;</span>ListChunked) -&gt; bool {
+    <span class="macro">assert_eq!</span>(ca.chunks().len(), <span class="number">1</span>);
+    <span class="kw">let </span>list_arr = ca.downcast_iter().next().unwrap();
+    <span class="kw">let </span>offset = list_arr.offsets().as_slice();
+    (offset[offset.len() - <span class="number">1</span>] <span class="kw">as </span>usize) == list_arr.len()
 }
 
-<span class="kw">fn</span> <span class="ident">check_map_output_len</span>(<span class="ident">input_len</span>: <span class="ident">usize</span>, <span class="ident">output_len</span>: <span class="ident">usize</span>, <span class="ident">expr</span>: <span class="kw-2">&amp;</span><span class="ident">Expr</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">if</span> <span class="ident">input_len</span> <span class="op">!</span><span class="op">=</span> <span class="ident">output_len</span> {
-        <span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="string">&quot;A &#39;map&#39; functions output length must be equal to that of the input length. Consider using &#39;apply&#39; in favor of &#39;map&#39;.&quot;</span>;
-        <span class="prelude-val">Err</span>(<span class="macro">expression_err!</span>(<span class="ident">msg</span>, <span class="ident">expr</span>, <span class="ident">ComputeError</span>))
-    } <span class="kw">else</span> {
+<span class="kw">fn </span>check_map_output_len(input_len: usize, output_len: usize, expr: <span class="kw-2">&amp;</span>Expr) -&gt; PolarsResult&lt;()&gt; {
+    <span class="kw">if </span>input_len != output_len {
+        <span class="kw">let </span>msg = <span class="string">&quot;A &#39;map&#39; functions output length must be equal to that of the input length. Consider using &#39;apply&#39; in favor of &#39;map&#39;.&quot;</span>;
+        <span class="prelude-val">Err</span>(<span class="macro">expression_err!</span>(msg, expr, ComputeError))
+    } <span class="kw">else </span>{
         <span class="prelude-val">Ok</span>(())
     }
 }
 
-<span class="kw">impl</span> <span class="ident">PhysicalExpr</span> <span class="kw">for</span> <span class="ident">ApplyExpr</span> {
-    <span class="kw">fn</span> <span class="ident">as_expression</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Expr</span><span class="op">&gt;</span> {
-        <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">expr</span>)
+<span class="kw">impl </span>PhysicalExpr <span class="kw">for </span>ApplyExpr {
+    <span class="kw">fn </span>as_expression(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Expr&gt; {
+        <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.expr)
     }
 
-    <span class="kw">fn</span> <span class="ident">evaluate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">df</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>, <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionState</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">inputs</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">inputs</span>
-            .<span class="ident">par_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">evaluate</span>(<span class="ident">df</span>, <span class="ident">state</span>))
-            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
+    <span class="kw">fn </span>evaluate(<span class="kw-2">&amp;</span><span class="self">self</span>, df: <span class="kw-2">&amp;</span>DataFrame, state: <span class="kw-2">&amp;</span>ExecutionState) -&gt; PolarsResult&lt;Series&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>inputs = <span class="self">self
+            </span>.inputs
+            .par_iter()
+            .map(|e| e.evaluate(df, state))
+            .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">allow_rename</span> {
-            <span class="kw">return</span> <span class="self">self</span>.<span class="ident">function</span>.<span class="ident">call_udf</span>(<span class="kw-2">&amp;mut</span> <span class="ident">inputs</span>);
+        <span class="kw">if </span><span class="self">self</span>.allow_rename {
+            <span class="kw">return </span><span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>inputs);
         }
-        <span class="kw">let</span> <span class="ident">in_name</span> <span class="op">=</span> <span class="ident">inputs</span>[<span class="number">0</span>].<span class="ident">name</span>().<span class="ident">to_string</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">function</span>.<span class="ident">call_udf</span>(<span class="kw-2">&amp;mut</span> <span class="ident">inputs</span>)<span class="question-mark">?</span>;
-        <span class="kw">if</span> <span class="ident">in_name</span> <span class="op">!</span><span class="op">=</span> <span class="ident">out</span>.<span class="ident">name</span>() {
-            <span class="ident">out</span>.<span class="ident">rename</span>(<span class="kw-2">&amp;</span><span class="ident">in_name</span>);
+        <span class="kw">let </span>in_name = inputs[<span class="number">0</span>].name().to_string();
+        <span class="kw">let </span><span class="kw-2">mut </span>out = <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>inputs)<span class="question-mark">?</span>;
+        <span class="kw">if </span>in_name != out.name() {
+            out.rename(<span class="kw-2">&amp;</span>in_name);
         }
-        <span class="prelude-val">Ok</span>(<span class="ident">out</span>)
+        <span class="prelude-val">Ok</span>(out)
     }
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::ptr_arg</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">evaluate_on_groups</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
+    <span class="attribute">#[allow(clippy::ptr_arg)]
+    </span><span class="kw">fn </span>evaluate_on_groups&lt;<span class="lifetime">&#39;a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">df</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-        <span class="ident">groups</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">GroupsProxy</span>,
-        <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionState</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">AggregationContext</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">inputs</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="number">1</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ac</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inputs</span>[<span class="number">0</span>].<span class="ident">evaluate_on_groups</span>(<span class="ident">df</span>, <span class="ident">groups</span>, <span class="ident">state</span>)<span class="question-mark">?</span>;
+        df: <span class="kw-2">&amp;</span>DataFrame,
+        groups: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GroupsProxy,
+        state: <span class="kw-2">&amp;</span>ExecutionState,
+    ) -&gt; PolarsResult&lt;AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+        <span class="kw">if </span><span class="self">self</span>.inputs.len() == <span class="number">1 </span>{
+            <span class="kw">let </span><span class="kw-2">mut </span>ac = <span class="self">self</span>.inputs[<span class="number">0</span>].evaluate_on_groups(df, groups, state)<span class="question-mark">?</span>;
 
-            <span class="kw">match</span> (<span class="ident">state</span>.<span class="ident">overlapping_groups</span>(), <span class="self">self</span>.<span class="ident">collect_groups</span>) {
-                (<span class="kw">_</span>, <span class="ident">ApplyOptions::ApplyList</span>) =&gt; {
-                    <span class="kw">let</span> <span class="ident">s</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">function</span>.<span class="ident">call_udf</span>(<span class="kw-2">&amp;mut</span> [<span class="ident">ac</span>.<span class="ident">aggregated</span>()])<span class="question-mark">?</span>;
-                    <span class="ident">ac</span>.<span class="ident">with_series</span>(<span class="ident">s</span>, <span class="bool-val">true</span>);
-                    <span class="prelude-val">Ok</span>(<span class="ident">ac</span>)
+            <span class="kw">match </span>(state.overlapping_groups(), <span class="self">self</span>.collect_groups) {
+                (<span class="kw">_</span>, ApplyOptions::ApplyList) =&gt; {
+                    <span class="kw">let </span>s = <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>[ac.aggregated()])<span class="question-mark">?</span>;
+                    ac.with_series(s, <span class="bool-val">true</span>);
+                    <span class="prelude-val">Ok</span>(ac)
                 }
-                <span class="comment">// overlapping groups always take this branch as explode/flat_naive bloats data size</span>
-                (<span class="kw">_</span>, <span class="ident">ApplyOptions::ApplyGroups</span>) <span class="op">|</span> (<span class="bool-val">true</span>, <span class="kw">_</span>) =&gt; {
-                    <span class="kw">let</span> <span class="ident">s</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">series</span>();
+                <span class="comment">// overlapping groups always take this branch as explode/flat_naive bloats data size
+                </span>(<span class="kw">_</span>, ApplyOptions::ApplyGroups) | (<span class="bool-val">true</span>, <span class="kw">_</span>) =&gt; {
+                    <span class="kw">let </span>s = ac.series();
 
-                    <span class="kw">if</span> <span class="macro">matches!</span>(<span class="ident">ac</span>.<span class="ident">agg_state</span>(), <span class="ident">AggState::AggregatedFlat</span>(<span class="kw">_</span>)) {
-                        <span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="macro">format!</span>(
+                    <span class="kw">if </span><span class="macro">matches!</span>(ac.agg_state(), AggState::AggregatedFlat(<span class="kw">_</span>)) {
+                        <span class="kw">let </span>msg = <span class="macro">format!</span>(
                             <span class="string">&quot;Cannot aggregate {:?}. The column is already aggregated.&quot;</span>,
-                            <span class="self">self</span>.<span class="ident">expr</span>
+                            <span class="self">self</span>.expr
                         );
-                        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="macro">expression_err!</span>(<span class="ident">msg</span>, <span class="self">self</span>.<span class="ident">expr</span>, <span class="ident">ComputeError</span>));
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">expression_err!</span>(msg, <span class="self">self</span>.expr, ComputeError));
                     }
 
-                    <span class="comment">// collection of empty list leads to a null dtype</span>
-                    <span class="comment">// see: #3687</span>
-                    <span class="kw">if</span> <span class="ident">s</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="number">0</span> {
-                        <span class="comment">// create input for the function to determine the output dtype</span>
-                        <span class="comment">// see #3946</span>
-                        <span class="kw">let</span> <span class="ident">agg</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">aggregated</span>();
-                        <span class="kw">let</span> <span class="ident">agg</span> <span class="op">=</span> <span class="ident">agg</span>.<span class="ident">list</span>().<span class="ident">unwrap</span>();
-                        <span class="kw">let</span> <span class="ident">input_dtype</span> <span class="op">=</span> <span class="ident">agg</span>.<span class="ident">inner_dtype</span>();
+                    <span class="comment">// collection of empty list leads to a null dtype
+                    // see: #3687
+                    </span><span class="kw">if </span>s.len() == <span class="number">0 </span>{
+                        <span class="comment">// create input for the function to determine the output dtype
+                        // see #3946
+                        </span><span class="kw">let </span>agg = ac.aggregated();
+                        <span class="kw">let </span>agg = agg.list().unwrap();
+                        <span class="kw">let </span>input_dtype = agg.inner_dtype();
 
-                        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">Series::full_null</span>(<span class="string">&quot;&quot;</span>, <span class="number">0</span>, <span class="kw-2">&amp;</span><span class="ident">input_dtype</span>);
+                        <span class="kw">let </span>input = Series::full_null(<span class="string">&quot;&quot;</span>, <span class="number">0</span>, <span class="kw-2">&amp;</span>input_dtype);
 
-                        <span class="kw">let</span> <span class="ident">output</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">function</span>.<span class="ident">call_udf</span>(<span class="kw-2">&amp;mut</span> [<span class="ident">input</span>])<span class="question-mark">?</span>;
-                        <span class="kw">let</span> <span class="ident">ca</span> <span class="op">=</span> <span class="ident">ListChunked::full</span>(<span class="ident">ac</span>.<span class="ident">series</span>().<span class="ident">name</span>(), <span class="kw-2">&amp;</span><span class="ident">output</span>, <span class="number">0</span>);
-                        <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">finish_apply_groups</span>(<span class="ident">ac</span>, <span class="ident">ca</span>));
+                        <span class="kw">let </span>output = <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>[input])<span class="question-mark">?</span>;
+                        <span class="kw">let </span>ca = ListChunked::full(ac.series().name(), <span class="kw-2">&amp;</span>output, <span class="number">0</span>);
+                        <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="self">self</span>.finish_apply_groups(ac, ca));
                     }
 
-                    <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">s</span>.<span class="ident">name</span>().<span class="ident">to_string</span>();
+                    <span class="kw">let </span>name = s.name().to_string();
 
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ca</span>: <span class="ident">ListChunked</span> <span class="op">=</span> <span class="ident">ac</span>
-                        .<span class="ident">aggregated</span>()
-                        .<span class="ident">list</span>()
-                        .<span class="ident">unwrap</span>()
-                        .<span class="ident">par_iter</span>()
-                        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">opt_s</span><span class="op">|</span> {
-                            <span class="ident">opt_s</span>.<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> {
-                                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">container</span> <span class="op">=</span> [<span class="ident">s</span>];
-                                <span class="self">self</span>.<span class="ident">function</span>.<span class="ident">call_udf</span>(<span class="kw-2">&amp;mut</span> <span class="ident">container</span>).<span class="ident">ok</span>()
+                    <span class="kw">let </span><span class="kw-2">mut </span>ca: ListChunked = ac
+                        .aggregated()
+                        .list()
+                        .unwrap()
+                        .par_iter()
+                        .map(|opt_s| {
+                            opt_s.and_then(|s| {
+                                <span class="kw">let </span><span class="kw-2">mut </span>container = [s];
+                                <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>container).ok()
                             })
                         })
-                        .<span class="ident">collect</span>();
+                        .collect();
 
-                    <span class="ident">ca</span>.<span class="ident">rename</span>(<span class="kw-2">&amp;</span><span class="ident">name</span>);
-                    <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">finish_apply_groups</span>(<span class="ident">ac</span>, <span class="ident">ca</span>))
+                    ca.rename(<span class="kw-2">&amp;</span>name);
+                    <span class="prelude-val">Ok</span>(<span class="self">self</span>.finish_apply_groups(ac, ca))
                 }
-                (<span class="kw">_</span>, <span class="ident">ApplyOptions::ApplyFlat</span>) =&gt; {
-                    <span class="comment">// make sure the groups are updated because we are about to throw away</span>
-                    <span class="comment">// the series&#39; length information</span>
-                    <span class="kw">let</span> <span class="ident">set_update_groups</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">ac</span>.<span class="ident">update_groups</span> {
-                        <span class="ident">UpdateGroups::WithSeriesLen</span> =&gt; {
-                            <span class="ident">ac</span>.<span class="ident">groups</span>();
-                            <span class="bool-val">true</span>
-                        }
-                        <span class="ident">UpdateGroups::WithSeriesLenOwned</span>(<span class="kw">_</span>) =&gt; <span class="bool-val">false</span>,
-                        <span class="ident">UpdateGroups::No</span> <span class="op">|</span> <span class="ident">UpdateGroups::WithGroupsLen</span> =&gt; <span class="bool-val">false</span>,
+                (<span class="kw">_</span>, ApplyOptions::ApplyFlat) =&gt; {
+                    <span class="comment">// make sure the groups are updated because we are about to throw away
+                    // the series&#39; length information
+                    </span><span class="kw">let </span>set_update_groups = <span class="kw">match </span>ac.update_groups {
+                        UpdateGroups::WithSeriesLen =&gt; {
+                            ac.groups();
+                            <span class="bool-val">true
+                        </span>}
+                        UpdateGroups::WithSeriesLenOwned(<span class="kw">_</span>) =&gt; <span class="bool-val">false</span>,
+                        UpdateGroups::No | UpdateGroups::WithGroupsLen =&gt; <span class="bool-val">false</span>,
                     };
 
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="ident">UpdateGroups::WithSeriesLen</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">update_groups</span> {
-                        <span class="ident">ac</span>.<span class="ident">groups</span>();
+                    <span class="kw">if let </span>UpdateGroups::WithSeriesLen = ac.update_groups {
+                        ac.groups();
                     }
 
-                    <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">flat_naive</span>().<span class="ident">into_owned</span>();
-                    <span class="kw">let</span> <span class="ident">input_len</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">len</span>();
-                    <span class="kw">let</span> <span class="ident">s</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">function</span>.<span class="ident">call_udf</span>(<span class="kw-2">&amp;mut</span> [<span class="ident">input</span>])<span class="question-mark">?</span>;
+                    <span class="kw">let </span>input = ac.flat_naive().into_owned();
+                    <span class="kw">let </span>input_len = input.len();
+                    <span class="kw">let </span>s = <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>[input])<span class="question-mark">?</span>;
 
-                    <span class="ident">check_map_output_len</span>(<span class="ident">input_len</span>, <span class="ident">s</span>.<span class="ident">len</span>(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">expr</span>)<span class="question-mark">?</span>;
-                    <span class="ident">ac</span>.<span class="ident">with_series</span>(<span class="ident">s</span>, <span class="bool-val">false</span>);
+                    check_map_output_len(input_len, s.len(), <span class="kw-2">&amp;</span><span class="self">self</span>.expr)<span class="question-mark">?</span>;
+                    ac.with_series(s, <span class="bool-val">false</span>);
 
-                    <span class="kw">if</span> <span class="ident">set_update_groups</span> {
-                        <span class="comment">// The flat_naive orders by groups, so we must create new groups</span>
-                        <span class="comment">// not by series length as we don&#39;t have an agg_list, but by original</span>
-                        <span class="comment">// groups length</span>
-                        <span class="ident">ac</span>.<span class="ident">update_groups</span> <span class="op">=</span> <span class="ident">UpdateGroups::WithGroupsLen</span>;
+                    <span class="kw">if </span>set_update_groups {
+                        <span class="comment">// The flat_naive orders by groups, so we must create new groups
+                        // not by series length as we don&#39;t have an agg_list, but by original
+                        // groups length
+                        </span>ac.update_groups = UpdateGroups::WithGroupsLen;
                     }
-                    <span class="prelude-val">Ok</span>(<span class="ident">ac</span>)
+                    <span class="prelude-val">Ok</span>(ac)
                 }
             }
-        } <span class="kw">else</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">acs</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">prepare_multiple_inputs</span>(<span class="ident">df</span>, <span class="ident">groups</span>, <span class="ident">state</span>)<span class="question-mark">?</span>;
+        } <span class="kw">else </span>{
+            <span class="kw">let </span><span class="kw-2">mut </span>acs = <span class="self">self</span>.prepare_multiple_inputs(df, groups, state)<span class="question-mark">?</span>;
 
-            <span class="kw">match</span> (<span class="ident">state</span>.<span class="ident">overlapping_groups</span>(), <span class="self">self</span>.<span class="ident">collect_groups</span>) {
-                (<span class="kw">_</span>, <span class="ident">ApplyOptions::ApplyList</span>) =&gt; {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">s</span> <span class="op">=</span> <span class="ident">acs</span>.<span class="ident">iter_mut</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">ac</span><span class="op">|</span> <span class="ident">ac</span>.<span class="ident">aggregated</span>()).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-                    <span class="kw">let</span> <span class="ident">s</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">function</span>.<span class="ident">call_udf</span>(<span class="kw-2">&amp;mut</span> <span class="ident">s</span>)<span class="question-mark">?</span>;
-                    <span class="comment">// take the first aggregation context that as that is the input series</span>
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ac</span> <span class="op">=</span> <span class="ident">acs</span>.<span class="ident">swap_remove</span>(<span class="number">0</span>);
-                    <span class="ident">ac</span>.<span class="ident">with_update_groups</span>(<span class="ident">UpdateGroups::WithGroupsLen</span>);
-                    <span class="ident">ac</span>.<span class="ident">with_series</span>(<span class="ident">s</span>, <span class="bool-val">true</span>);
-                    <span class="prelude-val">Ok</span>(<span class="ident">ac</span>)
+            <span class="kw">match </span>(state.overlapping_groups(), <span class="self">self</span>.collect_groups) {
+                (<span class="kw">_</span>, ApplyOptions::ApplyList) =&gt; {
+                    <span class="kw">let </span><span class="kw-2">mut </span>s = acs.iter_mut().map(|ac| ac.aggregated()).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                    <span class="kw">let </span>s = <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>s)<span class="question-mark">?</span>;
+                    <span class="comment">// take the first aggregation context that as that is the input series
+                    </span><span class="kw">let </span><span class="kw-2">mut </span>ac = acs.swap_remove(<span class="number">0</span>);
+                    ac.with_update_groups(UpdateGroups::WithGroupsLen);
+                    ac.with_series(s, <span class="bool-val">true</span>);
+                    <span class="prelude-val">Ok</span>(ac)
                 }
 
-                <span class="comment">// overlapping groups always take this branch as explode bloats data size</span>
-                (<span class="kw">_</span>, <span class="ident">ApplyOptions::ApplyGroups</span>) <span class="op">|</span> (<span class="bool-val">true</span>, <span class="kw">_</span>) =&gt; {
-                    <span class="comment">// if</span>
-                    <span class="comment">// - there are overlapping groups</span>
-                    <span class="comment">// - can do elementwise operations</span>
-                    <span class="comment">// - we don&#39;t have to explode</span>
-                    <span class="comment">// then apply flat</span>
-                    <span class="kw">if</span> <span class="kw">let</span> (
+                <span class="comment">// overlapping groups always take this branch as explode bloats data size
+                </span>(<span class="kw">_</span>, ApplyOptions::ApplyGroups) | (<span class="bool-val">true</span>, <span class="kw">_</span>) =&gt; {
+                    <span class="comment">// if
+                    // - there are overlapping groups
+                    // - can do elementwise operations
+                    // - we don&#39;t have to explode
+                    // then apply flat
+                    </span><span class="kw">if let </span>(
                         <span class="bool-val">true</span>,
-                        <span class="ident">ApplyOptions::ApplyFlat</span>,
-                        <span class="ident">AggState::AggregatedFlat</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">AggState::NotAggregated</span>(<span class="kw">_</span>),
-                    ) <span class="op">=</span> (
-                        <span class="ident">state</span>.<span class="ident">overlapping_groups</span>(),
-                        <span class="self">self</span>.<span class="ident">collect_groups</span>,
-                        <span class="ident">acs</span>[<span class="number">0</span>].<span class="ident">agg_state</span>(),
+                        ApplyOptions::ApplyFlat,
+                        AggState::AggregatedFlat(<span class="kw">_</span>) | AggState::NotAggregated(<span class="kw">_</span>),
+                    ) = (
+                        state.overlapping_groups(),
+                        <span class="self">self</span>.collect_groups,
+                        acs[<span class="number">0</span>].agg_state(),
                     ) {
-                        <span class="ident">apply_multiple_flat</span>(<span class="ident">acs</span>, <span class="self">self</span>.<span class="ident">function</span>.<span class="ident">as_ref</span>(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">expr</span>)
-                    } <span class="kw">else</span> {
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">container</span> <span class="op">=</span> <span class="macro">vec!</span>[<span class="ident">Default::default</span>(); <span class="ident">acs</span>.<span class="ident">len</span>()];
-                        <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">acs</span>[<span class="number">0</span>].<span class="ident">series</span>().<span class="ident">name</span>().<span class="ident">to_string</span>();
+                        apply_multiple_flat(acs, <span class="self">self</span>.function.as_ref(), <span class="kw-2">&amp;</span><span class="self">self</span>.expr)
+                    } <span class="kw">else </span>{
+                        <span class="kw">let </span><span class="kw-2">mut </span>container = <span class="macro">vec!</span>[Default::default(); acs.len()];
+                        <span class="kw">let </span>name = acs[<span class="number">0</span>].series().name().to_string();
 
-                        <span class="comment">// aggregate representation of the aggregation contexts</span>
-                        <span class="comment">// then unpack the lists and finally create iterators from this list chunked arrays.</span>
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">iters</span> <span class="op">=</span> <span class="ident">acs</span>
-                            .<span class="ident">iter_mut</span>()
-                            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ac</span><span class="op">|</span> <span class="ident">ac</span>.<span class="ident">iter_groups</span>())
-                            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+                        <span class="comment">// aggregate representation of the aggregation contexts
+                        // then unpack the lists and finally create iterators from this list chunked arrays.
+                        </span><span class="kw">let </span><span class="kw-2">mut </span>iters = acs
+                            .iter_mut()
+                            .map(|ac| ac.iter_groups())
+                            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-                        <span class="comment">// length of the items to iterate over</span>
-                        <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">iters</span>[<span class="number">0</span>].<span class="ident">size_hint</span>().<span class="number">0</span>;
+                        <span class="comment">// length of the items to iterate over
+                        </span><span class="kw">let </span>len = iters[<span class="number">0</span>].size_hint().<span class="number">0</span>;
 
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ca</span>: <span class="ident">ListChunked</span> <span class="op">=</span> (<span class="number">0</span>..<span class="ident">len</span>)
-                            .<span class="ident">map</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> {
-                                <span class="ident">container</span>.<span class="ident">clear</span>();
-                                <span class="kw">for</span> <span class="ident">iter</span> <span class="kw">in</span> <span class="kw-2">&amp;mut</span> <span class="ident">iters</span> {
-                                    <span class="kw">match</span> <span class="ident">iter</span>.<span class="ident">next</span>().<span class="ident">unwrap</span>() {
-                                        <span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">None</span>,
-                                        <span class="prelude-val">Some</span>(<span class="ident">s</span>) =&gt; <span class="ident">container</span>.<span class="ident">push</span>(<span class="ident">s</span>.<span class="ident">deep_clone</span>()),
+                        <span class="kw">let </span><span class="kw-2">mut </span>ca: ListChunked = (<span class="number">0</span>..len)
+                            .map(|<span class="kw">_</span>| {
+                                container.clear();
+                                <span class="kw">for </span>iter <span class="kw">in </span><span class="kw-2">&amp;mut </span>iters {
+                                    <span class="kw">match </span>iter.next().unwrap() {
+                                        <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">None</span>,
+                                        <span class="prelude-val">Some</span>(s) =&gt; container.push(s.deep_clone()),
                                     }
                                 }
-                                <span class="self">self</span>.<span class="ident">function</span>.<span class="ident">call_udf</span>(<span class="kw-2">&amp;mut</span> <span class="ident">container</span>).<span class="ident">ok</span>()
+                                <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>container).ok()
                             })
-                            .<span class="ident">collect_trusted</span>();
-                        <span class="ident">ca</span>.<span class="ident">rename</span>(<span class="kw-2">&amp;</span><span class="ident">name</span>);
-                        <span class="ident">drop</span>(<span class="ident">iters</span>);
+                            .collect_trusted();
+                        ca.rename(<span class="kw-2">&amp;</span>name);
+                        drop(iters);
 
-                        <span class="comment">// take the first aggregation context that as that is the input series</span>
-                        <span class="kw">let</span> <span class="ident">ac</span> <span class="op">=</span> <span class="ident">acs</span>.<span class="ident">swap_remove</span>(<span class="number">0</span>);
-                        <span class="kw">let</span> <span class="ident">ac</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">finish_apply_groups</span>(<span class="ident">ac</span>, <span class="ident">ca</span>);
-                        <span class="prelude-val">Ok</span>(<span class="ident">ac</span>)
+                        <span class="comment">// take the first aggregation context that as that is the input series
+                        </span><span class="kw">let </span>ac = acs.swap_remove(<span class="number">0</span>);
+                        <span class="kw">let </span>ac = <span class="self">self</span>.finish_apply_groups(ac, ca);
+                        <span class="prelude-val">Ok</span>(ac)
                     }
                 }
-                (<span class="kw">_</span>, <span class="ident">ApplyOptions::ApplyFlat</span>) =&gt; {
-                    <span class="ident">apply_multiple_flat</span>(<span class="ident">acs</span>, <span class="self">self</span>.<span class="ident">function</span>.<span class="ident">as_ref</span>(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">expr</span>)
+                (<span class="kw">_</span>, ApplyOptions::ApplyFlat) =&gt; {
+                    apply_multiple_flat(acs, <span class="self">self</span>.function.as_ref(), <span class="kw-2">&amp;</span><span class="self">self</span>.expr)
                 }
             }
         }
     }
-    <span class="kw">fn</span> <span class="ident">to_field</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">input_schema</span>: <span class="kw-2">&amp;</span><span class="ident">Schema</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Field</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">expr</span>.<span class="ident">to_field</span>(<span class="ident">input_schema</span>, <span class="ident">Context::Default</span>)
+    <span class="kw">fn </span>to_field(<span class="kw-2">&amp;</span><span class="self">self</span>, input_schema: <span class="kw-2">&amp;</span>Schema) -&gt; PolarsResult&lt;Field&gt; {
+        <span class="self">self</span>.expr.to_field(input_schema, Context::Default)
     }
-    <span class="kw">fn</span> <span class="ident">is_valid_aggregation</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="macro">matches!</span>(<span class="self">self</span>.<span class="ident">collect_groups</span>, <span class="ident">ApplyOptions::ApplyGroups</span>)
+    <span class="kw">fn </span>is_valid_aggregation(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="macro">matches!</span>(<span class="self">self</span>.collect_groups, ApplyOptions::ApplyGroups)
     }
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">as_stats_evaluator</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">polars_io::predicates::StatsEvaluator</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="macro">matches!</span>(
-            <span class="self">self</span>.<span class="ident">expr</span>,
-            <span class="ident">Expr::Function</span> {
-                <span class="ident">function</span>: <span class="ident">FunctionExpr::IsNull</span>,
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
+    </span><span class="kw">fn </span>as_stats_evaluator(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>polars_io::predicates::StatsEvaluator&gt; {
+        <span class="kw">if </span><span class="macro">matches!</span>(
+            <span class="self">self</span>.expr,
+            Expr::Function {
+                function: FunctionExpr::IsNull,
                 ..
             }
         ) {
             <span class="prelude-val">Some</span>(<span class="self">self</span>)
-        } <span class="kw">else</span> {
-            <span class="prelude-val">None</span>
-        }
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>}
     }
-    <span class="kw">fn</span> <span class="ident">as_partitioned_aggregator</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">PartitionedAggregation</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">inputs</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="number">1</span> <span class="op">&amp;&amp;</span> <span class="macro">matches!</span>(<span class="self">self</span>.<span class="ident">collect_groups</span>, <span class="ident">ApplyOptions::ApplyFlat</span>) {
+    <span class="kw">fn </span>as_partitioned_aggregator(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>PartitionedAggregation&gt; {
+        <span class="kw">if </span><span class="self">self</span>.inputs.len() == <span class="number">1 </span>&amp;&amp; <span class="macro">matches!</span>(<span class="self">self</span>.collect_groups, ApplyOptions::ApplyFlat) {
             <span class="prelude-val">Some</span>(<span class="self">self</span>)
-        } <span class="kw">else</span> {
-            <span class="prelude-val">None</span>
-        }
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>}
     }
 }
 
-<span class="kw">fn</span> <span class="ident">apply_multiple_flat</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
-    <span class="kw-2">mut</span> <span class="ident">acs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">AggregationContext</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">function</span>: <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">SeriesUdf</span>,
-    <span class="ident">expr</span>: <span class="kw-2">&amp;</span><span class="ident">Expr</span>,
-) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">AggregationContext</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">s</span> <span class="op">=</span> <span class="ident">acs</span>
-        .<span class="ident">iter_mut</span>()
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ac</span><span class="op">|</span> {
-            <span class="comment">// make sure the groups are updated because we are about to throw away</span>
-            <span class="comment">// the series length information</span>
-            <span class="kw">if</span> <span class="kw">let</span> <span class="ident">UpdateGroups::WithSeriesLen</span> <span class="op">=</span> <span class="ident">ac</span>.<span class="ident">update_groups</span> {
-                <span class="ident">ac</span>.<span class="ident">groups</span>();
+<span class="kw">fn </span>apply_multiple_flat&lt;<span class="lifetime">&#39;a</span>&gt;(
+    <span class="kw-2">mut </span>acs: Vec&lt;AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt;&gt;,
+    function: <span class="kw-2">&amp;</span><span class="kw">dyn </span>SeriesUdf,
+    expr: <span class="kw-2">&amp;</span>Expr,
+) -&gt; PolarsResult&lt;AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>s = acs
+        .iter_mut()
+        .map(|ac| {
+            <span class="comment">// make sure the groups are updated because we are about to throw away
+            // the series length information
+            </span><span class="kw">if let </span>UpdateGroups::WithSeriesLen = ac.update_groups {
+                ac.groups();
             }
 
-            <span class="ident">ac</span>.<span class="ident">flat_naive</span>().<span class="ident">into_owned</span>()
+            ac.flat_naive().into_owned()
         })
-        .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-    <span class="kw">let</span> <span class="ident">input_len</span> <span class="op">=</span> <span class="ident">s</span>[<span class="number">0</span>].<span class="ident">len</span>();
-    <span class="kw">let</span> <span class="ident">s</span> <span class="op">=</span> <span class="ident">function</span>.<span class="ident">call_udf</span>(<span class="kw-2">&amp;mut</span> <span class="ident">s</span>)<span class="question-mark">?</span>;
-    <span class="ident">check_map_output_len</span>(<span class="ident">input_len</span>, <span class="ident">s</span>.<span class="ident">len</span>(), <span class="ident">expr</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>input_len = s[<span class="number">0</span>].len();
+    <span class="kw">let </span>s = function.call_udf(<span class="kw-2">&amp;mut </span>s)<span class="question-mark">?</span>;
+    check_map_output_len(input_len, s.len(), expr)<span class="question-mark">?</span>;
 
-    <span class="comment">// take the first aggregation context that as that is the input series</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ac</span> <span class="op">=</span> <span class="ident">acs</span>.<span class="ident">swap_remove</span>(<span class="number">0</span>);
-    <span class="ident">ac</span>.<span class="ident">with_series</span>(<span class="ident">s</span>, <span class="bool-val">false</span>);
-    <span class="prelude-val">Ok</span>(<span class="ident">ac</span>)
+    <span class="comment">// take the first aggregation context that as that is the input series
+    </span><span class="kw">let </span><span class="kw-2">mut </span>ac = acs.swap_remove(<span class="number">0</span>);
+    ac.with_series(s, <span class="bool-val">false</span>);
+    <span class="prelude-val">Ok</span>(ac)
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;parquet&quot;</span>)]</span>
-<span class="kw">impl</span> <span class="ident">StatsEvaluator</span> <span class="kw">for</span> <span class="ident">ApplyExpr</span> {
-    <span class="kw">fn</span> <span class="ident">should_read</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">stats</span>: <span class="kw-2">&amp;</span><span class="ident">BatchStats</span>) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="macro">matches!</span>(
-            <span class="self">self</span>.<span class="ident">expr</span>,
-            <span class="ident">Expr::Function</span> {
-                <span class="ident">function</span>: <span class="ident">FunctionExpr::IsNull</span>,
+<span class="attribute">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
+</span><span class="kw">impl </span>StatsEvaluator <span class="kw">for </span>ApplyExpr {
+    <span class="kw">fn </span>should_read(<span class="kw-2">&amp;</span><span class="self">self</span>, stats: <span class="kw-2">&amp;</span>BatchStats) -&gt; PolarsResult&lt;bool&gt; {
+        <span class="kw">if </span><span class="macro">matches!</span>(
+            <span class="self">self</span>.expr,
+            Expr::Function {
+                function: FunctionExpr::IsNull,
                 ..
             }
         ) {
-            <span class="kw">let</span> <span class="ident">root</span> <span class="op">=</span> <span class="ident">expr_to_leaf_column_name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">expr</span>)<span class="question-mark">?</span>;
+            <span class="kw">let </span>root = expr_to_leaf_column_name(<span class="kw-2">&amp;</span><span class="self">self</span>.expr)<span class="question-mark">?</span>;
 
-            <span class="kw">let</span> <span class="ident">read</span> <span class="op">=</span> <span class="bool-val">true</span>;
-            <span class="kw">let</span> <span class="ident">skip</span> <span class="op">=</span> <span class="bool-val">false</span>;
+            <span class="kw">let </span>read = <span class="bool-val">true</span>;
+            <span class="kw">let </span>skip = <span class="bool-val">false</span>;
 
-            <span class="kw">match</span> <span class="ident">stats</span>.<span class="ident">get_stats</span>(<span class="kw-2">&amp;</span><span class="ident">root</span>).<span class="ident">ok</span>() {
-                <span class="prelude-val">Some</span>(<span class="ident">st</span>) =&gt; <span class="kw">match</span> <span class="ident">st</span>.<span class="ident">null_count</span>() {
-                    <span class="prelude-val">Some</span>(<span class="number">0</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">skip</span>),
-                    <span class="kw">_</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">read</span>),
+            <span class="kw">match </span>stats.get_stats(<span class="kw-2">&amp;</span>root).ok() {
+                <span class="prelude-val">Some</span>(st) =&gt; <span class="kw">match </span>st.null_count() {
+                    <span class="prelude-val">Some</span>(<span class="number">0</span>) =&gt; <span class="prelude-val">Ok</span>(skip),
+                    <span class="kw">_ </span>=&gt; <span class="prelude-val">Ok</span>(read),
                 },
-                <span class="prelude-val">None</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">read</span>),
+                <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Ok</span>(read),
             }
-        } <span class="kw">else</span> {
+        } <span class="kw">else </span>{
             <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">PartitionedAggregation</span> <span class="kw">for</span> <span class="ident">ApplyExpr</span> {
-    <span class="kw">fn</span> <span class="ident">evaluate_partitioned</span>(
+<span class="kw">impl </span>PartitionedAggregation <span class="kw">for </span>ApplyExpr {
+    <span class="kw">fn </span>evaluate_partitioned(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">df</span>: <span class="kw-2">&amp;</span><span class="ident">DataFrame</span>,
-        <span class="ident">groups</span>: <span class="kw-2">&amp;</span><span class="ident">GroupsProxy</span>,
-        <span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionState</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">a</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inputs</span>[<span class="number">0</span>].<span class="ident">as_partitioned_aggregator</span>().<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">s</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">evaluate_partitioned</span>(<span class="ident">df</span>, <span class="ident">groups</span>, <span class="ident">state</span>)<span class="question-mark">?</span>;
+        df: <span class="kw-2">&amp;</span>DataFrame,
+        groups: <span class="kw-2">&amp;</span>GroupsProxy,
+        state: <span class="kw-2">&amp;</span>ExecutionState,
+    ) -&gt; PolarsResult&lt;Series&gt; {
+        <span class="kw">let </span>a = <span class="self">self</span>.inputs[<span class="number">0</span>].as_partitioned_aggregator().unwrap();
+        <span class="kw">let </span>s = a.evaluate_partitioned(df, groups, state)<span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">allow_rename</span> {
-            <span class="kw">return</span> <span class="self">self</span>.<span class="ident">function</span>.<span class="ident">call_udf</span>(<span class="kw-2">&amp;mut</span> [<span class="ident">s</span>]);
+        <span class="kw">if </span><span class="self">self</span>.allow_rename {
+            <span class="kw">return </span><span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>[s]);
         }
-        <span class="kw">let</span> <span class="ident">in_name</span> <span class="op">=</span> <span class="ident">s</span>.<span class="ident">name</span>().<span class="ident">to_string</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">function</span>.<span class="ident">call_udf</span>(<span class="kw-2">&amp;mut</span> [<span class="ident">s</span>])<span class="question-mark">?</span>;
-        <span class="kw">if</span> <span class="ident">in_name</span> <span class="op">!</span><span class="op">=</span> <span class="ident">out</span>.<span class="ident">name</span>() {
-            <span class="ident">out</span>.<span class="ident">rename</span>(<span class="kw-2">&amp;</span><span class="ident">in_name</span>);
+        <span class="kw">let </span>in_name = s.name().to_string();
+        <span class="kw">let </span><span class="kw-2">mut </span>out = <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>[s])<span class="question-mark">?</span>;
+        <span class="kw">if </span>in_name != out.name() {
+            out.rename(<span class="kw-2">&amp;</span>in_name);
         }
-        <span class="prelude-val">Ok</span>(<span class="ident">out</span>)
+        <span class="prelude-val">Ok</span>(out)
     }
 
-    <span class="kw">fn</span> <span class="ident">finalize</span>(
+    <span class="kw">fn </span>finalize(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">partitioned</span>: <span class="ident">Series</span>,
-        <span class="ident">_groups</span>: <span class="kw-2">&amp;</span><span class="ident">GroupsProxy</span>,
-        <span class="ident">_state</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionState</span>,
-    ) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">Series</span><span class="op">&gt;</span> {
-        <span class="prelude-val">Ok</span>(<span class="ident">partitioned</span>)
+        partitioned: Series,
+        _groups: <span class="kw-2">&amp;</span>GroupsProxy,
+        _state: <span class="kw-2">&amp;</span>ExecutionState,
+    ) -&gt; PolarsResult&lt;Series&gt; {
+        <span class="prelude-val">Ok</span>(partitioned)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_lazy" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_lazy" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

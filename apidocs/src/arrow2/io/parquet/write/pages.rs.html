@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.14.2/src/io/parquet/write/pages.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>pages.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../arrow2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../arrow2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../arrow2/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.14.2/src/io/parquet/write/pages.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>pages.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../normalize.css"><link rel="stylesheet" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../arrow2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../arrow2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../arrow2/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -501,508 +501,508 @@
 <span id="501">501</span>
 <span id="502">502</span>
 <span id="503">503</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">parquet2::schema::types</span>::{<span class="ident">ParquetType</span>, <span class="ident">PrimitiveType</span> <span class="kw">as</span> <span class="ident">ParquetPrimitiveType</span>};
-<span class="kw">use</span> <span class="ident">parquet2</span>::{<span class="ident">page::EncodedPage</span>, <span class="ident">write::DynIter</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>parquet2::schema::types::{ParquetType, PrimitiveType <span class="kw">as </span>ParquetPrimitiveType};
+<span class="kw">use </span>parquet2::{page::EncodedPage, write::DynIter};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::array</span>::{<span class="ident">ListArray</span>, <span class="ident">Offset</span>, <span class="ident">StructArray</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::bitmap::Bitmap</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::datatypes::PhysicalType</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::io::parquet::read::schema::is_nullable</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">array::Array</span>,
-    <span class="ident">error</span>::{<span class="ident">Error</span>, <span class="prelude-ty">Result</span>},
+<span class="kw">use </span><span class="kw">crate</span>::array::{ListArray, Offset, StructArray};
+<span class="kw">use </span><span class="kw">crate</span>::bitmap::Bitmap;
+<span class="kw">use </span><span class="kw">crate</span>::datatypes::PhysicalType;
+<span class="kw">use </span><span class="kw">crate</span>::io::parquet::read::schema::is_nullable;
+<span class="kw">use crate</span>::{
+    array::Array,
+    error::{Error, <span class="prelude-ty">Result</span>},
 };
 
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">array_to_pages</span>, <span class="ident">Encoding</span>, <span class="ident">WriteOptions</span>};
+<span class="kw">use super</span>::{array_to_pages, Encoding, WriteOptions};
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ListNested</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">O</span>: <span class="ident">Offset</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="ident">is_optional</span>: <span class="ident">bool</span>,
-    <span class="kw">pub</span> <span class="ident">offsets</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">O</span>],
-    <span class="kw">pub</span> <span class="ident">validity</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Bitmap</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Debug, Clone, PartialEq)]
+</span><span class="kw">pub struct </span>ListNested&lt;<span class="lifetime">&#39;a</span>, O: Offset&gt; {
+    <span class="kw">pub </span>is_optional: bool,
+    <span class="kw">pub </span>offsets: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[O],
+    <span class="kw">pub </span>validity: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Bitmap&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">O</span>: <span class="ident">Offset</span><span class="op">&gt;</span> <span class="ident">ListNested</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">O</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">offsets</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">O</span>], <span class="ident">validity</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Bitmap</span><span class="op">&gt;</span>, <span class="ident">is_optional</span>: <span class="ident">bool</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">is_optional</span>,
-            <span class="ident">offsets</span>,
-            <span class="ident">validity</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, O: Offset&gt; ListNested&lt;<span class="lifetime">&#39;a</span>, O&gt; {
+    <span class="kw">pub fn </span>new(offsets: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[O], validity: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Bitmap&gt;, is_optional: bool) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            is_optional,
+            offsets,
+            validity,
         }
     }
 }
 
-<span class="doccomment">/// Descriptor of nested information of a field</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Nested</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// a primitive (leaf or parquet column)</span>
-    <span class="ident">Primitive</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Bitmap</span><span class="op">&gt;</span>, <span class="ident">bool</span>, <span class="ident">usize</span>),
-    <span class="doccomment">/// a list</span>
-    <span class="ident">List</span>(<span class="ident">ListNested</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">i32</span><span class="op">&gt;</span>),
-    <span class="doccomment">/// a list</span>
-    <span class="ident">LargeList</span>(<span class="ident">ListNested</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">i64</span><span class="op">&gt;</span>),
-    <span class="doccomment">/// a struct</span>
-    <span class="ident">Struct</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Bitmap</span><span class="op">&gt;</span>, <span class="ident">bool</span>, <span class="ident">usize</span>),
+<span class="doccomment">/// Descriptor of nested information of a field
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq)]
+</span><span class="kw">pub enum </span>Nested&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="doccomment">/// a primitive (leaf or parquet column)
+    </span>Primitive(<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Bitmap&gt;, bool, usize),
+    <span class="doccomment">/// a list
+    </span>List(ListNested&lt;<span class="lifetime">&#39;a</span>, i32&gt;),
+    <span class="doccomment">/// a list
+    </span>LargeList(ListNested&lt;<span class="lifetime">&#39;a</span>, i64&gt;),
+    <span class="doccomment">/// a struct
+    </span>Struct(<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Bitmap&gt;, bool, usize),
 }
 
-<span class="kw">impl</span> <span class="ident">Nested</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Returns the length (number of rows) of the element</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">Nested::Primitive</span>(<span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">length</span>) =&gt; <span class="kw-2">*</span><span class="ident">length</span>,
-            <span class="ident">Nested::List</span>(<span class="ident">nested</span>) =&gt; <span class="ident">nested</span>.<span class="ident">offsets</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>,
-            <span class="ident">Nested::LargeList</span>(<span class="ident">nested</span>) =&gt; <span class="ident">nested</span>.<span class="ident">offsets</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>,
-            <span class="ident">Nested::Struct</span>(<span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">len</span>) =&gt; <span class="kw-2">*</span><span class="ident">len</span>,
+<span class="kw">impl </span>Nested&lt;<span class="lifetime">&#39;_</span>&gt; {
+    <span class="doccomment">/// Returns the length (number of rows) of the element
+    </span><span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="kw">match </span><span class="self">self </span>{
+            Nested::Primitive(<span class="kw">_</span>, <span class="kw">_</span>, length) =&gt; <span class="kw-2">*</span>length,
+            Nested::List(nested) =&gt; nested.offsets.len() - <span class="number">1</span>,
+            Nested::LargeList(nested) =&gt; nested.offsets.len() - <span class="number">1</span>,
+            Nested::Struct(<span class="kw">_</span>, <span class="kw">_</span>, len) =&gt; <span class="kw-2">*</span>len,
         }
     }
 }
 
-<span class="doccomment">/// Constructs the necessary `Vec&lt;Vec&lt;Nested&gt;&gt;` to write the rep and def levels of `array` to parquet</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_nested</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">array</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw">dyn</span> <span class="ident">Array</span>, <span class="ident">type_</span>: <span class="kw-2">&amp;</span><span class="ident">ParquetType</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Nested</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">nested</span> <span class="op">=</span> <span class="macro">vec!</span>[];
+<span class="doccomment">/// Constructs the necessary `Vec&lt;Vec&lt;Nested&gt;&gt;` to write the rep and def levels of `array` to parquet
+</span><span class="kw">pub fn </span>to_nested&lt;<span class="lifetime">&#39;a</span>&gt;(array: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw">dyn </span>Array, type_: <span class="kw-2">&amp;</span>ParquetType) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Vec&lt;Nested&lt;<span class="lifetime">&#39;a</span>&gt;&gt;&gt;&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>nested = <span class="macro">vec!</span>[];
 
-    <span class="ident">to_nested_recursive</span>(<span class="ident">array</span>, <span class="ident">type_</span>, <span class="kw-2">&amp;mut</span> <span class="ident">nested</span>, <span class="macro">vec!</span>[])<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(<span class="ident">nested</span>)
+    to_nested_recursive(array, type_, <span class="kw-2">&amp;mut </span>nested, <span class="macro">vec!</span>[])<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(nested)
 }
 
-<span class="kw">fn</span> <span class="ident">to_nested_recursive</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
-    <span class="ident">array</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw">dyn</span> <span class="ident">Array</span>,
-    <span class="ident">type_</span>: <span class="kw-2">&amp;</span><span class="ident">ParquetType</span>,
-    <span class="ident">nested</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Nested</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="kw-2">mut</span> <span class="ident">parents</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Nested</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">is_optional</span> <span class="op">=</span> <span class="ident">is_nullable</span>(<span class="ident">type_</span>.<span class="ident">get_field_info</span>());
+<span class="kw">fn </span>to_nested_recursive&lt;<span class="lifetime">&#39;a</span>&gt;(
+    array: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw">dyn </span>Array,
+    type_: <span class="kw-2">&amp;</span>ParquetType,
+    nested: <span class="kw-2">&amp;mut </span>Vec&lt;Vec&lt;Nested&lt;<span class="lifetime">&#39;a</span>&gt;&gt;&gt;,
+    <span class="kw-2">mut </span>parents: Vec&lt;Nested&lt;<span class="lifetime">&#39;a</span>&gt;&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>is_optional = is_nullable(type_.get_field_info());
 
-    <span class="kw">use</span> <span class="ident">PhysicalType</span>::<span class="kw-2">*</span>;
-    <span class="kw">match</span> <span class="ident">array</span>.<span class="ident">data_type</span>().<span class="ident">to_physical_type</span>() {
-        <span class="ident">Struct</span> =&gt; {
-            <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">StructArray</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-            <span class="kw">let</span> <span class="ident">fields</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="ident">ParquetType::GroupType</span> { <span class="ident">fields</span>, .. } <span class="op">=</span> <span class="ident">type_</span> {
-                <span class="ident">fields</span>
-            } <span class="kw">else</span> {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::InvalidArgumentError</span>(
-                    <span class="string">&quot;Parquet type must be a group for a struct array&quot;</span>.<span class="ident">to_string</span>(),
+    <span class="kw">use </span>PhysicalType::<span class="kw-2">*</span>;
+    <span class="kw">match </span>array.data_type().to_physical_type() {
+        Struct =&gt; {
+            <span class="kw">let </span>array = array.as_any().downcast_ref::&lt;StructArray&gt;().unwrap();
+            <span class="kw">let </span>fields = <span class="kw">if let </span>ParquetType::GroupType { fields, .. } = type_ {
+                fields
+            } <span class="kw">else </span>{
+                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidArgumentError(
+                    <span class="string">&quot;Parquet type must be a group for a struct array&quot;</span>.to_string(),
                 ));
             };
 
-            <span class="ident">parents</span>.<span class="ident">push</span>(<span class="ident">Nested::Struct</span>(<span class="ident">array</span>.<span class="ident">validity</span>(), <span class="ident">is_optional</span>, <span class="ident">array</span>.<span class="ident">len</span>()));
+            parents.push(Nested::Struct(array.validity(), is_optional, array.len()));
 
-            <span class="kw">for</span> (<span class="ident">type_</span>, <span class="ident">array</span>) <span class="kw">in</span> <span class="ident">fields</span>.<span class="ident">iter</span>().<span class="ident">zip</span>(<span class="ident">array</span>.<span class="ident">values</span>()) {
-                <span class="ident">to_nested_recursive</span>(<span class="ident">array</span>.<span class="ident">as_ref</span>(), <span class="ident">type_</span>, <span class="ident">nested</span>, <span class="ident">parents</span>.<span class="ident">clone</span>())<span class="question-mark">?</span>;
+            <span class="kw">for </span>(type_, array) <span class="kw">in </span>fields.iter().zip(array.values()) {
+                to_nested_recursive(array.as_ref(), type_, nested, parents.clone())<span class="question-mark">?</span>;
             }
         }
-        <span class="ident">List</span> =&gt; {
-            <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">ListArray</span><span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-            <span class="kw">let</span> <span class="ident">type_</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="ident">ParquetType::GroupType</span> { <span class="ident">fields</span>, .. } <span class="op">=</span> <span class="ident">type_</span> {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">ParquetType::GroupType</span> { <span class="ident">fields</span>, .. } <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">fields</span>[<span class="number">0</span>] {
-                    <span class="kw-2">&amp;</span><span class="ident">fields</span>[<span class="number">0</span>]
-                } <span class="kw">else</span> {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::InvalidArgumentError</span>(
-                        <span class="string">&quot;Parquet type must be a group for a list array&quot;</span>.<span class="ident">to_string</span>(),
+        List =&gt; {
+            <span class="kw">let </span>array = array.as_any().downcast_ref::&lt;ListArray&lt;i32&gt;&gt;().unwrap();
+            <span class="kw">let </span>type_ = <span class="kw">if let </span>ParquetType::GroupType { fields, .. } = type_ {
+                <span class="kw">if let </span>ParquetType::GroupType { fields, .. } = <span class="kw-2">&amp;</span>fields[<span class="number">0</span>] {
+                    <span class="kw-2">&amp;</span>fields[<span class="number">0</span>]
+                } <span class="kw">else </span>{
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidArgumentError(
+                        <span class="string">&quot;Parquet type must be a group for a list array&quot;</span>.to_string(),
                     ));
                 }
-            } <span class="kw">else</span> {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::InvalidArgumentError</span>(
-                    <span class="string">&quot;Parquet type must be a group for a list array&quot;</span>.<span class="ident">to_string</span>(),
+            } <span class="kw">else </span>{
+                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidArgumentError(
+                    <span class="string">&quot;Parquet type must be a group for a list array&quot;</span>.to_string(),
                 ));
             };
 
-            <span class="ident">parents</span>.<span class="ident">push</span>(<span class="ident">Nested::List</span>(<span class="ident">ListNested::new</span>(
-                <span class="ident">array</span>.<span class="ident">offsets</span>(),
-                <span class="ident">array</span>.<span class="ident">validity</span>(),
-                <span class="ident">is_optional</span>,
+            parents.push(Nested::List(ListNested::new(
+                array.offsets(),
+                array.validity(),
+                is_optional,
             )));
-            <span class="ident">to_nested_recursive</span>(<span class="ident">array</span>.<span class="ident">values</span>().<span class="ident">as_ref</span>(), <span class="ident">type_</span>, <span class="ident">nested</span>, <span class="ident">parents</span>)<span class="question-mark">?</span>;
+            to_nested_recursive(array.values().as_ref(), type_, nested, parents)<span class="question-mark">?</span>;
         }
-        <span class="ident">LargeList</span> =&gt; {
-            <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">ListArray</span><span class="op">&lt;</span><span class="ident">i64</span><span class="op">&gt;</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-            <span class="kw">let</span> <span class="ident">type_</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="ident">ParquetType::GroupType</span> { <span class="ident">fields</span>, .. } <span class="op">=</span> <span class="ident">type_</span> {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">ParquetType::GroupType</span> { <span class="ident">fields</span>, .. } <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">fields</span>[<span class="number">0</span>] {
-                    <span class="kw-2">&amp;</span><span class="ident">fields</span>[<span class="number">0</span>]
-                } <span class="kw">else</span> {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::InvalidArgumentError</span>(
-                        <span class="string">&quot;Parquet type must be a group for a list array&quot;</span>.<span class="ident">to_string</span>(),
+        LargeList =&gt; {
+            <span class="kw">let </span>array = array.as_any().downcast_ref::&lt;ListArray&lt;i64&gt;&gt;().unwrap();
+            <span class="kw">let </span>type_ = <span class="kw">if let </span>ParquetType::GroupType { fields, .. } = type_ {
+                <span class="kw">if let </span>ParquetType::GroupType { fields, .. } = <span class="kw-2">&amp;</span>fields[<span class="number">0</span>] {
+                    <span class="kw-2">&amp;</span>fields[<span class="number">0</span>]
+                } <span class="kw">else </span>{
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidArgumentError(
+                        <span class="string">&quot;Parquet type must be a group for a list array&quot;</span>.to_string(),
                     ));
                 }
-            } <span class="kw">else</span> {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::InvalidArgumentError</span>(
-                    <span class="string">&quot;Parquet type must be a group for a list array&quot;</span>.<span class="ident">to_string</span>(),
+            } <span class="kw">else </span>{
+                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidArgumentError(
+                    <span class="string">&quot;Parquet type must be a group for a list array&quot;</span>.to_string(),
                 ));
             };
 
-            <span class="ident">parents</span>.<span class="ident">push</span>(<span class="ident">Nested::LargeList</span>(<span class="ident">ListNested::new</span>(
-                <span class="ident">array</span>.<span class="ident">offsets</span>(),
-                <span class="ident">array</span>.<span class="ident">validity</span>(),
-                <span class="ident">is_optional</span>,
+            parents.push(Nested::LargeList(ListNested::new(
+                array.offsets(),
+                array.validity(),
+                is_optional,
             )));
-            <span class="ident">to_nested_recursive</span>(<span class="ident">array</span>.<span class="ident">values</span>().<span class="ident">as_ref</span>(), <span class="ident">type_</span>, <span class="ident">nested</span>, <span class="ident">parents</span>)<span class="question-mark">?</span>;
+            to_nested_recursive(array.values().as_ref(), type_, nested, parents)<span class="question-mark">?</span>;
         }
-        <span class="kw">_</span> =&gt; {
-            <span class="ident">parents</span>.<span class="ident">push</span>(<span class="ident">Nested::Primitive</span>(
-                <span class="ident">array</span>.<span class="ident">validity</span>(),
-                <span class="ident">is_optional</span>,
-                <span class="ident">array</span>.<span class="ident">len</span>(),
+        <span class="kw">_ </span>=&gt; {
+            parents.push(Nested::Primitive(
+                array.validity(),
+                is_optional,
+                array.len(),
             ));
-            <span class="ident">nested</span>.<span class="ident">push</span>(<span class="ident">parents</span>)
+            nested.push(parents)
         }
     }
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">fn</span> <span class="ident">to_leafs</span>(<span class="ident">array</span>: <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">Array</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">Array</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">leafs</span> <span class="op">=</span> <span class="macro">vec!</span>[];
-    <span class="ident">to_leafs_recursive</span>(<span class="ident">array</span>, <span class="kw-2">&amp;mut</span> <span class="ident">leafs</span>);
-    <span class="ident">leafs</span>
+<span class="kw">fn </span>to_leafs(array: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Array) -&gt; Vec&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>Array&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>leafs = <span class="macro">vec!</span>[];
+    to_leafs_recursive(array, <span class="kw-2">&amp;mut </span>leafs);
+    leafs
 }
 
-<span class="kw">fn</span> <span class="ident">to_leafs_recursive</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">array</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw">dyn</span> <span class="ident">Array</span>, <span class="ident">leafs</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw">dyn</span> <span class="ident">Array</span><span class="op">&gt;</span>) {
-    <span class="kw">use</span> <span class="ident">PhysicalType</span>::<span class="kw-2">*</span>;
-    <span class="kw">match</span> <span class="ident">array</span>.<span class="ident">data_type</span>().<span class="ident">to_physical_type</span>() {
-        <span class="ident">Struct</span> =&gt; {
-            <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">StructArray</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-            <span class="ident">array</span>
-                .<span class="ident">values</span>()
-                .<span class="ident">iter</span>()
-                .<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">a</span><span class="op">|</span> <span class="ident">to_leafs_recursive</span>(<span class="ident">a</span>.<span class="ident">as_ref</span>(), <span class="ident">leafs</span>));
+<span class="kw">fn </span>to_leafs_recursive&lt;<span class="lifetime">&#39;a</span>&gt;(array: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw">dyn </span>Array, leafs: <span class="kw-2">&amp;mut </span>Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw">dyn </span>Array&gt;) {
+    <span class="kw">use </span>PhysicalType::<span class="kw-2">*</span>;
+    <span class="kw">match </span>array.data_type().to_physical_type() {
+        Struct =&gt; {
+            <span class="kw">let </span>array = array.as_any().downcast_ref::&lt;StructArray&gt;().unwrap();
+            array
+                .values()
+                .iter()
+                .for_each(|a| to_leafs_recursive(a.as_ref(), leafs));
         }
-        <span class="ident">List</span> =&gt; {
-            <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">ListArray</span><span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-            <span class="ident">to_leafs_recursive</span>(<span class="ident">array</span>.<span class="ident">values</span>().<span class="ident">as_ref</span>(), <span class="ident">leafs</span>);
+        List =&gt; {
+            <span class="kw">let </span>array = array.as_any().downcast_ref::&lt;ListArray&lt;i32&gt;&gt;().unwrap();
+            to_leafs_recursive(array.values().as_ref(), leafs);
         }
-        <span class="ident">LargeList</span> =&gt; {
-            <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">as_any</span>().<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">ListArray</span><span class="op">&lt;</span><span class="ident">i64</span><span class="op">&gt;</span><span class="op">&gt;</span>().<span class="ident">unwrap</span>();
-            <span class="ident">to_leafs_recursive</span>(<span class="ident">array</span>.<span class="ident">values</span>().<span class="ident">as_ref</span>(), <span class="ident">leafs</span>);
+        LargeList =&gt; {
+            <span class="kw">let </span>array = array.as_any().downcast_ref::&lt;ListArray&lt;i64&gt;&gt;().unwrap();
+            to_leafs_recursive(array.values().as_ref(), leafs);
         }
-        <span class="ident">Null</span> <span class="op">|</span> <span class="ident">Boolean</span> <span class="op">|</span> <span class="ident">Primitive</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Binary</span> <span class="op">|</span> <span class="ident">FixedSizeBinary</span> <span class="op">|</span> <span class="ident">LargeBinary</span> <span class="op">|</span> <span class="ident">Utf8</span>
-        <span class="op">|</span> <span class="ident">LargeUtf8</span> <span class="op">|</span> <span class="ident">Dictionary</span>(<span class="kw">_</span>) =&gt; <span class="ident">leafs</span>.<span class="ident">push</span>(<span class="ident">array</span>),
-        <span class="ident">other</span> =&gt; <span class="macro">todo!</span>(<span class="string">&quot;Writing {:?} to parquet not yet implemented&quot;</span>, <span class="ident">other</span>),
+        Null | Boolean | Primitive(<span class="kw">_</span>) | Binary | FixedSizeBinary | LargeBinary | Utf8
+        | LargeUtf8 | Dictionary(<span class="kw">_</span>) =&gt; leafs.push(array),
+        other =&gt; <span class="macro">todo!</span>(<span class="string">&quot;Writing {:?} to parquet not yet implemented&quot;</span>, other),
     }
 }
 
-<span class="kw">fn</span> <span class="ident">to_parquet_leafs</span>(<span class="ident">type_</span>: <span class="ident">ParquetType</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ParquetPrimitiveType</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">leafs</span> <span class="op">=</span> <span class="macro">vec!</span>[];
-    <span class="ident">to_parquet_leafs_recursive</span>(<span class="ident">type_</span>, <span class="kw-2">&amp;mut</span> <span class="ident">leafs</span>);
-    <span class="ident">leafs</span>
+<span class="kw">fn </span>to_parquet_leafs(type_: ParquetType) -&gt; Vec&lt;ParquetPrimitiveType&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>leafs = <span class="macro">vec!</span>[];
+    to_parquet_leafs_recursive(type_, <span class="kw-2">&amp;mut </span>leafs);
+    leafs
 }
 
-<span class="kw">fn</span> <span class="ident">to_parquet_leafs_recursive</span>(<span class="ident">type_</span>: <span class="ident">ParquetType</span>, <span class="ident">leafs</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ParquetPrimitiveType</span><span class="op">&gt;</span>) {
-    <span class="kw">match</span> <span class="ident">type_</span> {
-        <span class="ident">ParquetType::PrimitiveType</span>(<span class="ident">primitive</span>) =&gt; <span class="ident">leafs</span>.<span class="ident">push</span>(<span class="ident">primitive</span>),
-        <span class="ident">ParquetType::GroupType</span> { <span class="ident">fields</span>, .. } =&gt; {
-            <span class="ident">fields</span>
-                .<span class="ident">into_iter</span>()
-                .<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">type_</span><span class="op">|</span> <span class="ident">to_parquet_leafs_recursive</span>(<span class="ident">type_</span>, <span class="ident">leafs</span>));
+<span class="kw">fn </span>to_parquet_leafs_recursive(type_: ParquetType, leafs: <span class="kw-2">&amp;mut </span>Vec&lt;ParquetPrimitiveType&gt;) {
+    <span class="kw">match </span>type_ {
+        ParquetType::PrimitiveType(primitive) =&gt; leafs.push(primitive),
+        ParquetType::GroupType { fields, .. } =&gt; {
+            fields
+                .into_iter()
+                .for_each(|type_| to_parquet_leafs_recursive(type_, leafs));
         }
     }
 }
 
-<span class="doccomment">/// Returns a vector of iterators of [`EncodedPage`], one per leaf column in the array</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">array_to_columns</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Array</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span>(
-    <span class="ident">array</span>: <span class="ident">A</span>,
-    <span class="ident">type_</span>: <span class="ident">ParquetType</span>,
-    <span class="ident">options</span>: <span class="ident">WriteOptions</span>,
-    <span class="ident">encoding</span>: <span class="kw-2">&amp;</span>[<span class="ident">Encoding</span>],
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">DynIter</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">EncodedPage</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">array</span>.<span class="ident">as_ref</span>();
-    <span class="kw">let</span> <span class="ident">nested</span> <span class="op">=</span> <span class="ident">to_nested</span>(<span class="ident">array</span>, <span class="kw-2">&amp;</span><span class="ident">type_</span>)<span class="question-mark">?</span>;
+<span class="doccomment">/// Returns a vector of iterators of [`EncodedPage`], one per leaf column in the array
+</span><span class="kw">pub fn </span>array_to_columns&lt;A: AsRef&lt;<span class="kw">dyn </span>Array&gt; + Send + Sync&gt;(
+    array: A,
+    type_: ParquetType,
+    options: WriteOptions,
+    encoding: <span class="kw-2">&amp;</span>[Encoding],
+) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;DynIter&lt;<span class="lifetime">&#39;static</span>, <span class="prelude-ty">Result</span>&lt;EncodedPage&gt;&gt;&gt;&gt; {
+    <span class="kw">let </span>array = array.as_ref();
+    <span class="kw">let </span>nested = to_nested(array, <span class="kw-2">&amp;</span>type_)<span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">types</span> <span class="op">=</span> <span class="ident">to_parquet_leafs</span>(<span class="ident">type_</span>);
+    <span class="kw">let </span>types = to_parquet_leafs(type_);
 
-    <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">to_leafs</span>(<span class="ident">array</span>);
+    <span class="kw">let </span>values = to_leafs(array);
 
-    <span class="macro">assert_eq!</span>(<span class="ident">encoding</span>.<span class="ident">len</span>(), <span class="ident">types</span>.<span class="ident">len</span>());
+    <span class="macro">assert_eq!</span>(encoding.len(), types.len());
 
-    <span class="ident">values</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">zip</span>(<span class="ident">nested</span>.<span class="ident">into_iter</span>())
-        .<span class="ident">zip</span>(<span class="ident">types</span>.<span class="ident">into_iter</span>())
-        .<span class="ident">zip</span>(<span class="ident">encoding</span>.<span class="ident">iter</span>())
-        .<span class="ident">map</span>(<span class="op">|</span>(((<span class="ident">values</span>, <span class="ident">nested</span>), <span class="ident">type_</span>), <span class="ident">encoding</span>)<span class="op">|</span> {
-            <span class="ident">array_to_pages</span>(<span class="kw-2">*</span><span class="ident">values</span>, <span class="ident">type_</span>, <span class="kw-2">&amp;</span><span class="ident">nested</span>, <span class="ident">options</span>, <span class="kw-2">*</span><span class="ident">encoding</span>)
+    values
+        .iter()
+        .zip(nested.into_iter())
+        .zip(types.into_iter())
+        .zip(encoding.iter())
+        .map(|(((values, nested), type_), encoding)| {
+            array_to_pages(<span class="kw-2">*</span>values, type_, <span class="kw-2">&amp;</span>nested, options, <span class="kw-2">*</span>encoding)
         })
-        .<span class="ident">collect</span>()
+        .collect()
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="ident">parquet2::schema::Repetition</span>;
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use </span>parquet2::schema::Repetition;
 
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::array</span>::<span class="kw-2">*</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::bitmap::Bitmap</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::datatypes</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::array::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::bitmap::Bitmap;
+    <span class="kw">use </span><span class="kw">crate</span>::datatypes::<span class="kw-2">*</span>;
 
-    <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::<span class="kw">super</span></span>::{<span class="ident">FieldInfo</span>, <span class="ident">ParquetPhysicalType</span>, <span class="ident">ParquetPrimitiveType</span>};
+    <span class="kw">use </span><span class="kw">super</span>::<span class="kw">super</span>::{FieldInfo, ParquetPhysicalType, ParquetPrimitiveType};
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_struct</span>() {
-        <span class="kw">let</span> <span class="ident">boolean</span> <span class="op">=</span> <span class="ident">BooleanArray::from_slice</span>(<span class="kw-2">&amp;</span>[<span class="bool-val">false</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>, <span class="bool-val">true</span>]).<span class="ident">boxed</span>();
-        <span class="kw">let</span> <span class="ident">int</span> <span class="op">=</span> <span class="ident">Int32Array::from_slice</span>(<span class="kw-2">&amp;</span>[<span class="number">42</span>, <span class="number">28</span>, <span class="number">19</span>, <span class="number">31</span>]).<span class="ident">boxed</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_struct() {
+        <span class="kw">let </span>boolean = BooleanArray::from_slice(<span class="kw-2">&amp;</span>[<span class="bool-val">false</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>, <span class="bool-val">true</span>]).boxed();
+        <span class="kw">let </span>int = Int32Array::from_slice(<span class="kw-2">&amp;</span>[<span class="number">42</span>, <span class="number">28</span>, <span class="number">19</span>, <span class="number">31</span>]).boxed();
 
-        <span class="kw">let</span> <span class="ident">fields</span> <span class="op">=</span> <span class="macro">vec!</span>[
-            <span class="ident">Field::new</span>(<span class="string">&quot;b&quot;</span>, <span class="ident">DataType::Boolean</span>, <span class="bool-val">false</span>),
-            <span class="ident">Field::new</span>(<span class="string">&quot;c&quot;</span>, <span class="ident">DataType::Int32</span>, <span class="bool-val">false</span>),
+        <span class="kw">let </span>fields = <span class="macro">vec!</span>[
+            Field::new(<span class="string">&quot;b&quot;</span>, DataType::Boolean, <span class="bool-val">false</span>),
+            Field::new(<span class="string">&quot;c&quot;</span>, DataType::Int32, <span class="bool-val">false</span>),
         ];
 
-        <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">StructArray::from_data</span>(
-            <span class="ident">DataType::Struct</span>(<span class="ident">fields</span>),
-            <span class="macro">vec!</span>[<span class="ident">boolean</span>.<span class="ident">clone</span>(), <span class="ident">int</span>.<span class="ident">clone</span>()],
-            <span class="prelude-val">Some</span>(<span class="ident">Bitmap::from</span>([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])),
+        <span class="kw">let </span>array = StructArray::from_data(
+            DataType::Struct(fields),
+            <span class="macro">vec!</span>[boolean.clone(), int.clone()],
+            <span class="prelude-val">Some</span>(Bitmap::from([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])),
         );
 
-        <span class="kw">let</span> <span class="ident">type_</span> <span class="op">=</span> <span class="ident">ParquetType::GroupType</span> {
-            <span class="ident">field_info</span>: <span class="ident">FieldInfo</span> {
-                <span class="ident">name</span>: <span class="string">&quot;a&quot;</span>.<span class="ident">to_string</span>(),
-                <span class="ident">repetition</span>: <span class="ident">Repetition::Optional</span>,
-                <span class="ident">id</span>: <span class="prelude-val">None</span>,
+        <span class="kw">let </span>type_ = ParquetType::GroupType {
+            field_info: FieldInfo {
+                name: <span class="string">&quot;a&quot;</span>.to_string(),
+                repetition: Repetition::Optional,
+                id: <span class="prelude-val">None</span>,
             },
-            <span class="ident">logical_type</span>: <span class="prelude-val">None</span>,
-            <span class="ident">converted_type</span>: <span class="prelude-val">None</span>,
-            <span class="ident">fields</span>: <span class="macro">vec!</span>[
-                <span class="ident">ParquetType::PrimitiveType</span>(<span class="ident">ParquetPrimitiveType</span> {
-                    <span class="ident">field_info</span>: <span class="ident">FieldInfo</span> {
-                        <span class="ident">name</span>: <span class="string">&quot;b&quot;</span>.<span class="ident">to_string</span>(),
-                        <span class="ident">repetition</span>: <span class="ident">Repetition::Required</span>,
-                        <span class="ident">id</span>: <span class="prelude-val">None</span>,
+            logical_type: <span class="prelude-val">None</span>,
+            converted_type: <span class="prelude-val">None</span>,
+            fields: <span class="macro">vec!</span>[
+                ParquetType::PrimitiveType(ParquetPrimitiveType {
+                    field_info: FieldInfo {
+                        name: <span class="string">&quot;b&quot;</span>.to_string(),
+                        repetition: Repetition::Required,
+                        id: <span class="prelude-val">None</span>,
                     },
-                    <span class="ident">logical_type</span>: <span class="prelude-val">None</span>,
-                    <span class="ident">converted_type</span>: <span class="prelude-val">None</span>,
-                    <span class="ident">physical_type</span>: <span class="ident">ParquetPhysicalType::Boolean</span>,
+                    logical_type: <span class="prelude-val">None</span>,
+                    converted_type: <span class="prelude-val">None</span>,
+                    physical_type: ParquetPhysicalType::Boolean,
                 }),
-                <span class="ident">ParquetType::PrimitiveType</span>(<span class="ident">ParquetPrimitiveType</span> {
-                    <span class="ident">field_info</span>: <span class="ident">FieldInfo</span> {
-                        <span class="ident">name</span>: <span class="string">&quot;c&quot;</span>.<span class="ident">to_string</span>(),
-                        <span class="ident">repetition</span>: <span class="ident">Repetition::Required</span>,
-                        <span class="ident">id</span>: <span class="prelude-val">None</span>,
+                ParquetType::PrimitiveType(ParquetPrimitiveType {
+                    field_info: FieldInfo {
+                        name: <span class="string">&quot;c&quot;</span>.to_string(),
+                        repetition: Repetition::Required,
+                        id: <span class="prelude-val">None</span>,
                     },
-                    <span class="ident">logical_type</span>: <span class="prelude-val">None</span>,
-                    <span class="ident">converted_type</span>: <span class="prelude-val">None</span>,
-                    <span class="ident">physical_type</span>: <span class="ident">ParquetPhysicalType::Int32</span>,
+                    logical_type: <span class="prelude-val">None</span>,
+                    converted_type: <span class="prelude-val">None</span>,
+                    physical_type: ParquetPhysicalType::Int32,
                 }),
             ],
         };
-        <span class="kw">let</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">to_nested</span>(<span class="kw-2">&amp;</span><span class="ident">array</span>, <span class="kw-2">&amp;</span><span class="ident">type_</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let </span>a = to_nested(<span class="kw-2">&amp;</span>array, <span class="kw-2">&amp;</span>type_).unwrap();
 
         <span class="macro">assert_eq!</span>(
-            <span class="ident">a</span>,
+            a,
             <span class="macro">vec!</span>[
                 <span class="macro">vec!</span>[
-                    <span class="ident">Nested::Struct</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">Bitmap::from</span>([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])), <span class="bool-val">true</span>, <span class="number">4</span>),
-                    <span class="ident">Nested::Primitive</span>(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
+                    Nested::Struct(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>Bitmap::from([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])), <span class="bool-val">true</span>, <span class="number">4</span>),
+                    Nested::Primitive(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
                 ],
                 <span class="macro">vec!</span>[
-                    <span class="ident">Nested::Struct</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">Bitmap::from</span>([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])), <span class="bool-val">true</span>, <span class="number">4</span>),
-                    <span class="ident">Nested::Primitive</span>(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
+                    Nested::Struct(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>Bitmap::from([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])), <span class="bool-val">true</span>, <span class="number">4</span>),
+                    Nested::Primitive(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
                 ],
             ]
         );
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_struct_struct</span>() {
-        <span class="kw">let</span> <span class="ident">boolean</span> <span class="op">=</span> <span class="ident">BooleanArray::from_slice</span>(<span class="kw-2">&amp;</span>[<span class="bool-val">false</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>, <span class="bool-val">true</span>]).<span class="ident">boxed</span>();
-        <span class="kw">let</span> <span class="ident">int</span> <span class="op">=</span> <span class="ident">Int32Array::from_slice</span>(<span class="kw-2">&amp;</span>[<span class="number">42</span>, <span class="number">28</span>, <span class="number">19</span>, <span class="number">31</span>]).<span class="ident">boxed</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_struct_struct() {
+        <span class="kw">let </span>boolean = BooleanArray::from_slice(<span class="kw-2">&amp;</span>[<span class="bool-val">false</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>, <span class="bool-val">true</span>]).boxed();
+        <span class="kw">let </span>int = Int32Array::from_slice(<span class="kw-2">&amp;</span>[<span class="number">42</span>, <span class="number">28</span>, <span class="number">19</span>, <span class="number">31</span>]).boxed();
 
-        <span class="kw">let</span> <span class="ident">fields</span> <span class="op">=</span> <span class="macro">vec!</span>[
-            <span class="ident">Field::new</span>(<span class="string">&quot;b&quot;</span>, <span class="ident">DataType::Boolean</span>, <span class="bool-val">false</span>),
-            <span class="ident">Field::new</span>(<span class="string">&quot;c&quot;</span>, <span class="ident">DataType::Int32</span>, <span class="bool-val">false</span>),
+        <span class="kw">let </span>fields = <span class="macro">vec!</span>[
+            Field::new(<span class="string">&quot;b&quot;</span>, DataType::Boolean, <span class="bool-val">false</span>),
+            Field::new(<span class="string">&quot;c&quot;</span>, DataType::Int32, <span class="bool-val">false</span>),
         ];
 
-        <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">StructArray::from_data</span>(
-            <span class="ident">DataType::Struct</span>(<span class="ident">fields</span>),
-            <span class="macro">vec!</span>[<span class="ident">boolean</span>.<span class="ident">clone</span>(), <span class="ident">int</span>.<span class="ident">clone</span>()],
-            <span class="prelude-val">Some</span>(<span class="ident">Bitmap::from</span>([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])),
+        <span class="kw">let </span>array = StructArray::from_data(
+            DataType::Struct(fields),
+            <span class="macro">vec!</span>[boolean.clone(), int.clone()],
+            <span class="prelude-val">Some</span>(Bitmap::from([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])),
         );
 
-        <span class="kw">let</span> <span class="ident">fields</span> <span class="op">=</span> <span class="macro">vec!</span>[
-            <span class="ident">Field::new</span>(<span class="string">&quot;b&quot;</span>, <span class="ident">array</span>.<span class="ident">data_type</span>().<span class="ident">clone</span>(), <span class="bool-val">true</span>),
-            <span class="ident">Field::new</span>(<span class="string">&quot;c&quot;</span>, <span class="ident">array</span>.<span class="ident">data_type</span>().<span class="ident">clone</span>(), <span class="bool-val">true</span>),
+        <span class="kw">let </span>fields = <span class="macro">vec!</span>[
+            Field::new(<span class="string">&quot;b&quot;</span>, array.data_type().clone(), <span class="bool-val">true</span>),
+            Field::new(<span class="string">&quot;c&quot;</span>, array.data_type().clone(), <span class="bool-val">true</span>),
         ];
 
-        <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">StructArray::from_data</span>(
-            <span class="ident">DataType::Struct</span>(<span class="ident">fields</span>),
-            <span class="macro">vec!</span>[<span class="ident">Box::new</span>(<span class="ident">array</span>.<span class="ident">clone</span>()), <span class="ident">Box::new</span>(<span class="ident">array</span>)],
+        <span class="kw">let </span>array = StructArray::from_data(
+            DataType::Struct(fields),
+            <span class="macro">vec!</span>[Box::new(array.clone()), Box::new(array)],
             <span class="prelude-val">None</span>,
         );
 
-        <span class="kw">let</span> <span class="ident">type_</span> <span class="op">=</span> <span class="ident">ParquetType::GroupType</span> {
-            <span class="ident">field_info</span>: <span class="ident">FieldInfo</span> {
-                <span class="ident">name</span>: <span class="string">&quot;a&quot;</span>.<span class="ident">to_string</span>(),
-                <span class="ident">repetition</span>: <span class="ident">Repetition::Optional</span>,
-                <span class="ident">id</span>: <span class="prelude-val">None</span>,
+        <span class="kw">let </span>type_ = ParquetType::GroupType {
+            field_info: FieldInfo {
+                name: <span class="string">&quot;a&quot;</span>.to_string(),
+                repetition: Repetition::Optional,
+                id: <span class="prelude-val">None</span>,
             },
-            <span class="ident">logical_type</span>: <span class="prelude-val">None</span>,
-            <span class="ident">converted_type</span>: <span class="prelude-val">None</span>,
-            <span class="ident">fields</span>: <span class="macro">vec!</span>[
-                <span class="ident">ParquetType::PrimitiveType</span>(<span class="ident">ParquetPrimitiveType</span> {
-                    <span class="ident">field_info</span>: <span class="ident">FieldInfo</span> {
-                        <span class="ident">name</span>: <span class="string">&quot;b&quot;</span>.<span class="ident">to_string</span>(),
-                        <span class="ident">repetition</span>: <span class="ident">Repetition::Required</span>,
-                        <span class="ident">id</span>: <span class="prelude-val">None</span>,
+            logical_type: <span class="prelude-val">None</span>,
+            converted_type: <span class="prelude-val">None</span>,
+            fields: <span class="macro">vec!</span>[
+                ParquetType::PrimitiveType(ParquetPrimitiveType {
+                    field_info: FieldInfo {
+                        name: <span class="string">&quot;b&quot;</span>.to_string(),
+                        repetition: Repetition::Required,
+                        id: <span class="prelude-val">None</span>,
                     },
-                    <span class="ident">logical_type</span>: <span class="prelude-val">None</span>,
-                    <span class="ident">converted_type</span>: <span class="prelude-val">None</span>,
-                    <span class="ident">physical_type</span>: <span class="ident">ParquetPhysicalType::Boolean</span>,
+                    logical_type: <span class="prelude-val">None</span>,
+                    converted_type: <span class="prelude-val">None</span>,
+                    physical_type: ParquetPhysicalType::Boolean,
                 }),
-                <span class="ident">ParquetType::PrimitiveType</span>(<span class="ident">ParquetPrimitiveType</span> {
-                    <span class="ident">field_info</span>: <span class="ident">FieldInfo</span> {
-                        <span class="ident">name</span>: <span class="string">&quot;c&quot;</span>.<span class="ident">to_string</span>(),
-                        <span class="ident">repetition</span>: <span class="ident">Repetition::Required</span>,
-                        <span class="ident">id</span>: <span class="prelude-val">None</span>,
+                ParquetType::PrimitiveType(ParquetPrimitiveType {
+                    field_info: FieldInfo {
+                        name: <span class="string">&quot;c&quot;</span>.to_string(),
+                        repetition: Repetition::Required,
+                        id: <span class="prelude-val">None</span>,
                     },
-                    <span class="ident">logical_type</span>: <span class="prelude-val">None</span>,
-                    <span class="ident">converted_type</span>: <span class="prelude-val">None</span>,
-                    <span class="ident">physical_type</span>: <span class="ident">ParquetPhysicalType::Int32</span>,
+                    logical_type: <span class="prelude-val">None</span>,
+                    converted_type: <span class="prelude-val">None</span>,
+                    physical_type: ParquetPhysicalType::Int32,
                 }),
             ],
         };
 
-        <span class="kw">let</span> <span class="ident">type_</span> <span class="op">=</span> <span class="ident">ParquetType::GroupType</span> {
-            <span class="ident">field_info</span>: <span class="ident">FieldInfo</span> {
-                <span class="ident">name</span>: <span class="string">&quot;a&quot;</span>.<span class="ident">to_string</span>(),
-                <span class="ident">repetition</span>: <span class="ident">Repetition::Required</span>,
-                <span class="ident">id</span>: <span class="prelude-val">None</span>,
+        <span class="kw">let </span>type_ = ParquetType::GroupType {
+            field_info: FieldInfo {
+                name: <span class="string">&quot;a&quot;</span>.to_string(),
+                repetition: Repetition::Required,
+                id: <span class="prelude-val">None</span>,
             },
-            <span class="ident">logical_type</span>: <span class="prelude-val">None</span>,
-            <span class="ident">converted_type</span>: <span class="prelude-val">None</span>,
-            <span class="ident">fields</span>: <span class="macro">vec!</span>[<span class="ident">type_</span>.<span class="ident">clone</span>(), <span class="ident">type_</span>],
+            logical_type: <span class="prelude-val">None</span>,
+            converted_type: <span class="prelude-val">None</span>,
+            fields: <span class="macro">vec!</span>[type_.clone(), type_],
         };
 
-        <span class="kw">let</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">to_nested</span>(<span class="kw-2">&amp;</span><span class="ident">array</span>, <span class="kw-2">&amp;</span><span class="ident">type_</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let </span>a = to_nested(<span class="kw-2">&amp;</span>array, <span class="kw-2">&amp;</span>type_).unwrap();
 
         <span class="macro">assert_eq!</span>(
-            <span class="ident">a</span>,
+            a,
             <span class="macro">vec!</span>[
-                <span class="comment">// a.b.b</span>
-                <span class="macro">vec!</span>[
-                    <span class="ident">Nested::Struct</span>(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
-                    <span class="ident">Nested::Struct</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">Bitmap::from</span>([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])), <span class="bool-val">true</span>, <span class="number">4</span>),
-                    <span class="ident">Nested::Primitive</span>(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
+                <span class="comment">// a.b.b
+                </span><span class="macro">vec!</span>[
+                    Nested::Struct(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
+                    Nested::Struct(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>Bitmap::from([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])), <span class="bool-val">true</span>, <span class="number">4</span>),
+                    Nested::Primitive(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
                 ],
-                <span class="comment">// a.b.c</span>
-                <span class="macro">vec!</span>[
-                    <span class="ident">Nested::Struct</span>(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
-                    <span class="ident">Nested::Struct</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">Bitmap::from</span>([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])), <span class="bool-val">true</span>, <span class="number">4</span>),
-                    <span class="ident">Nested::Primitive</span>(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
+                <span class="comment">// a.b.c
+                </span><span class="macro">vec!</span>[
+                    Nested::Struct(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
+                    Nested::Struct(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>Bitmap::from([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])), <span class="bool-val">true</span>, <span class="number">4</span>),
+                    Nested::Primitive(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
                 ],
-                <span class="comment">// a.c.b</span>
-                <span class="macro">vec!</span>[
-                    <span class="ident">Nested::Struct</span>(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
-                    <span class="ident">Nested::Struct</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">Bitmap::from</span>([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])), <span class="bool-val">true</span>, <span class="number">4</span>),
-                    <span class="ident">Nested::Primitive</span>(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
+                <span class="comment">// a.c.b
+                </span><span class="macro">vec!</span>[
+                    Nested::Struct(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
+                    Nested::Struct(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>Bitmap::from([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])), <span class="bool-val">true</span>, <span class="number">4</span>),
+                    Nested::Primitive(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
                 ],
-                <span class="comment">// a.c.c</span>
-                <span class="macro">vec!</span>[
-                    <span class="ident">Nested::Struct</span>(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
-                    <span class="ident">Nested::Struct</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">Bitmap::from</span>([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])), <span class="bool-val">true</span>, <span class="number">4</span>),
-                    <span class="ident">Nested::Primitive</span>(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
+                <span class="comment">// a.c.c
+                </span><span class="macro">vec!</span>[
+                    Nested::Struct(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
+                    Nested::Struct(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>Bitmap::from([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])), <span class="bool-val">true</span>, <span class="number">4</span>),
+                    Nested::Primitive(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
                 ],
             ]
         );
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_list_struct</span>() {
-        <span class="kw">let</span> <span class="ident">boolean</span> <span class="op">=</span> <span class="ident">BooleanArray::from_slice</span>(<span class="kw-2">&amp;</span>[<span class="bool-val">false</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>, <span class="bool-val">true</span>]).<span class="ident">boxed</span>();
-        <span class="kw">let</span> <span class="ident">int</span> <span class="op">=</span> <span class="ident">Int32Array::from_slice</span>(<span class="kw-2">&amp;</span>[<span class="number">42</span>, <span class="number">28</span>, <span class="number">19</span>, <span class="number">31</span>]).<span class="ident">boxed</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_list_struct() {
+        <span class="kw">let </span>boolean = BooleanArray::from_slice(<span class="kw-2">&amp;</span>[<span class="bool-val">false</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>, <span class="bool-val">true</span>]).boxed();
+        <span class="kw">let </span>int = Int32Array::from_slice(<span class="kw-2">&amp;</span>[<span class="number">42</span>, <span class="number">28</span>, <span class="number">19</span>, <span class="number">31</span>]).boxed();
 
-        <span class="kw">let</span> <span class="ident">fields</span> <span class="op">=</span> <span class="macro">vec!</span>[
-            <span class="ident">Field::new</span>(<span class="string">&quot;b&quot;</span>, <span class="ident">DataType::Boolean</span>, <span class="bool-val">false</span>),
-            <span class="ident">Field::new</span>(<span class="string">&quot;c&quot;</span>, <span class="ident">DataType::Int32</span>, <span class="bool-val">false</span>),
+        <span class="kw">let </span>fields = <span class="macro">vec!</span>[
+            Field::new(<span class="string">&quot;b&quot;</span>, DataType::Boolean, <span class="bool-val">false</span>),
+            Field::new(<span class="string">&quot;c&quot;</span>, DataType::Int32, <span class="bool-val">false</span>),
         ];
 
-        <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">StructArray::from_data</span>(
-            <span class="ident">DataType::Struct</span>(<span class="ident">fields</span>),
-            <span class="macro">vec!</span>[<span class="ident">boolean</span>.<span class="ident">clone</span>(), <span class="ident">int</span>.<span class="ident">clone</span>()],
-            <span class="prelude-val">Some</span>(<span class="ident">Bitmap::from</span>([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])),
+        <span class="kw">let </span>array = StructArray::from_data(
+            DataType::Struct(fields),
+            <span class="macro">vec!</span>[boolean.clone(), int.clone()],
+            <span class="prelude-val">Some</span>(Bitmap::from([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])),
         );
 
-        <span class="kw">let</span> <span class="ident">array</span> <span class="op">=</span> <span class="ident">ListArray::new</span>(
-            <span class="ident">DataType::List</span>(<span class="ident">Box::new</span>(<span class="ident">Field::new</span>(<span class="string">&quot;l&quot;</span>, <span class="ident">array</span>.<span class="ident">data_type</span>().<span class="ident">clone</span>(), <span class="bool-val">true</span>))),
-            <span class="macro">vec!</span>[<span class="number">0i32</span>, <span class="number">2</span>, <span class="number">4</span>].<span class="ident">into</span>(),
-            <span class="ident">Box::new</span>(<span class="ident">array</span>),
+        <span class="kw">let </span>array = ListArray::new(
+            DataType::List(Box::new(Field::new(<span class="string">&quot;l&quot;</span>, array.data_type().clone(), <span class="bool-val">true</span>))),
+            <span class="macro">vec!</span>[<span class="number">0i32</span>, <span class="number">2</span>, <span class="number">4</span>].into(),
+            Box::new(array),
             <span class="prelude-val">None</span>,
         );
 
-        <span class="kw">let</span> <span class="ident">type_</span> <span class="op">=</span> <span class="ident">ParquetType::GroupType</span> {
-            <span class="ident">field_info</span>: <span class="ident">FieldInfo</span> {
-                <span class="ident">name</span>: <span class="string">&quot;a&quot;</span>.<span class="ident">to_string</span>(),
-                <span class="ident">repetition</span>: <span class="ident">Repetition::Optional</span>,
-                <span class="ident">id</span>: <span class="prelude-val">None</span>,
+        <span class="kw">let </span>type_ = ParquetType::GroupType {
+            field_info: FieldInfo {
+                name: <span class="string">&quot;a&quot;</span>.to_string(),
+                repetition: Repetition::Optional,
+                id: <span class="prelude-val">None</span>,
             },
-            <span class="ident">logical_type</span>: <span class="prelude-val">None</span>,
-            <span class="ident">converted_type</span>: <span class="prelude-val">None</span>,
-            <span class="ident">fields</span>: <span class="macro">vec!</span>[
-                <span class="ident">ParquetType::PrimitiveType</span>(<span class="ident">ParquetPrimitiveType</span> {
-                    <span class="ident">field_info</span>: <span class="ident">FieldInfo</span> {
-                        <span class="ident">name</span>: <span class="string">&quot;b&quot;</span>.<span class="ident">to_string</span>(),
-                        <span class="ident">repetition</span>: <span class="ident">Repetition::Required</span>,
-                        <span class="ident">id</span>: <span class="prelude-val">None</span>,
+            logical_type: <span class="prelude-val">None</span>,
+            converted_type: <span class="prelude-val">None</span>,
+            fields: <span class="macro">vec!</span>[
+                ParquetType::PrimitiveType(ParquetPrimitiveType {
+                    field_info: FieldInfo {
+                        name: <span class="string">&quot;b&quot;</span>.to_string(),
+                        repetition: Repetition::Required,
+                        id: <span class="prelude-val">None</span>,
                     },
-                    <span class="ident">logical_type</span>: <span class="prelude-val">None</span>,
-                    <span class="ident">converted_type</span>: <span class="prelude-val">None</span>,
-                    <span class="ident">physical_type</span>: <span class="ident">ParquetPhysicalType::Boolean</span>,
+                    logical_type: <span class="prelude-val">None</span>,
+                    converted_type: <span class="prelude-val">None</span>,
+                    physical_type: ParquetPhysicalType::Boolean,
                 }),
-                <span class="ident">ParquetType::PrimitiveType</span>(<span class="ident">ParquetPrimitiveType</span> {
-                    <span class="ident">field_info</span>: <span class="ident">FieldInfo</span> {
-                        <span class="ident">name</span>: <span class="string">&quot;c&quot;</span>.<span class="ident">to_string</span>(),
-                        <span class="ident">repetition</span>: <span class="ident">Repetition::Required</span>,
-                        <span class="ident">id</span>: <span class="prelude-val">None</span>,
+                ParquetType::PrimitiveType(ParquetPrimitiveType {
+                    field_info: FieldInfo {
+                        name: <span class="string">&quot;c&quot;</span>.to_string(),
+                        repetition: Repetition::Required,
+                        id: <span class="prelude-val">None</span>,
                     },
-                    <span class="ident">logical_type</span>: <span class="prelude-val">None</span>,
-                    <span class="ident">converted_type</span>: <span class="prelude-val">None</span>,
-                    <span class="ident">physical_type</span>: <span class="ident">ParquetPhysicalType::Int32</span>,
+                    logical_type: <span class="prelude-val">None</span>,
+                    converted_type: <span class="prelude-val">None</span>,
+                    physical_type: ParquetPhysicalType::Int32,
                 }),
             ],
         };
 
-        <span class="kw">let</span> <span class="ident">type_</span> <span class="op">=</span> <span class="ident">ParquetType::GroupType</span> {
-            <span class="ident">field_info</span>: <span class="ident">FieldInfo</span> {
-                <span class="ident">name</span>: <span class="string">&quot;l&quot;</span>.<span class="ident">to_string</span>(),
-                <span class="ident">repetition</span>: <span class="ident">Repetition::Required</span>,
-                <span class="ident">id</span>: <span class="prelude-val">None</span>,
+        <span class="kw">let </span>type_ = ParquetType::GroupType {
+            field_info: FieldInfo {
+                name: <span class="string">&quot;l&quot;</span>.to_string(),
+                repetition: Repetition::Required,
+                id: <span class="prelude-val">None</span>,
             },
-            <span class="ident">logical_type</span>: <span class="prelude-val">None</span>,
-            <span class="ident">converted_type</span>: <span class="prelude-val">None</span>,
-            <span class="ident">fields</span>: <span class="macro">vec!</span>[<span class="ident">ParquetType::GroupType</span> {
-                <span class="ident">field_info</span>: <span class="ident">FieldInfo</span> {
-                    <span class="ident">name</span>: <span class="string">&quot;list&quot;</span>.<span class="ident">to_string</span>(),
-                    <span class="ident">repetition</span>: <span class="ident">Repetition::Repeated</span>,
-                    <span class="ident">id</span>: <span class="prelude-val">None</span>,
+            logical_type: <span class="prelude-val">None</span>,
+            converted_type: <span class="prelude-val">None</span>,
+            fields: <span class="macro">vec!</span>[ParquetType::GroupType {
+                field_info: FieldInfo {
+                    name: <span class="string">&quot;list&quot;</span>.to_string(),
+                    repetition: Repetition::Repeated,
+                    id: <span class="prelude-val">None</span>,
                 },
-                <span class="ident">logical_type</span>: <span class="prelude-val">None</span>,
-                <span class="ident">converted_type</span>: <span class="prelude-val">None</span>,
-                <span class="ident">fields</span>: <span class="macro">vec!</span>[<span class="ident">type_</span>],
+                logical_type: <span class="prelude-val">None</span>,
+                converted_type: <span class="prelude-val">None</span>,
+                fields: <span class="macro">vec!</span>[type_],
             }],
         };
 
-        <span class="kw">let</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">to_nested</span>(<span class="kw-2">&amp;</span><span class="ident">array</span>, <span class="kw-2">&amp;</span><span class="ident">type_</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let </span>a = to_nested(<span class="kw-2">&amp;</span>array, <span class="kw-2">&amp;</span>type_).unwrap();
 
         <span class="macro">assert_eq!</span>(
-            <span class="ident">a</span>,
+            a,
             <span class="macro">vec!</span>[
                 <span class="macro">vec!</span>[
-                    <span class="ident">Nested::List</span>(<span class="ident">ListNested</span>::<span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span> {
-                        <span class="ident">is_optional</span>: <span class="bool-val">false</span>,
-                        <span class="ident">offsets</span>: <span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">2</span>, <span class="number">4</span>],
-                        <span class="ident">validity</span>: <span class="prelude-val">None</span>,
+                    Nested::List(ListNested::&lt;i32&gt; {
+                        is_optional: <span class="bool-val">false</span>,
+                        offsets: <span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">2</span>, <span class="number">4</span>],
+                        validity: <span class="prelude-val">None</span>,
                     }),
-                    <span class="ident">Nested::Struct</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">Bitmap::from</span>([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])), <span class="bool-val">true</span>, <span class="number">4</span>),
-                    <span class="ident">Nested::Primitive</span>(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
+                    Nested::Struct(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>Bitmap::from([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])), <span class="bool-val">true</span>, <span class="number">4</span>),
+                    Nested::Primitive(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
                 ],
                 <span class="macro">vec!</span>[
-                    <span class="ident">Nested::List</span>(<span class="ident">ListNested</span>::<span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span> {
-                        <span class="ident">is_optional</span>: <span class="bool-val">false</span>,
-                        <span class="ident">offsets</span>: <span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">2</span>, <span class="number">4</span>],
-                        <span class="ident">validity</span>: <span class="prelude-val">None</span>,
+                    Nested::List(ListNested::&lt;i32&gt; {
+                        is_optional: <span class="bool-val">false</span>,
+                        offsets: <span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">2</span>, <span class="number">4</span>],
+                        validity: <span class="prelude-val">None</span>,
                     }),
-                    <span class="ident">Nested::Struct</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">Bitmap::from</span>([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])), <span class="bool-val">true</span>, <span class="number">4</span>),
-                    <span class="ident">Nested::Primitive</span>(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
+                    Nested::Struct(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>Bitmap::from([<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">true</span>])), <span class="bool-val">true</span>, <span class="number">4</span>),
+                    Nested::Primitive(<span class="prelude-val">None</span>, <span class="bool-val">false</span>, <span class="number">4</span>),
                 ],
             ]
         );
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="arrow2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="arrow2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

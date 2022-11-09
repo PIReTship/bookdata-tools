@@ -1,4 +1,4 @@
-(function() {var implementors = {};
-implementors["bookdata"] = [{"text":"impl&lt;F:&nbsp;<a class=\"trait\" href=\"bookdata/util/logging/trait.FieldExtract.html\" title=\"trait bookdata::util::logging::FieldExtract\">FieldExtract</a> + 'static&gt; <a class=\"trait\" href=\"indicatif/style/trait.ProgressTracker.html\" title=\"trait indicatif::style::ProgressTracker\">ProgressTracker</a> for <a class=\"struct\" href=\"bookdata/util/logging/struct.Friendly.html\" title=\"struct bookdata::util::logging::Friendly\">Friendly</a>&lt;F&gt;","synthetic":false,"types":["bookdata::util::logging::Friendly"]}];
-implementors["indicatif"] = [];
-if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
+(function() {var implementors = {
+"bookdata":[["impl&lt;F:&nbsp;<a class=\"trait\" href=\"bookdata/util/logging/trait.FieldExtract.html\" title=\"trait bookdata::util::logging::FieldExtract\">FieldExtract</a> + 'static&gt; <a class=\"trait\" href=\"indicatif/style/trait.ProgressTracker.html\" title=\"trait indicatif::style::ProgressTracker\">ProgressTracker</a> for <a class=\"struct\" href=\"bookdata/util/logging/struct.Friendly.html\" title=\"struct bookdata::util::logging::Friendly\">Friendly</a>&lt;F&gt;"]],
+"indicatif":[]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

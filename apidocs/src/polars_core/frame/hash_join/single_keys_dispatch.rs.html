@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.25.1/src/frame/hash_join/single_keys_dispatch.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>single_keys_dispatch.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.25.1/src/frame/hash_join/single_keys_dispatch.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>single_keys_dispatch.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../polars_core/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -598,605 +598,605 @@
 <span id="598">598</span>
 <span id="599">599</span>
 <span id="600">600</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;chunked_ids&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils::create_chunked_index_mapping</span>;
+</pre><pre class="rust"><code><span class="kw">use super</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;chunked_ids&quot;</span>)]
+</span><span class="kw">use </span><span class="kw">crate</span>::utils::create_chunked_index_mapping;
 
-<span class="kw">impl</span> <span class="ident">Series</span> {
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;private&quot;</span>)]</span>
-    <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">hash_join_left</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">Series</span>) -&gt; <span class="ident">LeftJoinIds</span> {
-        <span class="kw">let</span> (<span class="ident">lhs</span>, <span class="ident">rhs</span>) <span class="op">=</span> (<span class="self">self</span>.<span class="ident">to_physical_repr</span>(), <span class="ident">other</span>.<span class="ident">to_physical_repr</span>());
+<span class="kw">impl </span>Series {
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;private&quot;</span>)]
+    #[doc(hidden)]
+    </span><span class="kw">pub fn </span>hash_join_left(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Series) -&gt; LeftJoinIds {
+        <span class="kw">let </span>(lhs, rhs) = (<span class="self">self</span>.to_physical_repr(), other.to_physical_repr());
 
-        <span class="kw">use</span> <span class="ident">DataType</span>::<span class="kw-2">*</span>;
-        <span class="kw">match</span> <span class="ident">lhs</span>.<span class="ident">dtype</span>() {
-            <span class="ident">Utf8</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">utf8</span>().<span class="ident">unwrap</span>();
-                <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">utf8</span>().<span class="ident">unwrap</span>();
-                <span class="ident">lhs</span>.<span class="ident">hash_join_left</span>(<span class="ident">rhs</span>)
+        <span class="kw">use </span>DataType::<span class="kw-2">*</span>;
+        <span class="kw">match </span>lhs.dtype() {
+            Utf8 =&gt; {
+                <span class="kw">let </span>lhs = lhs.utf8().unwrap();
+                <span class="kw">let </span>rhs = rhs.utf8().unwrap();
+                lhs.hash_join_left(rhs)
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-binary&quot;</span>)]</span>
-            <span class="ident">Binary</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">binary</span>().<span class="ident">unwrap</span>();
-                <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">binary</span>().<span class="ident">unwrap</span>();
-                <span class="ident">lhs</span>.<span class="ident">hash_join_left</span>(<span class="ident">rhs</span>)
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-binary&quot;</span>)]
+            </span>Binary =&gt; {
+                <span class="kw">let </span>lhs = lhs.binary().unwrap();
+                <span class="kw">let </span>rhs = rhs.binary().unwrap();
+                lhs.hash_join_left(rhs)
             }
-            <span class="kw">_</span> =&gt; {
-                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">bit_repr_is_large</span>() {
-                    <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">bit_repr_large</span>();
-                    <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">bit_repr_large</span>();
-                    <span class="ident">num_group_join_left</span>(<span class="kw-2">&amp;</span><span class="ident">lhs</span>, <span class="kw-2">&amp;</span><span class="ident">rhs</span>)
-                } <span class="kw">else</span> {
-                    <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">bit_repr_small</span>();
-                    <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">bit_repr_small</span>();
-                    <span class="ident">num_group_join_left</span>(<span class="kw-2">&amp;</span><span class="ident">lhs</span>, <span class="kw-2">&amp;</span><span class="ident">rhs</span>)
+            <span class="kw">_ </span>=&gt; {
+                <span class="kw">if </span><span class="self">self</span>.bit_repr_is_large() {
+                    <span class="kw">let </span>lhs = lhs.bit_repr_large();
+                    <span class="kw">let </span>rhs = rhs.bit_repr_large();
+                    num_group_join_left(<span class="kw-2">&amp;</span>lhs, <span class="kw-2">&amp;</span>rhs)
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span>lhs = lhs.bit_repr_small();
+                    <span class="kw">let </span>rhs = rhs.bit_repr_small();
+                    num_group_join_left(<span class="kw-2">&amp;</span>lhs, <span class="kw-2">&amp;</span>rhs)
                 }
             }
         }
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;semi_anti_join&quot;</span>)]</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">hash_join_semi_anti</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">Series</span>, <span class="ident">anti</span>: <span class="ident">bool</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">lhs</span>, <span class="ident">rhs</span>) <span class="op">=</span> (<span class="self">self</span>.<span class="ident">to_physical_repr</span>(), <span class="ident">other</span>.<span class="ident">to_physical_repr</span>());
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;semi_anti_join&quot;</span>)]
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>hash_join_semi_anti(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Series, anti: bool) -&gt; Vec&lt;IdxSize&gt; {
+        <span class="kw">let </span>(lhs, rhs) = (<span class="self">self</span>.to_physical_repr(), other.to_physical_repr());
 
-        <span class="kw">use</span> <span class="ident">DataType</span>::<span class="kw-2">*</span>;
-        <span class="kw">match</span> <span class="ident">lhs</span>.<span class="ident">dtype</span>() {
-            <span class="ident">Utf8</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">utf8</span>().<span class="ident">unwrap</span>();
-                <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">utf8</span>().<span class="ident">unwrap</span>();
-                <span class="ident">lhs</span>.<span class="ident">hash_join_semi_anti</span>(<span class="ident">rhs</span>, <span class="ident">anti</span>)
+        <span class="kw">use </span>DataType::<span class="kw-2">*</span>;
+        <span class="kw">match </span>lhs.dtype() {
+            Utf8 =&gt; {
+                <span class="kw">let </span>lhs = lhs.utf8().unwrap();
+                <span class="kw">let </span>rhs = rhs.utf8().unwrap();
+                lhs.hash_join_semi_anti(rhs, anti)
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-binary&quot;</span>)]</span>
-            <span class="ident">Binary</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">binary</span>().<span class="ident">unwrap</span>();
-                <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">binary</span>().<span class="ident">unwrap</span>();
-                <span class="ident">lhs</span>.<span class="ident">hash_join_semi_anti</span>(<span class="ident">rhs</span>, <span class="ident">anti</span>)
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-binary&quot;</span>)]
+            </span>Binary =&gt; {
+                <span class="kw">let </span>lhs = lhs.binary().unwrap();
+                <span class="kw">let </span>rhs = rhs.binary().unwrap();
+                lhs.hash_join_semi_anti(rhs, anti)
             }
-            <span class="kw">_</span> =&gt; {
-                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">bit_repr_is_large</span>() {
-                    <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">bit_repr_large</span>();
-                    <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">bit_repr_large</span>();
-                    <span class="ident">num_group_join_anti_semi</span>(<span class="kw-2">&amp;</span><span class="ident">lhs</span>, <span class="kw-2">&amp;</span><span class="ident">rhs</span>, <span class="ident">anti</span>)
-                } <span class="kw">else</span> {
-                    <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">bit_repr_small</span>();
-                    <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">bit_repr_small</span>();
-                    <span class="ident">num_group_join_anti_semi</span>(<span class="kw-2">&amp;</span><span class="ident">lhs</span>, <span class="kw-2">&amp;</span><span class="ident">rhs</span>, <span class="ident">anti</span>)
+            <span class="kw">_ </span>=&gt; {
+                <span class="kw">if </span><span class="self">self</span>.bit_repr_is_large() {
+                    <span class="kw">let </span>lhs = lhs.bit_repr_large();
+                    <span class="kw">let </span>rhs = rhs.bit_repr_large();
+                    num_group_join_anti_semi(<span class="kw-2">&amp;</span>lhs, <span class="kw-2">&amp;</span>rhs, anti)
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span>lhs = lhs.bit_repr_small();
+                    <span class="kw">let </span>rhs = rhs.bit_repr_small();
+                    num_group_join_anti_semi(<span class="kw-2">&amp;</span>lhs, <span class="kw-2">&amp;</span>rhs, anti)
                 }
             }
         }
     }
 
-    <span class="comment">// returns the join tuples and whether or not the lhs tuples are sorted</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">hash_join_inner</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">Series</span>) -&gt; ((<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>), <span class="ident">bool</span>) {
-        <span class="kw">let</span> (<span class="ident">lhs</span>, <span class="ident">rhs</span>) <span class="op">=</span> (<span class="self">self</span>.<span class="ident">to_physical_repr</span>(), <span class="ident">other</span>.<span class="ident">to_physical_repr</span>());
+    <span class="comment">// returns the join tuples and whether or not the lhs tuples are sorted
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>hash_join_inner(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Series) -&gt; ((Vec&lt;IdxSize&gt;, Vec&lt;IdxSize&gt;), bool) {
+        <span class="kw">let </span>(lhs, rhs) = (<span class="self">self</span>.to_physical_repr(), other.to_physical_repr());
 
-        <span class="kw">use</span> <span class="ident">DataType</span>::<span class="kw-2">*</span>;
-        <span class="kw">match</span> <span class="ident">lhs</span>.<span class="ident">dtype</span>() {
-            <span class="ident">Utf8</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">utf8</span>().<span class="ident">unwrap</span>();
-                <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">utf8</span>().<span class="ident">unwrap</span>();
-                <span class="ident">lhs</span>.<span class="ident">hash_join_inner</span>(<span class="ident">rhs</span>)
+        <span class="kw">use </span>DataType::<span class="kw-2">*</span>;
+        <span class="kw">match </span>lhs.dtype() {
+            Utf8 =&gt; {
+                <span class="kw">let </span>lhs = lhs.utf8().unwrap();
+                <span class="kw">let </span>rhs = rhs.utf8().unwrap();
+                lhs.hash_join_inner(rhs)
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-binary&quot;</span>)]</span>
-            <span class="ident">Binary</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">binary</span>().<span class="ident">unwrap</span>();
-                <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">binary</span>().<span class="ident">unwrap</span>();
-                <span class="ident">lhs</span>.<span class="ident">hash_join_inner</span>(<span class="ident">rhs</span>)
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-binary&quot;</span>)]
+            </span>Binary =&gt; {
+                <span class="kw">let </span>lhs = lhs.binary().unwrap();
+                <span class="kw">let </span>rhs = rhs.binary().unwrap();
+                lhs.hash_join_inner(rhs)
             }
-            <span class="kw">_</span> =&gt; {
-                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">bit_repr_is_large</span>() {
-                    <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">bit_repr_large</span>();
-                    <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">other</span>.<span class="ident">bit_repr_large</span>();
-                    <span class="ident">num_group_join_inner</span>(<span class="kw-2">&amp;</span><span class="ident">lhs</span>, <span class="kw-2">&amp;</span><span class="ident">rhs</span>)
-                } <span class="kw">else</span> {
-                    <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">bit_repr_small</span>();
-                    <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">other</span>.<span class="ident">bit_repr_small</span>();
-                    <span class="ident">num_group_join_inner</span>(<span class="kw-2">&amp;</span><span class="ident">lhs</span>, <span class="kw-2">&amp;</span><span class="ident">rhs</span>)
+            <span class="kw">_ </span>=&gt; {
+                <span class="kw">if </span><span class="self">self</span>.bit_repr_is_large() {
+                    <span class="kw">let </span>lhs = <span class="self">self</span>.bit_repr_large();
+                    <span class="kw">let </span>rhs = other.bit_repr_large();
+                    num_group_join_inner(<span class="kw-2">&amp;</span>lhs, <span class="kw-2">&amp;</span>rhs)
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span>lhs = <span class="self">self</span>.bit_repr_small();
+                    <span class="kw">let </span>rhs = other.bit_repr_small();
+                    num_group_join_inner(<span class="kw-2">&amp;</span>lhs, <span class="kw-2">&amp;</span>rhs)
                 }
             }
         }
     }
 
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">hash_join_outer</span>(
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>hash_join_outer(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">Series</span>,
-    ) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>)<span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">lhs</span>, <span class="ident">rhs</span>) <span class="op">=</span> (<span class="self">self</span>.<span class="ident">to_physical_repr</span>(), <span class="ident">other</span>.<span class="ident">to_physical_repr</span>());
+        other: <span class="kw-2">&amp;</span>Series,
+    ) -&gt; Vec&lt;(<span class="prelude-ty">Option</span>&lt;IdxSize&gt;, <span class="prelude-ty">Option</span>&lt;IdxSize&gt;)&gt; {
+        <span class="kw">let </span>(lhs, rhs) = (<span class="self">self</span>.to_physical_repr(), other.to_physical_repr());
 
-        <span class="kw">use</span> <span class="ident">DataType</span>::<span class="kw-2">*</span>;
-        <span class="kw">match</span> <span class="ident">lhs</span>.<span class="ident">dtype</span>() {
-            <span class="ident">Utf8</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">utf8</span>().<span class="ident">unwrap</span>();
-                <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">utf8</span>().<span class="ident">unwrap</span>();
-                <span class="ident">lhs</span>.<span class="ident">hash_join_outer</span>(<span class="ident">rhs</span>)
+        <span class="kw">use </span>DataType::<span class="kw-2">*</span>;
+        <span class="kw">match </span>lhs.dtype() {
+            Utf8 =&gt; {
+                <span class="kw">let </span>lhs = lhs.utf8().unwrap();
+                <span class="kw">let </span>rhs = rhs.utf8().unwrap();
+                lhs.hash_join_outer(rhs)
             }
-            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-binary&quot;</span>)]</span>
-            <span class="ident">Binary</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="ident">lhs</span>.<span class="ident">binary</span>().<span class="ident">unwrap</span>();
-                <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">rhs</span>.<span class="ident">binary</span>().<span class="ident">unwrap</span>();
-                <span class="ident">lhs</span>.<span class="ident">hash_join_outer</span>(<span class="ident">rhs</span>)
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-binary&quot;</span>)]
+            </span>Binary =&gt; {
+                <span class="kw">let </span>lhs = lhs.binary().unwrap();
+                <span class="kw">let </span>rhs = rhs.binary().unwrap();
+                lhs.hash_join_outer(rhs)
             }
-            <span class="kw">_</span> =&gt; {
-                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">bit_repr_is_large</span>() {
-                    <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">bit_repr_large</span>();
-                    <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">other</span>.<span class="ident">bit_repr_large</span>();
-                    <span class="ident">lhs</span>.<span class="ident">hash_join_outer</span>(<span class="kw-2">&amp;</span><span class="ident">rhs</span>)
-                } <span class="kw">else</span> {
-                    <span class="kw">let</span> <span class="ident">lhs</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">bit_repr_small</span>();
-                    <span class="kw">let</span> <span class="ident">rhs</span> <span class="op">=</span> <span class="ident">other</span>.<span class="ident">bit_repr_small</span>();
-                    <span class="ident">lhs</span>.<span class="ident">hash_join_outer</span>(<span class="kw-2">&amp;</span><span class="ident">rhs</span>)
+            <span class="kw">_ </span>=&gt; {
+                <span class="kw">if </span><span class="self">self</span>.bit_repr_is_large() {
+                    <span class="kw">let </span>lhs = <span class="self">self</span>.bit_repr_large();
+                    <span class="kw">let </span>rhs = other.bit_repr_large();
+                    lhs.hash_join_outer(<span class="kw-2">&amp;</span>rhs)
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span>lhs = <span class="self">self</span>.bit_repr_small();
+                    <span class="kw">let </span>rhs = other.bit_repr_small();
+                    lhs.hash_join_outer(<span class="kw-2">&amp;</span>rhs)
                 }
             }
         }
     }
 }
 
-<span class="kw">fn</span> <span class="ident">splitted_to_slice</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">splitted</span>: <span class="kw-2">&amp;</span>[<span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>]) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">T::Native</span>]<span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">PolarsNumericType</span>,
+<span class="kw">fn </span>splitted_to_slice&lt;T&gt;(splitted: <span class="kw-2">&amp;</span>[ChunkedArray&lt;T&gt;]) -&gt; Vec&lt;<span class="kw-2">&amp;</span>[T::Native]&gt;
+<span class="kw">where
+    </span>T: PolarsNumericType,
 {
-    <span class="ident">splitted</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">cont_slice</span>().<span class="ident">unwrap</span>()).<span class="ident">collect</span>()
+    splitted.iter().map(|ca| ca.cont_slice().unwrap()).collect()
 }
 
-<span class="kw">fn</span> <span class="ident">splitted_by_chunks</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">splitted</span>: <span class="kw-2">&amp;</span>[<span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>]) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">T::Native</span>]<span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">PolarsNumericType</span>,
+<span class="kw">fn </span>splitted_by_chunks&lt;T&gt;(splitted: <span class="kw-2">&amp;</span>[ChunkedArray&lt;T&gt;]) -&gt; Vec&lt;<span class="kw-2">&amp;</span>[T::Native]&gt;
+<span class="kw">where
+    </span>T: PolarsNumericType,
 {
-    <span class="ident">splitted</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">flat_map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">downcast_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">arr</span><span class="op">|</span> <span class="ident">arr</span>.<span class="ident">values</span>().<span class="ident">as_slice</span>()))
-        .<span class="ident">collect</span>()
+    splitted
+        .iter()
+        .flat_map(|ca| ca.downcast_iter().map(|arr| arr.values().as_slice()))
+        .collect()
 }
 
-<span class="kw">fn</span> <span class="ident">splitted_to_opt_vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">splitted</span>: <span class="kw-2">&amp;</span>[<span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>]) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T::Native</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">PolarsNumericType</span>,
+<span class="kw">fn </span>splitted_to_opt_vec&lt;T&gt;(splitted: <span class="kw-2">&amp;</span>[ChunkedArray&lt;T&gt;]) -&gt; Vec&lt;Vec&lt;<span class="prelude-ty">Option</span>&lt;T::Native&gt;&gt;&gt;
+<span class="kw">where
+    </span>T: PolarsNumericType,
 {
-    <span class="ident">splitted</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">into_iter</span>().<span class="ident">collect_trusted</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>())
-        .<span class="ident">collect</span>()
+    splitted
+        .iter()
+        .map(|ca| ca.into_iter().collect_trusted::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;())
+        .collect()
 }
 
-<span class="comment">// returns the join tuples and whether or not the lhs tuples are sorted</span>
-<span class="kw">fn</span> <span class="ident">num_group_join_inner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
-    <span class="ident">left</span>: <span class="kw-2">&amp;</span><span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-    <span class="ident">right</span>: <span class="kw-2">&amp;</span><span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-) -&gt; ((<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>), <span class="ident">bool</span>)
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">PolarsIntegerType</span>,
-    <span class="ident">T::Native</span>: <span class="ident">Hash</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">AsU64</span> <span class="op">+</span> <span class="ident">Copy</span>,
-    <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T::Native</span><span class="op">&gt;</span>: <span class="ident">AsU64</span>,
+<span class="comment">// returns the join tuples and whether or not the lhs tuples are sorted
+</span><span class="kw">fn </span>num_group_join_inner&lt;T&gt;(
+    left: <span class="kw-2">&amp;</span>ChunkedArray&lt;T&gt;,
+    right: <span class="kw-2">&amp;</span>ChunkedArray&lt;T&gt;,
+) -&gt; ((Vec&lt;IdxSize&gt;, Vec&lt;IdxSize&gt;), bool)
+<span class="kw">where
+    </span>T: PolarsIntegerType,
+    T::Native: Hash + Eq + Send + AsU64 + Copy,
+    <span class="prelude-ty">Option</span>&lt;T::Native&gt;: AsU64,
 {
-    <span class="kw">let</span> <span class="ident">n_threads</span> <span class="op">=</span> <span class="ident">POOL</span>.<span class="ident">current_num_threads</span>();
-    <span class="kw">let</span> (<span class="ident">a</span>, <span class="ident">b</span>, <span class="ident">swap</span>) <span class="op">=</span> <span class="macro">det_hash_prone_order!</span>(<span class="ident">left</span>, <span class="ident">right</span>);
-    <span class="kw">let</span> <span class="ident">splitted_a</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">a</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">splitted_b</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">b</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
-    <span class="kw">match</span> (
-        <span class="ident">left</span>.<span class="ident">null_count</span>() <span class="op">==</span> <span class="number">0</span>,
-        <span class="ident">right</span>.<span class="ident">null_count</span>() <span class="op">==</span> <span class="number">0</span>,
-        <span class="ident">left</span>.<span class="ident">chunks</span>.<span class="ident">len</span>(),
-        <span class="ident">right</span>.<span class="ident">chunks</span>.<span class="ident">len</span>(),
+    <span class="kw">let </span>n_threads = POOL.current_num_threads();
+    <span class="kw">let </span>(a, b, swap) = <span class="macro">det_hash_prone_order!</span>(left, right);
+    <span class="kw">let </span>splitted_a = split_ca(a, n_threads).unwrap();
+    <span class="kw">let </span>splitted_b = split_ca(b, n_threads).unwrap();
+    <span class="kw">match </span>(
+        left.null_count() == <span class="number">0</span>,
+        right.null_count() == <span class="number">0</span>,
+        left.chunks.len(),
+        right.chunks.len(),
     ) {
         (<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="number">1</span>, <span class="number">1</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">keys_a</span> <span class="op">=</span> <span class="ident">splitted_to_slice</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>);
-            <span class="kw">let</span> <span class="ident">keys_b</span> <span class="op">=</span> <span class="ident">splitted_to_slice</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>);
-            (<span class="ident">hash_join_tuples_inner</span>(<span class="ident">keys_a</span>, <span class="ident">keys_b</span>, <span class="ident">swap</span>), <span class="op">!</span><span class="ident">swap</span>)
+            <span class="kw">let </span>keys_a = splitted_to_slice(<span class="kw-2">&amp;</span>splitted_a);
+            <span class="kw">let </span>keys_b = splitted_to_slice(<span class="kw-2">&amp;</span>splitted_b);
+            (hash_join_tuples_inner(keys_a, keys_b, swap), !swap)
         }
         (<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">keys_a</span> <span class="op">=</span> <span class="ident">splitted_by_chunks</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>);
-            <span class="kw">let</span> <span class="ident">keys_b</span> <span class="op">=</span> <span class="ident">splitted_by_chunks</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>);
-            (<span class="ident">hash_join_tuples_inner</span>(<span class="ident">keys_a</span>, <span class="ident">keys_b</span>, <span class="ident">swap</span>), <span class="op">!</span><span class="ident">swap</span>)
+            <span class="kw">let </span>keys_a = splitted_by_chunks(<span class="kw-2">&amp;</span>splitted_a);
+            <span class="kw">let </span>keys_b = splitted_by_chunks(<span class="kw-2">&amp;</span>splitted_b);
+            (hash_join_tuples_inner(keys_a, keys_b, swap), !swap)
         }
-        <span class="kw">_</span> =&gt; {
-            <span class="kw">let</span> <span class="ident">keys_a</span> <span class="op">=</span> <span class="ident">splitted_to_opt_vec</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>);
-            <span class="kw">let</span> <span class="ident">keys_b</span> <span class="op">=</span> <span class="ident">splitted_to_opt_vec</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>);
-            (<span class="ident">hash_join_tuples_inner</span>(<span class="ident">keys_a</span>, <span class="ident">keys_b</span>, <span class="ident">swap</span>), <span class="op">!</span><span class="ident">swap</span>)
+        <span class="kw">_ </span>=&gt; {
+            <span class="kw">let </span>keys_a = splitted_to_opt_vec(<span class="kw-2">&amp;</span>splitted_a);
+            <span class="kw">let </span>keys_b = splitted_to_opt_vec(<span class="kw-2">&amp;</span>splitted_b);
+            (hash_join_tuples_inner(keys_a, keys_b, swap), !swap)
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;chunked_ids&quot;</span>)]</span>
-<span class="kw">fn</span> <span class="ident">create_mappings</span>(
-    <span class="ident">chunks_left</span>: <span class="kw-2">&amp;</span>[<span class="ident">ArrayRef</span>],
-    <span class="ident">chunks_right</span>: <span class="kw-2">&amp;</span>[<span class="ident">ArrayRef</span>],
-    <span class="ident">left_len</span>: <span class="ident">usize</span>,
-    <span class="ident">right_len</span>: <span class="ident">usize</span>,
-) -&gt; (<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ChunkId</span><span class="op">&gt;</span><span class="op">&gt;</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ChunkId</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
-    <span class="kw">let</span> <span class="ident">mapping_left</span> <span class="op">=</span> <span class="op">|</span><span class="op">|</span> {
-        <span class="kw">if</span> <span class="ident">chunks_left</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="number">1</span> {
-            <span class="prelude-val">Some</span>(<span class="ident">create_chunked_index_mapping</span>(<span class="ident">chunks_left</span>, <span class="ident">left_len</span>))
-        } <span class="kw">else</span> {
-            <span class="prelude-val">None</span>
-        }
+<span class="attribute">#[cfg(feature = <span class="string">&quot;chunked_ids&quot;</span>)]
+</span><span class="kw">fn </span>create_mappings(
+    chunks_left: <span class="kw-2">&amp;</span>[ArrayRef],
+    chunks_right: <span class="kw-2">&amp;</span>[ArrayRef],
+    left_len: usize,
+    right_len: usize,
+) -&gt; (<span class="prelude-ty">Option</span>&lt;Vec&lt;ChunkId&gt;&gt;, <span class="prelude-ty">Option</span>&lt;Vec&lt;ChunkId&gt;&gt;) {
+    <span class="kw">let </span>mapping_left = || {
+        <span class="kw">if </span>chunks_left.len() &gt; <span class="number">1 </span>{
+            <span class="prelude-val">Some</span>(create_chunked_index_mapping(chunks_left, left_len))
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>}
     };
 
-    <span class="kw">let</span> <span class="ident">mapping_right</span> <span class="op">=</span> <span class="op">|</span><span class="op">|</span> {
-        <span class="kw">if</span> <span class="ident">chunks_right</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="number">1</span> {
-            <span class="prelude-val">Some</span>(<span class="ident">create_chunked_index_mapping</span>(<span class="ident">chunks_right</span>, <span class="ident">right_len</span>))
-        } <span class="kw">else</span> {
-            <span class="prelude-val">None</span>
-        }
+    <span class="kw">let </span>mapping_right = || {
+        <span class="kw">if </span>chunks_right.len() &gt; <span class="number">1 </span>{
+            <span class="prelude-val">Some</span>(create_chunked_index_mapping(chunks_right, right_len))
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>}
     };
 
-    <span class="ident">POOL</span>.<span class="ident">join</span>(<span class="ident">mapping_left</span>, <span class="ident">mapping_right</span>)
+    POOL.join(mapping_left, mapping_right)
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;chunked_ids&quot;</span>))]</span>
-<span class="kw">fn</span> <span class="ident">create_mappings</span>(
-    <span class="ident">_chunks_left</span>: <span class="kw-2">&amp;</span>[<span class="ident">ArrayRef</span>],
-    <span class="ident">_chunks_right</span>: <span class="kw-2">&amp;</span>[<span class="ident">ArrayRef</span>],
-    <span class="ident">_left_len</span>: <span class="ident">usize</span>,
-    <span class="ident">_right_len</span>: <span class="ident">usize</span>,
-) -&gt; (<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ChunkId</span><span class="op">&gt;</span><span class="op">&gt;</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ChunkId</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
+<span class="attribute">#[cfg(not(feature = <span class="string">&quot;chunked_ids&quot;</span>))]
+</span><span class="kw">fn </span>create_mappings(
+    _chunks_left: <span class="kw-2">&amp;</span>[ArrayRef],
+    _chunks_right: <span class="kw-2">&amp;</span>[ArrayRef],
+    _left_len: usize,
+    _right_len: usize,
+) -&gt; (<span class="prelude-ty">Option</span>&lt;Vec&lt;ChunkId&gt;&gt;, <span class="prelude-ty">Option</span>&lt;Vec&lt;ChunkId&gt;&gt;) {
     (<span class="prelude-val">None</span>, <span class="prelude-val">None</span>)
 }
 
-<span class="kw">fn</span> <span class="ident">num_group_join_left</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">left</span>: <span class="kw-2">&amp;</span><span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">right</span>: <span class="kw-2">&amp;</span><span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="ident">LeftJoinIds</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">PolarsIntegerType</span>,
-    <span class="ident">T::Native</span>: <span class="ident">Hash</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">AsU64</span>,
-    <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T::Native</span><span class="op">&gt;</span>: <span class="ident">AsU64</span>,
+<span class="kw">fn </span>num_group_join_left&lt;T&gt;(left: <span class="kw-2">&amp;</span>ChunkedArray&lt;T&gt;, right: <span class="kw-2">&amp;</span>ChunkedArray&lt;T&gt;) -&gt; LeftJoinIds
+<span class="kw">where
+    </span>T: PolarsIntegerType,
+    T::Native: Hash + Eq + Send + AsU64,
+    <span class="prelude-ty">Option</span>&lt;T::Native&gt;: AsU64,
 {
-    <span class="kw">let</span> <span class="ident">n_threads</span> <span class="op">=</span> <span class="ident">POOL</span>.<span class="ident">current_num_threads</span>();
-    <span class="kw">let</span> <span class="ident">splitted_a</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">left</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">splitted_b</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">right</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
-    <span class="kw">match</span> (
-        <span class="ident">left</span>.<span class="ident">null_count</span>(),
-        <span class="ident">right</span>.<span class="ident">null_count</span>(),
-        <span class="ident">left</span>.<span class="ident">chunks</span>.<span class="ident">len</span>(),
-        <span class="ident">right</span>.<span class="ident">chunks</span>.<span class="ident">len</span>(),
+    <span class="kw">let </span>n_threads = POOL.current_num_threads();
+    <span class="kw">let </span>splitted_a = split_ca(left, n_threads).unwrap();
+    <span class="kw">let </span>splitted_b = split_ca(right, n_threads).unwrap();
+    <span class="kw">match </span>(
+        left.null_count(),
+        right.null_count(),
+        left.chunks.len(),
+        right.chunks.len(),
     ) {
         (<span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">1</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">keys_a</span> <span class="op">=</span> <span class="ident">splitted_to_slice</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>);
-            <span class="kw">let</span> <span class="ident">keys_b</span> <span class="op">=</span> <span class="ident">splitted_to_slice</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>);
-            <span class="ident">hash_join_tuples_left</span>(<span class="ident">keys_a</span>, <span class="ident">keys_b</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)
+            <span class="kw">let </span>keys_a = splitted_to_slice(<span class="kw-2">&amp;</span>splitted_a);
+            <span class="kw">let </span>keys_b = splitted_to_slice(<span class="kw-2">&amp;</span>splitted_b);
+            hash_join_tuples_left(keys_a, keys_b, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)
         }
         (<span class="number">0</span>, <span class="number">0</span>, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">keys_a</span> <span class="op">=</span> <span class="ident">splitted_by_chunks</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>);
-            <span class="kw">let</span> <span class="ident">keys_b</span> <span class="op">=</span> <span class="ident">splitted_by_chunks</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>);
+            <span class="kw">let </span>keys_a = splitted_by_chunks(<span class="kw-2">&amp;</span>splitted_a);
+            <span class="kw">let </span>keys_b = splitted_by_chunks(<span class="kw-2">&amp;</span>splitted_b);
 
-            <span class="kw">let</span> (<span class="ident">mapping_left</span>, <span class="ident">mapping_right</span>) <span class="op">=</span>
-                <span class="ident">create_mappings</span>(<span class="ident">left</span>.<span class="ident">chunks</span>(), <span class="ident">right</span>.<span class="ident">chunks</span>(), <span class="ident">left</span>.<span class="ident">len</span>(), <span class="ident">right</span>.<span class="ident">len</span>());
-            <span class="ident">hash_join_tuples_left</span>(
-                <span class="ident">keys_a</span>,
-                <span class="ident">keys_b</span>,
-                <span class="ident">mapping_left</span>.<span class="ident">as_deref</span>(),
-                <span class="ident">mapping_right</span>.<span class="ident">as_deref</span>(),
+            <span class="kw">let </span>(mapping_left, mapping_right) =
+                create_mappings(left.chunks(), right.chunks(), left.len(), right.len());
+            hash_join_tuples_left(
+                keys_a,
+                keys_b,
+                mapping_left.as_deref(),
+                mapping_right.as_deref(),
             )
         }
-        <span class="kw">_</span> =&gt; {
-            <span class="kw">let</span> <span class="ident">keys_a</span> <span class="op">=</span> <span class="ident">splitted_to_opt_vec</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>);
-            <span class="kw">let</span> <span class="ident">keys_b</span> <span class="op">=</span> <span class="ident">splitted_to_opt_vec</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>);
-            <span class="kw">let</span> (<span class="ident">mapping_left</span>, <span class="ident">mapping_right</span>) <span class="op">=</span>
-                <span class="ident">create_mappings</span>(<span class="ident">left</span>.<span class="ident">chunks</span>(), <span class="ident">right</span>.<span class="ident">chunks</span>(), <span class="ident">left</span>.<span class="ident">len</span>(), <span class="ident">right</span>.<span class="ident">len</span>());
-            <span class="ident">hash_join_tuples_left</span>(
-                <span class="ident">keys_a</span>,
-                <span class="ident">keys_b</span>,
-                <span class="ident">mapping_left</span>.<span class="ident">as_deref</span>(),
-                <span class="ident">mapping_right</span>.<span class="ident">as_deref</span>(),
+        <span class="kw">_ </span>=&gt; {
+            <span class="kw">let </span>keys_a = splitted_to_opt_vec(<span class="kw-2">&amp;</span>splitted_a);
+            <span class="kw">let </span>keys_b = splitted_to_opt_vec(<span class="kw-2">&amp;</span>splitted_b);
+            <span class="kw">let </span>(mapping_left, mapping_right) =
+                create_mappings(left.chunks(), right.chunks(), left.len(), right.len());
+            hash_join_tuples_left(
+                keys_a,
+                keys_b,
+                mapping_left.as_deref(),
+                mapping_right.as_deref(),
             )
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">PolarsIntegerType</span> <span class="op">+</span> <span class="ident">Sync</span>,
-    <span class="ident">T::Native</span>: <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Hash</span> <span class="op">+</span> <span class="ident">num::NumCast</span>,
+<span class="kw">impl</span>&lt;T&gt; ChunkedArray&lt;T&gt;
+<span class="kw">where
+    </span>T: PolarsIntegerType + Sync,
+    T::Native: Eq + Hash + num::NumCast,
 {
-    <span class="kw">fn</span> <span class="ident">hash_join_outer</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>)<span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">a</span>, <span class="ident">b</span>, <span class="ident">swap</span>) <span class="op">=</span> <span class="macro">det_hash_prone_order!</span>(<span class="self">self</span>, <span class="ident">other</span>);
+    <span class="kw">fn </span>hash_join_outer(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>ChunkedArray&lt;T&gt;) -&gt; Vec&lt;(<span class="prelude-ty">Option</span>&lt;IdxSize&gt;, <span class="prelude-ty">Option</span>&lt;IdxSize&gt;)&gt; {
+        <span class="kw">let </span>(a, b, swap) = <span class="macro">det_hash_prone_order!</span>(<span class="self">self</span>, other);
 
-        <span class="kw">let</span> <span class="ident">n_partitions</span> <span class="op">=</span> <span class="ident">_set_partition_size</span>();
-        <span class="kw">let</span> <span class="ident">splitted_a</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">a</span>, <span class="ident">n_partitions</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">splitted_b</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">b</span>, <span class="ident">n_partitions</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let </span>n_partitions = _set_partition_size();
+        <span class="kw">let </span>splitted_a = split_ca(a, n_partitions).unwrap();
+        <span class="kw">let </span>splitted_b = split_ca(b, n_partitions).unwrap();
 
-        <span class="kw">match</span> (<span class="ident">a</span>.<span class="ident">null_count</span>(), <span class="ident">b</span>.<span class="ident">null_count</span>()) {
+        <span class="kw">match </span>(a.null_count(), b.null_count()) {
             (<span class="number">0</span>, <span class="number">0</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">iters_a</span> <span class="op">=</span> <span class="ident">splitted_a</span>
-                    .<span class="ident">iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">into_no_null_iter</span>())
-                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-                <span class="kw">let</span> <span class="ident">iters_b</span> <span class="op">=</span> <span class="ident">splitted_b</span>
-                    .<span class="ident">iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">into_no_null_iter</span>())
-                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-                <span class="ident">hash_join_tuples_outer</span>(<span class="ident">iters_a</span>, <span class="ident">iters_b</span>, <span class="ident">swap</span>)
+                <span class="kw">let </span>iters_a = splitted_a
+                    .iter()
+                    .map(|ca| ca.into_no_null_iter())
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                <span class="kw">let </span>iters_b = splitted_b
+                    .iter()
+                    .map(|ca| ca.into_no_null_iter())
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                hash_join_tuples_outer(iters_a, iters_b, swap)
             }
-            <span class="kw">_</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">iters_a</span> <span class="op">=</span> <span class="ident">splitted_a</span>
-                    .<span class="ident">iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">into_iter</span>())
-                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-                <span class="kw">let</span> <span class="ident">iters_b</span> <span class="op">=</span> <span class="ident">splitted_b</span>
-                    .<span class="ident">iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">into_iter</span>())
-                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-                <span class="ident">hash_join_tuples_outer</span>(<span class="ident">iters_a</span>, <span class="ident">iters_b</span>, <span class="ident">swap</span>)
+            <span class="kw">_ </span>=&gt; {
+                <span class="kw">let </span>iters_a = splitted_a
+                    .iter()
+                    .map(|ca| ca.into_iter())
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                <span class="kw">let </span>iters_b = splitted_b
+                    .iter()
+                    .map(|ca| ca.into_iter())
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                hash_join_tuples_outer(iters_a, iters_b, swap)
             }
         }
     }
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">prepare_strs</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
-    <span class="ident">been_split</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">Utf8Chunked</span>],
-    <span class="ident">hb</span>: <span class="kw-2">&amp;</span><span class="ident">RandomState</span>,
-) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">BytesHash</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
-        <span class="ident">been_split</span>
-            .<span class="ident">par_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> {
-                <span class="ident">ca</span>.<span class="ident">into_iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">opt_s</span><span class="op">|</span> {
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state</span> <span class="op">=</span> <span class="ident">hb</span>.<span class="ident">build_hasher</span>();
-                        <span class="ident">opt_s</span>.<span class="ident">hash</span>(<span class="kw-2">&amp;mut</span> <span class="ident">state</span>);
-                        <span class="kw">let</span> <span class="ident">hash</span> <span class="op">=</span> <span class="ident">state</span>.<span class="ident">finish</span>();
-                        <span class="ident">BytesHash::new_from_str</span>(<span class="ident">opt_s</span>, <span class="ident">hash</span>)
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>prepare_strs&lt;<span class="lifetime">&#39;a</span>&gt;(
+    been_split: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Utf8Chunked],
+    hb: <span class="kw-2">&amp;</span>RandomState,
+) -&gt; Vec&lt;Vec&lt;BytesHash&lt;<span class="lifetime">&#39;a</span>&gt;&gt;&gt; {
+    POOL.install(|| {
+        been_split
+            .par_iter()
+            .map(|ca| {
+                ca.into_iter()
+                    .map(|opt_s| {
+                        <span class="kw">let </span><span class="kw-2">mut </span>state = hb.build_hasher();
+                        opt_s.hash(<span class="kw-2">&amp;mut </span>state);
+                        <span class="kw">let </span>hash = state.finish();
+                        BytesHash::new_from_str(opt_s, hash)
                     })
-                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
             })
-            .<span class="ident">collect</span>()
+            .collect()
     })
 }
 
-<span class="kw">impl</span> <span class="ident">Utf8Chunked</span> {
-    <span class="kw">fn</span> <span class="ident">prepare</span>(
+<span class="kw">impl </span>Utf8Chunked {
+    <span class="kw">fn </span>prepare(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">Utf8Chunked</span>,
-        <span class="ident">swapped</span>: <span class="ident">bool</span>,
-    ) -&gt; (<span class="ident">Vec</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">bool</span>, <span class="ident">RandomState</span>) {
-        <span class="kw">let</span> <span class="ident">n_threads</span> <span class="op">=</span> <span class="ident">POOL</span>.<span class="ident">current_num_threads</span>();
+        other: <span class="kw-2">&amp;</span>Utf8Chunked,
+        swapped: bool,
+    ) -&gt; (Vec&lt;<span class="self">Self</span>&gt;, Vec&lt;<span class="self">Self</span>&gt;, bool, RandomState) {
+        <span class="kw">let </span>n_threads = POOL.current_num_threads();
 
-        <span class="kw">let</span> (<span class="ident">a</span>, <span class="ident">b</span>, <span class="ident">swap</span>) <span class="op">=</span> <span class="kw">if</span> <span class="ident">swapped</span> {
-            <span class="macro">det_hash_prone_order!</span>(<span class="self">self</span>, <span class="ident">other</span>)
-        } <span class="kw">else</span> {
-            (<span class="self">self</span>, <span class="ident">other</span>, <span class="bool-val">false</span>)
+        <span class="kw">let </span>(a, b, swap) = <span class="kw">if </span>swapped {
+            <span class="macro">det_hash_prone_order!</span>(<span class="self">self</span>, other)
+        } <span class="kw">else </span>{
+            (<span class="self">self</span>, other, <span class="bool-val">false</span>)
         };
 
-        <span class="kw">let</span> <span class="ident">hb</span> <span class="op">=</span> <span class="ident">RandomState::default</span>();
-        <span class="kw">let</span> <span class="ident">splitted_a</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">a</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">splitted_b</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">b</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let </span>hb = RandomState::default();
+        <span class="kw">let </span>splitted_a = split_ca(a, n_threads).unwrap();
+        <span class="kw">let </span>splitted_b = split_ca(b, n_threads).unwrap();
 
-        (<span class="ident">splitted_a</span>, <span class="ident">splitted_b</span>, <span class="ident">swap</span>, <span class="ident">hb</span>)
+        (splitted_a, splitted_b, swap, hb)
     }
 
-    <span class="comment">// returns the join tuples and whether or not the lhs tuples are sorted</span>
-    <span class="kw">fn</span> <span class="ident">hash_join_inner</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">Utf8Chunked</span>) -&gt; ((<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>), <span class="ident">bool</span>) {
-        <span class="kw">let</span> (<span class="ident">splitted_a</span>, <span class="ident">splitted_b</span>, <span class="ident">swap</span>, <span class="ident">hb</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prepare</span>(<span class="ident">other</span>, <span class="bool-val">true</span>);
-        <span class="kw">let</span> <span class="ident">str_hashes_a</span> <span class="op">=</span> <span class="ident">prepare_strs</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
-        <span class="kw">let</span> <span class="ident">str_hashes_b</span> <span class="op">=</span> <span class="ident">prepare_strs</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
+    <span class="comment">// returns the join tuples and whether or not the lhs tuples are sorted
+    </span><span class="kw">fn </span>hash_join_inner(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Utf8Chunked) -&gt; ((Vec&lt;IdxSize&gt;, Vec&lt;IdxSize&gt;), bool) {
+        <span class="kw">let </span>(splitted_a, splitted_b, swap, hb) = <span class="self">self</span>.prepare(other, <span class="bool-val">true</span>);
+        <span class="kw">let </span>str_hashes_a = prepare_strs(<span class="kw-2">&amp;</span>splitted_a, <span class="kw-2">&amp;</span>hb);
+        <span class="kw">let </span>str_hashes_b = prepare_strs(<span class="kw-2">&amp;</span>splitted_b, <span class="kw-2">&amp;</span>hb);
         (
-            <span class="ident">hash_join_tuples_inner</span>(<span class="ident">str_hashes_a</span>, <span class="ident">str_hashes_b</span>, <span class="ident">swap</span>),
-            <span class="op">!</span><span class="ident">swap</span>,
+            hash_join_tuples_inner(str_hashes_a, str_hashes_b, swap),
+            !swap,
         )
     }
 
-    <span class="kw">fn</span> <span class="ident">hash_join_left</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">Utf8Chunked</span>) -&gt; <span class="ident">LeftJoinIds</span> {
-        <span class="kw">let</span> (<span class="ident">splitted_a</span>, <span class="ident">splitted_b</span>, <span class="kw">_</span>, <span class="ident">hb</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prepare</span>(<span class="ident">other</span>, <span class="bool-val">false</span>);
-        <span class="kw">let</span> <span class="ident">str_hashes_a</span> <span class="op">=</span> <span class="ident">prepare_strs</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
-        <span class="kw">let</span> <span class="ident">str_hashes_b</span> <span class="op">=</span> <span class="ident">prepare_strs</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
+    <span class="kw">fn </span>hash_join_left(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Utf8Chunked) -&gt; LeftJoinIds {
+        <span class="kw">let </span>(splitted_a, splitted_b, <span class="kw">_</span>, hb) = <span class="self">self</span>.prepare(other, <span class="bool-val">false</span>);
+        <span class="kw">let </span>str_hashes_a = prepare_strs(<span class="kw-2">&amp;</span>splitted_a, <span class="kw-2">&amp;</span>hb);
+        <span class="kw">let </span>str_hashes_b = prepare_strs(<span class="kw-2">&amp;</span>splitted_b, <span class="kw-2">&amp;</span>hb);
 
-        <span class="kw">let</span> (<span class="ident">mapping_left</span>, <span class="ident">mapping_right</span>) <span class="op">=</span>
-            <span class="ident">create_mappings</span>(<span class="self">self</span>.<span class="ident">chunks</span>(), <span class="ident">other</span>.<span class="ident">chunks</span>(), <span class="self">self</span>.<span class="ident">len</span>(), <span class="ident">other</span>.<span class="ident">len</span>());
-        <span class="ident">hash_join_tuples_left</span>(
-            <span class="ident">str_hashes_a</span>,
-            <span class="ident">str_hashes_b</span>,
-            <span class="ident">mapping_left</span>.<span class="ident">as_deref</span>(),
-            <span class="ident">mapping_right</span>.<span class="ident">as_deref</span>(),
+        <span class="kw">let </span>(mapping_left, mapping_right) =
+            create_mappings(<span class="self">self</span>.chunks(), other.chunks(), <span class="self">self</span>.len(), other.len());
+        hash_join_tuples_left(
+            str_hashes_a,
+            str_hashes_b,
+            mapping_left.as_deref(),
+            mapping_right.as_deref(),
         )
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;semi_anti_join&quot;</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">hash_join_semi_anti</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">Utf8Chunked</span>, <span class="ident">anti</span>: <span class="ident">bool</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">splitted_a</span>, <span class="ident">splitted_b</span>, <span class="kw">_</span>, <span class="ident">hb</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prepare</span>(<span class="ident">other</span>, <span class="bool-val">false</span>);
-        <span class="kw">let</span> <span class="ident">str_hashes_a</span> <span class="op">=</span> <span class="ident">prepare_strs</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
-        <span class="kw">let</span> <span class="ident">str_hashes_b</span> <span class="op">=</span> <span class="ident">prepare_strs</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
-        <span class="kw">if</span> <span class="ident">anti</span> {
-            <span class="ident">hash_join_tuples_left_anti</span>(<span class="ident">str_hashes_a</span>, <span class="ident">str_hashes_b</span>)
-        } <span class="kw">else</span> {
-            <span class="ident">hash_join_tuples_left_semi</span>(<span class="ident">str_hashes_a</span>, <span class="ident">str_hashes_b</span>)
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;semi_anti_join&quot;</span>)]
+    </span><span class="kw">fn </span>hash_join_semi_anti(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Utf8Chunked, anti: bool) -&gt; Vec&lt;IdxSize&gt; {
+        <span class="kw">let </span>(splitted_a, splitted_b, <span class="kw">_</span>, hb) = <span class="self">self</span>.prepare(other, <span class="bool-val">false</span>);
+        <span class="kw">let </span>str_hashes_a = prepare_strs(<span class="kw-2">&amp;</span>splitted_a, <span class="kw-2">&amp;</span>hb);
+        <span class="kw">let </span>str_hashes_b = prepare_strs(<span class="kw-2">&amp;</span>splitted_b, <span class="kw-2">&amp;</span>hb);
+        <span class="kw">if </span>anti {
+            hash_join_tuples_left_anti(str_hashes_a, str_hashes_b)
+        } <span class="kw">else </span>{
+            hash_join_tuples_left_semi(str_hashes_a, str_hashes_b)
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">hash_join_outer</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">Utf8Chunked</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>)<span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">a</span>, <span class="ident">b</span>, <span class="ident">swap</span>) <span class="op">=</span> <span class="macro">det_hash_prone_order!</span>(<span class="self">self</span>, <span class="ident">other</span>);
+    <span class="kw">fn </span>hash_join_outer(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Utf8Chunked) -&gt; Vec&lt;(<span class="prelude-ty">Option</span>&lt;IdxSize&gt;, <span class="prelude-ty">Option</span>&lt;IdxSize&gt;)&gt; {
+        <span class="kw">let </span>(a, b, swap) = <span class="macro">det_hash_prone_order!</span>(<span class="self">self</span>, other);
 
-        <span class="kw">let</span> <span class="ident">n_partitions</span> <span class="op">=</span> <span class="ident">_set_partition_size</span>();
-        <span class="kw">let</span> <span class="ident">splitted_a</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">a</span>, <span class="ident">n_partitions</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">splitted_b</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">b</span>, <span class="ident">n_partitions</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let </span>n_partitions = _set_partition_size();
+        <span class="kw">let </span>splitted_a = split_ca(a, n_partitions).unwrap();
+        <span class="kw">let </span>splitted_b = split_ca(b, n_partitions).unwrap();
 
-        <span class="kw">match</span> (<span class="ident">a</span>.<span class="ident">has_validity</span>(), <span class="ident">b</span>.<span class="ident">has_validity</span>()) {
+        <span class="kw">match </span>(a.has_validity(), b.has_validity()) {
             (<span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">iters_a</span> <span class="op">=</span> <span class="ident">splitted_a</span>
-                    .<span class="ident">iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">into_no_null_iter</span>())
-                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-                <span class="kw">let</span> <span class="ident">iters_b</span> <span class="op">=</span> <span class="ident">splitted_b</span>
-                    .<span class="ident">iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">into_no_null_iter</span>())
-                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-                <span class="ident">hash_join_tuples_outer</span>(<span class="ident">iters_a</span>, <span class="ident">iters_b</span>, <span class="ident">swap</span>)
+                <span class="kw">let </span>iters_a = splitted_a
+                    .iter()
+                    .map(|ca| ca.into_no_null_iter())
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                <span class="kw">let </span>iters_b = splitted_b
+                    .iter()
+                    .map(|ca| ca.into_no_null_iter())
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                hash_join_tuples_outer(iters_a, iters_b, swap)
             }
-            <span class="kw">_</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">iters_a</span> <span class="op">=</span> <span class="ident">splitted_a</span>
-                    .<span class="ident">iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">into_iter</span>())
-                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-                <span class="kw">let</span> <span class="ident">iters_b</span> <span class="op">=</span> <span class="ident">splitted_b</span>
-                    .<span class="ident">iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">into_iter</span>())
-                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-                <span class="ident">hash_join_tuples_outer</span>(<span class="ident">iters_a</span>, <span class="ident">iters_b</span>, <span class="ident">swap</span>)
+            <span class="kw">_ </span>=&gt; {
+                <span class="kw">let </span>iters_a = splitted_a
+                    .iter()
+                    .map(|ca| ca.into_iter())
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                <span class="kw">let </span>iters_b = splitted_b
+                    .iter()
+                    .map(|ca| ca.into_iter())
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                hash_join_tuples_outer(iters_a, iters_b, swap)
             }
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-binary&quot;</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">prepare_bytes</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
-    <span class="ident">been_split</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">BinaryChunked</span>],
-    <span class="ident">hb</span>: <span class="kw-2">&amp;</span><span class="ident">RandomState</span>,
-) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">BytesHash</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="ident">POOL</span>.<span class="ident">install</span>(<span class="op">|</span><span class="op">|</span> {
-        <span class="ident">been_split</span>
-            .<span class="ident">par_iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> {
-                <span class="ident">ca</span>.<span class="ident">into_iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">opt_b</span><span class="op">|</span> {
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state</span> <span class="op">=</span> <span class="ident">hb</span>.<span class="ident">build_hasher</span>();
-                        <span class="ident">opt_b</span>.<span class="ident">hash</span>(<span class="kw-2">&amp;mut</span> <span class="ident">state</span>);
-                        <span class="kw">let</span> <span class="ident">hash</span> <span class="op">=</span> <span class="ident">state</span>.<span class="ident">finish</span>();
-                        <span class="ident">BytesHash::new</span>(<span class="ident">opt_b</span>, <span class="ident">hash</span>)
+<span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-binary&quot;</span>)]
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>prepare_bytes&lt;<span class="lifetime">&#39;a</span>&gt;(
+    been_split: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[BinaryChunked],
+    hb: <span class="kw-2">&amp;</span>RandomState,
+) -&gt; Vec&lt;Vec&lt;BytesHash&lt;<span class="lifetime">&#39;a</span>&gt;&gt;&gt; {
+    POOL.install(|| {
+        been_split
+            .par_iter()
+            .map(|ca| {
+                ca.into_iter()
+                    .map(|opt_b| {
+                        <span class="kw">let </span><span class="kw-2">mut </span>state = hb.build_hasher();
+                        opt_b.hash(<span class="kw-2">&amp;mut </span>state);
+                        <span class="kw">let </span>hash = state.finish();
+                        BytesHash::new(opt_b, hash)
                     })
-                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
             })
-            .<span class="ident">collect</span>()
+            .collect()
     })
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;dtype-binary&quot;</span>)]</span>
-<span class="kw">impl</span> <span class="ident">BinaryChunked</span> {
-    <span class="kw">fn</span> <span class="ident">prepare</span>(
+<span class="attribute">#[cfg(feature = <span class="string">&quot;dtype-binary&quot;</span>)]
+</span><span class="kw">impl </span>BinaryChunked {
+    <span class="kw">fn </span>prepare(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">BinaryChunked</span>,
-        <span class="ident">swapped</span>: <span class="ident">bool</span>,
-    ) -&gt; (<span class="ident">Vec</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">bool</span>, <span class="ident">RandomState</span>) {
-        <span class="kw">let</span> <span class="ident">n_threads</span> <span class="op">=</span> <span class="ident">POOL</span>.<span class="ident">current_num_threads</span>();
+        other: <span class="kw-2">&amp;</span>BinaryChunked,
+        swapped: bool,
+    ) -&gt; (Vec&lt;<span class="self">Self</span>&gt;, Vec&lt;<span class="self">Self</span>&gt;, bool, RandomState) {
+        <span class="kw">let </span>n_threads = POOL.current_num_threads();
 
-        <span class="kw">let</span> (<span class="ident">a</span>, <span class="ident">b</span>, <span class="ident">swap</span>) <span class="op">=</span> <span class="kw">if</span> <span class="ident">swapped</span> {
-            <span class="macro">det_hash_prone_order!</span>(<span class="self">self</span>, <span class="ident">other</span>)
-        } <span class="kw">else</span> {
-            (<span class="self">self</span>, <span class="ident">other</span>, <span class="bool-val">false</span>)
+        <span class="kw">let </span>(a, b, swap) = <span class="kw">if </span>swapped {
+            <span class="macro">det_hash_prone_order!</span>(<span class="self">self</span>, other)
+        } <span class="kw">else </span>{
+            (<span class="self">self</span>, other, <span class="bool-val">false</span>)
         };
 
-        <span class="kw">let</span> <span class="ident">hb</span> <span class="op">=</span> <span class="ident">RandomState::default</span>();
-        <span class="kw">let</span> <span class="ident">splitted_a</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">a</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">splitted_b</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">b</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let </span>hb = RandomState::default();
+        <span class="kw">let </span>splitted_a = split_ca(a, n_threads).unwrap();
+        <span class="kw">let </span>splitted_b = split_ca(b, n_threads).unwrap();
 
-        (<span class="ident">splitted_a</span>, <span class="ident">splitted_b</span>, <span class="ident">swap</span>, <span class="ident">hb</span>)
+        (splitted_a, splitted_b, swap, hb)
     }
 
-    <span class="comment">// returns the join tuples and whether or not the lhs tuples are sorted</span>
-    <span class="kw">fn</span> <span class="ident">hash_join_inner</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">BinaryChunked</span>) -&gt; ((<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>), <span class="ident">bool</span>) {
-        <span class="kw">let</span> (<span class="ident">splitted_a</span>, <span class="ident">splitted_b</span>, <span class="ident">swap</span>, <span class="ident">hb</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prepare</span>(<span class="ident">other</span>, <span class="bool-val">true</span>);
-        <span class="kw">let</span> <span class="ident">str_hashes_a</span> <span class="op">=</span> <span class="ident">prepare_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
-        <span class="kw">let</span> <span class="ident">str_hashes_b</span> <span class="op">=</span> <span class="ident">prepare_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
+    <span class="comment">// returns the join tuples and whether or not the lhs tuples are sorted
+    </span><span class="kw">fn </span>hash_join_inner(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>BinaryChunked) -&gt; ((Vec&lt;IdxSize&gt;, Vec&lt;IdxSize&gt;), bool) {
+        <span class="kw">let </span>(splitted_a, splitted_b, swap, hb) = <span class="self">self</span>.prepare(other, <span class="bool-val">true</span>);
+        <span class="kw">let </span>str_hashes_a = prepare_bytes(<span class="kw-2">&amp;</span>splitted_a, <span class="kw-2">&amp;</span>hb);
+        <span class="kw">let </span>str_hashes_b = prepare_bytes(<span class="kw-2">&amp;</span>splitted_b, <span class="kw-2">&amp;</span>hb);
         (
-            <span class="ident">hash_join_tuples_inner</span>(<span class="ident">str_hashes_a</span>, <span class="ident">str_hashes_b</span>, <span class="ident">swap</span>),
-            <span class="op">!</span><span class="ident">swap</span>,
+            hash_join_tuples_inner(str_hashes_a, str_hashes_b, swap),
+            !swap,
         )
     }
 
-    <span class="kw">fn</span> <span class="ident">hash_join_left</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">BinaryChunked</span>) -&gt; <span class="ident">LeftJoinIds</span> {
-        <span class="kw">let</span> (<span class="ident">splitted_a</span>, <span class="ident">splitted_b</span>, <span class="kw">_</span>, <span class="ident">hb</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prepare</span>(<span class="ident">other</span>, <span class="bool-val">false</span>);
-        <span class="kw">let</span> <span class="ident">str_hashes_a</span> <span class="op">=</span> <span class="ident">prepare_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
-        <span class="kw">let</span> <span class="ident">str_hashes_b</span> <span class="op">=</span> <span class="ident">prepare_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
+    <span class="kw">fn </span>hash_join_left(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>BinaryChunked) -&gt; LeftJoinIds {
+        <span class="kw">let </span>(splitted_a, splitted_b, <span class="kw">_</span>, hb) = <span class="self">self</span>.prepare(other, <span class="bool-val">false</span>);
+        <span class="kw">let </span>str_hashes_a = prepare_bytes(<span class="kw-2">&amp;</span>splitted_a, <span class="kw-2">&amp;</span>hb);
+        <span class="kw">let </span>str_hashes_b = prepare_bytes(<span class="kw-2">&amp;</span>splitted_b, <span class="kw-2">&amp;</span>hb);
 
-        <span class="kw">let</span> (<span class="ident">mapping_left</span>, <span class="ident">mapping_right</span>) <span class="op">=</span>
-            <span class="ident">create_mappings</span>(<span class="self">self</span>.<span class="ident">chunks</span>(), <span class="ident">other</span>.<span class="ident">chunks</span>(), <span class="self">self</span>.<span class="ident">len</span>(), <span class="ident">other</span>.<span class="ident">len</span>());
-        <span class="ident">hash_join_tuples_left</span>(
-            <span class="ident">str_hashes_a</span>,
-            <span class="ident">str_hashes_b</span>,
-            <span class="ident">mapping_left</span>.<span class="ident">as_deref</span>(),
-            <span class="ident">mapping_right</span>.<span class="ident">as_deref</span>(),
+        <span class="kw">let </span>(mapping_left, mapping_right) =
+            create_mappings(<span class="self">self</span>.chunks(), other.chunks(), <span class="self">self</span>.len(), other.len());
+        hash_join_tuples_left(
+            str_hashes_a,
+            str_hashes_b,
+            mapping_left.as_deref(),
+            mapping_right.as_deref(),
         )
     }
 
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;semi_anti_join&quot;</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">hash_join_semi_anti</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">BinaryChunked</span>, <span class="ident">anti</span>: <span class="ident">bool</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">splitted_a</span>, <span class="ident">splitted_b</span>, <span class="kw">_</span>, <span class="ident">hb</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">prepare</span>(<span class="ident">other</span>, <span class="bool-val">false</span>);
-        <span class="kw">let</span> <span class="ident">str_hashes_a</span> <span class="op">=</span> <span class="ident">prepare_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
-        <span class="kw">let</span> <span class="ident">str_hashes_b</span> <span class="op">=</span> <span class="ident">prepare_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>, <span class="kw-2">&amp;</span><span class="ident">hb</span>);
-        <span class="kw">if</span> <span class="ident">anti</span> {
-            <span class="ident">hash_join_tuples_left_anti</span>(<span class="ident">str_hashes_a</span>, <span class="ident">str_hashes_b</span>)
-        } <span class="kw">else</span> {
-            <span class="ident">hash_join_tuples_left_semi</span>(<span class="ident">str_hashes_a</span>, <span class="ident">str_hashes_b</span>)
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;semi_anti_join&quot;</span>)]
+    </span><span class="kw">fn </span>hash_join_semi_anti(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>BinaryChunked, anti: bool) -&gt; Vec&lt;IdxSize&gt; {
+        <span class="kw">let </span>(splitted_a, splitted_b, <span class="kw">_</span>, hb) = <span class="self">self</span>.prepare(other, <span class="bool-val">false</span>);
+        <span class="kw">let </span>str_hashes_a = prepare_bytes(<span class="kw-2">&amp;</span>splitted_a, <span class="kw-2">&amp;</span>hb);
+        <span class="kw">let </span>str_hashes_b = prepare_bytes(<span class="kw-2">&amp;</span>splitted_b, <span class="kw-2">&amp;</span>hb);
+        <span class="kw">if </span>anti {
+            hash_join_tuples_left_anti(str_hashes_a, str_hashes_b)
+        } <span class="kw">else </span>{
+            hash_join_tuples_left_semi(str_hashes_a, str_hashes_b)
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">hash_join_outer</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">BinaryChunked</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>)<span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">a</span>, <span class="ident">b</span>, <span class="ident">swap</span>) <span class="op">=</span> <span class="macro">det_hash_prone_order!</span>(<span class="self">self</span>, <span class="ident">other</span>);
+    <span class="kw">fn </span>hash_join_outer(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>BinaryChunked) -&gt; Vec&lt;(<span class="prelude-ty">Option</span>&lt;IdxSize&gt;, <span class="prelude-ty">Option</span>&lt;IdxSize&gt;)&gt; {
+        <span class="kw">let </span>(a, b, swap) = <span class="macro">det_hash_prone_order!</span>(<span class="self">self</span>, other);
 
-        <span class="kw">let</span> <span class="ident">n_partitions</span> <span class="op">=</span> <span class="ident">_set_partition_size</span>();
-        <span class="kw">let</span> <span class="ident">splitted_a</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">a</span>, <span class="ident">n_partitions</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">splitted_b</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">b</span>, <span class="ident">n_partitions</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let </span>n_partitions = _set_partition_size();
+        <span class="kw">let </span>splitted_a = split_ca(a, n_partitions).unwrap();
+        <span class="kw">let </span>splitted_b = split_ca(b, n_partitions).unwrap();
 
-        <span class="kw">match</span> (<span class="ident">a</span>.<span class="ident">has_validity</span>(), <span class="ident">b</span>.<span class="ident">has_validity</span>()) {
+        <span class="kw">match </span>(a.has_validity(), b.has_validity()) {
             (<span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">iters_a</span> <span class="op">=</span> <span class="ident">splitted_a</span>
-                    .<span class="ident">iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">into_no_null_iter</span>())
-                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-                <span class="kw">let</span> <span class="ident">iters_b</span> <span class="op">=</span> <span class="ident">splitted_b</span>
-                    .<span class="ident">iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">into_no_null_iter</span>())
-                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-                <span class="ident">hash_join_tuples_outer</span>(<span class="ident">iters_a</span>, <span class="ident">iters_b</span>, <span class="ident">swap</span>)
+                <span class="kw">let </span>iters_a = splitted_a
+                    .iter()
+                    .map(|ca| ca.into_no_null_iter())
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                <span class="kw">let </span>iters_b = splitted_b
+                    .iter()
+                    .map(|ca| ca.into_no_null_iter())
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                hash_join_tuples_outer(iters_a, iters_b, swap)
             }
-            <span class="kw">_</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">iters_a</span> <span class="op">=</span> <span class="ident">splitted_a</span>
-                    .<span class="ident">iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">into_iter</span>())
-                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-                <span class="kw">let</span> <span class="ident">iters_b</span> <span class="op">=</span> <span class="ident">splitted_b</span>
-                    .<span class="ident">iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ca</span><span class="op">|</span> <span class="ident">ca</span>.<span class="ident">into_iter</span>())
-                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-                <span class="ident">hash_join_tuples_outer</span>(<span class="ident">iters_a</span>, <span class="ident">iters_b</span>, <span class="ident">swap</span>)
+            <span class="kw">_ </span>=&gt; {
+                <span class="kw">let </span>iters_a = splitted_a
+                    .iter()
+                    .map(|ca| ca.into_iter())
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                <span class="kw">let </span>iters_b = splitted_b
+                    .iter()
+                    .map(|ca| ca.into_iter())
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                hash_join_tuples_outer(iters_a, iters_b, swap)
             }
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;semi_anti_join&quot;</span>)]</span>
-<span class="kw">fn</span> <span class="ident">num_group_join_anti_semi</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
-    <span class="ident">left</span>: <span class="kw-2">&amp;</span><span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-    <span class="ident">right</span>: <span class="kw-2">&amp;</span><span class="ident">ChunkedArray</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-    <span class="ident">anti</span>: <span class="ident">bool</span>,
-) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">IdxSize</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">PolarsIntegerType</span>,
-    <span class="ident">T::Native</span>: <span class="ident">Hash</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">AsU64</span>,
-    <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T::Native</span><span class="op">&gt;</span>: <span class="ident">AsU64</span>,
+<span class="attribute">#[cfg(feature = <span class="string">&quot;semi_anti_join&quot;</span>)]
+</span><span class="kw">fn </span>num_group_join_anti_semi&lt;T&gt;(
+    left: <span class="kw-2">&amp;</span>ChunkedArray&lt;T&gt;,
+    right: <span class="kw-2">&amp;</span>ChunkedArray&lt;T&gt;,
+    anti: bool,
+) -&gt; Vec&lt;IdxSize&gt;
+<span class="kw">where
+    </span>T: PolarsIntegerType,
+    T::Native: Hash + Eq + Send + AsU64,
+    <span class="prelude-ty">Option</span>&lt;T::Native&gt;: AsU64,
 {
-    <span class="kw">let</span> <span class="ident">n_threads</span> <span class="op">=</span> <span class="ident">POOL</span>.<span class="ident">current_num_threads</span>();
-    <span class="kw">let</span> <span class="ident">splitted_a</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">left</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">splitted_b</span> <span class="op">=</span> <span class="ident">split_ca</span>(<span class="ident">right</span>, <span class="ident">n_threads</span>).<span class="ident">unwrap</span>();
-    <span class="kw">match</span> (
-        <span class="ident">left</span>.<span class="ident">null_count</span>(),
-        <span class="ident">right</span>.<span class="ident">null_count</span>(),
-        <span class="ident">left</span>.<span class="ident">chunks</span>.<span class="ident">len</span>(),
-        <span class="ident">right</span>.<span class="ident">chunks</span>.<span class="ident">len</span>(),
+    <span class="kw">let </span>n_threads = POOL.current_num_threads();
+    <span class="kw">let </span>splitted_a = split_ca(left, n_threads).unwrap();
+    <span class="kw">let </span>splitted_b = split_ca(right, n_threads).unwrap();
+    <span class="kw">match </span>(
+        left.null_count(),
+        right.null_count(),
+        left.chunks.len(),
+        right.chunks.len(),
     ) {
         (<span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">1</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">keys_a</span> <span class="op">=</span> <span class="ident">splitted_to_slice</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>);
-            <span class="kw">let</span> <span class="ident">keys_b</span> <span class="op">=</span> <span class="ident">splitted_to_slice</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>);
-            <span class="kw">if</span> <span class="ident">anti</span> {
-                <span class="ident">hash_join_tuples_left_anti</span>(<span class="ident">keys_a</span>, <span class="ident">keys_b</span>)
-            } <span class="kw">else</span> {
-                <span class="ident">hash_join_tuples_left_semi</span>(<span class="ident">keys_a</span>, <span class="ident">keys_b</span>)
+            <span class="kw">let </span>keys_a = splitted_to_slice(<span class="kw-2">&amp;</span>splitted_a);
+            <span class="kw">let </span>keys_b = splitted_to_slice(<span class="kw-2">&amp;</span>splitted_b);
+            <span class="kw">if </span>anti {
+                hash_join_tuples_left_anti(keys_a, keys_b)
+            } <span class="kw">else </span>{
+                hash_join_tuples_left_semi(keys_a, keys_b)
             }
         }
         (<span class="number">0</span>, <span class="number">0</span>, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">keys_a</span> <span class="op">=</span> <span class="ident">splitted_by_chunks</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>);
-            <span class="kw">let</span> <span class="ident">keys_b</span> <span class="op">=</span> <span class="ident">splitted_by_chunks</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>);
-            <span class="kw">if</span> <span class="ident">anti</span> {
-                <span class="ident">hash_join_tuples_left_anti</span>(<span class="ident">keys_a</span>, <span class="ident">keys_b</span>)
-            } <span class="kw">else</span> {
-                <span class="ident">hash_join_tuples_left_semi</span>(<span class="ident">keys_a</span>, <span class="ident">keys_b</span>)
+            <span class="kw">let </span>keys_a = splitted_by_chunks(<span class="kw-2">&amp;</span>splitted_a);
+            <span class="kw">let </span>keys_b = splitted_by_chunks(<span class="kw-2">&amp;</span>splitted_b);
+            <span class="kw">if </span>anti {
+                hash_join_tuples_left_anti(keys_a, keys_b)
+            } <span class="kw">else </span>{
+                hash_join_tuples_left_semi(keys_a, keys_b)
             }
         }
-        <span class="kw">_</span> =&gt; {
-            <span class="kw">let</span> <span class="ident">keys_a</span> <span class="op">=</span> <span class="ident">splitted_to_opt_vec</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_a</span>);
-            <span class="kw">let</span> <span class="ident">keys_b</span> <span class="op">=</span> <span class="ident">splitted_to_opt_vec</span>(<span class="kw-2">&amp;</span><span class="ident">splitted_b</span>);
-            <span class="kw">if</span> <span class="ident">anti</span> {
-                <span class="ident">hash_join_tuples_left_anti</span>(<span class="ident">keys_a</span>, <span class="ident">keys_b</span>)
-            } <span class="kw">else</span> {
-                <span class="ident">hash_join_tuples_left_semi</span>(<span class="ident">keys_a</span>, <span class="ident">keys_b</span>)
+        <span class="kw">_ </span>=&gt; {
+            <span class="kw">let </span>keys_a = splitted_to_opt_vec(<span class="kw-2">&amp;</span>splitted_a);
+            <span class="kw">let </span>keys_b = splitted_to_opt_vec(<span class="kw-2">&amp;</span>splitted_b);
+            <span class="kw">if </span>anti {
+                hash_join_tuples_left_anti(keys_a, keys_b)
+            } <span class="kw">else </span>{
+                hash_join_tuples_left_semi(keys_a, keys_b)
             }
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/parquet2-0.16.3/src/deserialize/hybrid_rle.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>hybrid_rle.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../parquet2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../parquet2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../parquet2/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/parquet2-0.16.3/src/deserialize/hybrid_rle.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>hybrid_rle.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../parquet2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../parquet2/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../parquet2/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -203,210 +203,210 @@
 <span id="203">203</span>
 <span id="204">204</span>
 <span id="205">205</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::error::Error</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::error::Error;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::encoding::hybrid_rle</span>::{<span class="self">self</span>, <span class="ident">BitmapIter</span>};
+<span class="kw">use </span><span class="kw">crate</span>::encoding::hybrid_rle::{<span class="self">self</span>, BitmapIter};
 
-<span class="doccomment">/// The decoding state of the hybrid-RLE decoder with a maximum definition level of 1</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">HybridEncoded</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// a bitmap</span>
-    <span class="ident">Bitmap</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>], <span class="ident">usize</span>),
-    <span class="doccomment">/// A repeated item. The first attribute corresponds to whether the value is set</span>
-    <span class="doccomment">/// the second attribute corresponds to the number of repetitions.</span>
-    <span class="ident">Repeated</span>(<span class="ident">bool</span>, <span class="ident">usize</span>),
+<span class="doccomment">/// The decoding state of the hybrid-RLE decoder with a maximum definition level of 1
+</span><span class="attribute">#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+</span><span class="kw">pub enum </span>HybridEncoded&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="doccomment">/// a bitmap
+    </span>Bitmap(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8], usize),
+    <span class="doccomment">/// A repeated item. The first attribute corresponds to whether the value is set
+    /// the second attribute corresponds to the number of repetitions.
+    </span>Repeated(bool, usize),
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">HybridEncoded</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Returns the length of the run in number of items</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HybridEncoded::Bitmap</span>(<span class="kw">_</span>, <span class="ident">length</span>) =&gt; <span class="kw-2">*</span><span class="ident">length</span>,
-            <span class="ident">HybridEncoded::Repeated</span>(<span class="kw">_</span>, <span class="ident">length</span>) =&gt; <span class="kw-2">*</span><span class="ident">length</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; HybridEncoded&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="doccomment">/// Returns the length of the run in number of items
+    </span><span class="attribute">#[inline]
+    </span><span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="kw">match </span><span class="self">self </span>{
+            HybridEncoded::Bitmap(<span class="kw">_</span>, length) =&gt; <span class="kw-2">*</span>length,
+            HybridEncoded::Repeated(<span class="kw">_</span>, length) =&gt; <span class="kw-2">*</span>length,
         }
     }
 
-    <span class="attribute">#[<span class="ident">must_use</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_empty</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="number">0</span>
-    }
+    <span class="attribute">#[must_use]
+    </span><span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.len() == <span class="number">0
+    </span>}
 }
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">HybridRleRunsIterator</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">HybridEncoded</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>, <span class="ident">Error</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Number of elements remaining. This may not be the items of the iterator - an item</span>
-    <span class="doccomment">/// of the iterator may contain more than one element.</span>
-    <span class="kw">fn</span> <span class="ident">number_of_elements</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span>;
+<span class="kw">pub trait </span>HybridRleRunsIterator&lt;<span class="lifetime">&#39;a</span>&gt;: Iterator&lt;Item = <span class="prelude-ty">Result</span>&lt;HybridEncoded&lt;<span class="lifetime">&#39;a</span>&gt;, Error&gt;&gt; {
+    <span class="doccomment">/// Number of elements remaining. This may not be the items of the iterator - an item
+    /// of the iterator may contain more than one element.
+    </span><span class="kw">fn </span>number_of_elements(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize;
 }
 
-<span class="doccomment">/// An iterator of [`HybridEncoded`], adapter over [`hybrid_rle::HybridEncoded`].</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">HybridRleIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">hybrid_rle::HybridEncoded</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>, <span class="ident">Error</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="doccomment">/// An iterator of [`HybridEncoded`], adapter over [`hybrid_rle::HybridEncoded`].
+</span><span class="attribute">#[derive(Debug, Clone)]
+</span><span class="kw">pub struct </span>HybridRleIter&lt;<span class="lifetime">&#39;a</span>, I&gt;
+<span class="kw">where
+    </span>I: Iterator&lt;Item = <span class="prelude-ty">Result</span>&lt;hybrid_rle::HybridEncoded&lt;<span class="lifetime">&#39;a</span>&gt;, Error&gt;&gt;,
 {
-    <span class="ident">iter</span>: <span class="ident">I</span>,
-    <span class="ident">length</span>: <span class="ident">usize</span>,
-    <span class="ident">consumed</span>: <span class="ident">usize</span>,
+    iter: I,
+    length: usize,
+    consumed: usize,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="ident">HybridRleIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">hybrid_rle::HybridEncoded</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>, <span class="ident">Error</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, I&gt; HybridRleIter&lt;<span class="lifetime">&#39;a</span>, I&gt;
+<span class="kw">where
+    </span>I: Iterator&lt;Item = <span class="prelude-ty">Result</span>&lt;hybrid_rle::HybridEncoded&lt;<span class="lifetime">&#39;a</span>&gt;, Error&gt;&gt;,
 {
-    <span class="doccomment">/// Returns a new [`HybridRleIter`]</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">iter</span>: <span class="ident">I</span>, <span class="ident">length</span>: <span class="ident">usize</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">iter</span>,
-            <span class="ident">length</span>,
-            <span class="ident">consumed</span>: <span class="number">0</span>,
+    <span class="doccomment">/// Returns a new [`HybridRleIter`]
+    </span><span class="attribute">#[inline]
+    </span><span class="kw">pub fn </span>new(iter: I, length: usize) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            iter,
+            length,
+            consumed: <span class="number">0</span>,
         }
     }
 
-    <span class="doccomment">/// the number of elements in the iterator. Note that this _is not_ the number of runs.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">length</span> <span class="op">-</span> <span class="self">self</span>.<span class="ident">consumed</span>
+    <span class="doccomment">/// the number of elements in the iterator. Note that this _is not_ the number of runs.
+    </span><span class="attribute">#[inline]
+    </span><span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.length - <span class="self">self</span>.consumed
     }
 
-    <span class="attribute">#[<span class="ident">must_use</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_empty</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="number">0</span>
+    <span class="attribute">#[must_use]
+    </span><span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.len() == <span class="number">0
+    </span>}
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, I&gt; HybridRleRunsIterator&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>HybridRleIter&lt;<span class="lifetime">&#39;a</span>, I&gt;
+<span class="kw">where
+    </span>I: Iterator&lt;Item = <span class="prelude-ty">Result</span>&lt;hybrid_rle::HybridEncoded&lt;<span class="lifetime">&#39;a</span>&gt;, Error&gt;&gt;,
+{
+    <span class="kw">fn </span>number_of_elements(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.len()
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="ident">HybridRleRunsIterator</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">HybridRleIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">hybrid_rle::HybridEncoded</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>, <span class="ident">Error</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, I&gt; Iterator <span class="kw">for </span>HybridRleIter&lt;<span class="lifetime">&#39;a</span>, I&gt;
+<span class="kw">where
+    </span>I: Iterator&lt;Item = <span class="prelude-ty">Result</span>&lt;hybrid_rle::HybridEncoded&lt;<span class="lifetime">&#39;a</span>&gt;, Error&gt;&gt;,
 {
-    <span class="kw">fn</span> <span class="ident">number_of_elements</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">len</span>()
-    }
-}
+    <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;HybridEncoded&lt;<span class="lifetime">&#39;a</span>&gt;, Error&gt;;
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">HybridRleIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">hybrid_rle::HybridEncoded</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>, <span class="ident">Error</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-{
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">HybridEncoded</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>, <span class="ident">Error</span><span class="op">&gt;</span>;
-
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">consumed</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">length</span> {
-            <span class="kw">return</span> <span class="prelude-val">None</span>;
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
+        <span class="kw">if </span><span class="self">self</span>.consumed == <span class="self">self</span>.length {
+            <span class="kw">return </span><span class="prelude-val">None</span>;
         };
-        <span class="kw">let</span> <span class="ident">run</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">iter</span>.<span class="ident">next</span>()<span class="question-mark">?</span>;
+        <span class="kw">let </span>run = <span class="self">self</span>.iter.next()<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Some</span>(<span class="ident">run</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">run</span><span class="op">|</span> <span class="kw">match</span> <span class="ident">run</span> {
-            <span class="ident">hybrid_rle::HybridEncoded::Bitpacked</span>(<span class="ident">pack</span>) =&gt; {
-                <span class="comment">// a pack has at most `pack.len() * 8` bits</span>
-                <span class="kw">let</span> <span class="ident">pack_size</span> <span class="op">=</span> <span class="ident">pack</span>.<span class="ident">len</span>() <span class="op">*</span> <span class="number">8</span>;
+        <span class="prelude-val">Some</span>(run.map(|run| <span class="kw">match </span>run {
+            hybrid_rle::HybridEncoded::Bitpacked(pack) =&gt; {
+                <span class="comment">// a pack has at most `pack.len() * 8` bits
+                </span><span class="kw">let </span>pack_size = pack.len() * <span class="number">8</span>;
 
-                <span class="kw">let</span> <span class="ident">additional</span> <span class="op">=</span> <span class="ident">pack_size</span>.<span class="ident">min</span>(<span class="self">self</span>.<span class="ident">len</span>());
+                <span class="kw">let </span>additional = pack_size.min(<span class="self">self</span>.len());
 
-                <span class="self">self</span>.<span class="ident">consumed</span> <span class="op">+</span><span class="op">=</span> <span class="ident">additional</span>;
-                <span class="ident">HybridEncoded::Bitmap</span>(<span class="ident">pack</span>, <span class="ident">additional</span>)
+                <span class="self">self</span>.consumed += additional;
+                HybridEncoded::Bitmap(pack, additional)
             }
-            <span class="ident">hybrid_rle::HybridEncoded::Rle</span>(<span class="ident">value</span>, <span class="ident">length</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">is_set</span> <span class="op">=</span> <span class="ident">value</span>[<span class="number">0</span>] <span class="op">==</span> <span class="number">1</span>;
+            hybrid_rle::HybridEncoded::Rle(value, length) =&gt; {
+                <span class="kw">let </span>is_set = value[<span class="number">0</span>] == <span class="number">1</span>;
 
-                <span class="kw">let</span> <span class="ident">additional</span> <span class="op">=</span> <span class="ident">length</span>.<span class="ident">min</span>(<span class="self">self</span>.<span class="ident">len</span>());
+                <span class="kw">let </span>additional = length.min(<span class="self">self</span>.len());
 
-                <span class="self">self</span>.<span class="ident">consumed</span> <span class="op">+</span><span class="op">=</span> <span class="ident">additional</span>;
-                <span class="ident">HybridEncoded::Repeated</span>(<span class="ident">is_set</span>, <span class="ident">additional</span>)
+                <span class="self">self</span>.consumed += additional;
+                HybridEncoded::Repeated(is_set, additional)
             }
         }))
     }
 
-    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>) {
-        <span class="self">self</span>.<span class="ident">iter</span>.<span class="ident">size_hint</span>()
+    <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
+        <span class="self">self</span>.iter.size_hint()
     }
 }
 
-<span class="doccomment">/// Type definition for a [`HybridRleIter`] using [`hybrid_rle::Decoder`].</span>
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">HybridDecoderBitmapIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">HybridRleIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">hybrid_rle::Decoder</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+<span class="doccomment">/// Type definition for a [`HybridRleIter`] using [`hybrid_rle::Decoder`].
+</span><span class="kw">pub type </span>HybridDecoderBitmapIter&lt;<span class="lifetime">&#39;a</span>&gt; = HybridRleIter&lt;<span class="lifetime">&#39;a</span>, hybrid_rle::Decoder&lt;<span class="lifetime">&#39;a</span>&gt;&gt;;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">enum</span> <span class="ident">HybridBooleanState</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// a bitmap</span>
-    <span class="ident">Bitmap</span>(<span class="ident">BitmapIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>),
-    <span class="doccomment">/// A repeated item. The first attribute corresponds to whether the value is set</span>
-    <span class="doccomment">/// the second attribute corresponds to the number of repetitions.</span>
-    <span class="ident">Repeated</span>(<span class="ident">bool</span>, <span class="ident">usize</span>),
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">enum </span>HybridBooleanState&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="doccomment">/// a bitmap
+    </span>Bitmap(BitmapIter&lt;<span class="lifetime">&#39;a</span>&gt;),
+    <span class="doccomment">/// A repeated item. The first attribute corresponds to whether the value is set
+    /// the second attribute corresponds to the number of repetitions.
+    </span>Repeated(bool, usize),
 }
 
-<span class="doccomment">/// An iterator adapter that maps an iterator of [`HybridEncoded`] into an iterator</span>
-<span class="doccomment">/// over [`bool`].</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">HybridRleBooleanIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">HybridEncoded</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>, <span class="ident">Error</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="doccomment">/// An iterator adapter that maps an iterator of [`HybridEncoded`] into an iterator
+/// over [`bool`].
+</span><span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub struct </span>HybridRleBooleanIter&lt;<span class="lifetime">&#39;a</span>, I&gt;
+<span class="kw">where
+    </span>I: Iterator&lt;Item = <span class="prelude-ty">Result</span>&lt;HybridEncoded&lt;<span class="lifetime">&#39;a</span>&gt;, Error&gt;&gt;,
 {
-    <span class="ident">iter</span>: <span class="ident">I</span>,
-    <span class="ident">current_run</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">HybridBooleanState</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    iter: I,
+    current_run: <span class="prelude-ty">Option</span>&lt;HybridBooleanState&lt;<span class="lifetime">&#39;a</span>&gt;&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="ident">HybridRleBooleanIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">HybridEncoded</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>, <span class="ident">Error</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, I&gt; HybridRleBooleanIter&lt;<span class="lifetime">&#39;a</span>, I&gt;
+<span class="kw">where
+    </span>I: Iterator&lt;Item = <span class="prelude-ty">Result</span>&lt;HybridEncoded&lt;<span class="lifetime">&#39;a</span>&gt;, Error&gt;&gt;,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">iter</span>: <span class="ident">I</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">iter</span>,
-            <span class="ident">current_run</span>: <span class="prelude-val">None</span>,
+    <span class="kw">pub fn </span>new(iter: I) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            iter,
+            current_run: <span class="prelude-val">None</span>,
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">HybridRleBooleanIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">I</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">I</span>: <span class="ident">HybridRleRunsIterator</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, I&gt; Iterator <span class="kw">for </span>HybridRleBooleanIter&lt;<span class="lifetime">&#39;a</span>, I&gt;
+<span class="kw">where
+    </span>I: HybridRleRunsIterator&lt;<span class="lifetime">&#39;a</span>&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bool</span>, <span class="ident">Error</span><span class="op">&gt;</span>;
+    <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;bool, Error&gt;;
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">run</span>) <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">current_run</span> {
-            <span class="kw">match</span> <span class="ident">run</span> {
-                <span class="ident">HybridBooleanState::Bitmap</span>(<span class="ident">bitmap</span>) =&gt; <span class="ident">bitmap</span>.<span class="ident">next</span>().<span class="ident">map</span>(<span class="prelude-val">Ok</span>),
-                <span class="ident">HybridBooleanState::Repeated</span>(<span class="ident">value</span>, <span class="ident">remaining</span>) =&gt; <span class="kw">if</span> <span class="kw-2">*</span><span class="ident">remaining</span> <span class="op">==</span> <span class="number">0</span> {
-                    <span class="prelude-val">None</span>
-                } <span class="kw">else</span> {
-                    <span class="kw-2">*</span><span class="ident">remaining</span> <span class="op">-</span><span class="op">=</span> <span class="number">1</span>;
-                    <span class="prelude-val">Some</span>(<span class="kw-2">*</span><span class="ident">value</span>)
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(run) = <span class="kw-2">&amp;mut </span><span class="self">self</span>.current_run {
+            <span class="kw">match </span>run {
+                HybridBooleanState::Bitmap(bitmap) =&gt; bitmap.next().map(<span class="prelude-val">Ok</span>),
+                HybridBooleanState::Repeated(value, remaining) =&gt; <span class="kw">if </span><span class="kw-2">*</span>remaining == <span class="number">0 </span>{
+                    <span class="prelude-val">None
+                </span>} <span class="kw">else </span>{
+                    <span class="kw-2">*</span>remaining -= <span class="number">1</span>;
+                    <span class="prelude-val">Some</span>(<span class="kw-2">*</span>value)
                 }
-                .<span class="ident">map</span>(<span class="prelude-val">Ok</span>),
+                .map(<span class="prelude-val">Ok</span>),
             }
-        } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">run</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">iter</span>.<span class="ident">next</span>() {
-            <span class="kw">let</span> <span class="ident">run</span> <span class="op">=</span> <span class="ident">run</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">run</span><span class="op">|</span> <span class="kw">match</span> <span class="ident">run</span> {
-                <span class="ident">HybridEncoded::Bitmap</span>(<span class="ident">bitmap</span>, <span class="ident">length</span>) =&gt; {
-                    <span class="ident">HybridBooleanState::Bitmap</span>(<span class="ident">BitmapIter::new</span>(<span class="ident">bitmap</span>, <span class="number">0</span>, <span class="ident">length</span>))
+        } <span class="kw">else if let </span><span class="prelude-val">Some</span>(run) = <span class="self">self</span>.iter.next() {
+            <span class="kw">let </span>run = run.map(|run| <span class="kw">match </span>run {
+                HybridEncoded::Bitmap(bitmap, length) =&gt; {
+                    HybridBooleanState::Bitmap(BitmapIter::new(bitmap, <span class="number">0</span>, length))
                 }
-                <span class="ident">HybridEncoded::Repeated</span>(<span class="ident">value</span>, <span class="ident">length</span>) =&gt; {
-                    <span class="ident">HybridBooleanState::Repeated</span>(<span class="ident">value</span>, <span class="ident">length</span>)
+                HybridEncoded::Repeated(value, length) =&gt; {
+                    HybridBooleanState::Repeated(value, length)
                 }
             });
-            <span class="kw">match</span> <span class="ident">run</span> {
-                <span class="prelude-val">Ok</span>(<span class="ident">run</span>) =&gt; {
-                    <span class="self">self</span>.<span class="ident">current_run</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">run</span>);
-                    <span class="self">self</span>.<span class="ident">next</span>()
+            <span class="kw">match </span>run {
+                <span class="prelude-val">Ok</span>(run) =&gt; {
+                    <span class="self">self</span>.current_run = <span class="prelude-val">Some</span>(run);
+                    <span class="self">self</span>.next()
                 }
-                <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>)),
+                <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(e)),
             }
-        } <span class="kw">else</span> {
-            <span class="prelude-val">None</span>
-        }
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>}
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>) {
-        <span class="kw">let</span> <span class="ident">exact</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">iter</span>.<span class="ident">number_of_elements</span>();
-        (<span class="ident">exact</span>, <span class="prelude-val">Some</span>(<span class="ident">exact</span>))
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
+        <span class="kw">let </span>exact = <span class="self">self</span>.iter.number_of_elements();
+        (exact, <span class="prelude-val">Some</span>(exact))
     }
 }
 
-<span class="doccomment">/// Type definition for a [`HybridRleBooleanIter`] using [`hybrid_rle::Decoder`].</span>
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">HybridRleDecoderIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">HybridRleBooleanIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">HybridDecoderBitmapIter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+<span class="doccomment">/// Type definition for a [`HybridRleBooleanIter`] using [`hybrid_rle::Decoder`].
+</span><span class="kw">pub type </span>HybridRleDecoderIter&lt;<span class="lifetime">&#39;a</span>&gt; = HybridRleBooleanIter&lt;<span class="lifetime">&#39;a</span>, HybridDecoderBitmapIter&lt;<span class="lifetime">&#39;a</span>&gt;&gt;;
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="parquet2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="parquet2" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

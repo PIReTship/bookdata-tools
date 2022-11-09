@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-io-0.25.1/src/csv/parser.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>parser.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../polars_io/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../polars_io/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../polars_io/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-io-0.25.1/src/csv/parser.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>parser.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../polars_io/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../polars_io/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../polars_io/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -657,567 +657,567 @@
 <span id="657">657</span>
 <span id="658">658</span>
 <span id="659">659</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">num::traits::Pow</span>;
-<span class="kw">use</span> <span class="ident">polars_core::prelude</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>num::traits::Pow;
+<span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::buffer</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::csv::read::NullValuesCompiled</span>;
+<span class="kw">use </span><span class="kw">super</span>::buffer::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::csv::read::NullValuesCompiled;
 
-<span class="doccomment">/// Skip the utf-8 Byte Order Mark.</span>
-<span class="doccomment">/// credits to csv-core</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">skip_bom</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] {
-    <span class="kw">if</span> <span class="ident">input</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="number">3</span> <span class="op">&amp;&amp;</span> <span class="kw-2">&amp;</span><span class="ident">input</span>[<span class="number">0</span>..<span class="number">3</span>] <span class="op">==</span> <span class="string">b&quot;\xef\xbb\xbf&quot;</span> {
-        <span class="kw-2">&amp;</span><span class="ident">input</span>[<span class="number">3</span>..]
-    } <span class="kw">else</span> {
-        <span class="ident">input</span>
+<span class="doccomment">/// Skip the utf-8 Byte Order Mark.
+/// credits to csv-core
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>skip_bom(input: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="kw-2">&amp;</span>[u8] {
+    <span class="kw">if </span>input.len() &gt;= <span class="number">3 </span>&amp;&amp; <span class="kw-2">&amp;</span>input[<span class="number">0</span>..<span class="number">3</span>] == <span class="string">b&quot;\xef\xbb\xbf&quot; </span>{
+        <span class="kw-2">&amp;</span>input[<span class="number">3</span>..]
+    } <span class="kw">else </span>{
+        input
     }
 }
 
-<span class="doccomment">/// Find the nearest next line position.</span>
-<span class="doccomment">/// Does not check for new line characters embedded in String fields.</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">next_line_position_naive</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>], <span class="ident">eol_char</span>: <span class="ident">u8</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">pos</span> <span class="op">=</span> <span class="ident">memchr::memchr</span>(<span class="ident">eol_char</span>, <span class="ident">input</span>)<span class="question-mark">?</span> <span class="op">+</span> <span class="number">1</span>;
-    <span class="kw">if</span> <span class="ident">input</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="ident">pos</span> <span class="op">==</span> <span class="number">0</span> {
-        <span class="kw">return</span> <span class="prelude-val">None</span>;
+<span class="doccomment">/// Find the nearest next line position.
+/// Does not check for new line characters embedded in String fields.
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>next_line_position_naive(input: <span class="kw-2">&amp;</span>[u8], eol_char: u8) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
+    <span class="kw">let </span>pos = memchr::memchr(eol_char, input)<span class="question-mark">? </span>+ <span class="number">1</span>;
+    <span class="kw">if </span>input.len() - pos == <span class="number">0 </span>{
+        <span class="kw">return </span><span class="prelude-val">None</span>;
     }
-    <span class="prelude-val">Some</span>(<span class="ident">pos</span>)
+    <span class="prelude-val">Some</span>(pos)
 }
 
-<span class="doccomment">/// Find the nearest next line position that is not embedded in a String field.</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">next_line_position</span>(
-    <span class="kw-2">mut</span> <span class="ident">input</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>],
-    <span class="kw-2">mut</span> <span class="ident">expected_fields</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
-    <span class="ident">delimiter</span>: <span class="ident">u8</span>,
-    <span class="ident">quote_char</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-    <span class="ident">eol_char</span>: <span class="ident">u8</span>,
-) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">total_pos</span> <span class="op">=</span> <span class="number">0</span>;
-    <span class="kw">if</span> <span class="ident">input</span>.<span class="ident">is_empty</span>() {
-        <span class="kw">return</span> <span class="prelude-val">None</span>;
+<span class="doccomment">/// Find the nearest next line position that is not embedded in a String field.
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>next_line_position(
+    <span class="kw-2">mut </span>input: <span class="kw-2">&amp;</span>[u8],
+    <span class="kw-2">mut </span>expected_fields: <span class="prelude-ty">Option</span>&lt;usize&gt;,
+    delimiter: u8,
+    quote_char: <span class="prelude-ty">Option</span>&lt;u8&gt;,
+    eol_char: u8,
+) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>total_pos = <span class="number">0</span>;
+    <span class="kw">if </span>input.is_empty() {
+        <span class="kw">return </span><span class="prelude-val">None</span>;
     }
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">lines_checked</span> <span class="op">=</span> <span class="number">0u16</span>;
-    <span class="kw">loop</span> {
-        <span class="ident">lines_checked</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-        <span class="comment">// headers might have an extra value</span>
-        <span class="comment">// So if we have churned through enough lines</span>
-        <span class="comment">// we try one field less.</span>
-        <span class="kw">if</span> <span class="ident">lines_checked</span> <span class="op">==</span> <span class="number">256</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">ef</span>) <span class="op">=</span> <span class="ident">expected_fields</span> {
-                <span class="ident">expected_fields</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">ef</span>.<span class="ident">saturating_sub</span>(<span class="number">1</span>))
+    <span class="kw">let </span><span class="kw-2">mut </span>lines_checked = <span class="number">0u16</span>;
+    <span class="kw">loop </span>{
+        lines_checked += <span class="number">1</span>;
+        <span class="comment">// headers might have an extra value
+        // So if we have churned through enough lines
+        // we try one field less.
+        </span><span class="kw">if </span>lines_checked == <span class="number">256 </span>{
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(ef) = expected_fields {
+                expected_fields = <span class="prelude-val">Some</span>(ef.saturating_sub(<span class="number">1</span>))
             }
         };
-        <span class="kw">let</span> <span class="ident">pos</span> <span class="op">=</span> <span class="ident">memchr::memchr</span>(<span class="ident">eol_char</span>, <span class="ident">input</span>)<span class="question-mark">?</span> <span class="op">+</span> <span class="number">1</span>;
-        <span class="kw">if</span> <span class="ident">input</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="ident">pos</span> <span class="op">==</span> <span class="number">0</span> {
-            <span class="kw">return</span> <span class="prelude-val">None</span>;
+        <span class="kw">let </span>pos = memchr::memchr(eol_char, input)<span class="question-mark">? </span>+ <span class="number">1</span>;
+        <span class="kw">if </span>input.len() - pos == <span class="number">0 </span>{
+            <span class="kw">return </span><span class="prelude-val">None</span>;
         }
-        <span class="macro">debug_assert!</span>(<span class="ident">pos</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">input</span>.<span class="ident">len</span>());
-        <span class="kw">let</span> <span class="ident">new_input</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">input</span>.<span class="ident">get_unchecked</span>(<span class="ident">pos</span>..) };
-        <span class="kw">let</span> <span class="ident">line</span> <span class="op">=</span> <span class="ident">SplitLines::new</span>(<span class="ident">new_input</span>, <span class="ident">quote_char</span>.<span class="ident">unwrap_or</span>(<span class="string">b&#39;&quot;&#39;</span>), <span class="ident">eol_char</span>).<span class="ident">next</span>();
+        <span class="macro">debug_assert!</span>(pos &lt;= input.len());
+        <span class="kw">let </span>new_input = <span class="kw">unsafe </span>{ input.get_unchecked(pos..) };
+        <span class="kw">let </span>line = SplitLines::new(new_input, quote_char.unwrap_or(<span class="string">b&#39;&quot;&#39;</span>), eol_char).next();
 
-        <span class="kw">let</span> <span class="ident">count_fields</span> <span class="op">=</span> <span class="op">|</span><span class="ident">line</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]<span class="op">|</span> {
-            <span class="ident">SplitFields::new</span>(<span class="ident">line</span>, <span class="ident">delimiter</span>, <span class="ident">quote_char</span>, <span class="ident">eol_char</span>)
-                .<span class="ident">into_iter</span>()
-                .<span class="ident">count</span>()
+        <span class="kw">let </span>count_fields = |line: <span class="kw-2">&amp;</span>[u8]| {
+            SplitFields::new(line, delimiter, quote_char, eol_char)
+                .into_iter()
+                .count()
         };
 
-        <span class="kw">match</span> (<span class="ident">line</span>, <span class="ident">expected_fields</span>) {
-            <span class="comment">// count the fields, and determine if they are equal to what we expect from the schema</span>
-            (<span class="prelude-val">Some</span>(<span class="ident">line</span>), <span class="prelude-val">Some</span>(<span class="ident">expected_fields</span>)) <span class="kw">if</span> { <span class="ident">count_fields</span>(<span class="ident">line</span>) <span class="op">==</span> <span class="ident">expected_fields</span> } =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">total_pos</span> <span class="op">+</span> <span class="ident">pos</span>)
+        <span class="kw">match </span>(line, expected_fields) {
+            <span class="comment">// count the fields, and determine if they are equal to what we expect from the schema
+            </span>(<span class="prelude-val">Some</span>(line), <span class="prelude-val">Some</span>(expected_fields)) <span class="kw">if </span>{ count_fields(line) == expected_fields } =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Some</span>(total_pos + pos)
             }
             (<span class="prelude-val">Some</span>(<span class="kw">_</span>), <span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; {
-                <span class="macro">debug_assert!</span>(<span class="ident">pos</span> <span class="op">&lt;</span> <span class="ident">input</span>.<span class="ident">len</span>());
-                <span class="kw">unsafe</span> {
-                    <span class="ident">input</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">get_unchecked</span>(<span class="ident">pos</span> <span class="op">+</span> <span class="number">1</span>..);
+                <span class="macro">debug_assert!</span>(pos &lt; input.len());
+                <span class="kw">unsafe </span>{
+                    input = input.get_unchecked(pos + <span class="number">1</span>..);
                 }
-                <span class="ident">total_pos</span> <span class="op">+</span><span class="op">=</span> <span class="ident">pos</span> <span class="op">+</span> <span class="number">1</span>;
+                total_pos += pos + <span class="number">1</span>;
             }
-            <span class="comment">// don&#39;t count the fields</span>
-            (<span class="prelude-val">Some</span>(<span class="kw">_</span>), <span class="prelude-val">None</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">total_pos</span> <span class="op">+</span> <span class="ident">pos</span>),
-            <span class="comment">// no new line found, check latest line (without eol) for number of fields</span>
-            (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="ident">expected_fields</span>)) <span class="kw">if</span> { <span class="ident">count_fields</span>(<span class="ident">new_input</span>) <span class="op">==</span> <span class="ident">expected_fields</span> } =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">total_pos</span> <span class="op">+</span> <span class="ident">pos</span>)
+            <span class="comment">// don&#39;t count the fields
+            </span>(<span class="prelude-val">Some</span>(<span class="kw">_</span>), <span class="prelude-val">None</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Some</span>(total_pos + pos),
+            <span class="comment">// no new line found, check latest line (without eol) for number of fields
+            </span>(<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(expected_fields)) <span class="kw">if </span>{ count_fields(new_input) == expected_fields } =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Some</span>(total_pos + pos)
             }
-            <span class="kw">_</span> =&gt; <span class="kw">return</span> <span class="prelude-val">None</span>,
+            <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">None</span>,
         }
     }
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">is_line_ending</span>(<span class="ident">b</span>: <span class="ident">u8</span>, <span class="ident">eol_char</span>: <span class="ident">u8</span>) -&gt; <span class="ident">bool</span> {
-    <span class="ident">b</span> <span class="op">==</span> <span class="ident">eol_char</span> <span class="op">|</span><span class="op">|</span> <span class="ident">b</span> <span class="op">==</span> <span class="string">b&#39;\r&#39;</span>
-}
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>is_line_ending(b: u8, eol_char: u8) -&gt; bool {
+    b == eol_char || b == <span class="string">b&#39;\r&#39;
+</span>}
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">is_whitespace</span>(<span class="ident">b</span>: <span class="ident">u8</span>) -&gt; <span class="ident">bool</span> {
-    <span class="ident">b</span> <span class="op">==</span> <span class="string">b&#39; &#39;</span> <span class="op">|</span><span class="op">|</span> <span class="ident">b</span> <span class="op">==</span> <span class="string">b&#39;\t&#39;</span>
-}
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>is_whitespace(b: u8) -&gt; bool {
+    b == <span class="string">b&#39; &#39; </span>|| b == <span class="string">b&#39;\t&#39;
+</span>}
 
-<span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">fn</span> <span class="ident">skip_condition</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>], <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">Fn</span>(<span class="ident">u8</span>) -&gt; <span class="ident">bool</span>,
+<span class="attribute">#[inline]
+</span><span class="kw">fn </span>skip_condition&lt;F&gt;(input: <span class="kw-2">&amp;</span>[u8], f: F) -&gt; <span class="kw-2">&amp;</span>[u8]
+<span class="kw">where
+    </span>F: Fn(u8) -&gt; bool,
 {
-    <span class="kw">if</span> <span class="ident">input</span>.<span class="ident">is_empty</span>() {
-        <span class="kw">return</span> <span class="ident">input</span>;
+    <span class="kw">if </span>input.is_empty() {
+        <span class="kw">return </span>input;
     }
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">read</span> <span class="op">=</span> <span class="number">0</span>;
-    <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">len</span>();
-    <span class="kw">while</span> <span class="ident">read</span> <span class="op">&lt;</span> <span class="ident">len</span> {
-        <span class="kw">let</span> <span class="ident">b</span> <span class="op">=</span> <span class="ident">input</span>[<span class="ident">read</span>];
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">f</span>(<span class="ident">b</span>) {
+    <span class="kw">let </span><span class="kw-2">mut </span>read = <span class="number">0</span>;
+    <span class="kw">let </span>len = input.len();
+    <span class="kw">while </span>read &lt; len {
+        <span class="kw">let </span>b = input[read];
+        <span class="kw">if </span>!f(b) {
             <span class="kw">break</span>;
         }
-        <span class="ident">read</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+        read += <span class="number">1</span>;
     }
-    <span class="kw-2">&amp;</span><span class="ident">input</span>[<span class="ident">read</span>..]
+    <span class="kw-2">&amp;</span>input[read..]
 }
 
-<span class="doccomment">/// Makes sure that the bytes stream starts with</span>
-<span class="doccomment">///     &#39;field_1,field_2&#39;</span>
-<span class="doccomment">/// and not with</span>
-<span class="doccomment">///     &#39;\nfield_1,field_1&#39;</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">skip_header</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>], <span class="ident">eol_char</span>: <span class="ident">u8</span>) -&gt; (<span class="kw-2">&amp;</span>[<span class="ident">u8</span>], <span class="ident">usize</span>) {
-    <span class="kw">match</span> <span class="ident">next_line_position_naive</span>(<span class="ident">input</span>, <span class="ident">eol_char</span>) {
-        <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">pos</span>) =&gt; {
-            <span class="kw">if</span> <span class="ident">input</span>[<span class="ident">pos</span>] <span class="op">==</span> <span class="ident">eol_char</span> {
-                <span class="ident">pos</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+<span class="doccomment">/// Makes sure that the bytes stream starts with
+///     &#39;field_1,field_2&#39;
+/// and not with
+///     &#39;\nfield_1,field_1&#39;
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>skip_header(input: <span class="kw-2">&amp;</span>[u8], eol_char: u8) -&gt; (<span class="kw-2">&amp;</span>[u8], usize) {
+    <span class="kw">match </span>next_line_position_naive(input, eol_char) {
+        <span class="prelude-val">Some</span>(<span class="kw-2">mut </span>pos) =&gt; {
+            <span class="kw">if </span>input[pos] == eol_char {
+                pos += <span class="number">1</span>;
             }
-            (<span class="kw-2">&amp;</span><span class="ident">input</span>[<span class="ident">pos</span>..], <span class="ident">pos</span>)
+            (<span class="kw-2">&amp;</span>input[pos..], pos)
         }
-        <span class="comment">// no lines in the file, so skipping the header is skipping all.</span>
-        <span class="prelude-val">None</span> =&gt; (<span class="kw-2">&amp;</span>[], <span class="ident">input</span>.<span class="ident">len</span>()),
+        <span class="comment">// no lines in the file, so skipping the header is skipping all.
+        </span><span class="prelude-val">None </span>=&gt; (<span class="kw-2">&amp;</span>[], input.len()),
     }
 }
 
-<span class="doccomment">/// Remove whitespace from the start of buffer.</span>
-<span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">skip_whitespace</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] {
-    <span class="ident">skip_condition</span>(<span class="ident">input</span>, <span class="ident">is_whitespace</span>)
+<span class="doccomment">/// Remove whitespace from the start of buffer.
+</span><span class="attribute">#[inline]
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>skip_whitespace(input: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="kw-2">&amp;</span>[u8] {
+    skip_condition(input, is_whitespace)
 }
 
-<span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="doccomment">/// Can be used to skip whitespace, but exclude the delimiter</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">skip_whitespace_exclude</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>], <span class="ident">exclude</span>: <span class="ident">u8</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] {
-    <span class="ident">skip_condition</span>(<span class="ident">input</span>, <span class="op">|</span><span class="ident">b</span><span class="op">|</span> <span class="ident">b</span> <span class="op">!</span><span class="op">=</span> <span class="ident">exclude</span> <span class="op">&amp;&amp;</span> (<span class="ident">is_whitespace</span>(<span class="ident">b</span>)))
+<span class="attribute">#[inline]
+</span><span class="doccomment">/// Can be used to skip whitespace, but exclude the delimiter
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>skip_whitespace_exclude(input: <span class="kw-2">&amp;</span>[u8], exclude: u8) -&gt; <span class="kw-2">&amp;</span>[u8] {
+    skip_condition(input, |b| b != exclude &amp;&amp; (is_whitespace(b)))
 }
 
-<span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="doccomment">/// Can be used to skip whitespace, but exclude the delimiter</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">skip_whitespace_line_ending_exclude</span>(
-    <span class="ident">input</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>],
-    <span class="ident">exclude</span>: <span class="ident">u8</span>,
-    <span class="ident">eol_char</span>: <span class="ident">u8</span>,
-) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] {
-    <span class="ident">skip_condition</span>(<span class="ident">input</span>, <span class="op">|</span><span class="ident">b</span><span class="op">|</span> {
-        <span class="ident">b</span> <span class="op">!</span><span class="op">=</span> <span class="ident">exclude</span> <span class="op">&amp;&amp;</span> (<span class="ident">is_whitespace</span>(<span class="ident">b</span>) <span class="op">|</span><span class="op">|</span> <span class="ident">is_line_ending</span>(<span class="ident">b</span>, <span class="ident">eol_char</span>))
+<span class="attribute">#[inline]
+</span><span class="doccomment">/// Can be used to skip whitespace, but exclude the delimiter
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>skip_whitespace_line_ending_exclude(
+    input: <span class="kw-2">&amp;</span>[u8],
+    exclude: u8,
+    eol_char: u8,
+) -&gt; <span class="kw-2">&amp;</span>[u8] {
+    skip_condition(input, |b| {
+        b != exclude &amp;&amp; (is_whitespace(b) || is_line_ending(b, eol_char))
     })
 }
 
-<span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">skip_line_ending</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>], <span class="ident">eol_char</span>: <span class="ident">u8</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] {
-    <span class="ident">skip_condition</span>(<span class="ident">input</span>, <span class="op">|</span><span class="ident">b</span><span class="op">|</span> <span class="ident">is_line_ending</span>(<span class="ident">b</span>, <span class="ident">eol_char</span>))
+<span class="attribute">#[inline]
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>skip_line_ending(input: <span class="kw-2">&amp;</span>[u8], eol_char: u8) -&gt; <span class="kw-2">&amp;</span>[u8] {
+    skip_condition(input, |b| is_line_ending(b, eol_char))
 }
 
-<span class="doccomment">/// Get the mean and standard deviation of length of lines in bytes</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">get_line_stats</span>(
-    <span class="ident">bytes</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>],
-    <span class="ident">n_lines</span>: <span class="ident">usize</span>,
-    <span class="ident">eol_char</span>: <span class="ident">u8</span>,
-    <span class="ident">expected_fields</span>: <span class="ident">usize</span>,
-    <span class="ident">delimiter</span>: <span class="ident">u8</span>,
-    <span class="ident">quote_char</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">f32</span>, <span class="ident">f32</span>)<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">lengths</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="ident">n_lines</span>);
+<span class="doccomment">/// Get the mean and standard deviation of length of lines in bytes
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>get_line_stats(
+    bytes: <span class="kw-2">&amp;</span>[u8],
+    n_lines: usize,
+    eol_char: u8,
+    expected_fields: usize,
+    delimiter: u8,
+    quote_char: <span class="prelude-ty">Option</span>&lt;u8&gt;,
+) -&gt; <span class="prelude-ty">Option</span>&lt;(f32, f32)&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>lengths = Vec::with_capacity(n_lines);
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bytes_trunc</span>;
-    <span class="kw">let</span> <span class="ident">n_lines_per_iter</span> <span class="op">=</span> <span class="ident">n_lines</span> <span class="op">/</span> <span class="number">2</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>bytes_trunc;
+    <span class="kw">let </span>n_lines_per_iter = n_lines / <span class="number">2</span>;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">n_read</span> <span class="op">=</span> <span class="number">0</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>n_read = <span class="number">0</span>;
 
-    <span class="comment">// sample from start and 75% in the file</span>
-    <span class="kw">for</span> <span class="ident">offset</span> <span class="kw">in</span> [<span class="number">0</span>, (<span class="ident">bytes</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">f32</span> <span class="op">*</span> <span class="number">0.75</span>) <span class="kw">as</span> <span class="ident">usize</span>] {
-        <span class="ident">bytes_trunc</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">bytes</span>[<span class="ident">offset</span>..];
-        <span class="kw">let</span> <span class="ident">pos</span> <span class="op">=</span> <span class="ident">next_line_position</span>(
-            <span class="ident">bytes_trunc</span>,
-            <span class="prelude-val">Some</span>(<span class="ident">expected_fields</span>),
-            <span class="ident">delimiter</span>,
-            <span class="ident">quote_char</span>,
-            <span class="ident">eol_char</span>,
+    <span class="comment">// sample from start and 75% in the file
+    </span><span class="kw">for </span>offset <span class="kw">in </span>[<span class="number">0</span>, (bytes.len() <span class="kw">as </span>f32 * <span class="number">0.75</span>) <span class="kw">as </span>usize] {
+        bytes_trunc = <span class="kw-2">&amp;</span>bytes[offset..];
+        <span class="kw">let </span>pos = next_line_position(
+            bytes_trunc,
+            <span class="prelude-val">Some</span>(expected_fields),
+            delimiter,
+            quote_char,
+            eol_char,
         )<span class="question-mark">?</span>;
-        <span class="ident">bytes_trunc</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">bytes_trunc</span>[<span class="ident">pos</span> <span class="op">+</span> <span class="number">1</span>..];
+        bytes_trunc = <span class="kw-2">&amp;</span>bytes_trunc[pos + <span class="number">1</span>..];
 
-        <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="ident">offset</span>..(<span class="ident">offset</span> <span class="op">+</span> <span class="ident">n_lines_per_iter</span>) {
-            <span class="kw">let</span> <span class="ident">pos</span> <span class="op">=</span> <span class="ident">next_line_position_naive</span>(<span class="ident">bytes_trunc</span>, <span class="ident">eol_char</span>)<span class="question-mark">?</span> <span class="op">+</span> <span class="number">1</span>;
-            <span class="ident">n_read</span> <span class="op">+</span><span class="op">=</span> <span class="ident">pos</span>;
-            <span class="ident">lengths</span>.<span class="ident">push</span>(<span class="ident">pos</span>);
-            <span class="ident">bytes_trunc</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">bytes_trunc</span>[<span class="ident">pos</span>..];
+        <span class="kw">for _ in </span>offset..(offset + n_lines_per_iter) {
+            <span class="kw">let </span>pos = next_line_position_naive(bytes_trunc, eol_char)<span class="question-mark">? </span>+ <span class="number">1</span>;
+            n_read += pos;
+            lengths.push(pos);
+            bytes_trunc = <span class="kw-2">&amp;</span>bytes_trunc[pos..];
         }
     }
 
-    <span class="kw">let</span> <span class="ident">n_samples</span> <span class="op">=</span> <span class="ident">lengths</span>.<span class="ident">len</span>();
+    <span class="kw">let </span>n_samples = lengths.len();
 
-    <span class="kw">let</span> <span class="ident">mean</span> <span class="op">=</span> (<span class="ident">n_read</span> <span class="kw">as</span> <span class="ident">f32</span>) <span class="op">/</span> (<span class="ident">n_samples</span> <span class="kw">as</span> <span class="ident">f32</span>);
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">std</span> <span class="op">=</span> <span class="number">0.0</span>;
-    <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">len</span> <span class="kw">in</span> <span class="ident">lengths</span>.<span class="ident">iter</span>() {
-        <span class="ident">std</span> <span class="op">+</span><span class="op">=</span> (<span class="ident">len</span> <span class="kw">as</span> <span class="ident">f32</span> <span class="op">-</span> <span class="ident">mean</span>).<span class="ident">pow</span>(<span class="number">2.0</span>)
+    <span class="kw">let </span>mean = (n_read <span class="kw">as </span>f32) / (n_samples <span class="kw">as </span>f32);
+    <span class="kw">let </span><span class="kw-2">mut </span>std = <span class="number">0.0</span>;
+    <span class="kw">for </span><span class="kw-2">&amp;</span>len <span class="kw">in </span>lengths.iter() {
+        std += (len <span class="kw">as </span>f32 - mean).pow(<span class="number">2.0</span>)
     }
-    <span class="ident">std</span> <span class="op">=</span> (<span class="ident">std</span> <span class="op">/</span> <span class="ident">n_samples</span> <span class="kw">as</span> <span class="ident">f32</span>).<span class="ident">sqrt</span>();
-    <span class="prelude-val">Some</span>((<span class="ident">mean</span>, <span class="ident">std</span>))
+    std = (std / n_samples <span class="kw">as </span>f32).sqrt();
+    <span class="prelude-val">Some</span>((mean, std))
 }
 
-<span class="doccomment">/// An adapted version of std::iter::Split.</span>
-<span class="doccomment">/// This exists solely because we cannot split the file in lines naively as</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// ```text</span>
-<span class="doccomment">///    for line in bytes.split(b&#39;\n&#39;) {</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This will fail when strings fields are have embedded end line characters.</span>
-<span class="doccomment">/// For instance: &quot;This is a valid field\nI have multiples lines&quot; is a valid string field, that contains multiple lines.</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">SplitLines</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="ident">v</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>],
-    <span class="ident">quote_char</span>: <span class="ident">u8</span>,
-    <span class="ident">end_line_char</span>: <span class="ident">u8</span>,
+<span class="doccomment">/// An adapted version of std::iter::Split.
+/// This exists solely because we cannot split the file in lines naively as
+///
+/// ```text
+///    for line in bytes.split(b&#39;\n&#39;) {
+/// ```
+///
+/// This will fail when strings fields are have embedded end line characters.
+/// For instance: &quot;This is a valid field\nI have multiples lines&quot; is a valid string field, that contains multiple lines.
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>SplitLines&lt;<span class="lifetime">&#39;a</span>&gt; {
+    v: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8],
+    quote_char: u8,
+    end_line_char: u8,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">SplitLines</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">slice</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>], <span class="ident">quote_char</span>: <span class="ident">u8</span>, <span class="ident">end_line_char</span>: <span class="ident">u8</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">v</span>: <span class="ident">slice</span>,
-            <span class="ident">quote_char</span>,
-            <span class="ident">end_line_char</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; SplitLines&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(slice: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8], quote_char: u8, end_line_char: u8) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            v: slice,
+            quote_char,
+            end_line_char,
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">SplitLines</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>];
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Iterator <span class="kw">for </span>SplitLines&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8];
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]<span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">v</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">return</span> <span class="prelude-val">None</span>;
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]&gt; {
+        <span class="kw">if </span><span class="self">self</span>.v.is_empty() {
+            <span class="kw">return </span><span class="prelude-val">None</span>;
         }
 
-        <span class="comment">// denotes if we are in a string field, started with a quote</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">in_field</span> <span class="op">=</span> <span class="bool-val">false</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">pos</span> <span class="op">=</span> <span class="number">0u32</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">iter</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">v</span>.<span class="ident">iter</span>();
-        <span class="kw">loop</span> {
-            <span class="kw">match</span> <span class="ident">iter</span>.<span class="ident">next</span>() {
-                <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">c</span>) =&gt; {
-                    <span class="ident">pos</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+        <span class="comment">// denotes if we are in a string field, started with a quote
+        </span><span class="kw">let </span><span class="kw-2">mut </span>in_field = <span class="bool-val">false</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>pos = <span class="number">0u32</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>iter = <span class="self">self</span>.v.iter();
+        <span class="kw">loop </span>{
+            <span class="kw">match </span>iter.next() {
+                <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>c) =&gt; {
+                    pos += <span class="number">1</span>;
 
-                    <span class="kw">if</span> <span class="ident">c</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">quote_char</span> {
-                        <span class="comment">// toggle between string field enclosure</span>
-                        <span class="comment">//      if we encounter a starting &#39;&quot;&#39; -&gt; in_field = true;</span>
-                        <span class="comment">//      if we encounter a closing &#39;&quot;&#39; -&gt; in_field = false;</span>
-                        <span class="ident">in_field</span> <span class="op">=</span> <span class="op">!</span><span class="ident">in_field</span>;
+                    <span class="kw">if </span>c == <span class="self">self</span>.quote_char {
+                        <span class="comment">// toggle between string field enclosure
+                        //      if we encounter a starting &#39;&quot;&#39; -&gt; in_field = true;
+                        //      if we encounter a closing &#39;&quot;&#39; -&gt; in_field = false;
+                        </span>in_field = !in_field;
                     }
-                    <span class="comment">// if we are not in a string and we encounter &#39;\n&#39; we can stop at this position.</span>
-                    <span class="kw">else</span> <span class="kw">if</span> <span class="ident">c</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">end_line_char</span> <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="ident">in_field</span> {
+                    <span class="comment">// if we are not in a string and we encounter &#39;\n&#39; we can stop at this position.
+                    </span><span class="kw">else if </span>c == <span class="self">self</span>.end_line_char &amp;&amp; !in_field {
                         <span class="kw">break</span>;
                     }
                 }
-                <span class="prelude-val">None</span> =&gt; {
-                    <span class="comment">// no new line found we are done</span>
-                    <span class="comment">// the rest will be done by last line specific code.</span>
-                    <span class="kw">return</span> <span class="prelude-val">None</span>;
+                <span class="prelude-val">None </span>=&gt; {
+                    <span class="comment">// no new line found we are done
+                    // the rest will be done by last line specific code.
+                    </span><span class="kw">return </span><span class="prelude-val">None</span>;
                 }
             }
         }
 
-        <span class="kw">unsafe</span> {
-            <span class="macro">debug_assert!</span>((<span class="ident">pos</span> <span class="kw">as</span> <span class="ident">usize</span>) <span class="op">&lt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">v</span>.<span class="ident">len</span>());
-            <span class="comment">// return line up to this position</span>
-            <span class="kw">let</span> <span class="ident">ret</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="ident">v</span>.<span class="ident">get_unchecked</span>(..(<span class="ident">pos</span> <span class="op">-</span> <span class="number">1</span>) <span class="kw">as</span> <span class="ident">usize</span>));
-            <span class="comment">// skip the &#39;\n&#39; token and update slice.</span>
-            <span class="self">self</span>.<span class="ident">v</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">v</span>.<span class="ident">get_unchecked</span>(<span class="ident">pos</span> <span class="kw">as</span> <span class="ident">usize</span>..);
-            <span class="ident">ret</span>
+        <span class="kw">unsafe </span>{
+            <span class="macro">debug_assert!</span>((pos <span class="kw">as </span>usize) &lt;= <span class="self">self</span>.v.len());
+            <span class="comment">// return line up to this position
+            </span><span class="kw">let </span>ret = <span class="prelude-val">Some</span>(<span class="self">self</span>.v.get_unchecked(..(pos - <span class="number">1</span>) <span class="kw">as </span>usize));
+            <span class="comment">// skip the &#39;\n&#39; token and update slice.
+            </span><span class="self">self</span>.v = <span class="self">self</span>.v.get_unchecked(pos <span class="kw">as </span>usize..);
+            ret
         }
     }
 }
 
-<span class="doccomment">/// An adapted version of std::iter::Split.</span>
-<span class="doccomment">/// This exists solely because we cannot split the lines naively as</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">SplitFields</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="ident">v</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>],
-    <span class="ident">delimiter</span>: <span class="ident">u8</span>,
-    <span class="ident">finished</span>: <span class="ident">bool</span>,
-    <span class="ident">quote_char</span>: <span class="ident">u8</span>,
-    <span class="ident">quoting</span>: <span class="ident">bool</span>,
-    <span class="ident">eol_char</span>: <span class="ident">u8</span>,
+<span class="doccomment">/// An adapted version of std::iter::Split.
+/// This exists solely because we cannot split the lines naively as
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>SplitFields&lt;<span class="lifetime">&#39;a</span>&gt; {
+    v: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8],
+    delimiter: u8,
+    finished: bool,
+    quote_char: u8,
+    quoting: bool,
+    eol_char: u8,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">SplitFields</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">slice</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>],
-        <span class="ident">delimiter</span>: <span class="ident">u8</span>,
-        <span class="ident">quote_char</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-        <span class="ident">eol_char</span>: <span class="ident">u8</span>,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">v</span>: <span class="ident">slice</span>,
-            <span class="ident">delimiter</span>,
-            <span class="ident">finished</span>: <span class="bool-val">false</span>,
-            <span class="ident">quote_char</span>: <span class="ident">quote_char</span>.<span class="ident">unwrap_or</span>(<span class="string">b&#39;&quot;&#39;</span>),
-            <span class="ident">quoting</span>: <span class="ident">quote_char</span>.<span class="ident">is_some</span>(),
-            <span class="ident">eol_char</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; SplitFields&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(
+        slice: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8],
+        delimiter: u8,
+        quote_char: <span class="prelude-ty">Option</span>&lt;u8&gt;,
+        eol_char: u8,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            v: slice,
+            delimiter,
+            finished: <span class="bool-val">false</span>,
+            quote_char: quote_char.unwrap_or(<span class="string">b&#39;&quot;&#39;</span>),
+            quoting: quote_char.is_some(),
+            eol_char,
         }
     }
 
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">finish_eol</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">need_escaping</span>: <span class="ident">bool</span>, <span class="ident">idx</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>], <span class="ident">bool</span>)<span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">finished</span> <span class="op">=</span> <span class="bool-val">true</span>;
-        <span class="macro">debug_assert!</span>(<span class="ident">idx</span> <span class="op">&lt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">v</span>.<span class="ident">len</span>());
-        <span class="prelude-val">Some</span>((<span class="self">self</span>.<span class="ident">v</span>.<span class="ident">get_unchecked</span>(..<span class="ident">idx</span>), <span class="ident">need_escaping</span>))
+    <span class="kw">unsafe fn </span>finish_eol(<span class="kw-2">&amp;mut </span><span class="self">self</span>, need_escaping: bool, idx: usize) -&gt; <span class="prelude-ty">Option</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8], bool)&gt; {
+        <span class="self">self</span>.finished = <span class="bool-val">true</span>;
+        <span class="macro">debug_assert!</span>(idx &lt;= <span class="self">self</span>.v.len());
+        <span class="prelude-val">Some</span>((<span class="self">self</span>.v.get_unchecked(..idx), need_escaping))
     }
 
-    <span class="kw">fn</span> <span class="ident">finish</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">need_escaping</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>], <span class="ident">bool</span>)<span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">finished</span> <span class="op">=</span> <span class="bool-val">true</span>;
-        <span class="prelude-val">Some</span>((<span class="self">self</span>.<span class="ident">v</span>, <span class="ident">need_escaping</span>))
+    <span class="kw">fn </span>finish(<span class="kw-2">&amp;mut </span><span class="self">self</span>, need_escaping: bool) -&gt; <span class="prelude-ty">Option</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8], bool)&gt; {
+        <span class="self">self</span>.finished = <span class="bool-val">true</span>;
+        <span class="prelude-val">Some</span>((<span class="self">self</span>.v, need_escaping))
     }
 
-    <span class="kw">fn</span> <span class="ident">eof_oel</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">current_ch</span>: <span class="ident">u8</span>) -&gt; <span class="ident">bool</span> {
-        <span class="ident">current_ch</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">delimiter</span> <span class="op">|</span><span class="op">|</span> <span class="ident">current_ch</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">eol_char</span>
+    <span class="kw">fn </span>eof_oel(<span class="kw-2">&amp;</span><span class="self">self</span>, current_ch: u8) -&gt; bool {
+        current_ch == <span class="self">self</span>.delimiter || current_ch == <span class="self">self</span>.eol_char
     }
 }
 
-<span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">fn</span> <span class="ident">find_quoted</span>(<span class="ident">bytes</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>], <span class="ident">quote_char</span>: <span class="ident">u8</span>, <span class="ident">needle</span>: <span class="ident">u8</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">in_field</span> <span class="op">=</span> <span class="bool-val">false</span>;
+<span class="attribute">#[inline]
+</span><span class="kw">fn </span>find_quoted(bytes: <span class="kw-2">&amp;</span>[u8], quote_char: u8, needle: u8) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>in_field = <span class="bool-val">false</span>;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx</span> <span class="op">=</span> <span class="number">0u32</span>;
-    <span class="comment">// micro optimizations</span>
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::explicit_counter_loop</span>)]</span>
-    <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">c</span> <span class="kw">in</span> <span class="ident">bytes</span>.<span class="ident">iter</span>() {
-        <span class="kw">if</span> <span class="ident">c</span> <span class="op">==</span> <span class="ident">quote_char</span> {
-            <span class="comment">// toggle between string field enclosure</span>
-            <span class="comment">//      if we encounter a starting &#39;&quot;&#39; -&gt; in_field = true;</span>
-            <span class="comment">//      if we encounter a closing &#39;&quot;&#39; -&gt; in_field = false;</span>
-            <span class="ident">in_field</span> <span class="op">=</span> <span class="op">!</span><span class="ident">in_field</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>idx = <span class="number">0u32</span>;
+    <span class="comment">// micro optimizations
+    </span><span class="attribute">#[allow(clippy::explicit_counter_loop)]
+    </span><span class="kw">for </span><span class="kw-2">&amp;</span>c <span class="kw">in </span>bytes.iter() {
+        <span class="kw">if </span>c == quote_char {
+            <span class="comment">// toggle between string field enclosure
+            //      if we encounter a starting &#39;&quot;&#39; -&gt; in_field = true;
+            //      if we encounter a closing &#39;&quot;&#39; -&gt; in_field = false;
+            </span>in_field = !in_field;
         }
 
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">in_field</span> <span class="op">&amp;&amp;</span> <span class="ident">c</span> <span class="op">==</span> <span class="ident">needle</span> {
-            <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">idx</span> <span class="kw">as</span> <span class="ident">usize</span>);
+        <span class="kw">if </span>!in_field &amp;&amp; c == needle {
+            <span class="kw">return </span><span class="prelude-val">Some</span>(idx <span class="kw">as </span>usize);
         }
-        <span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+        idx += <span class="number">1</span>;
     }
-    <span class="prelude-val">None</span>
-}
+    <span class="prelude-val">None
+</span>}
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">SplitFields</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="comment">// the bool is used to indicate that it requires escaping</span>
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> (<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>], <span class="ident">bool</span>);
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Iterator <span class="kw">for </span>SplitFields&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="comment">// the bool is used to indicate that it requires escaping
+    </span><span class="kw">type </span>Item = (<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8], bool);
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>], <span class="ident">bool</span>)<span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">v</span>.<span class="ident">is_empty</span>() <span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">finished</span> {
-            <span class="kw">return</span> <span class="prelude-val">None</span>;
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8], bool)&gt; {
+        <span class="kw">if </span><span class="self">self</span>.v.is_empty() || <span class="self">self</span>.finished {
+            <span class="kw">return </span><span class="prelude-val">None</span>;
         }
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">needs_escaping</span> <span class="op">=</span> <span class="bool-val">false</span>;
-        <span class="comment">// There can be strings with delimiters:</span>
-        <span class="comment">// &quot;Street, City&quot;,</span>
+        <span class="kw">let </span><span class="kw-2">mut </span>needs_escaping = <span class="bool-val">false</span>;
+        <span class="comment">// There can be strings with delimiters:
+        // &quot;Street, City&quot;,
 
-        <span class="comment">// Safety:</span>
-        <span class="comment">// we have checked bounds</span>
-        <span class="kw">let</span> <span class="ident">pos</span> <span class="op">=</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">quoting</span> <span class="op">&amp;&amp;</span> <span class="kw">unsafe</span> { <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">v</span>.<span class="ident">get_unchecked</span>(<span class="number">0</span>) } <span class="op">==</span> <span class="self">self</span>.<span class="ident">quote_char</span> {
-            <span class="ident">needs_escaping</span> <span class="op">=</span> <span class="bool-val">true</span>;
-            <span class="comment">// There can be pair of double-quotes within string.</span>
-            <span class="comment">// Each of the embedded double-quote characters must be represented</span>
-            <span class="comment">// by a pair of double-quote characters:</span>
-            <span class="comment">// e.g. 1997,Ford,E350,&quot;Super, &quot;&quot;luxurious&quot;&quot; truck&quot;,20020</span>
+        // Safety:
+        // we have checked bounds
+        </span><span class="kw">let </span>pos = <span class="kw">if </span><span class="self">self</span>.quoting &amp;&amp; <span class="kw">unsafe </span>{ <span class="kw-2">*</span><span class="self">self</span>.v.get_unchecked(<span class="number">0</span>) } == <span class="self">self</span>.quote_char {
+            needs_escaping = <span class="bool-val">true</span>;
+            <span class="comment">// There can be pair of double-quotes within string.
+            // Each of the embedded double-quote characters must be represented
+            // by a pair of double-quote characters:
+            // e.g. 1997,Ford,E350,&quot;Super, &quot;&quot;luxurious&quot;&quot; truck&quot;,20020
 
-            <span class="comment">// denotes if we are in a string field, started with a quote</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">in_field</span> <span class="op">=</span> <span class="bool-val">false</span>;
+            // denotes if we are in a string field, started with a quote
+            </span><span class="kw">let </span><span class="kw-2">mut </span>in_field = <span class="bool-val">false</span>;
 
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx</span> <span class="op">=</span> <span class="number">0u32</span>;
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">current_idx</span> <span class="op">=</span> <span class="number">0u32</span>;
-            <span class="comment">// micro optimizations</span>
-            <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::explicit_counter_loop</span>)]</span>
-            <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">c</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">v</span>.<span class="ident">iter</span>() {
-                <span class="kw">if</span> <span class="ident">c</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">quote_char</span> {
-                    <span class="comment">// toggle between string field enclosure</span>
-                    <span class="comment">//      if we encounter a starting &#39;&quot;&#39; -&gt; in_field = true;</span>
-                    <span class="comment">//      if we encounter a closing &#39;&quot;&#39; -&gt; in_field = false;</span>
-                    <span class="ident">in_field</span> <span class="op">=</span> <span class="op">!</span><span class="ident">in_field</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>idx = <span class="number">0u32</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>current_idx = <span class="number">0u32</span>;
+            <span class="comment">// micro optimizations
+            </span><span class="attribute">#[allow(clippy::explicit_counter_loop)]
+            </span><span class="kw">for </span><span class="kw-2">&amp;</span>c <span class="kw">in </span><span class="self">self</span>.v.iter() {
+                <span class="kw">if </span>c == <span class="self">self</span>.quote_char {
+                    <span class="comment">// toggle between string field enclosure
+                    //      if we encounter a starting &#39;&quot;&#39; -&gt; in_field = true;
+                    //      if we encounter a closing &#39;&quot;&#39; -&gt; in_field = false;
+                    </span>in_field = !in_field;
                 }
 
-                <span class="kw">if</span> <span class="op">!</span><span class="ident">in_field</span> <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">eof_oel</span>(<span class="ident">c</span>) {
-                    <span class="kw">if</span> <span class="ident">c</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">eol_char</span> {
-                        <span class="comment">// safety</span>
-                        <span class="comment">// we are in bounds</span>
-                        <span class="kw">return</span> <span class="kw">unsafe</span> { <span class="self">self</span>.<span class="ident">finish_eol</span>(<span class="ident">needs_escaping</span>, <span class="ident">current_idx</span> <span class="kw">as</span> <span class="ident">usize</span>) };
+                <span class="kw">if </span>!in_field &amp;&amp; <span class="self">self</span>.eof_oel(c) {
+                    <span class="kw">if </span>c == <span class="self">self</span>.eol_char {
+                        <span class="comment">// safety
+                        // we are in bounds
+                        </span><span class="kw">return unsafe </span>{ <span class="self">self</span>.finish_eol(needs_escaping, current_idx <span class="kw">as </span>usize) };
                     }
-                    <span class="ident">idx</span> <span class="op">=</span> <span class="ident">current_idx</span>;
+                    idx = current_idx;
                     <span class="kw">break</span>;
                 }
-                <span class="ident">current_idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                current_idx += <span class="number">1</span>;
             }
 
-            <span class="kw">if</span> <span class="ident">idx</span> <span class="op">==</span> <span class="number">0</span> {
-                <span class="kw">return</span> <span class="self">self</span>.<span class="ident">finish</span>(<span class="ident">needs_escaping</span>);
+            <span class="kw">if </span>idx == <span class="number">0 </span>{
+                <span class="kw">return </span><span class="self">self</span>.finish(needs_escaping);
             }
 
-            <span class="ident">idx</span> <span class="kw">as</span> <span class="ident">usize</span>
-        } <span class="kw">else</span> {
-            <span class="kw">match</span> <span class="ident">memchr::memchr2</span>(<span class="self">self</span>.<span class="ident">delimiter</span>, <span class="self">self</span>.<span class="ident">eol_char</span>, <span class="self">self</span>.<span class="ident">v</span>) {
-                <span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="self">self</span>.<span class="ident">finish</span>(<span class="ident">needs_escaping</span>),
-                <span class="prelude-val">Some</span>(<span class="ident">idx</span>) =&gt; <span class="kw">unsafe</span> {
-                    <span class="comment">// Safety:</span>
-                    <span class="comment">// idx was just found</span>
-                    <span class="kw">if</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">v</span>.<span class="ident">get_unchecked</span>(<span class="ident">idx</span>) <span class="op">==</span> <span class="self">self</span>.<span class="ident">eol_char</span> {
-                        <span class="kw">return</span> <span class="self">self</span>.<span class="ident">finish_eol</span>(<span class="ident">needs_escaping</span>, <span class="ident">idx</span>);
-                    } <span class="kw">else</span> {
-                        <span class="ident">idx</span>
+            idx <span class="kw">as </span>usize
+        } <span class="kw">else </span>{
+            <span class="kw">match </span>memchr::memchr2(<span class="self">self</span>.delimiter, <span class="self">self</span>.eol_char, <span class="self">self</span>.v) {
+                <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="self">self</span>.finish(needs_escaping),
+                <span class="prelude-val">Some</span>(idx) =&gt; <span class="kw">unsafe </span>{
+                    <span class="comment">// Safety:
+                    // idx was just found
+                    </span><span class="kw">if </span><span class="kw-2">*</span><span class="self">self</span>.v.get_unchecked(idx) == <span class="self">self</span>.eol_char {
+                        <span class="kw">return </span><span class="self">self</span>.finish_eol(needs_escaping, idx);
+                    } <span class="kw">else </span>{
+                        idx
                     }
                 },
             }
         };
 
-        <span class="kw">unsafe</span> {
-            <span class="macro">debug_assert!</span>(<span class="ident">pos</span> <span class="op">&lt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">v</span>.<span class="ident">len</span>());
-            <span class="comment">// safety</span>
-            <span class="comment">// we are in bounds</span>
-            <span class="kw">let</span> <span class="ident">ret</span> <span class="op">=</span> <span class="prelude-val">Some</span>((<span class="self">self</span>.<span class="ident">v</span>.<span class="ident">get_unchecked</span>(..<span class="ident">pos</span>), <span class="ident">needs_escaping</span>));
-            <span class="self">self</span>.<span class="ident">v</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">v</span>.<span class="ident">get_unchecked</span>(<span class="ident">pos</span> <span class="op">+</span> <span class="number">1</span>..);
-            <span class="ident">ret</span>
+        <span class="kw">unsafe </span>{
+            <span class="macro">debug_assert!</span>(pos &lt;= <span class="self">self</span>.v.len());
+            <span class="comment">// safety
+            // we are in bounds
+            </span><span class="kw">let </span>ret = <span class="prelude-val">Some</span>((<span class="self">self</span>.v.get_unchecked(..pos), needs_escaping));
+            <span class="self">self</span>.v = <span class="self">self</span>.v.get_unchecked(pos + <span class="number">1</span>..);
+            ret
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="kw">fn</span> <span class="ident">skip_this_line</span>(<span class="ident">bytes</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>], <span class="ident">quote</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, <span class="ident">eol_char</span>: <span class="ident">u8</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] {
-    <span class="kw">let</span> <span class="ident">pos</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">quote</span> {
-        <span class="prelude-val">Some</span>(<span class="ident">quote</span>) =&gt; <span class="ident">find_quoted</span>(<span class="ident">bytes</span>, <span class="ident">quote</span>, <span class="ident">eol_char</span>),
-        <span class="prelude-val">None</span> =&gt; <span class="ident">bytes</span>.<span class="ident">iter</span>().<span class="ident">position</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="kw-2">*</span><span class="ident">x</span> <span class="op">==</span> <span class="ident">eol_char</span>),
+<span class="attribute">#[inline]
+</span><span class="kw">fn </span>skip_this_line(bytes: <span class="kw-2">&amp;</span>[u8], quote: <span class="prelude-ty">Option</span>&lt;u8&gt;, eol_char: u8) -&gt; <span class="kw-2">&amp;</span>[u8] {
+    <span class="kw">let </span>pos = <span class="kw">match </span>quote {
+        <span class="prelude-val">Some</span>(quote) =&gt; find_quoted(bytes, quote, eol_char),
+        <span class="prelude-val">None </span>=&gt; bytes.iter().position(|x| <span class="kw-2">*</span>x == eol_char),
     };
-    <span class="kw">match</span> <span class="ident">pos</span> {
-        <span class="prelude-val">None</span> =&gt; <span class="kw-2">&amp;</span>[],
-        <span class="prelude-val">Some</span>(<span class="ident">pos</span>) =&gt; <span class="kw-2">&amp;</span><span class="ident">bytes</span>[<span class="ident">pos</span> <span class="op">+</span> <span class="number">1</span>..],
+    <span class="kw">match </span>pos {
+        <span class="prelude-val">None </span>=&gt; <span class="kw-2">&amp;</span>[],
+        <span class="prelude-val">Some</span>(pos) =&gt; <span class="kw-2">&amp;</span>bytes[pos + <span class="number">1</span>..],
     }
 }
 
-<span class="doccomment">/// Parse CSV.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Arguments</span>
-<span class="doccomment">/// * `bytes` - input to parse</span>
-<span class="doccomment">/// * `offset` - offset in bytes in total input. This is 0 if single threaded. If multi-threaded every</span>
-<span class="doccomment">///              thread has a different offset.</span>
-<span class="doccomment">/// * `projection` - Indices of the columns to project.</span>
-<span class="doccomment">/// * `buffers` - Parsed output will be written to these buffers. Except for UTF8 data. The offsets of the</span>
-<span class="doccomment">///               fields are written to the buffers. The UTF8 data will be parsed later.</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::too_many_arguments</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">parse_lines</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
-    <span class="kw-2">mut</span> <span class="ident">bytes</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>],
-    <span class="ident">offset</span>: <span class="ident">usize</span>,
-    <span class="ident">delimiter</span>: <span class="ident">u8</span>,
-    <span class="ident">comment_char</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-    <span class="ident">quote_char</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-    <span class="ident">eol_char</span>: <span class="ident">u8</span>,
-    <span class="ident">null_values</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">NullValuesCompiled</span><span class="op">&gt;</span>,
-    <span class="ident">projection</span>: <span class="kw-2">&amp;</span>[<span class="ident">usize</span>],
-    <span class="ident">buffers</span>: <span class="kw-2">&amp;mut</span> [<span class="ident">Buffer</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>],
-    <span class="ident">ignore_parser_errors</span>: <span class="ident">bool</span>,
-    <span class="ident">n_lines</span>: <span class="ident">usize</span>,
-    <span class="comment">// length or original schema</span>
-    <span class="ident">schema_len</span>: <span class="ident">usize</span>,
-) -&gt; <span class="ident">PolarsResult</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
+<span class="doccomment">/// Parse CSV.
+///
+/// # Arguments
+/// * `bytes` - input to parse
+/// * `offset` - offset in bytes in total input. This is 0 if single threaded. If multi-threaded every
+///              thread has a different offset.
+/// * `projection` - Indices of the columns to project.
+/// * `buffers` - Parsed output will be written to these buffers. Except for UTF8 data. The offsets of the
+///               fields are written to the buffers. The UTF8 data will be parsed later.
+</span><span class="attribute">#[allow(clippy::too_many_arguments)]
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>parse_lines&lt;<span class="lifetime">&#39;a</span>&gt;(
+    <span class="kw-2">mut </span>bytes: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8],
+    offset: usize,
+    delimiter: u8,
+    comment_char: <span class="prelude-ty">Option</span>&lt;u8&gt;,
+    quote_char: <span class="prelude-ty">Option</span>&lt;u8&gt;,
+    eol_char: u8,
+    null_values: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>NullValuesCompiled&gt;,
+    projection: <span class="kw-2">&amp;</span>[usize],
+    buffers: <span class="kw-2">&amp;mut </span>[Buffer&lt;<span class="lifetime">&#39;a</span>&gt;],
+    ignore_parser_errors: bool,
+    n_lines: usize,
+    <span class="comment">// length or original schema
+    </span>schema_len: usize,
+) -&gt; PolarsResult&lt;usize&gt; {
     <span class="macro">assert!</span>(
-        <span class="op">!</span><span class="ident">projection</span>.<span class="ident">is_empty</span>(),
-        <span class="string">&quot;at least one column should be projected&quot;</span>
-    );
+        !projection.is_empty(),
+        <span class="string">&quot;at least one column should be projected&quot;
+    </span>);
 
-    <span class="comment">// we use the pointers to track the no of bytes read.</span>
-    <span class="kw">let</span> <span class="ident">start</span> <span class="op">=</span> <span class="ident">bytes</span>.<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="ident">usize</span>;
-    <span class="kw">let</span> <span class="ident">original_bytes_len</span> <span class="op">=</span> <span class="ident">bytes</span>.<span class="ident">len</span>();
-    <span class="kw">let</span> <span class="ident">n_lines</span> <span class="op">=</span> <span class="ident">n_lines</span> <span class="kw">as</span> <span class="ident">u32</span>;
+    <span class="comment">// we use the pointers to track the no of bytes read.
+    </span><span class="kw">let </span>start = bytes.as_ptr() <span class="kw">as </span>usize;
+    <span class="kw">let </span>original_bytes_len = bytes.len();
+    <span class="kw">let </span>n_lines = n_lines <span class="kw">as </span>u32;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">line_count</span> <span class="op">=</span> <span class="number">0u32</span>;
-    <span class="kw">loop</span> {
-        <span class="kw">if</span> <span class="ident">line_count</span> <span class="op">&gt;</span> <span class="ident">n_lines</span> {
-            <span class="kw">let</span> <span class="ident">end</span> <span class="op">=</span> <span class="ident">bytes</span>.<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="ident">usize</span>;
-            <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">end</span> <span class="op">-</span> <span class="ident">start</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>line_count = <span class="number">0u32</span>;
+    <span class="kw">loop </span>{
+        <span class="kw">if </span>line_count &gt; n_lines {
+            <span class="kw">let </span>end = bytes.as_ptr() <span class="kw">as </span>usize;
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(end - start);
         }
 
-        <span class="comment">// only when we have one column \n should not be skipped</span>
-        <span class="comment">// other widths should have commas.</span>
-        <span class="ident">bytes</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">schema_len</span> <span class="op">&gt;</span> <span class="number">1</span> {
-            <span class="ident">skip_whitespace_line_ending_exclude</span>(<span class="ident">bytes</span>, <span class="ident">delimiter</span>, <span class="ident">eol_char</span>)
-        } <span class="kw">else</span> {
-            <span class="ident">skip_whitespace_exclude</span>(<span class="ident">bytes</span>, <span class="ident">delimiter</span>)
+        <span class="comment">// only when we have one column \n should not be skipped
+        // other widths should have commas.
+        </span>bytes = <span class="kw">if </span>schema_len &gt; <span class="number">1 </span>{
+            skip_whitespace_line_ending_exclude(bytes, delimiter, eol_char)
+        } <span class="kw">else </span>{
+            skip_whitespace_exclude(bytes, delimiter)
         };
-        <span class="kw">if</span> <span class="ident">bytes</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">original_bytes_len</span>);
+        <span class="kw">if </span>bytes.is_empty() {
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(original_bytes_len);
         }
 
-        <span class="comment">// deal with comments</span>
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">c</span>) <span class="op">=</span> <span class="ident">comment_char</span> {
-            <span class="comment">// line is a comment -&gt; skip</span>
-            <span class="kw">if</span> <span class="ident">bytes</span>[<span class="number">0</span>] <span class="op">==</span> <span class="ident">c</span> {
-                <span class="kw">let</span> <span class="ident">bytes_rem</span> <span class="op">=</span> <span class="ident">skip_this_line</span>(<span class="ident">bytes</span>, <span class="ident">quote_char</span>, <span class="ident">eol_char</span>);
-                <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">bytes_rem</span>;
+        <span class="comment">// deal with comments
+        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(c) = comment_char {
+            <span class="comment">// line is a comment -&gt; skip
+            </span><span class="kw">if </span>bytes[<span class="number">0</span>] == c {
+                <span class="kw">let </span>bytes_rem = skip_this_line(bytes, quote_char, eol_char);
+                bytes = bytes_rem;
                 <span class="kw">continue</span>;
             }
         }
 
-        <span class="comment">// Every line we only need to parse the columns that are projected.</span>
-        <span class="comment">// Therefore we check if the idx of the field is in our projected columns.</span>
-        <span class="comment">// If it is not, we skip the field.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">projection_iter</span> <span class="op">=</span> <span class="ident">projection</span>.<span class="ident">iter</span>().<span class="ident">copied</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">next_projected</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">projection_iter</span>.<span class="ident">next</span>().<span class="ident">unwrap_unchecked</span>() };
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">processed_fields</span> <span class="op">=</span> <span class="number">0</span>;
+        <span class="comment">// Every line we only need to parse the columns that are projected.
+        // Therefore we check if the idx of the field is in our projected columns.
+        // If it is not, we skip the field.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>projection_iter = projection.iter().copied();
+        <span class="kw">let </span><span class="kw-2">mut </span>next_projected = <span class="kw">unsafe </span>{ projection_iter.next().unwrap_unchecked() };
+        <span class="kw">let </span><span class="kw-2">mut </span>processed_fields = <span class="number">0</span>;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">iter</span> <span class="op">=</span> <span class="ident">SplitFields::new</span>(<span class="ident">bytes</span>, <span class="ident">delimiter</span>, <span class="ident">quote_char</span>, <span class="ident">eol_char</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">idx</span> <span class="op">=</span> <span class="number">0u32</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">read_sol</span> <span class="op">=</span> <span class="number">0</span>;
-        <span class="kw">loop</span> {
-            <span class="kw">match</span> <span class="ident">iter</span>.<span class="ident">next</span>() {
-                <span class="comment">// end of line</span>
-                <span class="prelude-val">None</span> =&gt; {
-                    <span class="ident">bytes</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">bytes</span>[<span class="ident">std::cmp::min</span>(<span class="ident">read_sol</span>, <span class="ident">bytes</span>.<span class="ident">len</span>())..];
+        <span class="kw">let </span><span class="kw-2">mut </span>iter = SplitFields::new(bytes, delimiter, quote_char, eol_char);
+        <span class="kw">let </span><span class="kw-2">mut </span>idx = <span class="number">0u32</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>read_sol = <span class="number">0</span>;
+        <span class="kw">loop </span>{
+            <span class="kw">match </span>iter.next() {
+                <span class="comment">// end of line
+                </span><span class="prelude-val">None </span>=&gt; {
+                    bytes = <span class="kw-2">&amp;</span>bytes[std::cmp::min(read_sol, bytes.len())..];
                     <span class="kw">break</span>;
                 }
-                <span class="prelude-val">Some</span>((<span class="kw-2">mut</span> <span class="ident">field</span>, <span class="ident">needs_escaping</span>)) =&gt; {
-                    <span class="ident">idx</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-                    <span class="kw">let</span> <span class="ident">field_len</span> <span class="op">=</span> <span class="ident">field</span>.<span class="ident">len</span>();
+                <span class="prelude-val">Some</span>((<span class="kw-2">mut </span>field, needs_escaping)) =&gt; {
+                    idx += <span class="number">1</span>;
+                    <span class="kw">let </span>field_len = field.len();
 
-                    <span class="comment">// +1 is the split character that is consumed by the iterator.</span>
-                    <span class="ident">read_sol</span> <span class="op">+</span><span class="op">=</span> <span class="ident">field_len</span> <span class="op">+</span> <span class="number">1</span>;
+                    <span class="comment">// +1 is the split character that is consumed by the iterator.
+                    </span>read_sol += field_len + <span class="number">1</span>;
 
-                    <span class="kw">if</span> (<span class="ident">idx</span> <span class="op">-</span> <span class="number">1</span>) <span class="op">==</span> <span class="ident">next_projected</span> <span class="kw">as</span> <span class="ident">u32</span> {
-                        <span class="comment">// the iterator is finished when it encounters a `\n`</span>
-                        <span class="comment">// this could be preceded by a &#39;\r&#39;</span>
-                        <span class="kw">if</span> <span class="ident">field_len</span> <span class="op">&gt;</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">field</span>[<span class="ident">field_len</span> <span class="op">-</span> <span class="number">1</span>] <span class="op">==</span> <span class="string">b&#39;\r&#39;</span> {
-                            <span class="ident">field</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">field</span>[..<span class="ident">field_len</span> <span class="op">-</span> <span class="number">1</span>];
+                    <span class="kw">if </span>(idx - <span class="number">1</span>) == next_projected <span class="kw">as </span>u32 {
+                        <span class="comment">// the iterator is finished when it encounters a `\n`
+                        // this could be preceded by a &#39;\r&#39;
+                        </span><span class="kw">if </span>field_len &gt; <span class="number">0 </span>&amp;&amp; field[field_len - <span class="number">1</span>] == <span class="string">b&#39;\r&#39; </span>{
+                            field = <span class="kw-2">&amp;</span>field[..field_len - <span class="number">1</span>];
                         }
 
-                        <span class="macro">debug_assert!</span>(<span class="ident">processed_fields</span> <span class="op">&lt;</span> <span class="ident">buffers</span>.<span class="ident">len</span>());
-                        <span class="kw">let</span> <span class="ident">buf</span> <span class="op">=</span> <span class="kw">unsafe</span> {
-                            <span class="comment">// SAFETY: processed fields index can never exceed the projection indices.</span>
-                            <span class="ident">buffers</span>.<span class="ident">get_unchecked_mut</span>(<span class="ident">processed_fields</span>)
+                        <span class="macro">debug_assert!</span>(processed_fields &lt; buffers.len());
+                        <span class="kw">let </span>buf = <span class="kw">unsafe </span>{
+                            <span class="comment">// SAFETY: processed fields index can never exceed the projection indices.
+                            </span>buffers.get_unchecked_mut(processed_fields)
                         };
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">add_null</span> <span class="op">=</span> <span class="bool-val">false</span>;
+                        <span class="kw">let </span><span class="kw-2">mut </span>add_null = <span class="bool-val">false</span>;
 
-                        <span class="comment">// if we have null values argument, check if this field equal null value</span>
-                        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">null_values</span>) <span class="op">=</span> <span class="ident">null_values</span> {
-                            <span class="kw">let</span> <span class="ident">field</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">needs_escaping</span> <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="ident">field</span>.<span class="ident">is_empty</span>() {
-                                <span class="kw-2">&amp;</span><span class="ident">field</span>[<span class="number">1</span>..<span class="ident">field</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>]
-                            } <span class="kw">else</span> {
-                                <span class="ident">field</span>
+                        <span class="comment">// if we have null values argument, check if this field equal null value
+                        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(null_values) = null_values {
+                            <span class="kw">let </span>field = <span class="kw">if </span>needs_escaping &amp;&amp; !field.is_empty() {
+                                <span class="kw-2">&amp;</span>field[<span class="number">1</span>..field.len() - <span class="number">1</span>]
+                            } <span class="kw">else </span>{
+                                field
                             };
 
-                            <span class="comment">// safety:</span>
-                            <span class="comment">// process fields is in bounds</span>
-                            <span class="ident">add_null</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">null_values</span>.<span class="ident">is_null</span>(<span class="ident">field</span>, <span class="ident">processed_fields</span>) }
+                            <span class="comment">// safety:
+                            // process fields is in bounds
+                            </span>add_null = <span class="kw">unsafe </span>{ null_values.is_null(field, processed_fields) }
                         }
-                        <span class="kw">if</span> <span class="ident">add_null</span> {
-                            <span class="ident">buf</span>.<span class="ident">add_null</span>()
-                        } <span class="kw">else</span> {
-                            <span class="ident">buf</span>.<span class="ident">add</span>(<span class="ident">field</span>, <span class="ident">ignore_parser_errors</span>, <span class="ident">needs_escaping</span>)
-                                .<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> {
-                                    <span class="kw">let</span> <span class="ident">bytes_offset</span> <span class="op">=</span> <span class="ident">offset</span> <span class="op">+</span> <span class="ident">field</span>.<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="ident">usize</span> <span class="op">-</span> <span class="ident">start</span>;
-                                    <span class="kw">let</span> <span class="ident">unparsable</span> <span class="op">=</span> <span class="ident">String::from_utf8_lossy</span>(<span class="ident">field</span>);
-                                    <span class="ident">PolarsError::ComputeError</span>(
+                        <span class="kw">if </span>add_null {
+                            buf.add_null()
+                        } <span class="kw">else </span>{
+                            buf.add(field, ignore_parser_errors, needs_escaping)
+                                .map_err(|<span class="kw">_</span>| {
+                                    <span class="kw">let </span>bytes_offset = offset + field.as_ptr() <span class="kw">as </span>usize - start;
+                                    <span class="kw">let </span>unparsable = String::from_utf8_lossy(field);
+                                    PolarsError::ComputeError(
                                         <span class="macro">format!</span>(
                                             <span class="string">&quot;Could not parse `{}` as dtype {:?} at column {}.\n\
                                             The current offset in the file is {} bytes.\n\
@@ -1226,32 +1226,32 @@
                                             the number of records used to infer the schema,\n\
                                             running the parser with `ignore_parser_errors=true`\n\
                                             or  adding `{}` to the `null_values` list.&quot;</span>,
-                                            <span class="kw-2">&amp;</span><span class="ident">unparsable</span>,
-                                            <span class="ident">buf</span>.<span class="ident">dtype</span>(),
-                                            <span class="ident">idx</span>,
-                                            <span class="ident">bytes_offset</span>,
-                                            <span class="kw-2">&amp;</span><span class="ident">unparsable</span>,
+                                            <span class="kw-2">&amp;</span>unparsable,
+                                            buf.dtype(),
+                                            idx,
+                                            bytes_offset,
+                                            <span class="kw-2">&amp;</span>unparsable,
                                         )
-                                        .<span class="ident">into</span>(),
+                                        .into(),
                                     )
                                 })<span class="question-mark">?</span>;
                         }
 
-                        <span class="ident">processed_fields</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                        processed_fields += <span class="number">1</span>;
 
-                        <span class="comment">// if we have all projected columns we are done with this line</span>
-                        <span class="kw">match</span> <span class="ident">projection_iter</span>.<span class="ident">next</span>() {
-                            <span class="prelude-val">Some</span>(<span class="ident">p</span>) =&gt; <span class="ident">next_projected</span> <span class="op">=</span> <span class="ident">p</span>,
-                            <span class="prelude-val">None</span> =&gt; {
-                                <span class="kw">if</span> <span class="ident">bytes</span>.<span class="ident">get</span>(<span class="ident">read_sol</span> <span class="op">-</span> <span class="number">1</span>) <span class="op">==</span> <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">eol_char</span>) {
-                                    <span class="ident">bytes</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">bytes</span>[<span class="ident">read_sol</span>..];
-                                } <span class="kw">else</span> {
-                                    <span class="kw">let</span> <span class="ident">bytes_rem</span> <span class="op">=</span> <span class="ident">skip_this_line</span>(
-                                        <span class="kw-2">&amp;</span><span class="ident">bytes</span>[<span class="ident">read_sol</span> <span class="op">-</span> <span class="number">1</span>..],
-                                        <span class="ident">quote_char</span>,
-                                        <span class="ident">eol_char</span>,
+                        <span class="comment">// if we have all projected columns we are done with this line
+                        </span><span class="kw">match </span>projection_iter.next() {
+                            <span class="prelude-val">Some</span>(p) =&gt; next_projected = p,
+                            <span class="prelude-val">None </span>=&gt; {
+                                <span class="kw">if </span>bytes.get(read_sol - <span class="number">1</span>) == <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>eol_char) {
+                                    bytes = <span class="kw-2">&amp;</span>bytes[read_sol..];
+                                } <span class="kw">else </span>{
+                                    <span class="kw">let </span>bytes_rem = skip_this_line(
+                                        <span class="kw-2">&amp;</span>bytes[read_sol - <span class="number">1</span>..],
+                                        quote_char,
+                                        eol_char,
                                     );
-                                    <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">bytes_rem</span>;
+                                    bytes = bytes_rem;
                                 }
                                 <span class="kw">break</span>;
                             }
@@ -1261,60 +1261,60 @@
             }
         }
 
-        <span class="comment">// there can be lines that miss fields (also the comma values)</span>
-        <span class="comment">// this means the splitter won&#39;t process them.</span>
-        <span class="comment">// We traverse them to read them as null values.</span>
-        <span class="kw">while</span> <span class="ident">processed_fields</span> <span class="op">&lt;</span> <span class="ident">projection</span>.<span class="ident">len</span>() {
-            <span class="macro">debug_assert!</span>(<span class="ident">processed_fields</span> <span class="op">&lt;</span> <span class="ident">buffers</span>.<span class="ident">len</span>());
-            <span class="kw">let</span> <span class="ident">buf</span> <span class="op">=</span> <span class="kw">unsafe</span> {
-                <span class="comment">// SAFETY: processed fields index can never exceed the projection indices.</span>
-                <span class="ident">buffers</span>.<span class="ident">get_unchecked_mut</span>(<span class="ident">processed_fields</span>)
+        <span class="comment">// there can be lines that miss fields (also the comma values)
+        // this means the splitter won&#39;t process them.
+        // We traverse them to read them as null values.
+        </span><span class="kw">while </span>processed_fields &lt; projection.len() {
+            <span class="macro">debug_assert!</span>(processed_fields &lt; buffers.len());
+            <span class="kw">let </span>buf = <span class="kw">unsafe </span>{
+                <span class="comment">// SAFETY: processed fields index can never exceed the projection indices.
+                </span>buffers.get_unchecked_mut(processed_fields)
             };
 
-            <span class="ident">buf</span>.<span class="ident">add_null</span>();
-            <span class="ident">processed_fields</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+            buf.add_null();
+            processed_fields += <span class="number">1</span>;
         }
 
-        <span class="ident">line_count</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+        line_count += <span class="number">1</span>;
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">test</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>test {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_splitfields</span>() {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="string">&quot;\&quot;foo\&quot;,\&quot;bar\&quot;&quot;</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fields</span> <span class="op">=</span> <span class="ident">SplitFields::new</span>(<span class="ident">input</span>.<span class="ident">as_bytes</span>(), <span class="string">b&#39;,&#39;</span>, <span class="prelude-val">Some</span>(<span class="string">b&#39;&quot;&#39;</span>), <span class="string">b&#39;\n&#39;</span>);
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_splitfields() {
+        <span class="kw">let </span>input = <span class="string">&quot;\&quot;foo\&quot;,\&quot;bar\&quot;&quot;</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>fields = SplitFields::new(input.as_bytes(), <span class="string">b&#39;,&#39;</span>, <span class="prelude-val">Some</span>(<span class="string">b&#39;&quot;&#39;</span>), <span class="string">b&#39;\n&#39;</span>);
 
-        <span class="macro">assert_eq!</span>(<span class="ident">fields</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>((<span class="string">&quot;\&quot;foo\&quot;&quot;</span>.<span class="ident">as_bytes</span>(), <span class="bool-val">true</span>)));
-        <span class="macro">assert_eq!</span>(<span class="ident">fields</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>((<span class="string">&quot;\&quot;bar\&quot;&quot;</span>.<span class="ident">as_bytes</span>(), <span class="bool-val">true</span>)));
-        <span class="macro">assert_eq!</span>(<span class="ident">fields</span>.<span class="ident">next</span>(), <span class="prelude-val">None</span>);
+        <span class="macro">assert_eq!</span>(fields.next(), <span class="prelude-val">Some</span>((<span class="string">&quot;\&quot;foo\&quot;&quot;</span>.as_bytes(), <span class="bool-val">true</span>)));
+        <span class="macro">assert_eq!</span>(fields.next(), <span class="prelude-val">Some</span>((<span class="string">&quot;\&quot;bar\&quot;&quot;</span>.as_bytes(), <span class="bool-val">true</span>)));
+        <span class="macro">assert_eq!</span>(fields.next(), <span class="prelude-val">None</span>);
 
-        <span class="kw">let</span> <span class="ident">input2</span> <span class="op">=</span> <span class="string">&quot;\&quot;foo\n bar\&quot;;\&quot;baz\&quot;;12345&quot;</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fields2</span> <span class="op">=</span> <span class="ident">SplitFields::new</span>(<span class="ident">input2</span>.<span class="ident">as_bytes</span>(), <span class="string">b&#39;;&#39;</span>, <span class="prelude-val">Some</span>(<span class="string">b&#39;&quot;&#39;</span>), <span class="string">b&#39;\n&#39;</span>);
+        <span class="kw">let </span>input2 = <span class="string">&quot;\&quot;foo\n bar\&quot;;\&quot;baz\&quot;;12345&quot;</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>fields2 = SplitFields::new(input2.as_bytes(), <span class="string">b&#39;;&#39;</span>, <span class="prelude-val">Some</span>(<span class="string">b&#39;&quot;&#39;</span>), <span class="string">b&#39;\n&#39;</span>);
 
-        <span class="macro">assert_eq!</span>(<span class="ident">fields2</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>((<span class="string">&quot;\&quot;foo\n bar\&quot;&quot;</span>.<span class="ident">as_bytes</span>(), <span class="bool-val">true</span>)));
-        <span class="macro">assert_eq!</span>(<span class="ident">fields2</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>((<span class="string">&quot;\&quot;baz\&quot;&quot;</span>.<span class="ident">as_bytes</span>(), <span class="bool-val">true</span>)));
-        <span class="macro">assert_eq!</span>(<span class="ident">fields2</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>((<span class="string">&quot;12345&quot;</span>.<span class="ident">as_bytes</span>(), <span class="bool-val">false</span>)));
-        <span class="macro">assert_eq!</span>(<span class="ident">fields2</span>.<span class="ident">next</span>(), <span class="prelude-val">None</span>);
+        <span class="macro">assert_eq!</span>(fields2.next(), <span class="prelude-val">Some</span>((<span class="string">&quot;\&quot;foo\n bar\&quot;&quot;</span>.as_bytes(), <span class="bool-val">true</span>)));
+        <span class="macro">assert_eq!</span>(fields2.next(), <span class="prelude-val">Some</span>((<span class="string">&quot;\&quot;baz\&quot;&quot;</span>.as_bytes(), <span class="bool-val">true</span>)));
+        <span class="macro">assert_eq!</span>(fields2.next(), <span class="prelude-val">Some</span>((<span class="string">&quot;12345&quot;</span>.as_bytes(), <span class="bool-val">false</span>)));
+        <span class="macro">assert_eq!</span>(fields2.next(), <span class="prelude-val">None</span>);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_splitlines</span>() {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="string">&quot;1,\&quot;foo\n\&quot;\n2,\&quot;foo\n\&quot;\n&quot;</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">lines</span> <span class="op">=</span> <span class="ident">SplitLines::new</span>(<span class="ident">input</span>.<span class="ident">as_bytes</span>(), <span class="string">b&#39;&quot;&#39;</span>, <span class="string">b&#39;\n&#39;</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">lines</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="string">&quot;1,\&quot;foo\n\&quot;&quot;</span>.<span class="ident">as_bytes</span>()));
-        <span class="macro">assert_eq!</span>(<span class="ident">lines</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="string">&quot;2,\&quot;foo\n\&quot;&quot;</span>.<span class="ident">as_bytes</span>()));
-        <span class="macro">assert_eq!</span>(<span class="ident">lines</span>.<span class="ident">next</span>(), <span class="prelude-val">None</span>);
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_splitlines() {
+        <span class="kw">let </span>input = <span class="string">&quot;1,\&quot;foo\n\&quot;\n2,\&quot;foo\n\&quot;\n&quot;</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>lines = SplitLines::new(input.as_bytes(), <span class="string">b&#39;&quot;&#39;</span>, <span class="string">b&#39;\n&#39;</span>);
+        <span class="macro">assert_eq!</span>(lines.next(), <span class="prelude-val">Some</span>(<span class="string">&quot;1,\&quot;foo\n\&quot;&quot;</span>.as_bytes()));
+        <span class="macro">assert_eq!</span>(lines.next(), <span class="prelude-val">Some</span>(<span class="string">&quot;2,\&quot;foo\n\&quot;&quot;</span>.as_bytes()));
+        <span class="macro">assert_eq!</span>(lines.next(), <span class="prelude-val">None</span>);
 
-        <span class="kw">let</span> <span class="ident">input2</span> <span class="op">=</span> <span class="string">&quot;1,&#39;foo\n&#39;\n2,&#39;foo\n&#39;\n&quot;</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">lines2</span> <span class="op">=</span> <span class="ident">SplitLines::new</span>(<span class="ident">input2</span>.<span class="ident">as_bytes</span>(), <span class="string">b&#39;\&#39;&#39;</span>, <span class="string">b&#39;\n&#39;</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">lines2</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="string">&quot;1,&#39;foo\n&#39;&quot;</span>.<span class="ident">as_bytes</span>()));
-        <span class="macro">assert_eq!</span>(<span class="ident">lines2</span>.<span class="ident">next</span>(), <span class="prelude-val">Some</span>(<span class="string">&quot;2,&#39;foo\n&#39;&quot;</span>.<span class="ident">as_bytes</span>()));
-        <span class="macro">assert_eq!</span>(<span class="ident">lines2</span>.<span class="ident">next</span>(), <span class="prelude-val">None</span>);
+        <span class="kw">let </span>input2 = <span class="string">&quot;1,&#39;foo\n&#39;\n2,&#39;foo\n&#39;\n&quot;</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>lines2 = SplitLines::new(input2.as_bytes(), <span class="string">b&#39;\&#39;&#39;</span>, <span class="string">b&#39;\n&#39;</span>);
+        <span class="macro">assert_eq!</span>(lines2.next(), <span class="prelude-val">Some</span>(<span class="string">&quot;1,&#39;foo\n&#39;&quot;</span>.as_bytes()));
+        <span class="macro">assert_eq!</span>(lines2.next(), <span class="prelude-val">Some</span>(<span class="string">&quot;2,&#39;foo\n&#39;&quot;</span>.as_bytes()));
+        <span class="macro">assert_eq!</span>(lines2.next(), <span class="prelude-val">None</span>);
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="polars_io" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="polars_io" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
