@@ -13,6 +13,7 @@ mod util;
 mod io;
 mod ids;
 mod gender;
+mod layout;
 mod graph;
 mod marc;
 mod openlib;

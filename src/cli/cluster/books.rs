@@ -42,6 +42,7 @@ pub struct ExtractBooks {
 
 impl Command for ExtractBooks {
   fn exec(&self) -> Result<()> {
+    require_working_root()?;
     let ns = NS::by_name(&self.namespace).ok_or(anyhow!("invalid namespace"))?;
     let data = LazyFrame::scan_parquet(GRAPH_NODE_FILE, default())?;
 

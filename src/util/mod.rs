@@ -21,16 +21,3 @@ pub use timing::Timer;
 pub fn default<T: Default>() -> T {
   T::default()
 }
-
-/// Expect that we are in a particular subdirectory.
-pub fn require_working_dir<P: AsRef<Path>>(path: P) -> anyhow::Result<()> {
-  let path = path.as_ref();
-  let cwd = current_dir()?;
-
-  if !cwd.ends_with(path) {
-    error!("expected to be run in {:?}", path);
-    Err(anyhow!("incorrect working directory"))
-  } else {
-    Ok(())
-  }
-}
