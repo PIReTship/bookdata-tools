@@ -41,7 +41,7 @@ available without special request.
     -   Added more tests for name parsing and normalization.
 -   Fixed a bug in GoodReads integration, where we were not extracting ASINs.
 -   Extract book genres and series from GoodReads.
--   Updated various Rust dependencies.
+-   Updated various Rust dependencies, and upgraded from StructOpt to `clap`'s derive macros.
 -   Better progress reporting for data scans.
 
 [peg]: https://docs.rs/peg
