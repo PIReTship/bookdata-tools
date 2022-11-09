@@ -22,6 +22,7 @@ available without special request.
 -   Updated OpenLibrary to March 29, 2022 dump
 -   Added code to extract edition and work subjects
 -   Updated docs for current extraction layout
+-   Added {file}`openlibrary/work-clusters.parquet` to simplify OpenLibrary integration
 
 ### Logic Updates
 
