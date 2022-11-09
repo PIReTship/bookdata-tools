@@ -67,7 +67,7 @@ peg::parser! {
 
     // digits, hyphens, and misc. marks are allowed (will clean later)
     rule digit_char() -> char
-      = mc:['0'..='9' | '-'] { mc }
+      = mc:['0'..='9' | '-' | 'O'] { mc }
       / mc:[c if NONSPACING_MARK.contains(c)] { mc }
 
     // some ISBNs have some random junk in the middle, match allowed junk
@@ -101,6 +101,8 @@ pub fn clean_isbn_chars(isbn: &str) -> String {
       vec.push(b)
     } else if b == b'x' {
       vec.push(b'X')
+    } else if b == b'O' {
+      vec.push(b'0')
     }
   }
   unsafe {  // we know it's only ascii
@@ -392,6 +394,20 @@ fn test_parse_two_isbns_real() {
 pub fn test_parse_isbn_junk_colon() {
   let src = "95l3512401 :";
   let isbn = "953512401";
+  let isbns = parse_isbn_string(src);
+  if let ParseResult::Valid(isbns, _tail) = isbns {
+    assert_eq!(isbns.len(), 1);
+    assert_eq!(&isbns[0].text, isbn);
+  } else {
+    panic!("failed to parse {}: {:?}", src, isbns);
+  }
+}
+
+#[test]
+pub fn test_parse_isbn_oh() {
+  let src = "O882970208 (pbk.)";
+  let isbn = "0882970208";
+
   let isbns = parse_isbn_string(src);
   if let ParseResult::Valid(isbns, _tail) = isbns {
     assert_eq!(isbns.len(), 1);
