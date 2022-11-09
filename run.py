@@ -49,8 +49,15 @@ def run_rust():
     # shell out to 'cargo run' to run the command
     tool_name = sys.argv[1]
 
+    run = ['cargo', 'run']
+    if os.environ.get('BOOKDATA_DEBUG_MODE', None):
+        pass # no op
+    else:
+        run.append('--release')
+    run.append('--')
+
     _log.info('building and running Rust tool %s', tool_name)
-    sp.run(['cargo', 'run', '--release', '--'] + sys.argv[1:], check=True)
+    sp.run(run + sys.argv[1:], check=True)
 
 
 def run_script():
