@@ -5,17 +5,17 @@ mod scan;
 mod work_gender;
 
 /// GoodReads processing commands.
-#[derive(StructOpt, Debug)]
+#[derive(Args, Debug)]
 pub struct Goodreads {
-  #[structopt(subcommand)]
+  #[command(subcommand)]
   command: GRCmd
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(clap::Subcommand, Debug)]
 enum GRCmd {
   /// Scan GoodReads data.
   Scan {
-    #[structopt(subcommand)]
+    #[command(subcommand)]
     data: scan::GRScan
   },
   /// Cluster GoodReads intearaction data.

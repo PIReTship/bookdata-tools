@@ -1,8 +1,6 @@
 //! Extract author information for book clusters.
 use std::path::{PathBuf};
 
-use structopt::StructOpt;
-
 use polars::prelude::*;
 use crate::arrow::polars::nonnull_schema;
 use crate::arrow::writer::open_parquet_writer;
@@ -11,32 +9,32 @@ use crate::ids::codes::*;
 
 static GRAPH_NODE_FILE: &str = "book-links/cluster-graph-nodes.parquet";
 
-#[derive(StructOpt, Debug)]
-#[structopt(name="extract-books")]
+#[derive(Args, Debug)]
+#[command(name="extract-books")]
 /// Extract cluster book codes for a particular namespace.
 pub struct ExtractBooks {
   /// Specify output file
-  #[structopt(short="o", long="output", parse(from_os_str))]
+  #[arg(short='o', long="output")]
   output: PathBuf,
 
   /// Output numspaced book codes instead of original IDs.
-  #[structopt(short="C", long="numspaced-book-codes")]
+  #[arg(short='C', long="numspaced-book-codes")]
   book_codes: bool,
 
   /// Specify the name of the book code field.
-  #[structopt(short="n", long="name", name="FIELD", default_value="book_code")]
+  #[arg(short='n', long="name", name="FIELD", default_value="book_code")]
   field_name: String,
 
   /// Specify an additional file to join into the results.
-  #[structopt(long="join-file", name="LINKFILE", parse(from_os_str))]
+  #[arg(long="join-file", name="LINKFILE")]
   join_file: Option<PathBuf>,
 
   /// Speficy a field to read from the join file.
-  #[structopt(long="join-field", name="LINKFIELD")]
+  #[arg(long="join-field", name="LINKFIELD")]
   join_field: Option<String>,
 
   /// Extract book codes in namespace NS.
-  #[structopt(name="NS")]
+  #[arg(name="NS")]
   namespace: String,
 }
 

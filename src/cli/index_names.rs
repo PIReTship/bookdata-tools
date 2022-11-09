@@ -6,7 +6,6 @@ use std::thread::{spawn, JoinHandle};
 
 use crossbeam::channel::{bounded, Sender, Receiver};
 
-use structopt::StructOpt;
 use csv;
 use serde::{Serialize};
 use flate2::write::GzEncoder;
@@ -21,16 +20,16 @@ use crate::io::object::ThreadObjectWriter;
 use crate::cleaning::names::*;
 use crate::util::logging::item_progress;
 
-#[derive(StructOpt, Debug)]
-#[structopt(name="index-names")]
+#[derive(Args, Debug)]
+#[command(name="index-names")]
 /// Clean and index author names from authority records.
 pub struct IndexNames {
   /// MARC authority field file to scan for names.
-  #[structopt(long="marc-authorities", name = "FILE", parse(from_os_str))]
+  #[arg(long="marc-authorities", name = "FILE")]
   marc_authorities: Option<PathBuf>,
 
   /// Index output Parquet file.
-  #[structopt(name = "OUTFILE", parse(from_os_str))]
+  #[arg(name = "OUTFILE")]
   outfile: PathBuf,
 }
 

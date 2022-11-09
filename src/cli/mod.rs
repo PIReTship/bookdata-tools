@@ -21,12 +21,12 @@ pub mod bx;
 
 use log::*;
 use paste::paste;
-use structopt::StructOpt;
+use clap::{Parser, Subcommand};
 use anyhow::Result;
 use enum_dispatch::enum_dispatch;
 use cpu_time::ProcessTime;
 use rayon::ThreadPoolBuilder;
-use happylog::LogOpts;
+use happylog::clap::LogOpts;
 
 #[cfg(unix)]
 use crate::util::process;
@@ -43,9 +43,9 @@ extern "C" {
 macro_rules! wrap_subcommands {
   ($name:ty) => {
     paste! {
-      #[derive(StructOpt, Debug)]
+      #[derive(clap::Args, Debug)]
       pub struct [<$name Wrapper>] {
-        #[structopt(subcommand)]
+        #[command(subcommand)]
         command: $name
       }
 
@@ -67,8 +67,8 @@ pub trait Command {
 
 /// Enum to collect and dispatch CLI commands.
 #[enum_dispatch(Command)]
-#[derive(StructOpt, Debug)]
-pub enum BDCommand {
+#[derive(Subcommand, Debug)]
+pub enum RootCommand {
   ScanMARC(scan_marc::ScanMARC),
   FilterMARC(filter_marc::FilterMARC),
   ClusterBooks(cluster_books::ClusterBooks),
@@ -95,14 +95,14 @@ wrap_subcommands!(BXCommand);
 wrap_subcommands!(ClusterCommand);
 
 #[enum_dispatch(Command)]
-#[derive(StructOpt, Debug)]
+#[derive(Subcommand, Debug)]
 enum AmazonCommand {
   ScanRatings(amazon::ScanRatings),
   ClusterRatings(amazon::ClusterRatings),
 }
 
 #[enum_dispatch(Command)]
-#[derive(StructOpt, Debug)]
+#[derive(Subcommand, Debug)]
 enum BXCommand {
   /// Extract BX from source data and clean.
   Extract(bx::Extract),
@@ -111,7 +111,7 @@ enum BXCommand {
 }
 
 #[enum_dispatch(Command)]
-#[derive(StructOpt, Debug)]
+#[derive(Subcommand, Debug)]
 pub enum ClusterCommand {
   Hash(cluster::hash::HashCmd),
   ExtractBooks(cluster::books::ExtractBooks),
@@ -122,14 +122,14 @@ pub enum ClusterCommand {
 /// Entry point for the Book Data Tools.
 ///
 /// This program runs the various book data tools, exposed as subcommands.
-#[derive(StructOpt, Debug)]
-#[structopt(name="bookdata")]
+#[derive(Parser, Debug)]
+#[command(name="bookdata")]
 pub struct CLI {
-  #[structopt(flatten)]
+  #[command(flatten)]
   logging: LogOpts,
 
-  #[structopt(subcommand)]
-  command: BDCommand,
+  #[command(subcommand)]
+  command: RootCommand,
 }
 
 impl CLI {

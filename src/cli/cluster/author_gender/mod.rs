@@ -7,8 +7,6 @@
 //! the integration pipeline.
 use std::path::{Path, PathBuf};
 
-use structopt::StructOpt;
-
 use serde::{Serialize, Deserialize};
 
 use crate::prelude::*;
@@ -25,16 +23,16 @@ mod clusters;
 //   VIAF,
 // }
 
-#[derive(StructOpt, Debug)]
-#[structopt(name="extract-author-genders")]
+#[derive(Args, Debug)]
+#[command(name="extract-author-genders")]
 /// Extract cluster author gender data from extracted book data.
 pub struct AuthorGender {
   /// Specify output file
-  #[structopt(short="o", long="output")]
+  #[arg(short='o', long="output")]
   output: PathBuf,
 
   /// Specify the cluster-author file.
-  #[structopt(short="A", long="cluster-authors")]
+  #[arg(short='A', long="cluster-authors")]
   author_file: PathBuf,
 }
 

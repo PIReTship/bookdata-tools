@@ -1,6 +1,6 @@
 //! Compute integration statistics.
 use std::fs::File;
-use structopt::StructOpt;
+use clap::Args;
 
 use polars::prelude::*;
 use crate::prelude::*;
@@ -19,8 +19,8 @@ static ACTION_FILES: &[(&str, &str)] = &[
 ];
 
 /// Compute integration statistics.
-#[derive(Debug, StructOpt)]
-#[structopt(name="integration-stats")]
+#[derive(Debug, Args)]
+#[command(name="integration-stats")]
 pub struct IntegrationStats {
 }
 

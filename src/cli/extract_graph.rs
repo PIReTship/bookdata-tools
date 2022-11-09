@@ -6,16 +6,16 @@ use crate::prelude::*;
 use crate::graph::{load_graph, save_gml};
 
 /// Extract a subgraph.
-#[derive(StructOpt, Debug)]
-#[structopt(name="extract-graph")]
+#[derive(Args, Debug)]
+#[command(name="extract-graph")]
 pub struct ExtractGraph {
-  #[structopt(long="graph-file")]
+  #[arg(long="graph-file")]
   graph_file: Option<PathBuf>,
 
-  #[structopt(short="c", long="cluster")]
+  #[arg(short='c', long="cluster")]
   cluster: Option<i32>,
 
-  #[structopt(long="output", short="o")]
+  #[arg(long="output", short='o')]
   out_file: Option<PathBuf>,
 }
 

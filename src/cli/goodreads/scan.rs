@@ -1,5 +1,3 @@
-use structopt::StructOpt;
-
 use crate::prelude::*;
 use crate::goodreads::*;
 use crate::io::object::ThreadObjectWriter;
@@ -7,7 +5,7 @@ use crate::util::logging::data_progress;
 use serde::de::DeserializeOwned;
 
 
-#[derive(StructOpt, Debug)]
+#[derive(clap::Subcommand, Debug)]
 pub enum GRScan {
   /// Scan GoodReads works.
   Works(ScanInput),
@@ -19,25 +17,25 @@ pub enum GRScan {
   Interactions(InterInput),
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(Args, Debug)]
 pub struct ScanInput {
   /// Input file
-  #[structopt(name = "INPUT", parse(from_os_str))]
+  #[arg(name = "INPUT")]
   infile: PathBuf
 }
 
 /// Input options for an interaction scan
-#[derive(StructOpt, Debug)]
+#[derive(Args, Debug)]
 pub struct InterInput {
   /// Book ID mapping file (only for CSV input)
-  #[structopt(name="MAP", long="book-map", parse(from_os_str))]
+  #[arg(name="MAP", long="book-map")]
   book_map: Option<PathBuf>,
 
   /// Run in CSV mode
-  #[structopt(long="csv")]
+  #[arg(long="csv")]
   csv_mode: bool,
 
-  #[structopt(flatten)]
+  #[command(flatten)]
   scan: ScanInput,
 }
 

@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use structopt::StructOpt;
+use clap::Args;
 
 use crate::prelude::*;
 use crate::arrow::polars::*;
@@ -8,26 +8,26 @@ use crate::ids::codes::{NS_GR_WORK, NS_GR_BOOK};
 
 use polars::prelude::*;
 
-#[derive(StructOpt, Debug)]
+#[derive(Args, Debug)]
 pub struct CICommand {
   /// Cluster ratings
-  #[structopt(long="ratings")]
+  #[arg(long="ratings")]
   ratings: bool,
 
   /// Cluster add-to-shelf actions
-  #[structopt(long="add-actions")]
+  #[arg(long="add-actions")]
   add_actions: bool,
 
   /// Cluster using simple data instead of full data.
-  #[structopt(long="simple")]
+  #[arg(long="simple")]
   simple: bool,
 
   /// Cluster using native GoodReads works instead of book clusters.
-  #[structopt(long="native-works")]
+  #[arg(long="native-works")]
   native_works: bool,
 
   /// Write output to FILE
-  #[structopt(short="o", long="output", name="FILE", parse(from_os_str))]
+  #[arg(short='o', long="output", name="FILE")]
   output: PathBuf,
 }
 

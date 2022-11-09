@@ -1,5 +1,4 @@
-//! ISBN linking code.
-use structopt::StructOpt;
+use clap::Args;
 
 use polars::prelude::*;
 use crate::{prelude::*, arrow::{polars::nonnull_schema, writer::open_parquet_writer}};
@@ -7,23 +6,23 @@ use crate::{prelude::*, arrow::{polars::nonnull_schema, writer::open_parquet_wri
 static ALL_ISBNS_FILE: &str = "book-links/all-isbns.parquet";
 
 /// Link records to ISBN IDs.
-#[derive(Debug, StructOpt)]
-#[structopt(name="link-isbn-ids")]
+#[derive(Debug, Args)]
+#[command(name="link-isbn-ids")]
 pub struct LinkISBNIds {
   /// Read record IDs from RECFLD.
-  #[structopt(short="R", long="record-id", name="RECFLD", default_value="rec_id")]
+  #[arg(short='R', long="record-id", name="RECFLD", default_value="rec_id")]
   rec_field: String,
 
   /// Read ISBNs from FIELD.
-  #[structopt(short="I", long="isbn-field", name="FIELD", default_value="isbn")]
+  #[arg(short='I', long="isbn-field", name="FIELD", default_value="isbn")]
   isbn_fields: Vec<String>,
 
   /// Write output to FILE.
-  #[structopt(short="o", long="output", name="FILE")]
+  #[arg(short='o', long="output", name="FILE")]
   outfile: PathBuf,
 
   /// Read records from INPUT.
-  #[structopt(name="INFILE")]
+  #[arg(name="INFILE")]
   infile: PathBuf,
 }
 

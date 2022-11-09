@@ -6,19 +6,18 @@ use std::io::{Write};
 use std::path::{PathBuf};
 use std::fs::File;
 
-use structopt::StructOpt;
 use zip::ZipArchive;
 
 use crate::prelude::*;
 
-#[derive(StructOpt, Debug)]
+#[derive(Args, Debug)]
 pub struct Extract {
   /// The zip file to read.
-  #[structopt(name="ZIPFILE")]
+  #[arg(name="ZIPFILE")]
   zipfile: PathBuf,
 
   /// The CSV file to write.
-  #[structopt(name="OUTFILE")]
+  #[arg(name="OUTFILE")]
   outfile: PathBuf,
 }
 

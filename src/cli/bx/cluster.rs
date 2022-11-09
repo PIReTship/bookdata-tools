@@ -1,24 +1,22 @@
 //! BookCrossing interaction clustering.
 use std::path::{PathBuf};
 
-use structopt::StructOpt;
-
 use polars::prelude::*;
 use crate::prelude::*;
 
-#[derive(StructOpt, Debug)]
-#[structopt(name="cluster-actions")]
+#[derive(Args, Debug)]
+#[command(name="cluster-actions")]
 pub struct Cluster {
   /// Cluster ratings.
-  #[structopt(long="ratings")]
+  #[arg(long="ratings")]
   ratings: bool,
 
   /// Cluster actions (implicit feedback).
-  #[structopt(long="add-actions")]
+  #[arg(long="add-actions")]
   add_actions: bool,
 
   /// The output file.
-  #[structopt(short="o", long="output", name="FILE")]
+  #[arg(short='o', long="output", name="FILE")]
   outfile: PathBuf,
 }
 

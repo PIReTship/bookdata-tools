@@ -3,7 +3,6 @@ use std::path::{PathBuf};
 use std::collections::HashMap;
 
 use arrow2_convert::ArrowField;
-use structopt::StructOpt;
 use md5::{Md5, Digest};
 use hex;
 
@@ -13,16 +12,16 @@ use crate::prelude::*;
 
 use crate::prelude::Result;
 
-#[derive(StructOpt, Debug)]
-#[structopt(name="hash")]
+#[derive(Args, Debug)]
+#[command(name="hash")]
 /// Compute a hash for each cluster.
 pub struct HashCmd {
   /// Specify output file
-  #[structopt(short="o", long="output", name="FILE")]
+  #[arg(short='o', long="output", name="FILE")]
   output: PathBuf,
 
   /// Specify input file
-  #[structopt(name="ISBN_CLUSTERS")]
+  #[arg(name="ISBN_CLUSTERS")]
   cluster_file: PathBuf,
 }
 

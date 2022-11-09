@@ -30,11 +30,11 @@ use mimalloc::MiMalloc;
 static GLOBAL: MiMalloc = MiMalloc;
 
 use anyhow::Result;
-use structopt::StructOpt;
+use clap::Parser;
 
 use cli::CLI;
 
 fn main() -> Result<()> {
-  let opt = CLI::from_args();
+  let opt = CLI::parse();
   opt.exec()
 }

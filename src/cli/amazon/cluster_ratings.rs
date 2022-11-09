@@ -4,15 +4,15 @@ use crate::prelude::*;
 
 
 /// Group Amazon ratings into clusters.
-#[derive(StructOpt, Debug)]
-#[structopt(name="cluster-ratings")]
+#[derive(Args, Debug)]
+#[command(name="cluster-ratings")]
 pub struct ClusterRatings {
   /// Rating output file
-  #[structopt(short="o", long="output", name="FILE", parse(from_os_str))]
+  #[arg(short='o', long="output", name="FILE")]
   ratings_out: PathBuf,
 
   /// Input file to cluster
-  #[structopt(name = "INPUT", parse(from_os_str))]
+  #[arg(name = "INPUT")]
   infile: PathBuf,
 }
 

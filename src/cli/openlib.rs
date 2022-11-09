@@ -9,14 +9,14 @@ use crate::util::logging::data_progress;
 
 use super::Command;
 
-#[derive(StructOpt, Debug)]
+#[derive(Args, Debug)]
 struct Input {
   /// Input file
-  #[structopt(name = "INPUT", parse(from_os_str))]
+  #[arg(name = "INPUT")]
   infile: PathBuf
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(clap::Subcommand, Debug)]
 enum DataType {
   /// Parse OpenLibrary works.
   ///
@@ -33,10 +33,10 @@ enum DataType {
 }
 
 /// Scan OpenLibrary data.
-#[derive(StructOpt, Debug)]
-#[structopt(name="openlib")]
+#[derive(Args, Debug)]
+#[command(name="openlib")]
 pub struct OpenLib {
-  #[structopt(subcommand)]
+  #[command(subcommand)]
   mode: DataType,
 }
 
