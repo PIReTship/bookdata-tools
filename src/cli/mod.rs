@@ -16,6 +16,7 @@ pub mod amazon;
 pub mod openlib;
 pub mod goodreads;
 pub mod pqinfo;
+pub mod stats;
 pub mod bx;
 
 use log::*;
@@ -86,6 +87,7 @@ pub enum BDCommand {
   /// Commands for working with clusters.
   Cluster(ClusterCommandWrapper),
   PQInfo(pqinfo::PQInfo),
+  IntegrationStats(stats::IntegrationStats),
 }
 
 wrap_subcommands!(AmazonCommand);

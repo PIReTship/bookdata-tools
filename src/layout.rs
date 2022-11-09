@@ -1,11 +1,62 @@
 //! Utilities for working with the directory tree layout.
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::io;
 use std::fs::read_to_string;
 use std::env::current_dir;
 
+use text_template::{Template, Piece};
 use anyhow::{Result, anyhow};
 use log::*;
+
+/// Configuration data.
+pub struct Config {
+  repr: toml::Value,
+}
+
+impl Config {
+  pub fn load() -> Result<Config> {
+    let mut path = find_path_root()?;
+    path.push("config.toml");
+    debug!("reading config from {:?}", path);
+    let text = read_to_string(&path)?;
+    Ok(Config {
+      repr: toml::de::from_str(&text)?
+    })
+  }
+
+  /// Lookup a configuration option by dotted path.
+  pub fn lookup_str<'a>(&'a self, path: &str) -> Option<&'a str> {
+    let parts = path.split(".");
+    let mut node = &self.repr;
+    for part in parts {
+      if let Some(n) = node.get(part) {
+        node = n;
+      } else {
+        return None
+      }
+    }
+
+    node.as_str()
+  }
+
+  /// Interpolate a string.
+  pub fn interpolate<'a, 'b: 'a>(&'a self, text: &'b str) -> String {
+    let tmpl = Template::from(text);
+    let mut vars = HashMap::new();
+    for piece in tmpl.iter() {
+      match piece {
+        Piece::Placeholder { name, .. } => {
+          vars.insert(*name, self.lookup_str(name).unwrap_or_default());
+        },
+        _ => (),
+      }
+    }
+
+    tmpl.fill_in(&vars).to_string()
+  }
+
+}
 
 /// Check the TOML manifest to see if we're bookdata.
 fn check_project_manifest(path: &Path) -> Result<bool> {
@@ -58,7 +109,6 @@ fn is_bookdata_root(path: &Path) -> Result<bool> {
 }
 
 /// Find the root path for the repository.
-#[allow(dead_code)]
 pub fn find_path_root() -> Result<PathBuf> {
   let mut path = current_dir()?;
   debug!("working directory: {}", path.display());
