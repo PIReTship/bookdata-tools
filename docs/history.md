@@ -3,7 +3,7 @@
 This page documents the release history of the Book Data Tools. Each numbered,
 released version has a corresponding Git tag (e.g. `v2.0`).
 
-## Book Data 2.1 (in progress)
+## Book Data 2.1
 
 Version 2.1 has a few updates but does not change existing data schemas when run
 with the full GoodReads interaction files.  It does have improved book/author
