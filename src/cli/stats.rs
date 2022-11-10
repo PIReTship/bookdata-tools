@@ -13,7 +13,8 @@ static STAT_FILE: &str = "book-links/gender-stats.csv";
 static ACTION_FILES: &[(&str, &str)] = &[
   ("BX-I", "bx/bx-cluster-actions.parquet"),
   ("BX-E", "bx/bx-cluster-ratings.parquet"),
-  ("AZ", "az2014/az-cluster-ratings.parquet"),
+  ("AZ14", "az2014/az-cluster-ratings.parquet"),
+  ("AZ18", "az2018/az-cluster-ratings.parquet"),
   ("GR-I", "goodreads/${goodreads.interactions}/gr-cluster-actions.parquet"),
   ("GR-E", "goodreads/${goodreads.interactions}/gr-cluster-ratings.parquet"),
 ];
