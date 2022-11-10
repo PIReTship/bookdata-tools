@@ -12,6 +12,10 @@ use crate::util::logging::data_progress;
 #[derive(Args, Debug)]
 #[command(name="scan-ratings")]
 pub struct ScanRatings {
+  /// Swap user and item columns (for AZ 2018 data)
+  #[arg(long="swap-id-columns")]
+  swap_columns: bool,
+
   /// Rating output file
   #[arg(short='o', long="rating-output", name="FILE")]
   ratings_out: PathBuf,
@@ -36,7 +40,10 @@ impl Command for ScanRatings {
     let src = src.into_deserialize();
     let mut index: IdIndex<String> = IdIndex::new();
     for row in src {
-      let row: SourceRating = row?;
+      let mut row: SourceRating = row?;
+      if self.swap_columns {
+        std::mem::swap(&mut row.user, &mut row.asin);
+      }
       let user = index.intern(row.user.as_str())?;
       writer.write_object(RatingRow {
         user,
