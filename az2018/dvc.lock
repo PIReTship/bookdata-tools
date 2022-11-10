@@ -1,7 +1,8 @@
 schema: '2.0'
 stages:
   scan-ratings:
-    cmd: python ../run.py --rust amazon scan-ratings -o ratings.parquet ../data/az2018/Books.csv
+    cmd: python ../run.py --rust amazon scan-ratings -o ratings.parquet --swap-id-columns
+      ../data/az2018/Books.csv
     deps:
     - path: ../data/az2018/Books.csv
       md5: bcdcbbf336eb0d410e7a7894efa904ab
@@ -10,13 +11,13 @@ stages:
       md5: eae365a533cc290e8c60b8d4dbdd4e46
       size: 587
     - path: ../src/cli/amazon/
-      md5: d2132fb4aaaf8c4f398de402c8245e47.dir
-      size: 1518
-      nfiles: 2
+      md5: a530a6f1192f57fe970aff77b7e9c801.dir
+      size: 3285
+      nfiles: 3
     outs:
     - path: ratings.parquet
-      md5: 87ca6ed404d50074e720c0a8d0318256
-      size: 581894654
+      md5: ea664babdc393f2ee15df23616903990
+      size: 315697300
   schema@ratings:
     cmd: python ../run.py --rust pq-info -o ratings.json ratings.parquet
     deps:
@@ -28,31 +29,30 @@ stages:
       md5: 593245102d9804256479f3226f4473c5
       size: 427
   cluster-ratings:
-    cmd: python ../run.py ../az2014/az-cluster-ratings.py
+    cmd: python run.py --rust amazon cluster-ratings -o az2018/az-cluster-ratings.parquet
+      az2018/ratings.parquet
     deps:
-    - path: ../az2014/az-cluster-ratings.py
-      md5: 1741af277753a63e76ff98c431863095
-      size: 1252
-    - path: ../book-links/all-isbns.parquet
-      md5: 6e3c2c9e36fb6e74ac1dea916d8c7193
-      size: 463945418
-    - path: ../book-links/isbn-clusters.parquet
-      md5: fa5ddd99a0f1d74708c1b0507845646d
-      size: 557696240
-    - path: ratings.parquet
+    - path: az2018/ratings.parquet
       md5: 87ca6ed404d50074e720c0a8d0318256
       size: 581894654
+    - path: book-links/isbn-clusters.parquet
+      md5: 652f093bf0108b05c6890e062002c466
+      size: 559956796
+    - path: src/cli/amazon
+      md5: 6e71d6ee4b1b80d9ac818addf2060895.dir
+      size: 3044
+      nfiles: 3
     outs:
-    - path: az-cluster-ratings.parquet
-      md5: 77fa1e2aace2765002528b452da39bd5
-      size: 641675354
+    - path: az2018/az-cluster-ratings.parquet
+      md5: 4c46f26fffa947ae40073693eb10bd83
+      size: 641401863
   schema@az-cluster-ratings:
     cmd: python ../run.py --rust pq-info -o az-cluster-ratings.json az-cluster-ratings.parquet
     deps:
     - path: az-cluster-ratings.parquet
-      md5: 77fa1e2aace2765002528b452da39bd5
-      size: 641675354
+      md5: 4c46f26fffa947ae40073693eb10bd83
+      size: 641401863
     outs:
     - path: az-cluster-ratings.json
-      md5: 9048b61b372602c468c3c354db2a3ea2
+      md5: 17549bab37bb567cf3ce076a8086c191
       size: 702
