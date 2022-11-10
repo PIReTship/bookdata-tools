@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["JSONRecords",""],["LineProcessor","Read lines from a file with buffering, decompression, and parsing."],["Records",""]]};
