@@ -1,7 +1,6 @@
 This repository contains the code to import and integrate the book and rating data that we work
 with. It imports and integrates data from several sources in a homogenous tabular outputs; import
-scripts are primarily Rust, with Python to orchestrate things and and implement analyses, and
-DataFusion SQL for some integration steps.
+scripts are primarily Rust, with Python implement analyses.
 
 If you use these scripts in any published research, cite [our paper][paper] ([PDF][]):
 

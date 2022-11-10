@@ -58,8 +58,8 @@ can, if needed, derive the source from a book code.
 
 
 The {rust:mod}`bookdata::ids::codes` module contains the Rust API for working
-with these codes (including each of the namespace objects), converting
-identifiers into and out of them, and exposing them to DataFusion SQL.
+with these codes (including each of the namespace objects) and converting
+identifiers into and out of them.
 
 The LOC Work and Instance sources are not currently used; they are intended for
 future use when we are able to import BIBFRAME data from the Library of
