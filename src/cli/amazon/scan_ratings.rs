@@ -23,7 +23,7 @@ pub struct ScanRatings {
 
 impl Command for ScanRatings {
   fn exec(&self) -> Result<()> {
-    info!("scanning Amazon rating CSV");
+    info!("scanning Amazon rating CSV from {}", self.infile.display());
     let out = &self.ratings_out;
     info!("writing to {}", out.display());
     let mut writer = TableWriter::open(out)?;
