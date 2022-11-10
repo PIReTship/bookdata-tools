@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["FieldOutput","Output for writing flat MARC fields to Parquet."],["FieldRecord","Flat MARC field record."],["FieldRecordArray",""],["FieldRecordArrayIterator",""],["MutableFieldRecordArray",""]]};

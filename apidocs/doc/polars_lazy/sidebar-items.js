@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":[["dsl","Domain specific language for the Lazy api."],["frame","Lazy variant of a DataFrame."],["physical_plan",""],["prelude",""],["utils",""]]};
