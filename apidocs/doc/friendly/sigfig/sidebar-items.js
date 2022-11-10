@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["sigscale","Adjust a value for the specified number of significant figures."]]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["spin_loop","Emits a machine instruction to signal the processor that it is running in a busy-wait spin-loop (“spin lock”)."]]};

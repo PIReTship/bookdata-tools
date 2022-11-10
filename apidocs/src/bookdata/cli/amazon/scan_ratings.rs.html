@@ -50,6 +50,13 @@
 <span id="50">50</span>
 <span id="51">51</span>
 <span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Scan Amazon ratings.
 </span><span class="kw">use </span>std::fs::File;
 <span class="kw">use </span>csv;
@@ -64,6 +71,10 @@
 </span><span class="attribute">#[derive(Args, Debug)]
 #[command(name=<span class="string">&quot;scan-ratings&quot;</span>)]
 </span><span class="kw">pub struct </span>ScanRatings {
+  <span class="doccomment">/// Swap user and item columns (for AZ 2018 data)
+  </span><span class="attribute">#[arg(long=<span class="string">&quot;swap-id-columns&quot;</span>)]
+  </span>swap_columns: bool,
+
   <span class="doccomment">/// Rating output file
   </span><span class="attribute">#[arg(short=<span class="string">&#39;o&#39;</span>, long=<span class="string">&quot;rating-output&quot;</span>, name=<span class="string">&quot;FILE&quot;</span>)]
   </span>ratings_out: PathBuf,
@@ -75,7 +86,7 @@
 
 <span class="kw">impl </span>Command <span class="kw">for </span>ScanRatings {
   <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="macro">info!</span>(<span class="string">&quot;scanning Amazon rating CSV&quot;</span>);
+    <span class="macro">info!</span>(<span class="string">&quot;scanning Amazon rating CSV from {}&quot;</span>, <span class="self">self</span>.infile.display());
     <span class="kw">let </span>out = <span class="kw-2">&amp;</span><span class="self">self</span>.ratings_out;
     <span class="macro">info!</span>(<span class="string">&quot;writing to {}&quot;</span>, out.display());
     <span class="kw">let </span><span class="kw-2">mut </span>writer = TableWriter::open(out)<span class="question-mark">?</span>;
@@ -88,7 +99,10 @@
     <span class="kw">let </span>src = src.into_deserialize();
     <span class="kw">let </span><span class="kw-2">mut </span>index: IdIndex&lt;String&gt; = IdIndex::new();
     <span class="kw">for </span>row <span class="kw">in </span>src {
-      <span class="kw">let </span>row: SourceRating = row<span class="question-mark">?</span>;
+      <span class="kw">let </span><span class="kw-2">mut </span>row: SourceRating = row<span class="question-mark">?</span>;
+      <span class="kw">if </span><span class="self">self</span>.swap_columns {
+        std::mem::swap(<span class="kw-2">&amp;mut </span>row.user, <span class="kw-2">&amp;mut </span>row.asin);
+      }
       <span class="kw">let </span>user = index.intern(row.user.as_str())<span class="question-mark">?</span>;
       writer.write_object(RatingRow {
         user,

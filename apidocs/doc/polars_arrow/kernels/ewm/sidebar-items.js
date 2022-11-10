@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["ewm_mean",""],["ewm_std",""],["ewm_var",""]],"struct":[["EWMOptions",""]]};

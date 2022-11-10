@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":[["csv","(De)serializing CSV files"],["export",""],["mmap",""],["parquet","Reading Apache parquet files."],["predicates",""],["prelude",""]],"struct":[["RowCount",""]],"trait":[["ArrowReader",""],["SerReader",""],["SerWriter",""],["WriterFactory",""]]};

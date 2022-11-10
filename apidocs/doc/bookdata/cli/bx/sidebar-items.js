@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":[["cluster","BookCrossing interaction clustering."],["extract","BookCrossing data extraction."]]};

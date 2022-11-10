@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":[["ROW_GROUP_SIZE",""]],"fn":[["nonnull_schema","Get a schema from a data frame with maximal nullability."],["save_df_parquet",""]]};

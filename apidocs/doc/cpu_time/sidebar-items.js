@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["ProcessTime","CPU Time Used by The Whole Process"],["ThreadTime","CPU Time Used by The Current Thread"]]};
