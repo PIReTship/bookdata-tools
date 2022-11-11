@@ -3,6 +3,14 @@
 This page documents the release history of the Book Data Tools. Each numbered,
 released version has a corresponding Git tag (e.g. `v2.0`).
 
+If you use the Book Data Tools in published research, we ask that you do the
+following:
+
+1.  Cite the [UMUAI paper](https://md.ekstrandom.net/pubs/bag-extended),
+    regardless of which version of the data set you use.
+2.  Clearly state the version of the data tools you are using in your paper.
+3.  [Let us know](papers.rst) about your use so we can add you to the list.
+
 ## Book Data 2.1
 
 Version 2.1 has a few updates but does not change existing data schemas when run
