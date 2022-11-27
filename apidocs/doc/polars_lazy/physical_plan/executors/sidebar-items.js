@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"trait":[["Executor","Executors will evaluate physical expressions and collect them in a DataFrame."]]};

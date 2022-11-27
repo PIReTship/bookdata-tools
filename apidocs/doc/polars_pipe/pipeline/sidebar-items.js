@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["can_convert_to_hash_agg",""],["create_pipeline",""]],"struct":[["Pipeline",""]]};

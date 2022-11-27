@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"type":[["CompactString","A convenience alias for a [`Compact`] layout [`SmartString`]."],["String","A convenience alias for a [`LazyCompact`] layout [`SmartString`]."]]};

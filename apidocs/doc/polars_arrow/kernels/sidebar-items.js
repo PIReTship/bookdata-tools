@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":[["concatenate",""],["ewm",""],["float",""],["list",""],["list_bytes_iter",""],["rolling",""],["set",""],["sort_partition",""],["take_agg","kernels that combine take and aggregations."]]};

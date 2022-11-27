@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["MeltArgs","Arguments for `[DataFrame::melt]` function"]]};

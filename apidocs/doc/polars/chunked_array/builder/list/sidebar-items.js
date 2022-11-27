@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["get_list_builder",""]],"struct":[["AnonymousListBuilder",""],["AnonymousOwnedListBuilder",""],["ListBooleanChunkedBuilder",""],["ListPrimitiveChunkedBuilder",""],["ListUtf8ChunkedBuilder",""]],"trait":[["ListBuilderTrait",""]]};
