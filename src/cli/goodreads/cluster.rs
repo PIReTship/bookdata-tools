@@ -18,6 +18,10 @@ pub struct CICommand {
   #[arg(long="add-actions")]
   add_actions: bool,
 
+  /// Cluster reviews actions
+  #[arg(long="reviews")]
+  reviews: bool,
+
   /// Cluster using simple data instead of full data.
   #[arg(long="simple")]
   simple: bool,
@@ -41,6 +45,7 @@ enum SrcType {
 enum ActionType {
   Ratings,
   AddActions,
+  Reviews,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -63,8 +68,10 @@ impl CICommand {
       ClusterOp::add_actions(&self.output)
     } else if self.ratings {
       ClusterOp::ratings(&self.output)
+    } else if self.reviews {
+      ClusterOp::reviews(&self.output)
     } else {
-      error!("must specify one of --add-actions or --raitngs");
+      error!("must specify one of --add-actions, --ratings, or --reviews");
       return Err(anyhow!("no operating mode specified"));
     };
     if self.native_works {
@@ -99,6 +106,16 @@ impl ClusterOp {
     }
   }
 
+  /// Start a new review-clustering operation.
+  pub fn reviews<P: AsRef<Path>>(path: P) -> ClusterOp {
+    ClusterOp {
+      actions: ActionType::Reviews,
+      data: SrcType::Full,
+      clusters: AggType::Clusters,
+      output: path.as_ref().to_path_buf(),
+    }
+  }
+
   /// Set operation to cluster simple records instead of full records.
   pub fn simple(self) -> ClusterOp {
     ClusterOp {
@@ -117,14 +134,26 @@ impl ClusterOp {
 
   /// Run the clustering operation.
   pub fn cluster(self) -> Result<()> {
-    let interactions = self.load_input()?;
-    let interactions = self.filter(interactions);
-    let interactions = self.project_and_sort(interactions);
-    let actions = interactions.clone().groupby(&[
-      col("user"), col("item")
-    ]).agg(self.aggregates());
+    let actions = {
+      match self.actions {
+        ActionType::Reviews => {
+          let reviews = self.load_reviews()?;
+          reviews.select(&[
+            col("review_id"),
+            col("user_id").alias("user"),
+            self.id_col().alias("item"),
+          ])
+        },
+        _ => {
+          let interactions = self.load_interactions()?;
+          let interactions = self.filter(interactions);
+          let interactions = self.project_and_sort(interactions);
+          let actions = self.aggregate(interactions.clone());
 
-    let actions = self.maybe_integrate_ratings(actions, &interactions);
+          self.maybe_integrate_ratings(actions, &interactions)
+        }
+      }
+    };
 
     debug!("logical plan: {:?}", actions.describe_plan());
     debug!("optimized plan: {:?}", actions.describe_optimized_plan()?);
@@ -137,13 +166,31 @@ impl ClusterOp {
     Ok(())
   }
 
-  /// Load the input.
-  fn load_input(&self) -> PolarsResult<LazyFrame> {
+  /// Load the interaction file.
+  fn load_interactions(&self) -> Result<LazyFrame> {
     let dir = match self.data {
       SrcType::Full => "full",
       SrcType::Simple => "simple",
     };
     let path = format!("goodreads/{}/gr-interactions.parquet", dir);
+    let data = LazyFrame::scan_parquet(path, Default::default())?;
+
+    let links = LazyFrame::scan_parquet("goodreads/gr-book-link.parquet", Default::default())?;
+
+    let data = data.join(links, &[col("book_id")], &[col("book_id")], JoinType::Inner);
+    Ok(data)
+  }
+
+  /// Load the review file.
+  fn load_reviews(&self) -> Result<LazyFrame> {
+    let dir = match self.data {
+      SrcType::Full => "full",
+      SrcType::Simple => {
+        error!("only full data has reviews");
+        return Err(anyhow!("invalid combination of options"));
+      }
+    };
+    let path = format!("goodreads/{}/gr-reviews.parquet", dir);
     let data = LazyFrame::scan_parquet(path, Default::default())?;
 
     let links = LazyFrame::scan_parquet("goodreads/gr-book-link.parquet", Default::default())?;
@@ -203,8 +250,15 @@ impl ClusterOp {
     }
   }
 
+  /// Aggregate the data.
+  fn aggregate(&self, frame: LazyFrame) -> LazyFrame {
+    frame.groupby(&[
+      col("user"), col("item")
+    ]).agg(self.aggregate_results())
+  }
+
   /// Aggreate the interactions.
-  fn aggregates(&self) -> Vec<Expr> {
+  fn aggregate_results(&self) -> Vec<Expr> {
     match (&self.actions, &self.data) {
       (ActionType::Ratings, SrcType::Simple) => {
         vec![
@@ -233,6 +287,7 @@ impl ClusterOp {
           col("item").count().alias("nactions"),
         ]
       },
+      (ActionType::Reviews, _) => unreachable!()
     }
   }
 
