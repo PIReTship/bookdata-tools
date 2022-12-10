@@ -91,7 +91,7 @@ impl GRScan {
           scan_gr(&opts.scan.infile, interaction::IntWriter::open()?)?;
         }
       },
-      GRCmd::Scan { data: GRScan::Reviews(opts) } => {
+      GRScan::Reviews(opts) => {
         info!("scanning GoodReads reviews");
         scan_gr(&opts.infile, review::ReviewWriter::open()?)?;
       },

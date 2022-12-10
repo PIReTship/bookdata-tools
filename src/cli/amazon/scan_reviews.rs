@@ -3,21 +3,22 @@ use crate::prelude::*;
 use crate::arrow::*;
 use crate::ids::index::IdIndex;
 use crate::amazon::*;
+use crate::util::logging::data_progress;
 
 /// Scan an Amazon review JSON file into Parquet.
-#[derive(StructOpt, Debug)]
-#[structopt(name="scan-reviews")]
+#[derive(Args, Debug)]
+#[command(name="scan-reviews")]
 pub struct ScanReviews {
   /// Rating output file
-  #[structopt(short="o", long="rating-output", parse(from_os_str))]
+  #[arg(short='o', long="rating-output")]
   ratings_out: PathBuf,
 
   /// Review output file
-  #[structopt(short="r", long="review-output", parse(from_os_str))]
+  #[arg(short='r', long="review-output")]
   reviews_out: Option<PathBuf>,
 
   /// Input file
-  #[structopt(name = "INPUT", parse(from_os_str))]
+  #[arg(name = "INPUT")]
   infile: PathBuf,
 }
 
@@ -36,7 +37,8 @@ impl Command for ScanReviews {
       None
     };
 
-    let src = LineProcessor::open_gzip(&self.infile)?;
+    let pb = data_progress(0);
+    let src = LineProcessor::open_gzip(&self.infile, pb.clone())?;
     // let mut timer = Timer::new();
     let mut users: IdIndex<String> = IdIndex::new();
     let mut lno: usize = 0;
@@ -47,7 +49,7 @@ impl Command for ScanReviews {
         error!("parse error on line {}: {}", lno, e);
         e
       })?;
-      let user = users.intern(row.user.as_str());
+      let user = users.intern(row.user.as_str())?;
       ratings.write_object(RatingRow {
         user,
         asin: row.asin.clone(),

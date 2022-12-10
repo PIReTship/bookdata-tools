@@ -25,7 +25,7 @@ pub struct RawReview {
 }
 
 /// Review records to write to the Parquet table.
-#[derive(ParquetRecordWriter)]
+#[derive(ArrowField)]
 pub struct ReviewRecord {
   pub rec_id: u32,
   pub review_id: i64,
@@ -69,7 +69,7 @@ impl ObjectWriter<RawReview> for ReviewWriter {
     self.n_recs += 1;
     let rec_id = self.n_recs;
     let user_key = hex::decode(row.user_id.as_bytes())?;
-    let user_id = self.users.intern_owned(user_key);
+    let user_id = self.users.intern_owned(user_key)?;
     let book_id: i32 = row.book_id.parse()?;
     let (rev_hi, rev_lo) = decode_hex_i64_pair(&row.review_id)?;
     let review_id = rev_hi ^ rev_lo;
