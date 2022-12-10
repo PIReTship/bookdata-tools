@@ -1,5 +1,6 @@
 //! OpenLibrary author schemas.
 use crate::cleaning::strings::norm_unicode;
+use crate::cleaning::names::clean_name;
 use crate::prelude::*;
 use crate::arrow::*;
 
@@ -7,7 +8,7 @@ use super::source::Row;
 pub use super::source::OLAuthorSource;
 
 /// An author record in the extracted Parquet.
-#[derive(ParquetRecordWriter)]
+#[derive(ArrowField)]
 pub struct AuthorRec {
   pub id: i32,
   pub key: String,
@@ -15,7 +16,7 @@ pub struct AuthorRec {
 }
 
 /// An author-name record in the extracted Parquet.
-#[derive(ParquetRecordWriter)]
+#[derive(ArrowField)]
 pub struct AuthorNameRec {
   pub id: i32,
   pub source: u8,
@@ -28,19 +29,19 @@ pub fn author_name_records(src: &OLAuthorSource, id: i32) -> Vec<AuthorNameRec> 
 
   if let Some(n) = &src.name {
     names.push(AuthorNameRec {
-      id, source: b'n', name: norm_unicode(&n).into_owned()
+      id, source: b'n', name: clean_name(&n)
     });
   }
 
   if let Some(n) = &src.personal_name {
     names.push(AuthorNameRec {
-      id, source: b'p', name: norm_unicode(&n).into_owned()
+      id, source: b'p', name: clean_name(&n)
     });
   }
 
   for n in &src.alternate_names {
     names.push(AuthorNameRec {
-      id, source: b'a', name: norm_unicode(&n).into_owned()
+      id, source: b'a', name: clean_name(&n)
     });
   }
 

@@ -1,3 +1,4 @@
+//! GoodReads interaction record schemas and processing.
 use hashbrown::HashSet;
 use serde::Deserialize;
 
@@ -12,13 +13,13 @@ pub const USER_FILE: &'static str = "gr-users.parquet";
 pub const UID_COL: &'static str = "user";
 pub const UHASH_COL: &'static str = "user_hash";
 
-// the records we read from JSON
+/// Interaction records we read from JSON.
 #[derive(Deserialize)]
 pub struct RawInteraction {
   pub user_id: String,
   pub book_id: String,
   pub review_id: String,
-  #[serde(rename="isRead")]
+  #[serde(alias="isRead")]
   pub is_read: bool,
   pub rating: f32,
   pub date_added: String,
@@ -32,7 +33,7 @@ pub struct RawInteraction {
 /// This struct is written to `gr-interactions.parquet` and records actual interaction data.
 /// Timestamps are UNIX timestamps recorded as 64-bit integers; they do not use a Parquet
 /// timestamp time, due to out-of-range values causing problems when loaded into Python.
-#[derive(ParquetRecordWriter)]
+#[derive(ArrowField)]
 pub struct IntRecord {
   pub rec_id: u32,
   /// The review ID.
@@ -52,7 +53,7 @@ pub struct IntRecord {
   pub read_finished: Option<f32>,
 }
 
-// Object writer to transform and write GoodReads interactions
+/// Object writer to transform and write GoodReads interactions
 pub struct IntWriter {
   writer: TableWriter<IntRecord>,
   users: IdIndex<String>,
@@ -61,7 +62,7 @@ pub struct IntWriter {
 }
 
 impl IntWriter {
-  // Open a new output
+  /// Open a new output
   pub fn open() -> Result<IntWriter> {
     let writer = TableWriter::open(OUT_FILE)?;
     Ok(IntWriter {
@@ -80,11 +81,11 @@ impl DataSink for IntWriter {
 }
 
 impl ObjectWriter<RawInteraction> for IntWriter {
-  // Write a single interaction to the output
+  /// Write a single interaction to the output
   fn write_object(&mut self, row: RawInteraction) -> Result<()> {
     self.n_recs += 1;
     let rec_id = self.n_recs;
-    let user_id = self.users.intern_owned(row.user_id);
+    let user_id = self.users.intern_owned(row.user_id)?;
     let book_id: i32 = row.book_id.parse()?;
     let (rev_hi, rev_lo) = decode_hex_i64_pair(&row.review_id)?;
     let review_id = rev_hi ^ rev_lo;

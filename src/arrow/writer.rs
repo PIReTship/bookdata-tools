@@ -1,147 +1,75 @@
+use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::fs::{OpenOptions};
+use std::fs::{File, OpenOptions};
 use std::mem::{replace};
-use std::sync::Arc;
 use std::marker::PhantomData;
 
-use parquet::record::RecordWriter;
-use parquet::schema::types::{ColumnPath, Type};
-use parquet::basic::{Compression, Encoding};
-use parquet::file::properties::{WriterProperties, WriterPropertiesBuilder};
-use parquet::file::writer::{FileWriter, SerializedFileWriter, ParquetWriter};
-use anyhow::Result;
+use log::*;
+use anyhow::{Result, anyhow};
+use arrow2::io::parquet::write::*;
+use arrow2::array::{MutableArray, TryExtend, StructArray, Array};
+use arrow2::chunk::Chunk;
+use arrow2::datatypes::*;
+use arrow2_convert::serialize::{ArrowSerialize};
 
-use crate::io::object::{ObjectWriter, ThreadWriter};
+use crate::io::object::{ObjectWriter, ThreadObjectWriter};
 use crate::io::{DataSink};
 
 const BATCH_SIZE: usize = 1024 * 1024;
 
+/// Open a Parquet writer using BookData defaults.
+pub fn open_parquet_writer<P: AsRef<Path>>(path: P, schema: Schema) -> Result<FileWriter<File>> {
+  let compression = CompressionOptions::Zstd(None);
+  let options = WriteOptions { write_statistics: true, version: Version::V2, compression };
+
+  info!("creating Parquet file {:?}", path.as_ref());
+  let file = OpenOptions::new().create(true).truncate(true).write(true).open(path)?;
+  let writer = FileWriter::try_new(file, schema, options)?;
+
+  Ok(writer)
+}
+
 /// Parquet table writer.
 ///
-/// A table writer is an [ObjectWriter] for structs implementing [RecordWriter], that writes
+/// A table writer is an [ObjectWriter] for structs implementing [ArrowSerialize], that writes
 /// them out to a Parquet file.
-pub struct TableWriter<R: Send + Sync + 'static> {
+pub struct TableWriter<R: ArrowSerialize + Send + Sync + 'static> {
   _phantom: PhantomData<R>,
-  writer: ThreadWriter<Vec<R>>,
+  writer: ThreadObjectWriter<Vec<R>>,
   out_path: Option<PathBuf>,
   batch: Vec<R>,
   batch_size: usize,
   row_count: usize
 }
 
-/// Builder for Parquet table writers.
-pub struct TableWriterBuilder<R> {
-  _phantom: PhantomData<R>,
-  schema: Arc<Type>,
-  props: WriterPropertiesBuilder,
-  bsize: usize,
-}
-
-impl <W, R> ObjectWriter<Vec<R>> for SerializedFileWriter<W> where R: Send + Sync + 'static, for<'a> &'a [R]: RecordWriter<R>, W: ParquetWriter + 'static {
-  fn write_object(&mut self, object: Vec<R>) -> Result<()> {
-    let oref: &[R] = &object;
-    let mut rg = self.next_row_group()?;
-    oref.write_to_row_group(&mut rg)?;
-    self.close_row_group(rg)?;
-    Ok(())
-  }
-
-  fn finish(mut self) -> Result<usize> {
-    self.close()?;
-    Ok(0)
-  }
-}
-
-impl <R> TableWriterBuilder<R> where R: Send + Sync + 'static, for<'a> &'a [R]: RecordWriter<R> {
-  pub fn new() -> Result<TableWriterBuilder<R>> {
-    let v: Vec<R> = Vec::new();
-    let vr: &[R] = &v;
-    let schema = vr.schema()?;
-    let props = WriterProperties::builder();
-    let props = props.set_dictionary_enabled(false);
-    let props = props.set_compression(Compression::ZSTD);
-    Ok(TableWriterBuilder {
-      _phantom: PhantomData,
-      schema, props,
-      bsize: BATCH_SIZE,
-    })
-  }
-
-  pub fn rename(mut self, orig: &str, tgt: &str) -> TableWriterBuilder<R> {
-    let fields = self.schema.get_fields();
-    let mut nf = Vec::new();
-
-    for field in fields {
-      if field.name() == orig {
-        if let Type::PrimitiveType {
-          basic_info, physical_type,
-          type_length, scale, precision,
-        } = field.as_ref() {
-          let t = Type::primitive_type_builder(tgt, physical_type.clone())
-            .with_repetition(basic_info.repetition())
-            .with_converted_type(basic_info.converted_type())
-            .with_logical_type(basic_info.logical_type())
-            .with_length(*type_length)
-            .with_scale(*scale)
-            .with_precision(*precision)
-            .build().expect("type reconstruction failure");
-          nf.push(Arc::new(t));
-        } else {
-          panic!("column type is not primitive");
-        }
-      } else {
-        nf.push(field.clone());
-      }
-    }
-
-    let g = Type::group_type_builder(self.schema.name())
-      .with_fields(&mut nf)
-      .build().expect("type reconstruction failure");
-
-    self.schema = Arc::new(g);
-    self
-  }
-
-  /// Set the batch size for a table writer builder.
-  #[allow(dead_code)]
-  pub fn batch_size(mut self, size: usize) -> TableWriterBuilder<R> {
-    self.bsize = size;
-    self
-  }
-
-  /// Set the encoding for a particular column.
-  #[allow(dead_code)]
-  pub fn column_encoding<C: Into<ColumnPath>>(mut self, col: C, enc: Encoding) -> TableWriterBuilder<R> {
-    self.props = self.props.set_column_encoding(col.into(), enc);
-    self
-  }
-
-  /// Open the configured table writer.
-  pub fn open<P: AsRef<Path>>(self, path: P) -> Result<TableWriter<R>> {
+impl <R> TableWriter<R> where R: ArrowSerialize + Send + Sync + 'static, R::MutableArrayType: TryExtend<Option<R>> {
+  /// Open a table writer for a path.
+  pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
     let path = path.as_ref();
-    let file = OpenOptions::new().create(true).truncate(true).write(true).open(path)?;
-    let props = self.props.build();
-    let props = Arc::new(props);
-    let schema = self.schema.clone();
-    let writer = SerializedFileWriter::new(file, schema, props)?;
-    let writer = ThreadWriter::new(writer);
+
+    // extract struct schema
+    let schema = match R::data_type() {
+      DataType::Struct(fields) => {
+        Schema {
+          fields, metadata: Default::default()
+        }
+      },
+      d => panic!("invalid data type {:?}", d)
+    };
+
+    let writer = open_parquet_writer(path, schema)?;
+    let writer = ThreadObjectWriter::new(writer);
+    let writer = writer.with_transform(vec_to_chunk);
+    let writer = ThreadObjectWriter::new(writer);
     let out_path = Some(path.to_path_buf());
     Ok(TableWriter {
       _phantom: PhantomData,
       writer,
       out_path,
-      batch: Vec::with_capacity(self.bsize),
-      batch_size: self.bsize,
+      batch: Vec::with_capacity(BATCH_SIZE),
+      batch_size: BATCH_SIZE,
       row_count: 0,
     })
-  }
-}
-
-impl <R> TableWriter<R> where R: Send + Sync + 'static, for<'a> &'a [R]: RecordWriter<R> {
-  /// Open a table writer for a path.
-  pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
-    let bld = TableWriterBuilder::new()?;
-    bld.open(path)
   }
 
   fn write_batch(&mut self) -> Result<()> {
@@ -156,7 +84,7 @@ impl <R> TableWriter<R> where R: Send + Sync + 'static, for<'a> &'a [R]: RecordW
   }
 }
 
-impl <R> DataSink for TableWriter<R> where R: Send + Sync + 'static {
+impl <R> DataSink for TableWriter<R> where R: ArrowSerialize + Send + Sync + 'static {
   fn output_files(&self) -> Vec<PathBuf> {
     match &self.out_path {
       None => Vec::new(),
@@ -165,7 +93,7 @@ impl <R> DataSink for TableWriter<R> where R: Send + Sync + 'static {
   }
 }
 
-impl <R> ObjectWriter<R> for TableWriter<R> where R: Send + Sync + 'static,  for<'a> &'a [R]: RecordWriter<R> {
+impl <R> ObjectWriter<R> for TableWriter<R> where R: ArrowSerialize + Send + Sync + 'static, R::MutableArrayType: TryExtend<Option<R>> {
   fn write_object(&mut self, row: R) -> Result<()> {
     self.batch.push(row);
     if self.batch.len() >= self.batch_size {
@@ -198,3 +126,42 @@ impl <R> ObjectWriter<R> for TableWriter<R> where R: Send + Sync + 'static,  for
 //     }
 //   }
 // }
+
+/// Convert a vector of records to a chunk.
+pub fn vec_to_chunk<R>(vec: Vec<R>) -> Result<Chunk<Box<dyn Array>>>
+where R: ArrowSerialize, R::MutableArrayType: TryExtend<Option<R>>
+{
+  let mut array = R::new_array();
+  array.reserve(vec.len());
+  array.try_extend(vec.into_iter().map(Some))?;
+
+  // get the struct array to chunkify
+  let array = array.as_box();
+  let sa = array.as_any().downcast_ref::<StructArray>();
+  let sa = sa.ok_or_else(|| anyhow!("invalid array type (not a structure)"))?;
+  let (_fields, cols, validity) = sa.to_owned().into_data();
+  if validity.is_some() {
+    return Err(anyhow!("structure arrays with validity not supported"))
+  }
+  let chunk = Chunk::new(cols);
+  Ok(chunk)
+}
+
+impl <W> ObjectWriter<Chunk<Box<dyn Array + 'static>>> for FileWriter<W> where W: Write {
+  fn write_object(&mut self, chunk: Chunk<Box<dyn Array + 'static>>) -> Result<()> {
+    let schema = self.schema();
+    let encodings: Vec<_> = schema.fields.iter().map(|f| transverse(&f.data_type, |_| Encoding::Plain)).collect();
+    let options = self.options();
+    let chunks = vec![Ok(chunk)];
+    let groups = RowGroupIterator::try_new(chunks.into_iter(), &schema, options, encodings)?;
+    for group in groups {
+      self.write(group?)?;
+    }
+    Ok(())
+  }
+
+  fn finish(mut self) -> Result<usize> {
+    self.end(None)?;
+    Ok(0)
+  }
+}

@@ -2,6 +2,11 @@ name: Build Docs
 on:
   push:
     branches: [master]
+
+defaults:
+  run:
+    shell: bash -l {0}
+
 jobs:
   doc-site:
     name: Build and deploy docs
@@ -11,16 +16,15 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v2
 
-      - name: Install Python 🐍
-        uses: actions/setup-python@v2
+      - name: Cache conda
+        uses: actions/cache@v2
+        env:
+          # Increase this value to reset cache if etc/example-environment.yml has not changed
+          CACHE_NUMBER: 0
         with:
-          python-version: 3.8
-
-      - name: Install Rust 🤖
-        uses: actions-rs/toolchain@v1
-        with:
-            toolchain: stable
-            override: true
+          path: ~/conda_pkgs_dir
+          key:
+            conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('conda-linux-64.lock') }}
 
       - name: Cache Rust dependency builds
         uses: actions/cache@v2
@@ -30,9 +34,12 @@ jobs:
             !target/site
           key: ${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
 
-      - name: Install Python dependencies 📦
-        run: |
-          pip install -r doc-requirements.txt
+      - name: Initialize Conda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: bookdata
+          environment-file: conda-linux-64.lock
+          use-only-tar-bz2: true
 
       - name: Build site 🕸
         run: |
@@ -40,7 +47,7 @@ jobs:
 
       - name: Build Rust API docs 📚
         run: |
-          cargo doc --no-deps
+          cargo doc
           mv target/doc target/site/apidocs
 
       - name: Deploy 🚀

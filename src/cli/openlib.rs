@@ -5,17 +5,18 @@ use serde::de::DeserializeOwned;
 use crate::prelude::*;
 use crate::io::LineProcessor;
 use crate::openlib::*;
+use crate::util::logging::data_progress;
 
 use super::Command;
 
-#[derive(StructOpt, Debug)]
+#[derive(Args, Debug)]
 struct Input {
   /// Input file
-  #[structopt(name = "INPUT", parse(from_os_str))]
+  #[arg(name = "INPUT")]
   infile: PathBuf
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(clap::Subcommand, Debug)]
 enum DataType {
   /// Parse OpenLibrary works.
   ///
@@ -32,10 +33,10 @@ enum DataType {
 }
 
 /// Scan OpenLibrary data.
-#[derive(StructOpt, Debug)]
-#[structopt(name="openlib")]
+#[derive(Args, Debug)]
+#[command(name="openlib")]
 pub struct OpenLib {
-  #[structopt(subcommand)]
+  #[command(subcommand)]
   mode: DataType,
 }
 
@@ -46,7 +47,8 @@ where Proc: ObjectWriter<Row<R>>, R: DeserializeOwned
   let mut proc = proc;
   let mut nlines = 0;
   info!("opening file {}", path.to_string_lossy());
-  let input = LineProcessor::open_gzip(path)?;
+  let pb = data_progress(0);
+  let input = LineProcessor::open_gzip(path, pb.clone())?;
 
   for line in input.records() {
     nlines += 1;

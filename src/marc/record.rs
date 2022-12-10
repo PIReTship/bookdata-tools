@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 use thiserror::Error;
 
-use crate::arrow::types::ArrowTypeWrapper;
+// use crate::arrow::types::ArrowTypeWrapper;
 
 /// An indicator or subfield code.
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, Default, PartialEq, Eq, Hash)]
@@ -225,23 +225,3 @@ impl fmt::Display for Code {
     }
   }
 }
-
-impl ArrowTypeWrapper for Code {
-  type Wrapped = u8;
-}
-
-// impl ArrowTypeInfo for Code {
-//   type Array = UInt8Array;
-//   type ArrayBuilder = UInt8Builder;
-
-//   fn pq_type() -> DataType {
-//     DataType::UInt8
-//   }
-
-//   fn append_to_builder(&self, ab: &mut Self::ArrayBuilder) -> ArrowResult<()> {
-//     ab.append_value(self.value)
-//   }
-//   fn append_opt_to_builder(opt: Option<Self>, ab: &mut Self::ArrayBuilder) -> ArrowResult<()> {
-//     ab.append_option(opt.map(|c| c.value))
-//   }
-// }

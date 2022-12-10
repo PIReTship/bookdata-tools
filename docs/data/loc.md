@@ -13,6 +13,14 @@ We download and import the XML versions of these files.
 
 Imported data lives under the `loc-mds` directory.
 
+```{mermaid}
+erDiagram
+    book-ids |o--|{ book-fields : contains
+    book-ids ||--o{ book-isbns : ""
+    book-ids ||--o{ book-isbn-ids : ""
+    book-ids ||--o{ book-authors : ""
+```
+
 ## Import Steps
 
 The import is controlled by the following DVC steps:
@@ -25,9 +33,6 @@ The import is controlled by the following DVC steps:
 
 `book-authors`
 :   Extract (and clean up) author names for LOC books.
-
-`loc-clusters`
-:   Resolve LOC books into [book clusters](clusters), producing {file}`loc-mds/loc-clusters.parquet`.
 
 (marc-format)=
 ## Raw MARC data
@@ -70,6 +75,7 @@ The `book-fields` table contains the raw data imported from the MARC files, as ]
 
 This table includes code information for each book record.
 
+- Record ID
 - MARC Control Number
 - Library of Congress Control Number (LCCN)
 - Record status

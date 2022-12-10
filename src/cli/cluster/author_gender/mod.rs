@@ -2,16 +2,10 @@
 //!
 //! This script reads the cluster author information and author gender
 //! information, in order to aggregate author genders for each cluster.
-//! We do this in Rust code, because DataFusion's aggregate support is
-//! not performant for very high-cardinality aggregations.  Therefore
-//! we use DataFusion to load and join the data, but perform the final
-//! summarization directly in Rust.
 //!
 //! We use a lot of left joins so that we can compute statistics across
 //! the integration pipeline.
 use std::path::{Path, PathBuf};
-
-use structopt::StructOpt;
 
 use serde::{Serialize, Deserialize};
 
@@ -29,21 +23,21 @@ mod clusters;
 //   VIAF,
 // }
 
-#[derive(StructOpt, Debug)]
-#[structopt(name="extract-author-genders")]
+#[derive(Args, Debug)]
+#[command(name="extract-author-genders")]
 /// Extract cluster author gender data from extracted book data.
 pub struct AuthorGender {
   /// Specify output file
-  #[structopt(short="o", long="output")]
+  #[arg(short='o', long="output")]
   output: PathBuf,
 
   /// Specify the cluster-author file.
-  #[structopt(short="A", long="cluster-authors")]
+  #[arg(short='A', long="cluster-authors")]
   author_file: PathBuf,
 }
 
 /// Record format for saving gender information.
-#[derive(Serialize, Deserialize, Clone, ParquetRecordWriter)]
+#[derive(Serialize, Deserialize, Clone, ArrowField)]
 struct ClusterGenderInfo {
   cluster: i32,
   gender: String,

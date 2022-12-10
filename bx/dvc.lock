@@ -1,18 +1,19 @@
 schema: '2.0'
 stages:
   clean-ratings:
-    cmd: python ../run.py bx-extract.py ../data/BX-CSV-Dump.zip cleaned-ratings.csv
+    cmd: python ../run.py --rust bx extract ../data/BX-CSV-Dump.zip cleaned-ratings.csv
     deps:
     - path: ../data/BX-CSV-Dump.zip
       md5: 37d647ee9e18ba134ea6d78ee4fe5292
       size: 26085508
-    - path: bx-extract.py
-      md5: d90021e31eb39ee3b3470715043d270b
-      size: 1297
+    - path: ../src/cli/bx
+      md5: 6c01a7909a63f378bed9d755dc966e0f.dir
+      size: 4273
+      nfiles: 3
     outs:
     - path: cleaned-ratings.csv
-      md5: da3196d4af84ae39b3713e73c59677c7
-      size: 22627884
+      md5: e2c423d665fb5271def51d358c8c285c
+      size: 22627335
   bx-cluster-ratings:
     cmd: python ../run.py --rust fusion bx-cluster-ratings.tcl
     deps:
@@ -52,36 +53,56 @@ stages:
       md5: b85f1f166708fd9bc68813a09ecad094
       size: 6246167
   cluster-ratings:
-    cmd: python run.py --rust cluster group-actions -s bx-ratings -o bx/bx-cluster-ratings.parquet
+    cmd: python ../run.py --rust bx cluster-actions --ratings -o bx-cluster-ratings.parquet
     deps:
-    - path: book-links/isbn-clusters.parquet
-      md5: 1d2d8e49ac9a9f5b763975016f47e0f2
-      size: 238382574
-    - path: bx/cleaned-ratings.csv
-      md5: da3196d4af84ae39b3713e73c59677c7
-      size: 22627884
-    - path: src/cli/cluster
-      md5: a1d600e4111815f34cd366be955d3f8f.dir
-      size: 24990
-      nfiles: 11
+    - path: ../book-links/isbn-clusters.parquet
+      md5: 84678be8379c1be519abd75616e88597
+      size: 335303234
+    - path: ../src/cli/bx
+      md5: 6c01a7909a63f378bed9d755dc966e0f.dir
+      size: 4273
+      nfiles: 3
+    - path: cleaned-ratings.csv
+      md5: e2c423d665fb5271def51d358c8c285c
+      size: 22627335
     outs:
-    - path: bx/bx-cluster-ratings.parquet
-      md5: f9b464b7e62afcdf3af9f9fb1b55173e
-      size: 3047791
+    - path: bx-cluster-ratings.parquet
+      md5: 89ee54a698bfa0bf59a88ed977163b44
+      size: 2988764
   cluster-actions:
-    cmd: python run.py --rust cluster group-actions -s bx-actions -o bx/bx-cluster-actions.parquet
+    cmd: python ../run.py --rust bx cluster-actions --add-actions -o bx-cluster-actions.parquet
     deps:
-    - path: book-links/isbn-clusters.parquet
-      md5: 1d2d8e49ac9a9f5b763975016f47e0f2
-      size: 238382574
-    - path: bx/cleaned-ratings.csv
-      md5: da3196d4af84ae39b3713e73c59677c7
-      size: 22627884
-    - path: src/cli/cluster
-      md5: a1d600e4111815f34cd366be955d3f8f.dir
-      size: 24990
-      nfiles: 11
+    - path: ../book-links/isbn-clusters.parquet
+      md5: 84678be8379c1be519abd75616e88597
+      size: 335303234
+    - path: ../src/cli/bx
+      md5: 6c01a7909a63f378bed9d755dc966e0f.dir
+      size: 4273
+      nfiles: 3
+    - path: cleaned-ratings.csv
+      md5: e2c423d665fb5271def51d358c8c285c
+      size: 22627335
     outs:
-    - path: bx/bx-cluster-actions.parquet
-      md5: bdc4231abff9f451a1bd31d013379245
-      size: 7260656
+    - path: bx-cluster-actions.parquet
+      md5: 78e5ade75d89e4ff8276c92094b9fc98
+      size: 7074067
+  schema@bx-cluster-actions:
+    cmd: python ../run.py --rust pq-info -o bx-cluster-actions.json bx-cluster-actions.parquet
+    deps:
+    - path: bx-cluster-actions.parquet
+      md5: 78e5ade75d89e4ff8276c92094b9fc98
+      size: 7074067
+    outs:
+    - path: bx-cluster-actions.json
+      md5: 53e3f94a0b68bc371b7022c37f435cc2
+      size: 331
+  schema@bx-cluster-ratings:
+    cmd: python ../run.py --rust pq-info -o bx-cluster-ratings.json bx-cluster-ratings.parquet
+    deps:
+    - path: bx-cluster-ratings.parquet
+      md5: 89ee54a698bfa0bf59a88ed977163b44
+      size: 2988764
+    outs:
+    - path: bx-cluster-ratings.json
+      md5: 3a3cf1d6d0ecc5cb7c614ee324c385d7
+      size: 420

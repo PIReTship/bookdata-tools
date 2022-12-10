@@ -30,7 +30,7 @@ import numpy as np
 # %% [markdown]
 # ## Load Link Stats
 #
-# We compute dataset linking statitsics as `gender-stats.csv` using DataFusion.  Let's load those:
+# We compute dataset linking statistics as `gender-stats.csv` as part of the integration.  Let's load those:
 
 # %% tags=[]
 link_stats = pd.read_csv('book-links/gender-stats.csv')

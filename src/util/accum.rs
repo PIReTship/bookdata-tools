@@ -1,99 +1,89 @@
-use std::string::FromUtf8Error;
-
 /// Activatable data acumulator.
-pub struct DataAccumulator<T> {
-  acc: Option<Vec<T>>
+pub struct StringAccumulator {
+  acc: Option<String>
 }
 
-impl <T: Clone> DataAccumulator<T> {
+impl StringAccumulator {
   /// Create a new data accumulator.
-  pub fn new() -> DataAccumulator<T> {
-    DataAccumulator {
+  pub fn new() -> StringAccumulator {
+    StringAccumulator {
       acc: None
     }
   }
 
   /// Start accumulating data
   pub fn activate(&mut self) {
-    self.acc = Some(Vec::new());
-  }
-
-  /// Finish the accumulator and return a vector
-  pub fn finish(&mut self) -> Vec<T> {
-    if let Some(vec) = self.acc.take() {
-      vec
-    } else {
-      Vec::new()
-    }
+    self.acc = Some(String::with_capacity(1024));
   }
 
   /// Add a slice of data to the accumulator.
-  pub fn add_slice(&mut self, other: &[T]) {
-    if let Some(vec) = self.acc.as_mut() {
-      vec.extend_from_slice(other);
+  pub fn add_slice<S: AsRef<str>>(&mut self, other: S) {
+    if let Some(string) = self.acc.as_mut() {
+      string.push_str(other.as_ref());
     }
   }
-}
 
-impl DataAccumulator<u8> {
-  pub fn finish_string(&mut self) -> Result<String, FromUtf8Error> {
-    let vec = self.finish();
-    String::from_utf8(vec)
+  pub fn finish(&mut self) -> String {
+    if let Some(string) = self.acc.take() {
+      string
+    } else {
+      String::new()
+    }
   }
 }
 
 #[test]
 fn test_empty() {
-  let mut acc = DataAccumulator::new();
-  let res: Vec<u8> = acc.finish();
+  let mut acc = StringAccumulator::new();
+  let res = acc.finish();
   assert!(res.is_empty());
 }
 
 #[test]
 fn test_add_inactive() {
-  let mut acc = DataAccumulator::new();
-  acc.add_slice("foo".as_bytes());
-  let res: Vec<u8> = acc.finish();
+  let mut acc = StringAccumulator::new();
+  acc.add_slice("foo");
+  let res = acc.finish();
   assert!(res.is_empty());
 }
 
 #[test]
 fn test_accum() {
-  let mut acc = DataAccumulator::new();
+  let mut acc = StringAccumulator::new();
   acc.activate();
-  acc.add_slice("lorem".as_bytes());
-  acc.add_slice(" ipsum".as_bytes());
-  let res: Vec<u8> = acc.finish();
-  assert_eq!(String::from_utf8(res).expect("invalid utf8"), "lorem ipsum".to_owned());
+  acc.add_slice("lorem");
+  acc.add_slice(" ipsum");
+  let res = acc.finish();
+  assert_eq!(res, "lorem ipsum".to_owned());
 }
 
 #[test]
 fn test_accum_finish() {
-  let mut acc = DataAccumulator::new();
+  let mut acc = StringAccumulator::new();
   acc.activate();
-  acc.add_slice("lorem".as_bytes());
-  acc.add_slice(" ipsum".as_bytes());
-  let res: Vec<u8> = acc.finish();
-  assert_eq!(String::from_utf8(res).expect("invalid utf8"), "lorem ipsum".to_owned());
+  acc.add_slice("lorem");
+  acc.add_slice(" ipsum");
+  let res = acc.finish();
+  assert_eq!(res, "lorem ipsum".to_owned());
 
-  acc.add_slice("bob".as_bytes());
-  let res: Vec<u8> = acc.finish();
+  acc.add_slice("bob");
+  let res = acc.finish();
   assert!(res.is_empty())
 }
 
 #[test]
 fn test_accum_twice() {
-  let mut acc = DataAccumulator::new();
+  let mut acc = StringAccumulator::new();
   acc.activate();
-  acc.add_slice("lorem".as_bytes());
-  acc.add_slice(" ipsum".as_bytes());
-  let res: Vec<u8> = acc.finish();
-  assert_eq!(String::from_utf8(res).expect("invalid utf8"), "lorem ipsum".to_owned());
+  acc.add_slice("lorem");
+  acc.add_slice(" ipsum");
+  let res = acc.finish();
+  assert_eq!(res, "lorem ipsum".to_owned());
 
-  acc.add_slice("bob".as_bytes());
+  acc.add_slice("bob");
 
   acc.activate();
-  acc.add_slice("fishbone".as_bytes());
-  let res: Vec<u8> = acc.finish();
-  assert_eq!(String::from_utf8(res).expect("invalid utf8"), "fishbone".to_owned());
+  acc.add_slice("fishbone");
+  let res = acc.finish();
+  assert_eq!(res, "fishbone".to_owned());
 }

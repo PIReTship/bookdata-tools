@@ -6,74 +6,65 @@ nav_order: 6
 
 # Amazon Ratings
 
-The [Amazon reviews data set](http://jmcauley.ucsd.edu/data/amazon/) consists of user-provided
-reviews and ratings for a variety of products.
+This processes two data sets from Julian Mcauley's group at UCSAD:
 
-Currently we import the ratings-only data from the Books segment of the 2014 data set.
+- The [2014 Amazon reviews data set](http://jmcauley.ucsd.edu/data/amazon/)
+- The [2018 Amazon reviews data set](https://nijianmo.github.io/amazon/index.html)
 
-**If you use this data, cite the paper(s) documented on the data set web site.**
+Each consists of user-provided reviews and ratings for a variety of products.
 
-Imported data lives in the `az` schema.  The source files are not automatically downloaded.
+Currently we import the ratings-only data from the Books segment of the 2014 and 2018 data sets.  Future versions of the data tools will support reviews.
 
-## Data Model Diagram
+**If you use this data, cite the paper(s) documented on the data set web site.**  For 2014 data:
 
-![Amazon data model](az.svg)
+> R. He and J. McAuley. 2016. Ups and downs: Modeling the visual evolution of fashion trends with one-class collaborative filtering. In <cite>Proc. WWW 2016</cite>. DOI:[10.1145/2872427.2883037](https://dx.doi.org/10.1145/2872427.2883037).
 
-- [SVG file](az.svg)
-- [PlantUML source](az.puml)
+> J. McAuley, C. Targett, J. Shi, and A. van den Hengel. Image-based recommendations on styles and substitutes. In <cite>Proc. SIGIR 2016</cite>. DOI:[10.1145/2766462.2767755](http://dx.doi.org/10.1145/2766462.2767755).
+
+For 2018 data:
+
+> J. Ni, J. Li, and J. McAuley. Justifying recommendations using distantly-labeled reviews and fined-grained aspects. In <cite>Empirical Methods in Natural Language Processing (EMNLP), 2019</cite>.
+
+:::{index} pair: directory; az2014
+:::
+:::{index} pair: directory; az2018
+:::
+
+Imported data lives in the `az2014` and `az2018` directories.  The source files
+are not automatically downloaded — you will need to download the
+**ratings-only** data for the Books category from each data site and save them
+in the `data/az2014` and `data/az2018` directories.
 
 ## Import Steps
 
 The import is controlled by the following DVC steps:
 
-`schemas/az-schema.dvc`
-:   Run `az-schema.sql` to set up the base schema.
+`scan-ratings`
+:   Scan the rating CSV file into a Parquet file, converting user strings into numeric IDs.  Produces {file}`az2014/ratings.parquet`.
 
-`import/az-ratings.dvc`
-:   Import raw BookCrossing ratings from `data/ratings_Books.csv`.
-
-`index/az-index.dvc`
-:   Run `az-index.sql` to index the rating data and integrate with book data.
+`cluster-ratings`
+:   Link ratings with book clusters and aggregate by cluster, to produce user ratings for book clsuters.  Produces {file}`az2014/az-cluster-ratings.parquet`.
 
 ## Raw Data
 
-The raw rating data, with invalid characters cleaned up, is in the `az.raw_ratings` table, with
-the following columns:
+:::{file} az2014/ratings.parquet
 
-user_key
-:   The alphanumeric user identifier.
+The raw rating data, with user strings converted to numeric IDs, is in this file.
+:::
 
-asin
-:   The Amazon identification number for the product; for a book with an ISBN, this is the ISBN.
+:::{file} az2018/ratings.parquet
 
-rating
-:   The book rating.  The ratings are on a 1-5 scale.
-
-rating_time
-:   The rating timestamp.
+The raw rating data, with user strings converted to numeric IDs, is in this file.
+:::
 
 ## Extracted Rating Tables
 
-We extract the following tables for Amazon ratings:
+:::{file} az2014/az-cluster-ratings.parquet
 
-`user_ids`
-:   Mapping from Amazon's alphanumeric user identifiers to numeric user IDs.
+This file contains the integrated Amazon ratings, with cluster IDs in the `item` column.
+:::
 
-`rating`
-:   Rating values suitable for LensKit use, with numeric user and item identifiers. The ratings are
-    pre-clustered, so the book IDs refer to book clusters and not individual ISBNs or editions.
-    This table has the following columns:
+:::{file} az2018/az-cluster-ratings.parquet
 
-    `user_id`
-    :   The user ID.
-
-    `book_id`
-    :   The [book code](ids.html#book-codes) for this book; the cluster identifier if available, or the
-        ISBN-based book code if this book is not in a cluster.
-
-    `rating`
-    :   The rating value; if the user has rated multiple books in a cluster, the median value is reported.
-
-    `nactions`
-    :   The number of book actions this user performed on this book.  Equivalent to the number of books in
-        the cluster that the user has rated.
+This file contains the integrated Amazon ratings, with cluster IDs in the `item` column.
+:::

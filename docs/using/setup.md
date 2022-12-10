@@ -18,13 +18,15 @@ You will need:
 ## Import Tool Dependencies
 
 The import tools are written in Python and Rust.  The provided Conda lockfiles,
-along with `pyproject.toml, provide the data to define an Anaconda environment
+along with `environment.yml`, provide the data to define an Anaconda environment
 that contains all required runtimes and libraries:
 
-    conda create -n bookdata --file conda-linux-64.lock
+    conda-lock install -n bookdata
     conda activate bookdata
 
-If you don't want to use Anaconda, see the following for more details on dependencies.
+If you don't want to use Anaconda, see the following for more details on dependencies.  If you don't yet have `conda-lock` installed in your base environment, run:
+
+    conda install -c conda-forge -n base conda-lock=1
 
 ### Python
 
@@ -38,7 +40,7 @@ This needs the following Python dependencies:
 - jupytext
 - dvc (2.0 or later)
 
-The Python dependencies are defined in `pyproject.toml`.
+The Python dependencies are defined in `environment.yml`.
 
 ### Rust
 

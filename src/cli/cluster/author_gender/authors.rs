@@ -1,11 +1,10 @@
 //! Support for loading author info.
 use std::collections::{HashMap, HashSet};
 
-use serde::{Deserialize};
-
 use crate::prelude::*;
 use crate::gender::*;
-use crate::arrow::row_de::scan_parquet_file;
+use crate::arrow::scan_parquet_file;
+use crate::util::logging::item_progress;
 
 #[derive(Debug, Default)]
 pub struct AuthorInfo {
@@ -15,13 +14,13 @@ pub struct AuthorInfo {
 
 pub type AuthorTable = HashMap<String,AuthorInfo>;
 
-#[derive(Deserialize, Debug)]
+#[derive(ArrowField, Debug)]
 struct NameRow {
   rec_id: u32,
   name: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ArrowField, Debug)]
 struct GenderRow {
   rec_id: u32,
   gender: String
@@ -34,14 +33,12 @@ fn viaf_load_names() -> Result<HashMap<u32, Vec<String>>> {
   info!("loading VIAF author names");
   let iter = scan_parquet_file("viaf/author-name-index.parquet")?;
 
-  let mut timer = Timer::builder();
-  timer.label("reading author names");
-  timer.interval(5.0);
-  let mut iter = timer.fallible_iter_progress(iter);
-  let timer = timer.build();
+  let pb = item_progress(iter.remaining() as u64, "authors");
+  let iter = pb.wrap_iter(iter);
+  let timer = Timer::new();
 
-  while let Some(row) = iter.next()? {
-    let row: NameRow = row;
+  for row in iter {
+    let row: NameRow = row?;
     map.entry(row.rec_id).or_default().push(row.name);
   }
 
@@ -53,13 +50,16 @@ fn viaf_load_names() -> Result<HashMap<u32, Vec<String>>> {
 /// Load VIAF author genders
 fn viaf_load_genders() -> Result<HashMap<u32, HashSet<Gender>>> {
   let mut map: HashMap<u32, HashSet<Gender>> = HashMap::new();
-  let timer = Timer::builder().label("reading author genders").interval(5.0).build();
+  let timer = Timer::new();
 
   info!("loading VIAF author genders");
   let iter = scan_parquet_file("viaf/author-genders.parquet")?;
-  let mut iter = timer.copy_builder().fallible_iter_progress(iter);
-  while let Some(row) = iter.next()? {
-    let row: GenderRow = row;
+
+  let pb = item_progress(iter.remaining(), "authors");
+  let iter = pb.wrap_iter(iter);
+
+  for row in iter {
+    let row: GenderRow = row?;
     let gender: Gender = row.gender.into();
     map.entry(row.rec_id).or_default().insert(gender);
   }
@@ -78,8 +78,9 @@ pub fn viaf_author_table() -> Result<AuthorTable> {
   let empty = HashSet::new();
 
   info!("merging gender records");
+  let pb = item_progress(rec_names.len() as u64, "clusters");
   let timer = Timer::new();
-  for (rec_id, names) in rec_names {
+  for (rec_id, names) in pb.wrap_iter(rec_names.into_iter()) {
     let genders = rec_genders.get(&rec_id).unwrap_or(&empty);
     for name in names {
       let mut rec = table.entry(name).or_default();

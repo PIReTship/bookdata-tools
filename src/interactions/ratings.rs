@@ -3,16 +3,18 @@ use std::marker::PhantomData;
 use std::path::Path;
 use std::mem::take;
 
+use arrow2::array::TryExtend;
 use log::*;
 use anyhow::{Result, anyhow};
 
 use crate::io::{ObjectWriter, file_size};
 use crate::util::Timer;
 use crate::arrow::*;
+use crate::util::logging::item_progress;
 use super::{Interaction, Dedup, Key};
 
 /// Record for a single output rating.
-#[derive(ParquetRecordWriter, Debug)]
+#[derive(ArrowField, Debug)]
 pub struct TimestampRatingRecord {
   pub user: i32,
   pub item: i32,
@@ -24,7 +26,7 @@ pub struct TimestampRatingRecord {
 }
 
 /// Record for a single output rating without time.
-#[derive(ParquetRecordWriter, Debug)]
+#[derive(ArrowField, Debug)]
 pub struct TimelessRatingRecord {
   pub user: i32,
   pub item: i32,
@@ -107,12 +109,12 @@ impl FromRatingSet for TimelessRatingRecord {
 }
 
 /// Rating deduplicator.
-pub struct RatingDedup<R> where R: FromRatingSet, for<'a> &'a [R]: RecordWriter<R> {
+pub struct RatingDedup<R> where R: FromRatingSet {
   _phantom: PhantomData<R>,
   table: HashMap<Key, Vec<(f32, i64)>>
 }
 
-impl <I: Interaction, R> Dedup<I> for RatingDedup<R> where R: FromRatingSet + Send + Sync + 'static, for<'a> &'a [R]: RecordWriter<R> {
+impl <I: Interaction, R> Dedup<I> for RatingDedup<R> where R: FromRatingSet + ArrowSerialize + Send + Sync + 'static, R::MutableArrayType: TryExtend<Option<R>> {
   fn add_interaction(&mut self, act: I) -> Result<()> {
     let rating = act.get_rating().ok_or_else(|| {
       anyhow!("rating deduplicator requires ratings")
@@ -126,7 +128,7 @@ impl <I: Interaction, R> Dedup<I> for RatingDedup<R> where R: FromRatingSet + Se
   }
 }
 
-impl <R> Default for RatingDedup<R> where R: FromRatingSet + Send + Sync + 'static, for<'a> &'a [R]: RecordWriter<R> {
+impl <R> Default for RatingDedup<R> where R: FromRatingSet + ArrowSerialize + Send + Sync + 'static, R::MutableArrayType: TryExtend<Option<R>> {
   fn default() -> RatingDedup<R> {
     RatingDedup {
       _phantom: PhantomData,
@@ -135,7 +137,7 @@ impl <R> Default for RatingDedup<R> where R: FromRatingSet + Send + Sync + 'stat
   }
 }
 
-impl <R> RatingDedup<R> where R: FromRatingSet + Send + Sync + 'static, for<'a> &'a [R]: RecordWriter<R> {
+impl <R> RatingDedup<R> where R: FromRatingSet + ArrowSerialize + Send + Sync + 'static, R::MutableArrayType: TryExtend<Option<R>> {
   /// Add a rating to the deduplicator.
   pub fn record(&mut self, user: i32, item: i32, rating: f32, timestamp: i64) {
     let k = Key::new(user, item);
@@ -151,22 +153,24 @@ impl <R> RatingDedup<R> where R: FromRatingSet + Send + Sync + 'static, for<'a> 
     info!("writing {} deduplicated ratings to {}",
           friendly::scalar(self.table.len()),
           path.display());
-    let twb = TableWriterBuilder::new()?;
-    let mut writer = twb.open(path)?;
+    let mut writer = TableWriter::open(path)?;
 
-    let mut timer = Timer::builder().task_count(self.table.len()).label("writing ratings").interval(5.0).build();
+    let n = self.table.len() as u64;
+    let timer = Timer::new();
+    let pb = item_progress(n, "writing ratings");
 
     // we're going to consume the hashtable.
-    for (k, vec) in take(&mut self.table) {
+    let table = take(&mut self.table);
+    for (k, vec) in pb.wrap_iter(table.into_iter()) {
       let record = R::create(k.user, k.item, vec);
       writer.write_object(record)?;
-      timer.complete(1);
-      timer.maybe_log_status();
     }
 
     let rv = writer.finish()?;
+    pb.finish_and_clear();
 
-    info!("wrote ratings in {}, file is {}",
+    info!("wrote {} ratings in {}, file is {}",
+          friendly::scalar(n),
           timer.human_elapsed(),
           friendly::bytes(file_size(path)?));
 

@@ -4,7 +4,7 @@ title: Code Layout
 
 # Code Layout
 
-The import code consists of Python, Rust, and some SQL code, wired together with DVC, with data
+The import code consists of Python and Rust, wired together with DVC, with data
 in several directories to facilitate ease of discovery.
 
 ## Python Scripts
@@ -37,28 +37,11 @@ the Rust tools.
 For writing new commands, there is a lot of utility code under `src`.  Consult the
 {rust:mod}`Rust API documentation <bookdata>` for further details.
 
-The `bd-macros` directory contains the `TableRow` derive macro, because procedural macros cannot
-live in the same crate in which they are used.  Most users won't need to adjust this macro.
+The Rust code makes extensive use of the [polars][], [arrow2][], and
+[parquet2][] crates for data analysis and IO.  [arrow2_convert][] is used to
+automate converstion for Parquet serialization.
 
-## DataFusion SQL
-
-[DF]: https://github.com/apache/arrow-datafusion/
-[Molt]: https://wduquette.github.io/molt/
-
-We do some processing with [DataFusion SQL][DF].  We have used [Molt][] (a Rust-based variant of
-TCL) to implement a small language for setting up tables, running queries, and saving the results.
-The `fusion` bookdata command runs scripts in this language.
-
-The following is a short example script demonstrating a join between two tables:
-
-```tcl
-table isbns "../book-links/all-isbns.parquet"
-table books "book-isbns.parquet"
-
-save-results "book-isbn-ids.parquet" {
-    SELECT rec_id, isbn_id
-    FROM books JOIN isbns USING (isbn)
-}
-```
-
-The `save-results` command can write to either CSV or Parquet.
+[polars]: https://docs.rs/polars
+[arrow2]: https://docs.rs/arrow2
+[arrow2_convert]: https://docs.rs/arrow2_convert
+[parquet2]: https://docs.rs/parquet2

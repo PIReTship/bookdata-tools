@@ -9,12 +9,23 @@ stages:
     - ratings.parquet
 
   cluster-ratings:
-    cmd: python run.py --rust cluster group-actions -s az-ratings -f az2014/ratings.parquet -o az2014/az-cluster-ratings.parquet
+    cmd: python run.py --rust amazon cluster-ratings -o az2014/az-cluster-ratings.parquet az2014/ratings.parquet
     wdir: ..
     deps:
-    - src/cli/cluster/
+    - src/cli/amazon
     - az2014/ratings.parquet
-    - book-links/all-isbns.parquet
     - book-links/isbn-clusters.parquet
     outs:
     - az2014/az-cluster-ratings.parquet
+
+  schema:
+    foreach:
+    - ratings
+    - az-cluster-ratings
+    do:
+      cmd: python ../run.py --rust pq-info -o ${item}.json ${item}.parquet
+      deps:
+      - ${item}.parquet
+      outs:
+      - ${item}.json:
+          cache: false

@@ -1,11 +1,13 @@
 ---
 title: Clusters
 parent: Data Model
-nav_order: 8
 ---
 
 (cluster)=
 # Book Clusters
+
+:::{index} cluster
+:::
 
 For recommendation and analysis, we often want to look at *works* instead of individual books or
 editions of those books.  The same material by the same author(s) may be reprinted in many different
@@ -61,3 +63,53 @@ There are a few known problems with the ISBN clustering:
 If you only need e.g. the GoodReads data, we recommend that you *not* cluster it for the purpose of
 ratings, and only use clusters to link to out-of-GR book or author data.  We are open to adding
 additional tables that facilitate linking GoodReads works directly to other tables.
+
+## Cluster Link Tables
+
+:::{file} book-links/isbn-clusters.parquet
+
+This file maps ISBN IDs to book clusters, enabling the various other book identifiers from other
+data sources to be mapped to clusters, since everything resolves to ISBN IDs.
+:::
+
+### Graph Tables
+
+We also export the book identifier graph used for clustering to support further analysis.
+
+:::{file} book-links/cluster-graph-nodes.parquet
+
+The table of nodes (with attributes) from the graph used for book clustering.
+:::
+
+:::{file} book-links/cluster-graph-edges.parquet
+
+The table of edges rom the book clustering graph.
+:::
+
+:::{file} book-links/book-graph.mp.zst
+
+This is a serialization of the actual graph itself, using `rmp-serde` to serialize the
+Petgraph structure with MsgPack and compressing ith with ZStandard.  This is unlikely to
+be usable outside of the Rust codebase, whereas the node and edge tables could be loaded
+into something like `igraph` for further analysis.
+:::
+
+## Cluster Information Tables
+
+With the clusters, we then extract additional information from other tables.
+
+:::{file} book-links/cluster-first-authors.parquet
+
+All available first-author records for each cluster, to support linking with VIAF.
+:::
+
+:::{file} book-links/cluster-hashes.parquet
+
+The MD5 checksums of the sorted sequence of ISBNs for each cluster, along with a
+`dcode` that is the least-significant bit of the checksum.
+:::
+
+:::{file} book-links/cluster-stats.parquet
+
+Statistics for each cluster, useful for auditing and debugging.
+:::

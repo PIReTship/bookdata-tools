@@ -2,89 +2,133 @@
 use std::collections::{HashSet, HashMap};
 use std::path::{PathBuf, Path};
 use std::fs::File;
+use std::thread::{spawn, JoinHandle};
 
-use structopt::StructOpt;
+use crossbeam::channel::{bounded, Sender, Receiver};
+
 use csv;
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
 use flate2::write::GzEncoder;
 
+use rayon::prelude::*;
+
+use crate::marc::flat_fields::FieldRecord;
 use crate::prelude::*;
 use crate::arrow::*;
+use crate::io::background::ThreadWrite;
+use crate::io::object::ThreadObjectWriter;
 use crate::cleaning::names::*;
-use crate::io::open_gzin_progress;
+use crate::util::logging::item_progress;
 
-#[derive(StructOpt, Debug)]
-#[structopt(name="index-names")]
+#[derive(Args, Debug)]
+#[command(name="index-names")]
 /// Clean and index author names from authority records.
 pub struct IndexNames {
-  /// Name input CSV file.
-  #[structopt(name = "INFILE", parse(from_os_str))]
-  infile: PathBuf,
+  /// MARC authority field file to scan for names.
+  #[arg(long="marc-authorities", name = "FILE")]
+  marc_authorities: Option<PathBuf>,
 
   /// Index output Parquet file.
-  #[structopt(name = "OUTFILE", parse(from_os_str))]
+  #[arg(name = "OUTFILE")]
   outfile: PathBuf,
 }
 
 type NameIndex = HashMap<String,HashSet<u32>>;
 
-#[derive(Deserialize)]
-struct RecAuthor {
-  rec_id: u32,
-  #[allow(dead_code)]
-  ind: Option<char>,
-  name: String,
-}
-
-#[derive(ParquetRecordWriter, Serialize, Clone)]
+#[derive(ArrowField, Serialize, Clone)]
 struct IndexEntry {
   rec_id: u32,
   name: String,
 }
 
-fn scan_names(path: &Path) -> Result<NameIndex> {
-  info!("reading names from {}", path.to_string_lossy());
+fn scan_authority_names(path: &Path, send: Sender<(String, u32)>) -> Result<JoinHandle<Result<usize>>> {
+  info!("reading names from authority fields in {:?}", path);
+  let scanner = scan_parquet_file(path)?;
+
+  Ok(spawn(move || {
+    let scanner = scanner;
+    let pb = item_progress(scanner.remaining() as u64, "fields");
+    let mut n = 0;
+    for rec in pb.wrap_iter(scanner) {
+      let rec: FieldRecord = rec?;
+      if rec.tag == 700 && rec.sf_code == b'a' {
+        send.send((rec.contents, rec.rec_id))?;
+        n += 1;
+      }
+    }
+    debug!("finished scanning parquet");
+    Ok(n)
+  }))
+}
+
+fn process_names(recv: Receiver<(String, u32)>) -> Result<NameIndex> {
   let mut index = NameIndex::new();
-  let reader = open_gzin_progress(path)?;
-  let mut reader = csv::Reader::from_reader(reader);
-  for line in reader.deserialize() {
-    let record: RecAuthor = line?;
-    for name in name_variants(&record.name)? {
-      index.entry(name).or_default().insert(record.rec_id);
+
+  // process results and add to list
+  for (src, rec_id) in recv {
+    for name in name_variants(&src)? {
+      index.entry(name).or_default().insert(rec_id);
     }
   }
+
+  info!("index {} names", index.len());
   Ok(index)
 }
 
 fn write_index(index: NameIndex, path: &Path) -> Result<()> {
-  let mut names: Vec<&str> = index.keys().map(|s| s.as_str()).collect();
-  info!("sorting {} names", names.len());
-  names.sort();
+  info!("sorting {} names", index.len());
+  debug!("copying names");
+  let mut names = Vec::with_capacity(index.len());
+  names.extend(index.keys().map(|s| s.as_str()));
+  debug!("sorting names");
+  names.par_sort_unstable();
+
   info!("writing deduplicated names to {}", path.to_string_lossy());
   let mut writer = TableWriter::open(&path)?;
+
   let mut csv_fn = PathBuf::from(path);
   csv_fn.set_extension("csv.gz");
+  info!("writing CSV version to {:?}", csv_fn);
   let out = File::create(&csv_fn)?;
-  let out = GzEncoder::new(out, flate2::Compression::best());
-  let mut csvw = csv::Writer::from_writer(out);
-  for name in names {
-    for rec_id in index.get(name).unwrap() {
+  let out = GzEncoder::new(out, flate2::Compression::fast());
+  let out = ThreadWrite::new(out)?;
+  // let out = Encoder::new(out, 2)?.auto_finish();
+  let csvw = csv::Writer::from_writer(out);
+  let mut csvout = ThreadObjectWriter::new(csvw);
+
+  let pb = item_progress(names.len(), "names");
+
+  for name in pb.wrap_iter(names.into_iter()) {
+    let mut ids: Vec<u32> = index.get(name).unwrap().iter().map(|i| *i).collect();
+    ids.sort_unstable();
+    for rec_id in ids {
       let e = IndexEntry {
-        rec_id: *rec_id,
+        rec_id,
         name: name.to_string()
       };
-      csvw.serialize(&e)?;
+      csvout.write_object(e.clone())?;
       writer.write_object(e)?;
     }
   }
 
   writer.finish()?;
+  csvout.finish()?;
   Ok(())
 }
 
 impl Command for IndexNames {
   fn exec(&self) -> Result<()> {
-    let names = scan_names(&self.infile)?;
+    let (send, recv) = bounded(4096);
+    let h = if let Some(ref path) = self.marc_authorities {
+      scan_authority_names(path.as_path(), send)?
+    } else {
+      return Err(anyhow!("no name source specified"))
+    };
+
+    let names = process_names(recv)?;
+    let nr = h.join().expect("thread join error")?;
+    info!("scanned {} name records", nr);
+
     write_index(names, &self.outfile)?;
 
     Ok(())

@@ -9,6 +9,7 @@ stages:
     - book-fields.parquet
     - book-ids.parquet
     - book-isbns.parquet
+    - book-authors.parquet
 
   scan-names:
     cmd: python ../run.py --rust scan-marc --glob "../data/loc-names/Names.2016*.xml.gz"
@@ -21,42 +22,42 @@ stages:
     - name-fields.parquet
 
   book-isbn-ids:
-    cmd: python ../run.py --rust fusion book-isbn-ids.tcl
+    cmd: python run.py --rust link-isbn-ids -R rec_id -o loc-mds/book-isbn-ids.parquet loc-mds/book-isbns.parquet
+    wdir: ..
     deps:
-    - book-isbn-ids.tcl
-    - book-isbns.parquet
-    - ../book-links/all-isbns.parquet
+    - loc-mds/book-isbns.parquet
+    - book-links/all-isbns.parquet
     outs:
-    - book-isbn-ids.parquet
+    - loc-mds/book-isbn-ids.parquet
 
-  book-authors:
-    cmd: python ../run.py --rust fusion book-authors.tcl
-    deps:
-    - book-authors.tcl
-    - book-fields.parquet
-    outs:
-    - book-authors.parquet
+  # author-names:
+  #   cmd: python ../run.py --rust fusion author-names.tcl
+  #   deps:
+  #   - author-names.tcl
+  #   - name-fields.parquet
+  #   outs:
+  #   - author-names.csv.gz
 
-  author-names:
-    cmd: python ../run.py --rust fusion author-names.tcl
-    deps:
-    - author-names.tcl
-    - name-fields.parquet
-    outs:
-    - author-names.csv.gz
+  # author-genders:
+  #   cmd: python ../run.py --rust fusion author-genders.tcl
+  #   deps:
+  #   - author-genders.tcl
+  #   - name-fields.parquet
+  #   outs:
+  #   - author-genders.csv.gz
 
-  author-genders:
-    cmd: python ../run.py --rust fusion author-genders.tcl
-    deps:
-    - author-genders.tcl
-    - name-fields.parquet
-    outs:
-    - author-genders.csv.gz
-
-  loc-clusters:
-    cmd: python ../run.py --rust fusion loc-clusters.tcl
-    deps:
-    - ../book-links/cluster-graph-nodes.parquet
-    - loc-clusters.tcl
-    outs:
-    - loc-clusters.parquet
+  schema:
+    foreach:
+    - book-fields
+    - book-ids
+    - book-isbns
+    - book-isbn-ids
+    - book-authors
+    - name-fields
+    do:
+      cmd: python ../run.py --rust pq-info -o ${item}.json ${item}.parquet
+      deps:
+      - ${item}.parquet
+      outs:
+      - ${item}.json:
+          cache: false

@@ -1,7 +1,6 @@
 This repository contains the code to import and integrate the book and rating data that we work
 with. It imports and integrates data from several sources in a homogenous tabular outputs; import
-scripts are primarily Rust, with Python to orchestrate things and and implement analyses, and
-DataFusion SQL for some integration steps.
+scripts are primarily Rust, with Python implement analyses.
 
 If you use these scripts in any published research, cite [our paper][paper] ([PDF][]):
 
@@ -28,11 +27,11 @@ these tools.
 
 ## Running Everything
 
-The dependencies are declared in `pyproject.toml`, in a format suitable for use with
+The dependencies are declared in `environment.yml`, in a format suitable for use with
 [conda-lock][].  We provide lockfiles for Windows, macOS, and Linux; to create a Conda
 environment, run:
 
-    conda create -n bookdata --file conda-linux-64.lock
+    conda-lock install -n bookdata conda-lock.yml
 
 You can run the entire import process with:
 
@@ -40,14 +39,15 @@ You can run the entire import process with:
 
 To regenerate or update the lockfiles, run:
 
-    conda-lock lock --mamba -f pyproject.toml
+    conda-lock lock --mamba -f environment.yml -f dev-environment.yml -f doc-environment.yml
 
 [conda-lock]: https://github.com/conda-incubator/conda-lock/
 
 ## Copyright and Acknowledgements
 
-Copyright &copy; 2020 Boise State University.  Distributed under the MIT License; see LICENSE.md.
-This material is based upon work supported by the National Science Foundation under
-Grant No. IIS 17-51278. Any opinions, findings, and conclusions or recommendations
-expressed in this material are those of the author(s) and do not necessarily reflect
-the views of the National Science Foundation.
+Copyright ⓒ 2020–2022 Boise State University.  Distributed under the MIT
+License; see LICENSE.md. This material is based upon work supported by the
+National Science Foundation under Grant No. IIS 17-51278. Any opinions,
+findings, and conclusions or recommendations expressed in this material are
+those of the author(s) and do not necessarily reflect the views of the National
+Science Foundation.

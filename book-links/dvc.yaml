@@ -1,3 +1,6 @@
+vars:
+- ../config.toml
+
 stages:
   collect-isbns:
     cmd: python ../run.py --rust collect-isbns -o all-isbns.parquet all-isbns.toml
@@ -14,7 +17,7 @@ stages:
     - all-isbns.parquet
 
   cluster:
-    cmd: python run.py --rust cluster-books
+    cmd: python run.py --rust cluster-books --save-graph book-links/book-graph.mp.zst
     wdir: ..
     deps:
     - src/cli/cluster_books.rs
@@ -29,13 +32,13 @@ stages:
     - goodreads/gr-book-ids.parquet
     - goodreads/book-isbn-ids.parquet
     outs:
+    - book-links/book-graph.mp.zst
     - book-links/isbn-clusters.parquet
     - book-links/cluster-stats.parquet
     - book-links/cluster-graph-nodes.parquet
     - book-links/cluster-graph-edges.parquet
-    - book-links/book-graph.mp.zst
     metrics:
-    - book-links/cluster-stats.json
+    - book-links/cluster-metrics.json
 
   cluster-ol-first-authors:
     cmd: python run.py --rust cluster extract-authors -o book-links/cluster-ol-first-authors.parquet
@@ -91,27 +94,46 @@ stages:
     - book-links/cluster-genders.parquet
 
   gender-stats:
-    cmd: python ../run.py --rust fusion integration-stats.tcl
+    cmd: python run.py --rust integration-stats
+    wdir: ..
     deps:
-    - integration-stats.tcl
-    - cluster-genders.parquet
-    - isbn-clusters.parquet
-    - ../loc-mds/book-isbn-ids.parquet
-    - ../bx/bx-cluster-actions.parquet
-    - ../bx/bx-cluster-ratings.parquet
-    - ../az2014/az-cluster-ratings.parquet
-    - ../goodreads/gr-cluster-actions.parquet
-    - ../goodreads/gr-cluster-ratings.parquet
+    - config.toml
+    - src/cli/stats.rs
+    - book-links/cluster-genders.parquet
+    - book-links/isbn-clusters.parquet
+    - loc-mds/book-isbn-ids.parquet
+    - bx/bx-cluster-actions.parquet
+    - bx/bx-cluster-ratings.parquet
+    - az2014/az-cluster-ratings.parquet
+    - az2018/az-cluster-ratings.parquet
+    - goodreads/${goodreads.interactions}/gr-cluster-actions.parquet
+    - goodreads/${goodreads.interactions}/gr-cluster-ratings.parquet
     outs:
-    - gender-stats.csv
+    - book-links/gender-stats.csv
 
   cluster-hashes:
-    cmd: python ../run.py --rust cluster hash -o cluster-hashes.parquet
+    cmd: python ../run.py --rust cluster hash -o cluster-hashes.parquet isbn-clusters.parquet
     deps:
-    - ../src/cli/cluster
+    - ../src/cli/cluster/hash.rs
     - isbn-clusters.parquet
     outs:
     - cluster-hashes.parquet
+
+  schema:
+    foreach:
+    - all-isbns
+    - isbn-clusters
+    - cluster-stats
+    - cluster-first-authors
+    - cluster-genders
+    - cluster-hashes
+    do:
+      cmd: python ../run.py --rust pq-info -o ${item}.json ${item}.parquet
+      deps:
+      - ${item}.parquet
+      outs:
+      - ${item}.json:
+          cache: false
 
   # debug-graph:
   #   cmd: python ./run.py --rust extract-graph --cluster ${debug.cluster} -o book-links/debug-graph.gml

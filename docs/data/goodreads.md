@@ -1,7 +1,6 @@
 ---
 title: GoodReads
 parent: Data Model
-nav_order: 7
 ---
 
 # GoodReads (UCSD Book Graph)
@@ -15,133 +14,156 @@ will need the following:
 - Authors
 - Book genres
 - Book series
-- **Full** interaction data
+- Interaction data (the CSV summary file, along with its book and user ID files,
+  is used by default; the full JSON file is also supported)
 
-We do not yet support reviews.
+We do not yet support reviews
 
 **If you use this data, cite the paper(s) documented on the data set web site.**
 
-Imported data lives in the `gr` schema.
+:::{index} pair: directory; goodreads
+:::
 
-## Data Model Diagram
+Imported data lives in the `goodreads` directory.
 
-![GoodReads model diagram](goodreads.svg)
+## Configuration
 
-- [SVG file](goodreads.svg)
-- [PlantUML source](goodreads.puml)
+The `config.toml` file defines what source of GoodReads interaction data is used:
+
+```toml
+[goodreads]
+interactions = "simple"
+```
+
+The default, `simple`, uses the CSV summary data that you can download directly
+from the web site in 3 files:
+
+- `goodreads_interactions.csv`
+- `user_id_map.csv`
+- `book_id_map.csv`
+
+Download and save these 3 files in `data/goodreads`, along with the other metadata files.
+
+The tools also support the detailed version (change interactions to `full`),
+delivered in JSON format.  If you want this version, you need to contact Mengtin
+Wan as noted on the web site.
 
 ## Import Steps
 
-The import is controlled by the following DVC steps:
+The import is controlled by several DVC steps:
 
-`schemas/gr-schema.dvc`
-:   Run `gr-schema.sql` to set up the base schema.
+`scan-*`
+:   The various `scan-*` steps each scan a JSON file into corresponding Parquet files.  They have a specific order, as scanning interactions needs book information.
 
-`import/gr-*.dvc`
-:   Import raw GoodReads data from files under `data/`
+`book-isbn-ids`
+:   Match GoodReads ISBNs with ISBN IDs.
 
-`index/gr-index-books.dvc`
-:   Run `gr-index-books.sql` to index the book data and extract identifiers.
+`book-links`
+:   Creates {file}`goodreads/gr-book-link.parquet`, which links each GoodReads book with its work (if applicable) and is cluster ID.
 
-`index/gr-book-info.dvc`
-:   Run `gr-book-info.sql` to extract additional book and work metadata.
+`cluster-actions`
+:   Extracts cluster-level implicit feedback data.  Each (user, cluster) pair has one record, with the number of actions (the number of times the user added a book from that cluster to a shelf) and timestamp data.
 
-`index/gr-index-ratings.dvc`
-:   Run `gr-index-ratings.sql` to index the rating and interaction data.
+`cluster-ratings`
+:   Extracts cluster-level explicit feedback data.  This is the ratings each user assigned to books in each cluster.
 
-## Raw Data
+`work-actions`, `work-ratings`
+:   The same thing as the `cluster-*` stages, except it groups by GoodReads work instead of by integrated cluster. If you are only working with the GoodReads data, and not trying to connect across data sets, this data is better to work with.
 
-The raw rating data, with invalid characters cleaned up, is in the various `gr.raw_*` tables:
+`work-gender`
+:   The author gender for each GoodReads work, as near as we can tell.
 
-- `raw_book`
-- `raw_work`
-- `raw_author`
-- `raw_series`
-- `raw_book_genres`
-- `raw_interaction`
+## Scanned and Linking Data
 
-Each table has the following columns:
+:::{file} goodreads/gr-book-ids.parquet
 
-gr_*type*_rid
-:   Numeric record identifier generated at import time.  Throughout this page, we will refer to these as record identifiers; they are distinct from the identifiers GoodReads uses for books and works, as those are not known until the JSON is unpacked.
+Identifiers extracted from each GoodReads book record.
+:::
 
-gr_*type*_data
-:   `JSONB` column containing imported data.
+:::{file} goodreads/gr-book-info.parquet
 
-## Extracted Book Tables
+Metadata extracted from GoodReads book records.
+:::
 
-We extract the following tables for book and work data:
+:::{file} goodreads/gr-book-genres.parquet
 
-`work_ids`
-:   GoodReads work identifiers.
+GoodReads book-genre associations.
+:::
 
-`book_ids`
-:   GoodReads book identifiers.  This maps each GoodReads book record identifier to the following identifiers:
+:::{file} goodreads/gr-book-series.parquet
 
-    - book ID
-    - work ID
-    - ASIN
-    - ISBN 10 (`gr_isbn`)
-    - ISBN 13 (`gr_isbn13`)
+GoodReads book series associations.
+:::
 
-    This table extracts the *textual* versions of ISBNs and ASINs directly from the `raw_book` table.  It does not resolve them to ISBN IDs.
+:::{file} goodreads/gr-genres.parquet
 
-`book_isbn`
-:   Map GoodReads books to ISBN IDs and book codes.  This does **not** use ASINs, just ISBN-10 and ISBN-13s.
+The genre labels to go with {file}`goodreads/gr-book-genres.parquet`.
+:::
 
-`book_genres`
-:   Genre membership (and scores) for each book.  This is a direct extract of the book genres file from UCSD.
+:::{file} goodreads/gr-book-link.parquet
 
-`work_title`
-:   The title of each work.
+Linking identifiers (work and cluster) for GoodReads books.
+:::
 
-`book_pub_date`
-:   The publication date of each book.  It extracts the year, month, and day; if all three are present, then `pub_date` contains the date as an SQL date.  These are the `publication_*` fields in the book JSON data.
+:::{file} goodreads/gr-work-info.parquet
 
-`work_pub_date`
-:   The original publication date of each work.  Extracted like `book_pub_date`, but from a work's `original_publication_*` fields.
+Metadata extracted from GoodReads work records.
+:::
 
-`book_cluster`
-:   The book cluster each book is a member of.
+:::{file} goodreads/gr-interactions.parquet
 
-## Extracted Interaction Tables
+GoodReads interaction records.
+:::
 
-We extract the following tables for book ratings and interactions (add-to-shelf actions):
+## Cluster-Level Tables
 
-`user_info`
-:   Mapping between user record IDs and GoodReads user IDs.
+:::{file} goodreads/full/gr-cluster-actions.parquet
 
-`interaction`
-:   Extract of basic information about each entry in the Interactions file.  These interactions
-    represent an add-to-shelf action, optionally with a rating.  We extract the following:
+Cluster-level implicit-feedback records, suitable for use in LensKit. The `item` column contains cluster IDs.  This version of the table
+is processed from the JSON version of the full interaction log, which is only available by request.
+:::
 
-    `gr_interaction_rid`
-    :   The interaction record identifier (PK)
+:::{file} goodreads/full/gr-cluster-ratings.parquet
 
-    `gr_book_id`
-    :   GoodReads book ID
+Cluster-level explicit-feedback records, suitable for use in LensKit. The `item` column contains cluster IDs.  This version of the table
+is processed from the JSON version of the full interaction log, which is only available by request.
+:::
 
-    `gr_user_rid`
-    :   User record identifier (we use record IDs instead of user IDs to keep them numeric)
+:::{file} goodreads/simple/gr-cluster-actions.parquet
 
-    `rating`
-    :   The 5-star rating value (if provided)
+Cluster-level implicit-feedback records, suitable for use in LensKit. The `item` column contains cluster IDs.  This version of the table
+is processed from the CSV data.
+:::
 
-    `is_read`
-    :   `isRead` flag from original JSON data.
+:::{file} goodreads/simple/gr-cluster-ratings.parquet
 
-    `date_added`
-    :   The date the book was added to the shelf.
+Cluster-level explicit-feedback records, suitable for use in LensKit. The `item` column contains cluster IDs.  This version of the table
+is processed from the CSV data.
+:::
 
-    `date_updated`
-    :   The update date for this interaction.
+## Work-Level Tables
 
-`rating`
-:   Rating table suitable for use in LensKit.  This is aggregated
-    by book cluster, and contains both the median rating and the
-    last rating, along with the median update date as the timestamp.
+:::{file} goodreads/full/gr-work-actions.parquet
 
-`add_action`
-:   Add-action table suitable for use in LensKit.  Also aggregated by book cluster,
-    with the first and last (update) date as the timestamps, and number of interactions
-    with this book.
+Work-level implicit-feedback records, suitable for use in LensKit. The `item` column contains work IDs.
+:::
+
+:::{file} goodreads/full/gr-work-ratings.parquet
+
+Work-level explicit-feedback records, suitable for use in LensKit. The `item` column contains work IDs.
+:::
+
+:::{file} goodreads/simple/gr-work-actions.parquet
+
+Work-level implicit-feedback records, suitable for use in LensKit. The `item` column contains work IDs.
+:::
+
+:::{file} goodreads/simple/gr-work-ratings.parquet
+
+Work-level explicit-feedback records, suitable for use in LensKit. The `item` column contains work IDs.
+:::
+
+:::{file} goodreads/gr-work-gender.parquet
+
+Author gender for GoodReads works.  This is computed by connecting works to clusters and obtaining the cluster gender information from {file}`book-links/cluster-genders.parquet`.
+:::

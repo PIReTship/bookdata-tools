@@ -4,19 +4,19 @@ stages:
     cmd: python ../run.py --rust scan-marc -L -o viaf.parquet ../data/viaf-clusters-marc21.xml.gz
     deps:
     - path: ../data/viaf-clusters-marc21.xml.gz
-      md5: 2f1af5262584d38f7331d333dec81cc3
-      size: 10662471024
+      md5: 83bfbacff8b72b5d4163c796941d6234
+      size: 12655431316
     - path: ../src/cli/scan_marc.rs
-      md5: 12a9d5d9854034367c903c5abb99d543
-      size: 3557
+      md5: bcbc2c6cfebc08fbd4072a6b01fba27d
+      size: 3706
     - path: ../src/marc
-      md5: db6eef7d87b56283dbbcdeea71a69a37.dir
-      size: 16783
+      md5: 066418c6e3db231224a89a97aa94da9f.dir
+      size: 19381
       nfiles: 5
     outs:
     - path: viaf.parquet
-      md5: 4e274ee04004e80f8da0f1168f123ff2
-      size: 10561644263
+      md5: e267c52cb6ead92d5b51b80b3dcd28af
+      size: 11318952681
   author-names:
     cmd: python ../run.py --rust fusion author-names.tcl
     deps:
@@ -24,38 +24,73 @@ stages:
       md5: d0ebf76118c885cd85ce01ddc87cdb64
       size: 223
     - path: viaf.parquet
-      md5: 4e274ee04004e80f8da0f1168f123ff2
-      size: 10561644263
+      md5: 8c93292c182dcfba2a5960eac57c6faa
+      size: 12519632430
     outs:
     - path: author-names.csv.gz
-      md5: e825c6458652609163ea3194fd9197ea
-      size: 418433891
+      md5: 3823edd34fc084a9f8cef5cd8ec43da2
+      size: 494355416
   author-genders:
-    cmd: python ../run.py --rust fusion author-genders.tcl
+    cmd: python ../run.py --rust filter-marc --tag=375 --subfield=a --trim --lower
+      -n gender -o author-genders.parquet viaf.parquet
     deps:
-    - path: author-genders.tcl
-      md5: 53a3022f70f9a5b5662a0b97501c891b
-      size: 183
+    - path: ../src/cli/filter_marc.rs
+      md5: b2b2e285ede35d3ea9a2f950b6bb079f
+      size: 5905
     - path: viaf.parquet
-      md5: 4e274ee04004e80f8da0f1168f123ff2
-      size: 10561644263
+      md5: e267c52cb6ead92d5b51b80b3dcd28af
+      size: 11318952681
     outs:
     - path: author-genders.parquet
-      md5: cbd6871e6ba229881aed5f58126fd652
-      size: 102791330
+      md5: f22e08510e3b70e749400b5019760350
+      size: 115076921
   index-names:
-    cmd: python ../run.py --rust index-names author-names.csv.gz author-name-index.parquet
+    cmd: python ../run.py --rust index-names --marc-authorities viaf.parquet author-name-index.parquet
     deps:
+    - path: ../src/cleaning/names
+      md5: bc2cfaeffef29d4e5e8f345322789c1d.dir
+      size: 10745
+      nfiles: 5
     - path: ../src/cli/index_names.rs
-      md5: 06ccbf23dca07e00e87d89dec625287a
-      size: 2363
-    - path: author-names.csv.gz
-      md5: e825c6458652609163ea3194fd9197ea
-      size: 418433891
+      md5: 4c059e9edf4439f0062e43ec477d0e47
+      size: 3858
+    - path: viaf.parquet
+      md5: e267c52cb6ead92d5b51b80b3dcd28af
+      size: 11318952681
     outs:
     - path: author-name-index.csv.gz
-      md5: b3aabf1eadec3499fec1791e6404e2d3
-      size: 497228706
+      md5: 31d281aacd49d67a30093da93dc42f31
+      size: 657718645
     - path: author-name-index.parquet
-      md5: 663023a30c3d2f93ca4dea7d26793e9d
-      size: 483832252
+      md5: 254a39021dedbd8c7a994fd2c4fbdc67
+      size: 516451943
+  schema@author-name-index:
+    cmd: python ../run.py --rust pq-info -o author-name-index.json author-name-index.parquet
+    deps:
+    - path: author-name-index.parquet
+      md5: 254a39021dedbd8c7a994fd2c4fbdc67
+      size: 516451943
+    outs:
+    - path: author-name-index.json
+      md5: 4e608b7c650d04ed5e77c3fc3312b44d
+      size: 247
+  schema@viaf:
+    cmd: python ../run.py --rust pq-info -o viaf.json viaf.parquet
+    deps:
+    - path: viaf.parquet
+      md5: e267c52cb6ead92d5b51b80b3dcd28af
+      size: 11318952681
+    outs:
+    - path: viaf.json
+      md5: 55485f5bc2034323462fa644d92d820d
+      size: 695
+  schema@author-genders:
+    cmd: python ../run.py --rust pq-info -o author-genders.json author-genders.parquet
+    deps:
+    - path: author-genders.parquet
+      md5: f22e08510e3b70e749400b5019760350
+      size: 115076921
+    outs:
+    - path: author-genders.json
+      md5: e6ac261bc04b94f1ee581ae5ee31844f
+      size: 249

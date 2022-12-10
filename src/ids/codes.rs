@@ -8,15 +8,6 @@
 //! into different regions.
 //!
 //! [bc]: https://bookdata.piret.info/data/ids.html#book-codes
-use std::sync::Arc;
-use arrow::datatypes::*;
-use arrow::array::*;
-use datafusion::prelude::create_udf;
-use datafusion::physical_plan::functions::{make_scalar_function, Volatility};
-use datafusion::physical_plan::udf::ScalarUDF;
-use datafusion::execution::context::ExecutionContext;
-
-use log::*;
 
 /// The "number space" structure for identifier spaces.
 pub struct NS<'a> {
@@ -30,7 +21,7 @@ pub struct NS<'a> {
 
 /// The multiplier base for distinguishing numbers in a number space.
 /// Each space supports up to 100K identifiers.
-const NS_MULT_BASE: i32 = 100_000_000;
+pub const NS_MULT_BASE: i32 = 100_000_000;
 
 #[allow(dead_code)]
 pub const NS_WORK: NS<'static> = NS::new("OL-W", "ol_work", 1);
@@ -109,52 +100,14 @@ impl <'a> NS<'a> {
 }
 
 impl NS<'static> {
-  /// DataFusion UDF to convert from codes.
-  pub fn from_code_udf(&'static self) -> ScalarUDF {
-    let name = format!("{}_from_code", self.fn_name);
-    let func = move |cols: &[ArrayRef]| {
-      let arr = cols[0].as_any().downcast_ref::<Int32Array>().unwrap();
-      let res: Int32Array = arr.iter().map(|co| match co {
-        Some(c) => self.from_code(c),
-        None => None
-      }).collect();
-      Ok(Arc::new(res) as ArrayRef)
-    };
-    debug!("registering function {}", name);
-    create_udf(
-      name.as_str(),
-      vec![DataType::Int32],
-      Arc::new(DataType::Int32),
-      Volatility::Immutable,
-      make_scalar_function(func))
-  }
+  pub fn by_name(name: &str) -> Option<&'static NS<'static>> {
+    for ns in NAMESPACES {
+      if ns.name() == name {
+        return Some(ns);
+      }
+    }
 
-  /// DataFusion UDF to check codes.
-  pub fn code_is_udf(&'static self) -> ScalarUDF {
-    let name = format!("code_is_{}", self.fn_name);
-    let func = move |cols: &[ArrayRef]| {
-      let arr = cols[0].as_any().downcast_ref::<Int32Array>().unwrap();
-      let res: BooleanArray = arr.iter().map(|co| match co {
-        Some(c) => Some(c / NS_MULT_BASE == self.code()),
-        None => None
-      }).collect();
-      Ok(Arc::new(res) as ArrayRef)
-    };
-    debug!("registering function {}", name);
-    create_udf(
-      name.as_str(),
-      vec![DataType::Int32],
-      Arc::new(DataType::Boolean),
-      Volatility::Immutable,
-      make_scalar_function(func))
-  }
-}
-
-/// Add book code UDFs to an execution context.
-pub fn add_udfs(ctx: &mut ExecutionContext) {
-  for ns in NAMESPACES {
-    ctx.register_udf(ns.from_code_udf());
-    ctx.register_udf(ns.code_is_udf());
+    None
   }
 }
 

@@ -13,7 +13,7 @@ sys.path.insert(0, fspath(_root_dir))
 project = 'Book Data Tools'
 copyright = '2020–2021 Boise State University'
 author = 'Michael D. Ekstrand'
-version = '2.0'
+version = '2.1'
 release = version
 ogp_site_url = 'https://bookdata.piret.info'
 
@@ -22,6 +22,7 @@ extensions = [
     'sphinx.ext.githubpages',
     'sphinxcontrib.bibtex',
     # 'sphinxext.opengraph',
+    'sphinxcontrib.mermaid',
     'bookdata.sphinx',
 ]
 

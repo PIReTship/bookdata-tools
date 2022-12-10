@@ -1,21 +1,17 @@
 //! Support for collecting keys and counting the records that contributed them.
-use std::sync::Arc;
 use std::fs::File;
 use std::path::Path;
 
 #[cfg(test)]
 use std::mem::drop;
 
-use arrow::{
-  array::*,
-  record_batch::RecordBatch,
-  datatypes::*
-};
-use parquet::{
-  arrow::ArrowWriter,
-  basic::Compression,
-  file::properties::WriterProperties,
-};
+use log::*;
+use polars::prelude::*;
+use arrow2::datatypes::{DataType, Field, Schema};
+use parquet2::write::Version;
+use arrow2::io::parquet::write::{FileWriter, WriteOptions};
+
+use crate::io::ObjectWriter;
 use super::index::IdIndex;
 
 use anyhow::Result;
@@ -77,23 +73,34 @@ impl KeyCollector {
 
   /// Save to a Parquet file.
   pub fn save<P: AsRef<Path>>(&mut self, key_col: &str, id_col: &str, path: P) -> Result<usize> {
-    let batch = self.to_record_batch(key_col, id_col)?;
+    info!("saving accumulated keys to {:?}", path.as_ref());
+
+    debug!("creating data frame");
+    let mut df = self.to_data_frame(id_col, key_col)?;
+    debug!("rechunking");
+    df.rechunk();
+
+    debug!("opening file");
     let file = File::create(path)?;
-    let props = WriterProperties::builder();
-    let props = props.set_dictionary_enabled(false);
-    let props = props.set_compression(Compression::ZSTD);
-    let props = props.build();
-    let mut w = ArrowWriter::try_new(file, batch.schema(), Some(props))?;
+    let options = WriteOptions {
+      write_statistics: true,
+      version: Version::V2,
+      compression: ParquetCompression::Zstd(None)
+    };
+    let mut writer = FileWriter::try_new(file, self.schema(id_col, key_col), options)?;
 
-    w.write(&batch)?;
-    let md = w.close()?;
+    for chunk in df.iter_chunks() {
+      writer.write_object(chunk)?;
+    }
 
-    Ok(md.num_rows as usize)
+    // FIXME use write_object
+    writer.end(None)?;
+
+    Ok(df.height())
   }
 
-  /// Create an Arrow [RecordBatch] for this accumulator.
-  pub fn to_record_batch(&mut self, key_col: &str, id_col: &str) -> Result<RecordBatch> {
-    let len = self.len();
+  /// Get an Arrow [Schema] for this key collector.
+  pub fn schema(&self, id_col: &str, key_col: &str) -> Schema {
     let mut fields = vec![
       Field::new(id_col, DataType::Int32, false),
       Field::new(key_col, DataType::Utf8, false)
@@ -101,38 +108,33 @@ impl KeyCollector {
     for l in &self.count_labels {
       fields.push(Field::new(l, DataType::Int32, false))
     }
-    let schema = Schema::new(fields);
-    let schema = Arc::new(schema);
-
-    let keys = self.index.key_vec();
-    let mut id_arr = Int32Builder::new(self.index.len());
-    let mut key_arr = StringBuilder::new(self.index.len());
-    for i in 0..keys.len() {
-      id_arr.append_value((i + 1) as i32)?;
-      key_arr.append_value(keys[i])?;
+    Schema {
+      fields,
+      metadata: Default::default()
     }
-    let mut cols: Vec<ArrayRef> = vec![
-      Arc::new(id_arr.finish()),
-      Arc::new(key_arr.finish())
-    ];
+  }
 
-    for cts in &mut self.counts {
-      cts.resize(len, 0);
-      let c_arr = Int32Array::from_iter_values(cts.iter().map(|i| *i));
-      cols.push(Arc::new(c_arr));
+  /// Create an Polars [DataFrame] for this accumulator's data.
+  pub fn to_data_frame(&mut self, id_col: &str, key_col: &str) -> Result<DataFrame> {
+    let len = self.len();
+    let mut df = self.index.data_frame(id_col, key_col)?;
+
+    for i in 0..self.counts.len() {
+      let name = self.count_labels[i].as_str();
+      let counts = &mut self.counts[i];
+      counts.resize(len, 0);
+      let col = Int32Chunked::new(name, counts);
+      df.with_column(col)?;
     }
 
-
-    let batch = RecordBatch::try_new(schema, cols)?;
-
-    Ok(batch)
+    Ok(df)
   }
 }
 
 impl <'a> KeyCountAccum<'a> {
   /// Add a key to this accumulator.
   pub fn add_key(&mut self, key: &str) {
-    let pos = self.index.intern(key) as usize - 1;
+    let pos = self.index.intern(key).expect("intern failure") as usize - 1;
     if pos >= self.counts.len() {
       self.counts.resize(pos + 1, 0);
     }

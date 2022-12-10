@@ -19,6 +19,7 @@ stages:
     outs:
     - works.parquet
     - work-authors.parquet
+    - work-subjects.parquet
     - author-ids-after-works.parquet
 
   scan-editions:
@@ -35,14 +36,47 @@ stages:
     - edition-works.parquet
     - edition-isbns.parquet
     - edition-authors.parquet
+    - edition-subjects.parquet
     - all-works.parquet
     - all-authors.parquet
 
   edition-isbn-ids:
-    cmd: python ../run.py --rust fusion edition-isbn-ids.tcl
+    cmd: python run.py --rust link-isbn-ids -R edition -o openlibrary/edition-isbn-ids.parquet openlibrary/edition-isbns.parquet
+    wdir: ..
     deps:
-    - edition-isbn-ids.tcl
-    - edition-isbns.parquet
-    - ../book-links/all-isbns.parquet
+    - openlibrary/edition-isbns.parquet
+    - book-links/all-isbns.parquet
     outs:
-    - edition-isbn-ids.parquet
+    - openlibrary/edition-isbn-ids.parquet
+
+  work-clusters:
+    cmd: python run.py --rust cluster extract-books -n work_id -o openlibrary/work-clusters.parquet OL-W
+    wdir: ..
+    deps:
+    - book-links/cluster-graph-nodes.parquet
+    outs:
+    - openlibrary/work-clusters.parquet
+
+  schema:
+    foreach:
+    - authors
+    - author-names
+    - works
+    - work-authors
+    - work-subjects
+    - work-clusters
+    - editions
+    - edition-works
+    - edition-isbns
+    - edition-authors
+    - edition-subjects
+    - all-works
+    - all-authors
+    - edition-isbn-ids
+    do:
+      cmd: python ../run.py --rust pq-info -o ${item}.json ${item}.parquet
+      deps:
+      - ${item}.parquet
+      outs:
+      - ${item}.json:
+          cache: false

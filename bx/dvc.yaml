@@ -1,28 +1,38 @@
 stages:
   clean-ratings:
-    cmd: python ../run.py bx-extract.py ../data/BX-CSV-Dump.zip cleaned-ratings.csv
+    cmd: python ../run.py --rust bx extract ../data/BX-CSV-Dump.zip cleaned-ratings.csv
     deps:
-    - bx-extract.py
+    - ../src/cli/bx
     - ../data/BX-CSV-Dump.zip
     outs:
     - cleaned-ratings.csv
 
   cluster-ratings:
-    cmd: python run.py --rust cluster group-actions -s bx-ratings -o bx/bx-cluster-ratings.parquet
-    wdir: ..
+    cmd: python ../run.py --rust bx cluster-actions --ratings -o bx-cluster-ratings.parquet
     deps:
-    - src/cli/cluster
-    - bx/cleaned-ratings.csv
-    - book-links/isbn-clusters.parquet
+    - ../src/cli/bx
+    - cleaned-ratings.csv
+    - ../book-links/isbn-clusters.parquet
     outs:
-    - bx/bx-cluster-ratings.parquet
+    - bx-cluster-ratings.parquet
 
   cluster-actions:
-    cmd: python run.py --rust cluster group-actions -s bx-actions -o bx/bx-cluster-actions.parquet
-    wdir: ..
+    cmd: python ../run.py --rust bx cluster-actions --add-actions -o bx-cluster-actions.parquet
     deps:
-    - src/cli/cluster
-    - bx/cleaned-ratings.csv
-    - book-links/isbn-clusters.parquet
+    - ../src/cli/bx
+    - cleaned-ratings.csv
+    - ../book-links/isbn-clusters.parquet
     outs:
-    - bx/bx-cluster-actions.parquet
+    - bx-cluster-actions.parquet
+
+  schema:
+    foreach:
+    - bx-cluster-actions
+    - bx-cluster-ratings
+    do:
+      cmd: python ../run.py --rust pq-info -o ${item}.json ${item}.parquet
+      deps:
+      - ${item}.parquet
+      outs:
+      - ${item}.json:
+          cache: false

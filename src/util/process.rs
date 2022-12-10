@@ -7,7 +7,7 @@ use log::*;
 
 fn timeval_duration(tv: &libc::timeval) -> Duration {
   let ds = Duration::seconds(tv.tv_sec);
-  let dus = Duration::microseconds(tv.tv_usec);
+  let dus = Duration::microseconds(tv.tv_usec.into());
   ds + dus
 }
 

@@ -1,103 +1,81 @@
 //! Extract author information for book clusters.
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::path::{PathBuf};
+use std::collections::HashMap;
 
-use structopt::StructOpt;
-use futures::{StreamExt};
+use arrow2_convert::ArrowField;
 use md5::{Md5, Digest};
 use hex;
 
-use serde::{Serialize, Deserialize};
-
-use datafusion::prelude::*;
+use polars::prelude::*;
+use crate::arrow::TableWriter;
 use crate::prelude::*;
-use crate::arrow::*;
-use crate::arrow::row_de::RecordBatchDeserializer;
-use crate::cli::AsyncCommand;
-use async_trait::async_trait;
 
-#[derive(StructOpt, Debug)]
-#[structopt(name="hash")]
+use crate::prelude::Result;
+
+#[derive(Args, Debug)]
+#[command(name="hash")]
 /// Compute a hash for each cluster.
 pub struct HashCmd {
   /// Specify output file
-  #[structopt(short="o", long="output")]
+  #[arg(short='o', long="output", name="FILE")]
   output: PathBuf,
+
+  /// Specify input file
+  #[arg(name="ISBN_CLUSTERS")]
+  cluster_file: PathBuf,
 }
 
-#[derive(Serialize, Deserialize, Hash, PartialEq, Eq, Clone, ParquetRecordWriter, Default)]
+#[derive(ArrowField)]
 struct ClusterHash {
   cluster: i32,
   isbn_hash: String,
   isbn_dcode: i8,
 }
 
-#[derive(Deserialize, Clone, Default)]
-struct ClusterIsbn {
-  cluster: i32,
-  isbn: String,
-}
-
 /// Load ISBN data
-async fn scan_isbns(ctx: &mut ExecutionContext) -> Result<Arc<dyn DataFrame>> {
-  let icl = ctx.read_parquet("isbn-clusters.parquet").await?;
-  let icl = icl.select_columns(&["isbn", "cluster"])?;
-  let icl = icl.sort(vec![
-    col("cluster").sort(true, true),
-    col("isbn").sort(true, true)
-  ])?;
+fn scan_isbns(path: &Path) -> Result<LazyFrame> {
+  let path = path.to_str().map(|s| s.to_string()).ok_or(anyhow!("invalid UTF8 pathname"))?;
+  info!("scanning ISBN cluster file {}", path);
+  let icl = LazyFrame::scan_parquet(path, default())?;
+  let icl = icl.select(&[col("isbn"), col("cluster")]);
   Ok(icl)
 }
 
-/// Write out cluster hah records to file, without duplicates.
-async fn write_hashes_dedup(df: Arc<dyn DataFrame>, path: &Path) -> Result<()> {
-  info!("saving output to {}", path.to_string_lossy());
-  let mut writer = TableWriter::open(path)?;
+impl Command for HashCmd {
+  fn exec(&self) -> Result<()> {
+    let isbns = scan_isbns(self.cluster_file.as_path())?;
 
-  info!("scanning author batches");
-  let stream = df.execute_stream().await?;
-  let mut cluster = -1;
-  let mut hash = Md5::default();
-  let mut rec_stream = RecordBatchDeserializer::for_stream(stream);
-  while let Some(row) = rec_stream.next().await {
-    let row: ClusterIsbn = row?;
-    if row.cluster != cluster {
-      if cluster >= 0 {
-        let h = hash.finalize_reset();
-        writer.write_object(ClusterHash {
-          cluster,
-          isbn_hash: hex::encode(h),
-          isbn_dcode: (h[h.len() - 1] % 2) as i8
-        })?;
+    // It would be nice to do this with group-by, but group-by is quite slow and introduces
+    // unhelpful overhead. Sorting (for consistency) and a custom loop to aggregate ISBNs
+    // into hashes is much more efficient.
+    info!("reading sorted ISBNs into memory");
+    let isbns = isbns.sort("isbn", SortOptions::default()).collect()?;
+
+    info!("computing ISBN hashes");
+    let mut hashes: HashMap<i32, Md5> = HashMap::new();
+    let isbn_col = isbns.column("isbn")?.utf8()?;
+    let clus_col = isbns.column("cluster")?.i32()?;
+    for pair in isbn_col.into_iter().zip(clus_col.into_iter()) {
+      if let (Some(i), Some(c)) = pair {
+        hashes.entry(c).or_default().update(i.as_bytes());
       }
-
-      cluster = row.cluster;
     }
 
-    hash.update(row.isbn.as_bytes());
-  }
+    info!("computed hashes for {} clusters", hashes.len());
 
-  if cluster >= 0 {
-    let h = hash.finalize_reset();
-    writer.write_object(ClusterHash {
-      cluster,
-      isbn_hash: hex::encode(h),
-      isbn_dcode: (h[h.len() - 1] % 2) as i8
-    })?;
-  }
+    let path = self.output.as_path();
+    info!("writing ISBN hashes to {:?}", path);
+    let mut writer = TableWriter::open(path)?;
+    for (cluster, h) in hashes.into_iter() {
+      let h = h.finalize();
+      writer.write_object(ClusterHash {
+        cluster,
+        isbn_hash: hex::encode(h),
+        isbn_dcode: (h[h.len() - 1] % 2) as i8
+      })?;
+    }
 
-  let n = writer.finish()?;
-  info!("wrote {} cluster-author links", n);
-
-  Ok(())
-}
-
-#[async_trait]
-impl AsyncCommand for HashCmd {
-  async fn exec_future(&self) -> Result<()> {
-    let mut ctx = ExecutionContext::new();
-    let df = scan_isbns(&mut ctx).await?;
-    write_hashes_dedup(df, &self.output).await?;
+    writer.finish()?;
 
     Ok(())
   }
