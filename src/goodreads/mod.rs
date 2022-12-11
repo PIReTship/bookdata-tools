@@ -7,3 +7,4 @@ pub mod work;
 pub mod simple_interaction;
 pub mod interaction;
 pub mod genres;
+pub mod author;
