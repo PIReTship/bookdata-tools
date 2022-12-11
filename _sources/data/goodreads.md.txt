@@ -110,9 +110,19 @@ Linking identifiers (work and cluster) for GoodReads books.
 Metadata extracted from GoodReads work records.
 :::
 
-:::{file} goodreads/gr-interactions.parquet
+:::{file} goodreads/simple/gr-interactions.parquet
 
-GoodReads interaction records.
+GoodReads interaction records (from CSV).
+:::
+
+:::{file} goodreads/full/gr-interactions.parquet
+
+GoodReads interaction records (from JSON).
+:::
+
+:::{file} goodreads/gr-author-info.parquet
+
+GoodReads author information.
 :::
 
 ## Cluster-Level Tables

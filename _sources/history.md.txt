@@ -11,6 +11,10 @@ following:
 2.  Clearly state the version of the data tools you are using in your paper.
 3.  [Let us know](papers.rst) about your use so we can add you to the list.
 
+## Book Data 2.2 (in progress)
+
+-   Extract GoodReads author information into {file}`goodreads/gr-author-info.parquet`.
+
 ## Book Data 2.1
 
 Version 2.1 has a few updates but does not change existing data schemas when run
