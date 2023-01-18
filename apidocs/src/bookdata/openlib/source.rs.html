@@ -125,17 +125,13 @@
 <span id="125">125</span>
 <span id="126">126</span>
 <span id="127">127</span>
-<span id="128">128</span>
-<span id="129">129</span>
-<span id="130">130</span>
-<span id="131">131</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Parse OpenLibrary JSON.
 </span><span class="kw">use </span>std::str::FromStr;
 
-<span class="kw">use </span>serde::Deserialize;
-<span class="kw">use </span>serde::de;
-<span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>log::<span class="kw-2">*</span>;
+<span class="kw">use </span>serde::de;
+<span class="kw">use </span>serde::Deserialize;
+<span class="kw">use </span>thiserror::Error;
 
 <span class="kw">use </span><span class="kw">crate</span>::tsv::split_first;
 
@@ -144,40 +140,40 @@
 /// The row extracts the key and record, deserializing the record from JSON to the
 /// appropriate type.
 </span><span class="kw">pub struct </span>Row&lt;T&gt; {
-  <span class="kw">pub </span>key: String,
-  <span class="kw">pub </span>record: T
+    <span class="kw">pub </span>key: String,
+    <span class="kw">pub </span>record: T,
 }
 
 <span class="doccomment">/// Error type for parsing an OpenLibrary JSON row.
 </span><span class="attribute">#[derive(Error, Debug)]
 </span><span class="kw">pub enum </span>RowError {
-  <span class="attribute">#[error(<span class="string">&quot;line has insufficient fields, failed splitting {0}&quot;</span>)]
-  </span>FieldError(i32),
-  <span class="attribute">#[error(<span class="string">&quot;JSON parsing error: {0}&quot;</span>)]
-  </span>ParseError(<span class="attribute">#[from] </span>serde_json::Error)
+    <span class="attribute">#[error(<span class="string">&quot;line has insufficient fields, failed splitting {0}&quot;</span>)]
+    </span>FieldError(i32),
+    <span class="attribute">#[error(<span class="string">&quot;JSON parsing error: {0}&quot;</span>)]
+    </span>ParseError(<span class="attribute">#[from] </span>serde_json::Error),
 }
 
-<span class="kw">impl </span>&lt;T: de::DeserializeOwned&gt; FromStr <span class="kw">for </span>Row&lt;T&gt; {
-  <span class="kw">type </span><span class="prelude-val">Err </span>= RowError;
+<span class="kw">impl</span>&lt;T: de::DeserializeOwned&gt; FromStr <span class="kw">for </span>Row&lt;T&gt; {
+    <span class="kw">type </span><span class="prelude-val">Err </span>= RowError;
 
-  <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Row&lt;T&gt;, RowError&gt; {
-    <span class="comment">// split row into columns
-    </span><span class="kw">let </span>(<span class="kw">_</span>, rest) = split_first(s).ok_or(RowError::FieldError(<span class="number">1</span>))<span class="question-mark">?</span>;
-    <span class="kw">let </span>(key, rest) = split_first(rest).ok_or(RowError::FieldError(<span class="number">2</span>))<span class="question-mark">?</span>;
-    <span class="kw">let </span>(<span class="kw">_</span>, rest) = split_first(rest).ok_or(RowError::FieldError(<span class="number">3</span>))<span class="question-mark">?</span>;
-    <span class="kw">let </span>(<span class="kw">_</span>, data) = split_first(rest).ok_or(RowError::FieldError(<span class="number">4</span>))<span class="question-mark">?</span>;
-    <span class="kw">let </span>record = serde_json::from_str(data).map_err(|e| {
-      <span class="macro">error!</span>(<span class="string">&quot;invalid JSON in record {}: {:?}&quot;</span>, key, e);
-      <span class="kw">let </span>jsv: serde_json::Value = serde_json::from_str(data).expect(<span class="string">&quot;invalid JSON&quot;</span>);
-      <span class="kw">let </span>jsp = serde_json::to_string_pretty(<span class="kw-2">&amp;</span>jsv).expect(<span class="string">&quot;uhh&quot;</span>);
-      <span class="macro">info!</span>(<span class="string">&quot;offending JSON: {}&quot;</span>, jsp);
-      e
-    })<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(Row {
-      key: key.to_owned(),
-      record
-    })
-  }
+    <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Row&lt;T&gt;, RowError&gt; {
+        <span class="comment">// split row into columns
+        </span><span class="kw">let </span>(<span class="kw">_</span>, rest) = split_first(s).ok_or(RowError::FieldError(<span class="number">1</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span>(key, rest) = split_first(rest).ok_or(RowError::FieldError(<span class="number">2</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span>(<span class="kw">_</span>, rest) = split_first(rest).ok_or(RowError::FieldError(<span class="number">3</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span>(<span class="kw">_</span>, data) = split_first(rest).ok_or(RowError::FieldError(<span class="number">4</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span>record = serde_json::from_str(data).map_err(|e| {
+            <span class="macro">error!</span>(<span class="string">&quot;invalid JSON in record {}: {:?}&quot;</span>, key, e);
+            <span class="kw">let </span>jsv: serde_json::Value = serde_json::from_str(data).expect(<span class="string">&quot;invalid JSON&quot;</span>);
+            <span class="kw">let </span>jsp = serde_json::to_string_pretty(<span class="kw-2">&amp;</span>jsv).expect(<span class="string">&quot;uhh&quot;</span>);
+            <span class="macro">info!</span>(<span class="string">&quot;offending JSON: {}&quot;</span>, jsp);
+            e
+        })<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(Row {
+            key: key.to_owned(),
+            record,
+        })
+    }
 }
 
 <span class="doccomment">/// Struct representing an author link in OL.
@@ -189,76 +185,72 @@
 </span><span class="attribute">#[derive(Deserialize, Debug)]
 #[serde(untagged)]
 </span><span class="kw">pub enum </span>Author {
-  Object {
-    key: String,
-  },
-  Nested {
-    author: Keyed
-  },
-  Key(String),
-  Empty {}
+    Object { key: String },
+    Nested { author: Keyed },
+    Key(String),
+    Empty {},
 }
 
 <span class="doccomment">/// Keyed object reference
 </span><span class="attribute">#[derive(Deserialize, Debug)]
 </span><span class="kw">pub struct </span>Keyed {
-  <span class="kw">pub </span>key: String
+    <span class="kw">pub </span>key: String,
 }
 
 <span class="kw">impl </span>Author {
-  <span class="doccomment">/// Get the key out of an author reference.
-  </span><span class="kw">pub fn </span>key&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt; {
-    <span class="kw">match </span><span class="self">self </span>{
-      Author::Object { key } =&gt; <span class="prelude-val">Some</span>(key.as_ref()),
-      Author::Nested { author } =&gt; <span class="prelude-val">Some</span>(author.key.as_ref()),
-      Author::Key(<span class="kw-2">ref </span>ks) =&gt; <span class="prelude-val">Some</span>(ks.as_ref()),
-      Author::Empty {} =&gt; <span class="prelude-val">None
-    </span>}
-  }
+    <span class="doccomment">/// Get the key out of an author reference.
+    </span><span class="kw">pub fn </span>key&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            Author::Object { key } =&gt; <span class="prelude-val">Some</span>(key.as_ref()),
+            Author::Nested { author } =&gt; <span class="prelude-val">Some</span>(author.key.as_ref()),
+            Author::Key(<span class="kw-2">ref </span>ks) =&gt; <span class="prelude-val">Some</span>(ks.as_ref()),
+            Author::Empty {} =&gt; <span class="prelude-val">None</span>,
+        }
+    }
 }
 
 <span class="doccomment">/// An author record parsed from OpenLibrary JSON.
 </span><span class="attribute">#[derive(Deserialize)]
 </span><span class="kw">pub struct </span>OLAuthorSource {
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>name: <span class="prelude-ty">Option</span>&lt;String&gt;,
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>personal_name: <span class="prelude-ty">Option</span>&lt;String&gt;,
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>alternate_names: Vec&lt;String&gt;
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>name: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>personal_name: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>alternate_names: Vec&lt;String&gt;,
 }
 
 <span class="doccomment">/// An edition record parsed from OpenLibrary JSON.
 </span><span class="attribute">#[derive(Deserialize)]
 </span><span class="kw">pub struct </span>OLEditionRecord {
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>isbn_10: Vec&lt;String&gt;,
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>isbn_13: Vec&lt;String&gt;,
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>asin: Vec&lt;String&gt;,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>isbn_10: Vec&lt;String&gt;,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>isbn_13: Vec&lt;String&gt;,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>asin: Vec&lt;String&gt;,
 
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>title: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>title: <span class="prelude-ty">Option</span>&lt;String&gt;,
 
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>works: Vec&lt;Keyed&gt;,
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>authors: Vec&lt;Author&gt;,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>works: Vec&lt;Keyed&gt;,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>authors: Vec&lt;Author&gt;,
 
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>subjects: Vec&lt;String&gt;,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>subjects: Vec&lt;String&gt;,
 }
 
 <span class="doccomment">/// An author record parsed from OpenLibrary JSON.
 </span><span class="attribute">#[derive(Deserialize)]
 </span><span class="kw">pub struct </span>OLWorkRecord {
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>authors: Vec&lt;Author&gt;,
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>title: <span class="prelude-ty">Option</span>&lt;String&gt;,
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>subjects: Vec&lt;String&gt;,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>authors: Vec&lt;Author&gt;,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>title: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>subjects: Vec&lt;String&gt;,
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

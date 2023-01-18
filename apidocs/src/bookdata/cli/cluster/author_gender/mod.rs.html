@@ -83,8 +83,6 @@
 <span id="83">83</span>
 <span id="84">84</span>
 <span id="85">85</span>
-<span id="86">86</span>
-<span id="87">87</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Summarize author gender information for clusters.
 //!
 //! This script reads the cluster author information and author gender
@@ -94,12 +92,12 @@
 //! the integration pipeline.
 </span><span class="kw">use </span>std::path::{Path, PathBuf};
 
-<span class="kw">use </span>serde::{Serialize, Deserialize};
+<span class="kw">use </span>serde::{Deserialize, Serialize};
 
-<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::gender::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::arrow::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::gender::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::ids::codes::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 
 <span class="kw">mod </span>authors;
 <span class="kw">mod </span>clusters;
@@ -111,66 +109,64 @@
 // }
 
 </span><span class="attribute">#[derive(Args, Debug)]
-#[command(name=<span class="string">&quot;extract-author-genders&quot;</span>)]
+#[command(name = <span class="string">&quot;extract-author-genders&quot;</span>)]
 </span><span class="doccomment">/// Extract cluster author gender data from extracted book data.
 </span><span class="kw">pub struct </span>AuthorGender {
-  <span class="doccomment">/// Specify output file
-  </span><span class="attribute">#[arg(short=<span class="string">&#39;o&#39;</span>, long=<span class="string">&quot;output&quot;</span>)]
-  </span>output: PathBuf,
+    <span class="doccomment">/// Specify output file
+    </span><span class="attribute">#[arg(short = <span class="string">&#39;o&#39;</span>, long = <span class="string">&quot;output&quot;</span>)]
+    </span>output: PathBuf,
 
-  <span class="doccomment">/// Specify the cluster-author file.
-  </span><span class="attribute">#[arg(short=<span class="string">&#39;A&#39;</span>, long=<span class="string">&quot;cluster-authors&quot;</span>)]
-  </span>author_file: PathBuf,
+    <span class="doccomment">/// Specify the cluster-author file.
+    </span><span class="attribute">#[arg(short = <span class="string">&#39;A&#39;</span>, long = <span class="string">&quot;cluster-authors&quot;</span>)]
+    </span>author_file: PathBuf,
 }
 
 <span class="doccomment">/// Record format for saving gender information.
 </span><span class="attribute">#[derive(Serialize, Deserialize, Clone, ArrowField)]
 </span><span class="kw">struct </span>ClusterGenderInfo {
-  cluster: i32,
-  gender: String,
+    cluster: i32,
+    gender: String,
 }
 
 <span class="kw">fn </span>save_genders(clusters: Vec&lt;i32&gt;, genders: clusters::ClusterTable, outf: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-  <span class="macro">info!</span>(<span class="string">&quot;writing cluster genders to {}&quot;</span>, outf.display());
-  <span class="kw">let </span><span class="kw-2">mut </span>out = TableWriter::open(outf)<span class="question-mark">?</span>;
+    <span class="macro">info!</span>(<span class="string">&quot;writing cluster genders to {}&quot;</span>, outf.display());
+    <span class="kw">let </span><span class="kw-2">mut </span>out = TableWriter::open(outf)<span class="question-mark">?</span>;
 
-  <span class="kw">for </span>cluster <span class="kw">in </span>clusters {
-    <span class="kw">let </span><span class="kw-2">mut </span>gender = <span class="string">&quot;no-book-author&quot;</span>.to_owned();
-    <span class="kw">if </span>NS_ISBN.from_code(cluster).is_some() {
-      gender = <span class="string">&quot;no-book&quot;</span>.to_owned();
+    <span class="kw">for </span>cluster <span class="kw">in </span>clusters {
+        <span class="kw">let </span><span class="kw-2">mut </span>gender = <span class="string">&quot;no-book-author&quot;</span>.to_owned();
+        <span class="kw">if </span>NS_ISBN.from_code(cluster).is_some() {
+            gender = <span class="string">&quot;no-book&quot;</span>.to_owned();
+        }
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(stats) = genders.get(<span class="kw-2">&amp;</span>cluster) {
+            <span class="kw">if </span>stats.n_book_authors == <span class="number">0 </span>{
+                <span class="macro">assert!</span>(stats.genders.is_empty());
+                gender = <span class="string">&quot;no-book-author&quot;</span>.to_owned() <span class="comment">// shouldn&#39;t happen but 🤷‍♀️
+            </span>} <span class="kw">else if </span>stats.n_author_recs == <span class="number">0 </span>{
+                <span class="macro">assert!</span>(stats.genders.is_empty());
+                gender = <span class="string">&quot;no-author-rec&quot;</span>.to_owned()
+            } <span class="kw">else if </span>stats.genders.is_empty() {
+                gender = <span class="string">&quot;no-gender&quot;</span>.to_owned()
+            } <span class="kw">else </span>{
+                gender = resolve_gender(<span class="kw-2">&amp;</span>stats.genders).to_string()
+            };
+        }
+        out.write_object(ClusterGenderInfo { cluster, gender })<span class="question-mark">?</span>;
     }
-    <span class="kw">if let </span><span class="prelude-val">Some</span>(stats) = genders.get(<span class="kw-2">&amp;</span>cluster) {
-      <span class="kw">if </span>stats.n_book_authors == <span class="number">0 </span>{
-        <span class="macro">assert!</span>(stats.genders.is_empty());
-        gender = <span class="string">&quot;no-book-author&quot;</span>.to_owned() <span class="comment">// shouldn&#39;t happen but 🤷‍♀️
-      </span>} <span class="kw">else if </span>stats.n_author_recs == <span class="number">0 </span>{
-        <span class="macro">assert!</span>(stats.genders.is_empty());
-        gender = <span class="string">&quot;no-author-rec&quot;</span>.to_owned()
-      } <span class="kw">else if </span>stats.genders.is_empty() {
-        gender = <span class="string">&quot;no-gender&quot;</span>.to_owned()
-      } <span class="kw">else </span>{
-        gender = resolve_gender(<span class="kw-2">&amp;</span>stats.genders).to_string()
-      };
-    }
-    out.write_object(ClusterGenderInfo {
-      cluster, gender
-    })<span class="question-mark">?</span>;
-  }
 
-  out.finish()<span class="question-mark">?</span>;
+    out.finish()<span class="question-mark">?</span>;
 
-  <span class="prelude-val">Ok</span>(())
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="kw">impl </span>Command <span class="kw">for </span>AuthorGender {
-  <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>clusters = clusters::all_clusters(<span class="string">&quot;book-links/cluster-stats.parquet&quot;</span>)<span class="question-mark">?</span>;
-    <span class="kw">let </span>name_genders = authors::viaf_author_table()<span class="question-mark">?</span>;
-    <span class="kw">let </span>cluster_genders = clusters::read_resolve(<span class="kw-2">&amp;</span><span class="self">self</span>.author_file, <span class="kw-2">&amp;</span>name_genders)<span class="question-mark">?</span>;
-    save_genders(clusters, cluster_genders, <span class="self">self</span>.output.as_ref())<span class="question-mark">?</span>;
+    <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span>clusters = clusters::all_clusters(<span class="string">&quot;book-links/cluster-stats.parquet&quot;</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>name_genders = authors::viaf_author_table()<span class="question-mark">?</span>;
+        <span class="kw">let </span>cluster_genders = clusters::read_resolve(<span class="kw-2">&amp;</span><span class="self">self</span>.author_file, <span class="kw-2">&amp;</span>name_genders)<span class="question-mark">?</span>;
+        save_genders(clusters, cluster_genders, <span class="self">self</span>.output.as_ref())<span class="question-mark">?</span>;
 
-    <span class="prelude-val">Ok</span>(())
-  }
+        <span class="prelude-val">Ok</span>(())
+    }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -277,120 +277,109 @@
 <span id="277">277</span>
 <span id="278">278</span>
 <span id="279">279</span>
-<span id="280">280</span>
-<span id="281">281</span>
-<span id="282">282</span>
-<span id="283">283</span>
-<span id="284">284</span>
-<span id="285">285</span>
-<span id="286">286</span>
-<span id="287">287</span>
-<span id="288">288</span>
-</pre><pre class="rust"><code><span class="kw">use </span>std::io::{BufRead, Lines};
+</pre><pre class="rust"><code><span class="kw">use </span>std::convert::TryInto;
+<span class="kw">use </span>std::io::{BufRead, Lines};
 <span class="kw">use </span>std::str;
-<span class="kw">use </span>std::convert::TryInto;
 <span class="kw">use </span>std::thread::spawn;
 
-<span class="kw">use </span>log::<span class="kw-2">*</span>;
 <span class="kw">use </span>crossbeam::channel::bounded;
+<span class="kw">use </span>log::<span class="kw-2">*</span>;
 
-<span class="kw">use </span>quick_xml::Reader;
-<span class="kw">use </span>quick_xml::events::Event;
-<span class="kw">use </span>quick_xml::events::attributes::Attributes;
+<span class="kw">use </span>anyhow::{anyhow, Error, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>fallible_iterator::FallibleIterator;
-<span class="kw">use </span>anyhow::{<span class="prelude-ty">Result</span>, anyhow, Error};
+<span class="kw">use </span>quick_xml::events::attributes::Attributes;
+<span class="kw">use </span>quick_xml::events::Event;
+<span class="kw">use </span>quick_xml::Reader;
 
-<span class="kw">use </span><span class="kw">crate</span>::util::StringAccumulator;
 <span class="kw">use </span><span class="kw">crate</span>::tsv::split_first;
 <span class="kw">use </span><span class="kw">crate</span>::util::iteration::chunk_owned;
+<span class="kw">use </span><span class="kw">crate</span>::util::StringAccumulator;
 
 <span class="kw">use </span><span class="kw">super</span>::record::<span class="kw-2">*</span>;
 
 <span class="attribute">#[derive(Debug, Default)]
 </span><span class="kw">struct </span>Codes {
-  tag: i16,
-  ind1: Code,
-  ind2: Code
+    tag: i16,
+    ind1: Code,
+    ind2: Code,
 }
 
 <span class="kw">impl </span>From&lt;Codes&gt; <span class="kw">for </span>Field {
-  <span class="kw">fn </span>from(c: Codes) -&gt; Field {
-    Field {
-      tag: c.tag,
-      ind1: c.ind1,
-      ind2: c.ind2,
-      subfields: Vec::new()
+    <span class="kw">fn </span>from(c: Codes) -&gt; Field {
+        Field {
+            tag: c.tag,
+            ind1: c.ind1,
+            ind2: c.ind2,
+            subfields: Vec::new(),
+        }
     }
-  }
 }
 
 <span class="doccomment">/// Sources of MARC data.
 </span><span class="kw">enum </span>Src&lt;B: BufRead&gt; {
-  <span class="doccomment">/// QuickXML Reader
-  </span>QXR(Reader&lt;B&gt;),
-  <span class="doccomment">/// Delimited lines
-  </span><span class="attribute">#[allow(dead_code)]
-  </span>DL(Lines&lt;B&gt;),
-  <span class="doccomment">/// Iterable of parsed records
-  </span>PRI(Box&lt;<span class="kw">dyn </span>Iterator&lt;Item=<span class="prelude-ty">Result</span>&lt;MARCRecord,Error&gt;&gt;&gt;),
+    <span class="doccomment">/// QuickXML Reader
+    </span>QXR(Reader&lt;B&gt;),
+    <span class="doccomment">/// Delimited lines
+    </span><span class="attribute">#[allow(dead_code)]
+    </span>DL(Lines&lt;B&gt;),
+    <span class="doccomment">/// Iterable of parsed records
+    </span>PRI(Box&lt;<span class="kw">dyn </span>Iterator&lt;Item = <span class="prelude-ty">Result</span>&lt;MARCRecord, Error&gt;&gt;&gt;),
 }
 
 <span class="doccomment">/// Iterator of MARC records.
 </span><span class="kw">pub struct </span>Records&lt;B: BufRead&gt; {
-  buffer: Vec&lt;u8&gt;,
-  source: Src&lt;B&gt;
+    buffer: Vec&lt;u8&gt;,
+    source: Src&lt;B&gt;,
 }
 
-<span class="kw">impl </span>&lt;B: BufRead&gt; FallibleIterator <span class="kw">for </span>Records&lt;B&gt; {
-  <span class="kw">type </span>Error = anyhow::Error;
-  <span class="kw">type </span>Item = MARCRecord;
+<span class="kw">impl</span>&lt;B: BufRead&gt; FallibleIterator <span class="kw">for </span>Records&lt;B&gt; {
+    <span class="kw">type </span>Error = anyhow::Error;
+    <span class="kw">type </span>Item = MARCRecord;
 
-  <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;MARCRecord&gt;&gt; {
-    <span class="kw">match </span><span class="kw-2">&amp;mut </span><span class="self">self</span>.source {
-      Src::QXR(reader) =&gt; next_qxr(reader, <span class="kw-2">&amp;mut </span><span class="self">self</span>.buffer),
-      Src::DL(lines) =&gt; next_line(lines),
-      Src::PRI(iter) =&gt; iter.next().transpose(),
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;MARCRecord&gt;&gt; {
+        <span class="kw">match </span><span class="kw-2">&amp;mut </span><span class="self">self</span>.source {
+            Src::QXR(reader) =&gt; next_qxr(reader, <span class="kw-2">&amp;mut </span><span class="self">self</span>.buffer),
+            Src::DL(lines) =&gt; next_line(lines),
+            Src::PRI(iter) =&gt; iter.next().transpose(),
+        }
     }
-  }
 }
 
 <span class="kw">fn </span>next_qxr&lt;B: BufRead&gt;(reader: <span class="kw-2">&amp;mut </span>Reader&lt;B&gt;, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u8&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;MARCRecord&gt;&gt; {
-  <span class="kw">loop </span>{
-    <span class="kw">match </span>reader.read_event_into(buf)<span class="question-mark">? </span>{
-      Event::Start(<span class="kw-2">ref </span>e) =&gt; {
-        <span class="kw">let </span>name = e.local_name();
-        <span class="kw">match </span>name.into_inner() {
-          <span class="string">b&quot;record&quot; </span>=&gt; {
-            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(read_record(reader)<span class="question-mark">?</span>))
-          },
-          <span class="kw">_ </span>=&gt; ()
+    <span class="kw">loop </span>{
+        <span class="kw">match </span>reader.read_event_into(buf)<span class="question-mark">? </span>{
+            Event::Start(<span class="kw-2">ref </span>e) =&gt; {
+                <span class="kw">let </span>name = e.local_name();
+                <span class="kw">match </span>name.into_inner() {
+                    <span class="string">b&quot;record&quot; </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(read_record(reader)<span class="question-mark">?</span>)),
+                    <span class="kw">_ </span>=&gt; (),
+                }
+            }
+            Event::Eof =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+            <span class="kw">_ </span>=&gt; (),
         }
-      },
-      Event::Eof =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
-      <span class="kw">_ </span>=&gt; ()
     }
-  }
 }
 
 <span class="kw">fn </span>next_line&lt;B: BufRead&gt;(lines: <span class="kw-2">&amp;mut </span>Lines&lt;B&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;MARCRecord&gt;&gt; {
-  <span class="kw">match </span>lines.next() {
-    <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
-    <span class="prelude-val">Some</span>(line) =&gt; {
-      <span class="kw">let </span>lstr = line<span class="question-mark">?</span>;
-      <span class="kw">let </span>(_id, xml) = split_first(<span class="kw-2">&amp;</span>lstr).ok_or(<span class="macro">anyhow!</span>(<span class="string">&quot;invalid line&quot;</span>))<span class="question-mark">?</span>;
-      <span class="kw">let </span>rec = parse_record(<span class="kw-2">&amp;</span>xml)<span class="question-mark">?</span>;
-      <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(rec))
+    <span class="kw">match </span>lines.next() {
+        <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+        <span class="prelude-val">Some</span>(line) =&gt; {
+            <span class="kw">let </span>lstr = line<span class="question-mark">?</span>;
+            <span class="kw">let </span>(_id, xml) = split_first(<span class="kw-2">&amp;</span>lstr).ok_or(<span class="macro">anyhow!</span>(<span class="string">&quot;invalid line&quot;</span>))<span class="question-mark">?</span>;
+            <span class="kw">let </span>rec = parse_record(<span class="kw-2">&amp;</span>xml)<span class="question-mark">?</span>;
+            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(rec))
+        }
     }
-  }
 }
 
 <span class="doccomment">/// Read MARC records from XML.
 </span><span class="kw">pub fn </span>read_records&lt;B: BufRead&gt;(reader: B) -&gt; Records&lt;B&gt; {
-  <span class="kw">let </span>reader = Reader::from_reader(reader);
-  Records {
-    buffer: Vec::with_capacity(<span class="number">1024</span>),
-    source: Src::QXR(reader)
-  }
+    <span class="kw">let </span>reader = Reader::from_reader(reader);
+    Records {
+        buffer: Vec::with_capacity(<span class="number">1024</span>),
+        source: Src::QXR(reader),
+    }
 }
 
 <span class="doccomment">/// Read MARC records from delimited XML.
@@ -398,181 +387,174 @@
 /// This reader uses Rayon to parse the XML in parallel, since XML parsing is typically
 /// the bottleneck for MARC scanning.
 </span><span class="kw">pub fn </span>read_records_delim&lt;B: BufRead + Send + <span class="lifetime">&#39;static</span>&gt;(reader: B) -&gt; Records&lt;B&gt; {
-  <span class="kw">let </span>lines = reader.lines();
-  <span class="comment">// chunk lines (to decrease threading overhead)
-  </span><span class="kw">let </span>chunks = chunk_owned(lines, <span class="number">5000</span>);
+    <span class="kw">let </span>lines = reader.lines();
+    <span class="comment">// chunk lines (to decrease threading overhead)
+    </span><span class="kw">let </span>chunks = chunk_owned(lines, <span class="number">5000</span>);
 
-  <span class="comment">// receivers &amp; senders for chunks of lines
-  </span><span class="kw">let </span>(chunk_tx, chunk_rx) = bounded(<span class="number">100</span>);
+    <span class="comment">// receivers &amp; senders for chunks of lines
+    </span><span class="kw">let </span>(chunk_tx, chunk_rx) = bounded(<span class="number">100</span>);
 
-  <span class="comment">// receivers and senders for chunks of parsed records
-  </span><span class="kw">let </span>(parsed_tx, parsed_rx) = bounded(<span class="number">100</span>);
+    <span class="comment">// receivers and senders for chunks of parsed records
+    </span><span class="kw">let </span>(parsed_tx, parsed_rx) = bounded(<span class="number">100</span>);
 
-  <span class="comment">// background thread getting lines
-  </span><span class="macro">info!</span>(<span class="string">&quot;spawning reader thread&quot;</span>);
-  <span class="kw">let </span>_bg_read = spawn(<span class="kw">move </span>|| {
-    <span class="kw">for </span>chunk <span class="kw">in </span>chunks {
-      chunk_tx.send(chunk).expect(<span class="string">&quot;background send failed&quot;</span>);
-    }
-  });
-
-  <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">4 </span>{
-    <span class="macro">info!</span>(<span class="string">&quot;spawning parser thread {}&quot;</span>, i + <span class="number">1</span>);
-    <span class="kw">let </span>rx = chunk_rx.clone();
-    <span class="kw">let </span>tx = parsed_tx.clone();
-    spawn(<span class="kw">move </span>|| {
-      <span class="kw">for </span>chunk <span class="kw">in </span>rx {
-        <span class="kw">let </span>res: Vec&lt;<span class="kw">_</span>&gt; = chunk.into_iter().map(|lres| {
-          <span class="kw">match </span>lres {
-            <span class="prelude-val">Ok</span>(line) =&gt; parse_record(<span class="kw-2">&amp;</span>line),
-            <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(e.into()),
-          }
-        }).collect();
-        tx.send(res).expect(<span class="string">&quot;background send failed&quot;</span>);
-      }
+    <span class="comment">// background thread getting lines
+    </span><span class="macro">info!</span>(<span class="string">&quot;spawning reader thread&quot;</span>);
+    <span class="kw">let </span>_bg_read = spawn(<span class="kw">move </span>|| {
+        <span class="kw">for </span>chunk <span class="kw">in </span>chunks {
+            chunk_tx.send(chunk).expect(<span class="string">&quot;background send failed&quot;</span>);
+        }
     });
-  }
 
-  <span class="kw">let </span>flat = parsed_rx.into_iter().flatten();
+    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">4 </span>{
+        <span class="macro">info!</span>(<span class="string">&quot;spawning parser thread {}&quot;</span>, i + <span class="number">1</span>);
+        <span class="kw">let </span>rx = chunk_rx.clone();
+        <span class="kw">let </span>tx = parsed_tx.clone();
+        spawn(<span class="kw">move </span>|| {
+            <span class="kw">for </span>chunk <span class="kw">in </span>rx {
+                <span class="kw">let </span>res: Vec&lt;<span class="kw">_</span>&gt; = chunk
+                    .into_iter()
+                    .map(|lres| <span class="kw">match </span>lres {
+                        <span class="prelude-val">Ok</span>(line) =&gt; parse_record(<span class="kw-2">&amp;</span>line),
+                        <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(e.into()),
+                    })
+                    .collect();
+                tx.send(res).expect(<span class="string">&quot;background send failed&quot;</span>);
+            }
+        });
+    }
 
-  Records {
-    buffer: Vec::new(),
-    source: Src::PRI(Box::new(flat))
-  }
+    <span class="kw">let </span>flat = parsed_rx.into_iter().flatten();
+
+    Records {
+        buffer: Vec::new(),
+        source: Src::PRI(Box::new(flat)),
+    }
 }
 
 <span class="doccomment">/// Parse a single MARC record from an XML string.
 </span><span class="kw">pub fn </span>parse_record&lt;S: AsRef&lt;str&gt;&gt;(xml: S) -&gt; <span class="prelude-ty">Result</span>&lt;MARCRecord&gt; {
-  <span class="kw">let </span><span class="kw-2">mut </span>parse = Reader::from_str(xml.as_ref());
-  read_record(<span class="kw-2">&amp;mut </span>parse)
+    <span class="kw">let </span><span class="kw-2">mut </span>parse = Reader::from_str(xml.as_ref());
+    read_record(<span class="kw-2">&amp;mut </span>parse)
 }
 
 <span class="doccomment">/// Read a single MARC record from an XML reader.
 </span><span class="attribute">#[inline(never)] </span><span class="comment">// make profiling a little easier, this fn isn&#39;t worth inlining
 </span><span class="kw">fn </span>read_record&lt;B: BufRead&gt;(rdr: <span class="kw-2">&amp;mut </span>Reader&lt;B&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;MARCRecord&gt; {
-  <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::new();
-  <span class="kw">let </span><span class="kw-2">mut </span>content = StringAccumulator::new();
-  <span class="kw">let </span><span class="kw-2">mut </span>record = MARCRecord {
-    leader: String::new(),
-    control: Vec::new(),
-    fields: Vec::new()
-  };
-  <span class="kw">let </span><span class="kw-2">mut </span>field = Field::default();
-  <span class="kw">let </span><span class="kw-2">mut </span>tag = <span class="number">0</span>;
-  <span class="kw">let </span><span class="kw-2">mut </span>sf_code = Code::default();
-  <span class="kw">loop </span>{
-    <span class="kw">match </span>rdr.read_event_into(<span class="kw-2">&amp;mut </span>buf)<span class="question-mark">? </span>{
-      Event::Start(<span class="kw-2">ref </span>e) =&gt; {
-        <span class="kw">let </span>name = e.local_name();
-        <span class="kw">match </span>name.into_inner() {
-          <span class="string">b&quot;record&quot; </span>=&gt; (),
-          <span class="string">b&quot;leader&quot; </span>=&gt; {
-            content.activate();
-          },
-          <span class="string">b&quot;controlfield&quot; </span>=&gt; {
-            tag = read_tag_attr(e.attributes())<span class="question-mark">?</span>;
-            content.activate();
-          },
-          <span class="string">b&quot;datafield&quot; </span>=&gt; {
-            <span class="kw">let </span>codes = read_code_attrs(e.attributes())<span class="question-mark">?</span>;
-            field = codes.into();
-          },
-          <span class="string">b&quot;subfield&quot; </span>=&gt; {
-            sf_code = read_sf_code_attr(e.attributes())<span class="question-mark">?</span>;
-            content.activate();
-          }
-          <span class="kw">_ </span>=&gt; ()
+    <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>content = StringAccumulator::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>record = MARCRecord {
+        leader: String::new(),
+        control: Vec::new(),
+        fields: Vec::new(),
+    };
+    <span class="kw">let </span><span class="kw-2">mut </span>field = Field::default();
+    <span class="kw">let </span><span class="kw-2">mut </span>tag = <span class="number">0</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>sf_code = Code::default();
+    <span class="kw">loop </span>{
+        <span class="kw">match </span>rdr.read_event_into(<span class="kw-2">&amp;mut </span>buf)<span class="question-mark">? </span>{
+            Event::Start(<span class="kw-2">ref </span>e) =&gt; {
+                <span class="kw">let </span>name = e.local_name();
+                <span class="kw">match </span>name.into_inner() {
+                    <span class="string">b&quot;record&quot; </span>=&gt; (),
+                    <span class="string">b&quot;leader&quot; </span>=&gt; {
+                        content.activate();
+                    }
+                    <span class="string">b&quot;controlfield&quot; </span>=&gt; {
+                        tag = read_tag_attr(e.attributes())<span class="question-mark">?</span>;
+                        content.activate();
+                    }
+                    <span class="string">b&quot;datafield&quot; </span>=&gt; {
+                        <span class="kw">let </span>codes = read_code_attrs(e.attributes())<span class="question-mark">?</span>;
+                        field = codes.into();
+                    }
+                    <span class="string">b&quot;subfield&quot; </span>=&gt; {
+                        sf_code = read_sf_code_attr(e.attributes())<span class="question-mark">?</span>;
+                        content.activate();
+                    }
+                    <span class="kw">_ </span>=&gt; (),
+                }
+            }
+            Event::End(<span class="kw-2">ref </span>e) =&gt; {
+                <span class="kw">let </span>name = e.local_name();
+                <span class="kw">match </span>name.into_inner() {
+                    <span class="string">b&quot;leader&quot; </span>=&gt; {
+                        record.leader = content.finish();
+                    }
+                    <span class="string">b&quot;controlfield&quot; </span>=&gt; record.control.push(ControlField {
+                        tag: tag.try_into()<span class="question-mark">?</span>,
+                        content: content.finish(),
+                    }),
+                    <span class="string">b&quot;subfield&quot; </span>=&gt; field.subfields.push(Subfield {
+                        code: sf_code,
+                        content: content.finish(),
+                    }),
+                    <span class="string">b&quot;datafield&quot; </span>=&gt; {
+                        record.fields.push(field);
+                        field = Field::default();
+                    }
+                    <span class="string">b&quot;record&quot; </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(record),
+                    <span class="kw">_ </span>=&gt; (),
+                }
+            }
+            Event::Text(e) =&gt; {
+                <span class="kw">let </span>t = e.unescape()<span class="question-mark">?</span>;
+                content.add_slice(t);
+            }
+            Event::Eof =&gt; <span class="kw">break</span>,
+            <span class="kw">_ </span>=&gt; (),
         }
-      },
-      Event::End(<span class="kw-2">ref </span>e) =&gt; {
-        <span class="kw">let </span>name = e.local_name();
-        <span class="kw">match </span>name.into_inner() {
-          <span class="string">b&quot;leader&quot; </span>=&gt; {
-            record.leader = content.finish();
-          }
-          <span class="string">b&quot;controlfield&quot; </span>=&gt; {
-            record.control.push(ControlField {
-              tag: tag.try_into()<span class="question-mark">?</span>,
-              content: content.finish()
-            })
-          }
-          <span class="string">b&quot;subfield&quot; </span>=&gt; {
-            field.subfields.push(Subfield {
-              code: sf_code,
-              content: content.finish()
-            })
-          },
-          <span class="string">b&quot;datafield&quot; </span>=&gt; {
-            record.fields.push(field);
-            field = Field::default();
-          },
-          <span class="string">b&quot;record&quot; </span>=&gt; {
-            <span class="kw">return </span><span class="prelude-val">Ok</span>(record)
-          },
-          <span class="kw">_ </span>=&gt; ()
-        }
-      },
-      Event::Text(e) =&gt; {
-        <span class="kw">let </span>t = e.unescape()<span class="question-mark">?</span>;
-        content.add_slice(t);
-      },
-      Event::Eof =&gt; <span class="kw">break</span>,
-      <span class="kw">_ </span>=&gt; ()
     }
-  }
-  <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;could not parse record&quot;</span>))
+    <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;could not parse record&quot;</span>))
 }
 
 <span class="doccomment">/// Read the tag attribute from a tag.
 </span><span class="kw">fn </span>read_tag_attr(attrs: Attributes&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;i16&gt; {
-  <span class="kw">for </span>ar <span class="kw">in </span>attrs {
-    <span class="kw">let </span>a = ar<span class="question-mark">?</span>;
-    <span class="kw">if </span>a.key.into_inner() == <span class="string">b&quot;tag&quot; </span>{
-      <span class="kw">let </span>tag = a.unescape_value()<span class="question-mark">?</span>;
-      <span class="kw">return </span><span class="prelude-val">Ok</span>(tag.parse()<span class="question-mark">?</span>);
+    <span class="kw">for </span>ar <span class="kw">in </span>attrs {
+        <span class="kw">let </span>a = ar<span class="question-mark">?</span>;
+        <span class="kw">if </span>a.key.into_inner() == <span class="string">b&quot;tag&quot; </span>{
+            <span class="kw">let </span>tag = a.unescape_value()<span class="question-mark">?</span>;
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(tag.parse()<span class="question-mark">?</span>);
+        }
     }
-  }
 
-  <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;no tag attribute found&quot;</span>))
+    <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;no tag attribute found&quot;</span>))
 }
 
 <span class="doccomment">/// Read code attributes from a tag.
 </span><span class="kw">fn </span>read_code_attrs(attrs: Attributes&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Codes&gt; {
-  <span class="kw">let </span><span class="kw-2">mut </span>tag = <span class="number">0</span>;
-  <span class="kw">let </span><span class="kw-2">mut </span>ind1 = Code::default();
-  <span class="kw">let </span><span class="kw-2">mut </span>ind2 = Code::default();
+    <span class="kw">let </span><span class="kw-2">mut </span>tag = <span class="number">0</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>ind1 = Code::default();
+    <span class="kw">let </span><span class="kw-2">mut </span>ind2 = Code::default();
 
-  <span class="kw">for </span>ar <span class="kw">in </span>attrs {
-    <span class="kw">let </span>a = ar<span class="question-mark">?</span>;
-    <span class="kw">let </span>v = a.unescape_value()<span class="question-mark">?</span>;
-    <span class="kw">match </span>a.key.into_inner() {
-      <span class="string">b&quot;tag&quot; </span>=&gt; tag = v.parse()<span class="question-mark">?</span>,
-      <span class="string">b&quot;ind1&quot; </span>=&gt; ind1 = v.as_bytes()[<span class="number">0</span>].into(),
-      <span class="string">b&quot;ind2&quot; </span>=&gt; ind2 = v.as_bytes()[<span class="number">0</span>].into(),
-      <span class="kw">_ </span>=&gt; ()
+    <span class="kw">for </span>ar <span class="kw">in </span>attrs {
+        <span class="kw">let </span>a = ar<span class="question-mark">?</span>;
+        <span class="kw">let </span>v = a.unescape_value()<span class="question-mark">?</span>;
+        <span class="kw">match </span>a.key.into_inner() {
+            <span class="string">b&quot;tag&quot; </span>=&gt; tag = v.parse()<span class="question-mark">?</span>,
+            <span class="string">b&quot;ind1&quot; </span>=&gt; ind1 = v.as_bytes()[<span class="number">0</span>].into(),
+            <span class="string">b&quot;ind2&quot; </span>=&gt; ind2 = v.as_bytes()[<span class="number">0</span>].into(),
+            <span class="kw">_ </span>=&gt; (),
+        }
     }
-  }
 
-  <span class="kw">if </span>tag == <span class="number">0 </span>{
-    <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;no tag attribute found&quot;</span>))
-  } <span class="kw">else </span>{
-    <span class="prelude-val">Ok</span>(Codes {
-      tag, ind1, ind2
-    })
-  }
+    <span class="kw">if </span>tag == <span class="number">0 </span>{
+        <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;no tag attribute found&quot;</span>))
+    } <span class="kw">else </span>{
+        <span class="prelude-val">Ok</span>(Codes { tag, ind1, ind2 })
+    }
 }
 
 <span class="doccomment">/// Read the subfield code attriute from a tag
 </span><span class="kw">fn </span>read_sf_code_attr(attrs: Attributes&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Code&gt; {
-  <span class="kw">for </span>ar <span class="kw">in </span>attrs {
-    <span class="kw">let </span>a = ar<span class="question-mark">?</span>;
-    <span class="kw">if </span>a.key.into_inner() == <span class="string">b&quot;code&quot; </span>{
-      <span class="kw">let </span>code = a.unescape_value()<span class="question-mark">?</span>;
-      <span class="kw">return </span><span class="prelude-val">Ok</span>(code.as_bytes()[<span class="number">0</span>].into())
+    <span class="kw">for </span>ar <span class="kw">in </span>attrs {
+        <span class="kw">let </span>a = ar<span class="question-mark">?</span>;
+        <span class="kw">if </span>a.key.into_inner() == <span class="string">b&quot;code&quot; </span>{
+            <span class="kw">let </span>code = a.unescape_value()<span class="question-mark">?</span>;
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(code.as_bytes()[<span class="number">0</span>].into());
+        }
     }
-  }
 
-  <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;no code found&quot;</span>))
+    <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;no code found&quot;</span>))
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

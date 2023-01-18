@@ -90,9 +90,9 @@
 </span><span class="kw">use </span>hashbrown::HashMap;
 <span class="kw">use </span>serde::Deserialize;
 
+<span class="kw">use </span><span class="kw">crate</span>::arrow::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::io::open_progress;
 <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::arrow::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::util::logging::data_progress;
 
 <span class="kw">pub const </span>OUT_FILE: <span class="kw-2">&amp;</span>str = <span class="string">&quot;gr-interactions.parquet&quot;</span>;
@@ -100,18 +100,18 @@
 <span class="doccomment">/// Interaction records we read from CSV.
 </span><span class="attribute">#[derive(Deserialize)]
 </span><span class="kw">pub struct </span>RawInteraction {
-  <span class="kw">pub </span>user_id: i32,
-  <span class="kw">pub </span>book_id: i32,
-  <span class="kw">pub </span>is_read: u8,
-  <span class="kw">pub </span>rating: f32,
-  <span class="kw">pub </span>is_reviewed: u8,
+    <span class="kw">pub </span>user_id: i32,
+    <span class="kw">pub </span>book_id: i32,
+    <span class="kw">pub </span>is_read: u8,
+    <span class="kw">pub </span>rating: f32,
+    <span class="kw">pub </span>is_reviewed: u8,
 }
 
 <span class="doccomment">/// Book ID map record from CSV.
 </span><span class="attribute">#[derive(Deserialize, Debug)]
 </span><span class="kw">pub struct </span>RawBookMap {
-  <span class="kw">pub </span>book_id_csv: i32,
-  <span class="kw">pub </span>book_id: i32,
+    <span class="kw">pub </span>book_id_csv: i32,
+    <span class="kw">pub </span>book_id: i32,
 }
 
 <span class="doccomment">/// GoodReads interaction records as actually written to the table.
@@ -122,57 +122,57 @@
 /// values causing problems when loaded into Python.
 </span><span class="attribute">#[derive(ArrowField)]
 </span><span class="kw">pub struct </span>IntRecord {
-  <span class="kw">pub </span>rec_id: u32,
-  <span class="kw">pub </span>user_id: i32,
-  <span class="kw">pub </span>book_id: i32,
-  <span class="kw">pub </span>is_read: u8,
-  <span class="kw">pub </span>rating: <span class="prelude-ty">Option</span>&lt;f32&gt;,
+    <span class="kw">pub </span>rec_id: u32,
+    <span class="kw">pub </span>user_id: i32,
+    <span class="kw">pub </span>book_id: i32,
+    <span class="kw">pub </span>is_read: u8,
+    <span class="kw">pub </span>rating: <span class="prelude-ty">Option</span>&lt;f32&gt;,
 }
 
 <span class="kw">fn </span>read_book_map(books: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;HashMap&lt;i32, i32&gt;&gt; {
-  <span class="kw">let </span><span class="kw-2">mut </span>map = HashMap::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>map = HashMap::new();
 
-  <span class="macro">info!</span>(<span class="string">&quot;scanning books from {:?}&quot;</span>, books);
-  <span class="kw">let </span><span class="kw-2">mut </span>read = csv::Reader::from_path(books)<span class="question-mark">?</span>;
-  <span class="kw">for </span>rec <span class="kw">in </span>read.deserialize() {
-    <span class="kw">let </span>rec: RawBookMap = rec<span class="question-mark">?</span>;
-    map.insert(rec.book_id_csv, rec.book_id);
-  }
+    <span class="macro">info!</span>(<span class="string">&quot;scanning books from {:?}&quot;</span>, books);
+    <span class="kw">let </span><span class="kw-2">mut </span>read = csv::Reader::from_path(books)<span class="question-mark">?</span>;
+    <span class="kw">for </span>rec <span class="kw">in </span>read.deserialize() {
+        <span class="kw">let </span>rec: RawBookMap = rec<span class="question-mark">?</span>;
+        map.insert(rec.book_id_csv, rec.book_id);
+    }
 
-  <span class="prelude-val">Ok</span>(map)
+    <span class="prelude-val">Ok</span>(map)
 }
 
 <span class="doccomment">/// Scan the GoodReads simple interaction records.
 </span><span class="kw">pub fn </span>scan_interaction_csv(books: <span class="kw-2">&amp;</span>Path, records: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-  <span class="kw">let </span>books = read_book_map(books)<span class="question-mark">?</span>;
+    <span class="kw">let </span>books = read_book_map(books)<span class="question-mark">?</span>;
 
-  <span class="macro">info!</span>(<span class="string">&quot;scanning interactions from {:?}&quot;</span>, records);
-  <span class="kw">let </span><span class="kw-2">mut </span>rec_id = <span class="number">0</span>;
-  <span class="kw">let </span>pb = data_progress(<span class="number">0</span>);
-  <span class="kw">let </span>read = open_progress(records, pb.clone())<span class="question-mark">?</span>;
-  <span class="kw">let </span><span class="kw-2">mut </span>read = csv::Reader::from_reader(read);
-  <span class="kw">let </span><span class="kw-2">mut </span>write = TableWriter::open(OUT_FILE)<span class="question-mark">?</span>;
-  <span class="kw">for </span>rec <span class="kw">in </span>read.deserialize() {
-    <span class="kw">let </span>rec: RawInteraction = rec<span class="question-mark">?</span>;
-    <span class="kw">let </span>book_id = books.get(<span class="kw-2">&amp;</span>rec.book_id).map(|id| <span class="kw-2">*</span>id);
-    <span class="kw">let </span>book_id = book_id.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;unknown book ID {}&quot;</span>, rec.book_id))<span class="question-mark">?</span>;
-    rec_id += <span class="number">1</span>;
-    write.write_object(IntRecord {
-      rec_id,
-      book_id,
-      user_id: rec.user_id,
-      is_read: rec.is_read <span class="kw">as </span>u8,
-      rating: <span class="kw">if </span>rec.rating &gt; <span class="number">0.0 </span>{
-        <span class="prelude-val">Some</span>(rec.rating)
-      } <span class="kw">else </span>{
-        <span class="prelude-val">None
-      </span>}
-    })<span class="question-mark">?</span>;
-  }
+    <span class="macro">info!</span>(<span class="string">&quot;scanning interactions from {:?}&quot;</span>, records);
+    <span class="kw">let </span><span class="kw-2">mut </span>rec_id = <span class="number">0</span>;
+    <span class="kw">let </span>pb = data_progress(<span class="number">0</span>);
+    <span class="kw">let </span>read = open_progress(records, pb.clone())<span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>read = csv::Reader::from_reader(read);
+    <span class="kw">let </span><span class="kw-2">mut </span>write = TableWriter::open(OUT_FILE)<span class="question-mark">?</span>;
+    <span class="kw">for </span>rec <span class="kw">in </span>read.deserialize() {
+        <span class="kw">let </span>rec: RawInteraction = rec<span class="question-mark">?</span>;
+        <span class="kw">let </span>book_id = books.get(<span class="kw-2">&amp;</span>rec.book_id).map(|id| <span class="kw-2">*</span>id);
+        <span class="kw">let </span>book_id = book_id.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;unknown book ID {}&quot;</span>, rec.book_id))<span class="question-mark">?</span>;
+        rec_id += <span class="number">1</span>;
+        write.write_object(IntRecord {
+            rec_id,
+            book_id,
+            user_id: rec.user_id,
+            is_read: rec.is_read <span class="kw">as </span>u8,
+            rating: <span class="kw">if </span>rec.rating &gt; <span class="number">0.0 </span>{
+                <span class="prelude-val">Some</span>(rec.rating)
+            } <span class="kw">else </span>{
+                <span class="prelude-val">None
+            </span>},
+        })<span class="question-mark">?</span>;
+    }
 
-  write.finish()<span class="question-mark">?</span>;
+    write.finish()<span class="question-mark">?</span>;
 
-  <span class="prelude-val">Ok</span>(())
+    <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

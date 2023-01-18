@@ -243,262 +243,250 @@
 <span id="243">243</span>
 <span id="244">244</span>
 <span id="245">245</span>
-<span id="246">246</span>
-<span id="247">247</span>
-<span id="248">248</span>
-<span id="249">249</span>
-<span id="250">250</span>
-<span id="251">251</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::path::{Path, PathBuf};
 
 <span class="kw">use </span>clap::Args;
 
-<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::arrow::polars::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::ids::codes::{NS_GR_WORK, NS_GR_BOOK};
+<span class="kw">use </span><span class="kw">crate</span>::ids::codes::{NS_GR_BOOK, NS_GR_WORK};
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 
 <span class="kw">use </span>polars::prelude::<span class="kw-2">*</span>;
 
 <span class="attribute">#[derive(Args, Debug)]
 </span><span class="kw">pub struct </span>CICommand {
-  <span class="doccomment">/// Cluster ratings
-  </span><span class="attribute">#[arg(long=<span class="string">&quot;ratings&quot;</span>)]
-  </span>ratings: bool,
+    <span class="doccomment">/// Cluster ratings
+    </span><span class="attribute">#[arg(long = <span class="string">&quot;ratings&quot;</span>)]
+    </span>ratings: bool,
 
-  <span class="doccomment">/// Cluster add-to-shelf actions
-  </span><span class="attribute">#[arg(long=<span class="string">&quot;add-actions&quot;</span>)]
-  </span>add_actions: bool,
+    <span class="doccomment">/// Cluster add-to-shelf actions
+    </span><span class="attribute">#[arg(long = <span class="string">&quot;add-actions&quot;</span>)]
+    </span>add_actions: bool,
 
-  <span class="doccomment">/// Cluster using simple data instead of full data.
-  </span><span class="attribute">#[arg(long=<span class="string">&quot;simple&quot;</span>)]
-  </span>simple: bool,
+    <span class="doccomment">/// Cluster using simple data instead of full data.
+    </span><span class="attribute">#[arg(long = <span class="string">&quot;simple&quot;</span>)]
+    </span>simple: bool,
 
-  <span class="doccomment">/// Cluster using native GoodReads works instead of book clusters.
-  </span><span class="attribute">#[arg(long=<span class="string">&quot;native-works&quot;</span>)]
-  </span>native_works: bool,
+    <span class="doccomment">/// Cluster using native GoodReads works instead of book clusters.
+    </span><span class="attribute">#[arg(long = <span class="string">&quot;native-works&quot;</span>)]
+    </span>native_works: bool,
 
-  <span class="doccomment">/// Write output to FILE
-  </span><span class="attribute">#[arg(short=<span class="string">&#39;o&#39;</span>, long=<span class="string">&quot;output&quot;</span>, name=<span class="string">&quot;FILE&quot;</span>)]
-  </span>output: PathBuf,
+    <span class="doccomment">/// Write output to FILE
+    </span><span class="attribute">#[arg(short = <span class="string">&#39;o&#39;</span>, long = <span class="string">&quot;output&quot;</span>, name = <span class="string">&quot;FILE&quot;</span>)]
+    </span>output: PathBuf,
 }
 
 <span class="attribute">#[derive(Debug, PartialEq, Eq)]
 </span><span class="kw">enum </span>SrcType {
-  Simple,
-  Full,
+    Simple,
+    Full,
 }
 
 <span class="attribute">#[derive(Debug, PartialEq, Eq)]
 </span><span class="kw">enum </span>ActionType {
-  Ratings,
-  AddActions,
+    Ratings,
+    AddActions,
 }
 
 <span class="attribute">#[derive(Debug, PartialEq, Eq)]
 </span><span class="kw">enum </span>AggType {
-  Clusters,
-  NativeWorks,
+    Clusters,
+    NativeWorks,
 }
 
 <span class="attribute">#[derive(Debug)]
 </span><span class="kw">pub struct </span>ClusterOp {
-  actions: ActionType,
-  data: SrcType,
-  clusters: AggType,
-  output: PathBuf,
+    actions: ActionType,
+    data: SrcType,
+    clusters: AggType,
+    output: PathBuf,
 }
 
 <span class="kw">impl </span>CICommand {
-  <span class="kw">pub fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>op = <span class="kw">if </span><span class="self">self</span>.add_actions {
-      ClusterOp::add_actions(<span class="kw-2">&amp;</span><span class="self">self</span>.output)
-    } <span class="kw">else if </span><span class="self">self</span>.ratings {
-      ClusterOp::ratings(<span class="kw-2">&amp;</span><span class="self">self</span>.output)
-    } <span class="kw">else </span>{
-      <span class="macro">error!</span>(<span class="string">&quot;must specify one of --add-actions or --raitngs&quot;</span>);
-      <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;no operating mode specified&quot;</span>));
-    };
-    <span class="kw">if </span><span class="self">self</span>.native_works {
-      op = op.native_works();
-    }
-    <span class="kw">if </span><span class="self">self</span>.simple {
-      op = op.simple();
-    }
+    <span class="kw">pub fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>op = <span class="kw">if </span><span class="self">self</span>.add_actions {
+            ClusterOp::add_actions(<span class="kw-2">&amp;</span><span class="self">self</span>.output)
+        } <span class="kw">else if </span><span class="self">self</span>.ratings {
+            ClusterOp::ratings(<span class="kw-2">&amp;</span><span class="self">self</span>.output)
+        } <span class="kw">else </span>{
+            <span class="macro">error!</span>(<span class="string">&quot;must specify one of --add-actions or --raitngs&quot;</span>);
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;no operating mode specified&quot;</span>));
+        };
+        <span class="kw">if </span><span class="self">self</span>.native_works {
+            op = op.native_works();
+        }
+        <span class="kw">if </span><span class="self">self</span>.simple {
+            op = op.simple();
+        }
 
-    op.cluster()
-  }
+        op.cluster()
+    }
 }
 
 <span class="kw">impl </span>ClusterOp {
-  <span class="doccomment">/// Start a new action-clustering operation.
-  </span><span class="kw">pub fn </span>add_actions&lt;P: AsRef&lt;Path&gt;&gt;(path: P) -&gt; ClusterOp {
-    ClusterOp {
-      actions: ActionType::AddActions,
-      data: SrcType::Full,
-      clusters: AggType::Clusters,
-      output: path.as_ref().to_path_buf(),
+    <span class="doccomment">/// Start a new action-clustering operation.
+    </span><span class="kw">pub fn </span>add_actions&lt;P: AsRef&lt;Path&gt;&gt;(path: P) -&gt; ClusterOp {
+        ClusterOp {
+            actions: ActionType::AddActions,
+            data: SrcType::Full,
+            clusters: AggType::Clusters,
+            output: path.as_ref().to_path_buf(),
+        }
     }
-  }
 
-  <span class="doccomment">/// Start a new rating-clustering operation.
-  </span><span class="kw">pub fn </span>ratings&lt;P: AsRef&lt;Path&gt;&gt;(path: P) -&gt; ClusterOp {
-    ClusterOp {
-      actions: ActionType::Ratings,
-      data: SrcType::Full,
-      clusters: AggType::Clusters,
-      output: path.as_ref().to_path_buf(),
+    <span class="doccomment">/// Start a new rating-clustering operation.
+    </span><span class="kw">pub fn </span>ratings&lt;P: AsRef&lt;Path&gt;&gt;(path: P) -&gt; ClusterOp {
+        ClusterOp {
+            actions: ActionType::Ratings,
+            data: SrcType::Full,
+            clusters: AggType::Clusters,
+            output: path.as_ref().to_path_buf(),
+        }
     }
-  }
 
-  <span class="doccomment">/// Set operation to cluster simple records instead of full records.
-  </span><span class="kw">pub fn </span>simple(<span class="self">self</span>) -&gt; ClusterOp {
-    ClusterOp {
-      data: SrcType::Simple,
-      ..<span class="self">self
-    </span>}
-  }
-
-  <span class="doccomment">/// Set operation to cluster with native works instead of clusters.
-  </span><span class="kw">pub fn </span>native_works(<span class="self">self</span>) -&gt; ClusterOp {
-    ClusterOp {
-      clusters: AggType::NativeWorks,
-      ..<span class="self">self
-    </span>}
-  }
-
-  <span class="doccomment">/// Run the clustering operation.
-  </span><span class="kw">pub fn </span>cluster(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>interactions = <span class="self">self</span>.load_input()<span class="question-mark">?</span>;
-    <span class="kw">let </span>interactions = <span class="self">self</span>.filter(interactions);
-    <span class="kw">let </span>interactions = <span class="self">self</span>.project_and_sort(interactions);
-    <span class="kw">let </span>actions = interactions.clone().groupby(<span class="kw-2">&amp;</span>[
-      col(<span class="string">&quot;user&quot;</span>), col(<span class="string">&quot;item&quot;</span>)
-    ]).agg(<span class="self">self</span>.aggregates());
-
-    <span class="kw">let </span>actions = <span class="self">self</span>.maybe_integrate_ratings(actions, <span class="kw-2">&amp;</span>interactions);
-
-    <span class="macro">debug!</span>(<span class="string">&quot;logical plan: {:?}&quot;</span>, actions.describe_plan());
-    <span class="macro">debug!</span>(<span class="string">&quot;optimized plan: {:?}&quot;</span>, actions.describe_optimized_plan()<span class="question-mark">?</span>);
-    <span class="macro">info!</span>(<span class="string">&quot;collecting results&quot;</span>);
-    <span class="kw">let </span>actions = actions.collect()<span class="question-mark">?</span>;
-
-    <span class="macro">info!</span>(<span class="string">&quot;writing {} actions to {:?}&quot;</span>, actions.height(), <span class="kw-2">&amp;</span><span class="self">self</span>.output);
-    save_df_parquet(actions, <span class="kw-2">&amp;</span><span class="self">self</span>.output)<span class="question-mark">?</span>;
-
-    <span class="prelude-val">Ok</span>(())
-  }
-
-  <span class="doccomment">/// Load the input.
-  </span><span class="kw">fn </span>load_input(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PolarsResult&lt;LazyFrame&gt; {
-    <span class="kw">let </span>dir = <span class="kw">match </span><span class="self">self</span>.data {
-      SrcType::Full =&gt; <span class="string">&quot;full&quot;</span>,
-      SrcType::Simple =&gt; <span class="string">&quot;simple&quot;</span>,
-    };
-    <span class="kw">let </span>path = <span class="macro">format!</span>(<span class="string">&quot;goodreads/{}/gr-interactions.parquet&quot;</span>, dir);
-    <span class="kw">let </span>data = LazyFrame::scan_parquet(path, Default::default())<span class="question-mark">?</span>;
-
-    <span class="kw">let </span>links = LazyFrame::scan_parquet(<span class="string">&quot;goodreads/gr-book-link.parquet&quot;</span>, Default::default())<span class="question-mark">?</span>;
-
-    <span class="kw">let </span>data = data.join(links, <span class="kw-2">&amp;</span>[col(<span class="string">&quot;book_id&quot;</span>)], <span class="kw-2">&amp;</span>[col(<span class="string">&quot;book_id&quot;</span>)], JoinType::Inner);
-    <span class="prelude-val">Ok</span>(data)
-  }
-
-  <span class="doccomment">/// Filter the data frame to only the actions we want
-  </span><span class="kw">fn </span>filter(<span class="kw-2">&amp;</span><span class="self">self</span>, frame: LazyFrame) -&gt; LazyFrame {
-    <span class="kw">match </span><span class="self">self</span>.actions {
-      ActionType::Ratings =&gt; {
-        frame.filter(col(<span class="string">&quot;rating&quot;</span>).is_not_null())
-      },
-      <span class="kw">_ </span>=&gt; frame
+    <span class="doccomment">/// Set operation to cluster simple records instead of full records.
+    </span><span class="kw">pub fn </span>simple(<span class="self">self</span>) -&gt; ClusterOp {
+        ClusterOp {
+            data: SrcType::Simple,
+            ..<span class="self">self
+        </span>}
     }
-  }
 
-  <span class="doccomment">/// Create an identity column reference.
-  </span><span class="kw">fn </span>id_col(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Expr {
-    <span class="kw">match </span><span class="self">self</span>.clusters {
-      AggType::Clusters =&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;grouping by integrated clusters&quot;</span>);
-        col(<span class="string">&quot;cluster&quot;</span>)
-      },
-      AggType::NativeWorks =&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;grouping by native works&quot;</span>);
-        when(
-          col(<span class="string">&quot;work_id&quot;</span>).is_not_null()
-        ).then(
-          col(<span class="string">&quot;work_id&quot;</span>) + lit(NS_GR_WORK.base())
-        ).otherwise(
-          col(<span class="string">&quot;book_id&quot;</span>) + lit(NS_GR_BOOK.base())
-        )
-      },
+    <span class="doccomment">/// Set operation to cluster with native works instead of clusters.
+    </span><span class="kw">pub fn </span>native_works(<span class="self">self</span>) -&gt; ClusterOp {
+        ClusterOp {
+            clusters: AggType::NativeWorks,
+            ..<span class="self">self
+        </span>}
     }
-  }
 
-  <span class="doccomment">/// Project and sort (if possible) the data.
-  </span><span class="kw">fn </span>project_and_sort(<span class="kw-2">&amp;</span><span class="self">self</span>, frame: LazyFrame) -&gt; LazyFrame {
-    <span class="kw">match </span><span class="self">self</span>.data {
-      SrcType::Simple =&gt; {
-        frame.select(<span class="kw-2">&amp;</span>[
-          col(<span class="string">&quot;user_id&quot;</span>).alias(<span class="string">&quot;user&quot;</span>),
-          <span class="self">self</span>.id_col().alias(<span class="string">&quot;item&quot;</span>),
-          col(<span class="string">&quot;rating&quot;</span>),
-        ])
-      },
-      SrcType::Full =&gt; {
-        frame.select(<span class="kw-2">&amp;</span>[
-          col(<span class="string">&quot;user_id&quot;</span>).alias(<span class="string">&quot;user&quot;</span>),
-          <span class="self">self</span>.id_col().alias(<span class="string">&quot;item&quot;</span>),
-          (col(<span class="string">&quot;updated&quot;</span>).cast(DataType::Int64) / lit(<span class="number">1000</span>)).alias(<span class="string">&quot;timestamp&quot;</span>),
-          col(<span class="string">&quot;rating&quot;</span>),
-        ])
-      }
-    }
-  }
+    <span class="doccomment">/// Run the clustering operation.
+    </span><span class="kw">pub fn </span>cluster(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span>interactions = <span class="self">self</span>.load_input()<span class="question-mark">?</span>;
+        <span class="kw">let </span>interactions = <span class="self">self</span>.filter(interactions);
+        <span class="kw">let </span>interactions = <span class="self">self</span>.project_and_sort(interactions);
+        <span class="kw">let </span>actions = interactions
+            .clone()
+            .groupby(<span class="kw-2">&amp;</span>[col(<span class="string">&quot;user&quot;</span>), col(<span class="string">&quot;item&quot;</span>)])
+            .agg(<span class="self">self</span>.aggregates());
 
-  <span class="doccomment">/// Aggreate the interactions.
-  </span><span class="kw">fn </span>aggregates(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;Expr&gt; {
-    <span class="kw">match </span>(<span class="kw-2">&amp;</span><span class="self">self</span>.actions, <span class="kw-2">&amp;</span><span class="self">self</span>.data) {
-      (ActionType::Ratings, SrcType::Simple) =&gt; {
-        <span class="macro">vec!</span>[
-          col(<span class="string">&quot;rating&quot;</span>).median().alias(<span class="string">&quot;rating&quot;</span>),
-          col(<span class="string">&quot;item&quot;</span>).count().alias(<span class="string">&quot;nratings&quot;</span>),
-        ]
-      },
-      (ActionType::Ratings, SrcType::Full) =&gt; {
-        <span class="macro">vec!</span>[
-          col(<span class="string">&quot;rating&quot;</span>).median().alias(<span class="string">&quot;rating&quot;</span>),
-          col(<span class="string">&quot;rating&quot;</span>).last().alias(<span class="string">&quot;last_rating&quot;</span>),
-          col(<span class="string">&quot;timestamp&quot;</span>).min().alias(<span class="string">&quot;first_time&quot;</span>),
-          col(<span class="string">&quot;timestamp&quot;</span>).max().alias(<span class="string">&quot;last_time&quot;</span>),
-          col(<span class="string">&quot;item&quot;</span>).count().alias(<span class="string">&quot;nratings&quot;</span>),
-        ]
-      },
-      (ActionType::AddActions, SrcType::Simple) =&gt; {
-        <span class="macro">vec!</span>[
-          col(<span class="string">&quot;item&quot;</span>).count().alias(<span class="string">&quot;nactions&quot;</span>),
-        ]
-      },
-      (ActionType::AddActions, SrcType::Full) =&gt; {
-        <span class="macro">vec!</span>[
-          col(<span class="string">&quot;timestamp&quot;</span>).min().alias(<span class="string">&quot;first_time&quot;</span>),
-          col(<span class="string">&quot;timestamp&quot;</span>).max().alias(<span class="string">&quot;last_time&quot;</span>),
-          col(<span class="string">&quot;item&quot;</span>).count().alias(<span class="string">&quot;nactions&quot;</span>),
-        ]
-      },
-    }
-  }
+        <span class="kw">let </span>actions = <span class="self">self</span>.maybe_integrate_ratings(actions, <span class="kw-2">&amp;</span>interactions);
 
-  <span class="kw">fn </span>maybe_integrate_ratings(<span class="kw-2">&amp;</span><span class="self">self</span>, actions: LazyFrame, source: <span class="kw-2">&amp;</span>LazyFrame) -&gt; LazyFrame {
-    <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.actions {
-      ActionType::AddActions =&gt; {
-        <span class="kw">let </span>ratings = source.clone().filter(col(<span class="string">&quot;rating&quot;</span>).is_not_null());
-        <span class="kw">let </span>ratings = ratings.groupby([<span class="string">&quot;user&quot;</span>, <span class="string">&quot;item&quot;</span>]).agg(<span class="kw-2">&amp;</span>[
-          col(<span class="string">&quot;rating&quot;</span>).last().alias(<span class="string">&quot;last_rating&quot;</span>)
-        ]);
-        actions.join(ratings, <span class="kw-2">&amp;</span>[col(<span class="string">&quot;user&quot;</span>), col(<span class="string">&quot;item&quot;</span>)], <span class="kw-2">&amp;</span>[col(<span class="string">&quot;user&quot;</span>), col(<span class="string">&quot;item&quot;</span>)], JoinType::Left)
-      },
-      <span class="kw">_ </span>=&gt; actions
+        <span class="macro">debug!</span>(<span class="string">&quot;logical plan: {:?}&quot;</span>, actions.describe_plan());
+        <span class="macro">debug!</span>(<span class="string">&quot;optimized plan: {:?}&quot;</span>, actions.describe_optimized_plan()<span class="question-mark">?</span>);
+        <span class="macro">info!</span>(<span class="string">&quot;collecting results&quot;</span>);
+        <span class="kw">let </span>actions = actions.collect()<span class="question-mark">?</span>;
+
+        <span class="macro">info!</span>(<span class="string">&quot;writing {} actions to {:?}&quot;</span>, actions.height(), <span class="kw-2">&amp;</span><span class="self">self</span>.output);
+        save_df_parquet(actions, <span class="kw-2">&amp;</span><span class="self">self</span>.output)<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(())
     }
-  }
+
+    <span class="doccomment">/// Load the input.
+    </span><span class="kw">fn </span>load_input(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PolarsResult&lt;LazyFrame&gt; {
+        <span class="kw">let </span>dir = <span class="kw">match </span><span class="self">self</span>.data {
+            SrcType::Full =&gt; <span class="string">&quot;full&quot;</span>,
+            SrcType::Simple =&gt; <span class="string">&quot;simple&quot;</span>,
+        };
+        <span class="kw">let </span>path = <span class="macro">format!</span>(<span class="string">&quot;goodreads/{}/gr-interactions.parquet&quot;</span>, dir);
+        <span class="kw">let </span>data = LazyFrame::scan_parquet(path, Default::default())<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>links = LazyFrame::scan_parquet(<span class="string">&quot;goodreads/gr-book-link.parquet&quot;</span>, Default::default())<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>data = data.join(links, <span class="kw-2">&amp;</span>[col(<span class="string">&quot;book_id&quot;</span>)], <span class="kw-2">&amp;</span>[col(<span class="string">&quot;book_id&quot;</span>)], JoinType::Inner);
+        <span class="prelude-val">Ok</span>(data)
+    }
+
+    <span class="doccomment">/// Filter the data frame to only the actions we want
+    </span><span class="kw">fn </span>filter(<span class="kw-2">&amp;</span><span class="self">self</span>, frame: LazyFrame) -&gt; LazyFrame {
+        <span class="kw">match </span><span class="self">self</span>.actions {
+            ActionType::Ratings =&gt; frame.filter(col(<span class="string">&quot;rating&quot;</span>).is_not_null()),
+            <span class="kw">_ </span>=&gt; frame,
+        }
+    }
+
+    <span class="doccomment">/// Create an identity column reference.
+    </span><span class="kw">fn </span>id_col(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Expr {
+        <span class="kw">match </span><span class="self">self</span>.clusters {
+            AggType::Clusters =&gt; {
+                <span class="macro">info!</span>(<span class="string">&quot;grouping by integrated clusters&quot;</span>);
+                col(<span class="string">&quot;cluster&quot;</span>)
+            }
+            AggType::NativeWorks =&gt; {
+                <span class="macro">info!</span>(<span class="string">&quot;grouping by native works&quot;</span>);
+                when(col(<span class="string">&quot;work_id&quot;</span>).is_not_null())
+                    .then(col(<span class="string">&quot;work_id&quot;</span>) + lit(NS_GR_WORK.base()))
+                    .otherwise(col(<span class="string">&quot;book_id&quot;</span>) + lit(NS_GR_BOOK.base()))
+            }
+        }
+    }
+
+    <span class="doccomment">/// Project and sort (if possible) the data.
+    </span><span class="kw">fn </span>project_and_sort(<span class="kw-2">&amp;</span><span class="self">self</span>, frame: LazyFrame) -&gt; LazyFrame {
+        <span class="kw">match </span><span class="self">self</span>.data {
+            SrcType::Simple =&gt; frame.select(<span class="kw-2">&amp;</span>[
+                col(<span class="string">&quot;user_id&quot;</span>).alias(<span class="string">&quot;user&quot;</span>),
+                <span class="self">self</span>.id_col().alias(<span class="string">&quot;item&quot;</span>),
+                col(<span class="string">&quot;rating&quot;</span>),
+            ]),
+            SrcType::Full =&gt; frame.select(<span class="kw-2">&amp;</span>[
+                col(<span class="string">&quot;user_id&quot;</span>).alias(<span class="string">&quot;user&quot;</span>),
+                <span class="self">self</span>.id_col().alias(<span class="string">&quot;item&quot;</span>),
+                (col(<span class="string">&quot;updated&quot;</span>).cast(DataType::Int64) / lit(<span class="number">1000</span>)).alias(<span class="string">&quot;timestamp&quot;</span>),
+                col(<span class="string">&quot;rating&quot;</span>),
+            ]),
+        }
+    }
+
+    <span class="doccomment">/// Aggreate the interactions.
+    </span><span class="kw">fn </span>aggregates(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;Expr&gt; {
+        <span class="kw">match </span>(<span class="kw-2">&amp;</span><span class="self">self</span>.actions, <span class="kw-2">&amp;</span><span class="self">self</span>.data) {
+            (ActionType::Ratings, SrcType::Simple) =&gt; {
+                <span class="macro">vec!</span>[
+                    col(<span class="string">&quot;rating&quot;</span>).median().alias(<span class="string">&quot;rating&quot;</span>),
+                    col(<span class="string">&quot;item&quot;</span>).count().alias(<span class="string">&quot;nratings&quot;</span>),
+                ]
+            }
+            (ActionType::Ratings, SrcType::Full) =&gt; {
+                <span class="macro">vec!</span>[
+                    col(<span class="string">&quot;rating&quot;</span>).median().alias(<span class="string">&quot;rating&quot;</span>),
+                    col(<span class="string">&quot;rating&quot;</span>).last().alias(<span class="string">&quot;last_rating&quot;</span>),
+                    col(<span class="string">&quot;timestamp&quot;</span>).min().alias(<span class="string">&quot;first_time&quot;</span>),
+                    col(<span class="string">&quot;timestamp&quot;</span>).max().alias(<span class="string">&quot;last_time&quot;</span>),
+                    col(<span class="string">&quot;item&quot;</span>).count().alias(<span class="string">&quot;nratings&quot;</span>),
+                ]
+            }
+            (ActionType::AddActions, SrcType::Simple) =&gt; {
+                <span class="macro">vec!</span>[col(<span class="string">&quot;item&quot;</span>).count().alias(<span class="string">&quot;nactions&quot;</span>)]
+            }
+            (ActionType::AddActions, SrcType::Full) =&gt; {
+                <span class="macro">vec!</span>[
+                    col(<span class="string">&quot;timestamp&quot;</span>).min().alias(<span class="string">&quot;first_time&quot;</span>),
+                    col(<span class="string">&quot;timestamp&quot;</span>).max().alias(<span class="string">&quot;last_time&quot;</span>),
+                    col(<span class="string">&quot;item&quot;</span>).count().alias(<span class="string">&quot;nactions&quot;</span>),
+                ]
+            }
+        }
+    }
+
+    <span class="kw">fn </span>maybe_integrate_ratings(<span class="kw-2">&amp;</span><span class="self">self</span>, actions: LazyFrame, source: <span class="kw-2">&amp;</span>LazyFrame) -&gt; LazyFrame {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.actions {
+            ActionType::AddActions =&gt; {
+                <span class="kw">let </span>ratings = source.clone().filter(col(<span class="string">&quot;rating&quot;</span>).is_not_null());
+                <span class="kw">let </span>ratings = ratings
+                    .groupby([<span class="string">&quot;user&quot;</span>, <span class="string">&quot;item&quot;</span>])
+                    .agg(<span class="kw-2">&amp;</span>[col(<span class="string">&quot;rating&quot;</span>).last().alias(<span class="string">&quot;last_rating&quot;</span>)]);
+                actions.join(
+                    ratings,
+                    <span class="kw-2">&amp;</span>[col(<span class="string">&quot;user&quot;</span>), col(<span class="string">&quot;item&quot;</span>)],
+                    <span class="kw-2">&amp;</span>[col(<span class="string">&quot;user&quot;</span>), col(<span class="string">&quot;item&quot;</span>)],
+                    JoinType::Left,
+                )
+            }
+            <span class="kw">_ </span>=&gt; actions,
+        }
+    }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

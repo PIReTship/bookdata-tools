@@ -64,71 +64,71 @@
 <span id="64">64</span>
 <span id="65">65</span>
 <span id="66">66</span>
-</pre><pre class="rust"><code><span class="kw">use </span>std::path::{Path, PathBuf};
-<span class="kw">use </span>std::io::{<span class="prelude-ty">Result </span><span class="kw">as </span>IOResult, BufReader, BufRead};
-<span class="kw">use </span>std::fs;
-<span class="kw">use </span>friendly::bytes;
-<span class="kw">use </span>log::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>friendly::bytes;
 <span class="kw">use </span>indicatif::ProgressBar;
+<span class="kw">use </span>log::<span class="kw-2">*</span>;
+<span class="kw">use </span>std::fs;
+<span class="kw">use </span>std::io::{BufRead, BufReader, <span class="prelude-ty">Result </span><span class="kw">as </span>IOResult};
+<span class="kw">use </span>std::path::{Path, PathBuf};
 
 <span class="kw">pub mod </span>background;
 <span class="kw">pub mod </span>compress;
+<span class="kw">pub mod </span>ext;
 <span class="kw">pub mod </span>lines;
 <span class="kw">pub mod </span>object;
-<span class="kw">pub mod </span>ext;
 
-<span class="kw">pub use </span>lines::LineProcessor;
 <span class="kw">pub use </span>compress::open_gzin_progress;
+<span class="kw">pub use </span>lines::LineProcessor;
 <span class="kw">pub use </span>object::ObjectWriter;
 
 <span class="doccomment">/// Trait for data processing sinks with input and ouptut files.
 </span><span class="kw">pub trait </span>DataSink {
-  <span class="doccomment">/// Get the output files for the sink.
-  </span><span class="kw">fn </span>output_files(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PathBuf&gt;;
+    <span class="doccomment">/// Get the output files for the sink.
+    </span><span class="kw">fn </span>output_files(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PathBuf&gt;;
 
-  <span class="doccomment">/// Get auxillary input files for the sink.
-  ///
-  /// Most sinks are also an [ObjectWriter], and the primary input is written
-  /// to the sink; that input file is not reported here.  However, sinks may
-  /// require additional input files to process, and those files can be reported
-  /// here.
-  </span><span class="kw">fn </span>input_files(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PathBuf&gt; {
-    Vec::new()
-  }
+    <span class="doccomment">/// Get auxillary input files for the sink.
+    ///
+    /// Most sinks are also an [ObjectWriter], and the primary input is written
+    /// to the sink; that input file is not reported here.  However, sinks may
+    /// require additional input files to process, and those files can be reported
+    /// here.
+    </span><span class="kw">fn </span>input_files(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PathBuf&gt; {
+        Vec::new()
+    }
 }
 
 <span class="doccomment">/// Log the sizes of a set of files.
-</span><span class="kw">pub fn </span>log_file_info&lt;P: AsRef&lt;Path&gt;, S: IntoIterator&lt;Item=P&gt;&gt;(files: S) -&gt; IOResult&lt;()&gt; {
-  <span class="kw">for </span>path <span class="kw">in </span>files {
-    <span class="kw">let </span>path = path.as_ref();
-    <span class="kw">let </span>size = file_size(path)<span class="question-mark">?</span>;
-    <span class="macro">info!</span>(<span class="string">&quot;output {:?}: {}&quot;</span>, path, bytes(size));
-  }
+</span><span class="kw">pub fn </span>log_file_info&lt;P: AsRef&lt;Path&gt;, S: IntoIterator&lt;Item = P&gt;&gt;(files: S) -&gt; IOResult&lt;()&gt; {
+    <span class="kw">for </span>path <span class="kw">in </span>files {
+        <span class="kw">let </span>path = path.as_ref();
+        <span class="kw">let </span>size = file_size(path)<span class="question-mark">?</span>;
+        <span class="macro">info!</span>(<span class="string">&quot;output {:?}: {}&quot;</span>, path, bytes(size));
+    }
 
-  <span class="prelude-val">Ok</span>(())
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Convert a list of strings into owned [PathBuf]s.
 </span><span class="kw">pub fn </span>path_list(paths: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>str]) -&gt; Vec&lt;PathBuf&gt; {
-  paths.into_iter().map(|p| PathBuf::from(p)).collect()
+    paths.into_iter().map(|p| PathBuf::from(p)).collect()
 }
 
 <span class="doccomment">/// Get the size of a file.
 </span><span class="kw">pub fn </span>file_size&lt;P: AsRef&lt;Path&gt;&gt;(path: P) -&gt; IOResult&lt;u64&gt; {
-  <span class="kw">let </span>meta = fs::metadata(path)<span class="question-mark">?</span>;
-  <span class="prelude-val">Ok</span>(meta.len())
+    <span class="kw">let </span>meta = fs::metadata(path)<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(meta.len())
 }
 
 <span class="doccomment">/// Open a file as a buffered reader with a progress bar.
 </span><span class="kw">pub fn </span>open_progress(path: <span class="kw-2">&amp;</span>Path, pb: ProgressBar) -&gt; IOResult&lt;<span class="kw">impl </span>BufRead&gt; {
-  <span class="kw">let </span>name = path.file_name().unwrap().to_string_lossy();
-  <span class="kw">let </span>read = fs::File::open(path)<span class="question-mark">?</span>;
-  pb.set_length(read.metadata()<span class="question-mark">?</span>.len());
-  pb.set_prefix(name.to_string());
+    <span class="kw">let </span>name = path.file_name().unwrap().to_string_lossy();
+    <span class="kw">let </span>read = fs::File::open(path)<span class="question-mark">?</span>;
+    pb.set_length(read.metadata()<span class="question-mark">?</span>.len());
+    pb.set_prefix(name.to_string());
 
-  <span class="kw">let </span>read = pb.wrap_read(read);
-  <span class="kw">let </span>read = BufReader::new(read);
-  <span class="prelude-val">Ok</span>(read)
+    <span class="kw">let </span>read = pb.wrap_read(read);
+    <span class="kw">let </span>read = BufReader::new(read);
+    <span class="prelude-val">Ok</span>(read)
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

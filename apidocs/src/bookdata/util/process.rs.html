@@ -30,37 +30,41 @@
 <span id="30">30</span>
 <span id="31">31</span>
 <span id="32">32</span>
-</pre><pre class="rust"><code><span class="kw">use </span>std::mem::MaybeUninit;
-<span class="kw">use </span>libc;
+<span id="33">33</span>
+<span id="34">34</span>
+</pre><pre class="rust"><code><span class="kw">use </span>libc;
+<span class="kw">use </span>std::mem::MaybeUninit;
 
 <span class="kw">use </span>chrono::Duration;
 <span class="kw">use </span>friendly::{bytes, duration};
 <span class="kw">use </span>log::<span class="kw-2">*</span>;
 
 <span class="kw">fn </span>timeval_duration(tv: <span class="kw-2">&amp;</span>libc::timeval) -&gt; Duration {
-  <span class="kw">let </span>ds = Duration::seconds(tv.tv_sec);
-  <span class="kw">let </span>dus = Duration::microseconds(tv.tv_usec.into());
-  ds + dus
+    <span class="kw">let </span>ds = Duration::seconds(tv.tv_sec);
+    <span class="kw">let </span>dus = Duration::microseconds(tv.tv_usec.into());
+    ds + dus
 }
 
 <span class="doccomment">/// Print closing process statistics.
 </span><span class="kw">pub fn </span>log_process_stats() {
-  <span class="kw">let </span><span class="kw-2">mut </span>usage = MaybeUninit::uninit();
-  <span class="kw">let </span>rc = <span class="kw">unsafe </span>{
-    libc::getrusage(libc::RUSAGE_SELF, usage.as_mut_ptr())
-  };
-  <span class="kw">if </span>rc != <span class="number">0 </span>{
-    <span class="macro">error!</span>(<span class="string">&quot;getrusage failed with code {}&quot;</span>, rc);
-    <span class="kw">return</span>;
-  }
+    <span class="kw">let </span><span class="kw-2">mut </span>usage = MaybeUninit::uninit();
+    <span class="kw">let </span>rc = <span class="kw">unsafe </span>{ libc::getrusage(libc::RUSAGE_SELF, usage.as_mut_ptr()) };
+    <span class="kw">if </span>rc != <span class="number">0 </span>{
+        <span class="macro">error!</span>(<span class="string">&quot;getrusage failed with code {}&quot;</span>, rc);
+        <span class="kw">return</span>;
+    }
 
-  <span class="kw">let </span>usage = <span class="kw">unsafe </span>{ usage.assume_init() };
-  <span class="kw">let </span>user = timeval_duration(<span class="kw-2">&amp;</span>usage.ru_utime);
-  <span class="kw">let </span>system = timeval_duration(<span class="kw-2">&amp;</span>usage.ru_stime);
-  <span class="macro">info!</span>(<span class="string">&quot;process time: {} user, {} system&quot;</span>, duration(user), duration(system));
+    <span class="kw">let </span>usage = <span class="kw">unsafe </span>{ usage.assume_init() };
+    <span class="kw">let </span>user = timeval_duration(<span class="kw-2">&amp;</span>usage.ru_utime);
+    <span class="kw">let </span>system = timeval_duration(<span class="kw-2">&amp;</span>usage.ru_stime);
+    <span class="macro">info!</span>(
+        <span class="string">&quot;process time: {} user, {} system&quot;</span>,
+        duration(user),
+        duration(system)
+    );
 
-  <span class="kw">let </span>mem = usage.ru_maxrss * <span class="number">1024</span>;
-  <span class="macro">info!</span>(<span class="string">&quot;max RSS (memory use): {}&quot;</span>, bytes(mem));
+    <span class="kw">let </span>mem = usage.ru_maxrss * <span class="number">1024</span>;
+    <span class="macro">info!</span>(<span class="string">&quot;max RSS (memory use): {}&quot;</span>, bytes(mem));
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

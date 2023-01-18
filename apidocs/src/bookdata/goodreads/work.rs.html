@@ -77,86 +77,84 @@
 <span id="77">77</span>
 <span id="78">78</span>
 <span id="79">79</span>
-<span id="80">80</span>
 </pre><pre class="rust"><code><span class="doccomment">//! GoodReads work schemas and record processing.
-</span><span class="kw">use </span>serde::Deserialize;
-<span class="kw">use </span>chrono::NaiveDate;
+</span><span class="kw">use </span>chrono::NaiveDate;
+<span class="kw">use </span>serde::Deserialize;
 
-<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::arrow::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::parsing::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 
 <span class="kw">const </span>OUT_FILE: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str = <span class="string">&quot;gr-work-info.parquet&quot;</span>;
 
 <span class="doccomment">/// Work records as parsed from JSON.
 </span><span class="attribute">#[derive(Deserialize)]
 </span><span class="kw">pub struct </span>RawWork {
-  <span class="kw">pub </span>work_id: String,
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>original_title: String,
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>original_publication_year: String,
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>original_publication_month: String,
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>original_publication_day: String,
+    <span class="kw">pub </span>work_id: String,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>original_title: String,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>original_publication_year: String,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>original_publication_month: String,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>original_publication_day: String,
 }
 
 <span class="doccomment">/// Rows in the processed work Parquet table.
 </span><span class="attribute">#[derive(ArrowField)]
 </span><span class="kw">pub struct </span>WorkRecord {
-  <span class="kw">pub </span>work_id: i32,
-  <span class="kw">pub </span>title: <span class="prelude-ty">Option</span>&lt;String&gt;,
-  <span class="kw">pub </span>pub_year: <span class="prelude-ty">Option</span>&lt;i16&gt;,
-  <span class="kw">pub </span>pub_month: <span class="prelude-ty">Option</span>&lt;u8&gt;,
-  <span class="kw">pub </span>pub_date: <span class="prelude-ty">Option</span>&lt;NaiveDate&gt;
+    <span class="kw">pub </span>work_id: i32,
+    <span class="kw">pub </span>title: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="kw">pub </span>pub_year: <span class="prelude-ty">Option</span>&lt;i16&gt;,
+    <span class="kw">pub </span>pub_month: <span class="prelude-ty">Option</span>&lt;u8&gt;,
+    <span class="kw">pub </span>pub_date: <span class="prelude-ty">Option</span>&lt;NaiveDate&gt;,
 }
 
 <span class="doccomment">/// Object writer to transform and write GoodReads works
 </span><span class="kw">pub struct </span>WorkWriter {
-  writer: TableWriter&lt;WorkRecord&gt;,
-  n_recs: usize,
+    writer: TableWriter&lt;WorkRecord&gt;,
+    n_recs: usize,
 }
 
 <span class="kw">impl </span>WorkWriter {
-  <span class="doccomment">/// Open a new output
-  </span><span class="kw">pub fn </span>open() -&gt; <span class="prelude-ty">Result</span>&lt;WorkWriter&gt; {
-    <span class="kw">let </span>writer = TableWriter::open(OUT_FILE)<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(WorkWriter {
-      writer,
-      n_recs: <span class="number">0
-    </span>})
-  }
+    <span class="doccomment">/// Open a new output
+    </span><span class="kw">pub fn </span>open() -&gt; <span class="prelude-ty">Result</span>&lt;WorkWriter&gt; {
+        <span class="kw">let </span>writer = TableWriter::open(OUT_FILE)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(WorkWriter { writer, n_recs: <span class="number">0 </span>})
+    }
 }
 
 <span class="kw">impl </span>DataSink <span class="kw">for </span>WorkWriter {
-  <span class="kw">fn </span>output_files(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PathBuf&gt; {
-    path_list(<span class="kw-2">&amp;</span>[OUT_FILE])
-  }
+    <span class="kw">fn </span>output_files(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PathBuf&gt; {
+        path_list(<span class="kw-2">&amp;</span>[OUT_FILE])
+    }
 }
 
 <span class="kw">impl </span>ObjectWriter&lt;RawWork&gt; <span class="kw">for </span>WorkWriter {
-  <span class="kw">fn </span>write_object(<span class="kw-2">&amp;mut </span><span class="self">self</span>, row: RawWork) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>work_id: i32 = row.work_id.parse()<span class="question-mark">?</span>;
+    <span class="kw">fn </span>write_object(<span class="kw-2">&amp;mut </span><span class="self">self</span>, row: RawWork) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span>work_id: i32 = row.work_id.parse()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>pub_year = parse_opt(<span class="kw-2">&amp;</span>row.original_publication_year)<span class="question-mark">?</span>;
-    <span class="kw">let </span>pub_month = parse_opt(<span class="kw-2">&amp;</span>row.original_publication_month)<span class="question-mark">?</span>;
-    <span class="kw">let </span>pub_day: <span class="prelude-ty">Option</span>&lt;u32&gt; = parse_opt(<span class="kw-2">&amp;</span>row.original_publication_day)<span class="question-mark">?</span>;
-    <span class="kw">let </span>pub_date = maybe_date(pub_year, pub_month, pub_day);
+        <span class="kw">let </span>pub_year = parse_opt(<span class="kw-2">&amp;</span>row.original_publication_year)<span class="question-mark">?</span>;
+        <span class="kw">let </span>pub_month = parse_opt(<span class="kw-2">&amp;</span>row.original_publication_month)<span class="question-mark">?</span>;
+        <span class="kw">let </span>pub_day: <span class="prelude-ty">Option</span>&lt;u32&gt; = parse_opt(<span class="kw-2">&amp;</span>row.original_publication_day)<span class="question-mark">?</span>;
+        <span class="kw">let </span>pub_date = maybe_date(pub_year, pub_month, pub_day);
 
-    <span class="self">self</span>.writer.write_object(WorkRecord {
-      work_id,
-      title: trim_owned(<span class="kw-2">&amp;</span>row.original_title),
-      pub_year, pub_month, pub_date
-    })<span class="question-mark">?</span>;
-    <span class="self">self</span>.n_recs += <span class="number">1</span>;
-    <span class="prelude-val">Ok</span>(())
-  }
+        <span class="self">self</span>.writer.write_object(WorkRecord {
+            work_id,
+            title: trim_owned(<span class="kw-2">&amp;</span>row.original_title),
+            pub_year,
+            pub_month,
+            pub_date,
+        })<span class="question-mark">?</span>;
+        <span class="self">self</span>.n_recs += <span class="number">1</span>;
+        <span class="prelude-val">Ok</span>(())
+    }
 
-  <span class="kw">fn </span>finish(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
-    <span class="self">self</span>.writer.finish()<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(<span class="self">self</span>.n_recs)
-  }
+    <span class="kw">fn </span>finish(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
+        <span class="self">self</span>.writer.finish()<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.n_recs)
+    }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -42,16 +42,19 @@
 <span id="42">42</span>
 <span id="43">43</span>
 <span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Parsing utilities.  Format-specific parsing is in various other modules.
-</span><span class="kw">use </span>std::str::FromStr;
-<span class="kw">use </span>std::error::{Error <span class="kw">as </span>StdError};
+</span><span class="kw">use </span>std::error::Error <span class="kw">as </span>StdError;
+<span class="kw">use </span>std::str::FromStr;
 
-<span class="kw">use </span>anyhow::{<span class="prelude-ty">Result</span>, anyhow};
+<span class="kw">use </span>anyhow::{anyhow, <span class="prelude-ty">Result</span>};
 
-<span class="attribute">#[cfg(feature=<span class="string">&quot;nom&quot;</span>)]
+<span class="kw">pub mod </span>bindata;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;nom&quot;</span>)]
 </span><span class="kw">pub mod </span>combinators;
 <span class="kw">pub mod </span>dates;
-<span class="kw">pub mod </span>bindata;
 <span class="attribute">#[cfg(test)]
 </span><span class="kw">mod </span>test_dates;
 
@@ -59,30 +62,33 @@
 
 <span class="doccomment">/// Trim a string, and convert to None if it is empty.
 </span><span class="kw">pub fn </span>trim_opt&lt;<span class="lifetime">&#39;a</span>&gt;(s: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt; {
-  <span class="kw">let </span>s2 = s.trim();
-  <span class="kw">if </span>s2.is_empty() {
-    <span class="prelude-val">None
-  </span>} <span class="kw">else </span>{
-    <span class="prelude-val">Some</span>(s2)
-  }
+    <span class="kw">let </span>s2 = s.trim();
+    <span class="kw">if </span>s2.is_empty() {
+        <span class="prelude-val">None
+    </span>} <span class="kw">else </span>{
+        <span class="prelude-val">Some</span>(s2)
+    }
 }
 
 <span class="doccomment">/// Trim a string, and convert to None if it is empty.
 </span><span class="kw">pub fn </span>trim_owned(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;String&gt; {
-  <span class="kw">return </span>trim_opt(s).map(|s| s.to_owned())
+    <span class="kw">return </span>trim_opt(s).map(|s| s.to_owned());
 }
 
 <span class="doccomment">/// Parse a possibly-empty string into an option.
-</span><span class="kw">pub fn </span>parse_opt&lt;T: FromStr&gt;(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;T&gt;&gt; <span class="kw">where </span>T::Err: StdError + Sync + Send + <span class="lifetime">&#39;static </span>{
-  <span class="kw">let </span>so = trim_opt(s);
-  <span class="comment">// we can&#39;t just use map because we need to propagate errors
-  </span><span class="prelude-val">Ok</span>(<span class="kw">match </span>so {
-    <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>,
-    <span class="prelude-val">Some</span>(s) =&gt; <span class="prelude-val">Some</span>(<span class="kw">match </span>s.parse() {
-      <span class="prelude-val">Ok</span>(v) =&gt; v,
-      <span class="prelude-val">Err</span>(e) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;error parsing ‘{}’: {}&quot;</span>, s, e))
+</span><span class="kw">pub fn </span>parse_opt&lt;T: FromStr&gt;(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;T&gt;&gt;
+<span class="kw">where
+    </span>T::Err: StdError + Sync + Send + <span class="lifetime">&#39;static</span>,
+{
+    <span class="kw">let </span>so = trim_opt(s);
+    <span class="comment">// we can&#39;t just use map because we need to propagate errors
+    </span><span class="prelude-val">Ok</span>(<span class="kw">match </span>so {
+        <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>,
+        <span class="prelude-val">Some</span>(s) =&gt; <span class="prelude-val">Some</span>(<span class="kw">match </span>s.parse() {
+            <span class="prelude-val">Ok</span>(v) =&gt; v,
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;error parsing ‘{}’: {}&quot;</span>, s, e)),
+        }),
     })
-  })
 }
 
 <span class="kw">pub use </span>dates::maybe_date;

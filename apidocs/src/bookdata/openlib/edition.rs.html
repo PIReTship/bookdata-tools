@@ -150,157 +150,163 @@
 <span id="150">150</span>
 <span id="151">151</span>
 <span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
 </pre><pre class="rust"><code><span class="doccomment">//! OpenLibrary edition schemas.
 </span><span class="kw">use </span>friendly::scalar;
 
-<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::arrow::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::ids::index::IdIndex;
 <span class="kw">use </span><span class="kw">crate</span>::cleaning::isbns::clean_asin_chars;
 <span class="kw">use </span><span class="kw">crate</span>::cleaning::isbns::clean_isbn_chars;
+<span class="kw">use </span><span class="kw">crate</span>::ids::index::IdIndex;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">use </span><span class="kw">super</span>::source::Row;
 <span class="kw">pub use </span><span class="kw">super</span>::source::OLEditionRecord;
+<span class="kw">use </span><span class="kw">super</span>::source::Row;
 
 <span class="doccomment">/// An edition row in the extracted Parquet.
 </span><span class="attribute">#[derive(ArrowField)]
 </span><span class="kw">pub struct </span>EditionRec {
-  <span class="kw">pub </span>id: i32,
-  <span class="kw">pub </span>key: String,
-  <span class="kw">pub </span>title: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="kw">pub </span>id: i32,
+    <span class="kw">pub </span>key: String,
+    <span class="kw">pub </span>title: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
 <span class="doccomment">/// Link between edition and work.
 </span><span class="attribute">#[derive(ArrowField)]
 </span><span class="kw">pub struct </span>LinkRec {
-  <span class="kw">pub </span>edition: i32,
-  <span class="kw">pub </span>work: i32
+    <span class="kw">pub </span>edition: i32,
+    <span class="kw">pub </span>work: i32,
 }
 
 <span class="doccomment">/// Edition ISBN record.
 </span><span class="attribute">#[derive(ArrowField)]
 </span><span class="kw">pub struct </span>ISBNrec {
-  <span class="kw">pub </span>edition: i32,
-  <span class="kw">pub </span>isbn: String
+    <span class="kw">pub </span>edition: i32,
+    <span class="kw">pub </span>isbn: String,
 }
 
 <span class="doccomment">/// Edition author record.
 </span><span class="attribute">#[derive(ArrowField)]
 </span><span class="kw">pub struct </span>EditionAuthorRec {
-  <span class="kw">pub </span>edition: i32,
-  <span class="kw">pub </span>pos: i16,
-  <span class="kw">pub </span>author: i32
+    <span class="kw">pub </span>edition: i32,
+    <span class="kw">pub </span>pos: i16,
+    <span class="kw">pub </span>author: i32,
 }
 
 <span class="doccomment">/// Edition-subject record in extracted Parquet.
 </span><span class="attribute">#[derive(ArrowField)]
 </span><span class="kw">pub struct </span>EditionSubjectRec {
-  <span class="kw">pub </span>id: i32,
-  <span class="kw">pub </span>subject: String,
+    <span class="kw">pub </span>id: i32,
+    <span class="kw">pub </span>subject: String,
 }
 
 <span class="doccomment">/// Process edition records into Parquet.
 ///
 /// This must be run **after** the author and work processors.
 </span><span class="kw">pub struct </span>EditionProcessor {
-  last_id: i32,
-  author_ids: IdIndex&lt;String&gt;,
-  work_ids: IdIndex&lt;String&gt;,
-  rec_writer: TableWriter&lt;EditionRec&gt;,
-  link_writer: TableWriter&lt;LinkRec&gt;,
-  isbn_writer: TableWriter&lt;ISBNrec&gt;,
-  author_writer: TableWriter&lt;EditionAuthorRec&gt;,
-  subject_writer: TableWriter&lt;EditionSubjectRec&gt;,
+    last_id: i32,
+    author_ids: IdIndex&lt;String&gt;,
+    work_ids: IdIndex&lt;String&gt;,
+    rec_writer: TableWriter&lt;EditionRec&gt;,
+    link_writer: TableWriter&lt;LinkRec&gt;,
+    isbn_writer: TableWriter&lt;ISBNrec&gt;,
+    author_writer: TableWriter&lt;EditionAuthorRec&gt;,
+    subject_writer: TableWriter&lt;EditionSubjectRec&gt;,
 }
 
 <span class="kw">impl </span>EditionProcessor {
-  <span class="kw">pub fn </span>new() -&gt; <span class="prelude-ty">Result</span>&lt;EditionProcessor&gt; {
-    <span class="prelude-val">Ok</span>(EditionProcessor {
-      last_id: <span class="number">0</span>,
-      author_ids: IdIndex::load_standard(<span class="string">&quot;author-ids-after-works.parquet&quot;</span>)<span class="question-mark">?</span>,
-      work_ids: IdIndex::load_standard(<span class="string">&quot;works.parquet&quot;</span>)<span class="question-mark">?</span>,
-      rec_writer: TableWriter::open(<span class="string">&quot;editions.parquet&quot;</span>)<span class="question-mark">?</span>,
-      link_writer: TableWriter::open(<span class="string">&quot;edition-works.parquet&quot;</span>)<span class="question-mark">?</span>,
-      isbn_writer: TableWriter::open(<span class="string">&quot;edition-isbns.parquet&quot;</span>)<span class="question-mark">?</span>,
-      author_writer: TableWriter::open(<span class="string">&quot;edition-authors.parquet&quot;</span>)<span class="question-mark">?</span>,
-      subject_writer: TableWriter::open(<span class="string">&quot;edition-subjects.parquet&quot;</span>)<span class="question-mark">?</span>,
-    })
-  }
-
-  <span class="kw">fn </span>save_isbns(<span class="kw-2">&amp;mut </span><span class="self">self</span>, edition: i32, isbns: Vec&lt;String&gt;, clean: <span class="kw">fn</span>(<span class="kw-2">&amp;</span>str) -&gt; String) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">for </span>isbn <span class="kw">in </span>isbns {
-      <span class="kw">let </span>isbn = clean(<span class="kw-2">&amp;</span>isbn);
-      <span class="comment">// filter but with a reasonable threshold of error
-      </span><span class="kw">if </span>isbn.len() &gt;= <span class="number">8 </span>{
-        <span class="self">self</span>.isbn_writer.write_object(ISBNrec {
-          edition, isbn
-        })<span class="question-mark">?</span>;
-      }
+    <span class="kw">pub fn </span>new() -&gt; <span class="prelude-ty">Result</span>&lt;EditionProcessor&gt; {
+        <span class="prelude-val">Ok</span>(EditionProcessor {
+            last_id: <span class="number">0</span>,
+            author_ids: IdIndex::load_standard(<span class="string">&quot;author-ids-after-works.parquet&quot;</span>)<span class="question-mark">?</span>,
+            work_ids: IdIndex::load_standard(<span class="string">&quot;works.parquet&quot;</span>)<span class="question-mark">?</span>,
+            rec_writer: TableWriter::open(<span class="string">&quot;editions.parquet&quot;</span>)<span class="question-mark">?</span>,
+            link_writer: TableWriter::open(<span class="string">&quot;edition-works.parquet&quot;</span>)<span class="question-mark">?</span>,
+            isbn_writer: TableWriter::open(<span class="string">&quot;edition-isbns.parquet&quot;</span>)<span class="question-mark">?</span>,
+            author_writer: TableWriter::open(<span class="string">&quot;edition-authors.parquet&quot;</span>)<span class="question-mark">?</span>,
+            subject_writer: TableWriter::open(<span class="string">&quot;edition-subjects.parquet&quot;</span>)<span class="question-mark">?</span>,
+        })
     }
 
-    <span class="prelude-val">Ok</span>(())
-  }
+    <span class="kw">fn </span>save_isbns(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        edition: i32,
+        isbns: Vec&lt;String&gt;,
+        clean: <span class="kw">fn</span>(<span class="kw-2">&amp;</span>str) -&gt; String,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">for </span>isbn <span class="kw">in </span>isbns {
+            <span class="kw">let </span>isbn = clean(<span class="kw-2">&amp;</span>isbn);
+            <span class="comment">// filter but with a reasonable threshold of error
+            </span><span class="kw">if </span>isbn.len() &gt;= <span class="number">8 </span>{
+                <span class="self">self</span>.isbn_writer.write_object(ISBNrec { edition, isbn })<span class="question-mark">?</span>;
+            }
+        }
+
+        <span class="prelude-val">Ok</span>(())
+    }
 }
 
 <span class="kw">impl </span>ObjectWriter&lt;Row&lt;OLEditionRecord&gt;&gt; <span class="kw">for </span>EditionProcessor {
-  <span class="kw">fn </span>write_object(<span class="kw-2">&amp;mut </span><span class="self">self</span>, row: Row&lt;OLEditionRecord&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="self">self</span>.last_id += <span class="number">1</span>;
-    <span class="kw">let </span>id = <span class="self">self</span>.last_id;
+    <span class="kw">fn </span>write_object(<span class="kw-2">&amp;mut </span><span class="self">self</span>, row: Row&lt;OLEditionRecord&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.last_id += <span class="number">1</span>;
+        <span class="kw">let </span>id = <span class="self">self</span>.last_id;
 
-    <span class="self">self</span>.rec_writer.write_object(EditionRec {
-      id, key: row.key.clone(), title: row.record.title.clone(),
-    })<span class="question-mark">?</span>;
-
-    <span class="self">self</span>.save_isbns(id, row.record.isbn_10, clean_isbn_chars)<span class="question-mark">?</span>;
-    <span class="self">self</span>.save_isbns(id, row.record.isbn_13, clean_isbn_chars)<span class="question-mark">?</span>;
-    <span class="self">self</span>.save_isbns(id, row.record.asin, clean_asin_chars)<span class="question-mark">?</span>;
-
-    <span class="kw">for </span>work <span class="kw">in </span>row.record.works {
-      <span class="kw">let </span>work = <span class="self">self</span>.work_ids.intern_owned(work.key)<span class="question-mark">?</span>;
-      <span class="self">self</span>.link_writer.write_object(LinkRec {
-        edition: id, work
-      })<span class="question-mark">?</span>;
-    }
-
-    <span class="kw">for </span>pos <span class="kw">in </span><span class="number">0</span>..row.record.authors.len() {
-      <span class="kw">let </span>akey = row.record.authors[pos].key();
-      <span class="kw">if let </span><span class="prelude-val">Some</span>(akey) = akey {
-        <span class="kw">let </span>aid = <span class="self">self</span>.author_ids.intern(akey)<span class="question-mark">?</span>;
-        <span class="kw">let </span>pos = pos <span class="kw">as </span>i16;
-        <span class="self">self</span>.author_writer.write_object(EditionAuthorRec {
-          edition: id, pos, author: aid
+        <span class="self">self</span>.rec_writer.write_object(EditionRec {
+            id,
+            key: row.key.clone(),
+            title: row.record.title.clone(),
         })<span class="question-mark">?</span>;
-      }
+
+        <span class="self">self</span>.save_isbns(id, row.record.isbn_10, clean_isbn_chars)<span class="question-mark">?</span>;
+        <span class="self">self</span>.save_isbns(id, row.record.isbn_13, clean_isbn_chars)<span class="question-mark">?</span>;
+        <span class="self">self</span>.save_isbns(id, row.record.asin, clean_asin_chars)<span class="question-mark">?</span>;
+
+        <span class="kw">for </span>work <span class="kw">in </span>row.record.works {
+            <span class="kw">let </span>work = <span class="self">self</span>.work_ids.intern_owned(work.key)<span class="question-mark">?</span>;
+            <span class="self">self</span>.link_writer
+                .write_object(LinkRec { edition: id, work })<span class="question-mark">?</span>;
+        }
+
+        <span class="kw">for </span>pos <span class="kw">in </span><span class="number">0</span>..row.record.authors.len() {
+            <span class="kw">let </span>akey = row.record.authors[pos].key();
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(akey) = akey {
+                <span class="kw">let </span>aid = <span class="self">self</span>.author_ids.intern(akey)<span class="question-mark">?</span>;
+                <span class="kw">let </span>pos = pos <span class="kw">as </span>i16;
+                <span class="self">self</span>.author_writer.write_object(EditionAuthorRec {
+                    edition: id,
+                    pos,
+                    author: aid,
+                })<span class="question-mark">?</span>;
+            }
+        }
+
+        <span class="kw">for </span>subject <span class="kw">in </span>row.record.subjects {
+            <span class="self">self</span>.subject_writer
+                .write_object(EditionSubjectRec { id, subject })<span class="question-mark">?</span>;
+        }
+
+        <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">for </span>subject <span class="kw">in </span>row.record.subjects {
-      <span class="self">self</span>.subject_writer.write_object(EditionSubjectRec {
-        id, subject
-      })<span class="question-mark">?</span>;
+    <span class="kw">fn </span>finish(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
+        <span class="kw">let </span>n = <span class="self">self</span>.rec_writer.finish()<span class="question-mark">?</span>;
+        <span class="macro">info!</span>(<span class="string">&quot;wrote {} edition records&quot;</span>, scalar(n));
+        <span class="kw">let </span>n = <span class="self">self</span>.author_writer.finish()<span class="question-mark">?</span>;
+        <span class="macro">info!</span>(<span class="string">&quot;wrote {} edition-author records&quot;</span>, scalar(n));
+        <span class="kw">let </span>n = <span class="self">self</span>.link_writer.finish()<span class="question-mark">?</span>;
+        <span class="macro">info!</span>(<span class="string">&quot;wrote {} edition-work records&quot;</span>, scalar(n));
+        <span class="kw">let </span>n = <span class="self">self</span>.isbn_writer.finish()<span class="question-mark">?</span>;
+        <span class="macro">info!</span>(<span class="string">&quot;wrote {} edition-isbn records&quot;</span>, scalar(n));
+        <span class="kw">let </span>n = <span class="self">self</span>.subject_writer.finish()<span class="question-mark">?</span>;
+        <span class="macro">info!</span>(<span class="string">&quot;wrote {} edition-subject records&quot;</span>, scalar(n));
+        <span class="self">self</span>.author_ids.save_standard(<span class="string">&quot;all-authors.parquet&quot;</span>)<span class="question-mark">?</span>;
+        <span class="self">self</span>.work_ids.save_standard(<span class="string">&quot;all-works.parquet&quot;</span>)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.last_id <span class="kw">as </span>usize)
     }
-
-    <span class="prelude-val">Ok</span>(())
-  }
-
-  <span class="kw">fn </span>finish(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
-    <span class="kw">let </span>n = <span class="self">self</span>.rec_writer.finish()<span class="question-mark">?</span>;
-    <span class="macro">info!</span>(<span class="string">&quot;wrote {} edition records&quot;</span>, scalar(n));
-    <span class="kw">let </span>n = <span class="self">self</span>.author_writer.finish()<span class="question-mark">?</span>;
-    <span class="macro">info!</span>(<span class="string">&quot;wrote {} edition-author records&quot;</span>, scalar(n));
-    <span class="kw">let </span>n = <span class="self">self</span>.link_writer.finish()<span class="question-mark">?</span>;
-    <span class="macro">info!</span>(<span class="string">&quot;wrote {} edition-work records&quot;</span>, scalar(n));
-    <span class="kw">let </span>n = <span class="self">self</span>.isbn_writer.finish()<span class="question-mark">?</span>;
-    <span class="macro">info!</span>(<span class="string">&quot;wrote {} edition-isbn records&quot;</span>, scalar(n));
-    <span class="kw">let </span>n = <span class="self">self</span>.subject_writer.finish()<span class="question-mark">?</span>;
-    <span class="macro">info!</span>(<span class="string">&quot;wrote {} edition-subject records&quot;</span>, scalar(n));
-    <span class="self">self</span>.author_ids.save_standard(<span class="string">&quot;all-authors.parquet&quot;</span>)<span class="question-mark">?</span>;
-    <span class="self">self</span>.work_ids.save_standard(<span class="string">&quot;all-works.parquet&quot;</span>)<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(<span class="self">self</span>.last_id <span class="kw">as </span>usize)
-  }
 }
 
-<span class="kw">impl </span>EditionProcessor {
-
-}
+<span class="kw">impl </span>EditionProcessor {}
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

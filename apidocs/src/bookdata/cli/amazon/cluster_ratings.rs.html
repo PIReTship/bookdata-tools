@@ -49,58 +49,56 @@
 <span id="49">49</span>
 <span id="50">50</span>
 <span id="51">51</span>
-<span id="52">52</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Cluster Amazon ratings.
-</span><span class="kw">use </span>polars::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
-
+</span><span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>polars::prelude::<span class="kw-2">*</span>;
 
 <span class="doccomment">/// Group Amazon ratings into clusters.
 </span><span class="attribute">#[derive(Args, Debug)]
-#[command(name=<span class="string">&quot;cluster-ratings&quot;</span>)]
+#[command(name = <span class="string">&quot;cluster-ratings&quot;</span>)]
 </span><span class="kw">pub struct </span>ClusterRatings {
-  <span class="doccomment">/// Rating output file
-  </span><span class="attribute">#[arg(short=<span class="string">&#39;o&#39;</span>, long=<span class="string">&quot;output&quot;</span>, name=<span class="string">&quot;FILE&quot;</span>)]
-  </span>ratings_out: PathBuf,
+    <span class="doccomment">/// Rating output file
+    </span><span class="attribute">#[arg(short = <span class="string">&#39;o&#39;</span>, long = <span class="string">&quot;output&quot;</span>, name = <span class="string">&quot;FILE&quot;</span>)]
+    </span>ratings_out: PathBuf,
 
-  <span class="doccomment">/// Input file to cluster
-  </span><span class="attribute">#[arg(name = <span class="string">&quot;INPUT&quot;</span>)]
-  </span>infile: PathBuf,
+    <span class="doccomment">/// Input file to cluster
+    </span><span class="attribute">#[arg(name = <span class="string">&quot;INPUT&quot;</span>)]
+    </span>infile: PathBuf,
 }
 
 <span class="kw">impl </span>Command <span class="kw">for </span>ClusterRatings {
-  <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>isbns = LazyFrame::scan_parquet(<span class="string">&quot;book-links/isbn-clusters.parquet&quot;</span>, default())<span class="question-mark">?</span>;
-    <span class="kw">let </span>isbns = isbns.select(<span class="kw-2">&amp;</span>[col(<span class="string">&quot;isbn&quot;</span>), col(<span class="string">&quot;cluster&quot;</span>)]);
+    <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span>isbns = LazyFrame::scan_parquet(<span class="string">&quot;book-links/isbn-clusters.parquet&quot;</span>, default())<span class="question-mark">?</span>;
+        <span class="kw">let </span>isbns = isbns.select(<span class="kw-2">&amp;</span>[col(<span class="string">&quot;isbn&quot;</span>), col(<span class="string">&quot;cluster&quot;</span>)]);
 
-    <span class="kw">let </span>ratings = LazyFrame::scan_parquet(<span class="kw-2">&amp;</span><span class="self">self</span>.infile, default())<span class="question-mark">?</span>;
+        <span class="kw">let </span>ratings = LazyFrame::scan_parquet(<span class="kw-2">&amp;</span><span class="self">self</span>.infile, default())<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>joined = ratings.join(isbns, <span class="kw-2">&amp;</span>[col(<span class="string">&quot;asin&quot;</span>)], <span class="kw-2">&amp;</span>[col(<span class="string">&quot;isbn&quot;</span>)], JoinType::Inner);
-    <span class="kw">let </span>joined = joined.select(<span class="kw-2">&amp;</span>[
-      col(<span class="string">&quot;user&quot;</span>),
-      col(<span class="string">&quot;cluster&quot;</span>).alias(<span class="string">&quot;item&quot;</span>),
-      col(<span class="string">&quot;rating&quot;</span>),
-      col(<span class="string">&quot;timestamp&quot;</span>),
-    ]).sort(<span class="string">&quot;timestamp&quot;</span>, default());
+        <span class="kw">let </span>joined = ratings.join(isbns, <span class="kw-2">&amp;</span>[col(<span class="string">&quot;asin&quot;</span>)], <span class="kw-2">&amp;</span>[col(<span class="string">&quot;isbn&quot;</span>)], JoinType::Inner);
+        <span class="kw">let </span>joined = joined
+            .select(<span class="kw-2">&amp;</span>[
+                col(<span class="string">&quot;user&quot;</span>),
+                col(<span class="string">&quot;cluster&quot;</span>).alias(<span class="string">&quot;item&quot;</span>),
+                col(<span class="string">&quot;rating&quot;</span>),
+                col(<span class="string">&quot;timestamp&quot;</span>),
+            ])
+            .sort(<span class="string">&quot;timestamp&quot;</span>, default());
 
-    <span class="kw">let </span>actions = joined.groupby(<span class="kw-2">&amp;</span>[
-      col(<span class="string">&quot;user&quot;</span>), col(<span class="string">&quot;item&quot;</span>)
-    ]).agg(<span class="kw-2">&amp;</span>[
-      col(<span class="string">&quot;rating&quot;</span>).median().alias(<span class="string">&quot;rating&quot;</span>),
-      col(<span class="string">&quot;rating&quot;</span>).last().alias(<span class="string">&quot;last_rating&quot;</span>),
-      col(<span class="string">&quot;timestamp&quot;</span>).min().alias(<span class="string">&quot;first_time&quot;</span>),
-      col(<span class="string">&quot;timestamp&quot;</span>).max().alias(<span class="string">&quot;last_time&quot;</span>),
-      col(<span class="string">&quot;item&quot;</span>).count().alias(<span class="string">&quot;nratings&quot;</span>),
-    ]);
+        <span class="kw">let </span>actions = joined.groupby(<span class="kw-2">&amp;</span>[col(<span class="string">&quot;user&quot;</span>), col(<span class="string">&quot;item&quot;</span>)]).agg(<span class="kw-2">&amp;</span>[
+            col(<span class="string">&quot;rating&quot;</span>).median().alias(<span class="string">&quot;rating&quot;</span>),
+            col(<span class="string">&quot;rating&quot;</span>).last().alias(<span class="string">&quot;last_rating&quot;</span>),
+            col(<span class="string">&quot;timestamp&quot;</span>).min().alias(<span class="string">&quot;first_time&quot;</span>),
+            col(<span class="string">&quot;timestamp&quot;</span>).max().alias(<span class="string">&quot;last_time&quot;</span>),
+            col(<span class="string">&quot;item&quot;</span>).count().alias(<span class="string">&quot;nratings&quot;</span>),
+        ]);
 
-    <span class="macro">info!</span>(<span class="string">&quot;collecting results&quot;</span>);
-    <span class="kw">let </span>actions = actions.collect()<span class="question-mark">?</span>;
+        <span class="macro">info!</span>(<span class="string">&quot;collecting results&quot;</span>);
+        <span class="kw">let </span>actions = actions.collect()<span class="question-mark">?</span>;
 
-    <span class="macro">info!</span>(<span class="string">&quot;saving {} records&quot;</span>, actions.height());
-    save_df_parquet(actions, <span class="kw-2">&amp;</span><span class="self">self</span>.ratings_out)<span class="question-mark">?</span>;
+        <span class="macro">info!</span>(<span class="string">&quot;saving {} records&quot;</span>, actions.height());
+        save_df_parquet(actions, <span class="kw-2">&amp;</span><span class="self">self</span>.ratings_out)<span class="question-mark">?</span>;
 
-    <span class="prelude-val">Ok</span>(())
-  }
+        <span class="prelude-val">Ok</span>(())
+    }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

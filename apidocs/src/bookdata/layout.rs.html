@@ -148,157 +148,155 @@
 <span id="148">148</span>
 <span id="149">149</span>
 <span id="150">150</span>
-<span id="151">151</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Utilities for working with the directory tree layout.
 </span><span class="kw">use </span>std::collections::HashMap;
-<span class="kw">use </span>std::path::{Path, PathBuf};
-<span class="kw">use </span>std::io;
-<span class="kw">use </span>std::fs::read_to_string;
 <span class="kw">use </span>std::env::current_dir;
+<span class="kw">use </span>std::fs::read_to_string;
+<span class="kw">use </span>std::io;
+<span class="kw">use </span>std::path::{Path, PathBuf};
 
-<span class="kw">use </span>text_template::{Template, Piece};
-<span class="kw">use </span>anyhow::{<span class="prelude-ty">Result</span>, anyhow};
+<span class="kw">use </span>anyhow::{anyhow, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>log::<span class="kw-2">*</span>;
+<span class="kw">use </span>text_template::{Piece, Template};
 
 <span class="doccomment">/// Configuration data.
 </span><span class="kw">pub struct </span>Config {
-  repr: toml::Value,
+    repr: toml::Value,
 }
 
 <span class="kw">impl </span>Config {
-  <span class="kw">pub fn </span>load() -&gt; <span class="prelude-ty">Result</span>&lt;Config&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>path = find_path_root()<span class="question-mark">?</span>;
-    path.push(<span class="string">&quot;config.toml&quot;</span>);
-    <span class="macro">debug!</span>(<span class="string">&quot;reading config from {:?}&quot;</span>, path);
-    <span class="kw">let </span>text = read_to_string(<span class="kw-2">&amp;</span>path)<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(Config {
-      repr: toml::de::from_str(<span class="kw-2">&amp;</span>text)<span class="question-mark">?
-    </span>})
-  }
-
-  <span class="doccomment">/// Lookup a configuration option by dotted path.
-  </span><span class="kw">pub fn </span>lookup_str&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, path: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt; {
-    <span class="kw">let </span>parts = path.split(<span class="string">&quot;.&quot;</span>);
-    <span class="kw">let </span><span class="kw-2">mut </span>node = <span class="kw-2">&amp;</span><span class="self">self</span>.repr;
-    <span class="kw">for </span>part <span class="kw">in </span>parts {
-      <span class="kw">if let </span><span class="prelude-val">Some</span>(n) = node.get(part) {
-        node = n;
-      } <span class="kw">else </span>{
-        <span class="kw">return </span><span class="prelude-val">None
-      </span>}
+    <span class="kw">pub fn </span>load() -&gt; <span class="prelude-ty">Result</span>&lt;Config&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>path = find_path_root()<span class="question-mark">?</span>;
+        path.push(<span class="string">&quot;config.toml&quot;</span>);
+        <span class="macro">debug!</span>(<span class="string">&quot;reading config from {:?}&quot;</span>, path);
+        <span class="kw">let </span>text = read_to_string(<span class="kw-2">&amp;</span>path)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(Config {
+            repr: toml::de::from_str(<span class="kw-2">&amp;</span>text)<span class="question-mark">?</span>,
+        })
     }
 
-    node.as_str()
-  }
+    <span class="doccomment">/// Lookup a configuration option by dotted path.
+    </span><span class="kw">pub fn </span>lookup_str&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, path: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt; {
+        <span class="kw">let </span>parts = path.split(<span class="string">&quot;.&quot;</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>node = <span class="kw-2">&amp;</span><span class="self">self</span>.repr;
+        <span class="kw">for </span>part <span class="kw">in </span>parts {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(n) = node.get(part) {
+                node = n;
+            } <span class="kw">else </span>{
+                <span class="kw">return </span><span class="prelude-val">None</span>;
+            }
+        }
 
-  <span class="doccomment">/// Interpolate a string.
-  </span><span class="kw">pub fn </span>interpolate&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span>: <span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, text: <span class="kw-2">&amp;</span><span class="lifetime">&#39;b </span>str) -&gt; String {
-    <span class="kw">let </span>tmpl = Template::from(text);
-    <span class="kw">let </span><span class="kw-2">mut </span>vars = HashMap::new();
-    <span class="kw">for </span>piece <span class="kw">in </span>tmpl.iter() {
-      <span class="kw">match </span>piece {
-        Piece::Placeholder { name, .. } =&gt; {
-          vars.insert(<span class="kw-2">*</span>name, <span class="self">self</span>.lookup_str(name).unwrap_or_default());
-        },
-        <span class="kw">_ </span>=&gt; (),
-      }
+        node.as_str()
     }
 
-    tmpl.fill_in(<span class="kw-2">&amp;</span>vars).to_string()
-  }
+    <span class="doccomment">/// Interpolate a string.
+    </span><span class="kw">pub fn </span>interpolate&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span>: <span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, text: <span class="kw-2">&amp;</span><span class="lifetime">&#39;b </span>str) -&gt; String {
+        <span class="kw">let </span>tmpl = Template::from(text);
+        <span class="kw">let </span><span class="kw-2">mut </span>vars = HashMap::new();
+        <span class="kw">for </span>piece <span class="kw">in </span>tmpl.iter() {
+            <span class="kw">match </span>piece {
+                Piece::Placeholder { name, .. } =&gt; {
+                    vars.insert(<span class="kw-2">*</span>name, <span class="self">self</span>.lookup_str(name).unwrap_or_default());
+                }
+                <span class="kw">_ </span>=&gt; (),
+            }
+        }
 
+        tmpl.fill_in(<span class="kw-2">&amp;</span>vars).to_string()
+    }
 }
 
 <span class="doccomment">/// Check the TOML manifest to see if we&#39;re bookdata.
 </span><span class="kw">fn </span>check_project_manifest(path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
-  <span class="kw">let </span><span class="kw-2">mut </span>path = path.to_path_buf();
-  path.push(<span class="string">&quot;Cargo.toml&quot;</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>path = path.to_path_buf();
+    path.push(<span class="string">&quot;Cargo.toml&quot;</span>);
 
-  <span class="kw">let </span>manifest = read_to_string(<span class="kw-2">&amp;</span>path);
-  <span class="kw">match </span>manifest {
-    <span class="prelude-val">Ok</span>(txt) =&gt; {
-      <span class="kw">let </span>val: toml::Value = toml::de::from_str(<span class="kw-2">&amp;</span>txt)<span class="question-mark">?</span>;
-      <span class="kw">if let </span><span class="prelude-val">Some</span>(pkg) = val.get(<span class="string">&quot;package&quot;</span>) {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(name) = pkg.get(<span class="string">&quot;name&quot;</span>) {
-          <span class="kw">if </span>name.as_str().unwrap_or_default() == <span class="string">&quot;bookdata&quot; </span>{
-            <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
-          } <span class="kw">else </span>{
-            <span class="macro">error!</span>(<span class="string">&quot;Cargo.toml has package name {}&quot;</span>, name);
-            <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
-          }
-        } <span class="kw">else </span>{
-          <span class="macro">error!</span>(<span class="string">&quot;Cargo.toml has no name&quot;</span>);
-          <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
+    <span class="kw">let </span>manifest = read_to_string(<span class="kw-2">&amp;</span>path);
+    <span class="kw">match </span>manifest {
+        <span class="prelude-val">Ok</span>(txt) =&gt; {
+            <span class="kw">let </span>val: toml::Value = toml::de::from_str(<span class="kw-2">&amp;</span>txt)<span class="question-mark">?</span>;
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(pkg) = val.get(<span class="string">&quot;package&quot;</span>) {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(name) = pkg.get(<span class="string">&quot;name&quot;</span>) {
+                    <span class="kw">if </span>name.as_str().unwrap_or_default() == <span class="string">&quot;bookdata&quot; </span>{
+                        <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
+                    } <span class="kw">else </span>{
+                        <span class="macro">error!</span>(<span class="string">&quot;Cargo.toml has package name {}&quot;</span>, name);
+                        <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
+                    }
+                } <span class="kw">else </span>{
+                    <span class="macro">error!</span>(<span class="string">&quot;Cargo.toml has no name&quot;</span>);
+                    <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
+                }
+            } <span class="kw">else </span>{
+                <span class="macro">error!</span>(<span class="string">&quot;Cargo.toml has no package section&quot;</span>);
+                <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
+            }
         }
-      } <span class="kw">else </span>{
-        <span class="macro">error!</span>(<span class="string">&quot;Cargo.toml has no package section&quot;</span>);
-        <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
-      }
-    },
-    <span class="prelude-val">Err</span>(e) <span class="kw">if </span>e.kind() == io::ErrorKind::NotFound =&gt; {
-      <span class="macro">error!</span>(<span class="string">&quot;Cargo.toml not found alongside .dvc&quot;</span>);
-      <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
-    },
-    <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(e.into()),
-  }
+        <span class="prelude-val">Err</span>(e) <span class="kw">if </span>e.kind() == io::ErrorKind::NotFound =&gt; {
+            <span class="macro">error!</span>(<span class="string">&quot;Cargo.toml not found alongside .dvc&quot;</span>);
+            <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
+        }
+        <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(e.into()),
+    }
 }
 
 <span class="kw">fn </span>is_bookdata_root(path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
-  <span class="kw">let </span><span class="kw-2">mut </span>dvc = path.to_path_buf();
-  dvc.push(<span class="string">&quot;.dvc&quot;</span>);
-  <span class="kw">if </span>dvc.try_exists()<span class="question-mark">? </span>{
-    <span class="macro">debug!</span>(<span class="string">&quot;found DVC path at {}&quot;</span>, dvc.display());
-    <span class="kw">if </span>check_project_manifest(path)<span class="question-mark">? </span>{
-      <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
+    <span class="kw">let </span><span class="kw-2">mut </span>dvc = path.to_path_buf();
+    dvc.push(<span class="string">&quot;.dvc&quot;</span>);
+    <span class="kw">if </span>dvc.try_exists()<span class="question-mark">? </span>{
+        <span class="macro">debug!</span>(<span class="string">&quot;found DVC path at {}&quot;</span>, dvc.display());
+        <span class="kw">if </span>check_project_manifest(path)<span class="question-mark">? </span>{
+            <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
+        } <span class="kw">else </span>{
+            <span class="macro">error!</span>(<span class="string">&quot;found .dvc but not bookdata, running from a weird directory?&quot;</span>);
+            <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;bookdata not found&quot;</span>))
+        }
     } <span class="kw">else </span>{
-      <span class="macro">error!</span>(<span class="string">&quot;found .dvc but not bookdata, running from a weird directory?&quot;</span>);
-      <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;bookdata not found&quot;</span>))
+        <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
     }
-  } <span class="kw">else </span>{
-    <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
-  }
 }
 
 <span class="doccomment">/// Find the root path for the repository.
 </span><span class="kw">pub fn </span>find_path_root() -&gt; <span class="prelude-ty">Result</span>&lt;PathBuf&gt; {
-  <span class="kw">let </span><span class="kw-2">mut </span>path = current_dir()<span class="question-mark">?</span>;
-  <span class="macro">debug!</span>(<span class="string">&quot;working directory: {}&quot;</span>, path.display());
-  <span class="kw">loop </span>{
-    <span class="macro">trace!</span>(<span class="string">&quot;looking for DVC in {}&quot;</span>, path.display());
-    <span class="kw">if </span>is_bookdata_root(<span class="kw-2">&amp;</span>path)<span class="question-mark">? </span>{
-      <span class="macro">info!</span>(<span class="string">&quot;found bookdata root at {}&quot;</span>, path.display());
-      <span class="kw">return </span><span class="prelude-val">Ok</span>(path);
-    }
+    <span class="kw">let </span><span class="kw-2">mut </span>path = current_dir()<span class="question-mark">?</span>;
+    <span class="macro">debug!</span>(<span class="string">&quot;working directory: {}&quot;</span>, path.display());
+    <span class="kw">loop </span>{
+        <span class="macro">trace!</span>(<span class="string">&quot;looking for DVC in {}&quot;</span>, path.display());
+        <span class="kw">if </span>is_bookdata_root(<span class="kw-2">&amp;</span>path)<span class="question-mark">? </span>{
+            <span class="macro">info!</span>(<span class="string">&quot;found bookdata root at {}&quot;</span>, path.display());
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(path);
+        }
 
-    <span class="kw">if </span>!path.pop() {
-      <span class="macro">error!</span>(<span class="string">&quot;scanned all parents and could not find bookdata root&quot;</span>);
-      <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;bookdata not found&quot;</span>));
+        <span class="kw">if </span>!path.pop() {
+            <span class="macro">error!</span>(<span class="string">&quot;scanned all parents and could not find bookdata root&quot;</span>);
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;bookdata not found&quot;</span>));
+        }
     }
-  }
 }
 
 <span class="doccomment">/// Require that we are in the root directory.
 </span><span class="kw">pub fn </span>require_working_root() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-  <span class="kw">let </span>cwd = current_dir()<span class="question-mark">?</span>;
-  <span class="kw">if </span>is_bookdata_root(<span class="kw-2">&amp;</span>cwd)<span class="question-mark">? </span>{
-    <span class="prelude-val">Ok</span>(())
-  } <span class="kw">else </span>{
-    <span class="macro">error!</span>(<span class="string">&quot;working directory is not bookdata root&quot;</span>);
-    <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;incorrect working directory&quot;</span>))
-  }
+    <span class="kw">let </span>cwd = current_dir()<span class="question-mark">?</span>;
+    <span class="kw">if </span>is_bookdata_root(<span class="kw-2">&amp;</span>cwd)<span class="question-mark">? </span>{
+        <span class="prelude-val">Ok</span>(())
+    } <span class="kw">else </span>{
+        <span class="macro">error!</span>(<span class="string">&quot;working directory is not bookdata root&quot;</span>);
+        <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;incorrect working directory&quot;</span>))
+    }
 }
 
 <span class="doccomment">/// Expect that we are in a particular subdirectory.
 </span><span class="kw">pub fn </span>require_working_dir&lt;P: AsRef&lt;Path&gt;&gt;(path: P) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-  <span class="kw">let </span>path = path.as_ref();
-  <span class="kw">let </span>cwd = current_dir()<span class="question-mark">?</span>;
+    <span class="kw">let </span>path = path.as_ref();
+    <span class="kw">let </span>cwd = current_dir()<span class="question-mark">?</span>;
 
-  <span class="kw">if </span>!cwd.ends_with(path) {
-    <span class="macro">error!</span>(<span class="string">&quot;expected to be run in {:?}&quot;</span>, path);
-    <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;incorrect working directory&quot;</span>))
-  } <span class="kw">else </span>{
-    <span class="prelude-val">Ok</span>(())
-  }
+    <span class="kw">if </span>!cwd.ends_with(path) {
+        <span class="macro">error!</span>(<span class="string">&quot;expected to be run in {:?}&quot;</span>, path);
+        <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;incorrect working directory&quot;</span>))
+    } <span class="kw">else </span>{
+        <span class="prelude-val">Ok</span>(())
+    }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

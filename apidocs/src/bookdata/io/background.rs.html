@@ -133,140 +133,146 @@
 <span id="133">133</span>
 <span id="134">134</span>
 <span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::io::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>std::io::{<span class="self">self</span>, copy};
 <span class="kw">use </span>std::mem::drop;
 <span class="kw">use </span>std::thread::{spawn, JoinHandle};
 
-<span class="kw">use </span>anyhow::{<span class="prelude-ty">Result</span>};
+<span class="kw">use </span>anyhow::Result;
+<span class="kw">use </span>friendly::bytes;
 <span class="kw">use </span>log::<span class="kw-2">*</span>;
 <span class="kw">use </span>os_pipe::{pipe, PipeReader, PipeWriter};
-<span class="kw">use </span>friendly::bytes;
 
 <span class="kw">use </span><span class="kw">crate</span>::util::timing::Timer;
 
 <span class="doccomment">/// Reader that reads from a background thread.
 </span><span class="kw">pub struct </span>ThreadRead {
-  read: PipeReader,
-  handle: <span class="prelude-ty">Option</span>&lt;JoinHandle&lt;io::Result&lt;u64&gt;&gt;&gt;
+    read: PipeReader,
+    handle: <span class="prelude-ty">Option</span>&lt;JoinHandle&lt;io::Result&lt;u64&gt;&gt;&gt;,
 }
 
 <span class="doccomment">/// Writer that writes to a background thread.
 </span><span class="kw">pub struct </span>ThreadWrite {
-  write: <span class="prelude-ty">Option</span>&lt;PipeWriter&gt;,
-  handle: <span class="prelude-ty">Option</span>&lt;JoinHandle&lt;io::Result&lt;u64&gt;&gt;&gt;
+    write: <span class="prelude-ty">Option</span>&lt;PipeWriter&gt;,
+    handle: <span class="prelude-ty">Option</span>&lt;JoinHandle&lt;io::Result&lt;u64&gt;&gt;&gt;,
 }
 
 <span class="kw">impl </span>ThreadRead {
-  <span class="doccomment">/// Push a read into a background thread.
-  </span><span class="kw">pub fn </span>new&lt;R: Read + Send + <span class="lifetime">&#39;static</span>&gt;(chan: R) -&gt; <span class="prelude-ty">Result</span>&lt;ThreadRead&gt; {
-    <span class="kw">let </span>(read, writer) = pipe()<span class="question-mark">?</span>;
+    <span class="doccomment">/// Push a read into a background thread.
+    </span><span class="kw">pub fn </span>new&lt;R: Read + Send + <span class="lifetime">&#39;static</span>&gt;(chan: R) -&gt; <span class="prelude-ty">Result</span>&lt;ThreadRead&gt; {
+        <span class="kw">let </span>(read, writer) = pipe()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>jh = spawn(<span class="kw">move </span>|| {
-      <span class="kw">let </span><span class="kw-2">mut </span>src = chan;
-      <span class="kw">let </span><span class="kw-2">mut </span>dst = writer;
-      <span class="kw">let </span>timer = Timer::new();
-      <span class="kw">let </span>res = copy(<span class="kw-2">&amp;mut </span>src, <span class="kw-2">&amp;mut </span>dst);
-      <span class="kw">if let </span><span class="prelude-val">Ok</span>(size) = res {
-        <span class="macro">info!</span>(<span class="string">&quot;copied {} in {}&quot;</span>, bytes(size), timer);
-      }
-      res
-    });
+        <span class="kw">let </span>jh = spawn(<span class="kw">move </span>|| {
+            <span class="kw">let </span><span class="kw-2">mut </span>src = chan;
+            <span class="kw">let </span><span class="kw-2">mut </span>dst = writer;
+            <span class="kw">let </span>timer = Timer::new();
+            <span class="kw">let </span>res = copy(<span class="kw-2">&amp;mut </span>src, <span class="kw-2">&amp;mut </span>dst);
+            <span class="kw">if let </span><span class="prelude-val">Ok</span>(size) = res {
+                <span class="macro">info!</span>(<span class="string">&quot;copied {} in {}&quot;</span>, bytes(size), timer);
+            }
+            res
+        });
 
-    <span class="prelude-val">Ok</span>(ThreadRead {
-      read, handle: <span class="prelude-val">Some</span>(jh)
-    })
-  }
-
-  <span class="doccomment">/// Create a thread read from an already-existing thread.
-  </span><span class="kw">pub fn </span>create(read: PipeReader, handle: JoinHandle&lt;io::Result&lt;u64&gt;&gt;) -&gt; ThreadRead {
-    ThreadRead {
-      read, handle: <span class="prelude-val">Some</span>(handle)
+        <span class="prelude-val">Ok</span>(ThreadRead {
+            read,
+            handle: <span class="prelude-val">Some</span>(jh),
+        })
     }
-  }
+
+    <span class="doccomment">/// Create a thread read from an already-existing thread.
+    </span><span class="kw">pub fn </span>create(read: PipeReader, handle: JoinHandle&lt;io::Result&lt;u64&gt;&gt;) -&gt; ThreadRead {
+        ThreadRead {
+            read,
+            handle: <span class="prelude-val">Some</span>(handle),
+        }
+    }
 }
 
 <span class="kw">impl </span>Read <span class="kw">for </span>ThreadRead {
-  <span class="kw">fn </span>read(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; io::Result&lt;usize&gt; {
-    <span class="kw">let </span>size = <span class="self">self</span>.read.read(buf)<span class="question-mark">?</span>;
-    <span class="kw">if </span>size == <span class="number">0 </span>{
-      <span class="comment">// eof - make sure thread completed successfully
-      // this makes it so thread failure results in an error
-      // on the last call to `read`, instead of a panic when
-      // the reader is dropped.
-      </span><span class="kw">if let </span><span class="prelude-val">Some</span>(h) = <span class="self">self</span>.handle.take() {
-        <span class="kw">let </span>res = h.join().expect(<span class="string">&quot;thread error&quot;</span>);
-        <span class="kw">let </span>sz = res<span class="question-mark">?</span>;
-        <span class="macro">debug!</span>(<span class="string">&quot;thread copied {} bytes&quot;</span>, sz);
-      }
+    <span class="kw">fn </span>read(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; io::Result&lt;usize&gt; {
+        <span class="kw">let </span>size = <span class="self">self</span>.read.read(buf)<span class="question-mark">?</span>;
+        <span class="kw">if </span>size == <span class="number">0 </span>{
+            <span class="comment">// eof - make sure thread completed successfully
+            // this makes it so thread failure results in an error
+            // on the last call to `read`, instead of a panic when
+            // the reader is dropped.
+            </span><span class="kw">if let </span><span class="prelude-val">Some</span>(h) = <span class="self">self</span>.handle.take() {
+                <span class="kw">let </span>res = h.join().expect(<span class="string">&quot;thread error&quot;</span>);
+                <span class="kw">let </span>sz = res<span class="question-mark">?</span>;
+                <span class="macro">debug!</span>(<span class="string">&quot;thread copied {} bytes&quot;</span>, sz);
+            }
+        }
+        <span class="prelude-val">Ok</span>(size)
     }
-    <span class="prelude-val">Ok</span>(size)
-  }
 }
 
 <span class="kw">impl </span>ThreadWrite {
-  <span class="doccomment">/// Push a read into a background thread.
-  </span><span class="kw">pub fn </span>new&lt;W: Write + Send + <span class="lifetime">&#39;static</span>&gt;(chan: W) -&gt; <span class="prelude-ty">Result</span>&lt;ThreadWrite&gt; {
-    <span class="kw">let </span>(read, writer) = pipe()<span class="question-mark">?</span>;
+    <span class="doccomment">/// Push a read into a background thread.
+    </span><span class="kw">pub fn </span>new&lt;W: Write + Send + <span class="lifetime">&#39;static</span>&gt;(chan: W) -&gt; <span class="prelude-ty">Result</span>&lt;ThreadWrite&gt; {
+        <span class="kw">let </span>(read, writer) = pipe()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>jh = spawn(<span class="kw">move </span>|| {
-      <span class="kw">let </span><span class="kw-2">mut </span>src = read;
-      <span class="kw">let </span><span class="kw-2">mut </span>dst = chan;
-      copy(<span class="kw-2">&amp;mut </span>src, <span class="kw-2">&amp;mut </span>dst)
-    });
+        <span class="kw">let </span>jh = spawn(<span class="kw">move </span>|| {
+            <span class="kw">let </span><span class="kw-2">mut </span>src = read;
+            <span class="kw">let </span><span class="kw-2">mut </span>dst = chan;
+            copy(<span class="kw-2">&amp;mut </span>src, <span class="kw-2">&amp;mut </span>dst)
+        });
 
-    <span class="prelude-val">Ok</span>(ThreadWrite {
-      write: <span class="prelude-val">Some</span>(writer), handle: <span class="prelude-val">Some</span>(jh)
-    })
-  }
-
-  <span class="kw">fn </span>do_close(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; io::Result&lt;u64&gt; {
-    <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>write) = <span class="self">self</span>.write.take() {
-      write.flush()<span class="question-mark">?</span>;
-      drop(write);
+        <span class="prelude-val">Ok</span>(ThreadWrite {
+            write: <span class="prelude-val">Some</span>(writer),
+            handle: <span class="prelude-val">Some</span>(jh),
+        })
     }
-    <span class="kw">if let </span><span class="prelude-val">Some</span>(h) = <span class="self">self</span>.handle.take() {
-      <span class="kw">let </span>res = h.join().expect(<span class="string">&quot;thread error&quot;</span>);
-      <span class="kw">let </span>sz = res<span class="question-mark">?</span>;
-      <span class="macro">debug!</span>(<span class="string">&quot;thread copied {} bytes&quot;</span>, sz);
-      <span class="prelude-val">Ok</span>(sz)
-    } <span class="kw">else </span>{
-      <span class="prelude-val">Err</span>(io::ErrorKind::BrokenPipe.into())
-    }
-  }
 
-  <span class="doccomment">/// Close and drop the thread writer.
-  </span><span class="attribute">#[allow(dead_code)]
-  </span><span class="kw">pub fn </span>close(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; io::Result&lt;u64&gt; {
-    <span class="self">self</span>.do_close()
-  }
+    <span class="kw">fn </span>do_close(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; io::Result&lt;u64&gt; {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>write) = <span class="self">self</span>.write.take() {
+            write.flush()<span class="question-mark">?</span>;
+            drop(write);
+        }
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(h) = <span class="self">self</span>.handle.take() {
+            <span class="kw">let </span>res = h.join().expect(<span class="string">&quot;thread error&quot;</span>);
+            <span class="kw">let </span>sz = res<span class="question-mark">?</span>;
+            <span class="macro">debug!</span>(<span class="string">&quot;thread copied {} bytes&quot;</span>, sz);
+            <span class="prelude-val">Ok</span>(sz)
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Err</span>(io::ErrorKind::BrokenPipe.into())
+        }
+    }
+
+    <span class="doccomment">/// Close and drop the thread writer.
+    </span><span class="attribute">#[allow(dead_code)]
+    </span><span class="kw">pub fn </span>close(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; io::Result&lt;u64&gt; {
+        <span class="self">self</span>.do_close()
+    }
 }
 
 <span class="kw">impl </span>Drop <span class="kw">for </span>ThreadWrite {
-  <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-    <span class="kw">if </span><span class="self">self</span>.write.is_some() || <span class="self">self</span>.handle.is_some() {
-      <span class="self">self</span>.do_close().expect(<span class="string">&quot;unclosed background thread failed&quot;</span>);
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">if </span><span class="self">self</span>.write.is_some() || <span class="self">self</span>.handle.is_some() {
+            <span class="self">self</span>.do_close().expect(<span class="string">&quot;unclosed background thread failed&quot;</span>);
+        }
     }
-  }
 }
 
 <span class="kw">impl </span>Write <span class="kw">for </span>ThreadWrite {
-  <span class="kw">fn </span>write(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;</span>[u8]) -&gt; io::Result&lt;usize&gt; {
-    <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref mut </span>write) = <span class="self">self</span>.write {
-      write.write(buf)
-    } <span class="kw">else </span>{
-      <span class="prelude-val">Err</span>(io::ErrorKind::BrokenPipe.into())
+    <span class="kw">fn </span>write(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;</span>[u8]) -&gt; io::Result&lt;usize&gt; {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref mut </span>write) = <span class="self">self</span>.write {
+            write.write(buf)
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Err</span>(io::ErrorKind::BrokenPipe.into())
+        }
     }
-  }
 
-  <span class="doccomment">/// Flush the thread writer. This is not reliable.
-  </span><span class="kw">fn </span>flush(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; io::Result&lt;()&gt; {
-    <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref mut </span>write) = <span class="self">self</span>.write {
-      write.flush()
-    } <span class="kw">else </span>{
-      <span class="prelude-val">Err</span>(io::ErrorKind::BrokenPipe.into())
+    <span class="doccomment">/// Flush the thread writer. This is not reliable.
+    </span><span class="kw">fn </span>flush(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; io::Result&lt;()&gt; {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref mut </span>write) = <span class="self">self</span>.write {
+            write.flush()
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Err</span>(io::ErrorKind::BrokenPipe.into())
+        }
     }
-  }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

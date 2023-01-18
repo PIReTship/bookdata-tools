@@ -152,14 +152,23 @@
 <span id="152">152</span>
 <span id="153">153</span>
 <span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
 </pre><pre class="rust"><code><span class="doccomment">//! GoodReads book schemas and record processing.
-</span><span class="kw">use </span>serde::Deserialize;
-<span class="kw">use </span>chrono::NaiveDate;
+</span><span class="kw">use </span>chrono::NaiveDate;
+<span class="kw">use </span>serde::Deserialize;
 
-<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::arrow::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::parsing::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::cleaning::isbns::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::parsing::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 
 <span class="kw">const </span>ID_FILE: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str = <span class="string">&quot;gr-book-ids.parquet&quot;</span>;
 <span class="kw">const </span>INFO_FILE: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str = <span class="string">&quot;gr-book-info.parquet&quot;</span>;
@@ -169,142 +178,151 @@
 <span class="doccomment">/// The raw records we read from JSON
 </span><span class="attribute">#[derive(Deserialize)]
 </span><span class="kw">pub struct </span>RawBook {
-  <span class="kw">pub </span>book_id: String,
-  <span class="kw">pub </span>work_id: String,
-  <span class="kw">pub </span>isbn: String,
-  <span class="kw">pub </span>isbn13: String,
-  <span class="kw">pub </span>asin: String,
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>title: String,
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>authors: Vec&lt;RawAuthor&gt;,
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>publication_year: String,
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>publication_month: String,
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>publication_day: String,
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>series: Vec&lt;String&gt;,
+    <span class="kw">pub </span>book_id: String,
+    <span class="kw">pub </span>work_id: String,
+    <span class="kw">pub </span>isbn: String,
+    <span class="kw">pub </span>isbn13: String,
+    <span class="kw">pub </span>asin: String,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>title: String,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>authors: Vec&lt;RawAuthor&gt;,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>publication_year: String,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>publication_month: String,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>publication_day: String,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>series: Vec&lt;String&gt;,
 }
 
 <span class="doccomment">/// The raw author records from JSON.
 </span><span class="attribute">#[derive(Deserialize)]
 </span><span class="kw">pub struct </span>RawAuthor {
-  <span class="kw">pub </span>author_id: String,
-  <span class="attribute">#[serde(default)]
-  </span><span class="kw">pub </span>role: String,
+    <span class="kw">pub </span>author_id: String,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>role: String,
 }
 
 <span class="doccomment">/// the book ID records to write to Parquet.
 </span><span class="attribute">#[derive(ArrowField)]
 </span><span class="kw">pub struct </span>BookIdRecord {
-  <span class="kw">pub </span>book_id: i32,
-  <span class="kw">pub </span>work_id: <span class="prelude-ty">Option</span>&lt;i32&gt;,
-  <span class="kw">pub </span>isbn10: <span class="prelude-ty">Option</span>&lt;String&gt;,
-  <span class="kw">pub </span>isbn13: <span class="prelude-ty">Option</span>&lt;String&gt;,
-  <span class="kw">pub </span>asin: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="kw">pub </span>book_id: i32,
+    <span class="kw">pub </span>work_id: <span class="prelude-ty">Option</span>&lt;i32&gt;,
+    <span class="kw">pub </span>isbn10: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="kw">pub </span>isbn13: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="kw">pub </span>asin: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
 <span class="doccomment">/// book info records to actually write
 </span><span class="attribute">#[derive(ArrowField)]
 </span><span class="kw">pub struct </span>BookRecord {
-  <span class="kw">pub </span>book_id: i32,
-  <span class="kw">pub </span>title: <span class="prelude-ty">Option</span>&lt;String&gt;,
-  <span class="kw">pub </span>pub_year: <span class="prelude-ty">Option</span>&lt;u16&gt;,
-  <span class="kw">pub </span>pub_month: <span class="prelude-ty">Option</span>&lt;u8&gt;,
-  <span class="kw">pub </span>pub_date: <span class="prelude-ty">Option</span>&lt;NaiveDate&gt;,
+    <span class="kw">pub </span>book_id: i32,
+    <span class="kw">pub </span>title: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="kw">pub </span>pub_year: <span class="prelude-ty">Option</span>&lt;u16&gt;,
+    <span class="kw">pub </span>pub_month: <span class="prelude-ty">Option</span>&lt;u8&gt;,
+    <span class="kw">pub </span>pub_date: <span class="prelude-ty">Option</span>&lt;NaiveDate&gt;,
 }
 
 <span class="doccomment">/// book series linking records
 </span><span class="attribute">#[derive(ArrowField)]
 </span><span class="kw">pub struct </span>BookSeriesRecord {
-  <span class="kw">pub </span>book_id: i32,
-  <span class="kw">pub </span>series: String,
+    <span class="kw">pub </span>book_id: i32,
+    <span class="kw">pub </span>series: String,
 }
 
 <span class="doccomment">/// book author linking records
 </span><span class="attribute">#[derive(ArrowField)]
 </span><span class="kw">pub struct </span>BookAuthorRecord {
-  <span class="kw">pub </span>book_id: i32,
-  <span class="kw">pub </span>author_id: i32,
-  <span class="kw">pub </span>role: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="kw">pub </span>book_id: i32,
+    <span class="kw">pub </span>author_id: i32,
+    <span class="kw">pub </span>role: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
 <span class="doccomment">/// Output handler for GoodReads books.
 </span><span class="kw">pub struct </span>BookWriter {
-  id_out: TableWriter&lt;BookIdRecord&gt;,
-  info_out: TableWriter&lt;BookRecord&gt;,
-  author_out: TableWriter&lt;BookAuthorRecord&gt;,
-  series_out: TableWriter&lt;BookSeriesRecord&gt;,
+    id_out: TableWriter&lt;BookIdRecord&gt;,
+    info_out: TableWriter&lt;BookRecord&gt;,
+    author_out: TableWriter&lt;BookAuthorRecord&gt;,
+    series_out: TableWriter&lt;BookSeriesRecord&gt;,
 }
 
 <span class="kw">impl </span>BookWriter {
-  <span class="kw">pub fn </span>open() -&gt; <span class="prelude-ty">Result</span>&lt;BookWriter&gt; {
-    <span class="kw">let </span>id_out = TableWriter::open(ID_FILE)<span class="question-mark">?</span>;
-    <span class="kw">let </span>info_out = TableWriter::open(INFO_FILE)<span class="question-mark">?</span>;
-    <span class="kw">let </span>author_out = TableWriter::open(AUTHOR_FILE)<span class="question-mark">?</span>;
-    <span class="kw">let </span>series_out = TableWriter::open(SERIES_FILE)<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(BookWriter {
-      id_out, info_out, author_out, series_out
-    })
-  }
+    <span class="kw">pub fn </span>open() -&gt; <span class="prelude-ty">Result</span>&lt;BookWriter&gt; {
+        <span class="kw">let </span>id_out = TableWriter::open(ID_FILE)<span class="question-mark">?</span>;
+        <span class="kw">let </span>info_out = TableWriter::open(INFO_FILE)<span class="question-mark">?</span>;
+        <span class="kw">let </span>author_out = TableWriter::open(AUTHOR_FILE)<span class="question-mark">?</span>;
+        <span class="kw">let </span>series_out = TableWriter::open(SERIES_FILE)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(BookWriter {
+            id_out,
+            info_out,
+            author_out,
+            series_out,
+        })
+    }
 }
 
 <span class="kw">impl </span>DataSink <span class="kw">for </span>BookWriter {
-  <span class="kw">fn </span>output_files&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>) -&gt; Vec&lt;PathBuf&gt; {
-    path_list(<span class="kw-2">&amp;</span>[ID_FILE, INFO_FILE, AUTHOR_FILE, SERIES_FILE])
-  }
+    <span class="kw">fn </span>output_files&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>) -&gt; Vec&lt;PathBuf&gt; {
+        path_list(<span class="kw-2">&amp;</span>[ID_FILE, INFO_FILE, AUTHOR_FILE, SERIES_FILE])
+    }
 }
 
 <span class="kw">impl </span>ObjectWriter&lt;RawBook&gt; <span class="kw">for </span>BookWriter {
-  <span class="kw">fn </span>write_object(<span class="kw-2">&amp;mut </span><span class="self">self</span>, row: RawBook) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>book_id: i32 = row.book_id.parse()<span class="question-mark">?</span>;
+    <span class="kw">fn </span>write_object(<span class="kw-2">&amp;mut </span><span class="self">self</span>, row: RawBook) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span>book_id: i32 = row.book_id.parse()<span class="question-mark">?</span>;
 
-    <span class="self">self</span>.id_out.write_object(BookIdRecord {
-      book_id,
-      work_id: parse_opt(<span class="kw-2">&amp;</span>row.work_id)<span class="question-mark">?</span>,
-      isbn10: trim_opt(<span class="kw-2">&amp;</span>row.isbn).map(|s| clean_asin_chars(s)).filter(|s| s.len() &gt;= <span class="number">7</span>),
-      isbn13: trim_opt(<span class="kw-2">&amp;</span>row.isbn13).map(|s| clean_asin_chars(s)).filter(|s| s.len() &gt;= <span class="number">7</span>),
-      asin: trim_opt(<span class="kw-2">&amp;</span>row.asin).map(|s| clean_asin_chars(s)).filter(|s| s.len() &gt;= <span class="number">7</span>),
-    })<span class="question-mark">?</span>;
+        <span class="self">self</span>.id_out.write_object(BookIdRecord {
+            book_id,
+            work_id: parse_opt(<span class="kw-2">&amp;</span>row.work_id)<span class="question-mark">?</span>,
+            isbn10: trim_opt(<span class="kw-2">&amp;</span>row.isbn)
+                .map(|s| clean_asin_chars(s))
+                .filter(|s| s.len() &gt;= <span class="number">7</span>),
+            isbn13: trim_opt(<span class="kw-2">&amp;</span>row.isbn13)
+                .map(|s| clean_asin_chars(s))
+                .filter(|s| s.len() &gt;= <span class="number">7</span>),
+            asin: trim_opt(<span class="kw-2">&amp;</span>row.asin)
+                .map(|s| clean_asin_chars(s))
+                .filter(|s| s.len() &gt;= <span class="number">7</span>),
+        })<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>pub_year = parse_opt(<span class="kw-2">&amp;</span>row.publication_year)<span class="question-mark">?</span>;
-    <span class="kw">let </span>pub_month = parse_opt(<span class="kw-2">&amp;</span>row.publication_month)<span class="question-mark">?</span>;
-    <span class="kw">let </span>pub_day: <span class="prelude-ty">Option</span>&lt;u32&gt; = parse_opt(<span class="kw-2">&amp;</span>row.publication_day)<span class="question-mark">?</span>;
-    <span class="kw">let </span>pub_date = maybe_date(pub_year, pub_month, pub_day);
+        <span class="kw">let </span>pub_year = parse_opt(<span class="kw-2">&amp;</span>row.publication_year)<span class="question-mark">?</span>;
+        <span class="kw">let </span>pub_month = parse_opt(<span class="kw-2">&amp;</span>row.publication_month)<span class="question-mark">?</span>;
+        <span class="kw">let </span>pub_day: <span class="prelude-ty">Option</span>&lt;u32&gt; = parse_opt(<span class="kw-2">&amp;</span>row.publication_day)<span class="question-mark">?</span>;
+        <span class="kw">let </span>pub_date = maybe_date(pub_year, pub_month, pub_day);
 
-    <span class="self">self</span>.info_out.write_object(BookRecord {
-      book_id,
-      title: trim_owned(<span class="kw-2">&amp;</span>row.title),
-      pub_year, pub_month, pub_date
-    })<span class="question-mark">?</span>;
+        <span class="self">self</span>.info_out.write_object(BookRecord {
+            book_id,
+            title: trim_owned(<span class="kw-2">&amp;</span>row.title),
+            pub_year,
+            pub_month,
+            pub_date,
+        })<span class="question-mark">?</span>;
 
-    <span class="kw">for </span>author <span class="kw">in </span>row.authors {
-      <span class="self">self</span>.author_out.write_object(BookAuthorRecord {
-        book_id,
-        author_id: author.author_id.parse()<span class="question-mark">?</span>,
-        role: <span class="prelude-val">Some</span>(author.role).filter(|s| !s.is_empty()),
-      })<span class="question-mark">?</span>;
+        <span class="kw">for </span>author <span class="kw">in </span>row.authors {
+            <span class="self">self</span>.author_out.write_object(BookAuthorRecord {
+                book_id,
+                author_id: author.author_id.parse()<span class="question-mark">?</span>,
+                role: <span class="prelude-val">Some</span>(author.role).filter(|s| !s.is_empty()),
+            })<span class="question-mark">?</span>;
+        }
+
+        <span class="kw">for </span>series <span class="kw">in </span>row.series {
+            <span class="self">self</span>.series_out
+                .write_object(BookSeriesRecord { book_id, series })<span class="question-mark">?</span>;
+        }
+
+        <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">for </span>series <span class="kw">in </span>row.series {
-      <span class="self">self</span>.series_out.write_object(BookSeriesRecord {
-        book_id,
-        series
-      })<span class="question-mark">?</span>;
+    <span class="kw">fn </span>finish(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
+        <span class="self">self</span>.id_out.finish()<span class="question-mark">?</span>;
+        <span class="self">self</span>.info_out.finish()<span class="question-mark">?</span>;
+        <span class="self">self</span>.author_out.finish()<span class="question-mark">?</span>;
+        <span class="self">self</span>.series_out.finish()<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(<span class="number">0</span>)
     }
-
-    <span class="prelude-val">Ok</span>(())
-  }
-
-  <span class="kw">fn </span>finish(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
-    <span class="self">self</span>.id_out.finish()<span class="question-mark">?</span>;
-    <span class="self">self</span>.info_out.finish()<span class="question-mark">?</span>;
-    <span class="self">self</span>.author_out.finish()<span class="question-mark">?</span>;
-    <span class="self">self</span>.series_out.finish()<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(<span class="number">0</span>)
-  }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

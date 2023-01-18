@@ -73,80 +73,96 @@
 <span id="73">73</span>
 <span id="74">74</span>
 <span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Read cluster information.
-</span><span class="kw">use </span>std::convert::identity;
+</span><span class="kw">use </span>std::collections::{HashMap, HashSet};
+<span class="kw">use </span>std::convert::identity;
 <span class="kw">use </span>std::path::Path;
-<span class="kw">use </span>std::collections::{HashMap, HashSet};
 
+<span class="kw">use </span><span class="kw">super</span>::authors::AuthorTable;
+<span class="kw">use </span><span class="kw">crate</span>::arrow::scan_parquet_file;
+<span class="kw">use </span><span class="kw">crate</span>::gender::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::util::logging::item_progress;
+<span class="kw">use </span>anyhow::Result;
 <span class="attribute">#[allow(unused_imports)]
 </span><span class="kw">use </span>arrow2_convert::field::LargeString;
 <span class="kw">use </span>polars::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::gender::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::arrow::scan_parquet_file;
-<span class="kw">use </span><span class="kw">crate</span>::util::logging::item_progress;
-<span class="kw">use </span><span class="kw">super</span>::authors::AuthorTable;
-<span class="kw">use </span>anyhow::Result;
 
 <span class="doccomment">/// Record for storing a cluster&#39;s gender statistics while aggregating.
 </span><span class="attribute">#[derive(Debug, Default)]
 </span><span class="kw">pub struct </span>ClusterStats {
-  <span class="kw">pub </span>n_book_authors: u32,
-  <span class="kw">pub </span>n_author_recs: u32,
-  <span class="kw">pub </span>n_gender_recs: u32,
-  <span class="kw">pub </span>genders: HashSet&lt;Gender&gt;,
+    <span class="kw">pub </span>n_book_authors: u32,
+    <span class="kw">pub </span>n_author_recs: u32,
+    <span class="kw">pub </span>n_gender_recs: u32,
+    <span class="kw">pub </span>genders: HashSet&lt;Gender&gt;,
 }
 
 <span class="doccomment">/// Row struct for reading cluster author names.
 </span><span class="attribute">#[derive(Debug, ArrowField)]
 </span><span class="kw">struct </span>ClusterAuthor {
-  cluster: i32,
-  <span class="attribute">#[arrow_field(<span class="kw">type</span>=<span class="string">&quot;LargeString&quot;</span>)]
-  </span>author_name: String,
+    cluster: i32,
+    <span class="attribute">#[arrow_field(<span class="kw">type </span>= <span class="string">&quot;LargeString&quot;</span>)]
+    </span>author_name: String,
 }
 
-<span class="kw">pub type </span>ClusterTable = HashMap&lt;i32,ClusterStats&gt;;
+<span class="kw">pub type </span>ClusterTable = HashMap&lt;i32, ClusterStats&gt;;
 
 <span class="doccomment">/// Read cluster author names and resolve them to gender information.
 </span><span class="kw">pub fn </span>read_resolve(path: <span class="kw-2">&amp;</span>Path, authors: <span class="kw-2">&amp;</span>AuthorTable) -&gt; <span class="prelude-ty">Result</span>&lt;ClusterTable&gt; {
-  <span class="kw">let </span>timer = Timer::new();
-  <span class="macro">info!</span>(<span class="string">&quot;reading cluster authors from {}&quot;</span>, path.display());
-  <span class="kw">let </span>iter = scan_parquet_file(path)<span class="question-mark">?</span>;
+    <span class="kw">let </span>timer = Timer::new();
+    <span class="macro">info!</span>(<span class="string">&quot;reading cluster authors from {}&quot;</span>, path.display());
+    <span class="kw">let </span>iter = scan_parquet_file(path)<span class="question-mark">?</span>;
 
-  <span class="kw">let </span>pb = item_progress(iter.remaining() <span class="kw">as </span>u64, <span class="string">&quot;authors&quot;</span>);
+    <span class="kw">let </span>pb = item_progress(iter.remaining() <span class="kw">as </span>u64, <span class="string">&quot;authors&quot;</span>);
 
-  <span class="kw">let </span><span class="kw-2">mut </span>table = ClusterTable::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>table = ClusterTable::new();
 
-  <span class="kw">for </span>row <span class="kw">in </span>pb.wrap_iter(iter) {
-    <span class="kw">let </span>row: ClusterAuthor = row<span class="question-mark">?</span>;
-    <span class="kw">let </span><span class="kw-2">mut </span>rec = table.entry(row.cluster).or_default();
-    rec.n_book_authors += <span class="number">1</span>;
-    <span class="kw">if let </span><span class="prelude-val">Some</span>(info) = authors.get(row.author_name.as_str()) {
-      rec.n_author_recs += info.n_author_recs;
-      rec.n_gender_recs += info.genders.len() <span class="kw">as </span>u32;
-      <span class="kw">for </span>g <span class="kw">in </span><span class="kw-2">&amp;</span>info.genders {
-        rec.genders.insert(g.clone());
-      }
+    <span class="kw">for </span>row <span class="kw">in </span>pb.wrap_iter(iter) {
+        <span class="kw">let </span>row: ClusterAuthor = row<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>rec = table.entry(row.cluster).or_default();
+        rec.n_book_authors += <span class="number">1</span>;
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(info) = authors.get(row.author_name.as_str()) {
+            rec.n_author_recs += info.n_author_recs;
+            rec.n_gender_recs += info.genders.len() <span class="kw">as </span>u32;
+            <span class="kw">for </span>g <span class="kw">in </span><span class="kw-2">&amp;</span>info.genders {
+                rec.genders.insert(g.clone());
+            }
+        }
     }
-  }
 
-  <span class="macro">info!</span>(<span class="string">&quot;scanned genders for {} clusters in {}&quot;</span>, table.len(), timer.human_elapsed());
+    <span class="macro">info!</span>(
+        <span class="string">&quot;scanned genders for {} clusters in {}&quot;</span>,
+        table.len(),
+        timer.human_elapsed()
+    );
 
-  <span class="prelude-val">Ok</span>(table)
+    <span class="prelude-val">Ok</span>(table)
 }
 
 <span class="doccomment">/// Read the full list of cluster IDs.
 </span><span class="kw">pub fn </span>all_clusters&lt;P: AsRef&lt;Path&gt;&gt;(path: P) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;i32&gt;&gt; {
-  <span class="macro">info!</span>(<span class="string">&quot;reading cluster IDs from {}&quot;</span>, path.as_ref().display());
-  <span class="kw">let </span>path = path.as_ref().to_str().map(|s| s.to_string()).ok_or(<span class="macro">anyhow!</span>(<span class="string">&quot;invalid unicode path&quot;</span>))<span class="question-mark">?</span>;
-  <span class="kw">let </span>df = LazyFrame::scan_parquet(path, Default::default())<span class="question-mark">?</span>;
-  <span class="kw">let </span>df = df.select([col(<span class="string">&quot;cluster&quot;</span>)]);
-  <span class="kw">let </span>clusters = df.collect()<span class="question-mark">?</span>;
-  <span class="kw">let </span>ids = clusters.column(<span class="string">&quot;cluster&quot;</span>)<span class="question-mark">?</span>.i32()<span class="question-mark">?</span>;
+    <span class="macro">info!</span>(<span class="string">&quot;reading cluster IDs from {}&quot;</span>, path.as_ref().display());
+    <span class="kw">let </span>path = path
+        .as_ref()
+        .to_str()
+        .map(|s| s.to_string())
+        .ok_or(<span class="macro">anyhow!</span>(<span class="string">&quot;invalid unicode path&quot;</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span>df = LazyFrame::scan_parquet(path, Default::default())<span class="question-mark">?</span>;
+    <span class="kw">let </span>df = df.select([col(<span class="string">&quot;cluster&quot;</span>)]);
+    <span class="kw">let </span>clusters = df.collect()<span class="question-mark">?</span>;
+    <span class="kw">let </span>ids = clusters.column(<span class="string">&quot;cluster&quot;</span>)<span class="question-mark">?</span>.i32()<span class="question-mark">?</span>;
 
-  <span class="macro">info!</span>(<span class="string">&quot;found {} cluster IDs&quot;</span>, ids.len());
+    <span class="macro">info!</span>(<span class="string">&quot;found {} cluster IDs&quot;</span>, ids.len());
 
-  <span class="prelude-val">Ok</span>(ids.into_iter().filter_map(identity).collect())
+    <span class="prelude-val">Ok</span>(ids.into_iter().filter_map(identity).collect())
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

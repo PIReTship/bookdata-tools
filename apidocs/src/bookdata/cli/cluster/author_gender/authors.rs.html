@@ -95,102 +95,118 @@
 <span id="95">95</span>
 <span id="96">96</span>
 <span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Support for loading author info.
 </span><span class="kw">use </span>std::collections::{HashMap, HashSet};
 
-<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::gender::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::arrow::scan_parquet_file;
+<span class="kw">use </span><span class="kw">crate</span>::gender::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::util::logging::item_progress;
 
 <span class="attribute">#[derive(Debug, Default)]
 </span><span class="kw">pub struct </span>AuthorInfo {
-  <span class="kw">pub </span>n_author_recs: u32,
-  <span class="kw">pub </span>genders: HashSet&lt;Gender&gt;
+    <span class="kw">pub </span>n_author_recs: u32,
+    <span class="kw">pub </span>genders: HashSet&lt;Gender&gt;,
 }
 
-<span class="kw">pub type </span>AuthorTable = HashMap&lt;String,AuthorInfo&gt;;
+<span class="kw">pub type </span>AuthorTable = HashMap&lt;String, AuthorInfo&gt;;
 
 <span class="attribute">#[derive(ArrowField, Debug)]
 </span><span class="kw">struct </span>NameRow {
-  rec_id: u32,
-  name: String,
+    rec_id: u32,
+    name: String,
 }
 
 <span class="attribute">#[derive(ArrowField, Debug)]
 </span><span class="kw">struct </span>GenderRow {
-  rec_id: u32,
-  gender: String
+    rec_id: u32,
+    gender: String,
 }
 
 <span class="doccomment">/// Load VIAF author names.
 </span><span class="kw">fn </span>viaf_load_names() -&gt; <span class="prelude-ty">Result</span>&lt;HashMap&lt;u32, Vec&lt;String&gt;&gt;&gt; {
-  <span class="kw">let </span><span class="kw-2">mut </span>map: HashMap&lt;u32, Vec&lt;String&gt;&gt; = HashMap::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>map: HashMap&lt;u32, Vec&lt;String&gt;&gt; = HashMap::new();
 
-  <span class="macro">info!</span>(<span class="string">&quot;loading VIAF author names&quot;</span>);
-  <span class="kw">let </span>iter = scan_parquet_file(<span class="string">&quot;viaf/author-name-index.parquet&quot;</span>)<span class="question-mark">?</span>;
+    <span class="macro">info!</span>(<span class="string">&quot;loading VIAF author names&quot;</span>);
+    <span class="kw">let </span>iter = scan_parquet_file(<span class="string">&quot;viaf/author-name-index.parquet&quot;</span>)<span class="question-mark">?</span>;
 
-  <span class="kw">let </span>pb = item_progress(iter.remaining() <span class="kw">as </span>u64, <span class="string">&quot;authors&quot;</span>);
-  <span class="kw">let </span>iter = pb.wrap_iter(iter);
-  <span class="kw">let </span>timer = Timer::new();
+    <span class="kw">let </span>pb = item_progress(iter.remaining() <span class="kw">as </span>u64, <span class="string">&quot;authors&quot;</span>);
+    <span class="kw">let </span>iter = pb.wrap_iter(iter);
+    <span class="kw">let </span>timer = Timer::new();
 
-  <span class="kw">for </span>row <span class="kw">in </span>iter {
-    <span class="kw">let </span>row: NameRow = row<span class="question-mark">?</span>;
-    map.entry(row.rec_id).or_default().push(row.name);
-  }
+    <span class="kw">for </span>row <span class="kw">in </span>iter {
+        <span class="kw">let </span>row: NameRow = row<span class="question-mark">?</span>;
+        map.entry(row.rec_id).or_default().push(row.name);
+    }
 
-  <span class="macro">info!</span>(<span class="string">&quot;loaded authors for {} records in {}&quot;</span>, map.len(), timer.human_elapsed());
+    <span class="macro">info!</span>(
+        <span class="string">&quot;loaded authors for {} records in {}&quot;</span>,
+        map.len(),
+        timer.human_elapsed()
+    );
 
-  <span class="prelude-val">Ok</span>(map)
+    <span class="prelude-val">Ok</span>(map)
 }
 
 <span class="doccomment">/// Load VIAF author genders
 </span><span class="kw">fn </span>viaf_load_genders() -&gt; <span class="prelude-ty">Result</span>&lt;HashMap&lt;u32, HashSet&lt;Gender&gt;&gt;&gt; {
-  <span class="kw">let </span><span class="kw-2">mut </span>map: HashMap&lt;u32, HashSet&lt;Gender&gt;&gt; = HashMap::new();
-  <span class="kw">let </span>timer = Timer::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>map: HashMap&lt;u32, HashSet&lt;Gender&gt;&gt; = HashMap::new();
+    <span class="kw">let </span>timer = Timer::new();
 
-  <span class="macro">info!</span>(<span class="string">&quot;loading VIAF author genders&quot;</span>);
-  <span class="kw">let </span>iter = scan_parquet_file(<span class="string">&quot;viaf/author-genders.parquet&quot;</span>)<span class="question-mark">?</span>;
+    <span class="macro">info!</span>(<span class="string">&quot;loading VIAF author genders&quot;</span>);
+    <span class="kw">let </span>iter = scan_parquet_file(<span class="string">&quot;viaf/author-genders.parquet&quot;</span>)<span class="question-mark">?</span>;
 
-  <span class="kw">let </span>pb = item_progress(iter.remaining(), <span class="string">&quot;authors&quot;</span>);
-  <span class="kw">let </span>iter = pb.wrap_iter(iter);
+    <span class="kw">let </span>pb = item_progress(iter.remaining(), <span class="string">&quot;authors&quot;</span>);
+    <span class="kw">let </span>iter = pb.wrap_iter(iter);
 
-  <span class="kw">for </span>row <span class="kw">in </span>iter {
-    <span class="kw">let </span>row: GenderRow = row<span class="question-mark">?</span>;
-    <span class="kw">let </span>gender: Gender = row.gender.into();
-    map.entry(row.rec_id).or_default().insert(gender);
-  }
+    <span class="kw">for </span>row <span class="kw">in </span>iter {
+        <span class="kw">let </span>row: GenderRow = row<span class="question-mark">?</span>;
+        <span class="kw">let </span>gender: Gender = row.gender.into();
+        map.entry(row.rec_id).or_default().insert(gender);
+    }
 
-  <span class="macro">info!</span>(<span class="string">&quot;loaded genders for {} records in {}&quot;</span>, map.len(), timer.human_elapsed());
+    <span class="macro">info!</span>(
+        <span class="string">&quot;loaded genders for {} records in {}&quot;</span>,
+        map.len(),
+        timer.human_elapsed()
+    );
 
-  <span class="prelude-val">Ok</span>(map)
+    <span class="prelude-val">Ok</span>(map)
 }
 
 <span class="doccomment">/// Load the VIAF author gender records.
 </span><span class="kw">pub fn </span>viaf_author_table() -&gt; <span class="prelude-ty">Result</span>&lt;AuthorTable&gt; {
-  <span class="kw">let </span><span class="kw-2">mut </span>table = AuthorTable::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>table = AuthorTable::new();
 
-  <span class="kw">let </span>rec_names = viaf_load_names()<span class="question-mark">?</span>;
-  <span class="kw">let </span>rec_genders = viaf_load_genders()<span class="question-mark">?</span>;
-  <span class="kw">let </span>empty = HashSet::new();
+    <span class="kw">let </span>rec_names = viaf_load_names()<span class="question-mark">?</span>;
+    <span class="kw">let </span>rec_genders = viaf_load_genders()<span class="question-mark">?</span>;
+    <span class="kw">let </span>empty = HashSet::new();
 
-  <span class="macro">info!</span>(<span class="string">&quot;merging gender records&quot;</span>);
-  <span class="kw">let </span>pb = item_progress(rec_names.len() <span class="kw">as </span>u64, <span class="string">&quot;clusters&quot;</span>);
-  <span class="kw">let </span>timer = Timer::new();
-  <span class="kw">for </span>(rec_id, names) <span class="kw">in </span>pb.wrap_iter(rec_names.into_iter()) {
-    <span class="kw">let </span>genders = rec_genders.get(<span class="kw-2">&amp;</span>rec_id).unwrap_or(<span class="kw-2">&amp;</span>empty);
-    <span class="kw">for </span>name <span class="kw">in </span>names {
-      <span class="kw">let </span><span class="kw-2">mut </span>rec = table.entry(name).or_default();
-      rec.n_author_recs += <span class="number">1</span>;
-      <span class="kw">for </span>g <span class="kw">in </span>genders {
-        rec.genders.insert(g.clone());
-      }
+    <span class="macro">info!</span>(<span class="string">&quot;merging gender records&quot;</span>);
+    <span class="kw">let </span>pb = item_progress(rec_names.len() <span class="kw">as </span>u64, <span class="string">&quot;clusters&quot;</span>);
+    <span class="kw">let </span>timer = Timer::new();
+    <span class="kw">for </span>(rec_id, names) <span class="kw">in </span>pb.wrap_iter(rec_names.into_iter()) {
+        <span class="kw">let </span>genders = rec_genders.get(<span class="kw-2">&amp;</span>rec_id).unwrap_or(<span class="kw-2">&amp;</span>empty);
+        <span class="kw">for </span>name <span class="kw">in </span>names {
+            <span class="kw">let </span><span class="kw-2">mut </span>rec = table.entry(name).or_default();
+            rec.n_author_recs += <span class="number">1</span>;
+            <span class="kw">for </span>g <span class="kw">in </span>genders {
+                rec.genders.insert(g.clone());
+            }
+        }
     }
-  }
 
-  <span class="macro">info!</span>(<span class="string">&quot;merged {} gender records in {}&quot;</span>, table.len(), timer);
+    <span class="macro">info!</span>(<span class="string">&quot;merged {} gender records in {}&quot;</span>, table.len(), timer);
 
-  <span class="prelude-val">Ok</span>(table)
+    <span class="prelude-val">Ok</span>(table)
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

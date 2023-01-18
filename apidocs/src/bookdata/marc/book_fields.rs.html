@@ -158,165 +158,183 @@
 <span id="158">158</span>
 <span id="159">159</span>
 <span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Code for writing extracted information specific to books.
 </span><span class="kw">use </span>serde::Serialize;
 
-<span class="kw">use </span><span class="kw">crate</span>::cleaning::names::clean_name;
-<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::arrow::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::cleaning::isbns::{ParseResult, parse_isbn_string};
-<span class="kw">use </span><span class="kw">crate</span>::marc::MARCRecord;
+<span class="kw">use </span><span class="kw">crate</span>::cleaning::isbns::{parse_isbn_string, ParseResult};
+<span class="kw">use </span><span class="kw">crate</span>::cleaning::names::clean_name;
 <span class="kw">use </span><span class="kw">crate</span>::marc::flat_fields::FieldOutput;
+<span class="kw">use </span><span class="kw">crate</span>::marc::MARCRecord;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 
 <span class="doccomment">/// Structure recording book identifiers from a MARC field.
 </span><span class="attribute">#[derive(ArrowField, Debug)]
 </span><span class="kw">struct </span>BookIds {
-  rec_id: u32,
-  marc_cn: String,
-  lccn: <span class="prelude-ty">Option</span>&lt;String&gt;,
-  status: u8,
-  rec_type: u8,
-  bib_level: u8
+    rec_id: u32,
+    marc_cn: String,
+    lccn: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    status: u8,
+    rec_type: u8,
+    bib_level: u8,
 }
 
 <span class="doccomment">/// Structure recording an ISBN record from a book.
 </span><span class="attribute">#[derive(Serialize, ArrowField, Debug)]
 </span><span class="kw">struct </span>ISBNrec {
-  rec_id: u32,
-  isbn: String,
-  tag: <span class="prelude-ty">Option</span>&lt;String&gt;
+    rec_id: u32,
+    isbn: String,
+    tag: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
 <span class="doccomment">/// Structure recording a record&#39;s author field.
 </span><span class="attribute">#[derive(Serialize, ArrowField, Debug)]
 </span><span class="kw">struct </span>AuthRec {
-  rec_id: u32,
-  author_name: String,
+    rec_id: u32,
+    author_name: String,
 }
 
 <span class="doccomment">/// Output that writes books to set of Parquet files.
 </span><span class="kw">pub struct </span>BookOutput {
-  n_books: u32,
-  prefix: String,
-  fields: FieldOutput,
-  ids: TableWriter&lt;BookIds&gt;,
-  isbns: TableWriter&lt;ISBNrec&gt;,
-  authors: TableWriter&lt;AuthRec&gt;,
+    n_books: u32,
+    prefix: String,
+    fields: FieldOutput,
+    ids: TableWriter&lt;BookIds&gt;,
+    isbns: TableWriter&lt;ISBNrec&gt;,
+    authors: TableWriter&lt;AuthRec&gt;,
 }
 
 <span class="kw">impl </span>BookOutput {
-  <span class="kw">pub fn </span>open(prefix: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;BookOutput&gt; {
-    <span class="kw">let </span>ffn = <span class="macro">format!</span>(<span class="string">&quot;{}-fields.parquet&quot;</span>, prefix);
-    <span class="macro">info!</span>(<span class="string">&quot;writing book fields to {}&quot;</span>, ffn);
-    <span class="kw">let </span>fields = TableWriter::open(ffn)<span class="question-mark">?</span>;
-    <span class="kw">let </span>fields = FieldOutput::new(fields);
+    <span class="kw">pub fn </span>open(prefix: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;BookOutput&gt; {
+        <span class="kw">let </span>ffn = <span class="macro">format!</span>(<span class="string">&quot;{}-fields.parquet&quot;</span>, prefix);
+        <span class="macro">info!</span>(<span class="string">&quot;writing book fields to {}&quot;</span>, ffn);
+        <span class="kw">let </span>fields = TableWriter::open(ffn)<span class="question-mark">?</span>;
+        <span class="kw">let </span>fields = FieldOutput::new(fields);
 
-    <span class="kw">let </span>idfn = <span class="macro">format!</span>(<span class="string">&quot;{}-ids.parquet&quot;</span>, prefix);
-    <span class="macro">info!</span>(<span class="string">&quot;writing book IDs to {}&quot;</span>, idfn);
-    <span class="kw">let </span>ids = TableWriter::open(idfn)<span class="question-mark">?</span>;
+        <span class="kw">let </span>idfn = <span class="macro">format!</span>(<span class="string">&quot;{}-ids.parquet&quot;</span>, prefix);
+        <span class="macro">info!</span>(<span class="string">&quot;writing book IDs to {}&quot;</span>, idfn);
+        <span class="kw">let </span>ids = TableWriter::open(idfn)<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>isbnfn = <span class="macro">format!</span>(<span class="string">&quot;{}-isbns.parquet&quot;</span>, prefix);
-    <span class="macro">info!</span>(<span class="string">&quot;writing book IDs to {}&quot;</span>, isbnfn);
-    <span class="kw">let </span>isbns = TableWriter::open(isbnfn)<span class="question-mark">?</span>;
+        <span class="kw">let </span>isbnfn = <span class="macro">format!</span>(<span class="string">&quot;{}-isbns.parquet&quot;</span>, prefix);
+        <span class="macro">info!</span>(<span class="string">&quot;writing book IDs to {}&quot;</span>, isbnfn);
+        <span class="kw">let </span>isbns = TableWriter::open(isbnfn)<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>authfn = <span class="macro">format!</span>(<span class="string">&quot;{}-authors.parquet&quot;</span>, prefix);
-    <span class="macro">info!</span>(<span class="string">&quot;writing book authors to {}&quot;</span>, authfn);
-    <span class="kw">let </span>authors = TableWriter::open(authfn)<span class="question-mark">?</span>;
+        <span class="kw">let </span>authfn = <span class="macro">format!</span>(<span class="string">&quot;{}-authors.parquet&quot;</span>, prefix);
+        <span class="macro">info!</span>(<span class="string">&quot;writing book authors to {}&quot;</span>, authfn);
+        <span class="kw">let </span>authors = TableWriter::open(authfn)<span class="question-mark">?</span>;
 
-    <span class="prelude-val">Ok</span>(BookOutput {
-      n_books: <span class="number">0</span>,
-      prefix: prefix.to_string(),
-      fields, ids, isbns, authors,
-    })
-  }
+        <span class="prelude-val">Ok</span>(BookOutput {
+            n_books: <span class="number">0</span>,
+            prefix: prefix.to_string(),
+            fields,
+            ids,
+            isbns,
+            authors,
+        })
+    }
 }
 
 <span class="kw">impl </span>DataSink <span class="kw">for </span>BookOutput {
-  <span class="kw">fn </span>output_files(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PathBuf&gt; {
-      <span class="macro">vec!</span>[
-        <span class="macro">format!</span>(<span class="string">&quot;{}-fields.parquet&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.prefix).into(),
-        <span class="macro">format!</span>(<span class="string">&quot;{}-ids.parquet&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.prefix).into(),
-        <span class="macro">format!</span>(<span class="string">&quot;{}-isbns.parquet&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.prefix).into(),
-      ]
-  }
+    <span class="kw">fn </span>output_files(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PathBuf&gt; {
+        <span class="macro">vec!</span>[
+            <span class="macro">format!</span>(<span class="string">&quot;{}-fields.parquet&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.prefix).into(),
+            <span class="macro">format!</span>(<span class="string">&quot;{}-ids.parquet&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.prefix).into(),
+            <span class="macro">format!</span>(<span class="string">&quot;{}-isbns.parquet&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.prefix).into(),
+        ]
+    }
 }
 
 <span class="kw">impl </span>ObjectWriter&lt;MARCRecord&gt; <span class="kw">for </span>BookOutput {
-  <span class="kw">fn </span>write_object(<span class="kw-2">&amp;mut </span><span class="self">self</span>, record: MARCRecord) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">if </span>!record.is_book() {
-      <span class="kw">return </span><span class="prelude-val">Ok</span>(())
-    }
-    <span class="self">self</span>.n_books += <span class="number">1</span>;
-    <span class="kw">let </span>rec_id = <span class="self">self</span>.n_books;
+    <span class="kw">fn </span>write_object(<span class="kw-2">&amp;mut </span><span class="self">self</span>, record: MARCRecord) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">if </span>!record.is_book() {
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+        }
+        <span class="self">self</span>.n_books += <span class="number">1</span>;
+        <span class="kw">let </span>rec_id = <span class="self">self</span>.n_books;
 
-    <span class="comment">// scan for ISBNs and authors
-    </span><span class="kw">for </span>df <span class="kw">in </span><span class="kw-2">&amp;</span>record.fields {
-      <span class="comment">// ISBNs: tag 20, subfield &#39;a&#39;
-      </span><span class="kw">if </span>df.tag == <span class="number">20 </span>{
-        <span class="kw">for </span>sf <span class="kw">in </span><span class="kw-2">&amp;</span>df.subfields {
-          <span class="kw">if </span>sf.code == <span class="string">&#39;a&#39; </span>{
-            <span class="kw">match </span>parse_isbn_string(<span class="kw-2">&amp;</span>sf.content) {
-              ParseResult::Valid(isbns, <span class="kw">_</span>) =&gt; {
-                <span class="kw">for </span>isbn <span class="kw">in </span>isbns {
-                  <span class="kw">if </span>isbn.tags.len() &gt; <span class="number">0 </span>{
-                    <span class="kw">for </span>tag <span class="kw">in </span>isbn.tags {
-                      <span class="self">self</span>.isbns.write_object(ISBNrec {
-                        rec_id, isbn: isbn.text.clone(), tag: <span class="prelude-val">Some</span>(tag)
-                      })<span class="question-mark">?</span>;
+        <span class="comment">// scan for ISBNs and authors
+        </span><span class="kw">for </span>df <span class="kw">in </span><span class="kw-2">&amp;</span>record.fields {
+            <span class="comment">// ISBNs: tag 20, subfield &#39;a&#39;
+            </span><span class="kw">if </span>df.tag == <span class="number">20 </span>{
+                <span class="kw">for </span>sf <span class="kw">in </span><span class="kw-2">&amp;</span>df.subfields {
+                    <span class="kw">if </span>sf.code == <span class="string">&#39;a&#39; </span>{
+                        <span class="kw">match </span>parse_isbn_string(<span class="kw-2">&amp;</span>sf.content) {
+                            ParseResult::Valid(isbns, <span class="kw">_</span>) =&gt; {
+                                <span class="kw">for </span>isbn <span class="kw">in </span>isbns {
+                                    <span class="kw">if </span>isbn.tags.len() &gt; <span class="number">0 </span>{
+                                        <span class="kw">for </span>tag <span class="kw">in </span>isbn.tags {
+                                            <span class="self">self</span>.isbns.write_object(ISBNrec {
+                                                rec_id,
+                                                isbn: isbn.text.clone(),
+                                                tag: <span class="prelude-val">Some</span>(tag),
+                                            })<span class="question-mark">?</span>;
+                                        }
+                                    } <span class="kw">else </span>{
+                                        <span class="self">self</span>.isbns.write_object(ISBNrec {
+                                            rec_id,
+                                            isbn: isbn.text,
+                                            tag: <span class="prelude-val">None</span>,
+                                        })<span class="question-mark">?</span>;
+                                    }
+                                }
+                            }
+                            ParseResult::Ignored(<span class="kw">_</span>) =&gt; (),
+                            ParseResult::Unmatched(s) =&gt; {
+                                <span class="macro">warn!</span>(<span class="string">&quot;unmatched ISBN text {}&quot;</span>, s)
+                            }
+                        }
                     }
-                  } <span class="kw">else </span>{
-                    <span class="self">self</span>.isbns.write_object(ISBNrec {
-                      rec_id, isbn: isbn.text, tag: <span class="prelude-val">None
-                    </span>})<span class="question-mark">?</span>;
-                  }
                 }
-              },
-              ParseResult::Ignored(<span class="kw">_</span>) =&gt; (),
-              ParseResult::Unmatched(s) =&gt; {
-                <span class="macro">warn!</span>(<span class="string">&quot;unmatched ISBN text {}&quot;</span>, s)
-              }
+            } <span class="kw">else if </span>df.tag == <span class="number">100 </span>{
+                <span class="comment">// authors: tag 100, subfield a
+                </span><span class="kw">for </span>sf <span class="kw">in </span><span class="kw-2">&amp;</span>df.subfields {
+                    <span class="kw">if </span>sf.code == <span class="string">&#39;a&#39; </span>{
+                        <span class="kw">let </span>content = sf.content.trim();
+                        <span class="kw">let </span>author_name = clean_name(content);
+                        <span class="kw">if </span>!author_name.is_empty() {
+                            <span class="self">self</span>.authors.write_object(AuthRec {
+                                rec_id,
+                                author_name,
+                            })<span class="question-mark">?</span>;
+                        }
+                    }
+                }
             }
-          }
         }
-      } <span class="kw">else if </span>df.tag == <span class="number">100 </span>{
-        <span class="comment">// authors: tag 100, subfield a
-        </span><span class="kw">for </span>sf <span class="kw">in </span><span class="kw-2">&amp;</span>df.subfields {
-          <span class="kw">if </span>sf.code == <span class="string">&#39;a&#39; </span>{
-            <span class="kw">let </span>content = sf.content.trim();
-            <span class="kw">let </span>author_name = clean_name(content);
-            <span class="kw">if </span>!author_name.is_empty() {
-              <span class="self">self</span>.authors.write_object(AuthRec {
-                rec_id, author_name
-              })<span class="question-mark">?</span>;
-            }
-          }
-        }
-      }
+
+        <span class="comment">// emit book IDs
+        </span><span class="kw">let </span>ids = BookIds {
+            rec_id,
+            marc_cn: record
+                .marc_control()
+                .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;no MARC control number&quot;</span>))<span class="question-mark">?
+                </span>.to_owned(),
+            lccn: record.lccn().map(|s| s.to_owned()),
+            status: record.rec_status().unwrap_or(<span class="number">0</span>),
+            rec_type: record.rec_type().unwrap_or(<span class="number">0</span>),
+            bib_level: record.rec_bib_level().unwrap_or(<span class="number">0</span>),
+        };
+        <span class="self">self</span>.ids.write_object(ids)<span class="question-mark">?</span>;
+
+        <span class="self">self</span>.fields.write_object(record)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="comment">// emit book IDs
-    </span><span class="kw">let </span>ids = BookIds {
-      rec_id,
-      marc_cn: record.marc_control().ok_or_else(|| {
-        <span class="macro">anyhow!</span>(<span class="string">&quot;no MARC control number&quot;</span>)
-      })<span class="question-mark">?</span>.to_owned(),
-      lccn: record.lccn().map(|s| s.to_owned()),
-      status: record.rec_status().unwrap_or(<span class="number">0</span>),
-      rec_type: record.rec_type().unwrap_or(<span class="number">0</span>),
-      bib_level: record.rec_bib_level().unwrap_or(<span class="number">0</span>)
-    };
-    <span class="self">self</span>.ids.write_object(ids)<span class="question-mark">?</span>;
-
-    <span class="self">self</span>.fields.write_object(record)<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(())
-  }
-
-  <span class="kw">fn </span>finish(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
-    <span class="self">self</span>.fields.finish()<span class="question-mark">?</span>;
-    <span class="self">self</span>.ids.finish()<span class="question-mark">?</span>;
-    <span class="self">self</span>.isbns.finish()<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(<span class="self">self</span>.n_books <span class="kw">as </span>usize)
-  }
+    <span class="kw">fn </span>finish(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
+        <span class="self">self</span>.fields.finish()<span class="question-mark">?</span>;
+        <span class="self">self</span>.ids.finish()<span class="question-mark">?</span>;
+        <span class="self">self</span>.isbns.finish()<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.n_books <span class="kw">as </span>usize)
+    }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -69,34 +69,38 @@
 <span id="69">69</span>
 <span id="70">70</span>
 <span id="71">71</span>
-</pre><pre class="rust"><code><span class="kw">use </span>std::io::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span>std::io::{BufReader, copy};
-<span class="kw">use </span>std::fs::File;
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+</pre><pre class="rust"><code><span class="kw">use </span>std::fs::File;
+<span class="kw">use </span>std::io::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>std::io::{copy, BufReader};
 <span class="kw">use </span>std::path::Path;
 <span class="kw">use </span>std::thread::spawn;
 
-<span class="kw">use </span>log::<span class="kw-2">*</span>;
-<span class="kw">use </span>anyhow::{<span class="prelude-ty">Result</span>, anyhow};
+<span class="kw">use </span>anyhow::{anyhow, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>flate2::bufread::MultiGzDecoder;
-<span class="kw">use </span>zip::read::<span class="kw-2">*</span>;
-<span class="kw">use </span>indicatif::ProgressBar;
-<span class="kw">use </span>os_pipe::pipe;
 <span class="kw">use </span>friendly::bytes;
+<span class="kw">use </span>indicatif::ProgressBar;
+<span class="kw">use </span>log::<span class="kw-2">*</span>;
+<span class="kw">use </span>os_pipe::pipe;
+<span class="kw">use </span>zip::read::<span class="kw-2">*</span>;
 
-<span class="kw">use </span><span class="kw">crate</span>::util::Timer;
-<span class="kw">use </span><span class="kw">crate</span>::io::background::ThreadRead;
 <span class="kw">use </span><span class="kw">super</span>::open_progress;
+<span class="kw">use </span><span class="kw">crate</span>::io::background::ThreadRead;
+<span class="kw">use </span><span class="kw">crate</span>::util::Timer;
 
 <span class="doccomment">/// Open a gzip-compressed file for input, with a progress bar.
 ///
 /// It sets the progress bar&#39;s prefix to the file name.
 </span><span class="kw">pub fn </span>open_gzin_progress(path: <span class="kw-2">&amp;</span>Path, pb: ProgressBar) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">impl </span>BufRead&gt; {
-  <span class="kw">let </span>read = open_progress(path, pb)<span class="question-mark">?</span>;
-  <span class="kw">let </span>gzf = MultiGzDecoder::new(read);
+    <span class="kw">let </span>read = open_progress(path, pb)<span class="question-mark">?</span>;
+    <span class="kw">let </span>gzf = MultiGzDecoder::new(read);
 
-  <span class="kw">let </span>thr = ThreadRead::new(gzf)<span class="question-mark">?</span>;
-  <span class="kw">let </span>bfs = BufReader::new(thr);
-  <span class="prelude-val">Ok</span>(Box::new(bfs))
+    <span class="kw">let </span>thr = ThreadRead::new(gzf)<span class="question-mark">?</span>;
+    <span class="kw">let </span>bfs = BufReader::new(thr);
+    <span class="prelude-val">Ok</span>(Box::new(bfs))
 }
 
 <span class="doccomment">/// Open a zingle member from a zip file for input, with a progress bar.
@@ -105,40 +109,44 @@
 /// delived as ZIP archives containing a single member.  This function opens such a file
 /// as a reader.  Zip decompression is handled in a background thread.
 </span><span class="kw">pub fn </span>open_solo_zip(path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">impl </span>BufRead&gt; {
-  <span class="kw">let </span>pstr = path.to_string_lossy();
-  <span class="macro">info!</span>(<span class="string">&quot;opening zip file from {}&quot;</span>, pstr);
-  <span class="kw">let </span>file = File::open(path)<span class="question-mark">?</span>;
-  <span class="kw">let </span>file = BufReader::new(file);
-  <span class="kw">let </span>zf = ZipArchive::new(file)<span class="question-mark">?</span>;
-  <span class="kw">if </span>zf.len() &gt; <span class="number">1 </span>{
-    <span class="macro">error!</span>(<span class="string">&quot;{}: more than one member file&quot;</span>, pstr);
-    <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;too many input files&quot;</span>))
-  } <span class="kw">else if </span>zf.len() == <span class="number">0 </span>{
-    <span class="macro">error!</span>(<span class="string">&quot;{}: empty input archive&quot;</span>, pstr);
-    <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;empty input archive&quot;</span>));
-  }
-  <span class="kw">let </span>(read, write) = pipe()<span class="question-mark">?</span>;
-
-  <span class="kw">let </span>handle = spawn(<span class="kw">move </span>|| {
-    <span class="comment">// move in the things we will own
-    </span><span class="kw">let </span><span class="kw-2">mut </span>zf = zf;
-    <span class="kw">let </span><span class="kw-2">mut </span>dst = write;
-
-    <span class="comment">// open and read the member
-    </span><span class="macro">debug!</span>(<span class="string">&quot;opening member from file&quot;</span>);
-    <span class="kw">let </span><span class="kw-2">mut </span>member = zf.by_index(<span class="number">0</span>)<span class="question-mark">?</span>;
-    <span class="macro">info!</span>(<span class="string">&quot;processing member {:?} with {} bytes&quot;</span>, member.name(), member.size());
-    <span class="kw">let </span>timer = Timer::new();
-    <span class="kw">let </span>res = copy(<span class="kw-2">&amp;mut </span>member, <span class="kw-2">&amp;mut </span>dst);
-    <span class="kw">if let </span><span class="prelude-val">Ok</span>(size) = res {
-      <span class="macro">info!</span>(<span class="string">&quot;copied {} in {}&quot;</span>, bytes(size), timer);
+    <span class="kw">let </span>pstr = path.to_string_lossy();
+    <span class="macro">info!</span>(<span class="string">&quot;opening zip file from {}&quot;</span>, pstr);
+    <span class="kw">let </span>file = File::open(path)<span class="question-mark">?</span>;
+    <span class="kw">let </span>file = BufReader::new(file);
+    <span class="kw">let </span>zf = ZipArchive::new(file)<span class="question-mark">?</span>;
+    <span class="kw">if </span>zf.len() &gt; <span class="number">1 </span>{
+        <span class="macro">error!</span>(<span class="string">&quot;{}: more than one member file&quot;</span>, pstr);
+        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;too many input files&quot;</span>));
+    } <span class="kw">else if </span>zf.len() == <span class="number">0 </span>{
+        <span class="macro">error!</span>(<span class="string">&quot;{}: empty input archive&quot;</span>, pstr);
+        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;empty input archive&quot;</span>));
     }
-    res
-  });
+    <span class="kw">let </span>(read, write) = pipe()<span class="question-mark">?</span>;
 
-  <span class="kw">let </span>thr = ThreadRead::create(read, handle);
-  <span class="kw">let </span>bfs = BufReader::new(thr);
-  <span class="prelude-val">Ok</span>(Box::new(bfs))
+    <span class="kw">let </span>handle = spawn(<span class="kw">move </span>|| {
+        <span class="comment">// move in the things we will own
+        </span><span class="kw">let </span><span class="kw-2">mut </span>zf = zf;
+        <span class="kw">let </span><span class="kw-2">mut </span>dst = write;
+
+        <span class="comment">// open and read the member
+        </span><span class="macro">debug!</span>(<span class="string">&quot;opening member from file&quot;</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>member = zf.by_index(<span class="number">0</span>)<span class="question-mark">?</span>;
+        <span class="macro">info!</span>(
+            <span class="string">&quot;processing member {:?} with {} bytes&quot;</span>,
+            member.name(),
+            member.size()
+        );
+        <span class="kw">let </span>timer = Timer::new();
+        <span class="kw">let </span>res = copy(<span class="kw-2">&amp;mut </span>member, <span class="kw-2">&amp;mut </span>dst);
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(size) = res {
+            <span class="macro">info!</span>(<span class="string">&quot;copied {} in {}&quot;</span>, bytes(size), timer);
+        }
+        res
+    });
+
+    <span class="kw">let </span>thr = ThreadRead::create(read, handle);
+    <span class="kw">let </span>bfs = BufReader::new(thr);
+    <span class="prelude-val">Ok</span>(Box::new(bfs))
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

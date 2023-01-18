@@ -312,23 +312,26 @@
 <span id="312">312</span>
 <span id="313">313</span>
 <span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Data structure for mapping string keys to numeric identifiers.
-</span><span class="kw">use </span>std::path::{Path};
-<span class="kw">use </span>std::fs::File;
-<span class="kw">use </span>std::hash::Hash;
-<span class="kw">use </span>std::borrow::Borrow;
-<span class="attribute">#[cfg(test)]
+</span><span class="attribute">#[cfg(test)]
 </span><span class="kw">use </span>arrow2::io::parquet::read::read_metadata;
 <span class="kw">use </span>hashbrown::hash_map::{HashMap, Keys};
+<span class="kw">use </span>std::borrow::Borrow;
+<span class="kw">use </span>std::fs::File;
+<span class="kw">use </span>std::hash::Hash;
+<span class="kw">use </span>std::path::Path;
 
-<span class="kw">use </span>serde::de::DeserializeOwned;
-<span class="kw">use </span>log::<span class="kw-2">*</span>;
 <span class="kw">use </span>anyhow::Result;
-<span class="kw">use </span>thiserror::Error;
+<span class="kw">use </span>log::<span class="kw-2">*</span>;
 <span class="kw">use </span>polars::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>serde::de::DeserializeOwned;
+<span class="kw">use </span>thiserror::Error;
 
 <span class="attribute">#[cfg(test)]
-</span><span class="kw">use </span>quickcheck::{Arbitrary,Gen};
+</span><span class="kw">use </span>quickcheck::{Arbitrary, Gen};
 <span class="attribute">#[cfg(test)]
 </span><span class="kw">use </span>tempfile::tempdir;
 
@@ -337,294 +340,297 @@
 
 <span class="attribute">#[derive(Error, Debug)]
 </span><span class="kw">pub enum </span>IndexError {
-  <span class="attribute">#[error(<span class="string">&quot;key not present in frozen index&quot;</span>)]
-  </span>KeyNotPresent
+    <span class="attribute">#[error(<span class="string">&quot;key not present in frozen index&quot;</span>)]
+    </span>KeyNotPresent,
 }
 
 <span class="doccomment">/// Index identifiers from a data type
 </span><span class="kw">pub struct </span>IdIndex&lt;K&gt; {
-  map: HashMap&lt;K,Id&gt;,
-  frozen: bool,
+    map: HashMap&lt;K, Id&gt;,
+    frozen: bool,
 }
 
-<span class="kw">impl </span>&lt;K&gt; IdIndex&lt;K&gt; <span class="kw">where </span>K: Eq + Hash {
-  <span class="doccomment">/// Create a new index.
-  </span><span class="kw">pub fn </span>new() -&gt; IdIndex&lt;K&gt; {
-    IdIndex {
-      map: HashMap::new(),
-      frozen: <span class="bool-val">false</span>,
+<span class="kw">impl</span>&lt;K&gt; IdIndex&lt;K&gt;
+<span class="kw">where
+    </span>K: Eq + Hash,
+{
+    <span class="doccomment">/// Create a new index.
+    </span><span class="kw">pub fn </span>new() -&gt; IdIndex&lt;K&gt; {
+        IdIndex {
+            map: HashMap::new(),
+            frozen: <span class="bool-val">false</span>,
+        }
     }
-  }
 
-  <span class="doccomment">/// Freeze the index so no new items can be added.
-  </span><span class="attribute">#[allow(dead_code)]
-  </span><span class="kw">pub fn </span>freeze(<span class="self">self</span>) -&gt; IdIndex&lt;K&gt; {
-    IdIndex { map: <span class="self">self</span>.map, frozen: <span class="bool-val">true </span>}
-  }
-
-  <span class="doccomment">/// Get the index length
-  </span><span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
-    <span class="self">self</span>.map.len()
-  }
-
-  <span class="doccomment">/// Get the ID for a key, adding it to the index if needed.
-  </span><span class="kw">pub fn </span>intern&lt;Q&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>Q) -&gt; <span class="prelude-ty">Result</span>&lt;Id, IndexError&gt; <span class="kw">where </span>K: Borrow&lt;Q&gt;, Q: Hash + Eq + ToOwned&lt;Owned=K&gt; + <span class="question-mark">?</span>Sized {
-    <span class="kw">let </span>n = <span class="self">self</span>.map.len() <span class="kw">as </span>Id;
-    <span class="kw">if </span><span class="self">self</span>.frozen {
-      <span class="self">self</span>.lookup(key).ok_or(IndexError::KeyNotPresent)
-    } <span class="kw">else </span>{
-      <span class="comment">// use Hashbrown&#39;s raw-entry API to minimize cloning
-      </span><span class="kw">let </span>eb = <span class="self">self</span>.map.raw_entry_mut();
-      <span class="kw">let </span>e = eb.from_key(key);
-      <span class="kw">let </span>(<span class="kw">_</span>, v) = e.or_insert_with(|| {
-        (key.to_owned(), n+<span class="number">1</span>)
-      });
-      <span class="prelude-val">Ok</span>(<span class="kw-2">*</span>v)
+    <span class="doccomment">/// Freeze the index so no new items can be added.
+    </span><span class="attribute">#[allow(dead_code)]
+    </span><span class="kw">pub fn </span>freeze(<span class="self">self</span>) -&gt; IdIndex&lt;K&gt; {
+        IdIndex {
+            map: <span class="self">self</span>.map,
+            frozen: <span class="bool-val">true</span>,
+        }
     }
-  }
 
-  <span class="doccomment">/// Get the ID for a key, adding it to the index if needed and transferring ownership.
-  </span><span class="kw">pub fn </span>intern_owned(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: K) -&gt; <span class="prelude-ty">Result</span>&lt;Id, IndexError&gt; {
-    <span class="kw">let </span>n = <span class="self">self</span>.map.len() <span class="kw">as </span>Id;
-    <span class="kw">if </span><span class="self">self</span>.frozen {
-      <span class="self">self</span>.lookup(<span class="kw-2">&amp;</span>key).ok_or(IndexError::KeyNotPresent)
-    } <span class="kw">else </span>{
-      <span class="prelude-val">Ok</span>(<span class="kw-2">*</span><span class="self">self</span>.map.entry(key).or_insert(n+<span class="number">1</span>))
+    <span class="doccomment">/// Get the index length
+    </span><span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.map.len()
     }
-  }
 
-  <span class="doccomment">/// Look up the ID for a key if it is present.
-  </span><span class="attribute">#[allow(dead_code)]
-  </span><span class="kw">pub fn </span>lookup&lt;Q&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>Q) -&gt; <span class="prelude-ty">Option</span>&lt;Id&gt; <span class="kw">where </span>K: Borrow&lt;Q&gt;, Q: Hash + Eq + <span class="question-mark">?</span>Sized {
-    <span class="self">self</span>.map.get(key).map(|i| <span class="kw-2">*</span>i)
-  }
+    <span class="doccomment">/// Get the ID for a key, adding it to the index if needed.
+    </span><span class="kw">pub fn </span>intern&lt;Q&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>Q) -&gt; <span class="prelude-ty">Result</span>&lt;Id, IndexError&gt;
+    <span class="kw">where
+        </span>K: Borrow&lt;Q&gt;,
+        Q: Hash + Eq + ToOwned&lt;Owned = K&gt; + <span class="question-mark">?</span>Sized,
+    {
+        <span class="kw">let </span>n = <span class="self">self</span>.map.len() <span class="kw">as </span>Id;
+        <span class="kw">if </span><span class="self">self</span>.frozen {
+            <span class="self">self</span>.lookup(key).ok_or(IndexError::KeyNotPresent)
+        } <span class="kw">else </span>{
+            <span class="comment">// use Hashbrown&#39;s raw-entry API to minimize cloning
+            </span><span class="kw">let </span>eb = <span class="self">self</span>.map.raw_entry_mut();
+            <span class="kw">let </span>e = eb.from_key(key);
+            <span class="kw">let </span>(<span class="kw">_</span>, v) = e.or_insert_with(|| (key.to_owned(), n + <span class="number">1</span>));
+            <span class="prelude-val">Ok</span>(<span class="kw-2">*</span>v)
+        }
+    }
 
-  <span class="doccomment">/// Iterate over keys (see [std::collections::HashMap::keys]).
-  </span><span class="attribute">#[allow(dead_code)]
-  </span><span class="kw">pub fn </span>keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Keys&lt;<span class="lifetime">&#39;_</span>, K, Id&gt; {
-    <span class="self">self</span>.map.keys()
-  }
+    <span class="doccomment">/// Get the ID for a key, adding it to the index if needed and transferring ownership.
+    </span><span class="kw">pub fn </span>intern_owned(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: K) -&gt; <span class="prelude-ty">Result</span>&lt;Id, IndexError&gt; {
+        <span class="kw">let </span>n = <span class="self">self</span>.map.len() <span class="kw">as </span>Id;
+        <span class="kw">if </span><span class="self">self</span>.frozen {
+            <span class="self">self</span>.lookup(<span class="kw-2">&amp;</span>key).ok_or(IndexError::KeyNotPresent)
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Ok</span>(<span class="kw-2">*</span><span class="self">self</span>.map.entry(key).or_insert(n + <span class="number">1</span>))
+        }
+    }
+
+    <span class="doccomment">/// Look up the ID for a key if it is present.
+    </span><span class="attribute">#[allow(dead_code)]
+    </span><span class="kw">pub fn </span>lookup&lt;Q&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>Q) -&gt; <span class="prelude-ty">Option</span>&lt;Id&gt;
+    <span class="kw">where
+        </span>K: Borrow&lt;Q&gt;,
+        Q: Hash + Eq + <span class="question-mark">?</span>Sized,
+    {
+        <span class="self">self</span>.map.get(key).map(|i| <span class="kw-2">*</span>i)
+    }
+
+    <span class="doccomment">/// Iterate over keys (see [std::collections::HashMap::keys]).
+    </span><span class="attribute">#[allow(dead_code)]
+    </span><span class="kw">pub fn </span>keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Keys&lt;<span class="lifetime">&#39;_</span>, K, Id&gt; {
+        <span class="self">self</span>.map.keys()
+    }
 }
 
 <span class="kw">impl </span>IdIndex&lt;String&gt; {
-  <span class="doccomment">/// Get the keys in order.
-  </span><span class="kw">pub fn </span>key_vec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;<span class="kw-2">&amp;</span>str&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::with_capacity(<span class="self">self</span>.len());
-    vec.resize(<span class="self">self</span>.len(), <span class="prelude-val">None</span>);
-    <span class="kw">for </span>(k, n) <span class="kw">in </span><span class="self">self</span>.map.iter() {
-      <span class="kw">let </span>i = (n - <span class="number">1</span>) <span class="kw">as </span>usize;
-      <span class="macro">assert!</span>(vec[i].is_none());
-      vec[i] = <span class="prelude-val">Some</span>(k);
+    <span class="doccomment">/// Get the keys in order.
+    </span><span class="kw">pub fn </span>key_vec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;<span class="kw-2">&amp;</span>str&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::with_capacity(<span class="self">self</span>.len());
+        vec.resize(<span class="self">self</span>.len(), <span class="prelude-val">None</span>);
+        <span class="kw">for </span>(k, n) <span class="kw">in </span><span class="self">self</span>.map.iter() {
+            <span class="kw">let </span>i = (n - <span class="number">1</span>) <span class="kw">as </span>usize;
+            <span class="macro">assert!</span>(vec[i].is_none());
+            vec[i] = <span class="prelude-val">Some</span>(k);
+        }
+
+        <span class="kw">let </span>vec = vec.iter().map(|ro| ro.unwrap().as_str()).collect();
+        vec
     }
 
-    <span class="kw">let </span>vec = vec.iter().map(|ro| ro.unwrap().as_str()).collect();
-    vec
-  }
+    <span class="doccomment">/// Conver this ID index into a [DataFrame], with columns for ID and key.
+    </span><span class="kw">pub fn </span>data_frame(<span class="kw-2">&amp;</span><span class="self">self</span>, id_col: <span class="kw-2">&amp;</span>str, key_col: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;DataFrame, PolarsError&gt; {
+        <span class="macro">debug!</span>(<span class="string">&quot;preparing data frame for index&quot;</span>);
+        <span class="kw">let </span>n = <span class="self">self</span>.map.len() <span class="kw">as </span>i32;
+        <span class="kw">let </span>keys = <span class="self">self</span>.key_vec();
+        <span class="kw">let </span>ids = Int32Chunked::new(id_col, <span class="number">1</span>..(n + <span class="number">1</span>));
+        <span class="kw">let </span>keys = Utf8Chunked::new(key_col, keys);
 
-  <span class="doccomment">/// Conver this ID index into a [DataFrame], with columns for ID and key.
-  </span><span class="kw">pub fn </span>data_frame(<span class="kw-2">&amp;</span><span class="self">self</span>, id_col: <span class="kw-2">&amp;</span>str, key_col: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;DataFrame, PolarsError&gt; {
-    <span class="macro">debug!</span>(<span class="string">&quot;preparing data frame for index&quot;</span>);
-    <span class="kw">let </span>n = <span class="self">self</span>.map.len() <span class="kw">as </span>i32;
-    <span class="kw">let </span>keys = <span class="self">self</span>.key_vec();
-    <span class="kw">let </span>ids = Int32Chunked::new(id_col, <span class="number">1</span>..(n + <span class="number">1</span>));
-    <span class="kw">let </span>keys = Utf8Chunked::new(key_col, keys);
-
-    DataFrame::new(<span class="macro">vec!</span>[ids.into_series(), keys.into_series()])
-  }
-
-  <span class="doccomment">/// Load from a Parquet file, with a standard configuration.
-  ///
-  /// This assumes the Parquet file has the following columns:
-  ///
-  /// - `key`, of type `String`, storing the keys
-  /// - `id`, of type `u32`, storing the IDs
-  </span><span class="kw">pub fn </span>load_standard&lt;P: AsRef&lt;Path&gt;&gt;(path: P) -&gt; <span class="prelude-ty">Result</span>&lt;IdIndex&lt;String&gt;&gt; {
-    IdIndex::load(path, <span class="string">&quot;id&quot;</span>, <span class="string">&quot;key&quot;</span>)
-  }
-
-  <span class="doccomment">/// Load from a Parquet file.
-  ///
-  /// This loads two columns from a Parquet file.  The ID column is expected to
-  /// have type `UInt32` (or a type projectable to it), and the key column should
-  /// be `Utf8`.
-  </span><span class="kw">pub fn </span>load&lt;P: AsRef&lt;Path&gt;&gt;(path: P, id_col: <span class="kw-2">&amp;</span>str, key_col: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;IdIndex&lt;String&gt;&gt; {
-    <span class="kw">let </span>path_str = path.as_ref().to_string_lossy();
-    <span class="macro">info!</span>(<span class="string">&quot;reading index from file {}&quot;</span>, path_str);
-    <span class="kw">let </span>file = File::open(path.as_ref())<span class="question-mark">?</span>;
-    <span class="kw">let </span>frame = ParquetReader::new(file).finish()<span class="question-mark">?</span>;
-    <span class="macro">debug!</span>(<span class="string">&quot;file schema: {:?}&quot;</span>, frame.schema());
-
-    <span class="kw">let </span>ic = frame.column(id_col)<span class="question-mark">?</span>.i32()<span class="question-mark">?</span>;
-    <span class="kw">let </span>kc = frame.column(key_col)<span class="question-mark">?</span>.utf8()<span class="question-mark">?</span>;
-
-    <span class="kw">let </span><span class="kw-2">mut </span>map = HashMap::new();
-
-    <span class="macro">debug!</span>(<span class="string">&quot;reading file contents&quot;</span>);
-    <span class="kw">let </span>iter = ic.into_iter().zip(kc.into_iter());
-    <span class="kw">for </span>pair <span class="kw">in </span>iter {
-      <span class="kw">if let </span>(<span class="prelude-val">Some</span>(id), <span class="prelude-val">Some</span>(key)) = pair {
-        map.insert(key.to_string(), id);
-      }
+        DataFrame::new(<span class="macro">vec!</span>[ids.into_series(), keys.into_series()])
     }
 
-    <span class="macro">info!</span>(<span class="string">&quot;read {} keys from {}&quot;</span>, map.len(), path_str);
-
-    <span class="prelude-val">Ok</span>(IdIndex {
-      map, frozen: <span class="bool-val">false
-    </span>})
-  }
-
-  <span class="doccomment">/// Load an index from a CSV file.
-  ///
-  /// This loads an index from a CSV file.  It assumes the first column is the ID, and the
-  /// second column is the key.
-  </span><span class="attribute">#[allow(dead_code)]
-  </span><span class="kw">pub fn </span>load_csv&lt;P: AsRef&lt;Path&gt;, K: Eq + Hash + DeserializeOwned&gt;(path: P) -&gt; <span class="prelude-ty">Result</span>&lt;IdIndex&lt;K&gt;&gt; {
-    <span class="macro">info!</span>(<span class="string">&quot;reading ID index from from {:?}&quot;</span>, path.as_ref());
-    <span class="kw">let </span>input = csv::Reader::from_path(path)<span class="question-mark">?</span>;
-    <span class="kw">let </span>recs = input.into_deserialize();
-
-    <span class="kw">let </span><span class="kw-2">mut </span>map = HashMap::new();
-
-    <span class="kw">for </span>row <span class="kw">in </span>recs {
-      <span class="kw">let </span>rec: (i32, K) = row<span class="question-mark">?</span>;
-      <span class="kw">let </span>(id, key) = rec;
-      map.insert(key, id);
+    <span class="doccomment">/// Load from a Parquet file, with a standard configuration.
+    ///
+    /// This assumes the Parquet file has the following columns:
+    ///
+    /// - `key`, of type `String`, storing the keys
+    /// - `id`, of type `u32`, storing the IDs
+    </span><span class="kw">pub fn </span>load_standard&lt;P: AsRef&lt;Path&gt;&gt;(path: P) -&gt; <span class="prelude-ty">Result</span>&lt;IdIndex&lt;String&gt;&gt; {
+        IdIndex::load(path, <span class="string">&quot;id&quot;</span>, <span class="string">&quot;key&quot;</span>)
     }
 
-    <span class="prelude-val">Ok</span>(IdIndex {
-      map, frozen: <span class="bool-val">false
-    </span>})
-  }
+    <span class="doccomment">/// Load from a Parquet file.
+    ///
+    /// This loads two columns from a Parquet file.  The ID column is expected to
+    /// have type `UInt32` (or a type projectable to it), and the key column should
+    /// be `Utf8`.
+    </span><span class="kw">pub fn </span>load&lt;P: AsRef&lt;Path&gt;&gt;(path: P, id_col: <span class="kw-2">&amp;</span>str, key_col: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;IdIndex&lt;String&gt;&gt; {
+        <span class="kw">let </span>path_str = path.as_ref().to_string_lossy();
+        <span class="macro">info!</span>(<span class="string">&quot;reading index from file {}&quot;</span>, path_str);
+        <span class="kw">let </span>file = File::open(path.as_ref())<span class="question-mark">?</span>;
+        <span class="kw">let </span>frame = ParquetReader::new(file).finish()<span class="question-mark">?</span>;
+        <span class="macro">debug!</span>(<span class="string">&quot;file schema: {:?}&quot;</span>, frame.schema());
 
-  <span class="doccomment">/// Save to a Parquet file with the standard configuration.
-  </span><span class="kw">pub fn </span>save_standard&lt;P: AsRef&lt;Path&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, path: P) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="self">self</span>.save(path, <span class="string">&quot;id&quot;</span>, <span class="string">&quot;key&quot;</span>)
-  }
+        <span class="kw">let </span>ic = frame.column(id_col)<span class="question-mark">?</span>.i32()<span class="question-mark">?</span>;
+        <span class="kw">let </span>kc = frame.column(key_col)<span class="question-mark">?</span>.utf8()<span class="question-mark">?</span>;
 
-  <span class="doccomment">/// Save to a Parquet file with the standard configuration.
-  </span><span class="kw">pub fn </span>save&lt;P: AsRef&lt;Path&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, path: P, id_col: <span class="kw-2">&amp;</span>str, key_col: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>frame = <span class="self">self</span>.data_frame(id_col, key_col)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>map = HashMap::new();
 
-    <span class="kw">let </span>path = path.as_ref();
-    <span class="macro">info!</span>(<span class="string">&quot;saving index to {:?}&quot;</span>, path);
-    <span class="kw">let </span>file = File::create(path)<span class="question-mark">?</span>;
-    <span class="kw">let </span>writer = ParquetWriter::new(file)
-      .with_compression(ParquetCompression::Zstd(<span class="prelude-val">None</span>));
-    writer.finish(<span class="kw-2">&amp;mut </span>frame)<span class="question-mark">?</span>;
+        <span class="macro">debug!</span>(<span class="string">&quot;reading file contents&quot;</span>);
+        <span class="kw">let </span>iter = ic.into_iter().zip(kc.into_iter());
+        <span class="kw">for </span>pair <span class="kw">in </span>iter {
+            <span class="kw">if let </span>(<span class="prelude-val">Some</span>(id), <span class="prelude-val">Some</span>(key)) = pair {
+                map.insert(key.to_string(), id);
+            }
+        }
 
-    <span class="prelude-val">Ok</span>(())
-  }
+        <span class="macro">info!</span>(<span class="string">&quot;read {} keys from {}&quot;</span>, map.len(), path_str);
+
+        <span class="prelude-val">Ok</span>(IdIndex { map, frozen: <span class="bool-val">false </span>})
+    }
+
+    <span class="doccomment">/// Load an index from a CSV file.
+    ///
+    /// This loads an index from a CSV file.  It assumes the first column is the ID, and the
+    /// second column is the key.
+    </span><span class="attribute">#[allow(dead_code)]
+    </span><span class="kw">pub fn </span>load_csv&lt;P: AsRef&lt;Path&gt;, K: Eq + Hash + DeserializeOwned&gt;(
+        path: P,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;IdIndex&lt;K&gt;&gt; {
+        <span class="macro">info!</span>(<span class="string">&quot;reading ID index from from {:?}&quot;</span>, path.as_ref());
+        <span class="kw">let </span>input = csv::Reader::from_path(path)<span class="question-mark">?</span>;
+        <span class="kw">let </span>recs = input.into_deserialize();
+
+        <span class="kw">let </span><span class="kw-2">mut </span>map = HashMap::new();
+
+        <span class="kw">for </span>row <span class="kw">in </span>recs {
+            <span class="kw">let </span>rec: (i32, K) = row<span class="question-mark">?</span>;
+            <span class="kw">let </span>(id, key) = rec;
+            map.insert(key, id);
+        }
+
+        <span class="prelude-val">Ok</span>(IdIndex { map, frozen: <span class="bool-val">false </span>})
+    }
+
+    <span class="doccomment">/// Save to a Parquet file with the standard configuration.
+    </span><span class="kw">pub fn </span>save_standard&lt;P: AsRef&lt;Path&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, path: P) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.save(path, <span class="string">&quot;id&quot;</span>, <span class="string">&quot;key&quot;</span>)
+    }
+
+    <span class="doccomment">/// Save to a Parquet file with the standard configuration.
+    </span><span class="kw">pub fn </span>save&lt;P: AsRef&lt;Path&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, path: P, id_col: <span class="kw-2">&amp;</span>str, key_col: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>frame = <span class="self">self</span>.data_frame(id_col, key_col)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>path = path.as_ref();
+        <span class="macro">info!</span>(<span class="string">&quot;saving index to {:?}&quot;</span>, path);
+        <span class="kw">let </span>file = File::create(path)<span class="question-mark">?</span>;
+        <span class="kw">let </span>writer = ParquetWriter::new(file).with_compression(ParquetCompression::Zstd(<span class="prelude-val">None</span>));
+        writer.finish(<span class="kw-2">&amp;mut </span>frame)<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(())
+    }
 }
-
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_index_empty() {
-  <span class="kw">let </span>index: IdIndex&lt;String&gt; = IdIndex::new();
-  <span class="macro">assert_eq!</span>(index.len(), <span class="number">0</span>);
-  <span class="macro">assert!</span>(index.lookup(<span class="string">&quot;bob&quot;</span>).is_none());
+    <span class="kw">let </span>index: IdIndex&lt;String&gt; = IdIndex::new();
+    <span class="macro">assert_eq!</span>(index.len(), <span class="number">0</span>);
+    <span class="macro">assert!</span>(index.lookup(<span class="string">&quot;bob&quot;</span>).is_none());
 }
-
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_index_intern_one() {
-  <span class="kw">let </span><span class="kw-2">mut </span>index: IdIndex&lt;String&gt; = IdIndex::new();
-  <span class="macro">assert!</span>(index.lookup(<span class="string">&quot;hackem muche&quot;</span>).is_none());
-  <span class="kw">let </span>id = index.intern(<span class="string">&quot;hackem muche&quot;</span>).expect(<span class="string">&quot;intern failure&quot;</span>);
-  <span class="macro">assert_eq!</span>(id, <span class="number">1</span>);
-  <span class="macro">assert_eq!</span>(index.lookup(<span class="string">&quot;hackem muche&quot;</span>).unwrap(), <span class="number">1</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>index: IdIndex&lt;String&gt; = IdIndex::new();
+    <span class="macro">assert!</span>(index.lookup(<span class="string">&quot;hackem muche&quot;</span>).is_none());
+    <span class="kw">let </span>id = index.intern(<span class="string">&quot;hackem muche&quot;</span>).expect(<span class="string">&quot;intern failure&quot;</span>);
+    <span class="macro">assert_eq!</span>(id, <span class="number">1</span>);
+    <span class="macro">assert_eq!</span>(index.lookup(<span class="string">&quot;hackem muche&quot;</span>).unwrap(), <span class="number">1</span>);
 }
-
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_index_intern_two() {
-  <span class="kw">let </span><span class="kw-2">mut </span>index: IdIndex&lt;String&gt; = IdIndex::new();
-  <span class="macro">assert!</span>(index.lookup(<span class="string">&quot;hackem muche&quot;</span>).is_none());
-  <span class="kw">let </span>id = index.intern(<span class="string">&quot;hackem muche&quot;</span>);
-  <span class="macro">assert_eq!</span>(id.expect(<span class="string">&quot;intern failure&quot;</span>), <span class="number">1</span>);
-  <span class="kw">let </span>id2 = index.intern(<span class="string">&quot;readme&quot;</span>);
-  <span class="macro">assert_eq!</span>(id2.expect(<span class="string">&quot;intern failure&quot;</span>), <span class="number">2</span>);
-  <span class="macro">assert_eq!</span>(index.lookup(<span class="string">&quot;hackem muche&quot;</span>).unwrap(), <span class="number">1</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>index: IdIndex&lt;String&gt; = IdIndex::new();
+    <span class="macro">assert!</span>(index.lookup(<span class="string">&quot;hackem muche&quot;</span>).is_none());
+    <span class="kw">let </span>id = index.intern(<span class="string">&quot;hackem muche&quot;</span>);
+    <span class="macro">assert_eq!</span>(id.expect(<span class="string">&quot;intern failure&quot;</span>), <span class="number">1</span>);
+    <span class="kw">let </span>id2 = index.intern(<span class="string">&quot;readme&quot;</span>);
+    <span class="macro">assert_eq!</span>(id2.expect(<span class="string">&quot;intern failure&quot;</span>), <span class="number">2</span>);
+    <span class="macro">assert_eq!</span>(index.lookup(<span class="string">&quot;hackem muche&quot;</span>).unwrap(), <span class="number">1</span>);
 }
-
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_index_intern_twice() {
-  <span class="kw">let </span><span class="kw-2">mut </span>index: IdIndex&lt;String&gt; = IdIndex::new();
-  <span class="macro">assert!</span>(index.lookup(<span class="string">&quot;hackem muche&quot;</span>).is_none());
-  <span class="kw">let </span>id = index.intern(<span class="string">&quot;hackem muche&quot;</span>);
-  <span class="macro">assert_eq!</span>(id.expect(<span class="string">&quot;intern failure&quot;</span>), <span class="number">1</span>);
-  <span class="kw">let </span>id2 = index.intern(<span class="string">&quot;hackem muche&quot;</span>);
-  <span class="macro">assert_eq!</span>(id2.expect(<span class="string">&quot;intern failure&quot;</span>), <span class="number">1</span>);
-  <span class="macro">assert_eq!</span>(index.len(), <span class="number">1</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>index: IdIndex&lt;String&gt; = IdIndex::new();
+    <span class="macro">assert!</span>(index.lookup(<span class="string">&quot;hackem muche&quot;</span>).is_none());
+    <span class="kw">let </span>id = index.intern(<span class="string">&quot;hackem muche&quot;</span>);
+    <span class="macro">assert_eq!</span>(id.expect(<span class="string">&quot;intern failure&quot;</span>), <span class="number">1</span>);
+    <span class="kw">let </span>id2 = index.intern(<span class="string">&quot;hackem muche&quot;</span>);
+    <span class="macro">assert_eq!</span>(id2.expect(<span class="string">&quot;intern failure&quot;</span>), <span class="number">1</span>);
+    <span class="macro">assert_eq!</span>(index.len(), <span class="number">1</span>);
 }
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_index_intern_twice_owned() {
-  <span class="kw">let </span><span class="kw-2">mut </span>index: IdIndex&lt;String&gt; = IdIndex::new();
-  <span class="macro">assert!</span>(index.lookup(<span class="string">&quot;hackem muche&quot;</span>).is_none());
-  <span class="kw">let </span>id = index.intern_owned(<span class="string">&quot;hackem muche&quot;</span>.to_owned());
-  <span class="macro">assert!</span>(id.is_ok());
-  <span class="macro">assert_eq!</span>(id.expect(<span class="string">&quot;intern failure&quot;</span>), <span class="number">1</span>);
-  <span class="kw">let </span>id2 = index.intern_owned(<span class="string">&quot;hackem muche&quot;</span>.to_owned());
-  <span class="macro">assert!</span>(id2.is_ok());
-  <span class="macro">assert_eq!</span>(id2.expect(<span class="string">&quot;intern failure&quot;</span>), <span class="number">1</span>);
-  <span class="macro">assert_eq!</span>(index.len(), <span class="number">1</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>index: IdIndex&lt;String&gt; = IdIndex::new();
+    <span class="macro">assert!</span>(index.lookup(<span class="string">&quot;hackem muche&quot;</span>).is_none());
+    <span class="kw">let </span>id = index.intern_owned(<span class="string">&quot;hackem muche&quot;</span>.to_owned());
+    <span class="macro">assert!</span>(id.is_ok());
+    <span class="macro">assert_eq!</span>(id.expect(<span class="string">&quot;intern failure&quot;</span>), <span class="number">1</span>);
+    <span class="kw">let </span>id2 = index.intern_owned(<span class="string">&quot;hackem muche&quot;</span>.to_owned());
+    <span class="macro">assert!</span>(id2.is_ok());
+    <span class="macro">assert_eq!</span>(id2.expect(<span class="string">&quot;intern failure&quot;</span>), <span class="number">1</span>);
+    <span class="macro">assert_eq!</span>(index.len(), <span class="number">1</span>);
 }
-
 
 <span class="attribute">#[cfg(test)]
 #[test_log::test]
 </span><span class="kw">fn </span>test_index_save() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-  <span class="kw">let </span><span class="kw-2">mut </span>index: IdIndex&lt;String&gt; = IdIndex::new();
-  <span class="kw">let </span><span class="kw-2">mut </span>gen = Gen::new(<span class="number">100</span>);
-  <span class="kw">for </span>_i <span class="kw">in </span><span class="number">0</span>..<span class="number">10000 </span>{
-    <span class="kw">let </span>key = String::arbitrary(<span class="kw-2">&amp;mut </span>gen);
-    <span class="kw">let </span>prev = index.lookup(<span class="kw-2">&amp;</span>key);
-    <span class="kw">let </span>id = index.intern(<span class="kw-2">&amp;</span>key).expect(<span class="string">&quot;intern failure&quot;</span>);
-    <span class="kw">match </span>prev {
-      <span class="prelude-val">Some</span>(i) =&gt; <span class="macro">assert_eq!</span>(id, i),
-      <span class="prelude-val">None </span>=&gt; <span class="macro">assert_eq!</span>(id <span class="kw">as </span>usize, index.len())
-    };
-  }
+    <span class="kw">let </span><span class="kw-2">mut </span>index: IdIndex&lt;String&gt; = IdIndex::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>gen = Gen::new(<span class="number">100</span>);
+    <span class="kw">for </span>_i <span class="kw">in </span><span class="number">0</span>..<span class="number">10000 </span>{
+        <span class="kw">let </span>key = String::arbitrary(<span class="kw-2">&amp;mut </span>gen);
+        <span class="kw">let </span>prev = index.lookup(<span class="kw-2">&amp;</span>key);
+        <span class="kw">let </span>id = index.intern(<span class="kw-2">&amp;</span>key).expect(<span class="string">&quot;intern failure&quot;</span>);
+        <span class="kw">match </span>prev {
+            <span class="prelude-val">Some</span>(i) =&gt; <span class="macro">assert_eq!</span>(id, i),
+            <span class="prelude-val">None </span>=&gt; <span class="macro">assert_eq!</span>(id <span class="kw">as </span>usize, index.len()),
+        };
+    }
 
-  <span class="kw">let </span>dir = tempdir()<span class="question-mark">?</span>;
-  <span class="kw">let </span>pq = dir.path().join(<span class="string">&quot;index.parquet&quot;</span>);
-  index.save_standard(<span class="kw-2">&amp;</span>pq).expect(<span class="string">&quot;save error&quot;</span>);
+    <span class="kw">let </span>dir = tempdir()<span class="question-mark">?</span>;
+    <span class="kw">let </span>pq = dir.path().join(<span class="string">&quot;index.parquet&quot;</span>);
+    index.save_standard(<span class="kw-2">&amp;</span>pq).expect(<span class="string">&quot;save error&quot;</span>);
 
-  <span class="kw">let </span><span class="kw-2">mut </span>pqf = File::open(<span class="kw-2">&amp;</span>pq).expect(<span class="string">&quot;open error&quot;</span>);
-  <span class="kw">let </span>meta = read_metadata(<span class="kw-2">&amp;mut </span>pqf).expect(<span class="string">&quot;meta error&quot;</span>);
-  <span class="macro">println!</span>(<span class="string">&quot;file metadata: {:?}&quot;</span>, meta);
-  std::mem::drop(pqf);
+    <span class="kw">let </span><span class="kw-2">mut </span>pqf = File::open(<span class="kw-2">&amp;</span>pq).expect(<span class="string">&quot;open error&quot;</span>);
+    <span class="kw">let </span>meta = read_metadata(<span class="kw-2">&amp;mut </span>pqf).expect(<span class="string">&quot;meta error&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">&quot;file metadata: {:?}&quot;</span>, meta);
+    std::mem::drop(pqf);
 
-  <span class="kw">let </span>i2 = IdIndex::load_standard(<span class="kw-2">&amp;</span>pq).expect(<span class="string">&quot;load error&quot;</span>);
-  <span class="macro">assert_eq!</span>(i2.len(), index.len());
-  <span class="kw">for </span>(k, v) <span class="kw">in </span><span class="kw-2">&amp;</span>index.map {
-    <span class="kw">let </span>v2 = i2.lookup(k);
-    <span class="macro">assert!</span>(v2.is_some());
-    <span class="macro">assert_eq!</span>(v2.unwrap(), <span class="kw-2">*</span>v);
-  }
+    <span class="kw">let </span>i2 = IdIndex::load_standard(<span class="kw-2">&amp;</span>pq).expect(<span class="string">&quot;load error&quot;</span>);
+    <span class="macro">assert_eq!</span>(i2.len(), index.len());
+    <span class="kw">for </span>(k, v) <span class="kw">in </span><span class="kw-2">&amp;</span>index.map {
+        <span class="kw">let </span>v2 = i2.lookup(k);
+        <span class="macro">assert!</span>(v2.is_some());
+        <span class="macro">assert_eq!</span>(v2.unwrap(), <span class="kw-2">*</span>v);
+    }
 
-  <span class="prelude-val">Ok</span>(())
+    <span class="prelude-val">Ok</span>(())
 }
-
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_index_freeze() {
-  <span class="kw">let </span><span class="kw-2">mut </span>index: IdIndex&lt;String&gt; = IdIndex::new();
-  <span class="macro">assert!</span>(index.lookup(<span class="string">&quot;hackem muche&quot;</span>).is_none());
-  <span class="kw">let </span>id = index.intern(<span class="string">&quot;hackem muche&quot;</span>);
-  <span class="macro">assert!</span>(id.is_ok());
-  <span class="macro">assert_eq!</span>(id.expect(<span class="string">&quot;intern failure&quot;</span>), <span class="number">1</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>index: IdIndex&lt;String&gt; = IdIndex::new();
+    <span class="macro">assert!</span>(index.lookup(<span class="string">&quot;hackem muche&quot;</span>).is_none());
+    <span class="kw">let </span>id = index.intern(<span class="string">&quot;hackem muche&quot;</span>);
+    <span class="macro">assert!</span>(id.is_ok());
+    <span class="macro">assert_eq!</span>(id.expect(<span class="string">&quot;intern failure&quot;</span>), <span class="number">1</span>);
 
-  <span class="kw">let </span><span class="kw-2">mut </span>index = index.freeze();
+    <span class="kw">let </span><span class="kw-2">mut </span>index = index.freeze();
 
-  <span class="kw">let </span>id = index.intern(<span class="string">&quot;hackem muche&quot;</span>);
-  <span class="macro">assert!</span>(id.is_ok());
-  <span class="macro">assert_eq!</span>(id.expect(<span class="string">&quot;intern failure&quot;</span>), <span class="number">1</span>);
+    <span class="kw">let </span>id = index.intern(<span class="string">&quot;hackem muche&quot;</span>);
+    <span class="macro">assert!</span>(id.is_ok());
+    <span class="macro">assert_eq!</span>(id.expect(<span class="string">&quot;intern failure&quot;</span>), <span class="number">1</span>);
 
-  <span class="kw">let </span>id2 = index.intern(<span class="string">&quot;foobie bletch&quot;</span>);
-  <span class="macro">assert!</span>(id2.is_err());
+    <span class="kw">let </span>id2 = index.intern(<span class="string">&quot;foobie bletch&quot;</span>);
+    <span class="macro">assert!</span>(id2.is_err());
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

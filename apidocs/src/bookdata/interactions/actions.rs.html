@@ -152,159 +152,209 @@
 <span id="152">152</span>
 <span id="153">153</span>
 <span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::marker::PhantomData;
-<span class="kw">use </span>std::path::Path;
 <span class="kw">use </span>std::mem::take;
+<span class="kw">use </span>std::path::Path;
 
+<span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>arrow2::array::TryExtend;
 <span class="kw">use </span>log::<span class="kw-2">*</span>;
-<span class="kw">use </span>anyhow::{<span class="prelude-ty">Result</span>};
 
-<span class="kw">use </span><span class="kw">crate</span>::io::{ObjectWriter, file_size};
-<span class="kw">use </span><span class="kw">crate</span>::util::Timer;
+<span class="kw">use super</span>::{Dedup, Interaction, Key};
 <span class="kw">use </span><span class="kw">crate</span>::arrow::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::io::{file_size, ObjectWriter};
 <span class="kw">use </span><span class="kw">crate</span>::util::logging::item_progress;
-<span class="kw">use super</span>::{Interaction, Dedup, Key};
+<span class="kw">use </span><span class="kw">crate</span>::util::Timer;
 
 <span class="doccomment">/// Record for a single output action.
 </span><span class="attribute">#[derive(ArrowField, Debug)]
 </span><span class="kw">pub struct </span>TimestampActionRecord {
-  <span class="kw">pub </span>user: i32,
-  <span class="kw">pub </span>item: i32,
-  <span class="kw">pub </span>first_time: i64,
-  <span class="kw">pub </span>last_time: i64,
-  <span class="kw">pub </span>last_rating: <span class="prelude-ty">Option</span>&lt;f32&gt;,
-  <span class="kw">pub </span>nactions: i32,
+    <span class="kw">pub </span>user: i32,
+    <span class="kw">pub </span>item: i32,
+    <span class="kw">pub </span>first_time: i64,
+    <span class="kw">pub </span>last_time: i64,
+    <span class="kw">pub </span>last_rating: <span class="prelude-ty">Option</span>&lt;f32&gt;,
+    <span class="kw">pub </span>nactions: i32,
 }
 
 <span class="doccomment">/// Record for a single output action without time.
 </span><span class="attribute">#[derive(ArrowField, Debug)]
 </span><span class="kw">pub struct </span>TimelessActionRecord {
-  <span class="kw">pub </span>user: i32,
-  <span class="kw">pub </span>item: i32,
-  <span class="kw">pub </span>nactions: i32,
+    <span class="kw">pub </span>user: i32,
+    <span class="kw">pub </span>item: i32,
+    <span class="kw">pub </span>nactions: i32,
 }
 
 <span class="attribute">#[derive(PartialEq, Clone, Debug)]
 </span><span class="kw">pub struct </span>ActionInstance {
-  timestamp: i64,
-  rating: <span class="prelude-ty">Option</span>&lt;f32&gt;,
+    timestamp: i64,
+    rating: <span class="prelude-ty">Option</span>&lt;f32&gt;,
 }
 
 <span class="doccomment">/// Collapse a sequence of actions into an action record.
 </span><span class="kw">pub trait </span>FromActionSet {
-  <span class="kw">fn </span>create(user: i32, item: i32, actions: Vec&lt;ActionInstance&gt;) -&gt; <span class="self">Self</span>;
+    <span class="kw">fn </span>create(user: i32, item: i32, actions: Vec&lt;ActionInstance&gt;) -&gt; <span class="self">Self</span>;
 }
 
 <span class="kw">impl </span>FromActionSet <span class="kw">for </span>TimestampActionRecord {
-  <span class="kw">fn </span>create(user: i32, item: i32, actions: Vec&lt;ActionInstance&gt;) -&gt; <span class="self">Self </span>{
-    <span class="kw">let </span><span class="kw-2">mut </span>vec = actions;
-    <span class="kw">if </span>vec.len() == <span class="number">1 </span>{
-      <span class="comment">// fast path
-      </span><span class="kw">let </span>act = <span class="kw-2">&amp;</span>vec[<span class="number">0</span>];
-      TimestampActionRecord {
-        user, item,
-        first_time: act.timestamp,
-        last_time: act.timestamp,
-        last_rating: act.rating,
-        nactions: <span class="number">1
-      </span>}
-    } <span class="kw">else </span>{
-      vec.sort_unstable_by_key(|a| a.timestamp);
-      <span class="kw">let </span>first = <span class="kw-2">&amp;</span>vec[<span class="number">0</span>];
-      <span class="kw">let </span>last = <span class="kw-2">&amp;</span>vec[vec.len() - <span class="number">1</span>];
-      <span class="kw">let </span>rates = vec.iter().flat_map(|a| a.rating).collect::&lt;Vec&lt;f32&gt;&gt;();
-      <span class="kw">let </span>last_rating = <span class="kw">if </span>rates.len() &gt; <span class="number">0 </span>{
-        <span class="prelude-val">Some</span>(rates[rates.len() - <span class="number">1</span>])
-      } <span class="kw">else </span>{
-        <span class="prelude-val">None
-      </span>};
+    <span class="kw">fn </span>create(user: i32, item: i32, actions: Vec&lt;ActionInstance&gt;) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>vec = actions;
+        <span class="kw">if </span>vec.len() == <span class="number">1 </span>{
+            <span class="comment">// fast path
+            </span><span class="kw">let </span>act = <span class="kw-2">&amp;</span>vec[<span class="number">0</span>];
+            TimestampActionRecord {
+                user,
+                item,
+                first_time: act.timestamp,
+                last_time: act.timestamp,
+                last_rating: act.rating,
+                nactions: <span class="number">1</span>,
+            }
+        } <span class="kw">else </span>{
+            vec.sort_unstable_by_key(|a| a.timestamp);
+            <span class="kw">let </span>first = <span class="kw-2">&amp;</span>vec[<span class="number">0</span>];
+            <span class="kw">let </span>last = <span class="kw-2">&amp;</span>vec[vec.len() - <span class="number">1</span>];
+            <span class="kw">let </span>rates = vec.iter().flat_map(|a| a.rating).collect::&lt;Vec&lt;f32&gt;&gt;();
+            <span class="kw">let </span>last_rating = <span class="kw">if </span>rates.len() &gt; <span class="number">0 </span>{
+                <span class="prelude-val">Some</span>(rates[rates.len() - <span class="number">1</span>])
+            } <span class="kw">else </span>{
+                <span class="prelude-val">None
+            </span>};
 
-      TimestampActionRecord {
-        user, item,
-        first_time: first.timestamp,
-        last_time: last.timestamp,
-        last_rating,
-        nactions: vec.len() <span class="kw">as </span>i32
-      }
+            TimestampActionRecord {
+                user,
+                item,
+                first_time: first.timestamp,
+                last_time: last.timestamp,
+                last_rating,
+                nactions: vec.len() <span class="kw">as </span>i32,
+            }
+        }
     }
-  }
 }
 
 <span class="kw">impl </span>FromActionSet <span class="kw">for </span>TimelessActionRecord {
-  <span class="kw">fn </span>create(user: i32, item: i32, actions: Vec&lt;ActionInstance&gt;) -&gt; <span class="self">Self </span>{
-    TimelessActionRecord {
-      user, item, nactions: actions.len() <span class="kw">as </span>i32
+    <span class="kw">fn </span>create(user: i32, item: i32, actions: Vec&lt;ActionInstance&gt;) -&gt; <span class="self">Self </span>{
+        TimelessActionRecord {
+            user,
+            item,
+            nactions: actions.len() <span class="kw">as </span>i32,
+        }
     }
-  }
 }
 
 <span class="doccomment">/// Action deduplicator.
-</span><span class="kw">pub struct </span>ActionDedup&lt;R&gt; <span class="kw">where </span>R: FromActionSet + ArrowSerialize {
-  _phantom: PhantomData&lt;R&gt;,
-  table: HashMap&lt;Key, Vec&lt;ActionInstance&gt;&gt;
+</span><span class="kw">pub struct </span>ActionDedup&lt;R&gt;
+<span class="kw">where
+    </span>R: FromActionSet + ArrowSerialize,
+{
+    _phantom: PhantomData&lt;R&gt;,
+    table: HashMap&lt;Key, Vec&lt;ActionInstance&gt;&gt;,
 }
 
-<span class="kw">impl </span>&lt;R&gt; Default <span class="kw">for </span>ActionDedup&lt;R&gt; <span class="kw">where </span>R: FromActionSet + ArrowSerialize + <span class="lifetime">&#39;static </span>{
-  <span class="kw">fn </span>default() -&gt; ActionDedup&lt;R&gt; {
-    ActionDedup {
-      _phantom: PhantomData,
-      table: HashMap::new(),
+<span class="kw">impl</span>&lt;R&gt; Default <span class="kw">for </span>ActionDedup&lt;R&gt;
+<span class="kw">where
+    </span>R: FromActionSet + ArrowSerialize + <span class="lifetime">&#39;static</span>,
+{
+    <span class="kw">fn </span>default() -&gt; ActionDedup&lt;R&gt; {
+        ActionDedup {
+            _phantom: PhantomData,
+            table: HashMap::new(),
+        }
     }
-  }
 }
 
-<span class="kw">impl </span>&lt;I: Interaction, R&gt; Dedup&lt;I&gt; <span class="kw">for </span>ActionDedup&lt;R&gt; <span class="kw">where </span>R: FromActionSet + ArrowSerialize + Send + Sync + <span class="lifetime">&#39;static</span>, R::MutableArrayType: TryExtend&lt;<span class="prelude-ty">Option</span>&lt;R&gt;&gt; {
-  <span class="kw">fn </span>add_interaction(<span class="kw-2">&amp;mut </span><span class="self">self</span>, act: I) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="self">self</span>.record(act.get_user(), act.get_item(), act.get_timestamp(), act.get_rating());
-    <span class="prelude-val">Ok</span>(())
-  }
-
-  <span class="kw">fn </span>save(<span class="kw-2">&amp;mut </span><span class="self">self</span>, path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
-    <span class="self">self</span>.write_actions(path)
-  }
-}
-
-<span class="kw">impl </span>&lt;R&gt; ActionDedup&lt;R&gt; <span class="kw">where </span>R: FromActionSet + ArrowSerialize + Send + Sync + <span class="lifetime">&#39;static</span>, R::MutableArrayType: TryExtend&lt;<span class="prelude-ty">Option</span>&lt;R&gt;&gt; {
-  <span class="doccomment">/// Add an action to the deduplicator.
-  </span><span class="kw">pub fn </span>record(<span class="kw-2">&amp;mut </span><span class="self">self</span>, user: i32, item: i32, timestamp: i64, rating: <span class="prelude-ty">Option</span>&lt;f32&gt;) {
-    <span class="kw">let </span>k = Key::new(user, item);
-    <span class="comment">// get the vector for this user/item pair
-    </span><span class="kw">let </span>vec = <span class="self">self</span>.table.entry(k).or_insert_with(|| Vec::with_capacity(<span class="number">1</span>));
-    <span class="comment">// and insert our records!
-    </span>vec.push(ActionInstance {
-      timestamp, rating
-    });
-  }
-
-  <span class="doccomment">/// Save the rating table disk.
-  </span><span class="kw">pub fn </span>write_actions&lt;P: AsRef&lt;Path&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, path: P) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
-    <span class="kw">let </span>path = path.as_ref();
-    <span class="macro">info!</span>(<span class="string">&quot;writing {} deduplicated actions to {}&quot;</span>,
-          friendly::scalar(<span class="self">self</span>.table.len()),
-          path.display());
-    <span class="kw">let </span><span class="kw-2">mut </span>writer = TableWriter::open(path)<span class="question-mark">?</span>;
-    <span class="kw">let </span>timer = Timer::new();
-    <span class="kw">let </span>n = <span class="self">self</span>.table.len() <span class="kw">as </span>u64;
-    <span class="kw">let </span>pb = item_progress(n, <span class="string">&quot;writing actions&quot;</span>);
-
-    <span class="comment">// we&#39;re going to consume the hashtable.
-    </span><span class="kw">let </span>table = take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.table);
-    <span class="kw">for </span>(k, vec) <span class="kw">in </span>pb.wrap_iter(table.into_iter()) {
-      <span class="kw">let </span>record = R::create(k.user, k.item, vec);
-      writer.write_object(record)<span class="question-mark">?</span>;
+<span class="kw">impl</span>&lt;I: Interaction, R&gt; Dedup&lt;I&gt; <span class="kw">for </span>ActionDedup&lt;R&gt;
+<span class="kw">where
+    </span>R: FromActionSet + ArrowSerialize + Send + Sync + <span class="lifetime">&#39;static</span>,
+    R::MutableArrayType: TryExtend&lt;<span class="prelude-ty">Option</span>&lt;R&gt;&gt;,
+{
+    <span class="kw">fn </span>add_interaction(<span class="kw-2">&amp;mut </span><span class="self">self</span>, act: I) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.record(
+            act.get_user(),
+            act.get_item(),
+            act.get_timestamp(),
+            act.get_rating(),
+        );
+        <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">let </span>rv = writer.finish()<span class="question-mark">?</span>;
+    <span class="kw">fn </span>save(<span class="kw-2">&amp;mut </span><span class="self">self</span>, path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
+        <span class="self">self</span>.write_actions(path)
+    }
+}
 
-    <span class="macro">info!</span>(<span class="string">&quot;wrote {} actions in {}, file is {}&quot;</span>,
-          friendly::scalar(n),
-          timer.human_elapsed(),
-          friendly::bytes(file_size(path)<span class="question-mark">?</span>));
+<span class="kw">impl</span>&lt;R&gt; ActionDedup&lt;R&gt;
+<span class="kw">where
+    </span>R: FromActionSet + ArrowSerialize + Send + Sync + <span class="lifetime">&#39;static</span>,
+    R::MutableArrayType: TryExtend&lt;<span class="prelude-ty">Option</span>&lt;R&gt;&gt;,
+{
+    <span class="doccomment">/// Add an action to the deduplicator.
+    </span><span class="kw">pub fn </span>record(<span class="kw-2">&amp;mut </span><span class="self">self</span>, user: i32, item: i32, timestamp: i64, rating: <span class="prelude-ty">Option</span>&lt;f32&gt;) {
+        <span class="kw">let </span>k = Key::new(user, item);
+        <span class="comment">// get the vector for this user/item pair
+        </span><span class="kw">let </span>vec = <span class="self">self</span>.table.entry(k).or_insert_with(|| Vec::with_capacity(<span class="number">1</span>));
+        <span class="comment">// and insert our records!
+        </span>vec.push(ActionInstance { timestamp, rating });
+    }
 
-    <span class="prelude-val">Ok</span>(rv)
-  }
+    <span class="doccomment">/// Save the rating table disk.
+    </span><span class="kw">pub fn </span>write_actions&lt;P: AsRef&lt;Path&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, path: P) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
+        <span class="kw">let </span>path = path.as_ref();
+        <span class="macro">info!</span>(
+            <span class="string">&quot;writing {} deduplicated actions to {}&quot;</span>,
+            friendly::scalar(<span class="self">self</span>.table.len()),
+            path.display()
+        );
+        <span class="kw">let </span><span class="kw-2">mut </span>writer = TableWriter::open(path)<span class="question-mark">?</span>;
+        <span class="kw">let </span>timer = Timer::new();
+        <span class="kw">let </span>n = <span class="self">self</span>.table.len() <span class="kw">as </span>u64;
+        <span class="kw">let </span>pb = item_progress(n, <span class="string">&quot;writing actions&quot;</span>);
+
+        <span class="comment">// we&#39;re going to consume the hashtable.
+        </span><span class="kw">let </span>table = take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.table);
+        <span class="kw">for </span>(k, vec) <span class="kw">in </span>pb.wrap_iter(table.into_iter()) {
+            <span class="kw">let </span>record = R::create(k.user, k.item, vec);
+            writer.write_object(record)<span class="question-mark">?</span>;
+        }
+
+        <span class="kw">let </span>rv = writer.finish()<span class="question-mark">?</span>;
+
+        <span class="macro">info!</span>(
+            <span class="string">&quot;wrote {} actions in {}, file is {}&quot;</span>,
+            friendly::scalar(n),
+            timer.human_elapsed(),
+            friendly::bytes(file_size(path)<span class="question-mark">?</span>)
+        );
+
+        <span class="prelude-val">Ok</span>(rv)
+    }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

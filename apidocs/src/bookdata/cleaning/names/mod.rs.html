@@ -133,7 +133,6 @@
 <span id="133">133</span>
 <span id="134">134</span>
 <span id="135">135</span>
-<span id="136">136</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Extract and normalize author names.
 //!
 //! Names in the book data — both in author records and in their references in
@@ -159,13 +158,13 @@
 
 <span class="kw">use </span><span class="kw">super</span>::strings::norm_unicode;
 
-<span class="kw">mod </span>types;
 <span class="kw">mod </span>parse;
+<span class="kw">mod </span>types;
 
 <span class="attribute">#[cfg(test)]
-</span><span class="kw">mod </span>test_variants;
-<span class="attribute">#[cfg(test)]
 </span><span class="kw">mod </span>test_cleaning;
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>test_variants;
 
 <span class="kw">pub use </span>types::NameError;
 <span class="kw">use </span>types::NameFmt;
@@ -177,98 +176,97 @@
 /// Many strings don&#39;t need advanced cleaning. This method tries to pre-clean
 /// a string.  If the string cannot be pre-cleaned, it returns None.
 </span><span class="kw">fn </span>preclean&lt;<span class="lifetime">&#39;a</span>&gt;(name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt; {
-  <span class="kw">let </span>name = name.trim();
+    <span class="kw">let </span>name = name.trim();
 
-  <span class="kw">let </span><span class="kw-2">mut </span>ws_count = <span class="number">0</span>;
-  <span class="kw">for </span>c <span class="kw">in </span>name.bytes() {
-    <span class="kw">if </span>c == <span class="string">b&#39;.&#39; </span>{
-      <span class="kw">return </span><span class="prelude-val">None
-    </span>} <span class="kw">else if </span>c.is_ascii_whitespace() {
-      ws_count += <span class="number">1</span>;
-      <span class="kw">if </span>ws_count &gt; <span class="number">1 </span>{
-        <span class="kw">return </span><span class="prelude-val">None
-      </span>}
-    } <span class="kw">else </span>{
-      <span class="kw">if </span>c == <span class="string">b&#39;,&#39; </span>&amp;&amp; ws_count &gt; <span class="number">0 </span>{
-        <span class="kw">return </span><span class="prelude-val">None  </span><span class="comment">// need cleaning of space and ,
-      </span>}
-      ws_count = <span class="number">0</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>ws_count = <span class="number">0</span>;
+    <span class="kw">for </span>c <span class="kw">in </span>name.bytes() {
+        <span class="kw">if </span>c == <span class="string">b&#39;.&#39; </span>{
+            <span class="kw">return </span><span class="prelude-val">None</span>;
+        } <span class="kw">else if </span>c.is_ascii_whitespace() {
+            ws_count += <span class="number">1</span>;
+            <span class="kw">if </span>ws_count &gt; <span class="number">1 </span>{
+                <span class="kw">return </span><span class="prelude-val">None</span>;
+            }
+        } <span class="kw">else </span>{
+            <span class="kw">if </span>c == <span class="string">b&#39;,&#39; </span>&amp;&amp; ws_count &gt; <span class="number">0 </span>{
+                <span class="kw">return </span><span class="prelude-val">None</span>; <span class="comment">// need cleaning of space and ,
+            </span>}
+            ws_count = <span class="number">0</span>;
+        }
     }
-  }
 
-  <span class="prelude-val">Some</span>(name)
+    <span class="prelude-val">Some</span>(name)
 }
 
 <span class="doccomment">/// Clean up a name from unnecessary special characters.
 </span><span class="kw">pub fn </span>clean_name&lt;<span class="lifetime">&#39;a</span>&gt;(name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str) -&gt; String {
-  <span class="kw">let </span>name = norm_unicode(name);
+    <span class="kw">let </span>name = norm_unicode(name);
 
-  <span class="comment">// fast path for pretty clean strings
-  // directly copying a string is faster than our character-by-character copying,
-  // probably due to simd, so it&#39;s worth scanning for a fast path.
-  </span><span class="kw">if let </span><span class="prelude-val">Some</span>(pc) = preclean(<span class="kw-2">&amp;</span>name) {
-    <span class="kw">return </span>pc.to_string()
-  }
-
-  <span class="comment">// we use a manually-coded state machine instead of REs for performance
-  </span><span class="kw">let </span><span class="kw-2">mut </span>res = Vec::with_capacity(name.len());
-  <span class="kw">let </span><span class="kw-2">mut </span>in_seq = <span class="bool-val">false</span>;
-  <span class="kw">for </span>c <span class="kw">in </span>name.bytes() {
-    <span class="kw">if </span>in_seq {
-      <span class="kw">if </span>c.is_ascii_whitespace() || c == <span class="string">b&#39;.&#39; </span>{
-        <span class="comment">// no-op
-      </span>} <span class="kw">else if </span>c == <span class="string">b&#39;,&#39; </span>|| res.is_empty() {
-        <span class="comment">// emit the comma and proceed
-        </span>res.push(c);
-        in_seq = <span class="bool-val">false</span>;
-      } <span class="kw">else </span>{
-        <span class="comment">// collapse whitespace sequence and proceed
-        </span>res.push(<span class="string">b&#39; &#39;</span>);
-        res.push(c);
-        in_seq = <span class="bool-val">false</span>;
-      }
-    } <span class="kw">else </span>{
-      <span class="kw">if </span>c.is_ascii_whitespace() || c == <span class="string">b&#39;.&#39; </span>{
-        in_seq = <span class="bool-val">true</span>;
-      } <span class="kw">else </span>{
-        res.push(c);
-      }
+    <span class="comment">// fast path for pretty clean strings
+    // directly copying a string is faster than our character-by-character copying,
+    // probably due to simd, so it&#39;s worth scanning for a fast path.
+    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(pc) = preclean(<span class="kw-2">&amp;</span>name) {
+        <span class="kw">return </span>pc.to_string();
     }
-  }
-  <span class="kw">unsafe </span>{
-    <span class="comment">// since we have copied bytes, except for ASCII manipulations, this is safe
-    </span>String::from_utf8_unchecked(res)
-  }
+
+    <span class="comment">// we use a manually-coded state machine instead of REs for performance
+    </span><span class="kw">let </span><span class="kw-2">mut </span>res = Vec::with_capacity(name.len());
+    <span class="kw">let </span><span class="kw-2">mut </span>in_seq = <span class="bool-val">false</span>;
+    <span class="kw">for </span>c <span class="kw">in </span>name.bytes() {
+        <span class="kw">if </span>in_seq {
+            <span class="kw">if </span>c.is_ascii_whitespace() || c == <span class="string">b&#39;.&#39; </span>{
+                <span class="comment">// no-op
+            </span>} <span class="kw">else if </span>c == <span class="string">b&#39;,&#39; </span>|| res.is_empty() {
+                <span class="comment">// emit the comma and proceed
+                </span>res.push(c);
+                in_seq = <span class="bool-val">false</span>;
+            } <span class="kw">else </span>{
+                <span class="comment">// collapse whitespace sequence and proceed
+                </span>res.push(<span class="string">b&#39; &#39;</span>);
+                res.push(c);
+                in_seq = <span class="bool-val">false</span>;
+            }
+        } <span class="kw">else </span>{
+            <span class="kw">if </span>c.is_ascii_whitespace() || c == <span class="string">b&#39;.&#39; </span>{
+                in_seq = <span class="bool-val">true</span>;
+            } <span class="kw">else </span>{
+                res.push(c);
+            }
+        }
+    }
+    <span class="kw">unsafe </span>{
+        <span class="comment">// since we have copied bytes, except for ASCII manipulations, this is safe
+        </span>String::from_utf8_unchecked(res)
+    }
 }
 
 <span class="doccomment">/// Extract all variants from a name.
 ///
 /// See the [module documentation][self] for details on this parsing process.
 </span><span class="kw">pub fn </span>name_variants(name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;String&gt;, NameError&gt; {
-  <span class="kw">let </span>parse = parse_name_entry(name)<span class="question-mark">?</span>;
-  <span class="kw">let </span><span class="kw-2">mut </span>variants = Vec::new();
-  <span class="kw">match </span>parse.name.simplify() {
-    NameFmt::Empty =&gt; (),
-    NameFmt::Single(n) =&gt; variants.push(n),
-    NameFmt::TwoPart(last, first) =&gt; {
-      variants.push(<span class="macro">format!</span>(<span class="string">&quot;{} {}&quot;</span>, first, last));
-      variants.push(<span class="macro">format!</span>(<span class="string">&quot;{}, {}&quot;</span>, last, first));
+    <span class="kw">let </span>parse = parse_name_entry(name)<span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>variants = Vec::new();
+    <span class="kw">match </span>parse.name.simplify() {
+        NameFmt::Empty =&gt; (),
+        NameFmt::Single(n) =&gt; variants.push(n),
+        NameFmt::TwoPart(last, first) =&gt; {
+            variants.push(<span class="macro">format!</span>(<span class="string">&quot;{} {}&quot;</span>, first, last));
+            variants.push(<span class="macro">format!</span>(<span class="string">&quot;{}, {}&quot;</span>, last, first));
+        }
+    };
+
+    <span class="comment">// create a version with the year
+    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(y) = parse.year {
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..variants.len() {
+            variants.push(<span class="macro">format!</span>(<span class="string">&quot;{}, {}&quot;</span>, variants[i], y));
+        }
     }
-  };
 
-  <span class="comment">// create a version with the year
-  </span><span class="kw">if let </span><span class="prelude-val">Some</span>(y) = parse.year {
-    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..variants.len() {
-      variants.push(<span class="macro">format!</span>(<span class="string">&quot;{}, {}&quot;</span>, variants[i], y));
-    }
-  }
+    <span class="kw">let </span><span class="kw-2">mut </span>variants: Vec&lt;String&gt; = variants.iter().map(|s| clean_name(s)).collect();
+    variants.sort();
+    variants.dedup();
 
-
-  <span class="kw">let </span><span class="kw-2">mut </span>variants: Vec&lt;String&gt; = variants.iter().map(|s| clean_name(s)).collect();
-  variants.sort();
-  variants.dedup();
-
-  <span class="prelude-val">Ok</span>(variants)
+    <span class="prelude-val">Ok</span>(variants)
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

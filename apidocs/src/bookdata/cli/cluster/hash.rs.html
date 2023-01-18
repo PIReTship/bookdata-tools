@@ -80,87 +80,93 @@
 <span id="80">80</span>
 <span id="81">81</span>
 <span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Extract author information for book clusters.
-</span><span class="kw">use </span>std::path::{PathBuf};
-<span class="kw">use </span>std::collections::HashMap;
+</span><span class="kw">use </span>std::collections::HashMap;
+<span class="kw">use </span>std::path::PathBuf;
 
 <span class="kw">use </span>arrow2_convert::ArrowField;
-<span class="kw">use </span>md5::{Md5, Digest};
 <span class="kw">use </span>hex;
+<span class="kw">use </span>md5::{Digest, Md5};
 
-<span class="kw">use </span>polars::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::arrow::TableWriter;
 <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>polars::prelude::<span class="kw-2">*</span>;
 
 <span class="kw">use </span><span class="kw">crate</span>::prelude::Result;
 
 <span class="attribute">#[derive(Args, Debug)]
-#[command(name=<span class="string">&quot;hash&quot;</span>)]
+#[command(name = <span class="string">&quot;hash&quot;</span>)]
 </span><span class="doccomment">/// Compute a hash for each cluster.
 </span><span class="kw">pub struct </span>HashCmd {
-  <span class="doccomment">/// Specify output file
-  </span><span class="attribute">#[arg(short=<span class="string">&#39;o&#39;</span>, long=<span class="string">&quot;output&quot;</span>, name=<span class="string">&quot;FILE&quot;</span>)]
-  </span>output: PathBuf,
+    <span class="doccomment">/// Specify output file
+    </span><span class="attribute">#[arg(short = <span class="string">&#39;o&#39;</span>, long = <span class="string">&quot;output&quot;</span>, name = <span class="string">&quot;FILE&quot;</span>)]
+    </span>output: PathBuf,
 
-  <span class="doccomment">/// Specify input file
-  </span><span class="attribute">#[arg(name=<span class="string">&quot;ISBN_CLUSTERS&quot;</span>)]
-  </span>cluster_file: PathBuf,
+    <span class="doccomment">/// Specify input file
+    </span><span class="attribute">#[arg(name = <span class="string">&quot;ISBN_CLUSTERS&quot;</span>)]
+    </span>cluster_file: PathBuf,
 }
 
 <span class="attribute">#[derive(ArrowField)]
 </span><span class="kw">struct </span>ClusterHash {
-  cluster: i32,
-  isbn_hash: String,
-  isbn_dcode: i8,
+    cluster: i32,
+    isbn_hash: String,
+    isbn_dcode: i8,
 }
 
 <span class="doccomment">/// Load ISBN data
 </span><span class="kw">fn </span>scan_isbns(path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
-  <span class="kw">let </span>path = path.to_str().map(|s| s.to_string()).ok_or(<span class="macro">anyhow!</span>(<span class="string">&quot;invalid UTF8 pathname&quot;</span>))<span class="question-mark">?</span>;
-  <span class="macro">info!</span>(<span class="string">&quot;scanning ISBN cluster file {}&quot;</span>, path);
-  <span class="kw">let </span>icl = LazyFrame::scan_parquet(path, default())<span class="question-mark">?</span>;
-  <span class="kw">let </span>icl = icl.select(<span class="kw-2">&amp;</span>[col(<span class="string">&quot;isbn&quot;</span>), col(<span class="string">&quot;cluster&quot;</span>)]);
-  <span class="prelude-val">Ok</span>(icl)
+    <span class="kw">let </span>path = path
+        .to_str()
+        .map(|s| s.to_string())
+        .ok_or(<span class="macro">anyhow!</span>(<span class="string">&quot;invalid UTF8 pathname&quot;</span>))<span class="question-mark">?</span>;
+    <span class="macro">info!</span>(<span class="string">&quot;scanning ISBN cluster file {}&quot;</span>, path);
+    <span class="kw">let </span>icl = LazyFrame::scan_parquet(path, default())<span class="question-mark">?</span>;
+    <span class="kw">let </span>icl = icl.select(<span class="kw-2">&amp;</span>[col(<span class="string">&quot;isbn&quot;</span>), col(<span class="string">&quot;cluster&quot;</span>)]);
+    <span class="prelude-val">Ok</span>(icl)
 }
 
 <span class="kw">impl </span>Command <span class="kw">for </span>HashCmd {
-  <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>isbns = scan_isbns(<span class="self">self</span>.cluster_file.as_path())<span class="question-mark">?</span>;
+    <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span>isbns = scan_isbns(<span class="self">self</span>.cluster_file.as_path())<span class="question-mark">?</span>;
 
-    <span class="comment">// It would be nice to do this with group-by, but group-by is quite slow and introduces
-    // unhelpful overhead. Sorting (for consistency) and a custom loop to aggregate ISBNs
-    // into hashes is much more efficient.
-    </span><span class="macro">info!</span>(<span class="string">&quot;reading sorted ISBNs into memory&quot;</span>);
-    <span class="kw">let </span>isbns = isbns.sort(<span class="string">&quot;isbn&quot;</span>, SortOptions::default()).collect()<span class="question-mark">?</span>;
+        <span class="comment">// It would be nice to do this with group-by, but group-by is quite slow and introduces
+        // unhelpful overhead. Sorting (for consistency) and a custom loop to aggregate ISBNs
+        // into hashes is much more efficient.
+        </span><span class="macro">info!</span>(<span class="string">&quot;reading sorted ISBNs into memory&quot;</span>);
+        <span class="kw">let </span>isbns = isbns.sort(<span class="string">&quot;isbn&quot;</span>, SortOptions::default()).collect()<span class="question-mark">?</span>;
 
-    <span class="macro">info!</span>(<span class="string">&quot;computing ISBN hashes&quot;</span>);
-    <span class="kw">let </span><span class="kw-2">mut </span>hashes: HashMap&lt;i32, Md5&gt; = HashMap::new();
-    <span class="kw">let </span>isbn_col = isbns.column(<span class="string">&quot;isbn&quot;</span>)<span class="question-mark">?</span>.utf8()<span class="question-mark">?</span>;
-    <span class="kw">let </span>clus_col = isbns.column(<span class="string">&quot;cluster&quot;</span>)<span class="question-mark">?</span>.i32()<span class="question-mark">?</span>;
-    <span class="kw">for </span>pair <span class="kw">in </span>isbn_col.into_iter().zip(clus_col.into_iter()) {
-      <span class="kw">if let </span>(<span class="prelude-val">Some</span>(i), <span class="prelude-val">Some</span>(c)) = pair {
-        hashes.entry(c).or_default().update(i.as_bytes());
-      }
+        <span class="macro">info!</span>(<span class="string">&quot;computing ISBN hashes&quot;</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>hashes: HashMap&lt;i32, Md5&gt; = HashMap::new();
+        <span class="kw">let </span>isbn_col = isbns.column(<span class="string">&quot;isbn&quot;</span>)<span class="question-mark">?</span>.utf8()<span class="question-mark">?</span>;
+        <span class="kw">let </span>clus_col = isbns.column(<span class="string">&quot;cluster&quot;</span>)<span class="question-mark">?</span>.i32()<span class="question-mark">?</span>;
+        <span class="kw">for </span>pair <span class="kw">in </span>isbn_col.into_iter().zip(clus_col.into_iter()) {
+            <span class="kw">if let </span>(<span class="prelude-val">Some</span>(i), <span class="prelude-val">Some</span>(c)) = pair {
+                hashes.entry(c).or_default().update(i.as_bytes());
+            }
+        }
+
+        <span class="macro">info!</span>(<span class="string">&quot;computed hashes for {} clusters&quot;</span>, hashes.len());
+
+        <span class="kw">let </span>path = <span class="self">self</span>.output.as_path();
+        <span class="macro">info!</span>(<span class="string">&quot;writing ISBN hashes to {:?}&quot;</span>, path);
+        <span class="kw">let </span><span class="kw-2">mut </span>writer = TableWriter::open(path)<span class="question-mark">?</span>;
+        <span class="kw">for </span>(cluster, h) <span class="kw">in </span>hashes.into_iter() {
+            <span class="kw">let </span>h = h.finalize();
+            writer.write_object(ClusterHash {
+                cluster,
+                isbn_hash: hex::encode(h),
+                isbn_dcode: (h[h.len() - <span class="number">1</span>] % <span class="number">2</span>) <span class="kw">as </span>i8,
+            })<span class="question-mark">?</span>;
+        }
+
+        writer.finish()<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(())
     }
-
-    <span class="macro">info!</span>(<span class="string">&quot;computed hashes for {} clusters&quot;</span>, hashes.len());
-
-    <span class="kw">let </span>path = <span class="self">self</span>.output.as_path();
-    <span class="macro">info!</span>(<span class="string">&quot;writing ISBN hashes to {:?}&quot;</span>, path);
-    <span class="kw">let </span><span class="kw-2">mut </span>writer = TableWriter::open(path)<span class="question-mark">?</span>;
-    <span class="kw">for </span>(cluster, h) <span class="kw">in </span>hashes.into_iter() {
-      <span class="kw">let </span>h = h.finalize();
-      writer.write_object(ClusterHash {
-        cluster,
-        isbn_hash: hex::encode(h),
-        isbn_dcode: (h[h.len() - <span class="number">1</span>] % <span class="number">2</span>) <span class="kw">as </span>i8
-      })<span class="question-mark">?</span>;
-    }
-
-    writer.finish()<span class="question-mark">?</span>;
-
-    <span class="prelude-val">Ok</span>(())
-  }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

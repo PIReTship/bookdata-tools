@@ -116,16 +116,23 @@
 <span id="116">116</span>
 <span id="117">117</span>
 <span id="118">118</span>
-</pre><pre class="rust"><code><span class="kw">use </span>std::io::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span>std::io::{Lines};
-<span class="kw">use </span>std::error::Error;
-<span class="kw">use </span>std::str::FromStr;
-<span class="kw">use </span>std::path::Path;
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+</pre><pre class="rust"><code><span class="kw">use </span>std::error::Error;
+<span class="kw">use </span>std::io::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>std::io::Lines;
 <span class="kw">use </span>std::marker::PhantomData;
+<span class="kw">use </span>std::path::Path;
+<span class="kw">use </span>std::str::FromStr;
 
+<span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>indicatif::ProgressBar;
 <span class="kw">use </span>log::<span class="kw-2">*</span>;
-<span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>serde::de::DeserializeOwned;
 
 <span class="kw">use </span><span class="kw">super</span>::compress::{open_gzin_progress, open_solo_zip};
@@ -133,106 +140,113 @@
 
 <span class="doccomment">/// Read lines from a file with buffering, decompression, and parsing.
 </span><span class="kw">pub struct </span>LineProcessor {
-  reader: Box&lt;<span class="kw">dyn </span>BufRead&gt;,
+    reader: Box&lt;<span class="kw">dyn </span>BufRead&gt;,
 }
 
 <span class="kw">pub struct </span>Records&lt;R&gt; {
-  lines: Lines&lt;Box&lt;<span class="kw">dyn </span>BufRead&gt;&gt;,
-  phantom: PhantomData&lt;R&gt;
+    lines: Lines&lt;Box&lt;<span class="kw">dyn </span>BufRead&gt;&gt;,
+    phantom: PhantomData&lt;R&gt;,
 }
 
-<span class="kw">impl </span>&lt;R: FromStr&gt; Iterator <span class="kw">for </span>Records&lt;R&gt; <span class="kw">where </span>R::Err : <span class="lifetime">&#39;static </span>+ Error + Send + Sync {
-  <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;R&gt;;
+<span class="kw">impl</span>&lt;R: FromStr&gt; Iterator <span class="kw">for </span>Records&lt;R&gt;
+<span class="kw">where
+    </span>R::Err: <span class="lifetime">&#39;static </span>+ Error + Send + Sync,
+{
+    <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;R&gt;;
 
-  <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
-    <span class="self">self</span>.lines.next().map(|l| {
-      <span class="kw">let </span>line = l<span class="question-mark">?</span>;
-      <span class="kw">let </span>rec = line.parse()<span class="question-mark">?</span>;
-      <span class="prelude-val">Ok</span>(rec)
-    })
-  }
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
+        <span class="self">self</span>.lines.next().map(|l| {
+            <span class="kw">let </span>line = l<span class="question-mark">?</span>;
+            <span class="kw">let </span>rec = line.parse()<span class="question-mark">?</span>;
+            <span class="prelude-val">Ok</span>(rec)
+        })
+    }
 }
 
 <span class="kw">pub struct </span>JSONRecords&lt;R&gt; {
-  lines: Lines&lt;Box&lt;<span class="kw">dyn </span>BufRead&gt;&gt;,
-  phantom: PhantomData&lt;R&gt;
+    lines: Lines&lt;Box&lt;<span class="kw">dyn </span>BufRead&gt;&gt;,
+    phantom: PhantomData&lt;R&gt;,
 }
 
-<span class="kw">impl </span>&lt;R: DeserializeOwned&gt; Iterator <span class="kw">for </span>JSONRecords&lt;R&gt; {
-  <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;R&gt;;
+<span class="kw">impl</span>&lt;R: DeserializeOwned&gt; Iterator <span class="kw">for </span>JSONRecords&lt;R&gt; {
+    <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;R&gt;;
 
-  <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
-    <span class="self">self</span>.lines.next().map(|l| {
-      <span class="kw">let </span>line = l<span class="question-mark">?</span>;
-      <span class="kw">let </span>rec = serde_json::from_str(<span class="kw-2">&amp;</span>line)<span class="question-mark">?</span>;
-      <span class="prelude-val">Ok</span>(rec)
-    })
-  }
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
+        <span class="self">self</span>.lines.next().map(|l| {
+            <span class="kw">let </span>line = l<span class="question-mark">?</span>;
+            <span class="kw">let </span>rec = serde_json::from_str(<span class="kw-2">&amp;</span>line)<span class="question-mark">?</span>;
+            <span class="prelude-val">Ok</span>(rec)
+        })
+    }
 }
 
 <span class="kw">impl </span>LineProcessor {
-  <span class="doccomment">/// Open a line processor from a gzipped source.
-  </span><span class="kw">pub fn </span>open_gzip(path: <span class="kw-2">&amp;</span>Path, pb: ProgressBar) -&gt; <span class="prelude-ty">Result</span>&lt;LineProcessor&gt; {
-    <span class="kw">let </span>read = open_gzin_progress(path, pb)<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(LineProcessor {
-      reader: Box::new(read),
-    })
-  }
-
-  <span class="doccomment">/// Open a line processor from a zipped source.
-  </span><span class="attribute">#[allow(dead_code)]
-  </span><span class="kw">pub fn </span>open_solo_zip(path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;LineProcessor&gt; {
-    <span class="kw">let </span>read = open_solo_zip(path)<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(LineProcessor {
-      reader: Box::new(read),
-    })
-  }
-
-  <span class="doccomment">/// Get the lines as strings.
-  </span><span class="attribute">#[allow(dead_code)]
-  </span><span class="kw">pub fn </span>lines(<span class="self">self</span>) -&gt; Lines&lt;Box&lt;<span class="kw">dyn </span>BufRead&gt;&gt; {
-    <span class="self">self</span>.reader.lines()
-  }
-
-  <span class="doccomment">/// Get the lines as records.
-  </span><span class="kw">pub fn </span>records&lt;R: FromStr&gt;(<span class="self">self</span>) -&gt; Records&lt;R&gt; {
-    Records {
-      lines: <span class="self">self</span>.reader.lines(),
-      phantom: PhantomData,
-    }
-  }
-
-  <span class="doccomment">/// Get the lines as JSON records.
-  </span><span class="kw">pub fn </span>json_records&lt;R: DeserializeOwned&gt;(<span class="self">self</span>) -&gt; JSONRecords&lt;R&gt; {
-    JSONRecords {
-      lines: <span class="self">self</span>.reader.lines(),
-      phantom: PhantomData,
-    }
-  }
-
-  <span class="doccomment">/// Process JSON rows into an object writer.
-  ///
-  /// This parses each line of the data set, deserializes it with JSON, and passes the resulting object
-  /// to the specified [ObjectWriter].  It produces useful error messages with line numbers when there
-  /// is a failure. It does **not** call [ObjectWriter::finish] when it is done - the caller needs to do that.
-  </span><span class="kw">pub fn </span>process_json&lt;W, R&gt;(<span class="self">self</span>, writer: <span class="kw-2">&amp;mut </span>W) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; <span class="kw">where </span>R: DeserializeOwned, W: ObjectWriter&lt;R&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>line_no = <span class="number">0</span>;
-    <span class="kw">for </span>line <span class="kw">in </span><span class="self">self</span>.json_records() {
-      line_no += <span class="number">1</span>;
-      <span class="kw">let </span>obj: R = line.map_err(|e| {
-        <span class="macro">error!</span>(<span class="string">&quot;error parsing line {}: {:?}&quot;</span>, line_no, e);
-        e
-      })<span class="question-mark">?</span>;
-      writer.write_object(obj).map_err(|e| {
-        <span class="macro">error!</span>(<span class="string">&quot;error writing line {}: {:?}&quot;</span>, line_no, e);
-        e
-      })<span class="question-mark">?</span>;
+    <span class="doccomment">/// Open a line processor from a gzipped source.
+    </span><span class="kw">pub fn </span>open_gzip(path: <span class="kw-2">&amp;</span>Path, pb: ProgressBar) -&gt; <span class="prelude-ty">Result</span>&lt;LineProcessor&gt; {
+        <span class="kw">let </span>read = open_gzin_progress(path, pb)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(LineProcessor {
+            reader: Box::new(read),
+        })
     }
 
-    <span class="macro">debug!</span>(<span class="string">&quot;read {} lines&quot;</span>, line_no);
+    <span class="doccomment">/// Open a line processor from a zipped source.
+    </span><span class="attribute">#[allow(dead_code)]
+    </span><span class="kw">pub fn </span>open_solo_zip(path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;LineProcessor&gt; {
+        <span class="kw">let </span>read = open_solo_zip(path)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(LineProcessor {
+            reader: Box::new(read),
+        })
+    }
 
-    <span class="prelude-val">Ok</span>(line_no)
-  }
+    <span class="doccomment">/// Get the lines as strings.
+    </span><span class="attribute">#[allow(dead_code)]
+    </span><span class="kw">pub fn </span>lines(<span class="self">self</span>) -&gt; Lines&lt;Box&lt;<span class="kw">dyn </span>BufRead&gt;&gt; {
+        <span class="self">self</span>.reader.lines()
+    }
+
+    <span class="doccomment">/// Get the lines as records.
+    </span><span class="kw">pub fn </span>records&lt;R: FromStr&gt;(<span class="self">self</span>) -&gt; Records&lt;R&gt; {
+        Records {
+            lines: <span class="self">self</span>.reader.lines(),
+            phantom: PhantomData,
+        }
+    }
+
+    <span class="doccomment">/// Get the lines as JSON records.
+    </span><span class="kw">pub fn </span>json_records&lt;R: DeserializeOwned&gt;(<span class="self">self</span>) -&gt; JSONRecords&lt;R&gt; {
+        JSONRecords {
+            lines: <span class="self">self</span>.reader.lines(),
+            phantom: PhantomData,
+        }
+    }
+
+    <span class="doccomment">/// Process JSON rows into an object writer.
+    ///
+    /// This parses each line of the data set, deserializes it with JSON, and passes the resulting object
+    /// to the specified [ObjectWriter].  It produces useful error messages with line numbers when there
+    /// is a failure. It does **not** call [ObjectWriter::finish] when it is done - the caller needs to do that.
+    </span><span class="kw">pub fn </span>process_json&lt;W, R&gt;(<span class="self">self</span>, writer: <span class="kw-2">&amp;mut </span>W) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt;
+    <span class="kw">where
+        </span>R: DeserializeOwned,
+        W: ObjectWriter&lt;R&gt;,
+    {
+        <span class="kw">let </span><span class="kw-2">mut </span>line_no = <span class="number">0</span>;
+        <span class="kw">for </span>line <span class="kw">in </span><span class="self">self</span>.json_records() {
+            line_no += <span class="number">1</span>;
+            <span class="kw">let </span>obj: R = line.map_err(|e| {
+                <span class="macro">error!</span>(<span class="string">&quot;error parsing line {}: {:?}&quot;</span>, line_no, e);
+                e
+            })<span class="question-mark">?</span>;
+            writer.write_object(obj).map_err(|e| {
+                <span class="macro">error!</span>(<span class="string">&quot;error writing line {}: {:?}&quot;</span>, line_no, e);
+                e
+            })<span class="question-mark">?</span>;
+        }
+
+        <span class="macro">debug!</span>(<span class="string">&quot;read {} lines&quot;</span>, line_no);
+
+        <span class="prelude-val">Ok</span>(line_no)
+    }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

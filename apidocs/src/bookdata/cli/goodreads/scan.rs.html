@@ -100,107 +100,121 @@
 <span id="100">100</span>
 <span id="101">101</span>
 <span id="102">102</span>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::goodreads::<span class="kw-2">*</span>;
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::goodreads::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::io::object::ThreadObjectWriter;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::util::logging::data_progress;
 <span class="kw">use </span>serde::de::DeserializeOwned;
 
-
 <span class="attribute">#[derive(clap::Subcommand, Debug)]
 </span><span class="kw">pub enum </span>GRScan {
-  <span class="doccomment">/// Scan GoodReads works.
-  </span>Works(ScanInput),
-  <span class="doccomment">/// Scan GoodReads books.
-  </span>Books(ScanInput),
-  <span class="doccomment">/// Scan GoodReads genres.
-  </span>Genres(ScanInput),
-  <span class="doccomment">/// Scan GoodReads authors.
-  </span>Authors(ScanInput),
-  <span class="doccomment">/// Scan GoodReads interactions.
-  </span>Interactions(InterInput),
+    <span class="doccomment">/// Scan GoodReads works.
+    </span>Works(ScanInput),
+    <span class="doccomment">/// Scan GoodReads books.
+    </span>Books(ScanInput),
+    <span class="doccomment">/// Scan GoodReads genres.
+    </span>Genres(ScanInput),
+    <span class="doccomment">/// Scan GoodReads authors.
+    </span>Authors(ScanInput),
+    <span class="doccomment">/// Scan GoodReads interactions.
+    </span>Interactions(InterInput),
 }
 
 <span class="attribute">#[derive(Args, Debug)]
 </span><span class="kw">pub struct </span>ScanInput {
-  <span class="doccomment">/// Input file
-  </span><span class="attribute">#[arg(name = <span class="string">&quot;INPUT&quot;</span>)]
-  </span>infile: PathBuf
+    <span class="doccomment">/// Input file
+    </span><span class="attribute">#[arg(name = <span class="string">&quot;INPUT&quot;</span>)]
+    </span>infile: PathBuf,
 }
 
 <span class="doccomment">/// Input options for an interaction scan
 </span><span class="attribute">#[derive(Args, Debug)]
 </span><span class="kw">pub struct </span>InterInput {
-  <span class="doccomment">/// Book ID mapping file (only for CSV input)
-  </span><span class="attribute">#[arg(name=<span class="string">&quot;MAP&quot;</span>, long=<span class="string">&quot;book-map&quot;</span>)]
-  </span>book_map: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+    <span class="doccomment">/// Book ID mapping file (only for CSV input)
+    </span><span class="attribute">#[arg(name = <span class="string">&quot;MAP&quot;</span>, long = <span class="string">&quot;book-map&quot;</span>)]
+    </span>book_map: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
 
-  <span class="doccomment">/// Run in CSV mode
-  </span><span class="attribute">#[arg(long=<span class="string">&quot;csv&quot;</span>)]
-  </span>csv_mode: bool,
+    <span class="doccomment">/// Run in CSV mode
+    </span><span class="attribute">#[arg(long = <span class="string">&quot;csv&quot;</span>)]
+    </span>csv_mode: bool,
 
-  <span class="attribute">#[command(flatten)]
-  </span>scan: ScanInput,
+    <span class="attribute">#[command(flatten)]
+    </span>scan: ScanInput,
 }
 
 <span class="kw">fn </span>scan_gr&lt;R, W&gt;(path: <span class="kw-2">&amp;</span>Path, proc: W) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;
 <span class="kw">where
-  </span>W: ObjectWriter&lt;R&gt; + DataSink + Send + <span class="lifetime">&#39;static</span>,
-  R: DeserializeOwned + Send + Sync + <span class="lifetime">&#39;static
-</span>{
-  <span class="kw">let </span>outs: Vec&lt;<span class="kw">_</span>&gt; = proc.output_files().iter().map(|p| p.to_path_buf()).collect();
+    </span>W: ObjectWriter&lt;R&gt; + DataSink + Send + <span class="lifetime">&#39;static</span>,
+    R: DeserializeOwned + Send + Sync + <span class="lifetime">&#39;static</span>,
+{
+    <span class="kw">let </span>outs: Vec&lt;<span class="kw">_</span>&gt; = proc
+        .output_files()
+        .iter()
+        .map(|p| p.to_path_buf())
+        .collect();
 
-  <span class="macro">info!</span>(<span class="string">&quot;reading data from {}&quot;</span>, path.display());
-  <span class="kw">let </span>pb = data_progress(<span class="number">0</span>);
-  <span class="kw">let </span>read = LineProcessor::open_gzip(path, pb.clone())<span class="question-mark">?</span>;
-  <span class="kw">let </span><span class="kw-2">mut </span>writer = ThreadObjectWriter::new(proc);
-  read.process_json(<span class="kw-2">&amp;mut </span>writer)<span class="question-mark">?</span>;
-  pb.finish_and_clear();
+    <span class="macro">info!</span>(<span class="string">&quot;reading data from {}&quot;</span>, path.display());
+    <span class="kw">let </span>pb = data_progress(<span class="number">0</span>);
+    <span class="kw">let </span>read = LineProcessor::open_gzip(path, pb.clone())<span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>writer = ThreadObjectWriter::new(proc);
+    read.process_json(<span class="kw-2">&amp;mut </span>writer)<span class="question-mark">?</span>;
+    pb.finish_and_clear();
 
-  writer.finish()<span class="question-mark">?</span>;
+    writer.finish()<span class="question-mark">?</span>;
 
-  <span class="kw">for </span>out <span class="kw">in </span>outs {
-    <span class="kw">let </span>outf = out.as_path();
-    <span class="macro">info!</span>(<span class="string">&quot;output {} is {}&quot;</span>, outf.display(), friendly::bytes(file_size(outf)<span class="question-mark">?</span>));
-  }
+    <span class="kw">for </span>out <span class="kw">in </span>outs {
+        <span class="kw">let </span>outf = out.as_path();
+        <span class="macro">info!</span>(
+            <span class="string">&quot;output {} is {}&quot;</span>,
+            outf.display(),
+            friendly::bytes(file_size(outf)<span class="question-mark">?</span>)
+        );
+    }
 
-  <span class="prelude-val">Ok</span>(())
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="kw">impl </span>GRScan {
-  <span class="kw">pub fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">match </span><span class="self">self </span>{
-      GRScan::Works(opts) =&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;scanning GoodReads works&quot;</span>);
-        scan_gr(<span class="kw-2">&amp;</span>opts.infile, work::WorkWriter::open()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
-      },
-      GRScan::Books(opts) =&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;scanning GoodReads books&quot;</span>);
-        scan_gr(<span class="kw-2">&amp;</span>opts.infile, book::BookWriter::open()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
-      },
-      GRScan::Genres(opts) =&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;scanning GoodReads book genres&quot;</span>);
-        scan_gr(<span class="kw-2">&amp;</span>opts.infile, genres::BookGenreWriter::open()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
-      },
-      GRScan::Authors(opts) =&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;scanning GoodReads book genres&quot;</span>);
-        scan_gr(<span class="kw-2">&amp;</span>opts.infile, author::AuthorWriter::open()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
-      },
-      GRScan::Interactions(opts) =&gt; {
-        <span class="kw">if </span>opts.csv_mode {
-          <span class="macro">info!</span>(<span class="string">&quot;scanning simplified GoodReads interactions&quot;</span>);
-          <span class="kw">let </span>books = opts.book_map.as_ref();
-          <span class="kw">let </span>books = books.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;book map required for CSV mode&quot;</span>))<span class="question-mark">?</span>;
-          simple_interaction::scan_interaction_csv(books, <span class="kw-2">&amp;</span>opts.scan.infile)<span class="question-mark">?</span>;
-        } <span class="kw">else </span>{
-          <span class="macro">info!</span>(<span class="string">&quot;scanning GoodReads interactions&quot;</span>);
-          scan_gr(<span class="kw-2">&amp;</span>opts.scan.infile, interaction::IntWriter::open()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
-        }
-      },
-    };
+    <span class="kw">pub fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            GRScan::Works(opts) =&gt; {
+                <span class="macro">info!</span>(<span class="string">&quot;scanning GoodReads works&quot;</span>);
+                scan_gr(<span class="kw-2">&amp;</span>opts.infile, work::WorkWriter::open()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+            }
+            GRScan::Books(opts) =&gt; {
+                <span class="macro">info!</span>(<span class="string">&quot;scanning GoodReads books&quot;</span>);
+                scan_gr(<span class="kw-2">&amp;</span>opts.infile, book::BookWriter::open()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+            }
+            GRScan::Genres(opts) =&gt; {
+                <span class="macro">info!</span>(<span class="string">&quot;scanning GoodReads book genres&quot;</span>);
+                scan_gr(<span class="kw-2">&amp;</span>opts.infile, genres::BookGenreWriter::open()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+            }
+            GRScan::Authors(opts) =&gt; {
+                <span class="macro">info!</span>(<span class="string">&quot;scanning GoodReads book genres&quot;</span>);
+                scan_gr(<span class="kw-2">&amp;</span>opts.infile, author::AuthorWriter::open()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+            }
+            GRScan::Interactions(opts) =&gt; {
+                <span class="kw">if </span>opts.csv_mode {
+                    <span class="macro">info!</span>(<span class="string">&quot;scanning simplified GoodReads interactions&quot;</span>);
+                    <span class="kw">let </span>books = opts.book_map.as_ref();
+                    <span class="kw">let </span>books = books.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;book map required for CSV mode&quot;</span>))<span class="question-mark">?</span>;
+                    simple_interaction::scan_interaction_csv(books, <span class="kw-2">&amp;</span>opts.scan.infile)<span class="question-mark">?</span>;
+                } <span class="kw">else </span>{
+                    <span class="macro">info!</span>(<span class="string">&quot;scanning GoodReads interactions&quot;</span>);
+                    scan_gr(<span class="kw-2">&amp;</span>opts.scan.infile, interaction::IntWriter::open()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+                }
+            }
+        };
 
-    <span class="prelude-val">Ok</span>(())
-  }
+        <span class="prelude-val">Ok</span>(())
+    }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

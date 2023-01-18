@@ -200,14 +200,14 @@
 <span class="attribute">#[cfg(test)]
 </span><span class="kw">use </span>std::mem::drop;
 
-<span class="kw">use </span>log::<span class="kw-2">*</span>;
-<span class="kw">use </span>polars::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>arrow2::datatypes::{DataType, Field, Schema};
-<span class="kw">use </span>parquet2::write::Version;
 <span class="kw">use </span>arrow2::io::parquet::write::{FileWriter, WriteOptions};
+<span class="kw">use </span>log::<span class="kw-2">*</span>;
+<span class="kw">use </span>parquet2::write::Version;
+<span class="kw">use </span>polars::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">use </span><span class="kw">crate</span>::io::ObjectWriter;
 <span class="kw">use </span><span class="kw">super</span>::index::IdIndex;
+<span class="kw">use </span><span class="kw">crate</span>::io::ObjectWriter;
 
 <span class="kw">use </span>anyhow::Result;
 
@@ -217,176 +217,176 @@
 /// divided by label (such as different sources).  It is optimized for use cases where
 /// records are read label-by-label.
 </span><span class="kw">pub struct </span>KeyCollector {
-  index: IdIndex&lt;String&gt;,
-  count_labels: Vec&lt;String&gt;,
-  counts: Vec&lt;Vec&lt;i32&gt;&gt;,
+    index: IdIndex&lt;String&gt;,
+    count_labels: Vec&lt;String&gt;,
+    counts: Vec&lt;Vec&lt;i32&gt;&gt;,
 }
 
 <span class="kw">pub struct </span>KeyCountAccum&lt;<span class="lifetime">&#39;a</span>&gt; {
-  index: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>IdIndex&lt;String&gt;,
-  counts: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Vec&lt;i32&gt;,
+    index: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>IdIndex&lt;String&gt;,
+    counts: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Vec&lt;i32&gt;,
 }
 
 <span class="kw">impl </span>KeyCollector {
-  <span class="doccomment">/// Create a new key collector.
-  </span><span class="kw">pub fn </span>new() -&gt; KeyCollector {
-    KeyCollector {
-      index: IdIndex::new(),
-      count_labels: Vec::new(),
-      counts: Vec::new(),
-    }
-  }
-
-  <span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
-    <span class="self">self</span>.index.len()
-  }
-
-  <span class="doccomment">/// Create an accumulator to count keys with a particular source label.
-  </span><span class="kw">pub fn </span>accum&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span><span class="self">self</span>, label: <span class="kw-2">&amp;</span>str) -&gt; KeyCountAccum&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>index = <span class="prelude-val">None</span>;
-    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="self">self</span>.count_labels.len() {
-      <span class="kw">if </span><span class="self">self</span>.count_labels[i] == label {
-        index = <span class="prelude-val">Some</span>(i);
-        <span class="kw">break</span>;
-      }
-    }
-    <span class="kw">let </span>vec = <span class="kw">if let </span><span class="prelude-val">Some</span>(i) = index {
-      <span class="kw-2">&amp;mut </span><span class="self">self</span>.counts[i]
-    } <span class="kw">else </span>{
-      <span class="kw">let </span>i = <span class="self">self</span>.count_labels.len();
-      <span class="self">self</span>.count_labels.push(label.to_string());
-      <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::with_capacity(<span class="self">self</span>.index.len());
-      vec.resize(<span class="self">self</span>.len(), <span class="number">0</span>);
-      <span class="self">self</span>.counts.push(vec);
-      <span class="kw-2">&amp;mut </span><span class="self">self</span>.counts[i]
-    };
-    KeyCountAccum {
-      index: <span class="kw-2">&amp;mut </span><span class="self">self</span>.index,
-      counts: vec
-    }
-  }
-
-  <span class="doccomment">/// Save to a Parquet file.
-  </span><span class="kw">pub fn </span>save&lt;P: AsRef&lt;Path&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key_col: <span class="kw-2">&amp;</span>str, id_col: <span class="kw-2">&amp;</span>str, path: P) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
-    <span class="macro">info!</span>(<span class="string">&quot;saving accumulated keys to {:?}&quot;</span>, path.as_ref());
-
-    <span class="macro">debug!</span>(<span class="string">&quot;creating data frame&quot;</span>);
-    <span class="kw">let </span><span class="kw-2">mut </span>df = <span class="self">self</span>.to_data_frame(id_col, key_col)<span class="question-mark">?</span>;
-    <span class="macro">debug!</span>(<span class="string">&quot;rechunking&quot;</span>);
-    df.rechunk();
-
-    <span class="macro">debug!</span>(<span class="string">&quot;opening file&quot;</span>);
-    <span class="kw">let </span>file = File::create(path)<span class="question-mark">?</span>;
-    <span class="kw">let </span>options = WriteOptions {
-      write_statistics: <span class="bool-val">true</span>,
-      version: Version::V2,
-      compression: ParquetCompression::Zstd(<span class="prelude-val">None</span>)
-    };
-    <span class="kw">let </span><span class="kw-2">mut </span>writer = FileWriter::try_new(file, <span class="self">self</span>.schema(id_col, key_col), options)<span class="question-mark">?</span>;
-
-    <span class="kw">for </span>chunk <span class="kw">in </span>df.iter_chunks() {
-      writer.write_object(chunk)<span class="question-mark">?</span>;
+    <span class="doccomment">/// Create a new key collector.
+    </span><span class="kw">pub fn </span>new() -&gt; KeyCollector {
+        KeyCollector {
+            index: IdIndex::new(),
+            count_labels: Vec::new(),
+            counts: Vec::new(),
+        }
     }
 
-    <span class="comment">// FIXME use write_object
-    </span>writer.end(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
-
-    <span class="prelude-val">Ok</span>(df.height())
-  }
-
-  <span class="doccomment">/// Get an Arrow [Schema] for this key collector.
-  </span><span class="kw">pub fn </span>schema(<span class="kw-2">&amp;</span><span class="self">self</span>, id_col: <span class="kw-2">&amp;</span>str, key_col: <span class="kw-2">&amp;</span>str) -&gt; Schema {
-    <span class="kw">let </span><span class="kw-2">mut </span>fields = <span class="macro">vec!</span>[
-      Field::new(id_col, DataType::Int32, <span class="bool-val">false</span>),
-      Field::new(key_col, DataType::Utf8, <span class="bool-val">false</span>)
-    ];
-    <span class="kw">for </span>l <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.count_labels {
-      fields.push(Field::new(l, DataType::Int32, <span class="bool-val">false</span>))
-    }
-    Schema {
-      fields,
-      metadata: Default::default()
-    }
-  }
-
-  <span class="doccomment">/// Create an Polars [DataFrame] for this accumulator&#39;s data.
-  </span><span class="kw">pub fn </span>to_data_frame(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id_col: <span class="kw-2">&amp;</span>str, key_col: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;DataFrame&gt; {
-    <span class="kw">let </span>len = <span class="self">self</span>.len();
-    <span class="kw">let </span><span class="kw-2">mut </span>df = <span class="self">self</span>.index.data_frame(id_col, key_col)<span class="question-mark">?</span>;
-
-    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="self">self</span>.counts.len() {
-      <span class="kw">let </span>name = <span class="self">self</span>.count_labels[i].as_str();
-      <span class="kw">let </span>counts = <span class="kw-2">&amp;mut </span><span class="self">self</span>.counts[i];
-      counts.resize(len, <span class="number">0</span>);
-      <span class="kw">let </span>col = Int32Chunked::new(name, counts);
-      df.with_column(col)<span class="question-mark">?</span>;
+    <span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.index.len()
     }
 
-    <span class="prelude-val">Ok</span>(df)
-  }
+    <span class="doccomment">/// Create an accumulator to count keys with a particular source label.
+    </span><span class="kw">pub fn </span>accum&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span><span class="self">self</span>, label: <span class="kw-2">&amp;</span>str) -&gt; KeyCountAccum&lt;<span class="lifetime">&#39;a</span>&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>index = <span class="prelude-val">None</span>;
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="self">self</span>.count_labels.len() {
+            <span class="kw">if </span><span class="self">self</span>.count_labels[i] == label {
+                index = <span class="prelude-val">Some</span>(i);
+                <span class="kw">break</span>;
+            }
+        }
+        <span class="kw">let </span>vec = <span class="kw">if let </span><span class="prelude-val">Some</span>(i) = index {
+            <span class="kw-2">&amp;mut </span><span class="self">self</span>.counts[i]
+        } <span class="kw">else </span>{
+            <span class="kw">let </span>i = <span class="self">self</span>.count_labels.len();
+            <span class="self">self</span>.count_labels.push(label.to_string());
+            <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::with_capacity(<span class="self">self</span>.index.len());
+            vec.resize(<span class="self">self</span>.len(), <span class="number">0</span>);
+            <span class="self">self</span>.counts.push(vec);
+            <span class="kw-2">&amp;mut </span><span class="self">self</span>.counts[i]
+        };
+        KeyCountAccum {
+            index: <span class="kw-2">&amp;mut </span><span class="self">self</span>.index,
+            counts: vec,
+        }
+    }
+
+    <span class="doccomment">/// Save to a Parquet file.
+    </span><span class="kw">pub fn </span>save&lt;P: AsRef&lt;Path&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key_col: <span class="kw-2">&amp;</span>str, id_col: <span class="kw-2">&amp;</span>str, path: P) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
+        <span class="macro">info!</span>(<span class="string">&quot;saving accumulated keys to {:?}&quot;</span>, path.as_ref());
+
+        <span class="macro">debug!</span>(<span class="string">&quot;creating data frame&quot;</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>df = <span class="self">self</span>.to_data_frame(id_col, key_col)<span class="question-mark">?</span>;
+        <span class="macro">debug!</span>(<span class="string">&quot;rechunking&quot;</span>);
+        df.rechunk();
+
+        <span class="macro">debug!</span>(<span class="string">&quot;opening file&quot;</span>);
+        <span class="kw">let </span>file = File::create(path)<span class="question-mark">?</span>;
+        <span class="kw">let </span>options = WriteOptions {
+            write_statistics: <span class="bool-val">true</span>,
+            version: Version::V2,
+            compression: ParquetCompression::Zstd(<span class="prelude-val">None</span>),
+        };
+        <span class="kw">let </span><span class="kw-2">mut </span>writer = FileWriter::try_new(file, <span class="self">self</span>.schema(id_col, key_col), options)<span class="question-mark">?</span>;
+
+        <span class="kw">for </span>chunk <span class="kw">in </span>df.iter_chunks() {
+            writer.write_object(chunk)<span class="question-mark">?</span>;
+        }
+
+        <span class="comment">// FIXME use write_object
+        </span>writer.end(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(df.height())
+    }
+
+    <span class="doccomment">/// Get an Arrow [Schema] for this key collector.
+    </span><span class="kw">pub fn </span>schema(<span class="kw-2">&amp;</span><span class="self">self</span>, id_col: <span class="kw-2">&amp;</span>str, key_col: <span class="kw-2">&amp;</span>str) -&gt; Schema {
+        <span class="kw">let </span><span class="kw-2">mut </span>fields = <span class="macro">vec!</span>[
+            Field::new(id_col, DataType::Int32, <span class="bool-val">false</span>),
+            Field::new(key_col, DataType::Utf8, <span class="bool-val">false</span>),
+        ];
+        <span class="kw">for </span>l <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.count_labels {
+            fields.push(Field::new(l, DataType::Int32, <span class="bool-val">false</span>))
+        }
+        Schema {
+            fields,
+            metadata: Default::default(),
+        }
+    }
+
+    <span class="doccomment">/// Create an Polars [DataFrame] for this accumulator&#39;s data.
+    </span><span class="kw">pub fn </span>to_data_frame(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id_col: <span class="kw-2">&amp;</span>str, key_col: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;DataFrame&gt; {
+        <span class="kw">let </span>len = <span class="self">self</span>.len();
+        <span class="kw">let </span><span class="kw-2">mut </span>df = <span class="self">self</span>.index.data_frame(id_col, key_col)<span class="question-mark">?</span>;
+
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="self">self</span>.counts.len() {
+            <span class="kw">let </span>name = <span class="self">self</span>.count_labels[i].as_str();
+            <span class="kw">let </span>counts = <span class="kw-2">&amp;mut </span><span class="self">self</span>.counts[i];
+            counts.resize(len, <span class="number">0</span>);
+            <span class="kw">let </span>col = Int32Chunked::new(name, counts);
+            df.with_column(col)<span class="question-mark">?</span>;
+        }
+
+        <span class="prelude-val">Ok</span>(df)
+    }
 }
 
-<span class="kw">impl </span>&lt;<span class="lifetime">&#39;a</span>&gt; KeyCountAccum&lt;<span class="lifetime">&#39;a</span>&gt; {
-  <span class="doccomment">/// Add a key to this accumulator.
-  </span><span class="kw">pub fn </span>add_key(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>str) {
-    <span class="kw">let </span>pos = <span class="self">self</span>.index.intern(key).expect(<span class="string">&quot;intern failure&quot;</span>) <span class="kw">as </span>usize - <span class="number">1</span>;
-    <span class="kw">if </span>pos &gt;= <span class="self">self</span>.counts.len() {
-      <span class="self">self</span>.counts.resize(pos + <span class="number">1</span>, <span class="number">0</span>);
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; KeyCountAccum&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="doccomment">/// Add a key to this accumulator.
+    </span><span class="kw">pub fn </span>add_key(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>str) {
+        <span class="kw">let </span>pos = <span class="self">self</span>.index.intern(key).expect(<span class="string">&quot;intern failure&quot;</span>) <span class="kw">as </span>usize - <span class="number">1</span>;
+        <span class="kw">if </span>pos &gt;= <span class="self">self</span>.counts.len() {
+            <span class="self">self</span>.counts.resize(pos + <span class="number">1</span>, <span class="number">0</span>);
+        }
+        <span class="self">self</span>.counts[pos] += <span class="number">1</span>;
     }
-    <span class="self">self</span>.counts[pos] += <span class="number">1</span>;
-  }
 
-  <span class="doccomment">/// Add an iterator&#39;s worth of keys to this accumulator.
-  </span><span class="kw">pub fn </span>add_keys&lt;I: Iterator&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, iter: I) <span class="kw">where </span>I::Item: AsRef&lt;str&gt; {
-    <span class="kw">for </span>s <span class="kw">in </span>iter {
-      <span class="kw">let </span>s = s.as_ref();
-      <span class="self">self</span>.add_key(s);
+    <span class="doccomment">/// Add an iterator&#39;s worth of keys to this accumulator.
+    </span><span class="kw">pub fn </span>add_keys&lt;I: Iterator&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, iter: I)
+    <span class="kw">where
+        </span>I::Item: AsRef&lt;str&gt;,
+    {
+        <span class="kw">for </span>s <span class="kw">in </span>iter {
+            <span class="kw">let </span>s = s.as_ref();
+            <span class="self">self</span>.add_key(s);
+        }
     }
-  }
 }
-
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_empty() {
-  <span class="kw">let </span>kc = KeyCollector::new();
-  <span class="macro">assert_eq!</span>(kc.index.len(), <span class="number">0</span>);
-  <span class="macro">assert_eq!</span>(kc.count_labels.len(), <span class="number">0</span>);
-  <span class="macro">assert_eq!</span>(kc.counts.len(), <span class="number">0</span>);
+    <span class="kw">let </span>kc = KeyCollector::new();
+    <span class="macro">assert_eq!</span>(kc.index.len(), <span class="number">0</span>);
+    <span class="macro">assert_eq!</span>(kc.count_labels.len(), <span class="number">0</span>);
+    <span class="macro">assert_eq!</span>(kc.counts.len(), <span class="number">0</span>);
 }
-
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_acc_1() {
-  <span class="kw">let </span><span class="kw-2">mut </span>kc = KeyCollector::new();
-  <span class="kw">let </span><span class="kw-2">mut </span>acc = kc.accum(<span class="string">&quot;bob&quot;</span>);
-  acc.add_key(<span class="string">&quot;wumpus&quot;</span>);
-  <span class="macro">assert_eq!</span>(kc.index.len(), <span class="number">1</span>);
-  <span class="macro">assert_eq!</span>(kc.count_labels.len(), <span class="number">1</span>);
-  <span class="macro">assert_eq!</span>(kc.counts.len(), <span class="number">1</span>);
-  <span class="macro">assert!</span>(kc.index.lookup(<span class="string">&quot;wumpus&quot;</span>).is_some());
-  <span class="macro">assert_eq!</span>(kc.count_labels[<span class="number">0</span>], <span class="string">&quot;bob&quot;</span>);
-  <span class="macro">assert_eq!</span>(kc.counts[<span class="number">0</span>][<span class="number">0</span>], <span class="number">1</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>kc = KeyCollector::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>acc = kc.accum(<span class="string">&quot;bob&quot;</span>);
+    acc.add_key(<span class="string">&quot;wumpus&quot;</span>);
+    <span class="macro">assert_eq!</span>(kc.index.len(), <span class="number">1</span>);
+    <span class="macro">assert_eq!</span>(kc.count_labels.len(), <span class="number">1</span>);
+    <span class="macro">assert_eq!</span>(kc.counts.len(), <span class="number">1</span>);
+    <span class="macro">assert!</span>(kc.index.lookup(<span class="string">&quot;wumpus&quot;</span>).is_some());
+    <span class="macro">assert_eq!</span>(kc.count_labels[<span class="number">0</span>], <span class="string">&quot;bob&quot;</span>);
+    <span class="macro">assert_eq!</span>(kc.counts[<span class="number">0</span>][<span class="number">0</span>], <span class="number">1</span>);
 }
-
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_acc_again() {
-  <span class="kw">let </span><span class="kw-2">mut </span>kc = KeyCollector::new();
-  <span class="kw">let </span><span class="kw-2">mut </span>acc = kc.accum(<span class="string">&quot;bob&quot;</span>);
-  acc.add_key(<span class="string">&quot;wumpus&quot;</span>);
-  drop(acc);
-  <span class="kw">let </span><span class="kw-2">mut </span>ac2 = kc.accum(<span class="string">&quot;albert&quot;</span>);
-  ac2.add_key(<span class="string">&quot;zzzz&quot;</span>);
-  drop(ac2);
-  <span class="macro">assert_eq!</span>(kc.index.len(), <span class="number">2</span>);
-  <span class="macro">assert_eq!</span>(kc.count_labels.len(), <span class="number">2</span>);
-  <span class="macro">assert_eq!</span>(kc.counts.len(), <span class="number">2</span>);
-  <span class="macro">assert!</span>(kc.index.lookup(<span class="string">&quot;wumpus&quot;</span>).is_some());
-  <span class="macro">assert!</span>(kc.index.lookup(<span class="string">&quot;zzzz&quot;</span>).is_some());
-  <span class="macro">assert_eq!</span>(kc.count_labels[<span class="number">0</span>], <span class="string">&quot;bob&quot;</span>);
-  <span class="macro">assert_eq!</span>(kc.counts[<span class="number">0</span>][<span class="number">0</span>], <span class="number">1</span>);
-  <span class="macro">assert_eq!</span>(kc.count_labels[<span class="number">1</span>], <span class="string">&quot;albert&quot;</span>);
-  <span class="macro">assert_eq!</span>(kc.counts[<span class="number">1</span>][<span class="number">1</span>], <span class="number">1</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>kc = KeyCollector::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>acc = kc.accum(<span class="string">&quot;bob&quot;</span>);
+    acc.add_key(<span class="string">&quot;wumpus&quot;</span>);
+    drop(acc);
+    <span class="kw">let </span><span class="kw-2">mut </span>ac2 = kc.accum(<span class="string">&quot;albert&quot;</span>);
+    ac2.add_key(<span class="string">&quot;zzzz&quot;</span>);
+    drop(ac2);
+    <span class="macro">assert_eq!</span>(kc.index.len(), <span class="number">2</span>);
+    <span class="macro">assert_eq!</span>(kc.count_labels.len(), <span class="number">2</span>);
+    <span class="macro">assert_eq!</span>(kc.counts.len(), <span class="number">2</span>);
+    <span class="macro">assert!</span>(kc.index.lookup(<span class="string">&quot;wumpus&quot;</span>).is_some());
+    <span class="macro">assert!</span>(kc.index.lookup(<span class="string">&quot;zzzz&quot;</span>).is_some());
+    <span class="macro">assert_eq!</span>(kc.count_labels[<span class="number">0</span>], <span class="string">&quot;bob&quot;</span>);
+    <span class="macro">assert_eq!</span>(kc.counts[<span class="number">0</span>][<span class="number">0</span>], <span class="number">1</span>);
+    <span class="macro">assert_eq!</span>(kc.count_labels[<span class="number">1</span>], <span class="string">&quot;albert&quot;</span>);
+    <span class="macro">assert_eq!</span>(kc.counts[<span class="number">1</span>][<span class="number">1</span>], <span class="number">1</span>);
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

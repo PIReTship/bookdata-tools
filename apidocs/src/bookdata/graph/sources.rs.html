@@ -143,14 +143,6 @@
 <span id="143">143</span>
 <span id="144">144</span>
 <span id="145">145</span>
-<span id="146">146</span>
-<span id="147">147</span>
-<span id="148">148</span>
-<span id="149">149</span>
-<span id="150">150</span>
-<span id="151">151</span>
-<span id="152">152</span>
-<span id="153">153</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::fmt::Debug;
 
 <span class="kw">use </span>anyhow::Result;
@@ -161,11 +153,11 @@
 <span class="kw">use </span><span class="kw">crate</span>::util::default;
 
 <span class="kw">pub trait </span>EdgeRead: Debug {
-  <span class="kw">fn </span>read_edges(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt;;
+    <span class="kw">fn </span>read_edges(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt;;
 }
 
 <span class="kw">pub trait </span>NodeRead: Debug {
-  <span class="kw">fn </span>read_node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt;;
+    <span class="kw">fn </span>read_node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt;;
 }
 
 <span class="attribute">#[derive(Debug)]
@@ -183,126 +175,118 @@
 
 <span class="doccomment">/// Get an ID column and apply the appropriate namespace adjustment.
 </span><span class="kw">fn </span>id_col(name: <span class="kw-2">&amp;</span>str, ns: NS&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Expr {
-  col(name) + lit(ns.base())
+    col(name) + lit(ns.base())
 }
 
 <span class="kw">impl </span>NodeRead <span class="kw">for </span>ISBN {
-  <span class="kw">fn </span>read_node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
-    <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;book-links/all-isbns.parquet&quot;</span>, default())<span class="question-mark">?</span>;
-    <span class="kw">let </span>df = df.select([
-      id_col(<span class="string">&quot;isbn_id&quot;</span>, NS_ISBN).alias(<span class="string">&quot;code&quot;</span>),
-      col(<span class="string">&quot;isbn&quot;</span>).alias(<span class="string">&quot;label&quot;</span>)
-    ]);
-    <span class="prelude-val">Ok</span>(df)
-  }
+    <span class="kw">fn </span>read_node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
+        <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;book-links/all-isbns.parquet&quot;</span>, default())<span class="question-mark">?</span>;
+        <span class="kw">let </span>df = df.select([
+            id_col(<span class="string">&quot;isbn_id&quot;</span>, NS_ISBN).alias(<span class="string">&quot;code&quot;</span>),
+            col(<span class="string">&quot;isbn&quot;</span>).alias(<span class="string">&quot;label&quot;</span>),
+        ]);
+        <span class="prelude-val">Ok</span>(df)
+    }
 }
 
 <span class="kw">impl </span>NodeRead <span class="kw">for </span>LOC {
-  <span class="kw">fn </span>read_node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
-    <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;loc-mds/book-ids.parquet&quot;</span>, default())<span class="question-mark">?</span>;
-    <span class="kw">let </span>df = df.select([
-      id_col(<span class="string">&quot;rec_id&quot;</span>, NS_LOC_REC).alias(<span class="string">&quot;code&quot;</span>)
-    ]);
-    <span class="prelude-val">Ok</span>(df)
-  }
+    <span class="kw">fn </span>read_node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
+        <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;loc-mds/book-ids.parquet&quot;</span>, default())<span class="question-mark">?</span>;
+        <span class="kw">let </span>df = df.select([id_col(<span class="string">&quot;rec_id&quot;</span>, NS_LOC_REC).alias(<span class="string">&quot;code&quot;</span>)]);
+        <span class="prelude-val">Ok</span>(df)
+    }
 }
 
 <span class="kw">impl </span>EdgeRead <span class="kw">for </span>LOC {
-  <span class="kw">fn </span>read_edges(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
-    <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;loc-mds/book-isbn-ids.parquet&quot;</span>, default())<span class="question-mark">?</span>;
-    <span class="kw">let </span>df = df.select([
-      id_col(<span class="string">&quot;isbn_id&quot;</span>, NS_ISBN).alias(<span class="string">&quot;src&quot;</span>),
-      id_col(<span class="string">&quot;rec_id&quot;</span>, NS_LOC_REC).alias(<span class="string">&quot;dst&quot;</span>)
-    ]);
-    <span class="prelude-val">Ok</span>(df)
-  }
+    <span class="kw">fn </span>read_edges(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
+        <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;loc-mds/book-isbn-ids.parquet&quot;</span>, default())<span class="question-mark">?</span>;
+        <span class="kw">let </span>df = df.select([
+            id_col(<span class="string">&quot;isbn_id&quot;</span>, NS_ISBN).alias(<span class="string">&quot;src&quot;</span>),
+            id_col(<span class="string">&quot;rec_id&quot;</span>, NS_LOC_REC).alias(<span class="string">&quot;dst&quot;</span>),
+        ]);
+        <span class="prelude-val">Ok</span>(df)
+    }
 }
 
 <span class="kw">impl </span>NodeRead <span class="kw">for </span>OLEditions {
-  <span class="kw">fn </span>read_node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
-    <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;openlibrary/editions.parquet&quot;</span>, default())<span class="question-mark">?</span>;
-    <span class="kw">let </span>df = df.select([
-      id_col(<span class="string">&quot;id&quot;</span>, NS_EDITION).alias(<span class="string">&quot;code&quot;</span>)
-    ]);
-    <span class="prelude-val">Ok</span>(df)
-  }
+    <span class="kw">fn </span>read_node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
+        <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;openlibrary/editions.parquet&quot;</span>, default())<span class="question-mark">?</span>;
+        <span class="kw">let </span>df = df.select([id_col(<span class="string">&quot;id&quot;</span>, NS_EDITION).alias(<span class="string">&quot;code&quot;</span>)]);
+        <span class="prelude-val">Ok</span>(df)
+    }
 }
 
 <span class="kw">impl </span>EdgeRead <span class="kw">for </span>OLEditions {
-  <span class="kw">fn </span>read_edges(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
-    <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;openlibrary/edition-isbn-ids.parquet&quot;</span>, default())<span class="question-mark">?</span>;
-    <span class="kw">let </span>df = df.select([
-      id_col(<span class="string">&quot;isbn_id&quot;</span>, NS_ISBN).alias(<span class="string">&quot;src&quot;</span>),
-      id_col(<span class="string">&quot;edition&quot;</span>, NS_EDITION).alias(<span class="string">&quot;dst&quot;</span>)
-    ]);
-    <span class="prelude-val">Ok</span>(df)
-  }
+    <span class="kw">fn </span>read_edges(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
+        <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;openlibrary/edition-isbn-ids.parquet&quot;</span>, default())<span class="question-mark">?</span>;
+        <span class="kw">let </span>df = df.select([
+            id_col(<span class="string">&quot;isbn_id&quot;</span>, NS_ISBN).alias(<span class="string">&quot;src&quot;</span>),
+            id_col(<span class="string">&quot;edition&quot;</span>, NS_EDITION).alias(<span class="string">&quot;dst&quot;</span>),
+        ]);
+        <span class="prelude-val">Ok</span>(df)
+    }
 }
 
 <span class="kw">impl </span>NodeRead <span class="kw">for </span>OLWorks {
-  <span class="kw">fn </span>read_node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
-    <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;openlibrary/all-works.parquet&quot;</span>, default())<span class="question-mark">?</span>;
-    <span class="kw">let </span>df = df.select([
-      id_col(<span class="string">&quot;id&quot;</span>, NS_WORK).alias(<span class="string">&quot;code&quot;</span>),
-      col(<span class="string">&quot;key&quot;</span>).alias(<span class="string">&quot;label&quot;</span>)
-    ]);
-    <span class="prelude-val">Ok</span>(df)
-  }
+    <span class="kw">fn </span>read_node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
+        <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;openlibrary/all-works.parquet&quot;</span>, default())<span class="question-mark">?</span>;
+        <span class="kw">let </span>df = df.select([
+            id_col(<span class="string">&quot;id&quot;</span>, NS_WORK).alias(<span class="string">&quot;code&quot;</span>),
+            col(<span class="string">&quot;key&quot;</span>).alias(<span class="string">&quot;label&quot;</span>),
+        ]);
+        <span class="prelude-val">Ok</span>(df)
+    }
 }
 
 <span class="kw">impl </span>EdgeRead <span class="kw">for </span>OLWorks {
-  <span class="kw">fn </span>read_edges(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
-    <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;openlibrary/edition-works.parquet&quot;</span>, default())<span class="question-mark">?</span>;
-    <span class="kw">let </span>df = df.select([
-      id_col(<span class="string">&quot;edition&quot;</span>, NS_EDITION).alias(<span class="string">&quot;src&quot;</span>),
-      id_col(<span class="string">&quot;work&quot;</span>, NS_WORK).alias(<span class="string">&quot;dst&quot;</span>)
-    ]);
-    <span class="prelude-val">Ok</span>(df)
-  }
+    <span class="kw">fn </span>read_edges(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
+        <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;openlibrary/edition-works.parquet&quot;</span>, default())<span class="question-mark">?</span>;
+        <span class="kw">let </span>df = df.select([
+            id_col(<span class="string">&quot;edition&quot;</span>, NS_EDITION).alias(<span class="string">&quot;src&quot;</span>),
+            id_col(<span class="string">&quot;work&quot;</span>, NS_WORK).alias(<span class="string">&quot;dst&quot;</span>),
+        ]);
+        <span class="prelude-val">Ok</span>(df)
+    }
 }
 
 <span class="kw">impl </span>NodeRead <span class="kw">for </span>GRBooks {
-  <span class="kw">fn </span>read_node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
-    <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;goodreads/gr-book-ids.parquet&quot;</span>, default())<span class="question-mark">?</span>;
-    <span class="kw">let </span>df = df.select([
-      id_col(<span class="string">&quot;book_id&quot;</span>, NS_GR_BOOK).alias(<span class="string">&quot;code&quot;</span>)
-    ]);
-    <span class="prelude-val">Ok</span>(df)
-  }
+    <span class="kw">fn </span>read_node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
+        <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;goodreads/gr-book-ids.parquet&quot;</span>, default())<span class="question-mark">?</span>;
+        <span class="kw">let </span>df = df.select([id_col(<span class="string">&quot;book_id&quot;</span>, NS_GR_BOOK).alias(<span class="string">&quot;code&quot;</span>)]);
+        <span class="prelude-val">Ok</span>(df)
+    }
 }
 
 <span class="kw">impl </span>EdgeRead <span class="kw">for </span>GRBooks {
-  <span class="kw">fn </span>read_edges(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
-    <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;goodreads/book-isbn-ids.parquet&quot;</span>, default())<span class="question-mark">?</span>;
-    <span class="kw">let </span>df = df.select([
-      id_col(<span class="string">&quot;isbn_id&quot;</span>, NS_ISBN).alias(<span class="string">&quot;src&quot;</span>),
-      id_col(<span class="string">&quot;book_id&quot;</span>, NS_GR_BOOK).alias(<span class="string">&quot;dst&quot;</span>)
-    ]);
-    <span class="prelude-val">Ok</span>(df)
-  }
+    <span class="kw">fn </span>read_edges(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
+        <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;goodreads/book-isbn-ids.parquet&quot;</span>, default())<span class="question-mark">?</span>;
+        <span class="kw">let </span>df = df.select([
+            id_col(<span class="string">&quot;isbn_id&quot;</span>, NS_ISBN).alias(<span class="string">&quot;src&quot;</span>),
+            id_col(<span class="string">&quot;book_id&quot;</span>, NS_GR_BOOK).alias(<span class="string">&quot;dst&quot;</span>),
+        ]);
+        <span class="prelude-val">Ok</span>(df)
+    }
 }
 
 <span class="kw">impl </span>NodeRead <span class="kw">for </span>GRWorks {
-  <span class="kw">fn </span>read_node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
-    <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;goodreads/gr-book-ids.parquet&quot;</span>, default())<span class="question-mark">?</span>;
-    <span class="kw">let </span>df = df.filter(col(<span class="string">&quot;work_id&quot;</span>).is_not_null());
-    <span class="kw">let </span>df = df.select([
-      id_col(<span class="string">&quot;work_id&quot;</span>, NS_GR_WORK).alias(<span class="string">&quot;code&quot;</span>)
-    ]);
-    <span class="prelude-val">Ok</span>(df)
-  }
+    <span class="kw">fn </span>read_node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
+        <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;goodreads/gr-book-ids.parquet&quot;</span>, default())<span class="question-mark">?</span>;
+        <span class="kw">let </span>df = df.filter(col(<span class="string">&quot;work_id&quot;</span>).is_not_null());
+        <span class="kw">let </span>df = df.select([id_col(<span class="string">&quot;work_id&quot;</span>, NS_GR_WORK).alias(<span class="string">&quot;code&quot;</span>)]);
+        <span class="prelude-val">Ok</span>(df)
+    }
 }
 
 <span class="kw">impl </span>EdgeRead <span class="kw">for </span>GRWorks {
-  <span class="kw">fn </span>read_edges(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
-    <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;goodreads/gr-book-ids.parquet&quot;</span>, default())<span class="question-mark">?</span>;
-    <span class="kw">let </span>df = df.filter(col(<span class="string">&quot;work_id&quot;</span>).is_not_null());
-    <span class="kw">let </span>df = df.select([
-      id_col(<span class="string">&quot;book_id&quot;</span>, NS_GR_BOOK).alias(<span class="string">&quot;src&quot;</span>),
-      id_col(<span class="string">&quot;work_id&quot;</span>, NS_GR_WORK).alias(<span class="string">&quot;dst&quot;</span>)
-    ]);
-    <span class="prelude-val">Ok</span>(df)
-  }
+    <span class="kw">fn </span>read_edges(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
+        <span class="kw">let </span>df = LazyFrame::scan_parquet(<span class="string">&quot;goodreads/gr-book-ids.parquet&quot;</span>, default())<span class="question-mark">?</span>;
+        <span class="kw">let </span>df = df.filter(col(<span class="string">&quot;work_id&quot;</span>).is_not_null());
+        <span class="kw">let </span>df = df.select([
+            id_col(<span class="string">&quot;book_id&quot;</span>, NS_GR_BOOK).alias(<span class="string">&quot;src&quot;</span>),
+            id_col(<span class="string">&quot;work_id&quot;</span>, NS_GR_WORK).alias(<span class="string">&quot;dst&quot;</span>),
+        ]);
+        <span class="prelude-val">Ok</span>(df)
+    }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -89,96 +89,116 @@
 <span id="89">89</span>
 <span id="90">90</span>
 <span id="91">91</span>
-</pre><pre class="rust"><code><span class="kw">use </span>std::path::Path;
-<span class="kw">use </span>anyhow::Result;
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+</pre><pre class="rust"><code><span class="kw">use </span>anyhow::Result;
+<span class="kw">use </span>std::path::Path;
 
-<span class="kw">use </span><span class="kw">crate</span>::arrow::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">super</span>::record::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::arrow::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::io::<span class="kw-2">*</span>;
 
 <span class="doccomment">/// Flat MARC field record.
 </span><span class="attribute">#[derive(ArrowField, Debug, Default)]
 </span><span class="kw">pub struct </span>FieldRecord {
-  <span class="kw">pub </span>rec_id: u32,
-  <span class="kw">pub </span>fld_no: u32,
-  <span class="kw">pub </span>tag: i16,
-  <span class="kw">pub </span>ind1: u8,
-  <span class="kw">pub </span>ind2: u8,
-  <span class="kw">pub </span>sf_code: u8,
-  <span class="kw">pub </span>contents: String,
+    <span class="kw">pub </span>rec_id: u32,
+    <span class="kw">pub </span>fld_no: u32,
+    <span class="kw">pub </span>tag: i16,
+    <span class="kw">pub </span>ind1: u8,
+    <span class="kw">pub </span>ind2: u8,
+    <span class="kw">pub </span>sf_code: u8,
+    <span class="kw">pub </span>contents: String,
 }
 
 <span class="doccomment">/// Output for writing flat MARC fields to Parquet.
 </span><span class="kw">pub struct </span>FieldOutput {
-  rec_count: u32,
-  writer: TableWriter&lt;FieldRecord&gt;
+    rec_count: u32,
+    writer: TableWriter&lt;FieldRecord&gt;,
 }
 
 <span class="kw">impl </span>FieldOutput {
-  <span class="doccomment">/// Create a new output.
-  </span><span class="kw">pub fn </span>new(writer: TableWriter&lt;FieldRecord&gt;) -&gt; FieldOutput {
-    FieldOutput {
-      rec_count: <span class="number">0</span>,
-      writer
+    <span class="doccomment">/// Create a new output.
+    </span><span class="kw">pub fn </span>new(writer: TableWriter&lt;FieldRecord&gt;) -&gt; FieldOutput {
+        FieldOutput {
+            rec_count: <span class="number">0</span>,
+            writer,
+        }
     }
-  }
 
-  <span class="doccomment">/// Open a field output going to a file.
-  </span><span class="kw">pub fn </span>open&lt;P: AsRef&lt;Path&gt;&gt;(path: P) -&gt; <span class="prelude-ty">Result</span>&lt;FieldOutput&gt; {
-    <span class="kw">let </span>writer = TableWriter::open(path)<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(<span class="self">Self</span>::new(writer))
-  }
+    <span class="doccomment">/// Open a field output going to a file.
+    </span><span class="kw">pub fn </span>open&lt;P: AsRef&lt;Path&gt;&gt;(path: P) -&gt; <span class="prelude-ty">Result</span>&lt;FieldOutput&gt; {
+        <span class="kw">let </span>writer = TableWriter::open(path)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(<span class="self">Self</span>::new(writer))
+    }
 }
 
 <span class="kw">impl </span>DataSink <span class="kw">for </span>FieldOutput {
-  <span class="kw">fn </span>output_files(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;std::path::PathBuf&gt; {
-    <span class="self">self</span>.writer.output_files()
-  }
+    <span class="kw">fn </span>output_files(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;std::path::PathBuf&gt; {
+        <span class="self">self</span>.writer.output_files()
+    }
 }
 
 <span class="kw">impl </span>ObjectWriter&lt;MARCRecord&gt; <span class="kw">for </span>FieldOutput {
-  <span class="kw">fn </span>write_object(<span class="kw-2">&amp;mut </span><span class="self">self</span>, rec: MARCRecord) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="self">self</span>.rec_count += <span class="number">1</span>;
-    <span class="kw">let </span>rec_id = <span class="self">self</span>.rec_count;
-    <span class="kw">let </span><span class="kw-2">mut </span>fld_no = <span class="number">0</span>;
+    <span class="kw">fn </span>write_object(<span class="kw-2">&amp;mut </span><span class="self">self</span>, rec: MARCRecord) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.rec_count += <span class="number">1</span>;
+        <span class="kw">let </span>rec_id = <span class="self">self</span>.rec_count;
+        <span class="kw">let </span><span class="kw-2">mut </span>fld_no = <span class="number">0</span>;
 
-    <span class="comment">// write the leader
-    </span><span class="self">self</span>.writer.write_object(FieldRecord {
-      rec_id, fld_no,
-      tag: -<span class="number">1</span>,
-      ind1: <span class="number">0</span>.into(), ind2: <span class="number">0</span>.into(), sf_code: <span class="number">0</span>.into(),
-      contents: rec.leader
-    })<span class="question-mark">?</span>;
-
-    <span class="comment">// write the control fields
-    </span><span class="kw">for </span>cf <span class="kw">in </span>rec.control {
-      fld_no += <span class="number">1</span>;
-      <span class="self">self</span>.writer.write_object(FieldRecord {
-        rec_id, fld_no, tag: cf.tag.into(),
-        ind1: <span class="number">0</span>.into(), ind2: <span class="number">0</span>.into(), sf_code: <span class="number">0</span>.into(),
-        contents: cf.content
-      })<span class="question-mark">?</span>;
-    }
-
-    <span class="comment">// write the data fields
-    </span><span class="kw">for </span>df <span class="kw">in </span>rec.fields {
-      <span class="kw">for </span>sf <span class="kw">in </span>df.subfields {
-        fld_no += <span class="number">1</span>;
-        <span class="self">self</span>.writer.write_object(FieldRecord {
-          rec_id, fld_no,
-          tag: df.tag, ind1: df.ind1.into(), ind2: df.ind2.into(),
-          sf_code: sf.code.into(),
-          contents: sf.content
+        <span class="comment">// write the leader
+        </span><span class="self">self</span>.writer.write_object(FieldRecord {
+            rec_id,
+            fld_no,
+            tag: -<span class="number">1</span>,
+            ind1: <span class="number">0</span>.into(),
+            ind2: <span class="number">0</span>.into(),
+            sf_code: <span class="number">0</span>.into(),
+            contents: rec.leader,
         })<span class="question-mark">?</span>;
-      }
+
+        <span class="comment">// write the control fields
+        </span><span class="kw">for </span>cf <span class="kw">in </span>rec.control {
+            fld_no += <span class="number">1</span>;
+            <span class="self">self</span>.writer.write_object(FieldRecord {
+                rec_id,
+                fld_no,
+                tag: cf.tag.into(),
+                ind1: <span class="number">0</span>.into(),
+                ind2: <span class="number">0</span>.into(),
+                sf_code: <span class="number">0</span>.into(),
+                contents: cf.content,
+            })<span class="question-mark">?</span>;
+        }
+
+        <span class="comment">// write the data fields
+        </span><span class="kw">for </span>df <span class="kw">in </span>rec.fields {
+            <span class="kw">for </span>sf <span class="kw">in </span>df.subfields {
+                fld_no += <span class="number">1</span>;
+                <span class="self">self</span>.writer.write_object(FieldRecord {
+                    rec_id,
+                    fld_no,
+                    tag: df.tag,
+                    ind1: df.ind1.into(),
+                    ind2: df.ind2.into(),
+                    sf_code: sf.code.into(),
+                    contents: sf.content,
+                })<span class="question-mark">?</span>;
+            }
+        }
+
+        <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="prelude-val">Ok</span>(())
-  }
-
-  <span class="kw">fn </span>finish(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
-    <span class="self">self</span>.writer.finish()
-  }
+    <span class="kw">fn </span>finish(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
+        <span class="self">self</span>.writer.finish()
+    }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

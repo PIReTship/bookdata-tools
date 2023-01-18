@@ -132,139 +132,155 @@
 <span id="132">132</span>
 <span id="133">133</span>
 <span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Support for streaming objects from a Parquet file.
-</span><span class="kw">use </span>std::path::Path;
-<span class="kw">use </span>std::fs::File;
+</span><span class="kw">use </span>std::fs::File;
+<span class="kw">use </span>std::path::Path;
 <span class="kw">use </span>std::thread::spawn;
 
-<span class="kw">use </span>crossbeam::channel::{Receiver, bounded};
+<span class="kw">use </span>crossbeam::channel::{bounded, Receiver};
 
+<span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>arrow2::chunk::Chunk;
 <span class="kw">use </span>log::<span class="kw-2">*</span>;
-<span class="kw">use </span>anyhow::Result;
 
 <span class="kw">use </span>arrow2::array::{Array, StructArray};
-<span class="kw">use </span>arrow2::io::parquet::read::{FileReader, read_metadata, infer_schema};
+<span class="kw">use </span>arrow2::io::parquet::read::{infer_schema, read_metadata, FileReader};
 
 <span class="kw">use </span>arrow2_convert::deserialize::<span class="kw-2">*</span>;
 
 <span class="doccomment">/// Iterator over deserialized records from a Parquet file.
-</span><span class="kw">pub struct </span>RecordIter&lt;R&gt; <span class="kw">where </span>R: ArrowDeserialize + Send + Sync + <span class="lifetime">&#39;static</span>, <span class="kw">for </span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>R::ArrayType: IntoIterator {
-  remaining: usize,
-  channel: Receiver&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;R&gt;&gt;&gt;,
-  batch: <span class="prelude-ty">Option</span>&lt;std::vec::IntoIter&lt;R&gt;&gt;,
+</span><span class="kw">pub struct </span>RecordIter&lt;R&gt;
+<span class="kw">where
+    </span>R: ArrowDeserialize + Send + Sync + <span class="lifetime">&#39;static</span>,
+    <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>R::ArrayType: IntoIterator,
+{
+    remaining: usize,
+    channel: Receiver&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;R&gt;&gt;&gt;,
+    batch: <span class="prelude-ty">Option</span>&lt;std::vec::IntoIter&lt;R&gt;&gt;,
 }
 
-<span class="kw">impl </span>&lt;R&gt; RecordIter&lt;R&gt; <span class="kw">where </span>R: ArrowDeserialize + Send + Sync + <span class="lifetime">&#39;static</span>, <span class="kw">for </span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>R::ArrayType: IntoIterator {
-  <span class="kw">pub fn </span>remaining(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
-    <span class="self">self</span>.remaining
-  }
+<span class="kw">impl</span>&lt;R&gt; RecordIter&lt;R&gt;
+<span class="kw">where
+    </span>R: ArrowDeserialize + Send + Sync + <span class="lifetime">&#39;static</span>,
+    <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>R::ArrayType: IntoIterator,
+{
+    <span class="kw">pub fn </span>remaining(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.remaining
+    }
 }
 
 <span class="kw">fn </span>decode_chunk&lt;R, E&gt;(chunk: <span class="prelude-ty">Result</span>&lt;Chunk&lt;Box&lt;<span class="kw">dyn </span>Array&gt;&gt;, E&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;R&gt;&gt;
 <span class="kw">where
-  </span>R: ArrowDeserialize&lt;Type=R&gt; + Send + Sync + <span class="lifetime">&#39;static</span>,
-  <span class="kw">for </span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>R::ArrayType: IntoIterator&lt;Item=<span class="prelude-ty">Option</span>&lt;R&gt;&gt;,
-  E: std::error::Error + Send + Sync + <span class="lifetime">&#39;static
-</span>{
-  <span class="kw">let </span>chunk = chunk<span class="question-mark">?</span>;
-  <span class="kw">let </span>chunk_size = chunk.len();
-  <span class="kw">let </span>sa = StructArray::try_new(R::data_type(), chunk.into_arrays(), <span class="prelude-val">None</span>).map_err(|e| {
-    <span class="macro">error!</span>(<span class="string">&quot;error decoding struct array: {:?}&quot;</span>, e);
-    e
-  })<span class="question-mark">?</span>;
-  <span class="kw">let </span>sa: Box&lt;<span class="kw">dyn </span>Array&gt; = Box::new(sa);
-  <span class="kw">let </span>sadt = sa.data_type().clone();
-  <span class="kw">let </span>recs: Vec&lt;R&gt; = sa.try_into_collection().map_err(|e| {
-    <span class="macro">error!</span>(<span class="string">&quot;error deserializing batch: {:?}&quot;</span>, e);
-    <span class="macro">info!</span>(<span class="string">&quot;chunk schema: {:?}&quot;</span>, sadt);
-    <span class="macro">info!</span>(<span class="string">&quot;target schema: {:?}&quot;</span>, R::data_type());
-    e
-  })<span class="question-mark">?</span>;
-  <span class="macro">assert_eq!</span>(recs.len(), chunk_size);
-  <span class="prelude-val">Ok</span>(recs)
+    </span>R: ArrowDeserialize&lt;Type = R&gt; + Send + Sync + <span class="lifetime">&#39;static</span>,
+    <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>R::ArrayType: IntoIterator&lt;Item = <span class="prelude-ty">Option</span>&lt;R&gt;&gt;,
+    E: std::error::Error + Send + Sync + <span class="lifetime">&#39;static</span>,
+{
+    <span class="kw">let </span>chunk = chunk<span class="question-mark">?</span>;
+    <span class="kw">let </span>chunk_size = chunk.len();
+    <span class="kw">let </span>sa = StructArray::try_new(R::data_type(), chunk.into_arrays(), <span class="prelude-val">None</span>).map_err(|e| {
+        <span class="macro">error!</span>(<span class="string">&quot;error decoding struct array: {:?}&quot;</span>, e);
+        e
+    })<span class="question-mark">?</span>;
+    <span class="kw">let </span>sa: Box&lt;<span class="kw">dyn </span>Array&gt; = Box::new(sa);
+    <span class="kw">let </span>sadt = sa.data_type().clone();
+    <span class="kw">let </span>recs: Vec&lt;R&gt; = sa.try_into_collection().map_err(|e| {
+        <span class="macro">error!</span>(<span class="string">&quot;error deserializing batch: {:?}&quot;</span>, e);
+        <span class="macro">info!</span>(<span class="string">&quot;chunk schema: {:?}&quot;</span>, sadt);
+        <span class="macro">info!</span>(<span class="string">&quot;target schema: {:?}&quot;</span>, R::data_type());
+        e
+    })<span class="question-mark">?</span>;
+    <span class="macro">assert_eq!</span>(recs.len(), chunk_size);
+    <span class="prelude-val">Ok</span>(recs)
 }
 
 <span class="doccomment">/// Scan a Parquet file in a background thread and deserialize records.
 </span><span class="kw">pub fn </span>scan_parquet_file&lt;R, P&gt;(path: P) -&gt; <span class="prelude-ty">Result</span>&lt;RecordIter&lt;R&gt;&gt;
 <span class="kw">where
-  </span>P: AsRef&lt;Path&gt;,
-  R: ArrowDeserialize&lt;Type=R&gt; + Send + Sync + <span class="lifetime">&#39;static</span>,
-  <span class="kw">for </span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>R::ArrayType: IntoIterator&lt;Item=<span class="prelude-ty">Option</span>&lt;R&gt;&gt;
+    </span>P: AsRef&lt;Path&gt;,
+    R: ArrowDeserialize&lt;Type = R&gt; + Send + Sync + <span class="lifetime">&#39;static</span>,
+    <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>R::ArrayType: IntoIterator&lt;Item = <span class="prelude-ty">Option</span>&lt;R&gt;&gt;,
 {
-  <span class="kw">let </span>path = path.as_ref();
-  <span class="kw">let </span><span class="kw-2">mut </span>reader = File::open(path)<span class="question-mark">?</span>;
+    <span class="kw">let </span>path = path.as_ref();
+    <span class="kw">let </span><span class="kw-2">mut </span>reader = File::open(path)<span class="question-mark">?</span>;
 
-  <span class="kw">let </span>meta = read_metadata(<span class="kw-2">&amp;mut </span>reader)<span class="question-mark">?</span>;
-  <span class="kw">let </span>schema = infer_schema(<span class="kw-2">&amp;</span>meta)<span class="question-mark">?</span>;
-  <span class="kw">let </span>row_count = meta.num_rows;
-  <span class="kw">let </span>row_groups = meta.row_groups;
+    <span class="kw">let </span>meta = read_metadata(<span class="kw-2">&amp;mut </span>reader)<span class="question-mark">?</span>;
+    <span class="kw">let </span>schema = infer_schema(<span class="kw-2">&amp;</span>meta)<span class="question-mark">?</span>;
+    <span class="kw">let </span>row_count = meta.num_rows;
+    <span class="kw">let </span>row_groups = meta.row_groups;
 
-  <span class="kw">let </span>reader = FileReader::new(reader, row_groups, schema,<span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>);
-  <span class="macro">info!</span>(<span class="string">&quot;scanning {:?} with {} rows&quot;</span>, path, row_count);
-  <span class="macro">debug!</span>(<span class="string">&quot;file schema: {:?}&quot;</span>, meta.schema_descr);
+    <span class="kw">let </span>reader = FileReader::new(reader, row_groups, schema, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>);
+    <span class="macro">info!</span>(<span class="string">&quot;scanning {:?} with {} rows&quot;</span>, path, row_count);
+    <span class="macro">debug!</span>(<span class="string">&quot;file schema: {:?}&quot;</span>, meta.schema_descr);
 
-  <span class="comment">// use a small bound since we&#39;re sending whole batches
-  </span><span class="kw">let </span>(send, receive) = bounded(<span class="number">5</span>);
+    <span class="comment">// use a small bound since we&#39;re sending whole batches
+    </span><span class="kw">let </span>(send, receive) = bounded(<span class="number">5</span>);
 
-  spawn(<span class="kw">move </span>|| {
-    <span class="kw">let </span>send = send;
-    <span class="kw">let </span>reader = reader;
+    spawn(<span class="kw">move </span>|| {
+        <span class="kw">let </span>send = send;
+        <span class="kw">let </span>reader = reader;
 
-    <span class="kw">for </span>chunk <span class="kw">in </span>reader {
-      <span class="kw">let </span>recs = decode_chunk(chunk);
-      <span class="kw">let </span>recs = <span class="kw">match </span>recs {
-        <span class="prelude-val">Ok</span>(v) =&gt; v,
-        <span class="prelude-val">Err</span>(e) =&gt; {
-          <span class="macro">debug!</span>(<span class="string">&quot;routing backend error {:?}&quot;</span>, e);
-          send.send(<span class="prelude-val">Err</span>(e)).expect(<span class="string">&quot;channel send error&quot;</span>);
-          <span class="kw">return</span>;
+        <span class="kw">for </span>chunk <span class="kw">in </span>reader {
+            <span class="kw">let </span>recs = decode_chunk(chunk);
+            <span class="kw">let </span>recs = <span class="kw">match </span>recs {
+                <span class="prelude-val">Ok</span>(v) =&gt; v,
+                <span class="prelude-val">Err</span>(e) =&gt; {
+                    <span class="macro">debug!</span>(<span class="string">&quot;routing backend error {:?}&quot;</span>, e);
+                    send.send(<span class="prelude-val">Err</span>(e)).expect(<span class="string">&quot;channel send error&quot;</span>);
+                    <span class="kw">return</span>;
+                }
+            };
+            send.send(<span class="prelude-val">Ok</span>(recs)).expect(<span class="string">&quot;channel send error&quot;</span>);
         }
-      };
-      send.send(<span class="prelude-val">Ok</span>(recs)).expect(<span class="string">&quot;channel send error&quot;</span>);
-    }
-  });
+    });
 
-  <span class="prelude-val">Ok</span>(RecordIter {
-    remaining: row_count,
-    channel: receive,
-    batch: <span class="prelude-val">None</span>,
-  })
+    <span class="prelude-val">Ok</span>(RecordIter {
+        remaining: row_count,
+        channel: receive,
+        batch: <span class="prelude-val">None</span>,
+    })
 }
 
-<span class="kw">impl </span>&lt;R&gt; Iterator <span class="kw">for </span>RecordIter&lt;R&gt;
+<span class="kw">impl</span>&lt;R&gt; Iterator <span class="kw">for </span>RecordIter&lt;R&gt;
 <span class="kw">where
-  </span>R: ArrowDeserialize + Send + Sync + <span class="lifetime">&#39;static</span>,
-  <span class="kw">for </span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>R::ArrayType: IntoIterator
+    </span>R: ArrowDeserialize + Send + Sync + <span class="lifetime">&#39;static</span>,
+    <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>R::ArrayType: IntoIterator,
 {
-  <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;R&gt;;
+    <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;R&gt;;
 
-  <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
-    <span class="kw">loop </span>{
-      <span class="comment">// try to get another item from the current batch
-      </span><span class="kw">let </span>next = <span class="self">self</span>.batch.as_mut().map(|i| i.next()).flatten();
-      <span class="kw">if let </span><span class="prelude-val">Some</span>(row) = next {
-        <span class="comment">// we got something! return it
-        </span><span class="self">self</span>.remaining -= <span class="number">1</span>;
-        <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(row));
-      } <span class="kw">else if let </span><span class="prelude-val">Ok</span>(br) = <span class="self">self</span>.channel.recv() {
-        <span class="comment">// fetch a new batch and try again
-        </span><span class="kw">match </span>br {
-          <span class="prelude-val">Ok</span>(batch) =&gt; {
-            <span class="self">self</span>.batch = <span class="prelude-val">Some</span>(batch.into_iter());
-            <span class="comment">// loop around and use the batch
-          </span>},
-          <span class="prelude-val">Err</span>(e) =&gt; {
-            <span class="comment">// error on the channel
-            </span><span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(e))
-          }
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
+        <span class="kw">loop </span>{
+            <span class="comment">// try to get another item from the current batch
+            </span><span class="kw">let </span>next = <span class="self">self</span>.batch.as_mut().map(|i| i.next()).flatten();
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(row) = next {
+                <span class="comment">// we got something! return it
+                </span><span class="self">self</span>.remaining -= <span class="number">1</span>;
+                <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(row));
+            } <span class="kw">else if let </span><span class="prelude-val">Ok</span>(br) = <span class="self">self</span>.channel.recv() {
+                <span class="comment">// fetch a new batch and try again
+                </span><span class="kw">match </span>br {
+                    <span class="prelude-val">Ok</span>(batch) =&gt; {
+                        <span class="self">self</span>.batch = <span class="prelude-val">Some</span>(batch.into_iter());
+                        <span class="comment">// loop around and use the batch
+                    </span>}
+                    <span class="prelude-val">Err</span>(e) =&gt; {
+                        <span class="comment">// error on the channel
+                        </span><span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(e));
+                    }
+                }
+            } <span class="kw">else </span>{
+                <span class="comment">// we&#39;re done
+                </span><span class="kw">return </span><span class="prelude-val">None</span>;
+            }
         }
-      } <span class="kw">else </span>{
-        <span class="comment">// we&#39;re done
-        </span><span class="kw">return </span><span class="prelude-val">None
-      </span>}
     }
-  }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

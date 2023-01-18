@@ -57,6 +57,7 @@
 <span id="57">57</span>
 <span id="58">58</span>
 <span id="59">59</span>
+<span id="60">60</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Utility module for serializing with to/from string.
 //!
 //! This module is designed to be used with `#[serde(with)]`, as in:
@@ -81,40 +82,41 @@
 </span><span class="comment">// This isn&#39;t currently in use anywhere.
 </span><span class="attribute">#![allow(dead_code)]
 </span><span class="kw">use </span>std::fmt;
-<span class="kw">use </span>std::str::FromStr;
 <span class="kw">use </span>std::marker::PhantomData;
+<span class="kw">use </span>std::str::FromStr;
 
-<span class="kw">use </span>serde::{
-  Serializer,
-  Deserializer,
-  de
-};
+<span class="kw">use </span>serde::{de, Deserializer, Serializer};
 
-<span class="kw">pub fn </span>serialize&lt;S, T: ToString&gt;(v: <span class="kw-2">&amp;</span>T, ser: S) -&gt; <span class="prelude-ty">Result</span>&lt;S::Ok, S::Error&gt; <span class="kw">where </span>S: Serializer {
-  <span class="kw">let </span>vs = v.to_string();
-  ser.serialize_str(vs.as_str())
+<span class="kw">pub fn </span>serialize&lt;S, T: ToString&gt;(v: <span class="kw-2">&amp;</span>T, ser: S) -&gt; <span class="prelude-ty">Result</span>&lt;S::Ok, S::Error&gt;
+<span class="kw">where
+    </span>S: Serializer,
+{
+    <span class="kw">let </span>vs = v.to_string();
+    ser.serialize_str(vs.as_str())
 }
 
 <span class="kw">struct </span>FromStrVisitor&lt;T&gt; {
-  _ph: PhantomData&lt;T&gt;
+    _ph: PhantomData&lt;T&gt;,
 }
 
-<span class="kw">pub fn </span>deserialize&lt;<span class="lifetime">&#39;de</span>, D, T: FromStr&gt;(de: D) -&gt; <span class="prelude-ty">Result</span>&lt;T, D::Error&gt; <span class="kw">where </span>D: Deserializer&lt;<span class="lifetime">&#39;de</span>&gt; {
-  de.deserialize_str(FromStrVisitor { _ph: PhantomData })
+<span class="kw">pub fn </span>deserialize&lt;<span class="lifetime">&#39;de</span>, D, T: FromStr&gt;(de: D) -&gt; <span class="prelude-ty">Result</span>&lt;T, D::Error&gt;
+<span class="kw">where
+    </span>D: Deserializer&lt;<span class="lifetime">&#39;de</span>&gt;,
+{
+    de.deserialize_str(FromStrVisitor { _ph: PhantomData })
 }
 
-<span class="kw">impl </span>&lt;<span class="lifetime">&#39;de</span>, T: FromStr&gt; de::Visitor&lt;<span class="lifetime">&#39;de</span>&gt; <span class="kw">for </span>FromStrVisitor&lt;T&gt; {
-  <span class="kw">type </span>Value = T;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>, T: FromStr&gt; de::Visitor&lt;<span class="lifetime">&#39;de</span>&gt; <span class="kw">for </span>FromStrVisitor&lt;T&gt; {
+    <span class="kw">type </span>Value = T;
 
-  <span class="kw">fn </span>expecting(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-    <span class="macro">write!</span>(formatter, <span class="string">&quot;a parsable string&quot;</span>)
-  }
+    <span class="kw">fn </span>expecting(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        <span class="macro">write!</span>(formatter, <span class="string">&quot;a parsable string&quot;</span>)
+    }
 
-  <span class="kw">fn </span>visit_str&lt;E: de::Error&gt;(<span class="self">self</span>, s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Value, E&gt; {
-    s.parse().map_err(|_e| {
-      de::Error::invalid_value(de::Unexpected::Str(s), <span class="kw-2">&amp;</span><span class="self">self</span>)
-    })
-  }
+    <span class="kw">fn </span>visit_str&lt;E: de::Error&gt;(<span class="self">self</span>, s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Value, E&gt; {
+        s.parse()
+            .map_err(|_e| de::Error::invalid_value(de::Unexpected::Str(s), <span class="kw-2">&amp;</span><span class="self">self</span>))
+    }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

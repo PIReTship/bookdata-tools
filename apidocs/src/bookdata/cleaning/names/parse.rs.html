@@ -50,49 +50,49 @@
 
 </span><span class="kw">use </span><span class="kw">super</span>::types::<span class="kw-2">*</span>;
 
-<span class="macro">peg::parser!</span>{
-  grammar name_parser() <span class="kw">for </span>str {
-    rule space() = <span class="macro">quiet!</span>{[<span class="string">&#39; &#39; </span>| <span class="string">&#39;\n&#39; </span>| <span class="string">&#39;\r&#39; </span>| <span class="string">&#39;\t&#39;</span>]}
-    rule digit() = <span class="macro">quiet!</span>{[<span class="string">&#39;0&#39;</span>..=<span class="string">&#39;9&#39;</span>]}
+<span class="macro">peg::parser! </span>{
+    grammar name_parser() <span class="kw">for </span>str {
+        rule space() = <span class="macro">quiet!</span>{[<span class="string">&#39; &#39; </span>| <span class="string">&#39;\n&#39; </span>| <span class="string">&#39;\r&#39; </span>| <span class="string">&#39;\t&#39;</span>]}
+        rule digit() = <span class="macro">quiet!</span>{[<span class="string">&#39;0&#39;</span>..=<span class="string">&#39;9&#39;</span>]}
 
-    rule trailing_junk() = [<span class="string">&#39;,&#39; </span>| <span class="string">&#39;.&#39;</span>] space()* ![<span class="kw">_</span>]
+        rule trailing_junk() = [<span class="string">&#39;,&#39; </span>| <span class="string">&#39;.&#39;</span>] space()* ![<span class="kw">_</span>]
 
-    rule year_range() -&gt; String
-      = range:$(digit()+ <span class="string">&quot;-&quot; </span>digit()<span class="kw-2">*</span>) { range.to_owned() }
+        rule year_range() -&gt; String
+        = range:$(digit()+ <span class="string">&quot;-&quot; </span>digit()<span class="kw-2">*</span>) { range.to_owned() }
 
-    rule year_tag() -&gt; String
-      = (space()* <span class="string">&quot;,&quot;</span>)<span class="question-mark">? </span>space()* <span class="string">&quot;(&quot;</span><span class="question-mark">? </span>y:year_range() <span class="string">&quot;)&quot;</span><span class="question-mark">? </span>{
-        y
-      }
-
-    rule ending() -&gt; <span class="prelude-ty">Option</span>&lt;String&gt;
-      = trailing_junk() { <span class="prelude-val">None </span>}
-      / y:year_tag() { <span class="prelude-val">Some</span>(y) }
-
-    rule cs_name() -&gt; NameFmt
-      = last:$([^<span class="string">&#39;,&#39;</span>]<span class="kw-2">*</span>) <span class="string">&quot;,&quot; </span>space()* rest:$(([<span class="kw">_</span>] !ending())* [^<span class="string">&#39;,&#39;</span>]<span class="question-mark">?</span>) {
-        <span class="kw">if </span>rest.trim().is_empty() {
-          NameFmt::Single(last.trim().to_owned())
-        } <span class="kw">else </span>{
-          NameFmt::TwoPart(last.trim().to_owned(), rest.trim().to_owned())
+        rule year_tag() -&gt; String
+        = (space()* <span class="string">&quot;,&quot;</span>)<span class="question-mark">? </span>space()* <span class="string">&quot;(&quot;</span><span class="question-mark">? </span>y:year_range() <span class="string">&quot;)&quot;</span><span class="question-mark">? </span>{
+            y
         }
-      }
 
-    rule single_name() -&gt; NameFmt
-      = name:$(([<span class="kw">_</span>] !ending())* [^<span class="string">&#39;,&#39; </span>| <span class="string">&#39;.&#39;</span>]<span class="question-mark">?</span>) { NameFmt::Single(name.trim().to_owned()) }
+        rule ending() -&gt; <span class="prelude-ty">Option</span>&lt;String&gt;
+        = trailing_junk() { <span class="prelude-val">None </span>}
+        / y:year_tag() { <span class="prelude-val">Some</span>(y) }
 
-    rule name() -&gt; NameFmt = (<span class="string">&quot;!!!&quot; </span>[<span class="string">&#39;a&#39;</span>..=<span class="string">&#39;z&#39; </span>| <span class="string">&#39;A&#39;</span>..=<span class="string">&#39;Z&#39;</span>]+ <span class="string">&quot;!!!&quot; </span>space()<span class="kw-2">*</span>)<span class="question-mark">? </span>n:(cs_name() / single_name()) { n }
+        rule cs_name() -&gt; NameFmt
+        = last:$([^<span class="string">&#39;,&#39;</span>]<span class="kw-2">*</span>) <span class="string">&quot;,&quot; </span>space()* rest:$(([<span class="kw">_</span>] !ending())* [^<span class="string">&#39;,&#39;</span>]<span class="question-mark">?</span>) {
+            <span class="kw">if </span>rest.trim().is_empty() {
+                NameFmt::Single(last.trim().to_owned())
+            } <span class="kw">else </span>{
+                NameFmt::TwoPart(last.trim().to_owned(), rest.trim().to_owned())
+            }
+        }
 
-    <span class="attribute">#[no_eof]
-    </span><span class="kw">pub </span>rule name_entry() -&gt; NameEntry
-      = year:year_tag() { NameEntry { name:NameFmt::Empty, year: <span class="prelude-val">Some</span>(year) } }
-      / name:name() year:ending()<span class="question-mark">? </span>{ NameEntry { name, year: year.flatten() } }
-  }
+        rule single_name() -&gt; NameFmt
+        = name:$(([<span class="kw">_</span>] !ending())* [^<span class="string">&#39;,&#39; </span>| <span class="string">&#39;.&#39;</span>]<span class="question-mark">?</span>) { NameFmt::Single(name.trim().to_owned()) }
+
+        rule name() -&gt; NameFmt = (<span class="string">&quot;!!!&quot; </span>[<span class="string">&#39;a&#39;</span>..=<span class="string">&#39;z&#39; </span>| <span class="string">&#39;A&#39;</span>..=<span class="string">&#39;Z&#39;</span>]+ <span class="string">&quot;!!!&quot; </span>space()<span class="kw-2">*</span>)<span class="question-mark">? </span>n:(cs_name() / single_name()) { n }
+
+        <span class="attribute">#[no_eof]
+        </span><span class="kw">pub </span>rule name_entry() -&gt; NameEntry
+        = year:year_tag() { NameEntry { name:NameFmt::Empty, year: <span class="prelude-val">Some</span>(year) } }
+        / name:name() year:ending()<span class="question-mark">? </span>{ NameEntry { name, year: year.flatten() } }
+    }
 }
 
 <span class="kw">pub fn </span>parse_name_entry(name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;NameEntry, NameError&gt; {
-  <span class="kw">let </span>res = name_parser::name_entry(name)<span class="question-mark">?</span>;
-  <span class="prelude-val">Ok</span>(res)
+    <span class="kw">let </span>res = name_parser::name_entry(name)<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(res)
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

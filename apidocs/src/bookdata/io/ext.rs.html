@@ -43,50 +43,52 @@
 <span id="43">43</span>
 <span id="44">44</span>
 <span id="45">45</span>
-</pre><pre class="rust"><code><span class="kw">use </span>std::io;
+<span id="46">46</span>
+</pre><pre class="rust"><code><span class="kw">use </span>std::fs::File;
+<span class="kw">use </span>std::io;
 <span class="kw">use </span>std::io::Read;
-<span class="kw">use </span>std::fs::File;
 <span class="kw">use </span>zip::read::ZipFile;
 
 <span class="kw">use </span>log::<span class="kw-2">*</span>;
 
 <span class="doccomment">/// Trait for read types that can report their size.
-</span><span class="kw">pub trait </span>LengthRead: Read  {
-  <span class="kw">fn </span>input_size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;u64&gt;;
+</span><span class="kw">pub trait </span>LengthRead: Read {
+    <span class="kw">fn </span>input_size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;u64&gt;;
 
-  <span class="doccomment">/// Read all bytes from a file, using its size to pre-allocate capacity.
-  </span><span class="kw">fn </span>read_all_sized(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; io::Result&lt;Vec&lt;u8&gt;&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>cap = <span class="self">self</span>.input_size()<span class="question-mark">? </span><span class="kw">as </span>usize;
-    <span class="kw">let </span><span class="kw-2">mut </span>out = <span class="macro">vec!</span>[<span class="number">0</span>; cap + <span class="number">1</span>];
-    <span class="kw">let </span><span class="kw-2">mut </span>pos = <span class="number">0</span>;
-    <span class="kw">loop </span>{
-      <span class="macro">trace!</span>(<span class="string">&quot;requesting {} bytes&quot;</span>, cap - pos);
-      <span class="kw">let </span>ls = <span class="self">self</span>.read(<span class="kw-2">&amp;mut </span>out[pos..])<span class="question-mark">?</span>;
-      pos += ls;
-      <span class="kw">if </span>pos &gt;= cap { <span class="comment">// the size hint was wrong
-        </span><span class="macro">warn!</span>(<span class="string">&quot;size was wrong, expanding&quot;</span>);
-        cap += <span class="number">16 </span>* <span class="number">1024</span>;
-        out.resize(cap, <span class="number">0</span>);
-      }
-      <span class="kw">if </span>ls == <span class="number">0 </span>{
-        out.truncate(pos);
-        <span class="kw">return </span><span class="prelude-val">Ok</span>(out);
-      }
+    <span class="doccomment">/// Read all bytes from a file, using its size to pre-allocate capacity.
+    </span><span class="kw">fn </span>read_all_sized(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; io::Result&lt;Vec&lt;u8&gt;&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>cap = <span class="self">self</span>.input_size()<span class="question-mark">? </span><span class="kw">as </span>usize;
+        <span class="kw">let </span><span class="kw-2">mut </span>out = <span class="macro">vec!</span>[<span class="number">0</span>; cap + <span class="number">1</span>];
+        <span class="kw">let </span><span class="kw-2">mut </span>pos = <span class="number">0</span>;
+        <span class="kw">loop </span>{
+            <span class="macro">trace!</span>(<span class="string">&quot;requesting {} bytes&quot;</span>, cap - pos);
+            <span class="kw">let </span>ls = <span class="self">self</span>.read(<span class="kw-2">&amp;mut </span>out[pos..])<span class="question-mark">?</span>;
+            pos += ls;
+            <span class="kw">if </span>pos &gt;= cap {
+                <span class="comment">// the size hint was wrong
+                </span><span class="macro">warn!</span>(<span class="string">&quot;size was wrong, expanding&quot;</span>);
+                cap += <span class="number">16 </span>* <span class="number">1024</span>;
+                out.resize(cap, <span class="number">0</span>);
+            }
+            <span class="kw">if </span>ls == <span class="number">0 </span>{
+                out.truncate(pos);
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(out);
+            }
+        }
     }
-  }
 }
 
 <span class="kw">impl </span>LengthRead <span class="kw">for </span>File {
-  <span class="kw">fn </span>input_size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;u64&gt; {
-    <span class="kw">let </span>meta = <span class="self">self</span>.metadata()<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(meta.len())
-  }
+    <span class="kw">fn </span>input_size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;u64&gt; {
+        <span class="kw">let </span>meta = <span class="self">self</span>.metadata()<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(meta.len())
+    }
 }
 
-<span class="kw">impl </span>&lt;<span class="lifetime">&#39;a</span>&gt; LengthRead <span class="kw">for </span>ZipFile&lt;<span class="lifetime">&#39;a</span>&gt; {
-  <span class="kw">fn </span>input_size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;u64&gt; {
-    <span class="prelude-val">Ok</span>(<span class="self">self</span>.size())
-  }
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; LengthRead <span class="kw">for </span>ZipFile&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">fn </span>input_size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; io::Result&lt;u64&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.size())
+    }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

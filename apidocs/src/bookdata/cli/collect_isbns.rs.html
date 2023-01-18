@@ -97,104 +97,108 @@
 <span id="97">97</span>
 <span id="98">98</span>
 <span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Collect ISBNs from across the data sources.
-</span><span class="kw">use </span>std::fs::read_to_string;
+</span><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fmt::Debug;
-<span class="kw">use </span>std::collections::HashMap;
+<span class="kw">use </span>std::fs::read_to_string;
 
 <span class="kw">use </span>serde::Deserialize;
 <span class="kw">use </span>toml;
 
 <span class="kw">use </span>friendly::bytes;
 
-<span class="kw">use </span>polars::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::prelude::Result;
 <span class="kw">use </span><span class="kw">crate</span>::ids::collector::KeyCollector;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::Result;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>polars::prelude::<span class="kw-2">*</span>;
 
 <span class="doccomment">/// Collect ISBNs from across the data sources.
 </span><span class="attribute">#[derive(Args, Debug)]
-#[command(name=<span class="string">&quot;collect-isbns&quot;</span>)]
+#[command(name = <span class="string">&quot;collect-isbns&quot;</span>)]
 </span><span class="kw">pub struct </span>CollectISBNs {
-  <span class="doccomment">/// Path to the output file (in Parquet format)
-  </span><span class="attribute">#[arg(short=<span class="string">&#39;o&#39;</span>, long=<span class="string">&quot;output&quot;</span>)]
-  </span>out_file: PathBuf,
+    <span class="doccomment">/// Path to the output file (in Parquet format)
+    </span><span class="attribute">#[arg(short = <span class="string">&#39;o&#39;</span>, long = <span class="string">&quot;output&quot;</span>)]
+    </span>out_file: PathBuf,
 
-  <span class="doccomment">/// path to the ISBN source definition file (in TOML format)
-  </span><span class="attribute">#[arg(name=<span class="string">&quot;DEFS&quot;</span>)]
-  </span>source_file: PathBuf
+    <span class="doccomment">/// path to the ISBN source definition file (in TOML format)
+    </span><span class="attribute">#[arg(name = <span class="string">&quot;DEFS&quot;</span>)]
+    </span>source_file: PathBuf,
 }
 
 <span class="attribute">#[derive(Deserialize, Debug)]
 #[serde(untagged)]
 </span><span class="kw">enum </span>MultiSource {
-  Single(ISBNSource),
-  Multi(Vec&lt;ISBNSource&gt;),
+    Single(ISBNSource),
+    Multi(Vec&lt;ISBNSource&gt;),
 }
 
 <span class="attribute">#[derive(Deserialize, Debug)]
 </span><span class="kw">struct </span>ISBNSource {
-  path: String,
-  <span class="attribute">#[serde(default)]
-  </span>column: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    path: String,
+    <span class="attribute">#[serde(default)]
+    </span>column: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
 <span class="doccomment">/// The type of ISBN source set specifications.
 </span><span class="kw">type </span>SourceSet = HashMap&lt;String, MultiSource&gt;;
 
 <span class="kw">impl </span>MultiSource {
-  <span class="kw">fn </span>to_list(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;<span class="kw-2">&amp;</span>ISBNSource&gt; {
-    <span class="kw">match </span><span class="self">self </span>{
-      MultiSource::Single(s) =&gt; <span class="macro">vec!</span>[<span class="kw-2">&amp;</span>s],
-      MultiSource::Multi(ss) =&gt; ss.iter().map(|s| s).collect(),
+    <span class="kw">fn </span>to_list(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;<span class="kw-2">&amp;</span>ISBNSource&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            MultiSource::Single(s) =&gt; <span class="macro">vec!</span>[<span class="kw-2">&amp;</span>s],
+            MultiSource::Multi(ss) =&gt; ss.iter().map(|s| s).collect(),
+        }
     }
-  }
 }
 
 <span class="doccomment">/// Read a single ISBN source into the accumulator.
 </span><span class="kw">fn </span>read_source(kc: <span class="kw-2">&amp;mut </span>KeyCollector, name: <span class="kw-2">&amp;</span>str, src: <span class="kw-2">&amp;</span>ISBNSource) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-  <span class="kw">let </span><span class="kw-2">mut </span>acc = kc.accum(name);
-  <span class="kw">let </span>id_col = src.column.as_deref().unwrap_or(<span class="string">&quot;isbn&quot;</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>acc = kc.accum(name);
+    <span class="kw">let </span>id_col = src.column.as_deref().unwrap_or(<span class="string">&quot;isbn&quot;</span>);
 
-  <span class="macro">info!</span>(<span class="string">&quot;reading ISBNs from {} (column {})&quot;</span>, src.path, id_col);
+    <span class="macro">info!</span>(<span class="string">&quot;reading ISBNs from {} (column {})&quot;</span>, src.path, id_col);
 
-  <span class="kw">let </span>df = <span class="kw">if </span>src.path.ends_with(<span class="string">&quot;.csv&quot;</span>) {
-    LazyCsvReader::new(src.path.to_string()).has_header(<span class="bool-val">true</span>).finish()<span class="question-mark">?
-  </span>} <span class="kw">else </span>{
-    LazyFrame::scan_parquet(src.path.to_string(), Default::default())<span class="question-mark">?
-  </span>};
-  <span class="kw">let </span>df = df.select(<span class="kw-2">&amp;</span>[col(id_col)]);
-  <span class="kw">let </span>df = df.drop_nulls(<span class="prelude-val">None</span>);
+    <span class="kw">let </span>df = <span class="kw">if </span>src.path.ends_with(<span class="string">&quot;.csv&quot;</span>) {
+        LazyCsvReader::new(src.path.to_string())
+            .has_header(<span class="bool-val">true</span>)
+            .finish()<span class="question-mark">?
+    </span>} <span class="kw">else </span>{
+        LazyFrame::scan_parquet(src.path.to_string(), Default::default())<span class="question-mark">?
+    </span>};
+    <span class="kw">let </span>df = df.select(<span class="kw-2">&amp;</span>[col(id_col)]);
+    <span class="kw">let </span>df = df.drop_nulls(<span class="prelude-val">None</span>);
 
-  <span class="kw">let </span>df = df.collect()<span class="question-mark">?</span>;
+    <span class="kw">let </span>df = df.collect()<span class="question-mark">?</span>;
 
-  <span class="kw">let </span>isbns = df.column(id_col)<span class="question-mark">?</span>.utf8()<span class="question-mark">?</span>;
+    <span class="kw">let </span>isbns = df.column(id_col)<span class="question-mark">?</span>.utf8()<span class="question-mark">?</span>;
 
-  <span class="macro">info!</span>(<span class="string">&quot;adding {} ISBNs&quot;</span>, isbns.len());
-  acc.add_keys(isbns.into_iter().flatten());
+    <span class="macro">info!</span>(<span class="string">&quot;adding {} ISBNs&quot;</span>, isbns.len());
+    acc.add_keys(isbns.into_iter().flatten());
 
-  <span class="prelude-val">Ok</span>(())
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="kw">impl </span>Command <span class="kw">for </span>CollectISBNs {
-  <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="macro">info!</span>(<span class="string">&quot;reading spec from {}&quot;</span>, <span class="self">self</span>.source_file.display());
-    <span class="kw">let </span>spec = read_to_string(<span class="kw-2">&amp;</span><span class="self">self</span>.source_file)<span class="question-mark">?</span>;
-    <span class="kw">let </span>spec: SourceSet = toml::de::from_str(<span class="kw-2">&amp;</span>spec)<span class="question-mark">?</span>;
+    <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">info!</span>(<span class="string">&quot;reading spec from {}&quot;</span>, <span class="self">self</span>.source_file.display());
+        <span class="kw">let </span>spec = read_to_string(<span class="kw-2">&amp;</span><span class="self">self</span>.source_file)<span class="question-mark">?</span>;
+        <span class="kw">let </span>spec: SourceSet = toml::de::from_str(<span class="kw-2">&amp;</span>spec)<span class="question-mark">?</span>;
 
-    <span class="kw">let </span><span class="kw-2">mut </span>kc = KeyCollector::new();
-    <span class="kw">for </span>(name, ms) <span class="kw">in </span>spec {
-      <span class="kw">for </span>source <span class="kw">in </span>ms.to_list() {
-        read_source(<span class="kw-2">&amp;mut </span>kc, <span class="kw-2">&amp;</span>name, source)<span class="question-mark">?</span>;
-      }
+        <span class="kw">let </span><span class="kw-2">mut </span>kc = KeyCollector::new();
+        <span class="kw">for </span>(name, ms) <span class="kw">in </span>spec {
+            <span class="kw">for </span>source <span class="kw">in </span>ms.to_list() {
+                read_source(<span class="kw-2">&amp;mut </span>kc, <span class="kw-2">&amp;</span>name, source)<span class="question-mark">?</span>;
+            }
+        }
+
+        <span class="macro">info!</span>(<span class="string">&quot;saving {} ISBNs to {}&quot;</span>, kc.len(), <span class="self">self</span>.out_file.display());
+        <span class="kw">let </span>n = kc.save(<span class="string">&quot;isbn&quot;</span>, <span class="string">&quot;isbn_id&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.out_file)<span class="question-mark">?</span>;
+        <span class="macro">info!</span>(<span class="string">&quot;wrote {} rows in {}&quot;</span>, n, bytes(file_size(<span class="kw-2">&amp;</span><span class="self">self</span>.out_file)<span class="question-mark">?</span>));
+
+        <span class="prelude-val">Ok</span>(())
     }
-
-    <span class="macro">info!</span>(<span class="string">&quot;saving {} ISBNs to {}&quot;</span>, kc.len(), <span class="self">self</span>.out_file.display());
-    <span class="kw">let </span>n = kc.save(<span class="string">&quot;isbn&quot;</span>, <span class="string">&quot;isbn_id&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.out_file)<span class="question-mark">?</span>;
-    <span class="macro">info!</span>(<span class="string">&quot;wrote {} rows in {}&quot;</span>, n, bytes(file_size(<span class="kw-2">&amp;</span><span class="self">self</span>.out_file)<span class="question-mark">?</span>));
-
-    <span class="prelude-val">Ok</span>(())
-  }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

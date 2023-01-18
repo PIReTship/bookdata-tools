@@ -99,6 +99,12 @@
 <span id="99">99</span>
 <span id="100">100</span>
 <span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Logging utilities for the book data tools.
 //!
 //! This module contains support for initializing the logging infrastucture, and
@@ -108,97 +114,103 @@
 </span><span class="kw">use </span>std::fmt::Debug;
 <span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">use </span>indicatif::{ProgressBar, ProgressStyle, ProgressState};
-<span class="kw">use </span>indicatif::style::ProgressTracker;
+<span class="kw">use </span>friendly::scalar;
 <span class="kw">use </span>happylog::new_progress;
-<span class="kw">use </span>friendly::{scalar};
+<span class="kw">use </span>indicatif::style::ProgressTracker;
+<span class="kw">use </span>indicatif::{ProgressBar, ProgressState, ProgressStyle};
 
-<span class="kw">const </span>DATA_PROGRESS_TMPL: <span class="kw-2">&amp;</span>str = <span class="string">&quot;{prefix}: {wide_bar} {bytes}/{total_bytes} ({bytes_per_sec}, {elapsed} elapsed, ETA {eta})&quot;</span>;
+<span class="kw">const </span>DATA_PROGRESS_TMPL: <span class="kw-2">&amp;</span>str =
+    <span class="string">&quot;{prefix}: {wide_bar} {bytes}/{total_bytes} ({bytes_per_sec}, {elapsed} elapsed, ETA {eta})&quot;</span>;
 <span class="kw">const </span>ITEM_PROGRESS_TMPL: <span class="kw-2">&amp;</span>str = <span class="string">&quot;{prefix}: {wide_bar} {friendly_pos}/{friendly_len} ({friendly_rate}/s, {elapsed} elapsed, ETA {eta}) {msg}&quot;</span>;
 
 <span class="kw">trait </span>FieldExtract: Default + Send + Sync {
-  <span class="kw">fn </span>extract(state: <span class="kw-2">&amp;</span>ProgressState) -&gt; f64;
+    <span class="kw">fn </span>extract(state: <span class="kw-2">&amp;</span>ProgressState) -&gt; f64;
 }
 
 <span class="attribute">#[derive(Default)]
 </span><span class="kw">struct </span>Friendly&lt;F: FieldExtract + <span class="lifetime">&#39;static</span>&gt; {
-  _ghost: PhantomData&lt;F&gt;,
+    _ghost: PhantomData&lt;F&gt;,
 }
 
-<span class="kw">impl </span>&lt;F: FieldExtract + <span class="lifetime">&#39;static</span>&gt; ProgressTracker <span class="kw">for </span>Friendly&lt;F&gt; {
-  <span class="kw">fn </span>clone_box(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Box&lt;<span class="kw">dyn </span>ProgressTracker&gt; {
-    Box::new(<span class="self">Self</span>::default())
-  }
+<span class="kw">impl</span>&lt;F: FieldExtract + <span class="lifetime">&#39;static</span>&gt; ProgressTracker <span class="kw">for </span>Friendly&lt;F&gt; {
+    <span class="kw">fn </span>clone_box(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Box&lt;<span class="kw">dyn </span>ProgressTracker&gt; {
+        Box::new(<span class="self">Self</span>::default())
+    }
 
-  <span class="kw">fn </span>reset(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _state: <span class="kw-2">&amp;</span>indicatif::ProgressState, _now: std::time::Instant) {
-    <span class="comment">// do nothing
-  </span>}
+    <span class="kw">fn </span>reset(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _state: <span class="kw-2">&amp;</span>indicatif::ProgressState, _now: std::time::Instant) {
+        <span class="comment">// do nothing
+    </span>}
 
-  <span class="kw">fn </span>tick(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _state: <span class="kw-2">&amp;</span>indicatif::ProgressState, _now: std::time::Instant) {
-    <span class="comment">// do nothing
-  </span>}
+    <span class="kw">fn </span>tick(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _state: <span class="kw-2">&amp;</span>indicatif::ProgressState, _now: std::time::Instant) {
+        <span class="comment">// do nothing
+    </span>}
 
-  <span class="kw">fn </span>write(<span class="kw-2">&amp;</span><span class="self">self</span>, state: <span class="kw-2">&amp;</span>indicatif::ProgressState, w: <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::fmt::Write) {
-    <span class="kw">let </span>val= F::extract(state);
-    <span class="kw">let </span>len = scalar(val);
-    <span class="macro">write!</span>(w, <span class="string">&quot;{}&quot;</span>, len).expect(<span class="string">&quot;failed to write progress&quot;</span>);
-  }
+    <span class="kw">fn </span>write(<span class="kw-2">&amp;</span><span class="self">self</span>, state: <span class="kw-2">&amp;</span>indicatif::ProgressState, w: <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::fmt::Write) {
+        <span class="kw">let </span>val = F::extract(state);
+        <span class="kw">let </span>len = scalar(val);
+        <span class="macro">write!</span>(w, <span class="string">&quot;{}&quot;</span>, len).expect(<span class="string">&quot;failed to write progress&quot;</span>);
+    }
 }
 
 <span class="attribute">#[derive(Default)]
 </span><span class="kw">struct </span>Pos;
 <span class="kw">impl </span>FieldExtract <span class="kw">for </span>Pos {
-  <span class="kw">fn </span>extract(state: <span class="kw-2">&amp;</span>ProgressState) -&gt; f64 {
-    state.pos() <span class="kw">as </span>f64
-  }
+    <span class="kw">fn </span>extract(state: <span class="kw-2">&amp;</span>ProgressState) -&gt; f64 {
+        state.pos() <span class="kw">as </span>f64
+    }
 }
 
 <span class="attribute">#[derive(Default)]
 </span><span class="kw">struct </span>Len;
 <span class="kw">impl </span>FieldExtract <span class="kw">for </span>Len {
-  <span class="kw">fn </span>extract(state: <span class="kw-2">&amp;</span>ProgressState) -&gt; f64 {
-    state.len().map(|x| x <span class="kw">as </span>f64).unwrap_or(f64::NAN)
-  }
+    <span class="kw">fn </span>extract(state: <span class="kw-2">&amp;</span>ProgressState) -&gt; f64 {
+        state.len().map(|x| x <span class="kw">as </span>f64).unwrap_or(f64::NAN)
+    }
 }
 
 <span class="attribute">#[derive(Default)]
 </span><span class="kw">struct </span>Rate;
 <span class="kw">impl </span>FieldExtract <span class="kw">for </span>Rate {
-  <span class="kw">fn </span>extract(state: <span class="kw-2">&amp;</span>ProgressState) -&gt; f64 {
-    state.per_sec()
-  }
+    <span class="kw">fn </span>extract(state: <span class="kw-2">&amp;</span>ProgressState) -&gt; f64 {
+        state.per_sec()
+    }
 }
 
 <span class="doccomment">/// Create a progress bar for tracking data.
 ///
 /// If the size is unknown at creation time, pass 0.
 </span><span class="kw">pub fn </span>data_progress&lt;S&gt;(len: S) -&gt; ProgressBar
-<span class="kw">where </span>S: TryInto&lt;u64&gt;,
-  S::Error: Debug
+<span class="kw">where
+    </span>S: TryInto&lt;u64&gt;,
+    S::Error: Debug,
 {
-  new_progress(len.try_into().expect(<span class="string">&quot;invalid length&quot;</span>))
-    .with_style(ProgressStyle::default_bar().template(DATA_PROGRESS_TMPL).expect(<span class="string">&quot;template error&quot;</span>))
+    new_progress(len.try_into().expect(<span class="string">&quot;invalid length&quot;</span>)).with_style(
+        ProgressStyle::default_bar()
+            .template(DATA_PROGRESS_TMPL)
+            .expect(<span class="string">&quot;template error&quot;</span>),
+    )
 }
 
 <span class="doccomment">/// Create a progress bar for tracking items.
 ///
 /// If the size is unknown at creation time, pass 0.
 </span><span class="kw">pub fn </span>item_progress&lt;S&gt;(len: S, name: <span class="kw-2">&amp;</span>str) -&gt; ProgressBar
-<span class="kw">where </span>S: TryInto&lt;u64&gt;,
-  S::Error: Debug
+<span class="kw">where
+    </span>S: TryInto&lt;u64&gt;,
+    S::Error: Debug,
 {
-  <span class="kw">let </span>len: u64 = len.try_into().expect(<span class="string">&quot;invalid length&quot;</span>);
-  <span class="kw">let </span>len = <span class="prelude-val">Some</span>(len).filter(|l| <span class="kw-2">*</span>l &gt; <span class="number">0</span>);
-  <span class="kw">let </span>style = ProgressStyle::default_bar()
-    .with_key(<span class="string">&quot;friendly_pos&quot;</span>, Friendly::&lt;Pos&gt;::default())
-    .with_key(<span class="string">&quot;friendly_len&quot;</span>, Friendly::&lt;Len&gt;::default())
-    .with_key(<span class="string">&quot;friendly_rate&quot;</span>, Friendly::&lt;Rate&gt;::default())
-    .template(ITEM_PROGRESS_TMPL)
-    .expect(<span class="string">&quot;template error&quot;</span>);
+    <span class="kw">let </span>len: u64 = len.try_into().expect(<span class="string">&quot;invalid length&quot;</span>);
+    <span class="kw">let </span>len = <span class="prelude-val">Some</span>(len).filter(|l| <span class="kw-2">*</span>l &gt; <span class="number">0</span>);
+    <span class="kw">let </span>style = ProgressStyle::default_bar()
+        .with_key(<span class="string">&quot;friendly_pos&quot;</span>, Friendly::&lt;Pos&gt;::default())
+        .with_key(<span class="string">&quot;friendly_len&quot;</span>, Friendly::&lt;Len&gt;::default())
+        .with_key(<span class="string">&quot;friendly_rate&quot;</span>, Friendly::&lt;Rate&gt;::default())
+        .template(ITEM_PROGRESS_TMPL)
+        .expect(<span class="string">&quot;template error&quot;</span>);
 
-  new_progress(len.unwrap_or(<span class="number">0</span>))
-    .with_style(style)
-    .with_prefix(name.to_string())
+    new_progress(len.unwrap_or(<span class="number">0</span>))
+        .with_style(style)
+        .with_prefix(name.to_string())
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

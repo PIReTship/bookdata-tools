@@ -30,8 +30,10 @@
 <span id="30">30</span>
 <span id="31">31</span>
 <span id="32">32</span>
-</pre><pre class="rust"><code><span class="kw">use </span>std::path::Path;
-<span class="kw">use </span>std::fs::File;
+<span id="33">33</span>
+<span id="34">34</span>
+</pre><pre class="rust"><code><span class="kw">use </span>std::fs::File;
+<span class="kw">use </span>std::path::Path;
 
 <span class="kw">use </span>anyhow::Result;
 
@@ -41,26 +43,28 @@
 
 <span class="doccomment">/// Get a schema from a data frame with maximal nullability.
 </span><span class="kw">pub fn </span>nonnull_schema(df: <span class="kw-2">&amp;</span>DataFrame) -&gt; ArrowSchema {
-  <span class="kw">let </span>schema = df.schema().to_arrow();
-  ArrowSchema {
-    fields: schema.fields.into_iter().map(|f| {
-      ArrowField {
-        is_nullable: df.column(<span class="kw-2">&amp;</span>f.name).expect(<span class="string">&quot;missing column&quot;</span>).null_count() &gt; <span class="number">0</span>,
-        ..f
-      }
-    }).collect(),
-    metadata: schema.metadata,
-  }
+    <span class="kw">let </span>schema = df.schema().to_arrow();
+    ArrowSchema {
+        fields: schema
+            .fields
+            .into_iter()
+            .map(|f| ArrowField {
+                is_nullable: df.column(<span class="kw-2">&amp;</span>f.name).expect(<span class="string">&quot;missing column&quot;</span>).null_count() &gt; <span class="number">0</span>,
+                ..f
+            })
+            .collect(),
+        metadata: schema.metadata,
+    }
 }
 
 <span class="kw">pub fn </span>save_df_parquet&lt;P: AsRef&lt;Path&gt;&gt;(df: DataFrame, path: P) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-  <span class="kw">let </span><span class="kw-2">mut </span>df = df;
-  <span class="kw">let </span>file = File::create(path)<span class="question-mark">?</span>;
-  ParquetWriter::new(file)
-      .with_compression(ParquetCompression::Zstd(<span class="prelude-val">None</span>))
-      .with_row_group_size(<span class="prelude-val">Some</span>(ROW_GROUP_SIZE))
-      .finish(<span class="kw-2">&amp;mut </span>df)<span class="question-mark">?</span>;
-  <span class="prelude-val">Ok</span>(())
+    <span class="kw">let </span><span class="kw-2">mut </span>df = df;
+    <span class="kw">let </span>file = File::create(path)<span class="question-mark">?</span>;
+    ParquetWriter::new(file)
+        .with_compression(ParquetCompression::Zstd(<span class="prelude-val">None</span>))
+        .with_row_group_size(<span class="prelude-val">Some</span>(ROW_GROUP_SIZE))
+        .finish(<span class="kw-2">&amp;mut </span>df)<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

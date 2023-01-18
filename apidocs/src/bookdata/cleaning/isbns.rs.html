@@ -429,81 +429,81 @@
 //! The multi-ISBN parser exposed through [parse_isbn_string] supports cleaning these ISBN
 //! strings using a PEG-based parser.
 </span><span class="kw">use </span>lazy_static::lazy_static;
-<span class="kw">use </span>regex::{RegexSet};
+<span class="kw">use </span>regex::RegexSet;
 
 <span class="kw">use </span><span class="kw">crate</span>::util::unicode::NONSPACING_MARK;
 
 <span class="doccomment">/// Single ISBN parsed from a string.
 </span><span class="attribute">#[derive(Debug, PartialEq)]
 </span><span class="kw">pub struct </span>ISBN {
-  <span class="kw">pub </span>text: String,
-  <span class="kw">pub </span>tags: Vec&lt;String&gt;
+    <span class="kw">pub </span>text: String,
+    <span class="kw">pub </span>tags: Vec&lt;String&gt;,
 }
 
 <span class="doccomment">/// Result of parsing an ISBN string.
 </span><span class="attribute">#[derive(Debug, PartialEq)]
 </span><span class="kw">pub enum </span>ParseResult {
-  <span class="doccomment">/// Vaid ISBNs, possibly with additional trailing text
-  </span>Valid(Vec&lt;ISBN&gt;, String),
-  <span class="doccomment">/// An ignored string
-  </span>Ignored(String),
-  <span class="doccomment">/// An unparsable string
-  </span>Unmatched(String)
+    <span class="doccomment">/// Vaid ISBNs, possibly with additional trailing text
+    </span>Valid(Vec&lt;ISBN&gt;, String),
+    <span class="doccomment">/// An ignored string
+    </span>Ignored(String),
+    <span class="doccomment">/// An unparsable string
+    </span>Unmatched(String),
 }
 
 <span class="doccomment">/// Regular expressions for unparsable ISBN strings to ignore.
 /// This cleans up warning displays.
 </span><span class="kw">static </span>IGNORES: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str] = <span class="kw-2">&amp;</span>[
-  <span class="string">r&quot;^[$]?[[:digit:]., ]+(?:[a-zA-Z*]{1,4})?(\s+\(.*?\))?$&quot;</span>,
-  <span class="string">r&quot;^[[:digit:].]+(/[[:digit:].]+)+$&quot;</span>,
-  <span class="string">r&quot;^[A-Z]-[A-Z]-\d{8,}&quot;</span>,
-  <span class="string">r&quot;^\s*$&quot;
-</span>];
+    <span class="string">r&quot;^[$]?[[:digit:]., ]+(?:[a-zA-Z*]{1,4})?(\s+\(.*?\))?$&quot;</span>,
+    <span class="string">r&quot;^[[:digit:].]+(/[[:digit:].]+)+$&quot;</span>,
+    <span class="string">r&quot;^[A-Z]-[A-Z]-\d{8,}&quot;</span>,
+    <span class="string">r&quot;^\s*$&quot;</span>,
+];
 
 <span class="macro">lazy_static! </span>{
-  <span class="kw">static </span><span class="kw-2">ref </span>IGNORE_RE: RegexSet = RegexSet::new(IGNORES).unwrap();
+    <span class="kw">static </span><span class="kw-2">ref </span>IGNORE_RE: RegexSet = RegexSet::new(IGNORES).unwrap();
 }
 
 <span class="macro">peg::parser! </span>{
-  grammar isbn_parser() <span class="kw">for </span>str {
-    rule space() = <span class="macro">quiet!</span>{[<span class="string">&#39; &#39; </span>| <span class="string">&#39;\n&#39; </span>| <span class="string">&#39;\r&#39; </span>| <span class="string">&#39;\t&#39;</span>]}
+    grammar isbn_parser() <span class="kw">for </span>str {
+        rule space() = <span class="macro">quiet!</span>{[<span class="string">&#39; &#39; </span>| <span class="string">&#39;\n&#39; </span>| <span class="string">&#39;\r&#39; </span>| <span class="string">&#39;\t&#39;</span>]}
 
-    rule lead() =
-      [<span class="string">&#39;;&#39; </span>| <span class="string">&#39;.&#39;</span>]<span class="question-mark">? </span>space()* prefix()<span class="question-mark">?
-    </span>rule prefix()
-      = [<span class="string">&#39;a&#39;</span>..=<span class="string">&#39;z&#39;</span>] space()+
-      / <span class="string">&quot;(&quot; </span>[<span class="string">&#39;0&#39;</span>..=<span class="string">&#39;9&#39;</span>]+ <span class="string">&quot;)&quot; </span>space()+
-      / <span class="string">&quot;*&quot;
-      </span>/ <span class="string">&quot;ISBN&quot; </span>space()+
+        rule lead() =
+        [<span class="string">&#39;;&#39; </span>| <span class="string">&#39;.&#39;</span>]<span class="question-mark">? </span>space()* prefix()<span class="question-mark">?
+        </span>rule prefix()
+        = [<span class="string">&#39;a&#39;</span>..=<span class="string">&#39;z&#39;</span>] space()+
+        / <span class="string">&quot;(&quot; </span>[<span class="string">&#39;0&#39;</span>..=<span class="string">&#39;9&#39;</span>]+ <span class="string">&quot;)&quot; </span>space()+
+        / <span class="string">&quot;*&quot;
+        </span>/ <span class="string">&quot;ISBN&quot; </span>space()+
 
-    rule single_tag() -&gt; String = s:$([^ <span class="string">&#39;:&#39; </span>| <span class="string">&#39;)&#39; </span>| <span class="string">&#39;]&#39;</span>]+) { s.trim().to_string() }
+        rule single_tag() -&gt; String = s:$([^ <span class="string">&#39;:&#39; </span>| <span class="string">&#39;)&#39; </span>| <span class="string">&#39;]&#39;</span>]+) { s.trim().to_string() }
 
-    rule tags() -&gt; Vec&lt;String&gt;
-      = space()* [<span class="string">&#39;[&#39; </span>| <span class="string">&#39;(&#39;</span>] tags:(single_tag() <span class="kw-2">*</span>* <span class="string">&quot;:&quot;</span>) [<span class="string">&#39;]&#39; </span>| <span class="string">&#39;)&#39;</span>] { tags }
+        rule tags() -&gt; Vec&lt;String&gt;
+        = space()* [<span class="string">&#39;[&#39; </span>| <span class="string">&#39;(&#39;</span>] tags:(single_tag() <span class="kw-2">*</span>* <span class="string">&quot;:&quot;</span>) [<span class="string">&#39;]&#39; </span>| <span class="string">&#39;)&#39;</span>] { tags }
 
-    rule tail_skip() = space()* [<span class="string">&#39;;&#39; </span>| <span class="string">&#39;:&#39; </span>| <span class="string">&#39;/&#39; </span>| <span class="string">&#39;.&#39;</span>]<span class="question-mark">?
+        rule tail_skip() = space()* [<span class="string">&#39;;&#39; </span>| <span class="string">&#39;:&#39; </span>| <span class="string">&#39;/&#39; </span>| <span class="string">&#39;.&#39;</span>]<span class="question-mark">?
 
-    </span><span class="comment">// digits, hyphens, and misc. marks are allowed (will clean later)
-    </span>rule digit_char() -&gt; char
-      = mc:[<span class="string">&#39;0&#39;</span>..=<span class="string">&#39;9&#39; </span>| <span class="string">&#39;-&#39; </span>| <span class="string">&#39;O&#39;</span>] { mc }
-      / mc:[c <span class="kw">if </span>NONSPACING_MARK.contains(c)] { mc }
+        </span><span class="comment">// digits, hyphens, and misc. marks are allowed (will clean later)
+        </span>rule digit_char() -&gt; char
+        = mc:[<span class="string">&#39;0&#39;</span>..=<span class="string">&#39;9&#39; </span>| <span class="string">&#39;-&#39; </span>| <span class="string">&#39;O&#39;</span>] { mc }
+        / mc:[c <span class="kw">if </span>NONSPACING_MARK.contains(c)] { mc }
 
-    <span class="comment">// some ISBNs have some random junk in the middle, match allowed junk
-    </span>rule inner_junk() = [<span class="string">&#39;a&#39;</span>..=<span class="string">&#39;z&#39; </span>| <span class="string">&#39;A&#39;</span>..=<span class="string">&#39;Z&#39;</span>]+ / [<span class="string">&#39; &#39; </span>| <span class="string">&#39;+&#39;</span>]
+        <span class="comment">// some ISBNs have some random junk in the middle, match allowed junk
+        </span>rule inner_junk() = [<span class="string">&#39;a&#39;</span>..=<span class="string">&#39;z&#39; </span>| <span class="string">&#39;A&#39;</span>..=<span class="string">&#39;Z&#39;</span>]+ / [<span class="string">&#39; &#39; </span>| <span class="string">&#39;+&#39;</span>]
 
-    rule isbn_text() -&gt; String
-      = s:$(digit_char()<span class="kw-2">*</span>&lt;<span class="number">8</span>,&gt; [<span class="string">&#39;X&#39; </span>| <span class="string">&#39;x&#39;</span>]<span class="question-mark">?</span>) { clean_isbn_chars(s) }
-      / s:$([<span class="string">&#39;0&#39;</span>..=<span class="string">&#39;9&#39;</span>]<span class="kw-2">*</span>&lt;<span class="number">1</span>,<span class="number">5</span>&gt; inner_junk() [<span class="string">&#39;0&#39;</span>..=<span class="string">&#39;9&#39; </span>| <span class="string">&#39;-&#39;</span>]<span class="kw-2">*</span>&lt;<span class="number">4</span>,&gt;) { clean_isbn_chars(s) }
+        rule isbn_text() -&gt; String
+        = s:$(digit_char()<span class="kw-2">*</span>&lt;<span class="number">8</span>,&gt; [<span class="string">&#39;X&#39; </span>| <span class="string">&#39;x&#39;</span>]<span class="question-mark">?</span>) { clean_isbn_chars(s) }
+        / s:$([<span class="string">&#39;0&#39;</span>..=<span class="string">&#39;9&#39;</span>]<span class="kw-2">*</span>&lt;<span class="number">1</span>,<span class="number">5</span>&gt; inner_junk() [<span class="string">&#39;0&#39;</span>..=<span class="string">&#39;9&#39; </span>| <span class="string">&#39;-&#39;</span>]<span class="kw-2">*</span>&lt;<span class="number">4</span>,&gt;) { clean_isbn_chars(s) }
 
-    rule isbn() -&gt; ISBN
-      = lead() i:isbn_text() tags:tags()* { ISBN {
-        text: i,
-        tags: tags.into_iter().flatten().collect()
-    }}
+        rule isbn() -&gt; ISBN
+        = lead() i:isbn_text() tags:tags()* { ISBN {
+            text: i,
+            tags: tags.into_iter().flatten().collect()
+        }}
 
-    <span class="kw">pub </span>rule parse_isbns() -&gt; (Vec&lt;ISBN&gt;, String)
-      = v:(isbn() <span class="kw-2">*</span>* tail_skip()) tail_skip() t:$([<span class="kw">_</span>]<span class="kw-2">*</span>) { (v, t.into()) }
-  }
+        <span class="kw">pub </span>rule parse_isbns() -&gt; (Vec&lt;ISBN&gt;, String)
+        = v:(isbn() <span class="kw-2">*</span>* tail_skip()) tail_skip() t:$([<span class="kw">_</span>]<span class="kw-2">*</span>) { (v, t.into()) }
+    }
 }
 
 <span class="doccomment">/// Crude ISBN cleanup.
@@ -511,328 +511,328 @@
 /// To be used with ISBN strings that are relatively well-formed, but may have invalid
 /// characters.
 </span><span class="kw">pub fn </span>clean_isbn_chars(isbn: <span class="kw-2">&amp;</span>str) -&gt; String {
-  <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::with_capacity(isbn.len());
-  <span class="kw">let </span>bytes = isbn.as_bytes();
-  <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..bytes.len() {
-    <span class="kw">let </span>b = bytes[i];
-    <span class="kw">if </span>b.is_ascii_digit() || b == <span class="string">b&#39;X&#39; </span>{
-      vec.push(b)
-    } <span class="kw">else if </span>b == <span class="string">b&#39;x&#39; </span>{
-      vec.push(<span class="string">b&#39;X&#39;</span>)
-    } <span class="kw">else if </span>b == <span class="string">b&#39;O&#39; </span>{
-      vec.push(<span class="string">b&#39;0&#39;</span>)
+    <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::with_capacity(isbn.len());
+    <span class="kw">let </span>bytes = isbn.as_bytes();
+    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..bytes.len() {
+        <span class="kw">let </span>b = bytes[i];
+        <span class="kw">if </span>b.is_ascii_digit() || b == <span class="string">b&#39;X&#39; </span>{
+            vec.push(b)
+        } <span class="kw">else if </span>b == <span class="string">b&#39;x&#39; </span>{
+            vec.push(<span class="string">b&#39;X&#39;</span>)
+        } <span class="kw">else if </span>b == <span class="string">b&#39;O&#39; </span>{
+            vec.push(<span class="string">b&#39;0&#39;</span>)
+        }
     }
-  }
-  <span class="kw">unsafe </span>{  <span class="comment">// we know it&#39;s only ascii
-    </span>String::from_utf8_unchecked(vec)
-  }
+    <span class="kw">unsafe </span>{
+        <span class="comment">// we know it&#39;s only ascii
+        </span>String::from_utf8_unchecked(vec)
+    }
 }
 
 <span class="doccomment">/// Crude ASIN cleanup.
 </span><span class="kw">pub fn </span>clean_asin_chars(isbn: <span class="kw-2">&amp;</span>str) -&gt; String {
-  <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::with_capacity(isbn.len());
-  <span class="kw">let </span>bytes = isbn.as_bytes();
-  <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..bytes.len() {
-    <span class="kw">let </span>b = bytes[i];
-    <span class="kw">if </span>b.is_ascii_alphanumeric() {
-      vec.push(b.to_ascii_uppercase())
+    <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::with_capacity(isbn.len());
+    <span class="kw">let </span>bytes = isbn.as_bytes();
+    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..bytes.len() {
+        <span class="kw">let </span>b = bytes[i];
+        <span class="kw">if </span>b.is_ascii_alphanumeric() {
+            vec.push(b.to_ascii_uppercase())
+        }
     }
-  }
-  <span class="kw">unsafe </span>{  <span class="comment">// we know it&#39;s only ascii
-    </span>String::from_utf8_unchecked(vec)
-  }
+    <span class="kw">unsafe </span>{
+        <span class="comment">// we know it&#39;s only ascii
+        </span>String::from_utf8_unchecked(vec)
+    }
 }
 
 <span class="doccomment">/// Parse an ISBN string.
 </span><span class="kw">pub fn </span>parse_isbn_string(s: <span class="kw-2">&amp;</span>str) -&gt; ParseResult {
-  <span class="comment">// let mut parser = self.create_parser(s);
-  // parser.read_all()
-  </span><span class="kw">if let </span><span class="prelude-val">Ok</span>((isbns, tail)) = isbn_parser::parse_isbns(s) {
-    <span class="kw">if </span>isbns.is_empty() {
-      <span class="kw">if </span>IGNORE_RE.is_match(s) {
-        ParseResult::Ignored(s.to_owned())
-      } <span class="kw">else </span>{
-        ParseResult::Unmatched(s.to_owned())
-      }
+    <span class="comment">// let mut parser = self.create_parser(s);
+    // parser.read_all()
+    </span><span class="kw">if let </span><span class="prelude-val">Ok</span>((isbns, tail)) = isbn_parser::parse_isbns(s) {
+        <span class="kw">if </span>isbns.is_empty() {
+            <span class="kw">if </span>IGNORE_RE.is_match(s) {
+                ParseResult::Ignored(s.to_owned())
+            } <span class="kw">else </span>{
+                ParseResult::Unmatched(s.to_owned())
+            }
+        } <span class="kw">else </span>{
+            ParseResult::Valid(isbns, tail)
+        }
     } <span class="kw">else </span>{
-      ParseResult::Valid(isbns, tail)
+        ParseResult::Unmatched(s.to_owned())
     }
-  } <span class="kw">else </span>{
-    ParseResult::Unmatched(s.to_owned())
-  }
 }
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_parse_empty() {
-  <span class="kw">let </span>res = parse_isbn_string(<span class="string">&quot;&quot;</span>);
-  <span class="macro">assert_eq!</span>(res, ParseResult::Ignored(<span class="string">&quot;&quot;</span>.to_owned()));
+    <span class="kw">let </span>res = parse_isbn_string(<span class="string">&quot;&quot;</span>);
+    <span class="macro">assert_eq!</span>(res, ParseResult::Ignored(<span class="string">&quot;&quot;</span>.to_owned()));
 }
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_parse_ws() {
-  <span class="kw">let </span>res = parse_isbn_string(<span class="string">&quot;  &quot;</span>);
-  <span class="macro">assert_eq!</span>(res, ParseResult::Ignored(<span class="string">&quot;  &quot;</span>.to_owned()));
+    <span class="kw">let </span>res = parse_isbn_string(<span class="string">&quot;  &quot;</span>);
+    <span class="macro">assert_eq!</span>(res, ParseResult::Ignored(<span class="string">&quot;  &quot;</span>.to_owned()));
 }
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_parse_isbn() {
-  <span class="kw">let </span>isbn = <span class="string">&quot;349224010X&quot;</span>;
+    <span class="kw">let </span>isbn = <span class="string">&quot;349224010X&quot;</span>;
 
-  <span class="kw">let </span>res = parse_isbn_string(isbn);
-  <span class="kw">match </span>res {
-    ParseResult::Valid(isbns, trail) =&gt; {
-      <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags.len(), <span class="number">0</span>);
-      <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
-    },
-    x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x)
-  }
+    <span class="kw">let </span>res = parse_isbn_string(isbn);
+    <span class="kw">match </span>res {
+        ParseResult::Valid(isbns, trail) =&gt; {
+            <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags.len(), <span class="number">0</span>);
+            <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
+        }
+        x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x),
+    }
 }
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_parse_isbn_trail() {
-  <span class="kw">let </span>src = <span class="string">&quot;349224010X :&quot;</span>;
-  <span class="kw">let </span>isbn = <span class="string">&quot;349224010X&quot;</span>;
+    <span class="kw">let </span>src = <span class="string">&quot;349224010X :&quot;</span>;
+    <span class="kw">let </span>isbn = <span class="string">&quot;349224010X&quot;</span>;
 
-  <span class="kw">let </span>res = parse_isbn_string(src);
-  <span class="kw">match </span>res {
-    ParseResult::Valid(isbns, trail) =&gt; {
-      <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags.len(), <span class="number">0</span>);
-      <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
-    },
-    x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x)
-  }
+    <span class="kw">let </span>res = parse_isbn_string(src);
+    <span class="kw">match </span>res {
+        ParseResult::Valid(isbns, trail) =&gt; {
+            <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags.len(), <span class="number">0</span>);
+            <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
+        }
+        x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x),
+    }
 }
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_parse_isbn_caron() {
-  <span class="kw">let </span>src = <span class="string">&quot;349̌224010X&quot;</span>;
-  <span class="kw">let </span>isbn = <span class="string">&quot;349224010X&quot;</span>;
+    <span class="kw">let </span>src = <span class="string">&quot;349̌224010X&quot;</span>;
+    <span class="kw">let </span>isbn = <span class="string">&quot;349224010X&quot;</span>;
 
-  <span class="kw">let </span>res = parse_isbn_string(src);
-  <span class="kw">match </span>res {
-    ParseResult::Valid(isbns, trail) =&gt; {
-      <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags.len(), <span class="number">0</span>);
-      <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
-    },
-    x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x)
-  }
+    <span class="kw">let </span>res = parse_isbn_string(src);
+    <span class="kw">match </span>res {
+        ParseResult::Valid(isbns, trail) =&gt; {
+            <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags.len(), <span class="number">0</span>);
+            <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
+        }
+        x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x),
+    }
 }
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_parse_hyphen_isbn() {
-  <span class="kw">let </span>src = <span class="string">&quot;978-03-2948-9391&quot;</span>;
-  <span class="kw">let </span>isbn = <span class="string">&quot;9780329489391&quot;</span>;
+    <span class="kw">let </span>src = <span class="string">&quot;978-03-2948-9391&quot;</span>;
+    <span class="kw">let </span>isbn = <span class="string">&quot;9780329489391&quot;</span>;
 
-  <span class="kw">let </span>res = parse_isbn_string(src);
-  <span class="kw">match </span>res {
-    ParseResult::Valid(isbns, trail) =&gt; {
-      <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags.len(), <span class="number">0</span>);
-      <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
-    },
-    x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x)
-  }
+    <span class="kw">let </span>res = parse_isbn_string(src);
+    <span class="kw">match </span>res {
+        ParseResult::Valid(isbns, trail) =&gt; {
+            <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags.len(), <span class="number">0</span>);
+            <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
+        }
+        x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x),
+    }
 }
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_parse_space_isbn() {
-  <span class="kw">let </span>src = <span class="string">&quot;978 032948-9391&quot;</span>;
-  <span class="kw">let </span>isbn = <span class="string">&quot;9780329489391&quot;</span>;
+    <span class="kw">let </span>src = <span class="string">&quot;978 032948-9391&quot;</span>;
+    <span class="kw">let </span>isbn = <span class="string">&quot;9780329489391&quot;</span>;
 
-  <span class="kw">let </span>res = parse_isbn_string(src);
-  <span class="kw">match </span>res {
-    ParseResult::Valid(isbns, trail) =&gt; {
-      <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags.len(), <span class="number">0</span>);
-      <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
-    },
-    x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x)
-  }
+    <span class="kw">let </span>res = parse_isbn_string(src);
+    <span class="kw">match </span>res {
+        ParseResult::Valid(isbns, trail) =&gt; {
+            <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags.len(), <span class="number">0</span>);
+            <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
+        }
+        x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x),
+    }
 }
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_parse_isbn_tag() {
-  <span class="kw">let </span>src = <span class="string">&quot;34922401038 (set)&quot;</span>;
-  <span class="kw">let </span>isbn = <span class="string">&quot;34922401038&quot;</span>;
-  <span class="kw">let </span>tag = <span class="string">&quot;set&quot;</span>;
+    <span class="kw">let </span>src = <span class="string">&quot;34922401038 (set)&quot;</span>;
+    <span class="kw">let </span>isbn = <span class="string">&quot;34922401038&quot;</span>;
+    <span class="kw">let </span>tag = <span class="string">&quot;set&quot;</span>;
 
-  <span class="kw">let </span>res = parse_isbn_string(src);
-  <span class="kw">match </span>res {
-    ParseResult::Valid(isbns, trail) =&gt; {
-      <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags, <span class="macro">vec!</span>[tag]);
-      <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
-    },
-    x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x)
-  }
+    <span class="kw">let </span>res = parse_isbn_string(src);
+    <span class="kw">match </span>res {
+        ParseResult::Valid(isbns, trail) =&gt; {
+            <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags, <span class="macro">vec!</span>[tag]);
+            <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
+        }
+        x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x),
+    }
 }
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_parse_isbn_square_tag() {
-  <span class="kw">let </span>src = <span class="string">&quot;34922401038 [set]&quot;</span>;
-  <span class="kw">let </span>isbn = <span class="string">&quot;34922401038&quot;</span>;
-  <span class="kw">let </span>tag = <span class="string">&quot;set&quot;</span>;
+    <span class="kw">let </span>src = <span class="string">&quot;34922401038 [set]&quot;</span>;
+    <span class="kw">let </span>isbn = <span class="string">&quot;34922401038&quot;</span>;
+    <span class="kw">let </span>tag = <span class="string">&quot;set&quot;</span>;
 
-  <span class="kw">let </span>res = parse_isbn_string(src);
-  <span class="kw">match </span>res {
-    ParseResult::Valid(isbns, trail) =&gt; {
-      <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags, <span class="macro">vec!</span>[tag]);
-      <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
-    },
-    x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x)
-  }
+    <span class="kw">let </span>res = parse_isbn_string(src);
+    <span class="kw">match </span>res {
+        ParseResult::Valid(isbns, trail) =&gt; {
+            <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags, <span class="macro">vec!</span>[tag]);
+            <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
+        }
+        x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x),
+    }
 }
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_parse_isbn_multi_tag_sep() {
-  <span class="kw">let </span>src = <span class="string">&quot;34922401038 (set : alk. paper)&quot;</span>;
-  <span class="kw">let </span>isbn = <span class="string">&quot;34922401038&quot;</span>;
+    <span class="kw">let </span>src = <span class="string">&quot;34922401038 (set : alk. paper)&quot;</span>;
+    <span class="kw">let </span>isbn = <span class="string">&quot;34922401038&quot;</span>;
 
-  <span class="kw">let </span>res = parse_isbn_string(src);
-  <span class="kw">match </span>res {
-    ParseResult::Valid(isbns, trail) =&gt; {
-      <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags, <span class="macro">vec!</span>[<span class="string">&quot;set&quot;</span>, <span class="string">&quot;alk. paper&quot;</span>]);
-      <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
-    },
-    x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x)
-  }
+    <span class="kw">let </span>res = parse_isbn_string(src);
+    <span class="kw">match </span>res {
+        ParseResult::Valid(isbns, trail) =&gt; {
+            <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags, <span class="macro">vec!</span>[<span class="string">&quot;set&quot;</span>, <span class="string">&quot;alk. paper&quot;</span>]);
+            <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
+        }
+        x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x),
+    }
 }
-
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_parse_isbn_tags() {
-  <span class="kw">let </span>src = <span class="string">&quot;34922401038 (pbk.) (set)&quot;</span>;
-  <span class="kw">let </span>isbn = <span class="string">&quot;34922401038&quot;</span>;
+    <span class="kw">let </span>src = <span class="string">&quot;34922401038 (pbk.) (set)&quot;</span>;
+    <span class="kw">let </span>isbn = <span class="string">&quot;34922401038&quot;</span>;
 
-  <span class="kw">let </span>res = parse_isbn_string(src);
-  <span class="kw">match </span>res {
-    ParseResult::Valid(isbns, trail) =&gt; {
-      <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags, <span class="macro">vec!</span>[<span class="string">&quot;pbk.&quot;</span>, <span class="string">&quot;set&quot;</span>]);
-      <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
-    },
-    x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x)
-  }
+    <span class="kw">let </span>res = parse_isbn_string(src);
+    <span class="kw">match </span>res {
+        ParseResult::Valid(isbns, trail) =&gt; {
+            <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags, <span class="macro">vec!</span>[<span class="string">&quot;pbk.&quot;</span>, <span class="string">&quot;set&quot;</span>]);
+            <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
+        }
+        x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x),
+    }
 }
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_parse_isbn_leader() {
-  <span class="kw">let </span>src = <span class="string">&quot;a 970238408138&quot;</span>;
-  <span class="kw">let </span>isbn = <span class="string">&quot;970238408138&quot;</span>;
+    <span class="kw">let </span>src = <span class="string">&quot;a 970238408138&quot;</span>;
+    <span class="kw">let </span>isbn = <span class="string">&quot;970238408138&quot;</span>;
 
-  <span class="kw">let </span>res = parse_isbn_string(src);
-  <span class="kw">match </span>res {
-    ParseResult::Valid(isbns, trail) =&gt; {
-      <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags.len(), <span class="number">0</span>);
-      <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
-    },
-    x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x)
-  }
+    <span class="kw">let </span>res = parse_isbn_string(src);
+    <span class="kw">match </span>res {
+        ParseResult::Valid(isbns, trail) =&gt; {
+            <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags.len(), <span class="number">0</span>);
+            <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
+        }
+        x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x),
+    }
 }
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_parse_two_isbns_ws() {
-  <span class="kw">let </span>src = <span class="string">&quot;970238408138 30148100103&quot;</span>;
-  <span class="kw">let </span>isbn1 = <span class="string">&quot;970238408138&quot;</span>;
-  <span class="kw">let </span>isbn2 = <span class="string">&quot;30148100103&quot;</span>;
+    <span class="kw">let </span>src = <span class="string">&quot;970238408138 30148100103&quot;</span>;
+    <span class="kw">let </span>isbn1 = <span class="string">&quot;970238408138&quot;</span>;
+    <span class="kw">let </span>isbn2 = <span class="string">&quot;30148100103&quot;</span>;
 
-  <span class="kw">let </span>res = parse_isbn_string(src);
-  <span class="kw">match </span>res {
-    ParseResult::Valid(isbns, trail) =&gt; {
-      <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">2</span>);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn1);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags.len(), <span class="number">0</span>);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">1</span>].text, isbn2);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">1</span>].tags.len(), <span class="number">0</span>);
-      <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
-    },
-    x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x)
-  }
+    <span class="kw">let </span>res = parse_isbn_string(src);
+    <span class="kw">match </span>res {
+        ParseResult::Valid(isbns, trail) =&gt; {
+            <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">2</span>);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn1);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags.len(), <span class="number">0</span>);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">1</span>].text, isbn2);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">1</span>].tags.len(), <span class="number">0</span>);
+            <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
+        }
+        x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x),
+    }
 }
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_parse_two_isbns_semi() {
-  <span class="kw">let </span>src = <span class="string">&quot;970238408138; ISBN 30148100103&quot;</span>;
-  <span class="kw">let </span>isbn1 = <span class="string">&quot;970238408138&quot;</span>;
-  <span class="kw">let </span>isbn2 = <span class="string">&quot;30148100103&quot;</span>;
+    <span class="kw">let </span>src = <span class="string">&quot;970238408138; ISBN 30148100103&quot;</span>;
+    <span class="kw">let </span>isbn1 = <span class="string">&quot;970238408138&quot;</span>;
+    <span class="kw">let </span>isbn2 = <span class="string">&quot;30148100103&quot;</span>;
 
-  <span class="kw">let </span>res = parse_isbn_string(src);
-  <span class="kw">match </span>res {
-    ParseResult::Valid(isbns, trail) =&gt; {
-      <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">2</span>);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn1);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags.len(), <span class="number">0</span>);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">1</span>].text, isbn2);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">1</span>].tags.len(), <span class="number">0</span>);
-      <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
-    },
-    x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x)
-  }
+    <span class="kw">let </span>res = parse_isbn_string(src);
+    <span class="kw">match </span>res {
+        ParseResult::Valid(isbns, trail) =&gt; {
+            <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">2</span>);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn1);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags.len(), <span class="number">0</span>);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">1</span>].text, isbn2);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">1</span>].tags.len(), <span class="number">0</span>);
+            <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
+        }
+        x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x),
+    }
 }
-
 
 <span class="attribute">#[test]
 </span><span class="kw">fn </span>test_parse_two_isbns_real() {
-  <span class="comment">// Real example from record 2175696
-  </span><span class="kw">let </span>src = <span class="string">&quot;8719359022. ISBN 8719359004 (pbk.)&quot;</span>;
-  <span class="kw">let </span>isbn1 = <span class="string">&quot;8719359022&quot;</span>;
-  <span class="kw">let </span>isbn2 = <span class="string">&quot;8719359004&quot;</span>;
+    <span class="comment">// Real example from record 2175696
+    </span><span class="kw">let </span>src = <span class="string">&quot;8719359022. ISBN 8719359004 (pbk.)&quot;</span>;
+    <span class="kw">let </span>isbn1 = <span class="string">&quot;8719359022&quot;</span>;
+    <span class="kw">let </span>isbn2 = <span class="string">&quot;8719359004&quot;</span>;
 
-  <span class="kw">let </span>res = parse_isbn_string(src);
-  <span class="kw">match </span>res {
-    ParseResult::Valid(isbns, trail) =&gt; {
-      <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">2</span>);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn1);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags.len(), <span class="number">0</span>);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">1</span>].text, isbn2);
-      <span class="macro">assert_eq!</span>(isbns[<span class="number">1</span>].tags, <span class="macro">vec!</span>[<span class="string">&quot;pbk.&quot;</span>]);
-      <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
-    },
-    x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x)
-  }
+    <span class="kw">let </span>res = parse_isbn_string(src);
+    <span class="kw">match </span>res {
+        ParseResult::Valid(isbns, trail) =&gt; {
+            <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">2</span>);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].text, isbn1);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">0</span>].tags.len(), <span class="number">0</span>);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">1</span>].text, isbn2);
+            <span class="macro">assert_eq!</span>(isbns[<span class="number">1</span>].tags, <span class="macro">vec!</span>[<span class="string">&quot;pbk.&quot;</span>]);
+            <span class="macro">assert_eq!</span>(trail, <span class="string">&quot;&quot;</span>);
+        }
+        x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse: {:?}&quot;</span>, x),
+    }
 }
 
 <span class="attribute">#[test]
 </span><span class="kw">pub fn </span>test_parse_isbn_junk_colon() {
-  <span class="kw">let </span>src = <span class="string">&quot;95l3512401 :&quot;</span>;
-  <span class="kw">let </span>isbn = <span class="string">&quot;953512401&quot;</span>;
-  <span class="kw">let </span>isbns = parse_isbn_string(src);
-  <span class="kw">if let </span>ParseResult::Valid(isbns, _tail) = isbns {
-    <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
-    <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>isbns[<span class="number">0</span>].text, isbn);
-  } <span class="kw">else </span>{
-    <span class="macro">panic!</span>(<span class="string">&quot;failed to parse {}: {:?}&quot;</span>, src, isbns);
-  }
+    <span class="kw">let </span>src = <span class="string">&quot;95l3512401 :&quot;</span>;
+    <span class="kw">let </span>isbn = <span class="string">&quot;953512401&quot;</span>;
+    <span class="kw">let </span>isbns = parse_isbn_string(src);
+    <span class="kw">if let </span>ParseResult::Valid(isbns, _tail) = isbns {
+        <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
+        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>isbns[<span class="number">0</span>].text, isbn);
+    } <span class="kw">else </span>{
+        <span class="macro">panic!</span>(<span class="string">&quot;failed to parse {}: {:?}&quot;</span>, src, isbns);
+    }
 }
 
 <span class="attribute">#[test]
 </span><span class="kw">pub fn </span>test_parse_isbn_oh() {
-  <span class="kw">let </span>src = <span class="string">&quot;O882970208 (pbk.)&quot;</span>;
-  <span class="kw">let </span>isbn = <span class="string">&quot;0882970208&quot;</span>;
+    <span class="kw">let </span>src = <span class="string">&quot;O882970208 (pbk.)&quot;</span>;
+    <span class="kw">let </span>isbn = <span class="string">&quot;0882970208&quot;</span>;
 
-  <span class="kw">let </span>isbns = parse_isbn_string(src);
-  <span class="kw">if let </span>ParseResult::Valid(isbns, _tail) = isbns {
-    <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
-    <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>isbns[<span class="number">0</span>].text, isbn);
-  } <span class="kw">else </span>{
-    <span class="macro">panic!</span>(<span class="string">&quot;failed to parse {}: {:?}&quot;</span>, src, isbns);
-  }
+    <span class="kw">let </span>isbns = parse_isbn_string(src);
+    <span class="kw">if let </span>ParseResult::Valid(isbns, _tail) = isbns {
+        <span class="macro">assert_eq!</span>(isbns.len(), <span class="number">1</span>);
+        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>isbns[<span class="number">0</span>].text, isbn);
+    } <span class="kw">else </span>{
+        <span class="macro">panic!</span>(<span class="string">&quot;failed to parse {}: {:?}&quot;</span>, src, isbns);
+    }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

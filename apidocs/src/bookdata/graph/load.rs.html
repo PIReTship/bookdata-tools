@@ -98,105 +98,133 @@
 <span id="98">98</span>
 <span id="99">99</span>
 <span id="100">100</span>
-</pre><pre class="rust"><code><span class="kw">use </span>std::collections::{HashMap};
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+</pre><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 
+<span class="kw">use </span>anyhow::{anyhow, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>log::<span class="kw-2">*</span>;
-<span class="kw">use </span>anyhow::{<span class="prelude-ty">Result</span>, anyhow};
 
-<span class="kw">use </span>polars::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">super</span>::sources::<span class="kw-2">*</span>;
-<span class="kw">use super</span>::{BookID, IdGraph,IdNode};
+<span class="kw">use super</span>::{BookID, IdGraph, IdNode};
+<span class="kw">use </span>polars::prelude::<span class="kw-2">*</span>;
 
 <span class="kw">type </span>NodeMap = HashMap&lt;i32, IdNode&gt;;
 
 <span class="kw">struct </span>GraphBuilder {
-  graph: IdGraph,
-  nodes: NodeMap,
+    graph: IdGraph,
+    nodes: NodeMap,
 }
 
 <span class="kw">impl </span>GraphBuilder {
-  <span class="kw">fn </span>add_vertices&lt;R: NodeRead&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, src: R) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="macro">info!</span>(<span class="string">&quot;scanning vertices from {:?}&quot;</span>, src);
-    <span class="kw">let </span>node_df = src.read_node_ids()<span class="question-mark">?</span>;
-    <span class="macro">debug!</span>(<span class="string">&quot;node schema: {:?}&quot;</span>, node_df.schema());
-    <span class="kw">let </span><span class="kw-2">mut </span>node_df = node_df.collect()<span class="question-mark">?</span>;
-    <span class="kw">let </span>ninit = <span class="self">self</span>.nodes.len();
+    <span class="kw">fn </span>add_vertices&lt;R: NodeRead&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, src: R) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">info!</span>(<span class="string">&quot;scanning vertices from {:?}&quot;</span>, src);
+        <span class="kw">let </span>node_df = src.read_node_ids()<span class="question-mark">?</span>;
+        <span class="macro">debug!</span>(<span class="string">&quot;node schema: {:?}&quot;</span>, node_df.schema());
+        <span class="kw">let </span><span class="kw-2">mut </span>node_df = node_df.collect()<span class="question-mark">?</span>;
+        <span class="kw">let </span>ninit = <span class="self">self</span>.nodes.len();
 
-    <span class="comment">// pull out the column to reduce memory
-    </span><span class="kw">let </span>code_s = node_df.drop_in_place(<span class="string">&quot;code&quot;</span>)<span class="question-mark">?</span>;
-    <span class="kw">let </span>code_s = code_s.cast(<span class="kw-2">&amp;</span>DataType::Int32)<span class="question-mark">?</span>;
-    <span class="kw">let </span>codes = code_s.i32()<span class="question-mark">?</span>;
-    <span class="kw">let </span>labels = node_df.column(<span class="string">&quot;label&quot;</span>).ok().map(|c| c.utf8()).transpose()<span class="question-mark">?</span>;
-    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..codes.len() {
-      <span class="kw">let </span>code = codes.get(i).unwrap();
-      <span class="kw">let </span>label = labels.map(|c| c.get(i)).flatten();
-      <span class="kw">let </span>label = label.map(|s| s.to_string());
-      <span class="kw">let </span>entry = <span class="self">self</span>.nodes.entry(code);
-      entry.or_insert_with(|| <span class="self">self</span>.graph.add_node(BookID { code, label, cluster: <span class="number">0 </span>}));
+        <span class="comment">// pull out the column to reduce memory
+        </span><span class="kw">let </span>code_s = node_df.drop_in_place(<span class="string">&quot;code&quot;</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>code_s = code_s.cast(<span class="kw-2">&amp;</span>DataType::Int32)<span class="question-mark">?</span>;
+        <span class="kw">let </span>codes = code_s.i32()<span class="question-mark">?</span>;
+        <span class="kw">let </span>labels = node_df.column(<span class="string">&quot;label&quot;</span>).ok().map(|c| c.utf8()).transpose()<span class="question-mark">?</span>;
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..codes.len() {
+            <span class="kw">let </span>code = codes.get(i).unwrap();
+            <span class="kw">let </span>label = labels.map(|c| c.get(i)).flatten();
+            <span class="kw">let </span>label = label.map(|s| s.to_string());
+            <span class="kw">let </span>entry = <span class="self">self</span>.nodes.entry(code);
+            entry.or_insert_with(|| {
+                <span class="self">self</span>.graph.add_node(BookID {
+                    code,
+                    label,
+                    cluster: <span class="number">0</span>,
+                })
+            });
+        }
+
+        <span class="macro">info!</span>(
+            <span class="string">&quot;loaded {} new vertices from {:?}&quot;</span>,
+            <span class="self">self</span>.nodes.len() - ninit,
+            src
+        );
+
+        <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="macro">info!</span>(<span class="string">&quot;loaded {} new vertices from {:?}&quot;</span>, <span class="self">self</span>.nodes.len() - ninit, src);
+    <span class="kw">fn </span>add_edges&lt;R: EdgeRead&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, src: R) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">info!</span>(<span class="string">&quot;scanning edges from {:?}&quot;</span>, src);
+        <span class="kw">let </span>edge_df = src.read_edges()<span class="question-mark">?</span>;
+        <span class="macro">debug!</span>(<span class="string">&quot;edge schema: {:?}&quot;</span>, edge_df.schema());
+        <span class="kw">let </span>edge_df = edge_df.collect()<span class="question-mark">?</span>;
+        <span class="kw">let </span>src_s = edge_df.column(<span class="string">&quot;src&quot;</span>)<span class="question-mark">?</span>.cast(<span class="kw-2">&amp;</span>DataType::Int32)<span class="question-mark">?</span>;
+        <span class="kw">let </span>srcs = src_s.i32()<span class="question-mark">?</span>;
+        <span class="kw">let </span>dst_s = edge_df.column(<span class="string">&quot;dst&quot;</span>)<span class="question-mark">?</span>.cast(<span class="kw-2">&amp;</span>DataType::Int32)<span class="question-mark">?</span>;
+        <span class="kw">let </span>dsts = dst_s.i32()<span class="question-mark">?</span>;
 
-    <span class="prelude-val">Ok</span>(())
-  }
+        <span class="kw">let </span>iter = srcs.into_iter().zip(dsts.into_iter());
+        <span class="kw">let </span><span class="kw-2">mut </span>n = <span class="number">0</span>;
 
-  <span class="kw">fn </span>add_edges&lt;R: EdgeRead&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, src: R) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="macro">info!</span>(<span class="string">&quot;scanning edges from {:?}&quot;</span>, src);
-    <span class="kw">let </span>edge_df = src.read_edges()<span class="question-mark">?</span>;
-    <span class="macro">debug!</span>(<span class="string">&quot;edge schema: {:?}&quot;</span>, edge_df.schema());
-    <span class="kw">let </span>edge_df = edge_df.collect()<span class="question-mark">?</span>;
-    <span class="kw">let </span>src_s = edge_df.column(<span class="string">&quot;src&quot;</span>)<span class="question-mark">?</span>.cast(<span class="kw-2">&amp;</span>DataType::Int32)<span class="question-mark">?</span>;
-    <span class="kw">let </span>srcs = src_s.i32()<span class="question-mark">?</span>;
-    <span class="kw">let </span>dst_s = edge_df.column(<span class="string">&quot;dst&quot;</span>)<span class="question-mark">?</span>.cast(<span class="kw-2">&amp;</span>DataType::Int32)<span class="question-mark">?</span>;
-    <span class="kw">let </span>dsts = dst_s.i32()<span class="question-mark">?</span>;
+        <span class="kw">for </span>pair <span class="kw">in </span>iter {
+            <span class="kw">if let </span>(<span class="prelude-val">Some</span>(sn), <span class="prelude-val">Some</span>(dn)) = pair {
+                <span class="kw">let </span>sid = <span class="self">self
+                    </span>.nodes
+                    .get(<span class="kw-2">&amp;</span>sn)
+                    .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;unknown source node {}&quot;</span>, sn))<span class="question-mark">?</span>;
+                <span class="kw">let </span>did = <span class="self">self
+                    </span>.nodes
+                    .get(<span class="kw-2">&amp;</span>dn)
+                    .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;unknown destination node {}&quot;</span>, sn))<span class="question-mark">?</span>;
+                <span class="self">self</span>.graph.add_edge(<span class="kw-2">*</span>sid, <span class="kw-2">*</span>did, ());
+                n += <span class="number">1</span>;
+            }
+        }
 
-    <span class="kw">let </span>iter = srcs.into_iter().zip(dsts.into_iter());
-    <span class="kw">let </span><span class="kw-2">mut </span>n = <span class="number">0</span>;
+        <span class="macro">info!</span>(<span class="string">&quot;added {} edges from {:?}&quot;</span>, n, src);
 
-    <span class="kw">for </span>pair <span class="kw">in </span>iter {
-      <span class="kw">if let </span>(<span class="prelude-val">Some</span>(sn), <span class="prelude-val">Some</span>(dn)) = pair {
-        <span class="kw">let </span>sid = <span class="self">self</span>.nodes.get(<span class="kw-2">&amp;</span>sn).ok_or_else(|| {
-          <span class="macro">anyhow!</span>(<span class="string">&quot;unknown source node {}&quot;</span>, sn)
-        })<span class="question-mark">?</span>;
-        <span class="kw">let </span>did = <span class="self">self</span>.nodes.get(<span class="kw-2">&amp;</span>dn).ok_or_else(|| {
-          <span class="macro">anyhow!</span>(<span class="string">&quot;unknown destination node {}&quot;</span>, sn)
-        })<span class="question-mark">?</span>;
-        <span class="self">self</span>.graph.add_edge(<span class="kw-2">*</span>sid, <span class="kw-2">*</span>did, ());
-        n += <span class="number">1</span>;
-      }
+        <span class="prelude-val">Ok</span>(())
     }
-
-    <span class="macro">info!</span>(<span class="string">&quot;added {} edges from {:?}&quot;</span>, n, src);
-
-    <span class="prelude-val">Ok</span>(())
-  }
 }
 
 <span class="kw">pub fn </span>construct_graph() -&gt; <span class="prelude-ty">Result</span>&lt;IdGraph&gt; {
-  <span class="kw">let </span>graph = IdGraph::new_undirected();
-  <span class="kw">let </span>nodes = NodeMap::new();
-  <span class="kw">let </span><span class="kw-2">mut </span>gb = GraphBuilder {
-    graph, nodes,
-  };
+    <span class="kw">let </span>graph = IdGraph::new_undirected();
+    <span class="kw">let </span>nodes = NodeMap::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>gb = GraphBuilder { graph, nodes };
 
-  <span class="macro">info!</span>(<span class="string">&quot;loading nodes&quot;</span>);
-  gb.add_vertices(ISBN)<span class="question-mark">?</span>;
-  gb.add_vertices(LOC)<span class="question-mark">?</span>;
-  gb.add_vertices(OLEditions)<span class="question-mark">?</span>;
-  gb.add_vertices(OLWorks)<span class="question-mark">?</span>;
-  gb.add_vertices(GRBooks)<span class="question-mark">?</span>;
-  gb.add_vertices(GRWorks)<span class="question-mark">?</span>;
+    <span class="macro">info!</span>(<span class="string">&quot;loading nodes&quot;</span>);
+    gb.add_vertices(ISBN)<span class="question-mark">?</span>;
+    gb.add_vertices(LOC)<span class="question-mark">?</span>;
+    gb.add_vertices(OLEditions)<span class="question-mark">?</span>;
+    gb.add_vertices(OLWorks)<span class="question-mark">?</span>;
+    gb.add_vertices(GRBooks)<span class="question-mark">?</span>;
+    gb.add_vertices(GRWorks)<span class="question-mark">?</span>;
 
-  <span class="macro">info!</span>(<span class="string">&quot;loading edges&quot;</span>);
-  gb.add_edges(LOC)<span class="question-mark">?</span>;
-  gb.add_edges(OLEditions)<span class="question-mark">?</span>;
-  gb.add_edges(OLWorks)<span class="question-mark">?</span>;
-  gb.add_edges(GRBooks)<span class="question-mark">?</span>;
-  gb.add_edges(GRWorks)<span class="question-mark">?</span>;
+    <span class="macro">info!</span>(<span class="string">&quot;loading edges&quot;</span>);
+    gb.add_edges(LOC)<span class="question-mark">?</span>;
+    gb.add_edges(OLEditions)<span class="question-mark">?</span>;
+    gb.add_edges(OLWorks)<span class="question-mark">?</span>;
+    gb.add_edges(GRBooks)<span class="question-mark">?</span>;
+    gb.add_edges(GRWorks)<span class="question-mark">?</span>;
 
-  <span class="kw">let </span>graph = gb.graph;
-  <span class="macro">info!</span>(<span class="string">&quot;graph has {} nodes, {} edges&quot;</span>, graph.node_count(), graph.edge_count());
-  <span class="prelude-val">Ok</span>(graph)
+    <span class="kw">let </span>graph = gb.graph;
+    <span class="macro">info!</span>(
+        <span class="string">&quot;graph has {} nodes, {} edges&quot;</span>,
+        graph.node_count(),
+        graph.edge_count()
+    );
+    <span class="prelude-val">Ok</span>(graph)
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

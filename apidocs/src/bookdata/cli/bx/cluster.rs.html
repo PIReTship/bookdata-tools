@@ -59,70 +59,66 @@
 <span id="59">59</span>
 <span id="60">60</span>
 <span id="61">61</span>
-<span id="62">62</span>
-<span id="63">63</span>
 </pre><pre class="rust"><code><span class="doccomment">//! BookCrossing interaction clustering.
-</span><span class="kw">use </span>std::path::{PathBuf};
+</span><span class="kw">use </span>std::path::PathBuf;
 
-<span class="kw">use </span>polars::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>polars::prelude::<span class="kw-2">*</span>;
 
 <span class="attribute">#[derive(Args, Debug)]
-#[command(name=<span class="string">&quot;cluster-actions&quot;</span>)]
+#[command(name = <span class="string">&quot;cluster-actions&quot;</span>)]
 </span><span class="kw">pub struct </span>Cluster {
-  <span class="doccomment">/// Cluster ratings.
-  </span><span class="attribute">#[arg(long=<span class="string">&quot;ratings&quot;</span>)]
-  </span>ratings: bool,
+    <span class="doccomment">/// Cluster ratings.
+    </span><span class="attribute">#[arg(long = <span class="string">&quot;ratings&quot;</span>)]
+    </span>ratings: bool,
 
-  <span class="doccomment">/// Cluster actions (implicit feedback).
-  </span><span class="attribute">#[arg(long=<span class="string">&quot;add-actions&quot;</span>)]
-  </span>add_actions: bool,
+    <span class="doccomment">/// Cluster actions (implicit feedback).
+    </span><span class="attribute">#[arg(long = <span class="string">&quot;add-actions&quot;</span>)]
+    </span>add_actions: bool,
 
-  <span class="doccomment">/// The output file.
-  </span><span class="attribute">#[arg(short=<span class="string">&#39;o&#39;</span>, long=<span class="string">&quot;output&quot;</span>, name=<span class="string">&quot;FILE&quot;</span>)]
-  </span>outfile: PathBuf,
+    <span class="doccomment">/// The output file.
+    </span><span class="attribute">#[arg(short = <span class="string">&#39;o&#39;</span>, long = <span class="string">&quot;output&quot;</span>, name = <span class="string">&quot;FILE&quot;</span>)]
+    </span>outfile: PathBuf,
 }
 
 <span class="kw">impl </span>Command <span class="kw">for </span>Cluster {
-  <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">if </span>!<span class="self">self</span>.ratings &amp;&amp; !<span class="self">self</span>.add_actions {
-      <span class="macro">error!</span>(<span class="string">&quot;one of --ratings or --add-actions must be specified&quot;</span>);
-      <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;no mode specified&quot;</span>));
+    <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">if </span>!<span class="self">self</span>.ratings &amp;&amp; !<span class="self">self</span>.add_actions {
+            <span class="macro">error!</span>(<span class="string">&quot;one of --ratings or --add-actions must be specified&quot;</span>);
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;no mode specified&quot;</span>));
+        }
+        require_working_dir(<span class="string">&quot;bx&quot;</span>)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>isbns = LazyFrame::scan_parquet(<span class="string">&quot;../book-links/isbn-clusters.parquet&quot;</span>, default())<span class="question-mark">?</span>;
+        <span class="kw">let </span>isbns = isbns.select(<span class="kw-2">&amp;</span>[col(<span class="string">&quot;isbn&quot;</span>), col(<span class="string">&quot;cluster&quot;</span>)]);
+
+        <span class="kw">let </span>ratings = LazyCsvReader::new(<span class="string">&quot;cleaned-ratings.csv&quot;</span>)
+            .has_header(<span class="bool-val">true</span>)
+            .finish()<span class="question-mark">?</span>;
+        <span class="kw">let </span>ratings = <span class="kw">if </span><span class="self">self</span>.ratings {
+            ratings.filter(col(<span class="string">&quot;rating&quot;</span>).gt(<span class="number">0</span>))
+        } <span class="kw">else </span>{
+            ratings
+        };
+        <span class="kw">let </span>joined = ratings.join(isbns, <span class="kw-2">&amp;</span>[col(<span class="string">&quot;isbn&quot;</span>)], <span class="kw-2">&amp;</span>[col(<span class="string">&quot;isbn&quot;</span>)], JoinType::Inner);
+        <span class="kw">let </span>grouped = joined.groupby(<span class="kw-2">&amp;</span>[col(<span class="string">&quot;user&quot;</span>), col(<span class="string">&quot;cluster&quot;</span>).alias(<span class="string">&quot;item&quot;</span>)]);
+        <span class="kw">let </span>agg = <span class="kw">if </span><span class="self">self</span>.ratings {
+            grouped.agg(<span class="kw-2">&amp;</span>[
+                col(<span class="string">&quot;rating&quot;</span>).median().alias(<span class="string">&quot;rating&quot;</span>),
+                col(<span class="string">&quot;cluster&quot;</span>).count().alias(<span class="string">&quot;nratings&quot;</span>),
+            ])
+        } <span class="kw">else </span>{
+            grouped.agg(<span class="kw-2">&amp;</span>[col(<span class="string">&quot;cluster&quot;</span>).count().alias(<span class="string">&quot;nactions&quot;</span>)])
+        };
+
+        <span class="macro">info!</span>(<span class="string">&quot;collecting results&quot;</span>);
+        <span class="kw">let </span>results = agg.collect()<span class="question-mark">?</span>;
+
+        <span class="macro">info!</span>(<span class="string">&quot;writing to {:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.outfile);
+        save_df_parquet(results, <span class="kw-2">&amp;</span><span class="self">self</span>.outfile)<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(())
     }
-    require_working_dir(<span class="string">&quot;bx&quot;</span>)<span class="question-mark">?</span>;
-
-    <span class="kw">let </span>isbns = LazyFrame::scan_parquet(<span class="string">&quot;../book-links/isbn-clusters.parquet&quot;</span>, default())<span class="question-mark">?</span>;
-    <span class="kw">let </span>isbns = isbns.select(<span class="kw-2">&amp;</span>[col(<span class="string">&quot;isbn&quot;</span>), col(<span class="string">&quot;cluster&quot;</span>)]);
-
-    <span class="kw">let </span>ratings = LazyCsvReader::new(<span class="string">&quot;cleaned-ratings.csv&quot;</span>).has_header(<span class="bool-val">true</span>).finish()<span class="question-mark">?</span>;
-    <span class="kw">let </span>ratings = <span class="kw">if </span><span class="self">self</span>.ratings {
-      ratings.filter(col(<span class="string">&quot;rating&quot;</span>).gt(<span class="number">0</span>))
-    } <span class="kw">else </span>{
-      ratings
-    };
-    <span class="kw">let </span>joined = ratings.join(isbns, <span class="kw-2">&amp;</span>[col(<span class="string">&quot;isbn&quot;</span>)], <span class="kw-2">&amp;</span>[col(<span class="string">&quot;isbn&quot;</span>)], JoinType::Inner);
-    <span class="kw">let </span>grouped = joined.groupby(<span class="kw-2">&amp;</span>[
-      col(<span class="string">&quot;user&quot;</span>), col(<span class="string">&quot;cluster&quot;</span>).alias(<span class="string">&quot;item&quot;</span>)
-    ]);
-    <span class="kw">let </span>agg = <span class="kw">if </span><span class="self">self</span>.ratings {
-      grouped.agg(<span class="kw-2">&amp;</span>[
-        col(<span class="string">&quot;rating&quot;</span>).median().alias(<span class="string">&quot;rating&quot;</span>),
-        col(<span class="string">&quot;cluster&quot;</span>).count().alias(<span class="string">&quot;nratings&quot;</span>),
-      ])
-    } <span class="kw">else </span>{
-      grouped.agg(<span class="kw-2">&amp;</span>[
-        col(<span class="string">&quot;cluster&quot;</span>).count().alias(<span class="string">&quot;nactions&quot;</span>),
-      ])
-    };
-
-    <span class="macro">info!</span>(<span class="string">&quot;collecting results&quot;</span>);
-    <span class="kw">let </span>results = agg.collect()<span class="question-mark">?</span>;
-
-    <span class="macro">info!</span>(<span class="string">&quot;writing to {:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.outfile);
-    save_df_parquet(results, <span class="kw-2">&amp;</span><span class="self">self</span>.outfile)<span class="question-mark">?</span>;
-
-    <span class="prelude-val">Ok</span>(())
-  }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

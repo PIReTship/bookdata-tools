@@ -81,88 +81,92 @@
 <span id="81">81</span>
 <span id="82">82</span>
 <span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::path::{Path, PathBuf};
 
 <span class="kw">use </span>serde::de::DeserializeOwned;
 
-<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::io::LineProcessor;
 <span class="kw">use </span><span class="kw">crate</span>::openlib::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::util::logging::data_progress;
 
 <span class="kw">use </span><span class="kw">super</span>::Command;
 
 <span class="attribute">#[derive(Args, Debug)]
 </span><span class="kw">struct </span>Input {
-  <span class="doccomment">/// Input file
-  </span><span class="attribute">#[arg(name = <span class="string">&quot;INPUT&quot;</span>)]
-  </span>infile: PathBuf
+    <span class="doccomment">/// Input file
+    </span><span class="attribute">#[arg(name = <span class="string">&quot;INPUT&quot;</span>)]
+    </span>infile: PathBuf,
 }
 
 <span class="attribute">#[derive(clap::Subcommand, Debug)]
 </span><span class="kw">enum </span>DataType {
-  <span class="doccomment">/// Parse OpenLibrary works.
-  ///
-  /// Authors must be processed first.
-  </span>ScanWorks(Input),
+    <span class="doccomment">/// Parse OpenLibrary works.
+    ///
+    /// Authors must be processed first.
+    </span>ScanWorks(Input),
 
-  <span class="doccomment">/// Parse OpenLibrary editions.
-  ///
-  /// Authors and works must be processed first.
-  </span>ScanEditions(Input),
+    <span class="doccomment">/// Parse OpenLibrary editions.
+    ///
+    /// Authors and works must be processed first.
+    </span>ScanEditions(Input),
 
-  <span class="doccomment">/// Parse OpenLibrary authors.
-  </span>ScanAuthors(Input)
+    <span class="doccomment">/// Parse OpenLibrary authors.
+    </span>ScanAuthors(Input),
 }
 
 <span class="doccomment">/// Scan OpenLibrary data.
 </span><span class="attribute">#[derive(Args, Debug)]
-#[command(name=<span class="string">&quot;openlib&quot;</span>)]
+#[command(name = <span class="string">&quot;openlib&quot;</span>)]
 </span><span class="kw">pub struct </span>OpenLib {
-  <span class="attribute">#[command(subcommand)]
-  </span>mode: DataType,
+    <span class="attribute">#[command(subcommand)]
+    </span>mode: DataType,
 }
 
 <span class="doccomment">/// Helper function to route OpenLibrary data.
 </span><span class="kw">fn </span>scan_openlib&lt;R, Proc&gt;(path: <span class="kw-2">&amp;</span>Path, proc: Proc) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;
-<span class="kw">where </span>Proc: ObjectWriter&lt;Row&lt;R&gt;&gt;, R: DeserializeOwned
+<span class="kw">where
+    </span>Proc: ObjectWriter&lt;Row&lt;R&gt;&gt;,
+    R: DeserializeOwned,
 {
-  <span class="kw">let </span><span class="kw-2">mut </span>proc = proc;
-  <span class="kw">let </span><span class="kw-2">mut </span>nlines = <span class="number">0</span>;
-  <span class="macro">info!</span>(<span class="string">&quot;opening file {}&quot;</span>, path.to_string_lossy());
-  <span class="kw">let </span>pb = data_progress(<span class="number">0</span>);
-  <span class="kw">let </span>input = LineProcessor::open_gzip(path, pb.clone())<span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>proc = proc;
+    <span class="kw">let </span><span class="kw-2">mut </span>nlines = <span class="number">0</span>;
+    <span class="macro">info!</span>(<span class="string">&quot;opening file {}&quot;</span>, path.to_string_lossy());
+    <span class="kw">let </span>pb = data_progress(<span class="number">0</span>);
+    <span class="kw">let </span>input = LineProcessor::open_gzip(path, pb.clone())<span class="question-mark">?</span>;
 
-  <span class="kw">for </span>line <span class="kw">in </span>input.records() {
-    nlines += <span class="number">1</span>;
-    <span class="kw">if </span>!line.is_ok() {
-      <span class="macro">error!</span>(<span class="string">&quot;parse error on line {}&quot;</span>, nlines);
+    <span class="kw">for </span>line <span class="kw">in </span>input.records() {
+        nlines += <span class="number">1</span>;
+        <span class="kw">if </span>!line.is_ok() {
+            <span class="macro">error!</span>(<span class="string">&quot;parse error on line {}&quot;</span>, nlines);
+        }
+        <span class="kw">let </span>row: Row&lt;R&gt; = line<span class="question-mark">?</span>;
+        proc.write_object(row)<span class="question-mark">?</span>;
     }
-    <span class="kw">let </span>row: Row&lt;R&gt; = line<span class="question-mark">?</span>;
-    proc.write_object(row)<span class="question-mark">?</span>;
-  }
 
-  proc.finish()<span class="question-mark">?</span>;
+    proc.finish()<span class="question-mark">?</span>;
 
-  <span class="prelude-val">Ok</span>(())
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="kw">impl </span>Command <span class="kw">for </span>OpenLib {
-  <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.mode {
-      DataType::ScanAuthors(opts) =&gt; {
-        scan_openlib(<span class="kw-2">&amp;</span>opts.infile, AuthorProcessor::new()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
-      },
-      DataType::ScanWorks(opts) =&gt; {
-        scan_openlib(<span class="kw-2">&amp;</span>opts.infile, WorkProcessor::new()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
-      },
-      DataType::ScanEditions(opts) =&gt; {
-        scan_openlib(<span class="kw-2">&amp;</span>opts.infile, EditionProcessor::new()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
-      }
-    };
+    <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.mode {
+            DataType::ScanAuthors(opts) =&gt; {
+                scan_openlib(<span class="kw-2">&amp;</span>opts.infile, AuthorProcessor::new()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+            }
+            DataType::ScanWorks(opts) =&gt; {
+                scan_openlib(<span class="kw-2">&amp;</span>opts.infile, WorkProcessor::new()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+            }
+            DataType::ScanEditions(opts) =&gt; {
+                scan_openlib(<span class="kw-2">&amp;</span>opts.infile, EditionProcessor::new()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+            }
+        };
 
-    <span class="prelude-val">Ok</span>(())
-  }
+        <span class="prelude-val">Ok</span>(())
+    }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -84,9 +84,9 @@
 //!
 //! The BookCrossing CSV files are corrupt, so this command extracts them and fixes
 //! up the character sets to make them well-formed CSV.
-</span><span class="kw">use </span>std::io::{Write};
-<span class="kw">use </span>std::path::{PathBuf};
-<span class="kw">use </span>std::fs::File;
+</span><span class="kw">use </span>std::fs::File;
+<span class="kw">use </span>std::io::Write;
+<span class="kw">use </span>std::path::PathBuf;
 
 <span class="kw">use </span>zip::ZipArchive;
 
@@ -94,73 +94,73 @@
 
 <span class="attribute">#[derive(Args, Debug)]
 </span><span class="kw">pub struct </span>Extract {
-  <span class="doccomment">/// The zip file to read.
-  </span><span class="attribute">#[arg(name=<span class="string">&quot;ZIPFILE&quot;</span>)]
-  </span>zipfile: PathBuf,
+    <span class="doccomment">/// The zip file to read.
+    </span><span class="attribute">#[arg(name = <span class="string">&quot;ZIPFILE&quot;</span>)]
+    </span>zipfile: PathBuf,
 
-  <span class="doccomment">/// The CSV file to write.
-  </span><span class="attribute">#[arg(name=<span class="string">&quot;OUTFILE&quot;</span>)]
-  </span>outfile: PathBuf,
+    <span class="doccomment">/// The CSV file to write.
+    </span><span class="attribute">#[arg(name = <span class="string">&quot;OUTFILE&quot;</span>)]
+    </span>outfile: PathBuf,
 }
 
 <span class="kw">impl </span>Command <span class="kw">for </span>Extract {
-  <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="macro">info!</span>(<span class="string">&quot;reading {:?}&quot;</span>, <span class="self">self</span>.zipfile);
-    <span class="kw">let </span>file = File::open(<span class="kw-2">&amp;</span><span class="self">self</span>.zipfile)<span class="question-mark">?</span>;
-    <span class="kw">let </span><span class="kw-2">mut </span>zip = ZipArchive::new(file)<span class="question-mark">?</span>;
-    <span class="kw">let </span><span class="kw-2">mut </span>entry = zip.by_name(<span class="string">&quot;BX-Book-Ratings.csv&quot;</span>)<span class="question-mark">?</span>;
-    <span class="kw">let </span><span class="kw-2">mut </span>data = entry.read_all_sized()<span class="question-mark">?</span>;
+    <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="macro">info!</span>(<span class="string">&quot;reading {:?}&quot;</span>, <span class="self">self</span>.zipfile);
+        <span class="kw">let </span>file = File::open(<span class="kw-2">&amp;</span><span class="self">self</span>.zipfile)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>zip = ZipArchive::new(file)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>entry = zip.by_name(<span class="string">&quot;BX-Book-Ratings.csv&quot;</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>data = entry.read_all_sized()<span class="question-mark">?</span>;
 
-    <span class="macro">info!</span>(<span class="string">&quot;cleaning up data file&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">&quot;cleaning up data file&quot;</span>);
 
-    <span class="macro">debug!</span>(<span class="string">&quot;removing non-ASCII characters and carriage returns&quot;</span>);
-    data.retain(|b| <span class="kw-2">*</span>b &lt; <span class="number">128 </span>&amp;&amp; <span class="kw-2">*</span>b != <span class="string">b&#39;\r&#39;</span>);
+        <span class="macro">debug!</span>(<span class="string">&quot;removing non-ASCII characters and carriage returns&quot;</span>);
+        data.retain(|b| <span class="kw-2">*</span>b &lt; <span class="number">128 </span>&amp;&amp; <span class="kw-2">*</span>b != <span class="string">b&#39;\r&#39;</span>);
 
-    <span class="macro">debug!</span>(<span class="string">&quot;replacing semicolons to make CSV&quot;</span>);
-    <span class="comment">// can this be done with retain_with?
-    </span><span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..data.len() {
-      <span class="kw">let </span>c = data[i];
-      <span class="kw">if </span>c == <span class="string">b&#39;;&#39; </span>{
-        data[i] = <span class="string">b&#39;,&#39;</span>;
-      }
+        <span class="macro">debug!</span>(<span class="string">&quot;replacing semicolons to make CSV&quot;</span>);
+        <span class="comment">// can this be done with retain_with?
+        </span><span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..data.len() {
+            <span class="kw">let </span>c = data[i];
+            <span class="kw">if </span>c == <span class="string">b&#39;;&#39; </span>{
+                data[i] = <span class="string">b&#39;,&#39;</span>;
+            }
+        }
+
+        <span class="macro">debug!</span>(<span class="string">&quot;splitting CSV header&quot;</span>);
+        <span class="kw">let </span>data = String::from_utf8(data)<span class="question-mark">?</span>;
+        <span class="kw">let </span>pos = <span class="kw">if let </span><span class="prelude-val">Some</span>(p) = data.find(<span class="string">&#39;\n&#39;</span>) {
+            p
+        } <span class="kw">else </span>{
+            <span class="macro">error!</span>(<span class="string">&quot;no newline found, corrupt input data?&quot;</span>);
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;corrupt data&quot;</span>));
+        };
+        <span class="kw">let </span>(hdr, rest) = data.split_at(pos + <span class="number">1</span>);
+        <span class="kw">if </span>!hdr.starts_with(<span class="string">&quot;\&quot;User-ID\&quot;,&quot;</span>) {
+            <span class="macro">error!</span>(<span class="string">&quot;unexpected file header found&quot;</span>);
+            <span class="macro">info!</span>(<span class="string">&quot;found header: “{}“&quot;</span>, hdr);
+            <span class="macro">info!</span>(<span class="string">&quot;expected cleaned header to begin with “\&quot;User-ID\&quot;,“&quot;</span>);
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;corrupt data&quot;</span>));
+        }
+
+        <span class="macro">info!</span>(<span class="string">&quot;writing cleaned output&quot;</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>out = File::create(<span class="kw-2">&amp;</span><span class="self">self</span>.outfile)<span class="question-mark">?</span>;
+        <span class="macro">write!</span>(out, <span class="string">&quot;user,isbn,rating\n&quot;</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>csvin = csv::Reader::from_reader(rest.as_bytes());
+        <span class="kw">for </span>row <span class="kw">in </span>csvin.into_records() {
+            <span class="kw">let </span>row = row<span class="question-mark">?</span>;
+            <span class="kw">let </span>user = row.get(<span class="number">0</span>).ok_or(<span class="macro">anyhow!</span>(<span class="string">&quot;invalid CSV row&quot;</span>))<span class="question-mark">?</span>;
+            <span class="kw">let </span>isbn = row.get(<span class="number">1</span>).ok_or(<span class="macro">anyhow!</span>(<span class="string">&quot;invalid CSV row&quot;</span>))<span class="question-mark">?</span>;
+            <span class="kw">let </span>rating = row.get(<span class="number">2</span>).ok_or(<span class="macro">anyhow!</span>(<span class="string">&quot;invalid CSV row&quot;</span>))<span class="question-mark">?</span>;
+
+            <span class="kw">let </span><span class="kw-2">mut </span>isbn = isbn.to_uppercase();
+            isbn.retain(|c| (c &gt;= <span class="string">&#39;0&#39; </span>&amp;&amp; c &lt;= <span class="string">&#39;9&#39;</span>) || c == <span class="string">&#39;X&#39;</span>);
+
+            <span class="kw">if </span>isbn.len() &gt; <span class="number">0 </span>{
+                <span class="macro">write!</span>(out, <span class="string">&quot;{},{},{}\n&quot;</span>, user, isbn, rating)<span class="question-mark">?</span>;
+            }
+        }
+
+        <span class="prelude-val">Ok</span>(())
     }
-
-    <span class="macro">debug!</span>(<span class="string">&quot;splitting CSV header&quot;</span>);
-    <span class="kw">let </span>data = String::from_utf8(data)<span class="question-mark">?</span>;
-    <span class="kw">let </span>pos = <span class="kw">if let </span><span class="prelude-val">Some</span>(p) = data.find(<span class="string">&#39;\n&#39;</span>) {
-      p
-    } <span class="kw">else </span>{
-      <span class="macro">error!</span>(<span class="string">&quot;no newline found, corrupt input data?&quot;</span>);
-      <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;corrupt data&quot;</span>));
-    };
-    <span class="kw">let </span>(hdr, rest) = data.split_at(pos + <span class="number">1</span>);
-    <span class="kw">if </span>!hdr.starts_with(<span class="string">&quot;\&quot;User-ID\&quot;,&quot;</span>) {
-      <span class="macro">error!</span>(<span class="string">&quot;unexpected file header found&quot;</span>);
-      <span class="macro">info!</span>(<span class="string">&quot;found header: “{}“&quot;</span>, hdr);
-      <span class="macro">info!</span>(<span class="string">&quot;expected cleaned header to begin with “\&quot;User-ID\&quot;,“&quot;</span>);
-      <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;corrupt data&quot;</span>));
-    }
-
-    <span class="macro">info!</span>(<span class="string">&quot;writing cleaned output&quot;</span>);
-    <span class="kw">let </span><span class="kw-2">mut </span>out = File::create(<span class="kw-2">&amp;</span><span class="self">self</span>.outfile)<span class="question-mark">?</span>;
-    <span class="macro">write!</span>(out, <span class="string">&quot;user,isbn,rating\n&quot;</span>)<span class="question-mark">?</span>;
-    <span class="kw">let </span>csvin = csv::Reader::from_reader(rest.as_bytes());
-    <span class="kw">for </span>row <span class="kw">in </span>csvin.into_records() {
-      <span class="kw">let </span>row = row<span class="question-mark">?</span>;
-      <span class="kw">let </span>user = row.get(<span class="number">0</span>).ok_or(<span class="macro">anyhow!</span>(<span class="string">&quot;invalid CSV row&quot;</span>))<span class="question-mark">?</span>;
-      <span class="kw">let </span>isbn = row.get(<span class="number">1</span>).ok_or(<span class="macro">anyhow!</span>(<span class="string">&quot;invalid CSV row&quot;</span>))<span class="question-mark">?</span>;
-      <span class="kw">let </span>rating = row.get(<span class="number">2</span>).ok_or(<span class="macro">anyhow!</span>(<span class="string">&quot;invalid CSV row&quot;</span>))<span class="question-mark">?</span>;
-
-      <span class="kw">let </span><span class="kw-2">mut </span>isbn = isbn.to_uppercase();
-      isbn.retain(|c| (c &gt;= <span class="string">&#39;0&#39; </span>&amp;&amp; c &lt;= <span class="string">&#39;9&#39;</span>) || c == <span class="string">&#39;X&#39;</span>);
-
-      <span class="kw">if </span>isbn.len() &gt; <span class="number">0 </span>{
-        <span class="macro">write!</span>(out, <span class="string">&quot;{},{},{}\n&quot;</span>, user, isbn, rating)<span class="question-mark">?</span>;
-      }
-    }
-
-    <span class="prelude-val">Ok</span>(())
-  }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

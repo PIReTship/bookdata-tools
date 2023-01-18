@@ -172,36 +172,36 @@
 //! compilation time and disk space in common configurations, with different tools
 //! implemented as subcommands.  Each subcommand implements the [Command] trait, which
 //! exposes the command line arguments and invocation.
-</span><span class="kw">pub mod </span>scan_marc;
-<span class="kw">pub mod </span>filter_marc;
-<span class="kw">pub mod </span>index_names;
-<span class="kw">pub mod </span>extract_graph;
-<span class="kw">pub mod </span>cluster_books;
-<span class="kw">pub mod </span>cluster;
-<span class="kw">pub mod </span>collect_isbns;
-<span class="kw">pub mod </span>link_isbns;
-<span class="kw">pub mod </span>amazon;
-<span class="kw">pub mod </span>openlib;
-<span class="kw">pub mod </span>goodreads;
-<span class="kw">pub mod </span>pqinfo;
-<span class="kw">pub mod </span>stats;
+</span><span class="kw">pub mod </span>amazon;
 <span class="kw">pub mod </span>bx;
+<span class="kw">pub mod </span>cluster;
+<span class="kw">pub mod </span>cluster_books;
+<span class="kw">pub mod </span>collect_isbns;
+<span class="kw">pub mod </span>extract_graph;
+<span class="kw">pub mod </span>filter_marc;
+<span class="kw">pub mod </span>goodreads;
+<span class="kw">pub mod </span>index_names;
+<span class="kw">pub mod </span>link_isbns;
+<span class="kw">pub mod </span>openlib;
+<span class="kw">pub mod </span>pqinfo;
+<span class="kw">pub mod </span>scan_marc;
+<span class="kw">pub mod </span>stats;
 
+<span class="kw">use </span>anyhow::Result;
+<span class="kw">use </span>clap::{Parser, Subcommand};
+<span class="kw">use </span>cpu_time::ProcessTime;
+<span class="kw">use </span>enum_dispatch::enum_dispatch;
+<span class="kw">use </span>happylog::clap::LogOpts;
 <span class="kw">use </span>log::<span class="kw-2">*</span>;
 <span class="kw">use </span>paste::paste;
-<span class="kw">use </span>clap::{Parser, Subcommand};
-<span class="kw">use </span>anyhow::Result;
-<span class="kw">use </span>enum_dispatch::enum_dispatch;
-<span class="kw">use </span>cpu_time::ProcessTime;
 <span class="kw">use </span>rayon::ThreadPoolBuilder;
-<span class="kw">use </span>happylog::clap::LogOpts;
 
 <span class="attribute">#[cfg(unix)]
 </span><span class="kw">use </span><span class="kw">crate</span>::util::process;
 <span class="kw">use </span><span class="kw">crate</span>::util::Timer;
 
 <span class="kw">extern </span><span class="string">&quot;C&quot; </span>{
-  <span class="kw">fn </span>mi_stats_print(out: <span class="kw-2">*const </span>std::ffi::c_void);
+    <span class="kw">fn </span>mi_stats_print(out: <span class="kw-2">*const </span>std::ffi::c_void);
 }
 
 <span class="doccomment">/// Macro to generate wrappers for subcommand enums.
@@ -209,53 +209,53 @@
 /// This is for subcommands that only exist to contain further subcommands,
 /// to make it easier to implement their wrapper classes.
 </span><span class="macro">macro_rules! </span>wrap_subcommands {
-  (<span class="macro-nonterminal">$name</span>:ty) =&gt; {
-    <span class="macro">paste! </span>{
-      <span class="attribute">#[derive(clap::Args, Debug)]
-      </span><span class="kw">pub struct </span>[&lt;<span class="macro-nonterminal">$name </span>Wrapper&gt;] {
-        <span class="attribute">#[command(subcommand)]
-        </span>command: <span class="macro-nonterminal">$name
-      </span>}
+    (<span class="macro-nonterminal">$name</span>:ty) =&gt; {
+        <span class="macro">paste! </span>{
+          <span class="attribute">#[derive(clap::Args, Debug)]
+          </span><span class="kw">pub struct </span>[&lt;<span class="macro-nonterminal">$name </span>Wrapper&gt;] {
+            <span class="attribute">#[command(subcommand)]
+            </span>command: <span class="macro-nonterminal">$name
+          </span>}
 
-      <span class="kw">impl </span>Command <span class="kw">for </span>[&lt;<span class="macro-nonterminal">$name </span>Wrapper&gt;] {
-        <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-          <span class="self">self</span>.command.exec()
+          <span class="kw">impl </span>Command <span class="kw">for </span>[&lt;<span class="macro-nonterminal">$name </span>Wrapper&gt;] {
+            <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+              <span class="self">self</span>.command.exec()
+            }
+          }
         }
-      }
-    }
-  };
+    };
 }
 
 <span class="doccomment">/// Trait implemented by book data commands.
 </span><span class="attribute">#[enum_dispatch]
 </span><span class="kw">pub trait </span>Command {
-  <span class="doccomment">/// Run the command with options
-  </span><span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
+    <span class="doccomment">/// Run the command with options
+    </span><span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
 }
 
 <span class="doccomment">/// Enum to collect and dispatch CLI commands.
 </span><span class="attribute">#[enum_dispatch(Command)]
 #[derive(Subcommand, Debug)]
 </span><span class="kw">pub enum </span>RootCommand {
-  ScanMARC(scan_marc::ScanMARC),
-  FilterMARC(filter_marc::FilterMARC),
-  ClusterBooks(cluster_books::ClusterBooks),
-  IndexNames(index_names::IndexNames),
-  ExtractGraph(extract_graph::ExtractGraph),
-  CollectISBNS(collect_isbns::CollectISBNs),
-  LinkISBNIds(link_isbns::LinkISBNIds),
-  <span class="doccomment">/// Commands for processing Amazon data.
-  </span>Amazon(AmazonCommandWrapper),
-  <span class="doccomment">/// Commands for processing OpenLibrary data.
-  </span>Openlib(openlib::OpenLib),
-  <span class="doccomment">/// Commands for processing BookCrossing data.
-  </span>BX(BXCommandWrapper),
-  <span class="doccomment">/// Commands for processing GoodReads data.
-  </span>Goodreads(goodreads::Goodreads),
-  <span class="doccomment">/// Commands for working with clusters.
-  </span>Cluster(ClusterCommandWrapper),
-  PQInfo(pqinfo::PQInfo),
-  IntegrationStats(stats::IntegrationStats),
+    ScanMARC(scan_marc::ScanMARC),
+    FilterMARC(filter_marc::FilterMARC),
+    ClusterBooks(cluster_books::ClusterBooks),
+    IndexNames(index_names::IndexNames),
+    ExtractGraph(extract_graph::ExtractGraph),
+    CollectISBNS(collect_isbns::CollectISBNs),
+    LinkISBNIds(link_isbns::LinkISBNIds),
+    <span class="doccomment">/// Commands for processing Amazon data.
+    </span>Amazon(AmazonCommandWrapper),
+    <span class="doccomment">/// Commands for processing OpenLibrary data.
+    </span>Openlib(openlib::OpenLib),
+    <span class="doccomment">/// Commands for processing BookCrossing data.
+    </span>BX(BXCommandWrapper),
+    <span class="doccomment">/// Commands for processing GoodReads data.
+    </span>Goodreads(goodreads::Goodreads),
+    <span class="doccomment">/// Commands for working with clusters.
+    </span>Cluster(ClusterCommandWrapper),
+    PQInfo(pqinfo::PQInfo),
+    IntegrationStats(stats::IntegrationStats),
 }
 
 <span class="macro">wrap_subcommands!</span>(AmazonCommand);
@@ -265,74 +265,74 @@
 <span class="attribute">#[enum_dispatch(Command)]
 #[derive(Subcommand, Debug)]
 </span><span class="kw">enum </span>AmazonCommand {
-  ScanRatings(amazon::ScanRatings),
-  ClusterRatings(amazon::ClusterRatings),
+    ScanRatings(amazon::ScanRatings),
+    ClusterRatings(amazon::ClusterRatings),
 }
 
 <span class="attribute">#[enum_dispatch(Command)]
 #[derive(Subcommand, Debug)]
 </span><span class="kw">enum </span>BXCommand {
-  <span class="doccomment">/// Extract BX from source data and clean.
-  </span>Extract(bx::Extract),
-  <span class="doccomment">/// Match BX interactions with clusters.
-  </span>ClusterActions(bx::Cluster),
+    <span class="doccomment">/// Extract BX from source data and clean.
+    </span>Extract(bx::Extract),
+    <span class="doccomment">/// Match BX interactions with clusters.
+    </span>ClusterActions(bx::Cluster),
 }
 
 <span class="attribute">#[enum_dispatch(Command)]
 #[derive(Subcommand, Debug)]
 </span><span class="kw">pub enum </span>ClusterCommand {
-  Hash(cluster::hash::HashCmd),
-  ExtractBooks(cluster::books::ExtractBooks),
-  ExtractAuthors(cluster::authors::ClusterAuthors),
-  ExtractAuthorGender(cluster::author_gender::AuthorGender),
+    Hash(cluster::hash::HashCmd),
+    ExtractBooks(cluster::books::ExtractBooks),
+    ExtractAuthors(cluster::authors::ClusterAuthors),
+    ExtractAuthorGender(cluster::author_gender::AuthorGender),
 }
 
 <span class="doccomment">/// Entry point for the Book Data Tools.
 ///
 /// This program runs the various book data tools, exposed as subcommands.
 </span><span class="attribute">#[derive(Parser, Debug)]
-#[command(name=<span class="string">&quot;bookdata&quot;</span>)]
+#[command(name = <span class="string">&quot;bookdata&quot;</span>)]
 </span><span class="kw">pub struct </span>CLI {
-  <span class="attribute">#[command(flatten)]
-  </span>logging: LogOpts,
+    <span class="attribute">#[command(flatten)]
+    </span>logging: LogOpts,
 
-  <span class="attribute">#[command(subcommand)]
-  </span>command: RootCommand,
+    <span class="attribute">#[command(subcommand)]
+    </span>command: RootCommand,
 }
 
 <span class="kw">impl </span>CLI {
-  <span class="kw">pub fn </span>exec(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="self">self</span>.logging.init()<span class="question-mark">?</span>;
+    <span class="kw">pub fn </span>exec(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.logging.init()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>npar = std::cmp::min(num_cpus::get(), num_cpus::get_physical());
-    <span class="macro">debug!</span>(<span class="string">&quot;setting up Rayon pool with {} threads&quot;</span>, npar);
-    ThreadPoolBuilder::new().num_threads(npar).build_global()<span class="question-mark">?</span>;
+        <span class="kw">let </span>npar = std::cmp::min(num_cpus::get(), num_cpus::get_physical());
+        <span class="macro">debug!</span>(<span class="string">&quot;setting up Rayon pool with {} threads&quot;</span>, npar);
+        ThreadPoolBuilder::new().num_threads(npar).build_global()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>timer = Timer::new();
+        <span class="kw">let </span>timer = Timer::new();
 
-    <span class="kw">let </span>res = <span class="self">self</span>.command.exec();
-    <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = <span class="kw-2">&amp;</span>res {
-      <span class="macro">error!</span>(<span class="string">&quot;command failed: {}&quot;</span>, e);
-      <span class="kw">return </span>res;
+        <span class="kw">let </span>res = <span class="self">self</span>.command.exec();
+        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = <span class="kw-2">&amp;</span>res {
+            <span class="macro">error!</span>(<span class="string">&quot;command failed: {}&quot;</span>, e);
+            <span class="kw">return </span>res;
+        }
+
+        <span class="macro">info!</span>(<span class="string">&quot;work completed in {}&quot;</span>, timer.human_elapsed());
+        <span class="kw">match </span>ProcessTime::try_now() {
+            <span class="prelude-val">Ok</span>(pt) =&gt; <span class="macro">info!</span>(<span class="string">&quot;used {} CPU time&quot;</span>, friendly::duration(pt.as_duration())),
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">error!</span>(<span class="string">&quot;error fetching CPU time: {}&quot;</span>, e),
+        };
+
+        <span class="kw">if </span><span class="macro">log_enabled!</span>(Level::Debug) {
+            <span class="macro">debug!</span>(<span class="string">&quot;mimalloc stats follow&quot;</span>);
+            <span class="kw">unsafe </span>{
+                mi_stats_print(std::ptr::null());
+            }
+        }
+
+        <span class="attribute">#[cfg(unix)]
+        </span>process::log_process_stats();
+        res
     }
-
-    <span class="macro">info!</span>(<span class="string">&quot;work completed in {}&quot;</span>, timer.human_elapsed());
-    <span class="kw">match </span>ProcessTime::try_now() {
-      <span class="prelude-val">Ok</span>(pt) =&gt; <span class="macro">info!</span>(<span class="string">&quot;used {} CPU time&quot;</span>, friendly::duration(pt.as_duration())),
-      <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">error!</span>(<span class="string">&quot;error fetching CPU time: {}&quot;</span>, e)
-    };
-
-    <span class="kw">if </span><span class="macro">log_enabled!</span>(Level::Debug) {
-      <span class="macro">debug!</span>(<span class="string">&quot;mimalloc stats follow&quot;</span>);
-      <span class="kw">unsafe </span>{
-        mi_stats_print(std::ptr::null());
-      }
-    }
-
-    <span class="attribute">#[cfg(unix)]
-    </span>process::log_process_stats();
-    res
-  }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="bookdata" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
