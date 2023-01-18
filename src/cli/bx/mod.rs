@@ -1,6 +1,6 @@
 //! BookCrossing commands.
-mod extract;
 mod cluster;
+mod extract;
 
-pub use extract::Extract;
 pub use cluster::Cluster;
+pub use extract::Extract;

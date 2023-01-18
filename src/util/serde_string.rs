@@ -22,38 +22,39 @@
 // This isn't currently in use anywhere.
 #![allow(dead_code)]
 use std::fmt;
-use std::str::FromStr;
 use std::marker::PhantomData;
+use std::str::FromStr;
 
-use serde::{
-  Serializer,
-  Deserializer,
-  de
-};
+use serde::{de, Deserializer, Serializer};
 
-pub fn serialize<S, T: ToString>(v: &T, ser: S) -> Result<S::Ok, S::Error> where S: Serializer {
-  let vs = v.to_string();
-  ser.serialize_str(vs.as_str())
+pub fn serialize<S, T: ToString>(v: &T, ser: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let vs = v.to_string();
+    ser.serialize_str(vs.as_str())
 }
 
 struct FromStrVisitor<T> {
-  _ph: PhantomData<T>
+    _ph: PhantomData<T>,
 }
 
-pub fn deserialize<'de, D, T: FromStr>(de: D) -> Result<T, D::Error> where D: Deserializer<'de> {
-  de.deserialize_str(FromStrVisitor { _ph: PhantomData })
+pub fn deserialize<'de, D, T: FromStr>(de: D) -> Result<T, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    de.deserialize_str(FromStrVisitor { _ph: PhantomData })
 }
 
-impl <'de, T: FromStr> de::Visitor<'de> for FromStrVisitor<T> {
-  type Value = T;
+impl<'de, T: FromStr> de::Visitor<'de> for FromStrVisitor<T> {
+    type Value = T;
 
-  fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(formatter, "a parsable string")
-  }
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "a parsable string")
+    }
 
-  fn visit_str<E: de::Error>(self, s: &str) -> Result<Self::Value, E> {
-    s.parse().map_err(|_e| {
-      de::Error::invalid_value(de::Unexpected::Str(s), &self)
-    })
-  }
+    fn visit_str<E: de::Error>(self, s: &str) -> Result<Self::Value, E> {
+        s.parse()
+            .map_err(|_e| de::Error::invalid_value(de::Unexpected::Str(s), &self))
+    }
 }

@@ -6,23 +6,23 @@
 //! currently usable as a library; you can extend them by adding additional commands
 //! to the [cli] module (`src/cli/` in the source tree).
 
+mod amazon;
+mod arrow;
 mod cleaning;
-mod parsing;
-mod tsv;
-mod util;
-mod io;
-mod ids;
+mod cli;
 mod gender;
-mod layout;
+mod goodreads;
 mod graph;
+mod ids;
+mod interactions;
+mod io;
+mod layout;
 mod marc;
 mod openlib;
-mod amazon;
-mod goodreads;
-mod arrow;
-mod interactions;
-mod cli;
+mod parsing;
 mod prelude;
+mod tsv;
+mod util;
 
 use mimalloc::MiMalloc;
 
@@ -35,6 +35,6 @@ use clap::Parser;
 use cli::CLI;
 
 fn main() -> Result<()> {
-  let opt = CLI::parse();
-  opt.exec()
+    let opt = CLI::parse();
+    opt.exec()
 }
