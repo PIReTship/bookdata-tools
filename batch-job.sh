@@ -11,5 +11,8 @@ ulimit -v unlimited
 ulimit -u 4096
 ulimit -n 4096
 
+echo "System limits:" >&2
+ulimit -a >&2
+
 # Finally run the code
 exec "$@"
