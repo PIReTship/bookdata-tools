@@ -1,7 +1,0 @@
-(function() {var implementors = {
-"adler":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.66.1/core/hash/trait.Hasher.html\" title=\"trait core::hash::Hasher\">Hasher</a> for <a class=\"struct\" href=\"adler/struct.Adler32.html\" title=\"struct adler::Adler32\">Adler32</a>"]],
-"ahash":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.66.1/core/hash/trait.Hasher.html\" title=\"trait core::hash::Hasher\">Hasher</a> for <a class=\"struct\" href=\"ahash/struct.AHasher.html\" title=\"struct ahash::AHasher\">AHasher</a>"]],
-"crc32fast":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.66.1/core/hash/trait.Hasher.html\" title=\"trait core::hash::Hasher\">Hasher</a> for <a class=\"struct\" href=\"crc32fast/struct.Hasher.html\" title=\"struct crc32fast::Hasher\">Hasher</a>"]],
-"hash_hasher":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.66.1/core/hash/trait.Hasher.html\" title=\"trait core::hash::Hasher\">Hasher</a> for <a class=\"struct\" href=\"hash_hasher/struct.HashHasher.html\" title=\"struct hash_hasher::HashHasher\">HashHasher</a>"]],
-"xxhash_rust":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.66.1/core/hash/trait.Hasher.html\" title=\"trait core::hash::Hasher\">Hasher</a> for <a class=\"struct\" href=\"xxhash_rust/xxh64/struct.Xxh64.html\" title=\"struct xxhash_rust::xxh64::Xxh64\">Xxh64</a>"]]
-};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

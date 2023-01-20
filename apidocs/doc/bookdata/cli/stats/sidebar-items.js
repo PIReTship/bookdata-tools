@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["scan_actions",""],["scan_genders",""],["scan_loc",""]],"static":[["ACTION_FILES",""],["GENDER_FILE",""],["ISBN_CLUSTER_FILE",""],["LOC_BOOK_FILE",""],["STAT_FILE",""]],"struct":[["IntegrationStats","Compute integration statistics."]]};

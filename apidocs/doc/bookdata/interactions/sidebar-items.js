@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":[["actions",""],["ratings",""]],"struct":[["Key",""]],"trait":[["Dedup","Interface for de-duplicating interactions."],["Interaction","Trait for an interaction."]]};

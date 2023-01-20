@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":[["default_arrays",""],["list",""]],"trait":[["ArrowGetItem",""],["ListFromIter",""],["PolarsArray",""],["ValueSize",""]]};

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/rustix-0.36.4/src/backend/linux_raw/io/epoll.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>epoll.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../normalize.css"><link rel="stylesheet" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../rustix/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../rustix/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../rustix/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/rustix-0.36.7/src/backend/linux_raw/io/epoll.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>epoll.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../normalize.css"><link rel="stylesheet" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../../rustix/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -402,157 +402,6 @@
 <span id="402">402</span>
 <span id="403">403</span>
 <span id="404">404</span>
-<span id="405">405</span>
-<span id="406">406</span>
-<span id="407">407</span>
-<span id="408">408</span>
-<span id="409">409</span>
-<span id="410">410</span>
-<span id="411">411</span>
-<span id="412">412</span>
-<span id="413">413</span>
-<span id="414">414</span>
-<span id="415">415</span>
-<span id="416">416</span>
-<span id="417">417</span>
-<span id="418">418</span>
-<span id="419">419</span>
-<span id="420">420</span>
-<span id="421">421</span>
-<span id="422">422</span>
-<span id="423">423</span>
-<span id="424">424</span>
-<span id="425">425</span>
-<span id="426">426</span>
-<span id="427">427</span>
-<span id="428">428</span>
-<span id="429">429</span>
-<span id="430">430</span>
-<span id="431">431</span>
-<span id="432">432</span>
-<span id="433">433</span>
-<span id="434">434</span>
-<span id="435">435</span>
-<span id="436">436</span>
-<span id="437">437</span>
-<span id="438">438</span>
-<span id="439">439</span>
-<span id="440">440</span>
-<span id="441">441</span>
-<span id="442">442</span>
-<span id="443">443</span>
-<span id="444">444</span>
-<span id="445">445</span>
-<span id="446">446</span>
-<span id="447">447</span>
-<span id="448">448</span>
-<span id="449">449</span>
-<span id="450">450</span>
-<span id="451">451</span>
-<span id="452">452</span>
-<span id="453">453</span>
-<span id="454">454</span>
-<span id="455">455</span>
-<span id="456">456</span>
-<span id="457">457</span>
-<span id="458">458</span>
-<span id="459">459</span>
-<span id="460">460</span>
-<span id="461">461</span>
-<span id="462">462</span>
-<span id="463">463</span>
-<span id="464">464</span>
-<span id="465">465</span>
-<span id="466">466</span>
-<span id="467">467</span>
-<span id="468">468</span>
-<span id="469">469</span>
-<span id="470">470</span>
-<span id="471">471</span>
-<span id="472">472</span>
-<span id="473">473</span>
-<span id="474">474</span>
-<span id="475">475</span>
-<span id="476">476</span>
-<span id="477">477</span>
-<span id="478">478</span>
-<span id="479">479</span>
-<span id="480">480</span>
-<span id="481">481</span>
-<span id="482">482</span>
-<span id="483">483</span>
-<span id="484">484</span>
-<span id="485">485</span>
-<span id="486">486</span>
-<span id="487">487</span>
-<span id="488">488</span>
-<span id="489">489</span>
-<span id="490">490</span>
-<span id="491">491</span>
-<span id="492">492</span>
-<span id="493">493</span>
-<span id="494">494</span>
-<span id="495">495</span>
-<span id="496">496</span>
-<span id="497">497</span>
-<span id="498">498</span>
-<span id="499">499</span>
-<span id="500">500</span>
-<span id="501">501</span>
-<span id="502">502</span>
-<span id="503">503</span>
-<span id="504">504</span>
-<span id="505">505</span>
-<span id="506">506</span>
-<span id="507">507</span>
-<span id="508">508</span>
-<span id="509">509</span>
-<span id="510">510</span>
-<span id="511">511</span>
-<span id="512">512</span>
-<span id="513">513</span>
-<span id="514">514</span>
-<span id="515">515</span>
-<span id="516">516</span>
-<span id="517">517</span>
-<span id="518">518</span>
-<span id="519">519</span>
-<span id="520">520</span>
-<span id="521">521</span>
-<span id="522">522</span>
-<span id="523">523</span>
-<span id="524">524</span>
-<span id="525">525</span>
-<span id="526">526</span>
-<span id="527">527</span>
-<span id="528">528</span>
-<span id="529">529</span>
-<span id="530">530</span>
-<span id="531">531</span>
-<span id="532">532</span>
-<span id="533">533</span>
-<span id="534">534</span>
-<span id="535">535</span>
-<span id="536">536</span>
-<span id="537">537</span>
-<span id="538">538</span>
-<span id="539">539</span>
-<span id="540">540</span>
-<span id="541">541</span>
-<span id="542">542</span>
-<span id="543">543</span>
-<span id="544">544</span>
-<span id="545">545</span>
-<span id="546">546</span>
-<span id="547">547</span>
-<span id="548">548</span>
-<span id="549">549</span>
-<span id="550">550</span>
-<span id="551">551</span>
-<span id="552">552</span>
-<span id="553">553</span>
-<span id="554">554</span>
-<span id="555">555</span>
 </pre><pre class="rust"><code><span class="doccomment">//! epoll support.
 //!
 //! This is an experiment, and it isn&#39;t yet clear whether epoll is the right
@@ -616,16 +465,17 @@
 
 </span><span class="kw">use </span><span class="kw">super</span>::<span class="kw">super</span>::c;
 <span class="kw">use </span><span class="kw">crate</span>::backend::io::syscalls::{epoll_add, epoll_create, epoll_del, epoll_mod, epoll_wait};
-<span class="kw">use </span><span class="kw">crate</span>::fd::{AsFd, AsRawFd, BorrowedFd, OwnedFd, RawFd};
+<span class="kw">use </span><span class="kw">crate</span>::fd::{AsFd, AsRawFd, OwnedFd};
 <span class="attribute">#[cfg(feature = <span class="string">&quot;std&quot;</span>)]
-</span><span class="kw">use </span><span class="kw">crate</span>::fd::{FromRawFd, IntoRawFd};
+</span><span class="kw">use </span><span class="kw">crate</span>::fd::{BorrowedFd, FromRawFd, IntoRawFd, RawFd};
 <span class="kw">use </span><span class="kw">crate</span>::io;
 <span class="kw">use </span>alloc::vec::Vec;
 <span class="kw">use </span>bitflags::bitflags;
-<span class="kw">use </span>core::fmt;
 <span class="kw">use </span>core::marker::PhantomData;
-<span class="kw">use </span>core::ops::Deref;
 <span class="kw">use </span>core::ptr::null;
+
+<span class="attribute">#[doc(inline)]
+</span><span class="kw">pub use </span><span class="kw">crate</span>::io::context::<span class="kw-2">*</span>;
 
 <span class="macro">bitflags! </span>{
     <span class="doccomment">/// `EPOLL_*` for use with [`Epoll::new`].
@@ -665,158 +515,6 @@
 
         <span class="doccomment">/// `EPOLLEXCLUSIVE`
         </span><span class="kw">const </span>EXCLUSIVE = linux_raw_sys::general::EPOLLEXCLUSIVE <span class="kw">as </span>u32;
-    }
-}
-
-<span class="doccomment">/// A reference to a `T`.
-</span><span class="kw">pub struct </span>Ref&lt;<span class="lifetime">&#39;a</span>, T&gt; {
-    t: T,
-    _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>T&gt;,
-}
-
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; Ref&lt;<span class="lifetime">&#39;a</span>, T&gt; {
-    <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>new(t: T) -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{
-            t,
-            _phantom: PhantomData,
-        }
-    }
-
-    <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>consume(<span class="self">self</span>) -&gt; T {
-        <span class="self">self</span>.t
-    }
-}
-
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; Deref <span class="kw">for </span>Ref&lt;<span class="lifetime">&#39;a</span>, T&gt; {
-    <span class="kw">type </span>Target = T;
-
-    <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.t
-    }
-}
-
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: fmt::Debug&gt; fmt::Debug <span class="kw">for </span>Ref&lt;<span class="lifetime">&#39;a</span>, T&gt; {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-        <span class="self">self</span>.t.fmt(fmt)
-    }
-}
-
-<span class="doccomment">/// A trait for data stored within an [`Epoll`] instance.
-</span><span class="kw">pub trait </span>Context {
-    <span class="doccomment">/// The type of an element owned by this context.
-    </span><span class="kw">type </span>Data;
-
-    <span class="doccomment">/// The type of a value used to refer to an element owned by this context.
-    </span><span class="kw">type </span>Target: AsFd;
-
-    <span class="doccomment">/// Assume ownership of `data`, and returning a `Target`.
-    </span><span class="kw">fn </span>acquire&lt;<span class="lifetime">&#39;call</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, data: <span class="self">Self</span>::Data) -&gt; Ref&lt;<span class="lifetime">&#39;call</span>, <span class="self">Self</span>::Target&gt;;
-
-    <span class="doccomment">/// Encode `target` as a `u64`. The only requirement on this value is that
-    /// it be decodable by `decode`.
-    </span><span class="kw">fn </span>encode(<span class="kw-2">&amp;</span><span class="self">self</span>, target: Ref&lt;<span class="lifetime">&#39;_</span>, <span class="self">Self</span>::Target&gt;) -&gt; u64;
-
-    <span class="doccomment">/// Decode `raw`, which is a value encoded by `encode`, into a `Target`.
-    ///
-    /// # Safety
-    ///
-    /// `raw` must be a `u64` value returned from `encode`, from the same
-    /// context, and within the context&#39;s lifetime.
-    </span><span class="kw">unsafe fn </span>decode&lt;<span class="lifetime">&#39;call</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, raw: u64) -&gt; Ref&lt;<span class="lifetime">&#39;call</span>, <span class="self">Self</span>::Target&gt;;
-
-    <span class="doccomment">/// Release ownership of the value referred to by `target` and return it.
-    </span><span class="kw">fn </span>release(<span class="kw-2">&amp;</span><span class="self">self</span>, target: Ref&lt;<span class="lifetime">&#39;_</span>, <span class="self">Self</span>::Target&gt;) -&gt; <span class="self">Self</span>::Data;
-}
-
-<span class="doccomment">/// A type implementing [`Context`] where the `Data` type is `BorrowedFd&lt;&#39;a&gt;`.
-</span><span class="kw">pub struct </span>Borrowing&lt;<span class="lifetime">&#39;a</span>&gt; {
-    _phantom: PhantomData&lt;BorrowedFd&lt;<span class="lifetime">&#39;a</span>&gt;&gt;,
-}
-
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Context <span class="kw">for </span>Borrowing&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">type </span>Data = BorrowedFd&lt;<span class="lifetime">&#39;a</span>&gt;;
-    <span class="kw">type </span>Target = BorrowedFd&lt;<span class="lifetime">&#39;a</span>&gt;;
-
-    <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>acquire&lt;<span class="lifetime">&#39;call</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, data: <span class="self">Self</span>::Data) -&gt; Ref&lt;<span class="lifetime">&#39;call</span>, <span class="self">Self</span>::Target&gt; {
-        Ref::new(data)
-    }
-
-    <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>encode(<span class="kw-2">&amp;</span><span class="self">self</span>, target: Ref&lt;<span class="lifetime">&#39;_</span>, <span class="self">Self</span>::Target&gt;) -&gt; u64 {
-        target.as_raw_fd() <span class="kw">as </span>u64
-    }
-
-    <span class="attribute">#[inline]
-    </span><span class="kw">unsafe fn </span>decode&lt;<span class="lifetime">&#39;call</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, raw: u64) -&gt; Ref&lt;<span class="lifetime">&#39;call</span>, <span class="self">Self</span>::Target&gt; {
-        Ref::new(BorrowedFd::&lt;<span class="lifetime">&#39;a</span>&gt;::borrow_raw(raw <span class="kw">as </span>RawFd))
-    }
-
-    <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>release(<span class="kw-2">&amp;</span><span class="self">self</span>, target: Ref&lt;<span class="lifetime">&#39;_</span>, <span class="self">Self</span>::Target&gt;) -&gt; <span class="self">Self</span>::Data {
-        target.consume()
-    }
-}
-
-<span class="doccomment">/// A type implementing [`Context`] where the `Data` type is `T`, a type
-/// implementing `From&lt;OwnedFd&gt;` and `From&lt;T&gt; of OwnedFd`.
-///
-/// This may be used with [`OwnedFd`], or higher-level types like
-/// [`std::fs::File`] or [`std::net::TcpStream`].
-</span><span class="attribute">#[cfg(feature = <span class="string">&quot;std&quot;</span>)]
-</span><span class="kw">pub struct </span>Owning&lt;<span class="lifetime">&#39;context</span>, T: Into&lt;OwnedFd&gt; + From&lt;OwnedFd&gt;&gt; {
-    _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;context </span>T&gt;,
-}
-
-<span class="attribute">#[cfg(feature = <span class="string">&quot;std&quot;</span>)]
-</span><span class="kw">impl</span>&lt;<span class="lifetime">&#39;context</span>, T: Into&lt;OwnedFd&gt; + From&lt;OwnedFd&gt;&gt; Owning&lt;<span class="lifetime">&#39;context</span>, T&gt; {
-    <span class="doccomment">/// Creates a new empty `Owning`.
-    </span><span class="attribute">#[allow(clippy::new_without_default)] </span><span class="comment">// This is a specialized type that doesn&#39;t need to be generically constructible.
-    </span><span class="attribute">#[inline]
-    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{
-            _phantom: PhantomData,
-        }
-    }
-}
-
-<span class="attribute">#[cfg(feature = <span class="string">&quot;std&quot;</span>)]
-</span><span class="kw">impl</span>&lt;<span class="lifetime">&#39;context</span>, T: AsFd + Into&lt;OwnedFd&gt; + From&lt;OwnedFd&gt;&gt; Context <span class="kw">for </span>Owning&lt;<span class="lifetime">&#39;context</span>, T&gt; {
-    <span class="kw">type </span>Data = T;
-    <span class="kw">type </span>Target = BorrowedFd&lt;<span class="lifetime">&#39;context</span>&gt;;
-
-    <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>acquire&lt;<span class="lifetime">&#39;call</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, data: <span class="self">Self</span>::Data) -&gt; Ref&lt;<span class="lifetime">&#39;call</span>, <span class="self">Self</span>::Target&gt; {
-        <span class="kw">let </span>raw_fd = data.into().into_raw_fd();
-        <span class="comment">// Safety: `epoll` will assign ownership of the file descriptor to the
-        // kernel epoll object. We use `Into&lt;OwnedFd&gt;`+`IntoRawFd` to consume
-        // the `Data` and extract the raw file descriptor and then &quot;borrow&quot; it
-        // with `borrow_raw` knowing that the borrow won&#39;t outlive the
-        // kernel epoll object.
-        </span><span class="kw">unsafe </span>{ Ref::new(BorrowedFd::&lt;<span class="lifetime">&#39;context</span>&gt;::borrow_raw(raw_fd)) }
-    }
-
-    <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>encode(<span class="kw-2">&amp;</span><span class="self">self</span>, target: Ref&lt;<span class="lifetime">&#39;_</span>, <span class="self">Self</span>::Target&gt;) -&gt; u64 {
-        target.as_fd().as_raw_fd() <span class="kw">as </span>u64
-    }
-
-    <span class="attribute">#[inline]
-    </span><span class="kw">unsafe fn </span>decode&lt;<span class="lifetime">&#39;call</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, raw: u64) -&gt; Ref&lt;<span class="lifetime">&#39;call</span>, <span class="self">Self</span>::Target&gt; {
-        Ref::new(BorrowedFd::&lt;<span class="lifetime">&#39;context</span>&gt;::borrow_raw(raw <span class="kw">as </span>RawFd))
-    }
-
-    <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>release(<span class="kw-2">&amp;</span><span class="self">self</span>, target: Ref&lt;<span class="lifetime">&#39;_</span>, <span class="self">Self</span>::Target&gt;) -&gt; <span class="self">Self</span>::Data {
-        <span class="kw">let </span>raw_fd = target.consume().as_raw_fd();
-
-        <span class="comment">// Safety: The file descriptor was held by the kernel epoll object and
-        // is now being released, so we can create a new `OwnedFd` that assumes
-        // ownership.
-        </span><span class="kw">unsafe </span>{ T::from(io_lifetimes::OwnedFd::from_raw_fd(raw_fd)) }
     }
 }
 
@@ -1109,4 +807,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="rustix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="rustix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

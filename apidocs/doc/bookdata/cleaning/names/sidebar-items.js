@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["clean_name","Clean up a name from unnecessary special characters."],["name_variants","Extract all variants from a name."],["preclean","Pre-clean a string without copying."]],"mod":[["parse","PEG parser for name variants."],["types",""]]};

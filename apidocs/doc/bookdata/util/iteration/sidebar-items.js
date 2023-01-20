@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["chunk_owned","Wrap an iterator in an iterator that returns chunks."]],"struct":[["ChunkIter","A chunking iterator that owns its delegate."]]};
