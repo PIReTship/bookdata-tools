@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["xxh64","Returns hash for the provided input."]],"struct":[["Xxh64","XXH64 Streaming algorithm"],["Xxh64Builder","Hash builder for `Xxh64`"]]};

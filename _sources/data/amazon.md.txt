@@ -6,7 +6,7 @@ nav_order: 6
 
 # Amazon Ratings
 
-This processes two data sets from Julian Mcauley's group at UCSAD:
+This processes two data sets from Julian McAuley's group at UCSD:
 
 - The [2014 Amazon reviews data set](http://jmcauley.ucsd.edu/data/amazon/)
 - The [2018 Amazon reviews data set](https://nijianmo.github.io/amazon/index.html)

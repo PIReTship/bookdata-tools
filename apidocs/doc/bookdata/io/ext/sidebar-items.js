@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"trait":[["LengthRead","Trait for read types that can report their size."]]};

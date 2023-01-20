@@ -1,0 +1,234 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/simdutf8-0.1.4/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../simdutf8/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
+<span id="2">2</span>
+<span id="3">3</span>
+<span id="4">4</span>
+<span id="5">5</span>
+<span id="6">6</span>
+<span id="7">7</span>
+<span id="8">8</span>
+<span id="9">9</span>
+<span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+</pre><pre class="rust"><code><span class="attribute">#![deny(warnings)]
+#![warn(unused_extern_crates)]
+#![deny(
+    clippy::all,
+    clippy::unwrap_used,
+    clippy::unnecessary_unwrap,
+    clippy::pedantic,
+    clippy::nursery
+)]
+#![allow(clippy::redundant_pub_crate)] </span><span class="comment">// check is broken
+</span><span class="attribute">#![allow(clippy::redundant_else)] </span><span class="comment">// can make code more readable
+</span><span class="attribute">#![allow(clippy::explicit_iter_loop)] </span><span class="comment">// can make code more readable
+</span><span class="attribute">#![allow(clippy::semicolon_if_nothing_returned)] </span><span class="comment">// see https://github.com/rust-lang/rust-clippy/issues/7768
+</span><span class="attribute">#![deny(missing_docs)]
+#![cfg_attr(not(feature = <span class="string">&quot;std&quot;</span>), no_std)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
+</span><span class="doccomment">//! Blazingly fast API-compatible UTF-8 validation for Rust using SIMD extensions, based on the implementation from
+//! [simdjson](https://github.com/simdjson/simdjson). Originally ported to Rust by the developers of [simd-json.rs](https://simd-json.rs), but now heavily improved.
+//!
+//! ## Quick start
+//! Add the dependency to your Cargo.toml file:
+//! ```toml
+//! [dependencies]
+//! simdutf8 = &quot;0.1.4&quot;
+//! ```
+//! For ARM64 SIMD support on Rust 1.59:
+//! ```toml
+//! [dependencies]
+//! simdutf8 = { version = &quot;0.1.4&quot;, features = [&quot;aarch64_neon&quot;] }
+//! ```
+//!
+//! Use [`basic::from_utf8()`] as a drop-in replacement for `std::str::from_utf8()`.
+//!
+//! ```rust
+//! use simdutf8::basic::from_utf8;
+//!
+//! println!(&quot;{}&quot;, from_utf8(b&quot;I \xE2\x9D\xA4\xEF\xB8\x8F UTF-8!&quot;).unwrap());
+//! ```
+//!
+//! If you need detailed information on validation failures, use [`compat::from_utf8()`]
+//! instead.
+//!
+//! ```rust
+//! use simdutf8::compat::from_utf8;
+//!
+//! let err = from_utf8(b&quot;I \xE2\x9D\xA4\xEF\xB8 UTF-8!&quot;).unwrap_err();
+//! assert_eq!(err.valid_up_to(), 5);
+//! assert_eq!(err.error_len(), Some(2));
+//! ```
+//!
+//! ## APIs
+//!
+//! ### Basic flavor
+//! Use the `basic` API flavor for maximum speed. It is fastest on valid UTF-8, but only checks
+//! for errors after processing the whole byte sequence and does not provide detailed information if the data
+//! is not valid UTF-8. [`basic::Utf8Error`] is a zero-sized error struct.
+//!
+//! ### Compat flavor
+//! The `compat` flavor is fully API-compatible with `std::str::from_utf8()`. In particular, [`compat::from_utf8()`]
+//! returns a [`compat::Utf8Error`], which has [`valid_up_to()`](compat::Utf8Error#method.valid_up_to) and
+//! [`error_len()`](compat::Utf8Error#method.error_len) methods. The first is useful for verification of streamed data. The
+//! second is useful e.g. for replacing invalid byte sequences with a replacement character.
+//!
+//! It also fails early: errors are checked on the fly as the string is processed and once
+//! an invalid UTF-8 sequence is encountered, it returns without processing the rest of the data.
+//! This comes at a slight performance penalty compared to the [`basic`] API even if the input is valid UTF-8.
+//!
+//! ## Implementation selection
+//!
+//! ### X86
+//! The fastest implementation is selected at runtime using the `std::is_x86_feature_detected!` macro, unless the CPU
+//! targeted by the compiler supports the fastest available implementation.
+//! So if you compile with `RUSTFLAGS=&quot;-C target-cpu=native&quot;` on a recent x86-64 machine, the AVX 2 implementation is selected at
+//! compile-time and runtime selection is disabled.
+//!
+//! For no-std support (compiled with `--no-default-features`) the implementation is always selected at compile time based on
+//! the targeted CPU. Use `RUSTFLAGS=&quot;-C target-feature=+avx2&quot;` for the AVX 2 implementation or `RUSTFLAGS=&quot;-C target-feature=+sse4.2&quot;`
+//! for the SSE 4.2 implementation.
+//!
+//! ### ARM64
+//! To get the SIMD implementation with Rust 1.59 on ARM64 the crate feature `aarch64_neon` needs to be enabled. For Rust Nightly
+//! this is no longer required (but does not hurt either). Once [Rust PR #90621](https://github.com/rust-lang/rust/pull/90621)
+//! lands in a stable version, this is no longer required.
+//!
+//! CAVE: If this features is not turned on with Rust 1.59 the non-SIMD std library implementation is used.
+//!
+//! ### WASM32
+//! For wasm32 support, the implementation is selected at compile time based on the presence of the `simd128` target feature.
+//! Use `RUSTFLAGS=&quot;-C target-feature=+simd128&quot;` to enable the WASM SIMD implementation.  WASM, at
+//! the time of this writing, doesn&#39;t have a way to detect SIMD through WASM itself.  Although this capability
+//! is available in various WASM host environments (e.g., [wasm-feature-detect] in the web browser), there is no portable
+//! way from within the library to detect this.
+//!
+//! [wasm-feature-detect]: https://github.com/GoogleChromeLabs/wasm-feature-detect
+//!
+//! ### Access to low-level functionality
+//! If you want to be able to call a SIMD implementation directly, use the `public_imp` feature flag. The validation
+//! implementations are then accessible via [`basic::imp`] and [`compat::imp`]. Traits facilitating streaming validation are available
+//! there as well.
+//!
+//! ## Optimisation flags
+//! Do not use [`opt-level = &quot;z&quot;`](https://doc.rust-lang.org/cargo/reference/profiles.html), which prevents inlining and makes
+//! the code quite slow.
+//!
+//! ## Minimum Supported Rust Version (MSRV)
+//! This crate&#39;s minimum supported Rust version is 1.38.0.
+//!
+//! ## Algorithm
+//!
+//! See Validating UTF-8 In Less Than One Instruction Per Byte, Software: Practice and Experience 51 (5), 2021
+//! &lt;https://arxiv.org/abs/2010.03090&gt;
+
+</span><span class="kw">pub mod </span>basic;
+<span class="kw">pub mod </span>compat;
+<span class="kw">mod </span>implementation;
+</code></pre></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="simdutf8" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

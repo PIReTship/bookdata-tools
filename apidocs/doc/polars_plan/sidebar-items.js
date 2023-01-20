@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":[["map",""],["map_owned",""]],"mod":[["dot",""],["dsl","Domain specific language for the Lazy api."],["frame",""],["global",""],["logical_plan",""],["prelude",""],["utils",""]]};

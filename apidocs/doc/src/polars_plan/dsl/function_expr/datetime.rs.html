@@ -1,0 +1,376 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.25.1/src/dsl/function_expr/datetime.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>datetime.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
+<span id="2">2</span>
+<span id="3">3</span>
+<span id="4">4</span>
+<span id="5">5</span>
+<span id="6">6</span>
+<span id="7">7</span>
+<span id="8">8</span>
+<span id="9">9</span>
+<span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+</pre><pre class="rust"><code><span class="kw">use </span>polars_core::utils::arrow::temporal_conversions::SECONDS_IN_DAY;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;serde&quot;</span>)]
+</span><span class="kw">use </span>serde::{Deserialize, Serialize};
+
+<span class="kw">use super</span>::<span class="kw-2">*</span>;
+
+<span class="attribute">#[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(Serialize, Deserialize))]
+#[derive(Clone, PartialEq, Debug, Eq, Hash)]
+</span><span class="kw">pub enum </span>TemporalFunction {
+    Year,
+    IsoYear,
+    Quarter,
+    Month,
+    Week,
+    WeekDay,
+    Day,
+    OrdinalDay,
+    Hour,
+    Minute,
+    Second,
+    Millisecond,
+    Microsecond,
+    Nanosecond,
+    TimeStamp(TimeUnit),
+    Truncate(String, String),
+    Round(String, String),
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;timezones&quot;</span>)]
+    </span>CastTimezone(TimeZone),
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;timezones&quot;</span>)]
+    </span>TzLocalize(TimeZone),
+    DateRange {
+        name: String,
+        every: Duration,
+        closed: ClosedWindow,
+        tz: <span class="prelude-ty">Option</span>&lt;TimeZone&gt;,
+    },
+}
+
+<span class="kw">impl </span>Display <span class="kw">for </span>TemporalFunction {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+        <span class="kw">use </span>TemporalFunction::<span class="kw-2">*</span>;
+        <span class="kw">let </span>s = <span class="kw">match </span><span class="self">self </span>{
+            Year =&gt; <span class="string">&quot;year&quot;</span>,
+            IsoYear =&gt; <span class="string">&quot;iso_year&quot;</span>,
+            Quarter =&gt; <span class="string">&quot;quarter&quot;</span>,
+            Month =&gt; <span class="string">&quot;month&quot;</span>,
+            Week =&gt; <span class="string">&quot;week&quot;</span>,
+            WeekDay =&gt; <span class="string">&quot;weekday&quot;</span>,
+            Day =&gt; <span class="string">&quot;day&quot;</span>,
+            OrdinalDay =&gt; <span class="string">&quot;ordinal_day&quot;</span>,
+            Hour =&gt; <span class="string">&quot;hour&quot;</span>,
+            Minute =&gt; <span class="string">&quot;minute&quot;</span>,
+            Second =&gt; <span class="string">&quot;second&quot;</span>,
+            Millisecond =&gt; <span class="string">&quot;millisecond&quot;</span>,
+            Microsecond =&gt; <span class="string">&quot;microsecond&quot;</span>,
+            Nanosecond =&gt; <span class="string">&quot;nanosecond&quot;</span>,
+            TimeStamp(tu) =&gt; <span class="kw">return </span><span class="macro">write!</span>(f, <span class="string">&quot;dt.timestamp({})&quot;</span>, tu),
+            Truncate(..) =&gt; <span class="string">&quot;truncate&quot;</span>,
+            Round(..) =&gt; <span class="string">&quot;round&quot;</span>,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;timezones&quot;</span>)]
+            </span>CastTimezone(<span class="kw">_</span>) =&gt; <span class="string">&quot;cast_timezone&quot;</span>,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;timezones&quot;</span>)]
+            </span>TzLocalize(<span class="kw">_</span>) =&gt; <span class="string">&quot;tz_localize&quot;</span>,
+            DateRange { .. } =&gt; <span class="kw">return </span><span class="macro">write!</span>(f, <span class="string">&quot;date_range&quot;</span>),
+        };
+        <span class="macro">write!</span>(f, <span class="string">&quot;dt.{}&quot;</span>, s)
+    }
+}
+
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>year(s: <span class="kw-2">&amp;</span>Series) -&gt; PolarsResult&lt;Series&gt; {
+    s.year().map(|ca| ca.into_series())
+}
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>iso_year(s: <span class="kw-2">&amp;</span>Series) -&gt; PolarsResult&lt;Series&gt; {
+    s.iso_year().map(|ca| ca.into_series())
+}
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>month(s: <span class="kw-2">&amp;</span>Series) -&gt; PolarsResult&lt;Series&gt; {
+    s.month().map(|ca| ca.into_series())
+}
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>quarter(s: <span class="kw-2">&amp;</span>Series) -&gt; PolarsResult&lt;Series&gt; {
+    s.quarter().map(|ca| ca.into_series())
+}
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>week(s: <span class="kw-2">&amp;</span>Series) -&gt; PolarsResult&lt;Series&gt; {
+    s.week().map(|ca| ca.into_series())
+}
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>weekday(s: <span class="kw-2">&amp;</span>Series) -&gt; PolarsResult&lt;Series&gt; {
+    s.weekday().map(|ca| ca.into_series())
+}
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>day(s: <span class="kw-2">&amp;</span>Series) -&gt; PolarsResult&lt;Series&gt; {
+    s.day().map(|ca| ca.into_series())
+}
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>ordinal_day(s: <span class="kw-2">&amp;</span>Series) -&gt; PolarsResult&lt;Series&gt; {
+    s.ordinal_day().map(|ca| ca.into_series())
+}
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>hour(s: <span class="kw-2">&amp;</span>Series) -&gt; PolarsResult&lt;Series&gt; {
+    s.hour().map(|ca| ca.into_series())
+}
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>minute(s: <span class="kw-2">&amp;</span>Series) -&gt; PolarsResult&lt;Series&gt; {
+    s.minute().map(|ca| ca.into_series())
+}
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>second(s: <span class="kw-2">&amp;</span>Series) -&gt; PolarsResult&lt;Series&gt; {
+    s.second().map(|ca| ca.into_series())
+}
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>millisecond(s: <span class="kw-2">&amp;</span>Series) -&gt; PolarsResult&lt;Series&gt; {
+    s.nanosecond().map(|ca| (ca / <span class="number">1_000_000</span>).into_series())
+}
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>microsecond(s: <span class="kw-2">&amp;</span>Series) -&gt; PolarsResult&lt;Series&gt; {
+    s.nanosecond().map(|ca| (ca / <span class="number">1_000</span>).into_series())
+}
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>nanosecond(s: <span class="kw-2">&amp;</span>Series) -&gt; PolarsResult&lt;Series&gt; {
+    s.nanosecond().map(|ca| ca.into_series())
+}
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>timestamp(s: <span class="kw-2">&amp;</span>Series, tu: TimeUnit) -&gt; PolarsResult&lt;Series&gt; {
+    s.timestamp(tu).map(|ca| ca.into_series())
+}
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>truncate(s: <span class="kw-2">&amp;</span>Series, every: <span class="kw-2">&amp;</span>str, offset: <span class="kw-2">&amp;</span>str) -&gt; PolarsResult&lt;Series&gt; {
+    <span class="kw">let </span>every = Duration::parse(every);
+    <span class="kw">let </span>offset = Duration::parse(offset);
+    <span class="kw">match </span>s.dtype() {
+        DataType::Datetime(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(s.datetime().unwrap().truncate(every, offset).into_series()),
+        DataType::Date =&gt; <span class="prelude-val">Ok</span>(s.date().unwrap().truncate(every, offset).into_series()),
+        dt =&gt; <span class="prelude-val">Err</span>(PolarsError::ComputeError(
+            <span class="macro">format!</span>(<span class="string">&quot;expected date/datetime got {:?}&quot;</span>, dt).into(),
+        )),
+    }
+}
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>round(s: <span class="kw-2">&amp;</span>Series, every: <span class="kw-2">&amp;</span>str, offset: <span class="kw-2">&amp;</span>str) -&gt; PolarsResult&lt;Series&gt; {
+    <span class="kw">let </span>every = Duration::parse(every);
+    <span class="kw">let </span>offset = Duration::parse(offset);
+    <span class="kw">match </span>s.dtype() {
+        DataType::Datetime(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(s.datetime().unwrap().round(every, offset).into_series()),
+        DataType::Date =&gt; <span class="prelude-val">Ok</span>(s.date().unwrap().round(every, offset).into_series()),
+        dt =&gt; <span class="prelude-val">Err</span>(PolarsError::ComputeError(
+            <span class="macro">format!</span>(<span class="string">&quot;expected date/datetime got {:?}&quot;</span>, dt).into(),
+        )),
+    }
+}
+<span class="attribute">#[cfg(feature = <span class="string">&quot;timezones&quot;</span>)]
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>cast_timezone(s: <span class="kw-2">&amp;</span>Series, tz: <span class="kw-2">&amp;</span>str) -&gt; PolarsResult&lt;Series&gt; {
+    <span class="kw">let </span>ca = s.datetime()<span class="question-mark">?</span>;
+    ca.cast_time_zone(tz).map(|ca| ca.into_series())
+}
+
+<span class="attribute">#[cfg(feature = <span class="string">&quot;timezones&quot;</span>)]
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>tz_localize(s: <span class="kw-2">&amp;</span>Series, tz: <span class="kw-2">&amp;</span>str) -&gt; PolarsResult&lt;Series&gt; {
+    <span class="kw">let </span>ca = s.datetime()<span class="question-mark">?</span>.clone();
+    <span class="kw">match </span>ca.time_zone() {
+        <span class="prelude-val">Some</span>(tz) <span class="kw">if </span>!tz.is_empty() =&gt; {
+            <span class="prelude-val">Err</span>(PolarsError::ComputeError(<span class="string">&quot;Cannot localize a tz-aware datetime. Consider using &#39;dt.with_time_zone&#39; or &#39;dt.cast_time_zone&#39;&quot;</span>.into()))
+        },
+        <span class="kw">_ </span>=&gt; {
+            <span class="prelude-val">Ok</span>(ca.with_time_zone(<span class="prelude-val">Some</span>(tz.into())).cast_time_zone(<span class="string">&quot;UTC&quot;</span>)<span class="question-mark">?</span>.with_time_zone(<span class="prelude-val">Some</span>(tz.into())).into_series())
+        }
+    }
+}
+
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>date_range_dispatch(
+    s: <span class="kw-2">&amp;</span>[Series],
+    name: <span class="kw-2">&amp;</span>str,
+    every: Duration,
+    closed: ClosedWindow,
+    tz: <span class="prelude-ty">Option</span>&lt;TimeZone&gt;,
+) -&gt; PolarsResult&lt;Series&gt; {
+    <span class="kw">let </span>start = <span class="kw-2">&amp;</span>s[<span class="number">0</span>];
+    <span class="kw">let </span>stop = <span class="kw-2">&amp;</span>s[<span class="number">1</span>];
+
+    <span class="kw">match </span>start.dtype() {
+        DataType::Date =&gt; {
+            <span class="kw">let </span>start = start.to_physical_repr();
+            <span class="kw">let </span>stop = stop.to_physical_repr();
+            <span class="comment">// to milliseconds
+            </span><span class="kw">let </span>start = start.get(<span class="number">0</span>).extract::&lt;i64&gt;().unwrap() * SECONDS_IN_DAY * <span class="number">1000</span>;
+            <span class="kw">let </span>stop = stop.get(<span class="number">0</span>).extract::&lt;i64&gt;().unwrap() * SECONDS_IN_DAY * <span class="number">1000</span>;
+
+            date_range_impl(name, start, stop, every, closed, TimeUnit::Milliseconds, tz)
+                .cast(<span class="kw-2">&amp;</span>DataType::Date)
+        }
+        DataType::Datetime(tu, <span class="kw">_</span>) =&gt; {
+            <span class="kw">let </span>start = start.to_physical_repr();
+            <span class="kw">let </span>stop = stop.to_physical_repr();
+            <span class="kw">let </span>start = start.get(<span class="number">0</span>).extract::&lt;i64&gt;().unwrap();
+            <span class="kw">let </span>stop = stop.get(<span class="number">0</span>).extract::&lt;i64&gt;().unwrap();
+
+            <span class="prelude-val">Ok</span>(date_range_impl(name, start, stop, every, closed, <span class="kw-2">*</span>tu, tz).into_series())
+        }
+        <span class="kw">_ </span>=&gt; <span class="macro">todo!</span>(),
+    }
+}
+</code></pre></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="polars_plan" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

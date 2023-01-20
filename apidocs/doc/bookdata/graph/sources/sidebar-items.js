@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["id_col","Get an ID column and apply the appropriate namespace adjustment."]],"struct":[["GRBooks",""],["GRWorks",""],["ISBN",""],["LOC",""],["OLEditions",""],["OLWorks",""]],"trait":[["EdgeRead",""],["NodeRead",""]]};

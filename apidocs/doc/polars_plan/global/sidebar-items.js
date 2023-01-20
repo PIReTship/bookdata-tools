@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["FETCH_ROWS",""]],"fn":[["_set_n_rows_for_scan",""]]};
