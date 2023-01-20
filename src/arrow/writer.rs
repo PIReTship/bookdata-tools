@@ -69,9 +69,9 @@ where
         };
 
         let writer = open_parquet_writer(path, schema)?;
-        let writer = ThreadObjectWriter::new(writer);
+        let writer = ThreadObjectWriter::with_capacity(writer, 32);
         let writer = writer.with_transform(vec_to_chunk);
-        let writer = ThreadObjectWriter::new(writer);
+        let writer = ThreadObjectWriter::with_capacity(writer, 32);
         let out_path = Some(path.to_path_buf());
         Ok(TableWriter {
             _phantom: PhantomData,

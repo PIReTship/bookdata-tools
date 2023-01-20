@@ -89,7 +89,11 @@ where
 
 impl<T: Send + Sync + 'static> ThreadObjectWriter<T> {
     pub fn new<W: ObjectWriter<T> + Send + 'static>(writer: W) -> ThreadObjectWriter<T> {
-        let (sender, receiver) = bounded(4096);
+        Self::with_capacity(writer, 4096)
+    }
+
+    pub fn with_capacity<W: ObjectWriter<T> + Send + 'static>(writer: W, cap: usize) -> ThreadObjectWriter<T> {
+        let (sender, receiver) = bounded(cap);
 
         let handle = spawn(|| {
             let recv = receiver;
