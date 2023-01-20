@@ -24,6 +24,7 @@ pub fn open_parquet_writer<P: AsRef<Path>>(path: P, schema: Schema) -> Result<Fi
         write_statistics: true,
         version: Version::V2,
         compression,
+        data_pagesize_limit: None,
     };
 
     info!("creating Parquet file {:?}", path.as_ref());

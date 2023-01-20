@@ -19,7 +19,7 @@ pub struct RawBookGenre {
 }
 
 /// Rows in the processed book-genre Parquet table.
-#[derive(ArrowField)]
+#[derive(ArrowField, ArrowSerialize)]
 pub struct BookGenreRecord {
     pub book_id: i32,
     pub genre_id: i32,

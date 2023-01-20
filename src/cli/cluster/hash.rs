@@ -25,7 +25,7 @@ pub struct HashCmd {
     cluster_file: PathBuf,
 }
 
-#[derive(ArrowField)]
+#[derive(ArrowField, ArrowSerialize)]
 struct ClusterHash {
     cluster: i32,
     isbn_hash: String,

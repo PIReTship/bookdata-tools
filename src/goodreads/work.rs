@@ -23,7 +23,7 @@ pub struct RawWork {
 }
 
 /// Rows in the processed work Parquet table.
-#[derive(ArrowField)]
+#[derive(ArrowField, ArrowSerialize, ArrowDeserialize)]
 pub struct WorkRecord {
     pub work_id: i32,
     pub title: Option<String>,

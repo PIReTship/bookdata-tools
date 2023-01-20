@@ -9,7 +9,7 @@ use crate::marc::MARCRecord;
 use crate::prelude::*;
 
 /// Structure recording book identifiers from a MARC field.
-#[derive(ArrowField, Debug)]
+#[derive(ArrowField, ArrowSerialize, ArrowDeserialize, Debug)]
 struct BookIds {
     rec_id: u32,
     marc_cn: String,
@@ -20,7 +20,7 @@ struct BookIds {
 }
 
 /// Structure recording an ISBN record from a book.
-#[derive(Serialize, ArrowField, Debug)]
+#[derive(Serialize, ArrowField, ArrowSerialize, ArrowDeserialize, Debug)]
 struct ISBNrec {
     rec_id: u32,
     isbn: String,
@@ -28,7 +28,7 @@ struct ISBNrec {
 }
 
 /// Structure recording a record's author field.
-#[derive(Serialize, ArrowField, Debug)]
+#[derive(Serialize, ArrowField, ArrowSerialize, ArrowDeserialize, Debug)]
 struct AuthRec {
     rec_id: u32,
     author_name: String,

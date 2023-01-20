@@ -140,9 +140,10 @@ impl Command for ClusterAuthors {
             writer,
             schema,
             WriteOptions {
-                compression: ParquetCompression::Zstd(None),
+                compression: parquet2::compression::CompressionOptions::Zstd(None),
                 version: Version::V2,
                 write_statistics: false,
+                data_pagesize_limit: None,
             },
         )?;
         let mut writer = ThreadObjectWriter::new(writer);

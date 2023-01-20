@@ -1,5 +1,6 @@
 //! Structs defining Amazon data sets.
 use crate::arrow::*;
+use arrow2_convert::ArrowSerialize;
 use serde::{Deserialize, Serialize};
 
 /// A rating as described in a source CSV file.
@@ -14,7 +15,7 @@ pub struct SourceRating {
 /// Structure for scanned ratings.
 ///
 /// This data structure is serialized to `ratings.parquet` in the Amazon directories.
-#[derive(ArrowField, Serialize, Deserialize)]
+#[derive(ArrowField, ArrowSerialize, Serialize, Deserialize)]
 pub struct RatingRow {
     pub user: i32,
     pub asin: String,

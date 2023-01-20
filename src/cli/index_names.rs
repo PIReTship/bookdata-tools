@@ -35,7 +35,7 @@ pub struct IndexNames {
 
 type NameIndex = HashMap<String, HashSet<u32>>;
 
-#[derive(ArrowField, Serialize, Clone)]
+#[derive(ArrowField, ArrowSerialize, Serialize, Clone)]
 struct IndexEntry {
     rec_id: u32,
     name: String,

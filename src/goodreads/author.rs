@@ -15,7 +15,7 @@ pub struct RawAuthor {
 }
 
 /// Rows in the processed work Parquet table.
-#[derive(ArrowField)]
+#[derive(ArrowField, ArrowSerialize)]
 pub struct AuthorRecord {
     pub author_id: i32,
     pub name: Option<String>,

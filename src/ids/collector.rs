@@ -85,7 +85,8 @@ impl KeyCollector {
         let options = WriteOptions {
             write_statistics: true,
             version: Version::V2,
-            compression: ParquetCompression::Zstd(None),
+            compression: parquet2::compression::CompressionOptions::Zstd(None),
+            data_pagesize_limit: None,
         };
         let mut writer = FileWriter::try_new(file, self.schema(id_col, key_col), options)?;
 

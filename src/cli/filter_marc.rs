@@ -160,6 +160,7 @@ fn write_records(out: &OutputSpec, recv: Receiver<FieldRecord>) -> Result<usize>
         compression: CompressionOptions::Zstd(None),
         version: Version::V2,
         write_statistics: false,
+        data_pagesize_limit: None,
     };
     let mut writer = FileWriter::try_new(writer, schema, options)?;
 

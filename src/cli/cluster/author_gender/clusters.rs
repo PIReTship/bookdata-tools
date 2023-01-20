@@ -23,7 +23,7 @@ pub struct ClusterStats {
 }
 
 /// Row struct for reading cluster author names.
-#[derive(Debug, ArrowField)]
+#[derive(Debug, ArrowField, ArrowSerialize, ArrowDeserialize)]
 struct ClusterAuthor {
     cluster: i32,
     #[arrow_field(type = "LargeString")]

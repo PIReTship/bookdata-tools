@@ -14,13 +14,13 @@ pub struct AuthorInfo {
 
 pub type AuthorTable = HashMap<String, AuthorInfo>;
 
-#[derive(ArrowField, Debug)]
+#[derive(ArrowField, ArrowSerialize, ArrowDeserialize, Debug)]
 struct NameRow {
     rec_id: u32,
     name: String,
 }
 
-#[derive(ArrowField, Debug)]
+#[derive(ArrowField, ArrowSerialize, ArrowDeserialize, Debug)]
 struct GenderRow {
     rec_id: u32,
     gender: String,
