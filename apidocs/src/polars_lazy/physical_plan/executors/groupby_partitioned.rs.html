@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.25.1/src/physical_plan/executors/groupby_partitioned.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>groupby_partitioned.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.26.1/src/physical_plan/executors/groupby_partitioned.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>groupby_partitioned.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -321,6 +321,21 @@
 <span id="321">321</span>
 <span id="322">322</span>
 <span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
+<span id="338">338</span>
 </pre><pre class="rust"><code><span class="kw">use </span>polars_core::utils::{accumulate_dataframes_vertical, split_df};
 <span class="kw">use </span>polars_core::POOL;
 <span class="kw">use </span>rayon::prelude::<span class="kw-2">*</span>;
@@ -335,16 +350,21 @@
     maintain_order: bool,
     slice: <span class="prelude-ty">Option</span>&lt;(i64, usize)&gt;,
     input_schema: SchemaRef,
+    output_schema: SchemaRef,
+    from_partitioned_ds: bool,
 }
 
 <span class="kw">impl </span>PartitionGroupByExec {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(
+    <span class="attribute">#[allow(clippy::too_many_arguments)]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(
         input: Box&lt;<span class="kw">dyn </span>Executor&gt;,
         keys: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
         phys_aggs: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
         maintain_order: bool,
         slice: <span class="prelude-ty">Option</span>&lt;(i64, usize)&gt;,
         input_schema: SchemaRef,
+        output_schema: SchemaRef,
+        from_partitioned_ds: bool,
     ) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             input,
@@ -353,6 +373,8 @@
             maintain_order,
             slice,
             input_schema,
+            output_schema,
+            from_partitioned_ds,
         }
     }
 
@@ -434,7 +456,6 @@
     // u: total unique groups counted in sample
     // ui: groups with single unique value counted in sample
     </span><span class="kw">let </span>set_size = keys[<span class="number">0</span>].len();
-    <span class="kw">let </span>offset = (keys[<span class="number">0</span>].len() / <span class="number">2</span>) <span class="kw">as </span>i64;
     <span class="kw">if </span>set_size &lt; sample_size {
         sample_size = set_size;
     }
@@ -458,6 +479,7 @@
         </span><span class="kw">let </span>groups = s.group_tuples(<span class="bool-val">true</span>, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(finish(<span class="kw-2">&amp;</span>groups))
     } <span class="kw">else </span>{
+        <span class="kw">let </span>offset = (keys[<span class="number">0</span>].len() / <span class="number">2</span>) <span class="kw">as </span>i64;
         <span class="kw">let </span>keys = keys
             .iter()
             .map(|s| s.slice(offset, sample_size))
@@ -475,6 +497,7 @@
     keys: <span class="kw-2">&amp;</span>[Series],
     original_df: <span class="kw-2">&amp;</span>DataFrame,
     state: <span class="kw-2">&amp;</span>ExecutionState,
+    from_partitioned_ds: bool,
 ) -&gt; PolarsResult&lt;bool&gt; {
     <span class="kw">if </span>std::env::var(<span class="string">&quot;POLARS_NO_PARTITION&quot;</span>).is_ok() {
         <span class="kw">if </span>state.verbose() {
@@ -514,12 +537,21 @@
             }
         };
         <span class="kw">if </span>state.verbose() {
-            <span class="macro">eprintln!</span>(<span class="string">&quot;{} unique values: {}&quot;</span>, sampled_method, unique_estimate);
+            <span class="macro">eprintln!</span>(<span class="string">&quot;{sampled_method} unique values: {unique_estimate}&quot;</span>);
         }
 
-        <span class="kw">if </span>unique_estimate &gt; unique_count_boundary {
+        <span class="kw">if </span>from_partitioned_ds {
+            <span class="kw">let </span>estimated_cardinality = unique_estimate <span class="kw">as </span>f32 / original_df.height() <span class="kw">as </span>f32;
+            <span class="kw">if </span>estimated_cardinality &lt; <span class="number">0.4 </span>{
+                <span class="macro">eprintln!</span>(<span class="string">&quot;PARTITIONED DS&quot;</span>);
+                <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
+            } <span class="kw">else </span>{
+                <span class="macro">eprintln!</span>(<span class="string">&quot;PARTITIONED DS: estimated cardinality: {estimated_cardinality} exceeded the boundary: 0.4, running default HASH AGGREGATION&quot;</span>);
+                <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
+            }
+        } <span class="kw">else if </span>unique_estimate &gt; unique_count_boundary {
             <span class="kw">if </span>state.verbose() {
-                <span class="macro">eprintln!</span>(<span class="string">&quot;estimated unique count: {} exceeded the boundary: {}, running default HASH AGGREGATION&quot;</span>,unique_estimate, unique_count_boundary)
+                <span class="macro">eprintln!</span>(<span class="string">&quot;estimated unique count: {unique_estimate} exceeded the boundary: {unique_count_boundary}, running default HASH AGGREGATION&quot;</span>)
             }
             <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
         } <span class="kw">else </span>{
@@ -541,7 +573,7 @@
             // of groups.
             </span><span class="kw">let </span>keys = <span class="self">self</span>.keys(<span class="kw-2">&amp;</span>original_df, state)<span class="question-mark">?</span>;
 
-            <span class="kw">if </span>!can_run_partitioned(<span class="kw-2">&amp;</span>keys, <span class="kw-2">&amp;</span>original_df, state)<span class="question-mark">? </span>{
+            <span class="kw">if </span>!can_run_partitioned(<span class="kw-2">&amp;</span>keys, <span class="kw-2">&amp;</span>original_df, state, <span class="self">self</span>.from_partitioned_ds)<span class="question-mark">? </span>{
                 <span class="kw">return </span>groupby_helper(
                     original_df,
                     keys,
@@ -559,8 +591,6 @@
             <span class="comment">// Run the partitioned aggregations
             </span><span class="kw">let </span>n_threads = POOL.current_num_threads();
 
-            <span class="comment">// set it here, because `self.input.execute` will clear the schema cache.
-            </span>state.set_schema(<span class="self">self</span>.input_schema.clone());
             run_partitions(
                 <span class="kw-2">&amp;mut </span>original_df,
                 <span class="self">self</span>,
@@ -569,8 +599,8 @@
                 <span class="self">self</span>.maintain_order,
             )<span class="question-mark">?
         </span>};
-        state.clear_schema_cache();
 
+        state.set_schema(<span class="self">self</span>.output_schema.clone());
         <span class="comment">// MERGE phase
         // merge and hash aggregate again
         </span><span class="kw">let </span>df = accumulate_dataframes_vertical(dfs)<span class="question-mark">?</span>;

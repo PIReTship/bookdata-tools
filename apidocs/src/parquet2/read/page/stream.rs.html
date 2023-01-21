@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/parquet2-0.16.3/src/read/page/stream.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>stream.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../parquet2/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/parquet2-0.17.1/src/read/page/stream.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>stream.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../parquet2/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -127,6 +127,16 @@
 <span id="127">127</span>
 <span id="128">128</span>
 <span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::io::SeekFrom;
 
 <span class="kw">use </span>async_stream::try_stream;
@@ -135,7 +145,7 @@
 <span class="kw">use </span>parquet_format_safe::thrift::protocol::TCompactInputStreamProtocol;
 
 <span class="kw">use </span><span class="kw">crate</span>::compression::Compression;
-<span class="kw">use </span><span class="kw">crate</span>::error::Result;
+<span class="kw">use </span><span class="kw">crate</span>::error::{Error, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span><span class="kw">crate</span>::metadata::{ColumnChunkMetaData, Descriptor};
 <span class="kw">use </span><span class="kw">crate</span>::page::{CompressedPage, ParquetPageHeader};
 
@@ -148,14 +158,14 @@
     reader: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>RR,
     scratch: Vec&lt;u8&gt;,
     pages_filter: PageFilter,
-    max_header_size: usize,
+    max_page_size: usize,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">impl </span>Stream&lt;Item = <span class="prelude-ty">Result</span>&lt;CompressedPage&gt;&gt; + <span class="lifetime">&#39;a</span>&gt; {
     get_page_stream_with_page_meta(
         column_metadata.into(),
         reader,
         scratch,
         pages_filter,
-        max_header_size,
+        max_page_size,
     )
     .<span class="kw">await
 </span>}
@@ -186,7 +196,7 @@
     reader: <span class="kw-2">&amp;mut </span>RR,
     scratch: Vec&lt;u8&gt;,
     pages_filter: PageFilter,
-    max_header_size: usize,
+    max_page_size: usize,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">impl </span>Stream&lt;Item = <span class="prelude-ty">Result</span>&lt;CompressedPage&gt;&gt; + <span class="lifetime">&#39;_</span>&gt; {
     <span class="kw">let </span>column_start = page_metadata.column_start;
     reader.seek(SeekFrom::Start(column_start)).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -197,7 +207,7 @@
         page_metadata.descriptor,
         scratch,
         pages_filter,
-        max_header_size,
+        max_page_size,
     ))
 }
 
@@ -208,13 +218,13 @@
     descriptor: Descriptor,
     <span class="kw-2">mut </span>scratch: Vec&lt;u8&gt;,
     pages_filter: PageFilter,
-    max_header_size: usize,
+    max_page_size: usize,
 ) -&gt; <span class="kw">impl </span>Stream&lt;Item = <span class="prelude-ty">Result</span>&lt;CompressedPage&gt;&gt; + <span class="lifetime">&#39;_ </span>{
     <span class="kw">let </span><span class="kw-2">mut </span>seen_values = <span class="number">0i64</span>;
     <span class="macro">try_stream! </span>{
         <span class="kw">while </span>seen_values &lt; total_num_values {
             <span class="comment">// the header
-            </span><span class="kw">let </span>page_header = read_page_header(reader, max_header_size).<span class="kw">await</span><span class="question-mark">?</span>;
+            </span><span class="kw">let </span>page_header = read_page_header(reader, max_page_size).<span class="kw">await</span><span class="question-mark">?</span>;
 
             <span class="kw">let </span>data_header = get_page_header(<span class="kw-2">&amp;</span>page_header)<span class="question-mark">?</span>;
             seen_values += data_header.as_ref().map(|x| x.num_values() <span class="kw">as </span>i64).unwrap_or_default();
@@ -229,12 +239,22 @@
                 </span>}
             }
 
+            <span class="kw">if </span>read_size &gt; max_page_size {
+                <span class="prelude-val">Err</span>(Error::WouldOverAllocate)<span class="question-mark">?
+            </span>}
+
             <span class="comment">// followed by the buffer
             </span>scratch.clear();
             scratch.try_reserve(read_size)<span class="question-mark">?</span>;
-            reader
+            <span class="kw">let </span>bytes_read = reader
                 .take(read_size <span class="kw">as </span>u64)
                 .read_to_end(<span class="kw-2">&amp;mut </span>scratch).<span class="kw">await</span><span class="question-mark">?</span>;
+
+            <span class="kw">if </span>bytes_read != read_size {
+                <span class="prelude-val">Err</span>(Error::oos(
+                    <span class="string">&quot;The page header reported the wrong page size&quot;</span>.to_string(),
+                ))<span class="question-mark">?
+            </span>}
 
             <span class="kw">yield </span>finish_page(
                 page_header,
@@ -250,9 +270,9 @@
 <span class="doccomment">/// Reads Page header from Thrift.
 </span><span class="kw">async fn </span>read_page_header&lt;R: AsyncRead + Unpin + Send&gt;(
     reader: <span class="kw-2">&amp;mut </span>R,
-    max_header_size: usize,
+    max_page_size: usize,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;ParquetPageHeader&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>prot = TCompactInputStreamProtocol::new(reader, max_header_size);
+    <span class="kw">let </span><span class="kw-2">mut </span>prot = TCompactInputStreamProtocol::new(reader, max_page_size);
     <span class="kw">let </span>page_header = ParquetPageHeader::stream_from_in_protocol(<span class="kw-2">&amp;mut </span>prot).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(page_header)
 }

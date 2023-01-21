@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-arrow-0.25.1/src/array/default_arrays.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>default_arrays.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../polars_arrow/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-arrow-0.26.1/src/array/default_arrays.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>default_arrays.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../polars_arrow/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -60,10 +60,14 @@
 <span id="60">60</span>
 <span id="61">61</span>
 <span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
 </pre><pre class="rust"><code><span class="kw">use </span>arrow::array::{BinaryArray, BooleanArray, PrimitiveArray, Utf8Array};
 <span class="kw">use </span>arrow::bitmap::Bitmap;
 <span class="kw">use </span>arrow::buffer::Buffer;
 <span class="kw">use </span>arrow::datatypes::DataType;
+<span class="kw">use </span>arrow::offset::OffsetsBuffer;
 <span class="kw">use </span>arrow::types::NativeType;
 
 <span class="kw">pub trait </span>FromData&lt;T&gt; {
@@ -72,14 +76,14 @@
 
 <span class="kw">impl </span>FromData&lt;Bitmap&gt; <span class="kw">for </span>BooleanArray {
     <span class="kw">fn </span>from_data_default(values: Bitmap, validity: <span class="prelude-ty">Option</span>&lt;Bitmap&gt;) -&gt; BooleanArray {
-        BooleanArray::from_data(DataType::Boolean, values, validity)
+        BooleanArray::new(DataType::Boolean, values, validity)
     }
 }
 
 <span class="kw">impl</span>&lt;T: NativeType&gt; FromData&lt;Buffer&lt;T&gt;&gt; <span class="kw">for </span>PrimitiveArray&lt;T&gt; {
     <span class="kw">fn </span>from_data_default(values: Buffer&lt;T&gt;, validity: <span class="prelude-ty">Option</span>&lt;Bitmap&gt;) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>dt = T::PRIMITIVE;
-        PrimitiveArray::from_data(dt.into(), values, validity)
+        PrimitiveArray::new(dt.into(), values, validity)
     }
 }
 
@@ -99,7 +103,8 @@
         values: Buffer&lt;u8&gt;,
         validity: <span class="prelude-ty">Option</span>&lt;Bitmap&gt;,
     ) -&gt; <span class="self">Self </span>{
-        Utf8Array::from_data_unchecked(DataType::LargeUtf8, offsets, values, validity)
+        <span class="kw">let </span>offsets = OffsetsBuffer::new_unchecked(offsets);
+        Utf8Array::new_unchecked(DataType::LargeUtf8, offsets, values, validity)
     }
 }
 
@@ -119,7 +124,8 @@
         values: Buffer&lt;u8&gt;,
         validity: <span class="prelude-ty">Option</span>&lt;Bitmap&gt;,
     ) -&gt; <span class="self">Self </span>{
-        BinaryArray::from_data_unchecked(DataType::LargeBinary, offsets, values, validity)
+        <span class="kw">let </span>offsets = OffsetsBuffer::new_unchecked(offsets);
+        BinaryArray::new(DataType::LargeBinary, offsets, values, validity)
     }
 }
 </code></pre></div>

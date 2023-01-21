@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["Pattern",""]],"mod":[["infer",""]],"trait":[["Utf8Methods",""]]};
+window.SIDEBAR_ITEMS = {"enum":[["Pattern",""]],"mod":[["infer",""]],"trait":[["AsUtf8",""],["Utf8Methods",""]]};

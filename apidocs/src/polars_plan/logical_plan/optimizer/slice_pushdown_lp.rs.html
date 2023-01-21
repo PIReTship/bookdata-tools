@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.25.1/src/logical_plan/optimizer/slice_pushdown_lp.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>slice_pushdown_lp.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.26.1/src/logical_plan/optimizer/slice_pushdown_lp.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>slice_pushdown_lp.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -362,12 +362,22 @@
 <span id="362">362</span>
 <span id="363">363</span>
 <span id="364">364</span>
+<span id="365">365</span>
+<span id="366">366</span>
+<span id="367">367</span>
+<span id="368">368</span>
+<span id="369">369</span>
+<span id="370">370</span>
+<span id="371">371</span>
+<span id="372">372</span>
 </pre><pre class="rust"><code><span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
 
 <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::utils::aexpr_is_simple_projection;
 
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>SlicePushDown {}
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>SlicePushDown {
+    streaming: bool,
+}
 
 <span class="attribute">#[derive(Copy, Clone)]
 </span><span class="kw">struct </span>State {
@@ -376,6 +386,10 @@
 }
 
 <span class="kw">impl </span>SlicePushDown {
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>new(streaming: bool) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ streaming }
+    }
+
     <span class="comment">// slice will be done at this node if we found any
     // we also stop optimization
     </span><span class="kw">fn </span>no_pushdown_finish_opt(
@@ -461,7 +475,7 @@
         <span class="kw">match </span>(lp, state) {
             (AnonymousScan {
                 function,
-                schema,
+                file_info,
                 output_schema,
                 predicate,
                 options,
@@ -473,7 +487,7 @@
                 options.n_rows = <span class="prelude-val">Some</span>(state.len <span class="kw">as </span>usize);
                 <span class="kw">let </span>lp = AnonymousScan {
                     function,
-                    schema,
+                    file_info,
                     output_schema,
                     predicate,
                     options,
@@ -485,7 +499,7 @@
             <span class="attribute">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
             </span>(ParquetScan {
                 path,
-                schema,
+                file_info,
                 output_schema,
                 predicate,
                 options,
@@ -498,7 +512,7 @@
                 options.n_rows = <span class="prelude-val">Some</span>(state.len <span class="kw">as </span>usize);
                 <span class="kw">let </span>lp = ParquetScan {
                     path,
-                    schema,
+                    file_info,
                     output_schema,
                     predicate,
                     options
@@ -508,7 +522,7 @@
             },
             <span class="attribute">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
             </span>(IpcScan {path,
-            schema,
+            file_info,
                 output_schema,
                 predicate,
                 options
@@ -517,7 +531,7 @@
                 options.n_rows = <span class="prelude-val">Some</span>(state.len <span class="kw">as </span>usize);
                 <span class="kw">let </span>lp = IpcScan {
                     path,
-                    schema,
+                    file_info,
                     output_schema,
                     predicate,
                     options
@@ -530,7 +544,7 @@
             <span class="attribute">#[cfg(feature = <span class="string">&quot;csv-file&quot;</span>)]
             </span>(CsvScan {
                 path,
-                schema,
+                file_info,
                 output_schema,
                 options,
                 predicate,
@@ -541,7 +555,7 @@
 
                 <span class="kw">let </span>lp = CsvScan {
                     path,
-                    schema,
+                    file_info,
                     output_schema,
                     options,
                     predicate,
@@ -562,7 +576,7 @@
                 left_on,
                 right_on,
                 <span class="kw-2">mut </span>options
-            }, <span class="prelude-val">Some</span>(state)) =&gt; {
+            }, <span class="prelude-val">Some</span>(state)) <span class="kw">if </span>!<span class="self">self</span>.streaming =&gt; {
                 <span class="comment">// first restart optimization in both inputs and get the updated LP
                 </span><span class="kw">let </span>lp_left = lp_arena.take(input_left);
                 <span class="kw">let </span>lp_left = <span class="self">self</span>.pushdown(lp_left, <span class="prelude-val">None</span>, lp_arena, expr_arena)<span class="question-mark">?</span>;
@@ -662,6 +676,8 @@
             | m @ (Distinct {..}, <span class="kw">_</span>)
             | m @ (HStack {..},<span class="kw">_</span>)
             | m @ (Aggregate{..},<span class="kw">_</span>)
+            <span class="comment">// blocking in streaming
+            </span>| m @ (Join{..},<span class="kw">_</span>)
             =&gt; {
                 <span class="kw">let </span>(lp, state) = m;
                 <span class="self">self</span>.no_pushdown_restart_opt(lp, state, lp_arena, expr_arena)

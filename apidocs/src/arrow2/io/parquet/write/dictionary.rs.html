@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.14.2/src/io/parquet/write/dictionary.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>dictionary.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../normalize.css"><link rel="stylesheet" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../../arrow2/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.15.0/src/io/parquet/write/dictionary.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>dictionary.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../normalize.css"><link rel="stylesheet" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../../arrow2/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -243,15 +243,19 @@
 <span id="243">243</span>
 <span id="244">244</span>
 <span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
 </pre><pre class="rust"><code><span class="kw">use </span>parquet2::{
     encoding::{hybrid_rle::encode_u32, Encoding},
-    page::{DictPage, EncodedPage},
+    page::{DictPage, Page},
     schema::types::PrimitiveType,
     statistics::{serialize_statistics, ParquetStatistics},
     write::DynIter,
 };
 
-<span class="kw">use </span><span class="kw">crate</span>::io::parquet::write::utils;
+<span class="kw">use </span><span class="kw">crate</span>::io::parquet::write::{slice_nested_leaf, utils};
 <span class="kw">use crate</span>::{
     array::{Array, DictionaryArray, DictionaryKey},
     io::parquet::read::schema::is_nullable,
@@ -320,6 +324,7 @@
     nested: <span class="kw-2">&amp;</span>[Nested],
     options: WriteOptions,
     buffer: <span class="kw-2">&amp;mut </span>Vec&lt;u8&gt;,
+    offset: usize,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(usize, usize)&gt; {
     <span class="kw">if </span>nested.len() == <span class="number">1 </span>{
         <span class="kw">let </span>is_optional = is_nullable(<span class="kw-2">&amp;</span>type_.field_info);
@@ -327,7 +332,7 @@
         <span class="kw">let </span>definition_levels_byte_length = buffer.len();
         <span class="prelude-val">Ok</span>((<span class="number">0</span>, definition_levels_byte_length))
     } <span class="kw">else </span>{
-        nested::write_rep_and_def(options.version, nested, buffer)
+        nested::write_rep_and_def(options.version, nested, buffer, offset)
     }
 }
 
@@ -351,12 +356,13 @@
     nested: <span class="kw-2">&amp;</span>[Nested],
     statistics: ParquetStatistics,
     options: WriteOptions,
-) -&gt; <span class="prelude-ty">Result</span>&lt;EncodedPage&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;Page&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[];
 
     <span class="comment">// parquet only accepts a single validity - we &quot;&amp;&quot; the validities into a single one
     // and ignore keys whole _value_ is null.
     </span><span class="kw">let </span>validity = normalized_validity(array);
+    <span class="kw">let </span>(start, len) = slice_nested_leaf(nested);
 
     <span class="kw">let </span>(repetition_levels_byte_length, definition_levels_byte_length) = serialize_levels(
         validity.as_ref(),
@@ -365,9 +371,11 @@
         nested,
         options,
         <span class="kw-2">&amp;mut </span>buffer,
+        start,
     )<span class="question-mark">?</span>;
+    <span class="kw">let </span>array = array.slice(start, len);
 
-    serialize_keys_values(array, validity.as_ref(), <span class="kw-2">&amp;mut </span>buffer)<span class="question-mark">?</span>;
+    serialize_keys_values(<span class="kw-2">&amp;</span>array, validity.as_ref(), <span class="kw-2">&amp;mut </span>buffer)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>(num_values, num_rows) = <span class="kw">if </span>nested.len() == <span class="number">1 </span>{
         (array.len(), array.len())
@@ -387,7 +395,7 @@
         options,
         Encoding::RleDictionary,
     )
-    .map(EncodedPage::Data)
+    .map(Page::Data)
 }
 
 <span class="macro">macro_rules! </span>dyn_prim {
@@ -407,7 +415,7 @@
     nested: <span class="kw-2">&amp;</span>[Nested],
     options: WriteOptions,
     encoding: Encoding,
-) -&gt; <span class="prelude-ty">Result</span>&lt;DynIter&lt;<span class="lifetime">&#39;static</span>, <span class="prelude-ty">Result</span>&lt;EncodedPage&gt;&gt;&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;DynIter&lt;<span class="lifetime">&#39;static</span>, <span class="prelude-ty">Result</span>&lt;Page&gt;&gt;&gt; {
     <span class="kw">match </span>encoding {
         Encoding::PlainDictionary | Encoding::RleDictionary =&gt; {
             <span class="comment">// write DictPage
@@ -475,7 +483,7 @@
                     )))
                 }
             };
-            <span class="kw">let </span>dict_page = EncodedPage::Dict(dict_page);
+            <span class="kw">let </span>dict_page = Page::Dict(dict_page);
 
             <span class="comment">// write DataPage pointing to DictPage
             </span><span class="kw">let </span>data_page = serialize_keys(array, type_, nested, statistics, options)<span class="question-mark">?</span>;

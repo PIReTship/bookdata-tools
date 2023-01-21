@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.14.2/src/io/ipc/write/serialize.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>serialize.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../normalize.css"><link rel="stylesheet" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../../arrow2/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.15.0/src/io/ipc/write/serialize.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>serialize.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../normalize.css"><link rel="stylesheet" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../../arrow2/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -758,11 +758,22 @@
 <span id="758">758</span>
 <span id="759">759</span>
 <span id="760">760</span>
+<span id="761">761</span>
+<span id="762">762</span>
+<span id="763">763</span>
+<span id="764">764</span>
+<span id="765">765</span>
+<span id="766">766</span>
 </pre><pre class="rust"><code><span class="attribute">#![allow(clippy::ptr_arg)] </span><span class="comment">// false positive in clippy, see https://github.com/rust-lang/rust-clippy/issues/8463
 </span><span class="kw">use </span>arrow_format::ipc;
 
 <span class="kw">use crate</span>::{
-    array::<span class="kw-2">*</span>, bitmap::Bitmap, datatypes::PhysicalType, trusted_len::TrustedLen, types::NativeType,
+    array::<span class="kw-2">*</span>,
+    bitmap::Bitmap,
+    datatypes::PhysicalType,
+    offset::{Offset, OffsetsBuffer},
+    trusted_len::TrustedLen,
+    types::NativeType,
 };
 
 <span class="kw">use </span><span class="kw">super</span>::<span class="kw">super</span>::compression;
@@ -825,7 +836,7 @@
 <span class="attribute">#[allow(clippy::too_many_arguments)]
 </span><span class="kw">fn </span>write_generic_binary&lt;O: Offset&gt;(
     validity: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Bitmap&gt;,
-    offsets: <span class="kw-2">&amp;</span>[O],
+    offsets: <span class="kw-2">&amp;</span>OffsetsBuffer&lt;O&gt;,
     values: <span class="kw-2">&amp;</span>[u8],
     buffers: <span class="kw-2">&amp;mut </span>Vec&lt;ipc::Buffer&gt;,
     arrow_data: <span class="kw-2">&amp;mut </span>Vec&lt;u8&gt;,
@@ -833,6 +844,7 @@
     is_little_endian: bool,
     compression: <span class="prelude-ty">Option</span>&lt;Compression&gt;,
 ) {
+    <span class="kw">let </span>offsets = offsets.buffer();
     write_bitmap(
         validity,
         offsets.len() - <span class="number">1</span>,
@@ -941,7 +953,7 @@
     is_little_endian: bool,
     compression: <span class="prelude-ty">Option</span>&lt;Compression&gt;,
 ) {
-    <span class="kw">let </span>offsets = array.offsets();
+    <span class="kw">let </span>offsets = array.offsets().buffer();
     <span class="kw">let </span>validity = array.validity();
 
     write_bitmap(
@@ -955,7 +967,7 @@
 
     <span class="kw">let </span>first = <span class="kw-2">*</span>offsets.first().unwrap();
     <span class="kw">let </span>last = <span class="kw-2">*</span>offsets.last().unwrap();
-    <span class="kw">if </span>first == O::default() {
+    <span class="kw">if </span>first == O::zero() {
         write_buffer(
             offsets,
             buffers,
@@ -1069,7 +1081,7 @@
     is_little_endian: bool,
     compression: <span class="prelude-ty">Option</span>&lt;Compression&gt;,
 ) {
-    <span class="kw">let </span>offsets = array.offsets();
+    <span class="kw">let </span>offsets = array.offsets().buffer();
     <span class="kw">let </span>validity = array.validity();
 
     write_bitmap(

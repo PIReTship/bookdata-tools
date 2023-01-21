@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.25.1/src/physical_plan/planner/expr.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>expr.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.26.1/src/physical_plan/planner/expr.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>expr.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -596,6 +596,13 @@
 <span id="596">596</span>
 <span id="597">597</span>
 <span id="598">598</span>
+<span id="599">599</span>
+<span id="600">600</span>
+<span id="601">601</span>
+<span id="602">602</span>
+<span id="603">603</span>
+<span id="604">604</span>
+<span id="605">605</span>
 </pre><pre class="rust"><code><span class="kw">use </span>polars_core::frame::groupby::GroupByMethod;
 <span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>polars_core::series::IsSorted;
@@ -608,10 +615,11 @@
     exprs: <span class="kw-2">&amp;</span>[Node],
     context: Context,
     expr_arena: <span class="kw-2">&amp;</span>Arena&lt;AExpr&gt;,
+    schema: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>SchemaRef&gt;,
 ) -&gt; PolarsResult&lt;Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;&gt; {
     exprs
         .iter()
-        .map(|e| create_physical_expr(<span class="kw-2">*</span>e, context, expr_arena))
+        .map(|e| create_physical_expr(<span class="kw-2">*</span>e, context, expr_arena, schema))
         .collect()
 }
 
@@ -619,6 +627,7 @@
     expression: Node,
     ctxt: Context,
     expr_arena: <span class="kw-2">&amp;</span>Arena&lt;AExpr&gt;,
+    schema: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>SchemaRef&gt;,
 ) -&gt; PolarsResult&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt; {
     <span class="kw">use </span>AExpr::<span class="kw-2">*</span>;
 
@@ -632,8 +641,9 @@
         } =&gt; {
             <span class="comment">// TODO! Order by
             </span><span class="kw">let </span>group_by =
-                create_physical_expressions(<span class="kw-2">&amp;</span>partition_by, Context::Default, expr_arena)<span class="question-mark">?</span>;
-            <span class="kw">let </span>phys_function = create_physical_expr(function, Context::Aggregation, expr_arena)<span class="question-mark">?</span>;
+                create_physical_expressions(<span class="kw-2">&amp;</span>partition_by, Context::Default, expr_arena, schema)<span class="question-mark">?</span>;
+            <span class="kw">let </span>phys_function =
+                create_physical_expr(function, Context::Aggregation, expr_arena, schema)<span class="question-mark">?</span>;
             <span class="kw">let </span><span class="kw-2">mut </span>out_name = <span class="prelude-val">None</span>;
             <span class="kw">let </span><span class="kw-2">mut </span>apply_columns = aexpr_to_leaf_names(function, expr_arena);
             <span class="comment">// sort and then dedup removes consecutive duplicates == all duplicates
@@ -650,8 +660,7 @@
                     <span class="kw">return </span><span class="prelude-val">Err</span>(PolarsError::ComputeError(
                         <span class="macro">format!</span>(
                             <span class="string">&quot;Cannot apply a window function, did not find a root column. \
-                        This is likely due to a syntax error in this expression: {:?}&quot;</span>,
-                            e
+                        This is likely due to a syntax error in this expression: {e:?}&quot;</span>,
                         )
                         .into(),
                     ));
@@ -679,8 +688,8 @@
             node_to_expr(expression, expr_arena),
         ))),
         BinaryExpr { left, op, right } =&gt; {
-            <span class="kw">let </span>lhs = create_physical_expr(left, ctxt, expr_arena)<span class="question-mark">?</span>;
-            <span class="kw">let </span>rhs = create_physical_expr(right, ctxt, expr_arena)<span class="question-mark">?</span>;
+            <span class="kw">let </span>lhs = create_physical_expr(left, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
+            <span class="kw">let </span>rhs = create_physical_expr(right, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Arc::new(phys_expr::BinaryExpr::new(
                 lhs,
                 op,
@@ -691,9 +700,10 @@
         Column(column) =&gt; <span class="prelude-val">Ok</span>(Arc::new(ColumnExpr::new(
             column,
             node_to_expr(expression, expr_arena),
+            schema.cloned(),
         ))),
         Sort { expr, options } =&gt; {
-            <span class="kw">let </span>phys_expr = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
+            <span class="kw">let </span>phys_expr = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Arc::new(SortExpr::new(
                 phys_expr,
                 options,
@@ -701,8 +711,8 @@
             )))
         }
         Take { expr, idx } =&gt; {
-            <span class="kw">let </span>phys_expr = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
-            <span class="kw">let </span>phys_idx = create_physical_expr(idx, ctxt, expr_arena)<span class="question-mark">?</span>;
+            <span class="kw">let </span>phys_expr = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
+            <span class="kw">let </span>phys_idx = create_physical_expr(idx, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Arc::new(TakeExpr {
                 phys_expr,
                 idx: phys_idx,
@@ -710,8 +720,8 @@
             }))
         }
         SortBy { expr, by, reverse } =&gt; {
-            <span class="kw">let </span>phys_expr = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
-            <span class="kw">let </span>phys_by = create_physical_expressions(<span class="kw-2">&amp;</span>by, ctxt, expr_arena)<span class="question-mark">?</span>;
+            <span class="kw">let </span>phys_expr = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
+            <span class="kw">let </span>phys_by = create_physical_expressions(<span class="kw-2">&amp;</span>by, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Arc::new(SortByExpr::new(
                 phys_expr,
                 phys_by,
@@ -720,8 +730,8 @@
             )))
         }
         Filter { input, by } =&gt; {
-            <span class="kw">let </span>phys_input = create_physical_expr(input, ctxt, expr_arena)<span class="question-mark">?</span>;
-            <span class="kw">let </span>phys_by = create_physical_expr(by, ctxt, expr_arena)<span class="question-mark">?</span>;
+            <span class="kw">let </span>phys_input = create_physical_expr(input, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
+            <span class="kw">let </span>phys_by = create_physical_expr(by, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Arc::new(FilterExpr::new(
                 phys_input,
                 phys_by,
@@ -729,7 +739,7 @@
             )))
         }
         Alias(expr, name) =&gt; {
-            <span class="kw">let </span>phys_expr = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
+            <span class="kw">let </span>phys_expr = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Arc::new(AliasExpr::new(
                 phys_expr,
                 name,
@@ -742,7 +752,7 @@
                     input: expr,
                     propagate_nans,
                 } =&gt; {
-                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
                     <span class="kw">match </span>ctxt {
                         Context::Aggregation =&gt; {
                             <span class="kw">if </span>propagate_nans {
@@ -795,7 +805,7 @@
                     input: expr,
                     propagate_nans,
                 } =&gt; {
-                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
                     <span class="kw">match </span>ctxt {
                         Context::Aggregation =&gt; {
                             <span class="kw">if </span>propagate_nans {
@@ -845,7 +855,7 @@
                     }
                 }
                 AAggExpr::Sum(expr) =&gt; {
-                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
                     <span class="kw">match </span>ctxt {
                         Context::Aggregation =&gt; {
                             <span class="prelude-val">Ok</span>(Arc::new(AggregationExpr::new(input, GroupByMethod::Sum)))
@@ -866,7 +876,7 @@
                     }
                 }
                 AAggExpr::Std(expr, ddof) =&gt; {
-                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
                     <span class="kw">match </span>ctxt {
                         Context::Aggregation =&gt; <span class="prelude-val">Ok</span>(Arc::new(AggregationExpr::new(
                             input,
@@ -888,7 +898,7 @@
                     }
                 }
                 AAggExpr::Var(expr, ddof) =&gt; {
-                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
                     <span class="kw">match </span>ctxt {
                         Context::Aggregation =&gt; <span class="prelude-val">Ok</span>(Arc::new(AggregationExpr::new(
                             input,
@@ -910,7 +920,7 @@
                     }
                 }
                 AAggExpr::Mean(expr) =&gt; {
-                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
                     <span class="kw">match </span>ctxt {
                         Context::Aggregation =&gt; {
                             <span class="prelude-val">Ok</span>(Arc::new(AggregationExpr::new(input, GroupByMethod::Mean)))
@@ -931,7 +941,7 @@
                     }
                 }
                 AAggExpr::Median(expr) =&gt; {
-                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
                     <span class="kw">match </span>ctxt {
                         Context::Aggregation =&gt; {
                             <span class="prelude-val">Ok</span>(Arc::new(AggregationExpr::new(input, GroupByMethod::Median)))
@@ -952,7 +962,7 @@
                     }
                 }
                 AAggExpr::First(expr) =&gt; {
-                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
                     <span class="kw">match </span>ctxt {
                         Context::Aggregation =&gt; {
                             <span class="prelude-val">Ok</span>(Arc::new(AggregationExpr::new(input, GroupByMethod::First)))
@@ -973,7 +983,7 @@
                     }
                 }
                 AAggExpr::Last(expr) =&gt; {
-                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
                     <span class="kw">match </span>ctxt {
                         Context::Aggregation =&gt; {
                             <span class="prelude-val">Ok</span>(Arc::new(AggregationExpr::new(input, GroupByMethod::Last)))
@@ -994,7 +1004,7 @@
                     }
                 }
                 AAggExpr::List(expr) =&gt; {
-                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
                     <span class="kw">match </span>ctxt {
                         Context::Aggregation =&gt; {
                             <span class="prelude-val">Ok</span>(Arc::new(AggregationExpr::new(input, GroupByMethod::List)))
@@ -1015,7 +1025,7 @@
                     }
                 }
                 AAggExpr::NUnique(expr) =&gt; {
-                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
                     <span class="kw">match </span>ctxt {
                         Context::Aggregation =&gt; <span class="prelude-val">Ok</span>(Arc::new(AggregationExpr::new(
                             input,
@@ -1045,38 +1055,42 @@
                     interpol,
                 } =&gt; {
                     <span class="comment">// todo! add schema to get correct output type
-                    </span><span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
-                    <span class="kw">match </span>ctxt {
-                        Context::Aggregation =&gt; {
-                            <span class="prelude-val">Ok</span>(Arc::new(AggQuantileExpr::new(input, quantile, interpol)))
-                        }
-                        Context::Default =&gt; {
-                            <span class="kw">let </span>function = SpecialEq::new(Arc::new(<span class="kw">move </span>|s: <span class="kw-2">&amp;mut </span>[Series]| {
-                                <span class="kw">let </span>s = std::mem::take(<span class="kw-2">&amp;mut </span>s[<span class="number">0</span>]);
-                                s.quantile_as_series(quantile, interpol)
-                            })
-                                <span class="kw">as </span>Arc&lt;<span class="kw">dyn </span>SeriesUdf&gt;);
-                            <span class="prelude-val">Ok</span>(Arc::new(ApplyExpr::new_minimal(
-                                <span class="macro">vec!</span>[input],
-                                function,
-                                node_to_expr(expression, expr_arena),
-                                ApplyOptions::ApplyFlat,
-                            )))
-                        }
-                    }
-                }
+                    </span><span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>quantile = create_physical_expr(quantile, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
+                    <span class="prelude-val">Ok</span>(Arc::new(AggQuantileExpr::new(input, quantile, interpol)))
+                    <span class="comment">//
+                    // match ctxt {
+                    //     Context::Aggregation =&gt; {
+                    //
+                    //         Ok(Arc::new(AggQuantileExpr::new(input, quantile, interpol)))
+                    //     }
+                    //     Context::Default =&gt; {
+                    //         let function = SpecialEq::new(Arc::new(move |s: &amp;mut [Series]| {
+                    //             let s = std::mem::take(&amp;mut s[0]);
+                    //             s.quantile_as_series(quantile, interpol)
+                    //         })
+                    //             as Arc&lt;dyn SeriesUdf&gt;);
+                    //         Ok(Arc::new(ApplyExpr::new_minimal(
+                    //             vec![input],
+                    //             function,
+                    //             node_to_expr(expression, expr_arena),
+                    //             ApplyOptions::ApplyFlat,
+                    //         )))
+                    //     }
+                    // }
+                </span>}
                 AAggExpr::AggGroups(expr) =&gt; {
                     <span class="kw">if let </span>Context::Default = ctxt {
                         <span class="macro">panic!</span>(<span class="string">&quot;agg groups expression only supported in aggregation context&quot;</span>)
                     }
-                    <span class="kw">let </span>phys_expr = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>phys_expr = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
                     <span class="prelude-val">Ok</span>(Arc::new(AggregationExpr::new(
                         phys_expr,
                         GroupByMethod::Groups,
                     )))
                 }
                 AAggExpr::Count(expr) =&gt; {
-                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
                     <span class="kw">match </span>ctxt {
                         Context::Aggregation =&gt; {
                             <span class="prelude-val">Ok</span>(Arc::new(AggregationExpr::new(input, GroupByMethod::Count)))
@@ -1105,7 +1119,7 @@
             data_type,
             strict,
         } =&gt; {
-            <span class="kw">let </span>phys_expr = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
+            <span class="kw">let </span>phys_expr = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Arc::new(CastExpr {
                 input: phys_expr,
                 data_type,
@@ -1118,9 +1132,9 @@
             truthy,
             falsy,
         } =&gt; {
-            <span class="kw">let </span>predicate = create_physical_expr(predicate, ctxt, expr_arena)<span class="question-mark">?</span>;
-            <span class="kw">let </span>truthy = create_physical_expr(truthy, ctxt, expr_arena)<span class="question-mark">?</span>;
-            <span class="kw">let </span>falsy = create_physical_expr(falsy, ctxt, expr_arena)<span class="question-mark">?</span>;
+            <span class="kw">let </span>predicate = create_physical_expr(predicate, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
+            <span class="kw">let </span>truthy = create_physical_expr(truthy, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
+            <span class="kw">let </span>falsy = create_physical_expr(falsy, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Arc::new(TernaryExpr::new(
                 predicate,
                 truthy,
@@ -1134,7 +1148,7 @@
             output_type: <span class="kw">_</span>,
             options,
         } =&gt; {
-            <span class="kw">let </span>input = create_physical_expressions(<span class="kw-2">&amp;</span>input, ctxt, expr_arena)<span class="question-mark">?</span>;
+            <span class="kw">let </span>input = create_physical_expressions(<span class="kw-2">&amp;</span>input, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
 
             <span class="prelude-val">Ok</span>(Arc::new(ApplyExpr {
                 inputs: input,
@@ -1151,7 +1165,7 @@
             options,
             ..
         } =&gt; {
-            <span class="kw">let </span>input = create_physical_expressions(<span class="kw-2">&amp;</span>input, ctxt, expr_arena)<span class="question-mark">?</span>;
+            <span class="kw">let </span>input = create_physical_expressions(<span class="kw-2">&amp;</span>input, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
 
             <span class="prelude-val">Ok</span>(Arc::new(ApplyExpr {
                 inputs: input,
@@ -1167,9 +1181,9 @@
             offset,
             length,
         } =&gt; {
-            <span class="kw">let </span>input = create_physical_expr(input, ctxt, expr_arena)<span class="question-mark">?</span>;
-            <span class="kw">let </span>offset = create_physical_expr(offset, ctxt, expr_arena)<span class="question-mark">?</span>;
-            <span class="kw">let </span>length = create_physical_expr(length, ctxt, expr_arena)<span class="question-mark">?</span>;
+            <span class="kw">let </span>input = create_physical_expr(input, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
+            <span class="kw">let </span>offset = create_physical_expr(offset, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
+            <span class="kw">let </span>length = create_physical_expr(length, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Arc::new(SliceExpr {
                 input,
                 offset,
@@ -1178,7 +1192,7 @@
             }))
         }
         Explode(expr) =&gt; {
-            <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena)<span class="question-mark">?</span>;
+            <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena, schema)<span class="question-mark">?</span>;
             <span class="kw">let </span>function = SpecialEq::new(Arc::new(<span class="kw">move </span>|s: <span class="kw-2">&amp;mut </span>[Series]| {
                 <span class="kw">let </span>s = std::mem::take(<span class="kw-2">&amp;mut </span>s[<span class="number">0</span>]);
                 s.explode()

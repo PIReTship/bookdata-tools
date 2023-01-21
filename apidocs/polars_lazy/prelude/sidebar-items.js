@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":[["NULL",""]],"enum":[["LiteralValue",""],["LogicalPlan",""]],"struct":[["AnonymousScanOptions",""],["Null","The literal Null"]],"trait":[["AnonymousScan",""],["Literal",""]]};
+window.SIDEBAR_ITEMS = {"constant":[["NULL",""]],"enum":[["LiteralValue",""],["LogicalPlan",""]],"struct":[["AnonymousScanOptions",""],["Null","The literal Null"],["ParquetWriteOptions",""]],"trait":[["AnonymousScan",""],["Literal",""]]};

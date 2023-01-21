@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/parquet2-0.16.3/src/read/page/reader.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>reader.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../parquet2/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/parquet2-0.17.1/src/read/page/reader.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>reader.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../parquet2/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -300,6 +300,11 @@
 <span id="300">300</span>
 <span id="301">301</span>
 <span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::convert::TryInto;
 <span class="kw">use </span>std::{io::Read, sync::Arc};
 
@@ -386,7 +391,8 @@
     <span class="comment">// The currently allocated buffer.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) scratch: Vec&lt;u8&gt;,
 
-    max_header_size: usize,
+    <span class="comment">// Maximum page size (compressed or uncompressed) to limit allocations
+    </span>max_page_size: usize,
 }
 
 <span class="kw">impl</span>&lt;R: Read&gt; PageReader&lt;R&gt; {
@@ -399,15 +405,9 @@
         column: <span class="kw-2">&amp;</span>ColumnChunkMetaData,
         pages_filter: PageFilter,
         scratch: Vec&lt;u8&gt;,
-        max_header_size: usize,
+        max_page_size: usize,
     ) -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>::new_with_page_meta(
-            reader,
-            column.into(),
-            pages_filter,
-            scratch,
-            max_header_size,
-        )
+        <span class="self">Self</span>::new_with_page_meta(reader, column.into(), pages_filter, scratch, max_page_size)
     }
 
     <span class="doccomment">/// Create a a new [`PageReader`] with [`PageMetaData`].
@@ -418,7 +418,7 @@
         reader_meta: PageMetaData,
         pages_filter: PageFilter,
         scratch: Vec&lt;u8&gt;,
-        max_header_size: usize,
+        max_page_size: usize,
     ) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             reader,
@@ -428,7 +428,7 @@
             descriptor: reader_meta.descriptor,
             pages_filter,
             scratch,
-            max_header_size,
+            max_page_size,
         }
     }
 
@@ -493,7 +493,7 @@
     reader: <span class="kw-2">&amp;mut </span>PageReader&lt;R&gt;,
     buffer: <span class="kw-2">&amp;mut </span>Vec&lt;u8&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;CompressedPage&gt;&gt; {
-    <span class="kw">let </span>page_header = read_page_header(<span class="kw-2">&amp;mut </span>reader.reader, reader.max_header_size)<span class="question-mark">?</span>;
+    <span class="kw">let </span>page_header = read_page_header(<span class="kw-2">&amp;mut </span>reader.reader, reader.max_page_size)<span class="question-mark">?</span>;
 
     reader.seen_num_values += get_page_header(<span class="kw-2">&amp;</span>page_header)<span class="question-mark">?
         </span>.map(|x| x.num_values() <span class="kw">as </span>i64)
@@ -501,13 +501,23 @@
 
     <span class="kw">let </span>read_size: usize = page_header.compressed_page_size.try_into()<span class="question-mark">?</span>;
 
+    <span class="kw">if </span>read_size &gt; reader.max_page_size {
+        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::WouldOverAllocate);
+    }
+
     buffer.clear();
     buffer.try_reserve(read_size)<span class="question-mark">?</span>;
-    reader
+    <span class="kw">let </span>bytes_read = reader
         .reader
         .by_ref()
         .take(read_size <span class="kw">as </span>u64)
         .read_to_end(buffer)<span class="question-mark">?</span>;
+
+    <span class="kw">if </span>bytes_read != read_size {
+        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::oos(
+            <span class="string">&quot;The page header reported the wrong page size&quot;</span>.to_string(),
+        ));
+    }
 
     finish_page(
         page_header,

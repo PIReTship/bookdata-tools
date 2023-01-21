@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["SyncCounter","A utility to create a sharable counter This does not implement drop as the user needs to decide when to drop it. Which is likely the moment the last thread is finished."]]};

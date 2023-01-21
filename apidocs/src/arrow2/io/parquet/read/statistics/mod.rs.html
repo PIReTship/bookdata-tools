@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.14.2/src/io/parquet/read/statistics/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../../normalize.css"><link rel="stylesheet" href="../../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../../storage.js"></script><script defer src="../../../../../../source-script.js"></script><script defer src="../../../../../../source-files.js"></script><script defer src="../../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../../../arrow2/index.html"><img class="rust-logo" src="../../../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.15.0/src/io/parquet/read/statistics/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../../normalize.css"><link rel="stylesheet" href="../../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../../storage.js"></script><script defer src="../../../../../../source-script.js"></script><script defer src="../../../../../../source-files.js"></script><script defer src="../../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../../../arrow2/index.html"><img class="rust-logo" src="../../../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -552,7 +552,6 @@
 <span id="552">552</span>
 <span id="553">553</span>
 <span id="554">554</span>
-<span id="555">555</span>
 </pre><pre class="rust"><code><span class="doccomment">//! APIs exposing `parquet2`&#39;s statistics as arrow&#39;s statistics.
 </span><span class="kw">use </span>std::collections::VecDeque;
 <span class="kw">use </span>std::sync::Arc;
@@ -729,11 +728,10 @@
         PhysicalType::LargeUtf8 =&gt; {
             Box::new(MutableUtf8Array::&lt;i64&gt;::with_capacity(capacity)) <span class="kw">as </span>Box&lt;<span class="kw">dyn </span>MutableArray&gt;
         }
-        PhysicalType::FixedSizeBinary =&gt; Box::new(MutableFixedSizeBinaryArray::from_data(
-            data_type.clone(),
-            <span class="macro">vec!</span>[],
-            <span class="prelude-val">None</span>,
-        )) <span class="kw">as _</span>,
+        PhysicalType::FixedSizeBinary =&gt; {
+            Box::new(MutableFixedSizeBinaryArray::try_new(data_type.clone(), <span class="macro">vec!</span>[], <span class="prelude-val">None</span>).unwrap())
+                <span class="kw">as _
+        </span>}
         PhysicalType::LargeList | PhysicalType::List =&gt; Box::new(
             DynMutableListArray::try_with_capacity(data_type.clone(), capacity)<span class="question-mark">?</span>,
         ) <span class="kw">as </span>Box&lt;<span class="kw">dyn </span>MutableArray&gt;,
@@ -997,7 +995,7 @@
         Boolean =&gt; boolean::push(from, min, max),
         Int8 =&gt; primitive::push(from, min, max, |x: i32| <span class="prelude-val">Ok</span>(x <span class="kw">as </span>i8)),
         Int16 =&gt; primitive::push(from, min, max, |x: i32| <span class="prelude-val">Ok</span>(x <span class="kw">as </span>i16)),
-        Date32 | Time32(<span class="kw">_</span>) =&gt; primitive::push(from, min, max, |x: i32| <span class="prelude-val">Ok</span>(x <span class="kw">as </span>i32)),
+        Date32 | Time32(<span class="kw">_</span>) =&gt; primitive::push::&lt;i32, i32, <span class="kw">_</span>&gt;(from, min, max, <span class="prelude-val">Ok</span>),
         Interval(IntervalUnit::YearMonth) =&gt; fixlen::push_year_month(from, min, max),
         Interval(IntervalUnit::DayTime) =&gt; fixlen::push_days_ms(from, min, max),
         UInt8 =&gt; primitive::push(from, min, max, |x: i32| <span class="prelude-val">Ok</span>(x <span class="kw">as </span>u8)),
@@ -1011,9 +1009,9 @@
                 other
             ))),
         },
-        Int32 =&gt; primitive::push(from, min, max, |x: i32| <span class="prelude-val">Ok</span>(x <span class="kw">as </span>i32)),
+        Int32 =&gt; primitive::push::&lt;i32, i32, <span class="kw">_</span>&gt;(from, min, max, <span class="prelude-val">Ok</span>),
         Int64 | Date64 | Time64(<span class="kw">_</span>) | Duration(<span class="kw">_</span>) =&gt; {
-            primitive::push(from, min, max, |x: i64| <span class="prelude-val">Ok</span>(x <span class="kw">as </span>i64))
+            primitive::push::&lt;i64, i64, <span class="kw">_</span>&gt;(from, min, max, <span class="prelude-val">Ok</span>)
         }
         UInt64 =&gt; primitive::push(from, min, max, |x: i64| <span class="prelude-val">Ok</span>(x <span class="kw">as </span>u64)),
         Timestamp(time_unit, <span class="kw">_</span>) =&gt; {
@@ -1054,8 +1052,8 @@
                 })
             }
         }
-        Float32 =&gt; primitive::push(from, min, max, |x: f32| <span class="prelude-val">Ok</span>(x <span class="kw">as </span>f32)),
-        Float64 =&gt; primitive::push(from, min, max, |x: f64| <span class="prelude-val">Ok</span>(x <span class="kw">as </span>f64)),
+        Float32 =&gt; primitive::push::&lt;f32, f32, <span class="kw">_</span>&gt;(from, min, max, <span class="prelude-val">Ok</span>),
+        Float64 =&gt; primitive::push::&lt;f64, f64, <span class="kw">_</span>&gt;(from, min, max, <span class="prelude-val">Ok</span>),
         Decimal(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="kw">match </span>physical_type {
             ParquetPhysicalType::Int32 =&gt; primitive::push(from, min, max, |x: i32| <span class="prelude-val">Ok</span>(x <span class="kw">as </span>i128)),
             ParquetPhysicalType::Int64 =&gt; primitive::push(from, min, max, |x: i64| <span class="prelude-val">Ok</span>(x <span class="kw">as </span>i128)),

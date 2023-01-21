@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":[["AsList",""],["AsUtf8",""],["ChunkedSet",""],["DataFrameOps",""],["IntoSeriesOps",""],["ListNameSpaceImpl",""],["SeriesMethods",""],["SeriesOps",""],["SeriesSealed",""]]};
+window.SIDEBAR_ITEMS = {"trait":[["AsList",""],["AsUtf8",""],["ChunkedSet",""],["DataFrameJoinOps",""],["DataFrameOps",""],["IntoSeriesOps",""],["ListNameSpaceImpl",""],["SeriesMethods",""],["SeriesOps",""],["SeriesSealed",""]]};

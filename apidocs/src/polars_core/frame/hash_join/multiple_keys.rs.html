@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.25.1/src/frame/hash_join/multiple_keys.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>multiple_keys.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.26.1/src/frame/hash_join/multiple_keys.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>multiple_keys.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -593,7 +593,6 @@
 <span id="593">593</span>
 <span id="594">594</span>
 <span id="595">595</span>
-<span id="596">596</span>
 </pre><pre class="rust"><code><span class="kw">use </span>hashbrown::hash_map::RawEntryMut;
 <span class="kw">use </span>hashbrown::HashMap;
 <span class="kw">use </span>rayon::prelude::<span class="kw-2">*</span>;
@@ -604,7 +603,7 @@
     get_hash_tbl_threaded_join_mut_partitioned, get_hash_tbl_threaded_join_partitioned,
 };
 <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::utils::series::to_physical_and_bit_repr;
+<span class="kw">use </span><span class="kw">crate</span>::utils::series::_to_physical_and_bit_repr;
 <span class="kw">use </span><span class="kw">crate</span>::utils::{_set_partition_size, split_df};
 <span class="kw">use </span><span class="kw">crate</span>::vector_hasher::{df_rows_to_hashes_threaded, this_partition, IdBuildHasher, IdxHash};
 <span class="kw">use </span><span class="kw">crate</span>::POOL;
@@ -617,8 +616,7 @@
     right_idx: usize,
 ) -&gt; bool {
     <span class="kw">for </span>(l, r) <span class="kw">in </span>left.get_columns().iter().zip(right.get_columns()) {
-        <span class="comment">// get: there could be nulls.
-        </span><span class="kw">if </span>!(l.get(left_idx) == r.get(right_idx)) {
+        <span class="kw">if </span>!(l.get_unchecked(left_idx) == r.get_unchecked(right_idx)) {
             <span class="kw">return </span><span class="bool-val">false</span>;
         }
     }
@@ -770,7 +768,7 @@
         .collect()
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>inner_join_multiple_keys(
+<span class="kw">pub fn </span>_inner_join_multiple_keys(
     a: <span class="kw-2">&amp;mut </span>DataFrame,
     b: <span class="kw-2">&amp;mut </span>DataFrame,
     swap: bool,
@@ -844,12 +842,12 @@
     </span>chunk_mapping_left: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[ChunkId]&gt;,
     chunk_mapping_right: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[ChunkId]&gt;,
 ) -&gt; LeftJoinIds {
-    <span class="kw">let </span><span class="kw-2">mut </span>a = DataFrame::new_no_checks(to_physical_and_bit_repr(a.get_columns()));
-    <span class="kw">let </span><span class="kw-2">mut </span>b = DataFrame::new_no_checks(to_physical_and_bit_repr(b.get_columns()));
-    left_join_multiple_keys(<span class="kw-2">&amp;mut </span>a, <span class="kw-2">&amp;mut </span>b, chunk_mapping_left, chunk_mapping_right)
+    <span class="kw">let </span><span class="kw-2">mut </span>a = DataFrame::new_no_checks(_to_physical_and_bit_repr(a.get_columns()));
+    <span class="kw">let </span><span class="kw-2">mut </span>b = DataFrame::new_no_checks(_to_physical_and_bit_repr(b.get_columns()));
+    _left_join_multiple_keys(<span class="kw-2">&amp;mut </span>a, <span class="kw-2">&amp;mut </span>b, chunk_mapping_left, chunk_mapping_right)
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>left_join_multiple_keys(
+<span class="kw">pub fn </span>_left_join_multiple_keys(
     a: <span class="kw-2">&amp;mut </span>DataFrame,
     b: <span class="kw-2">&amp;mut </span>DataFrame,
     <span class="comment">// map the global indices to [chunk_idx, array_idx]
@@ -1050,7 +1048,7 @@
 }
 
 <span class="attribute">#[cfg(feature = <span class="string">&quot;semi_anti_join&quot;</span>)]
-</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>left_anti_multiple_keys(a: <span class="kw-2">&amp;mut </span>DataFrame, b: <span class="kw-2">&amp;mut </span>DataFrame) -&gt; Vec&lt;IdxSize&gt; {
+</span><span class="kw">pub fn </span>_left_anti_multiple_keys(a: <span class="kw-2">&amp;mut </span>DataFrame, b: <span class="kw-2">&amp;mut </span>DataFrame) -&gt; Vec&lt;IdxSize&gt; {
     semi_anti_join_multiple_keys_impl(a, b)
         .filter(|tpls| !tpls.<span class="number">1</span>)
         .map(|tpls| tpls.<span class="number">0</span>)
@@ -1058,7 +1056,7 @@
 }
 
 <span class="attribute">#[cfg(feature = <span class="string">&quot;semi_anti_join&quot;</span>)]
-</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>left_semi_multiple_keys(a: <span class="kw-2">&amp;mut </span>DataFrame, b: <span class="kw-2">&amp;mut </span>DataFrame) -&gt; Vec&lt;IdxSize&gt; {
+</span><span class="kw">pub fn </span>_left_semi_multiple_keys(a: <span class="kw-2">&amp;mut </span>DataFrame, b: <span class="kw-2">&amp;mut </span>DataFrame) -&gt; Vec&lt;IdxSize&gt; {
     semi_anti_join_multiple_keys_impl(a, b)
         .filter(|tpls| tpls.<span class="number">1</span>)
         .map(|tpls| tpls.<span class="number">0</span>)
@@ -1135,7 +1133,7 @@
     }
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>outer_join_multiple_keys(
+<span class="kw">pub fn </span>_outer_join_multiple_keys(
     a: <span class="kw-2">&amp;mut </span>DataFrame,
     b: <span class="kw-2">&amp;mut </span>DataFrame,
     swap: bool,
