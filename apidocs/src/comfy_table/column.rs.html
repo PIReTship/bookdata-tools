@@ -1,0 +1,258 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/comfy-table-6.1.4/src/column.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>column.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../comfy_table/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
+<span id="2">2</span>
+<span id="3">3</span>
+<span id="4">4</span>
+<span id="5">5</span>
+<span id="6">6</span>
+<span id="7">7</span>
+<span id="8">8</span>
+<span id="9">9</span>
+<span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::style::{CellAlignment, ColumnConstraint};
+
+<span class="doccomment">/// A representation of a table&#39;s column.
+/// Useful for styling and specifying constraints how big a column should be.
+///
+/// 1. Content padding for cells in this column
+/// 2. Constraints on how wide this column shall be
+/// 3. Default alignment for cells in this column
+///
+/// Columns are generated when adding rows or a header to a table.\
+/// As a result columns can only be modified after the table is populated by some data.
+///
+/// ```
+/// use comfy_table::{Width::*, CellAlignment, ColumnConstraint::*, Table};
+///
+/// let mut table = Table::new();
+/// table.set_header(&amp;vec![&quot;one&quot;, &quot;two&quot;]);
+///
+/// let mut column = table.column_mut(1).expect(&quot;This should be column two&quot;);
+///
+/// // Set the max width for all cells of this column to 20 characters.
+/// column.set_constraint(UpperBoundary(Fixed(20)));
+///
+/// // Set the left padding to 5 spaces and the right padding to 1 space
+/// column.set_padding((5, 1));
+///
+/// // Align content in all cells of this column to the center of the cell.
+/// column.set_cell_alignment(CellAlignment::Center);
+/// ```
+</span><span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub struct </span>Column {
+    <span class="doccomment">/// The index of the column
+    </span><span class="kw">pub </span>index: usize,
+    <span class="doccomment">/// Left/right padding for each cell of this column in spaces
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) padding: (u16, u16),
+    <span class="doccomment">/// The delimiter which is used to split the text into consistent pieces.
+    /// Default is ` `.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) delimiter: <span class="prelude-ty">Option</span>&lt;char&gt;,
+    <span class="doccomment">/// Define the [CellAlignment] for all cells of this column
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) cell_alignment: <span class="prelude-ty">Option</span>&lt;CellAlignment&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) constraint: <span class="prelude-ty">Option</span>&lt;ColumnConstraint&gt;,
+}
+
+<span class="kw">impl </span>Column {
+    <span class="kw">pub fn </span>new(index: usize) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            index,
+            padding: (<span class="number">1</span>, <span class="number">1</span>),
+            delimiter: <span class="prelude-val">None</span>,
+            constraint: <span class="prelude-val">None</span>,
+            cell_alignment: <span class="prelude-val">None</span>,
+        }
+    }
+
+    <span class="doccomment">/// Set the padding for all cells of this column.
+    ///
+    /// Padding is provided in the form of (left, right).\
+    /// Default is `(1, 1)`.
+    </span><span class="kw">pub fn </span>set_padding(<span class="kw-2">&amp;mut </span><span class="self">self</span>, padding: (u16, u16)) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.padding = padding;
+
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Internal convenience helper that returns the total width of the combined padding.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>padding_width(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u16 {
+        <span class="self">self</span>.padding.<span class="number">0 </span>+ <span class="self">self</span>.padding.<span class="number">1
+    </span>}
+
+    <span class="doccomment">/// Set the delimiter used to split text for this column&#39;s cells.
+    ///
+    /// A custom delimiter on a cell in will overwrite the column&#39;s delimiter.
+    /// Normal text uses spaces (` `) as delimiters. This is necessary to help comfy-table
+    /// understand the concept of _words_.
+    </span><span class="kw">pub fn </span>set_delimiter(<span class="kw-2">&amp;mut </span><span class="self">self</span>, delimiter: char) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.delimiter = <span class="prelude-val">Some</span>(delimiter);
+
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Constraints allow to influence the auto-adjustment behavior of columns.\
+    /// This can be useful to counter undesired auto-adjustment of content in tables.
+    </span><span class="kw">pub fn </span>set_constraint(<span class="kw-2">&amp;mut </span><span class="self">self</span>, constraint: ColumnConstraint) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.constraint = <span class="prelude-val">Some</span>(constraint);
+
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Get the constraint that is used for this column.
+    </span><span class="kw">pub fn </span>constraint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>ColumnConstraint&gt; {
+        <span class="self">self</span>.constraint.as_ref()
+    }
+
+    <span class="doccomment">/// Remove any constraint on this column
+    </span><span class="kw">pub fn </span>remove_constraint(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.constraint = <span class="prelude-val">None</span>;
+
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Returns wheather the columns is hidden via [ColumnConstraint::Hidden].
+    </span><span class="kw">pub fn </span>is_hidden(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="macro">matches!</span>(<span class="self">self</span>.constraint, <span class="prelude-val">Some</span>(ColumnConstraint::Hidden))
+    }
+
+    <span class="doccomment">/// Set the alignment for content inside of cells for this column.\
+    /// **Note:** Alignment on a cell will always overwrite the column&#39;s setting.
+    </span><span class="kw">pub fn </span>set_cell_alignment(<span class="kw-2">&amp;mut </span><span class="self">self</span>, alignment: CellAlignment) {
+        <span class="self">self</span>.cell_alignment = <span class="prelude-val">Some</span>(alignment);
+    }
+}
+
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_column() {
+        <span class="kw">let </span><span class="kw-2">mut </span>column = Column::new(<span class="number">0</span>);
+        column.set_padding((<span class="number">0</span>, <span class="number">0</span>));
+
+        column.set_constraint(ColumnConstraint::ContentWidth);
+        <span class="macro">assert_eq!</span>(column.constraint(), <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>ColumnConstraint::ContentWidth));
+
+        column.remove_constraint();
+        <span class="macro">assert_eq!</span>(column.constraint(), <span class="prelude-val">None</span>);
+    }
+}
+</code></pre></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="comfy_table" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

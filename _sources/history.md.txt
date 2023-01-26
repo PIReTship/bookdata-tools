@@ -16,6 +16,7 @@ following:
 ## Book Data 2.2 (in progress)
 
 -   Extract GoodReads author information into {file}`goodreads/gr-author-info.parquet`.
+-   Extract 5-cores of interaction files.
 
 ## Book Data 2.1
 

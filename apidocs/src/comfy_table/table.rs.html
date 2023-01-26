@@ -1,0 +1,1580 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/comfy-table-6.1.4/src/table.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>table.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../comfy_table/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
+<span id="2">2</span>
+<span id="3">3</span>
+<span id="4">4</span>
+<span id="5">5</span>
+<span id="6">6</span>
+<span id="7">7</span>
+<span id="8">8</span>
+<span id="9">9</span>
+<span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
+<span id="212">212</span>
+<span id="213">213</span>
+<span id="214">214</span>
+<span id="215">215</span>
+<span id="216">216</span>
+<span id="217">217</span>
+<span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
+<span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
+<span id="338">338</span>
+<span id="339">339</span>
+<span id="340">340</span>
+<span id="341">341</span>
+<span id="342">342</span>
+<span id="343">343</span>
+<span id="344">344</span>
+<span id="345">345</span>
+<span id="346">346</span>
+<span id="347">347</span>
+<span id="348">348</span>
+<span id="349">349</span>
+<span id="350">350</span>
+<span id="351">351</span>
+<span id="352">352</span>
+<span id="353">353</span>
+<span id="354">354</span>
+<span id="355">355</span>
+<span id="356">356</span>
+<span id="357">357</span>
+<span id="358">358</span>
+<span id="359">359</span>
+<span id="360">360</span>
+<span id="361">361</span>
+<span id="362">362</span>
+<span id="363">363</span>
+<span id="364">364</span>
+<span id="365">365</span>
+<span id="366">366</span>
+<span id="367">367</span>
+<span id="368">368</span>
+<span id="369">369</span>
+<span id="370">370</span>
+<span id="371">371</span>
+<span id="372">372</span>
+<span id="373">373</span>
+<span id="374">374</span>
+<span id="375">375</span>
+<span id="376">376</span>
+<span id="377">377</span>
+<span id="378">378</span>
+<span id="379">379</span>
+<span id="380">380</span>
+<span id="381">381</span>
+<span id="382">382</span>
+<span id="383">383</span>
+<span id="384">384</span>
+<span id="385">385</span>
+<span id="386">386</span>
+<span id="387">387</span>
+<span id="388">388</span>
+<span id="389">389</span>
+<span id="390">390</span>
+<span id="391">391</span>
+<span id="392">392</span>
+<span id="393">393</span>
+<span id="394">394</span>
+<span id="395">395</span>
+<span id="396">396</span>
+<span id="397">397</span>
+<span id="398">398</span>
+<span id="399">399</span>
+<span id="400">400</span>
+<span id="401">401</span>
+<span id="402">402</span>
+<span id="403">403</span>
+<span id="404">404</span>
+<span id="405">405</span>
+<span id="406">406</span>
+<span id="407">407</span>
+<span id="408">408</span>
+<span id="409">409</span>
+<span id="410">410</span>
+<span id="411">411</span>
+<span id="412">412</span>
+<span id="413">413</span>
+<span id="414">414</span>
+<span id="415">415</span>
+<span id="416">416</span>
+<span id="417">417</span>
+<span id="418">418</span>
+<span id="419">419</span>
+<span id="420">420</span>
+<span id="421">421</span>
+<span id="422">422</span>
+<span id="423">423</span>
+<span id="424">424</span>
+<span id="425">425</span>
+<span id="426">426</span>
+<span id="427">427</span>
+<span id="428">428</span>
+<span id="429">429</span>
+<span id="430">430</span>
+<span id="431">431</span>
+<span id="432">432</span>
+<span id="433">433</span>
+<span id="434">434</span>
+<span id="435">435</span>
+<span id="436">436</span>
+<span id="437">437</span>
+<span id="438">438</span>
+<span id="439">439</span>
+<span id="440">440</span>
+<span id="441">441</span>
+<span id="442">442</span>
+<span id="443">443</span>
+<span id="444">444</span>
+<span id="445">445</span>
+<span id="446">446</span>
+<span id="447">447</span>
+<span id="448">448</span>
+<span id="449">449</span>
+<span id="450">450</span>
+<span id="451">451</span>
+<span id="452">452</span>
+<span id="453">453</span>
+<span id="454">454</span>
+<span id="455">455</span>
+<span id="456">456</span>
+<span id="457">457</span>
+<span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
+<span id="464">464</span>
+<span id="465">465</span>
+<span id="466">466</span>
+<span id="467">467</span>
+<span id="468">468</span>
+<span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
+<span id="478">478</span>
+<span id="479">479</span>
+<span id="480">480</span>
+<span id="481">481</span>
+<span id="482">482</span>
+<span id="483">483</span>
+<span id="484">484</span>
+<span id="485">485</span>
+<span id="486">486</span>
+<span id="487">487</span>
+<span id="488">488</span>
+<span id="489">489</span>
+<span id="490">490</span>
+<span id="491">491</span>
+<span id="492">492</span>
+<span id="493">493</span>
+<span id="494">494</span>
+<span id="495">495</span>
+<span id="496">496</span>
+<span id="497">497</span>
+<span id="498">498</span>
+<span id="499">499</span>
+<span id="500">500</span>
+<span id="501">501</span>
+<span id="502">502</span>
+<span id="503">503</span>
+<span id="504">504</span>
+<span id="505">505</span>
+<span id="506">506</span>
+<span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
+<span id="532">532</span>
+<span id="533">533</span>
+<span id="534">534</span>
+<span id="535">535</span>
+<span id="536">536</span>
+<span id="537">537</span>
+<span id="538">538</span>
+<span id="539">539</span>
+<span id="540">540</span>
+<span id="541">541</span>
+<span id="542">542</span>
+<span id="543">543</span>
+<span id="544">544</span>
+<span id="545">545</span>
+<span id="546">546</span>
+<span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
+<span id="567">567</span>
+<span id="568">568</span>
+<span id="569">569</span>
+<span id="570">570</span>
+<span id="571">571</span>
+<span id="572">572</span>
+<span id="573">573</span>
+<span id="574">574</span>
+<span id="575">575</span>
+<span id="576">576</span>
+<span id="577">577</span>
+<span id="578">578</span>
+<span id="579">579</span>
+<span id="580">580</span>
+<span id="581">581</span>
+<span id="582">582</span>
+<span id="583">583</span>
+<span id="584">584</span>
+<span id="585">585</span>
+<span id="586">586</span>
+<span id="587">587</span>
+<span id="588">588</span>
+<span id="589">589</span>
+<span id="590">590</span>
+<span id="591">591</span>
+<span id="592">592</span>
+<span id="593">593</span>
+<span id="594">594</span>
+<span id="595">595</span>
+<span id="596">596</span>
+<span id="597">597</span>
+<span id="598">598</span>
+<span id="599">599</span>
+<span id="600">600</span>
+<span id="601">601</span>
+<span id="602">602</span>
+<span id="603">603</span>
+<span id="604">604</span>
+<span id="605">605</span>
+<span id="606">606</span>
+<span id="607">607</span>
+<span id="608">608</span>
+<span id="609">609</span>
+<span id="610">610</span>
+<span id="611">611</span>
+<span id="612">612</span>
+<span id="613">613</span>
+<span id="614">614</span>
+<span id="615">615</span>
+<span id="616">616</span>
+<span id="617">617</span>
+<span id="618">618</span>
+<span id="619">619</span>
+<span id="620">620</span>
+<span id="621">621</span>
+<span id="622">622</span>
+<span id="623">623</span>
+<span id="624">624</span>
+<span id="625">625</span>
+<span id="626">626</span>
+<span id="627">627</span>
+<span id="628">628</span>
+<span id="629">629</span>
+<span id="630">630</span>
+<span id="631">631</span>
+<span id="632">632</span>
+<span id="633">633</span>
+<span id="634">634</span>
+<span id="635">635</span>
+<span id="636">636</span>
+<span id="637">637</span>
+<span id="638">638</span>
+<span id="639">639</span>
+<span id="640">640</span>
+<span id="641">641</span>
+<span id="642">642</span>
+<span id="643">643</span>
+<span id="644">644</span>
+<span id="645">645</span>
+<span id="646">646</span>
+<span id="647">647</span>
+<span id="648">648</span>
+<span id="649">649</span>
+<span id="650">650</span>
+<span id="651">651</span>
+<span id="652">652</span>
+<span id="653">653</span>
+<span id="654">654</span>
+<span id="655">655</span>
+<span id="656">656</span>
+<span id="657">657</span>
+<span id="658">658</span>
+<span id="659">659</span>
+<span id="660">660</span>
+<span id="661">661</span>
+<span id="662">662</span>
+<span id="663">663</span>
+<span id="664">664</span>
+<span id="665">665</span>
+<span id="666">666</span>
+<span id="667">667</span>
+<span id="668">668</span>
+<span id="669">669</span>
+<span id="670">670</span>
+<span id="671">671</span>
+<span id="672">672</span>
+<span id="673">673</span>
+<span id="674">674</span>
+<span id="675">675</span>
+<span id="676">676</span>
+<span id="677">677</span>
+<span id="678">678</span>
+<span id="679">679</span>
+<span id="680">680</span>
+<span id="681">681</span>
+<span id="682">682</span>
+<span id="683">683</span>
+<span id="684">684</span>
+<span id="685">685</span>
+<span id="686">686</span>
+<span id="687">687</span>
+<span id="688">688</span>
+<span id="689">689</span>
+<span id="690">690</span>
+<span id="691">691</span>
+<span id="692">692</span>
+<span id="693">693</span>
+<span id="694">694</span>
+<span id="695">695</span>
+<span id="696">696</span>
+<span id="697">697</span>
+<span id="698">698</span>
+<span id="699">699</span>
+<span id="700">700</span>
+<span id="701">701</span>
+<span id="702">702</span>
+<span id="703">703</span>
+<span id="704">704</span>
+<span id="705">705</span>
+<span id="706">706</span>
+<span id="707">707</span>
+<span id="708">708</span>
+<span id="709">709</span>
+<span id="710">710</span>
+<span id="711">711</span>
+<span id="712">712</span>
+<span id="713">713</span>
+<span id="714">714</span>
+<span id="715">715</span>
+<span id="716">716</span>
+<span id="717">717</span>
+<span id="718">718</span>
+<span id="719">719</span>
+<span id="720">720</span>
+<span id="721">721</span>
+<span id="722">722</span>
+<span id="723">723</span>
+<span id="724">724</span>
+<span id="725">725</span>
+<span id="726">726</span>
+<span id="727">727</span>
+<span id="728">728</span>
+<span id="729">729</span>
+<span id="730">730</span>
+<span id="731">731</span>
+<span id="732">732</span>
+<span id="733">733</span>
+<span id="734">734</span>
+<span id="735">735</span>
+<span id="736">736</span>
+<span id="737">737</span>
+<span id="738">738</span>
+<span id="739">739</span>
+<span id="740">740</span>
+<span id="741">741</span>
+<span id="742">742</span>
+<span id="743">743</span>
+<span id="744">744</span>
+<span id="745">745</span>
+<span id="746">746</span>
+<span id="747">747</span>
+<span id="748">748</span>
+<span id="749">749</span>
+<span id="750">750</span>
+<span id="751">751</span>
+<span id="752">752</span>
+<span id="753">753</span>
+<span id="754">754</span>
+<span id="755">755</span>
+<span id="756">756</span>
+<span id="757">757</span>
+<span id="758">758</span>
+<span id="759">759</span>
+<span id="760">760</span>
+<span id="761">761</span>
+<span id="762">762</span>
+<span id="763">763</span>
+<span id="764">764</span>
+<span id="765">765</span>
+<span id="766">766</span>
+<span id="767">767</span>
+<span id="768">768</span>
+<span id="769">769</span>
+<span id="770">770</span>
+<span id="771">771</span>
+<span id="772">772</span>
+<span id="773">773</span>
+<span id="774">774</span>
+<span id="775">775</span>
+<span id="776">776</span>
+<span id="777">777</span>
+<span id="778">778</span>
+<span id="779">779</span>
+<span id="780">780</span>
+<span id="781">781</span>
+<span id="782">782</span>
+<span id="783">783</span>
+<span id="784">784</span>
+<span id="785">785</span>
+<span id="786">786</span>
+<span id="787">787</span>
+<span id="788">788</span>
+<span id="789">789</span>
+</pre><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
+<span class="kw">use </span>std::fmt;
+<span class="kw">use </span>std::iter::IntoIterator;
+<span class="kw">use </span>std::slice::{Iter, IterMut};
+
+<span class="attribute">#[cfg(feature = <span class="string">&quot;tty&quot;</span>)]
+</span><span class="kw">use </span>crossterm::terminal;
+<span class="attribute">#[cfg(feature = <span class="string">&quot;tty&quot;</span>)]
+</span><span class="kw">use </span>crossterm::tty::IsTty;
+<span class="kw">use </span>strum::IntoEnumIterator;
+
+<span class="kw">use </span><span class="kw">crate</span>::cell::Cell;
+<span class="kw">use </span><span class="kw">crate</span>::column::Column;
+<span class="kw">use </span><span class="kw">crate</span>::row::Row;
+<span class="kw">use </span><span class="kw">crate</span>::style::presets::ASCII_FULL;
+<span class="kw">use </span><span class="kw">crate</span>::style::{ColumnConstraint, ContentArrangement, TableComponent};
+<span class="kw">use </span><span class="kw">crate</span>::utils::build_table;
+
+<span class="doccomment">/// This is the main interface for building a table.
+/// Each table consists of [Rows](Row), which in turn contain [Cells](crate::cell::Cell).
+///
+/// There also exists a representation of a [Column].
+/// Columns are automatically created when adding rows to a table.
+</span><span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub struct </span>Table {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) columns: Vec&lt;Column&gt;,
+    style: HashMap&lt;TableComponent, char&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) header: <span class="prelude-ty">Option</span>&lt;Row&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) rows: Vec&lt;Row&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) arrangement: ContentArrangement,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) delimiter: <span class="prelude-ty">Option</span>&lt;char&gt;,
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;tty&quot;</span>)]
+    </span>no_tty: bool,
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;tty&quot;</span>)]
+    </span>use_stderr: bool,
+    width: <span class="prelude-ty">Option</span>&lt;u16&gt;,
+    <span class="attribute">#[cfg(feature = <span class="string">&quot;tty&quot;</span>)]
+    </span>enforce_styling: bool,
+    <span class="doccomment">/// Define whether everything in a cells should be styled, including whitespaces
+    /// or whether only the text should be styled.
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;tty&quot;</span>)]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) style_text_only: bool,
+}
+
+<span class="kw">impl </span>fmt::Display <span class="kw">for </span>Table {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.lines().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;().join(<span class="string">&quot;\n&quot;</span>))
+    }
+}
+
+<span class="kw">impl </span>Default <span class="kw">for </span>Table {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::new()
+    }
+}
+
+<span class="kw">impl </span>Table {
+    <span class="doccomment">/// Create a new table with default ASCII styling.
+    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>table = <span class="self">Self </span>{
+            columns: Vec::new(),
+            header: <span class="prelude-val">None</span>,
+            rows: Vec::new(),
+            arrangement: ContentArrangement::Disabled,
+            delimiter: <span class="prelude-val">None</span>,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;tty&quot;</span>)]
+            </span>no_tty: <span class="bool-val">false</span>,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;tty&quot;</span>)]
+            </span>use_stderr: <span class="bool-val">false</span>,
+            width: <span class="prelude-val">None</span>,
+            style: HashMap::new(),
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;tty&quot;</span>)]
+            </span>enforce_styling: <span class="bool-val">false</span>,
+            <span class="attribute">#[cfg(feature = <span class="string">&quot;tty&quot;</span>)]
+            </span>style_text_only: <span class="bool-val">false</span>,
+        };
+
+        table.load_preset(ASCII_FULL);
+
+        table
+    }
+
+    <span class="doccomment">/// This is an alternative `fmt` function, which simply removes any trailing whitespaces.
+    /// Trailing whitespaces often occur, when using tables without a right border.
+    </span><span class="kw">pub fn </span>trim_fmt(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+        <span class="self">self</span>.lines()
+            .map(|line| line.trim_end().to_string())
+            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
+            .join(<span class="string">&quot;\n&quot;</span>)
+    }
+
+    <span class="doccomment">/// This is an alternative to `fmt`, but rather returns an iterator to each line, rather than
+    /// one String separated by newlines.
+    </span><span class="kw">pub fn </span>lines(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = String&gt; {
+        build_table(<span class="self">self</span>)
+    }
+
+    <span class="doccomment">/// Set the header row of the table. This is usually the title of each column.\
+    /// There&#39;ll be no header unless you explicitly set it with this function.
+    ///
+    /// ```
+    /// use comfy_table::{Table, Row};
+    ///
+    /// let mut table = Table::new();
+    /// let header = Row::from(vec![&quot;Header One&quot;, &quot;Header Two&quot;]);
+    /// table.set_header(header);
+    /// ```
+
+    </span><span class="kw">pub fn </span>set_header&lt;T: Into&lt;Row&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, row: T) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="kw">let </span>row = row.into();
+        <span class="self">self</span>.autogenerate_columns(<span class="kw-2">&amp;</span>row);
+        <span class="self">self</span>.header = <span class="prelude-val">Some</span>(row);
+
+        <span class="self">self
+    </span>}
+
+    <span class="kw">pub fn </span>header(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Row&gt; {
+        <span class="self">self</span>.header.as_ref()
+    }
+
+    <span class="doccomment">/// Add a new row to the table.
+    ///
+    /// ```
+    /// use comfy_table::{Table, Row};
+    ///
+    /// let mut table = Table::new();
+    /// let row = Row::from(vec![&quot;One&quot;, &quot;Two&quot;]);
+    /// table.add_row(row);
+    /// ```
+    </span><span class="kw">pub fn </span>add_row&lt;T: Into&lt;Row&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, row: T) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>row = row.into();
+        <span class="self">self</span>.autogenerate_columns(<span class="kw-2">&amp;</span>row);
+        row.index = <span class="prelude-val">Some</span>(<span class="self">self</span>.rows.len());
+        <span class="self">self</span>.rows.push(row);
+
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Add multiple rows to the table.
+    ///
+    /// ```
+    /// use comfy_table::{Table, Row};
+    ///
+    /// let mut table = Table::new();
+    /// let rows = vec![
+    ///     Row::from(vec![&quot;One&quot;, &quot;Two&quot;]),
+    ///     Row::from(vec![&quot;Three&quot;, &quot;Four&quot;])
+    /// ];
+    /// table.add_rows(rows);
+    /// ```
+    </span><span class="kw">pub fn </span>add_rows&lt;I&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, rows: I) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self
+    </span><span class="kw">where
+        </span>I: IntoIterator,
+        I::Item: Into&lt;Row&gt;,
+    {
+        <span class="kw">for </span>row <span class="kw">in </span>rows.into_iter() {
+            <span class="kw">let </span><span class="kw-2">mut </span>row = row.into();
+            <span class="self">self</span>.autogenerate_columns(<span class="kw-2">&amp;</span>row);
+            row.index = <span class="prelude-val">Some</span>(<span class="self">self</span>.rows.len());
+            <span class="self">self</span>.rows.push(row);
+        }
+
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Enforce a max width that should be used in combination with [dynamic content arrangement](ContentArrangement::Dynamic).\
+    /// This is usually not necessary, if you plan to output your table to a tty,
+    /// since the terminal width can be automatically determined.
+    </span><span class="kw">pub fn </span>set_width(<span class="kw-2">&amp;mut </span><span class="self">self</span>, width: u16) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.width = <span class="prelude-val">Some</span>(width);
+
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Get the expected width of the table.
+    ///
+    /// This will be `Some(width)`, if the terminal width can be detected or if the table width is set via [set_width](Table::set_width).
+    ///
+    /// If neither is not possible, `None` will be returned.\
+    /// This implies that both the [Dynamic](ContentArrangement::Dynamic) mode and the [Percentage](crate::style::Width::Percentage) constraint won&#39;t work.
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;tty&quot;</span>)]
+    </span><span class="kw">pub fn </span>width(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;u16&gt; {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(width) = <span class="self">self</span>.width {
+            <span class="prelude-val">Some</span>(width)
+        } <span class="kw">else if </span><span class="self">self</span>.is_tty() {
+            <span class="kw">if let </span><span class="prelude-val">Ok</span>((width, <span class="kw">_</span>)) = terminal::size() {
+                <span class="prelude-val">Some</span>(width)
+            } <span class="kw">else </span>{
+                <span class="prelude-val">None
+            </span>}
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>}
+    }
+
+    <span class="attribute">#[cfg(not(feature = <span class="string">&quot;tty&quot;</span>))]
+    </span><span class="kw">pub fn </span>width(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;u16&gt; {
+        <span class="self">self</span>.width
+    }
+
+    <span class="doccomment">/// Specify how Comfy Table should arrange the content in your table.
+    ///
+    /// ```
+    /// use comfy_table::{Table, ContentArrangement};
+    ///
+    /// let mut table = Table::new();
+    /// table.set_content_arrangement(ContentArrangement::Dynamic);
+    /// ```
+    </span><span class="kw">pub fn </span>set_content_arrangement(<span class="kw-2">&amp;mut </span><span class="self">self</span>, arrangement: ContentArrangement) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.arrangement = arrangement;
+
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Get the current content arrangement of the table.
+    </span><span class="kw">pub fn </span>content_arrangement(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ContentArrangement {
+        <span class="self">self</span>.arrangement.clone()
+    }
+
+    <span class="doccomment">/// Set the delimiter used to split text in all cells.
+    ///
+    /// A custom delimiter on a cell in will overwrite the column&#39;s delimiter.\
+    /// Normal text uses spaces (` `) as delimiters. This is necessary to help comfy-table
+    /// understand the concept of _words_.
+    </span><span class="kw">pub fn </span>set_delimiter(<span class="kw-2">&amp;mut </span><span class="self">self</span>, delimiter: char) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.delimiter = <span class="prelude-val">Some</span>(delimiter);
+
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// In case you are sure you don&#39;t want export tables to a tty or you experience
+    /// problems with tty specific code, you can enforce a non_tty mode.
+    ///
+    /// This disables:
+    ///
+    /// - width lookup from the current tty
+    /// - Styling and attributes on cells (unless you use [Table::enforce_styling])
+    ///
+    /// If you use the [dynamic content arrangement](ContentArrangement::Dynamic),
+    /// you need to set the width of your desired table manually with [set_width](Table::set_width).
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;tty&quot;</span>)]
+    </span><span class="kw">pub fn </span>force_no_tty(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.no_tty = <span class="bool-val">true</span>;
+
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Use this function to check whether `stderr` is a tty.
+    ///
+    /// The default is `stdout`.
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;tty&quot;</span>)]
+    </span><span class="kw">pub fn </span>use_stderr(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.use_stderr = <span class="bool-val">true</span>;
+
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Returns whether the table will be handled as if it&#39;s printed to a tty.
+    ///
+    /// By default, comfy-table looks at `stdout` and checks whether it&#39;s a tty.
+    /// This behavior can be changed via [Table::force_no_tty] and [Table::use_stderr].
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;tty&quot;</span>)]
+    </span><span class="kw">pub fn </span>is_tty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">if </span><span class="self">self</span>.no_tty {
+            <span class="kw">return </span><span class="bool-val">false</span>;
+        }
+
+        <span class="kw">if </span><span class="self">self</span>.use_stderr {
+            ::std::io::stderr().is_tty()
+        } <span class="kw">else </span>{
+            ::std::io::stdout().is_tty()
+        }
+    }
+
+    <span class="doccomment">/// Enforce terminal styling.
+    ///
+    /// Only useful if you forcefully disabled tty, but still want those fancy terminal styles.
+    ///
+    /// ```
+    /// use comfy_table::Table;
+    ///
+    /// let mut table = Table::new();
+    /// table.force_no_tty()
+    ///     .enforce_styling();
+    /// ```
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;tty&quot;</span>)]
+    </span><span class="kw">pub fn </span>enforce_styling(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.enforce_styling = <span class="bool-val">true</span>;
+
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Returns whether the content of this table should be styled with the current settings and
+    /// environment.
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;tty&quot;</span>)]
+    </span><span class="kw">pub fn </span>should_style(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">if </span><span class="self">self</span>.enforce_styling {
+            <span class="kw">return </span><span class="bool-val">true</span>;
+        }
+        <span class="self">self</span>.is_tty()
+    }
+
+    <span class="doccomment">/// By default, the whole content of a cells will be styled.
+    /// Calling this function disables this behavior for all cells, resulting in
+    /// only the text of cells being styled.
+    </span><span class="attribute">#[cfg(feature = <span class="string">&quot;tty&quot;</span>)]
+    </span><span class="kw">pub fn </span>style_text_only(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.style_text_only = <span class="bool-val">true</span>;
+    }
+
+    <span class="doccomment">/// Convenience method to set a [ColumnConstraint] for all columns at once.
+    /// Constraints are used to influence the way the columns will be arranged.
+    /// Check out their docs for more information.
+    ///
+    /// **Attention:**
+    /// This function should be called after at least one row (or the headers) has been added to the table.
+    /// Before that, the columns won&#39;t initialized.
+    ///
+    /// If more constraints are passed than there are columns, any superfluous constraints will be ignored.
+    /// ```
+    /// use comfy_table::{Width::*, CellAlignment, ColumnConstraint::*, ContentArrangement, Table};
+    ///
+    /// let mut table = Table::new();
+    /// table.add_row(&amp;vec![&quot;one&quot;, &quot;two&quot;, &quot;three&quot;])
+    ///     .set_content_arrangement(ContentArrangement::Dynamic)
+    ///     .set_constraints(vec![
+    ///         UpperBoundary(Fixed(15)),
+    ///         LowerBoundary(Fixed(20)),
+    /// ]);
+    /// ```
+    </span><span class="kw">pub fn </span>set_constraints&lt;T: IntoIterator&lt;Item = ColumnConstraint&gt;&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        constraints: T,
+    ) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>constraints = constraints.into_iter();
+        <span class="kw">for </span>column <span class="kw">in </span><span class="self">self</span>.column_iter_mut() {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(constraint) = constraints.next() {
+                column.set_constraint(constraint);
+            } <span class="kw">else </span>{
+                <span class="kw">break</span>;
+            }
+        }
+
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// This function creates a TableStyle from a given preset string.\
+    /// Preset strings can be found in `styling::presets::*`.
+    ///
+    /// You can also write your own preset strings and use them with this function.
+    /// There&#39;s the convenience method [Table::current_style_as_preset], which prints you a preset
+    /// string from your current style configuration. \
+    /// The function expects the to-be-drawn characters to be in the same order as in the [TableComponent] enum.
+    ///
+    /// If the string isn&#39;t long enough, the default [ASCII_FULL] style will be used for all remaining components.
+    ///
+    /// If the string is too long, remaining charaacters will be simply ignored.
+    </span><span class="kw">pub fn </span>load_preset(<span class="kw-2">&amp;mut </span><span class="self">self</span>, preset: <span class="kw-2">&amp;</span>str) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>components = TableComponent::iter();
+
+        <span class="kw">for </span>character <span class="kw">in </span>preset.chars() {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(component) = components.next() {
+                <span class="comment">// White spaces mean &quot;don&#39;t draw this&quot; in presets
+                // If we want to override the default preset, we need to remove
+                // this component from the HashMap in case we find a whitespace.
+                </span><span class="kw">if </span>character == <span class="string">&#39; &#39; </span>{
+                    <span class="self">self</span>.remove_style(component);
+                    <span class="kw">continue</span>;
+                }
+
+                <span class="self">self</span>.set_style(component, character);
+            } <span class="kw">else </span>{
+                <span class="kw">break</span>;
+            }
+        }
+
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Returns the current style as a preset string.
+    ///
+    /// A pure convenience method, so you&#39;re not force to fiddle with those preset strings yourself.
+    ///
+    /// ```
+    /// use comfy_table::Table;
+    /// use comfy_table::presets::UTF8_FULL;
+    ///
+    /// let mut table = Table::new();
+    /// table.load_preset(UTF8_FULL);
+    ///
+    /// assert_eq!(UTF8_FULL, table.current_style_as_preset())
+    /// ```
+    </span><span class="kw">pub fn </span>current_style_as_preset(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; String {
+        <span class="kw">let </span>components = TableComponent::iter();
+        <span class="kw">let </span><span class="kw-2">mut </span>preset_string = String::new();
+
+        <span class="kw">for </span>component <span class="kw">in </span>components {
+            <span class="kw">match </span><span class="self">self</span>.style(component) {
+                <span class="prelude-val">None </span>=&gt; preset_string.push(<span class="string">&#39; &#39;</span>),
+                <span class="prelude-val">Some</span>(character) =&gt; preset_string.push(character),
+            }
+        }
+
+        preset_string
+    }
+
+    <span class="doccomment">/// Modify a preset with a modifier string from [modifiers](crate::style::modifiers).
+    ///
+    /// For instance, the [UTF8_ROUND_CORNERS](crate::style::modifiers::UTF8_ROUND_CORNERS) modifies all corners to be round UTF8 box corners.
+    ///
+    /// ```
+    /// use comfy_table::Table;
+    /// use comfy_table::presets::UTF8_FULL;
+    /// use comfy_table::modifiers::UTF8_ROUND_CORNERS;
+    ///
+    /// let mut table = Table::new();
+    /// table.load_preset(UTF8_FULL);
+    /// table.apply_modifier(UTF8_ROUND_CORNERS);
+    /// ```
+    </span><span class="kw">pub fn </span>apply_modifier(<span class="kw-2">&amp;mut </span><span class="self">self</span>, modifier: <span class="kw-2">&amp;</span>str) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>components = TableComponent::iter();
+
+        <span class="kw">for </span>character <span class="kw">in </span>modifier.chars() {
+            <span class="comment">// Skip spaces while applying modifiers.
+            </span><span class="kw">if </span>character == <span class="string">&#39; &#39; </span>{
+                components.next();
+                <span class="kw">continue</span>;
+            }
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(component) = components.next() {
+                <span class="self">self</span>.set_style(component, character);
+            } <span class="kw">else </span>{
+                <span class="kw">break</span>;
+            }
+        }
+
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Define the char that will be used to draw a specific component.\
+    /// Look at [TableComponent] to see all stylable components
+    ///
+    /// If `None` is supplied, the element won&#39;t be displayed.\
+    /// In case of a e.g. *BorderIntersection a whitespace will be used as placeholder,
+    /// unless related borders and and corners are set to `None` as well.
+    ///
+    /// For example, if `TopBorderIntersections` is `None` the first row would look like this:
+    ///
+    /// ```text
+    /// +------ ------+
+    /// | this | test |
+    /// ```
+    ///
+    /// If in addition `TopLeftCorner`,`TopBorder` and `TopRightCorner` would be `None` as well,
+    /// the first line wouldn&#39;t be displayed at all.
+    ///
+    /// ```
+    /// use comfy_table::Table;
+    /// use comfy_table::presets::UTF8_FULL;
+    /// use comfy_table::TableComponent::*;
+    ///
+    /// let mut table = Table::new();
+    /// // Load the UTF8_FULL preset
+    /// table.load_preset(UTF8_FULL);
+    /// // Set all outer corners to round UTF8 corners
+    /// // This is basically the same as the UTF8_ROUND_CORNERS modifier
+    /// table.set_style(TopLeftCorner, &#39;╭&#39;);
+    /// table.set_style(TopRightCorner, &#39;╮&#39;);
+    /// table.set_style(BottomLeftCorner, &#39;╰&#39;);
+    /// table.set_style(BottomRightCorner, &#39;╯&#39;);
+    /// ```
+    </span><span class="kw">pub fn </span>set_style(<span class="kw-2">&amp;mut </span><span class="self">self</span>, component: TableComponent, character: char) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.style.insert(component, character);
+
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Get a copy of the char that&#39;s currently used for drawing this component.
+    /// ```
+    /// use comfy_table::Table;
+    /// use comfy_table::TableComponent::*;
+    ///
+    /// let mut table = Table::new();
+    /// assert_eq!(table.style(TopLeftCorner), Some(&#39;+&#39;));
+    /// ```
+
+    </span><span class="kw">pub fn </span>style(<span class="kw-2">&amp;mut </span><span class="self">self</span>, component: TableComponent) -&gt; <span class="prelude-ty">Option</span>&lt;char&gt; {
+        <span class="self">self</span>.style.get(<span class="kw-2">&amp;</span>component).copied()
+    }
+
+    <span class="doccomment">/// Remove the style for a specific component of the table.\
+    /// By default, a space will be used as a placeholder instead.\
+    /// Though, if for instance all components of the left border are removed, the left border won&#39;t be displayed.
+    </span><span class="kw">pub fn </span>remove_style(<span class="kw-2">&amp;mut </span><span class="self">self</span>, component: TableComponent) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.style.remove(<span class="kw-2">&amp;</span>component);
+
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Get a reference to a specific column.
+    </span><span class="kw">pub fn </span>column(<span class="kw-2">&amp;</span><span class="self">self</span>, index: usize) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Column&gt; {
+        <span class="self">self</span>.columns.get(index)
+    }
+
+    <span class="doccomment">/// Get a mutable reference to a specific column.
+    </span><span class="kw">pub fn </span>column_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, index: usize) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>Column&gt; {
+        <span class="self">self</span>.columns.get_mut(index)
+    }
+
+    <span class="doccomment">/// Iterator over all columns
+    </span><span class="kw">pub fn </span>column_iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Iter&lt;Column&gt; {
+        <span class="self">self</span>.columns.iter()
+    }
+
+    <span class="doccomment">/// Get a mutable iterator over all columns.
+    ///
+    /// ```
+    /// use comfy_table::{Width::*, ColumnConstraint::*, Table};
+    ///
+    /// let mut table = Table::new();
+    /// table.add_row(&amp;vec![&quot;First&quot;, &quot;Second&quot;, &quot;Third&quot;]);
+    ///
+    /// // Add a ColumnConstraint to each column (left-&gt;right)
+    /// // first -&gt; min width of 10
+    /// // second -&gt; max width of 8
+    /// // third -&gt; fixed width of 10
+    /// let constraints = vec![
+    ///     LowerBoundary(Fixed(10)),
+    ///     UpperBoundary(Fixed(8)),
+    ///     Absolute(Fixed(10)),
+    /// ];
+    ///
+    /// // Add the constraints to their respective column
+    /// for (column_index, column) in table.column_iter_mut().enumerate() {
+    ///     let constraint = constraints.get(column_index).unwrap();
+    ///     column.set_constraint(*constraint);
+    /// }
+    /// ```
+    </span><span class="kw">pub fn </span>column_iter_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; IterMut&lt;Column&gt; {
+        <span class="self">self</span>.columns.iter_mut()
+    }
+
+    <span class="doccomment">/// Get a mutable iterator over cells of a column.
+    /// The iterator returns a nested Option&lt;Option&lt;Cell&gt;&gt;, since there might be
+    /// rows that are missing this specific Cell.
+    ///
+    /// ```
+    /// use comfy_table::Table;
+    /// let mut table = Table::new();
+    /// table.add_row(&amp;vec![&quot;First&quot;, &quot;Second&quot;]);
+    /// table.add_row(&amp;vec![&quot;Third&quot;]);
+    /// table.add_row(&amp;vec![&quot;Fourth&quot;, &quot;Fifth&quot;]);
+    ///
+    /// // Create an iterator over the second column
+    /// let mut cell_iter = table.column_cells_iter(1);
+    /// assert_eq!(cell_iter.next().unwrap().unwrap().content(), &quot;Second&quot;);
+    /// assert!(cell_iter.next().unwrap().is_none());
+    /// assert_eq!(cell_iter.next().unwrap().unwrap().content(), &quot;Fifth&quot;);
+    /// assert!(cell_iter.next().is_none());
+    /// ```
+    </span><span class="kw">pub fn </span>column_cells_iter(<span class="kw-2">&amp;</span><span class="self">self</span>, column_index: usize) -&gt; ColumnCellIter {
+        ColumnCellIter {
+            rows: <span class="kw-2">&amp;</span><span class="self">self</span>.rows,
+            column_index,
+            row_index: <span class="number">0</span>,
+        }
+    }
+
+    <span class="doccomment">/// Get a mutable iterator over cells of a column, including the header cell.
+    /// The header cell will be the very first cell returned.
+    /// The iterator returns a nested Option&lt;Option&lt;Cell&gt;&gt;, since there might be
+    /// rows that are missing this specific Cell.
+    ///
+    /// ```
+    /// use comfy_table::Table;
+    /// let mut table = Table::new();
+    /// table.set_header(&amp;vec![&quot;A&quot;, &quot;B&quot;]);
+    /// table.add_row(&amp;vec![&quot;First&quot;, &quot;Second&quot;]);
+    /// table.add_row(&amp;vec![&quot;Third&quot;]);
+    /// table.add_row(&amp;vec![&quot;Fourth&quot;, &quot;Fifth&quot;]);
+    ///
+    /// // Create an iterator over the second column
+    /// let mut cell_iter = table.column_cells_with_header_iter(1);
+    /// assert_eq!(cell_iter.next().unwrap().unwrap().content(), &quot;B&quot;);
+    /// assert_eq!(cell_iter.next().unwrap().unwrap().content(), &quot;Second&quot;);
+    /// assert!(cell_iter.next().unwrap().is_none());
+    /// assert_eq!(cell_iter.next().unwrap().unwrap().content(), &quot;Fifth&quot;);
+    /// assert!(cell_iter.next().is_none());
+    /// ```
+    </span><span class="kw">pub fn </span>column_cells_with_header_iter(<span class="kw-2">&amp;</span><span class="self">self</span>, column_index: usize) -&gt; ColumnCellsWithHeaderIter {
+        ColumnCellsWithHeaderIter {
+            header_checked: <span class="bool-val">false</span>,
+            header: <span class="kw-2">&amp;</span><span class="self">self</span>.header,
+            rows: <span class="kw-2">&amp;</span><span class="self">self</span>.rows,
+            column_index,
+            row_index: <span class="number">0</span>,
+        }
+    }
+
+    <span class="doccomment">/// Reference to a specific row
+    </span><span class="kw">pub fn </span>row(<span class="kw-2">&amp;</span><span class="self">self</span>, index: usize) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Row&gt; {
+        <span class="self">self</span>.rows.get(index)
+    }
+
+    <span class="doccomment">/// Mutable reference to a specific row
+    </span><span class="kw">pub fn </span>row_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, index: usize) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>Row&gt; {
+        <span class="self">self</span>.rows.get_mut(index)
+    }
+
+    <span class="doccomment">/// Iterator over all rows
+    </span><span class="kw">pub fn </span>row_iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Iter&lt;Row&gt; {
+        <span class="self">self</span>.rows.iter()
+    }
+
+    <span class="doccomment">/// Get a mutable iterator over all rows.
+    ///
+    /// ```
+    /// use comfy_table::Table;
+    /// let mut table = Table::new();
+    /// table.add_row(&amp;vec![&quot;First&quot;, &quot;Second&quot;, &quot;Third&quot;]);
+    ///
+    /// // Add the constraints to their respective row
+    /// for row in table.row_iter_mut() {
+    ///     row.max_height(5);
+    /// }
+    /// assert!(table.row_iter_mut().len() == 1);
+    /// ```
+    </span><span class="kw">pub fn </span>row_iter_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; IterMut&lt;Row&gt; {
+        <span class="self">self</span>.rows.iter_mut()
+    }
+
+    <span class="doccomment">/// Return a vector representing the maximum amount of characters in any line of this column.\
+    ///
+    /// **Attention** This scans the whole current content of the table.
+    </span><span class="kw">pub fn </span>column_max_content_widths(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;u16&gt; {
+        <span class="kw">fn </span>set_max_content_widths(max_widths: <span class="kw-2">&amp;mut </span>[u16], row: <span class="kw-2">&amp;</span>Row) {
+            <span class="comment">// Get the max width for each cell of the row
+            </span><span class="kw">let </span>row_max_widths = row.max_content_widths();
+            <span class="kw">for </span>(index, width) <span class="kw">in </span>row_max_widths.iter().enumerate() {
+                <span class="kw">let </span>width = (<span class="kw-2">*</span>width).try_into().unwrap_or(u16::MAX);
+
+                <span class="comment">// Set a new max, if the current cell is the longest for that column.
+                </span><span class="kw">let </span>current_max = max_widths[index];
+                <span class="kw">if </span>current_max &lt; width {
+                    max_widths[index] = width;
+                }
+            }
+        }
+        <span class="comment">// The vector that&#39;ll contain the max widths per column.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>max_widths = <span class="macro">vec!</span>[<span class="number">0</span>; <span class="self">self</span>.columns.len()];
+
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(header) = <span class="kw-2">&amp;</span><span class="self">self</span>.header {
+            set_max_content_widths(<span class="kw-2">&amp;mut </span>max_widths, header);
+        }
+        <span class="comment">// Iterate through all rows of the table.
+        </span><span class="kw">for </span>row <span class="kw">in </span><span class="self">self</span>.rows.iter() {
+            set_max_content_widths(<span class="kw-2">&amp;mut </span>max_widths, row);
+        }
+
+        max_widths
+    }
+
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>style_or_default(<span class="kw-2">&amp;</span><span class="self">self</span>, component: TableComponent) -&gt; String {
+        <span class="kw">match </span><span class="self">self</span>.style.get(<span class="kw-2">&amp;</span>component) {
+            <span class="prelude-val">None </span>=&gt; <span class="string">&quot; &quot;</span>.to_string(),
+            <span class="prelude-val">Some</span>(character) =&gt; character.to_string(),
+        }
+    }
+
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>style_exists(<span class="kw-2">&amp;</span><span class="self">self</span>, component: TableComponent) -&gt; bool {
+        <span class="self">self</span>.style.get(<span class="kw-2">&amp;</span>component).is_some()
+    }
+
+    <span class="doccomment">/// Autogenerate new columns, if a row is added with more cells than existing columns.
+    </span><span class="kw">fn </span>autogenerate_columns(<span class="kw-2">&amp;mut </span><span class="self">self</span>, row: <span class="kw-2">&amp;</span>Row) {
+        <span class="kw">if </span>row.cell_count() &gt; <span class="self">self</span>.columns.len() {
+            <span class="kw">for </span>index <span class="kw">in </span><span class="self">self</span>.columns.len()..row.cell_count() {
+                <span class="self">self</span>.columns.push(Column::new(index));
+            }
+        }
+    }
+
+    <span class="doccomment">/// Calling this might be necessary if you add new cells to rows that&#39;re already added to the
+    /// table.
+    ///
+    /// If more cells than&#39;re currently know to the table are added to that row,
+    /// the table cannot know about these, since new [Column]s are only
+    /// automatically detected when a new row is added.
+    ///
+    /// To make sure everything works as expected, just call this function if you&#39;re adding cells
+    /// to rows that&#39;re already added to the table.
+    </span><span class="kw">pub fn </span>discover_columns(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">for </span>row <span class="kw">in </span><span class="self">self</span>.rows.iter() {
+            <span class="kw">if </span>row.cell_count() &gt; <span class="self">self</span>.columns.len() {
+                <span class="kw">for </span>index <span class="kw">in </span><span class="self">self</span>.columns.len()..row.cell_count() {
+                    <span class="self">self</span>.columns.push(Column::new(index));
+                }
+            }
+        }
+    }
+}
+
+<span class="doccomment">/// An iterator over cells of a specific column.
+/// A dedicated struct is necessary, as data is usually handled by rows and thereby stored in
+/// `Table::rows`. This type is returned by [Table::column_cells_iter].
+</span><span class="kw">pub struct </span>ColumnCellIter&lt;<span class="lifetime">&#39;a</span>&gt; {
+    rows: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Row],
+    column_index: usize,
+    row_index: usize,
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Iterator <span class="kw">for </span>ColumnCellIter&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">type </span>Item = <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Cell&gt;;
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Cell&gt;&gt; {
+        <span class="comment">// Check if there&#39;s a next row
+        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(row) = <span class="self">self</span>.rows.get(<span class="self">self</span>.row_index) {
+            <span class="self">self</span>.row_index += <span class="number">1</span>;
+
+            <span class="comment">// Return the cell (if it exists).
+            </span><span class="kw">return </span><span class="prelude-val">Some</span>(row.cells.get(<span class="self">self</span>.column_index));
+        }
+
+        <span class="prelude-val">None
+    </span>}
+}
+
+<span class="doccomment">/// An iterator over cells of a specific column.
+/// A dedicated struct is necessary, as data is usually handled by rows and thereby stored in
+/// `Table::rows`. This type is returned by [Table::column_cells_iter].
+</span><span class="kw">pub struct </span>ColumnCellsWithHeaderIter&lt;<span class="lifetime">&#39;a</span>&gt; {
+    header_checked: bool,
+    header: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="prelude-ty">Option</span>&lt;Row&gt;,
+    rows: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Row],
+    column_index: usize,
+    row_index: usize,
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Iterator <span class="kw">for </span>ColumnCellsWithHeaderIter&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">type </span>Item = <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Cell&gt;;
+    <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Cell&gt;&gt; {
+        <span class="comment">// Get the header as the first cell
+        </span><span class="kw">if </span>!<span class="self">self</span>.header_checked {
+            <span class="self">self</span>.header_checked = <span class="bool-val">true</span>;
+
+            <span class="kw">return match </span><span class="self">self</span>.header {
+                <span class="prelude-val">Some</span>(header) =&gt; {
+                    <span class="comment">// Return the cell (if it exists).
+                    </span><span class="prelude-val">Some</span>(header.cells.get(<span class="self">self</span>.column_index))
+                }
+                <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Some</span>(<span class="prelude-val">None</span>),
+            };
+        }
+
+        <span class="comment">// Check if there&#39;s a next row
+        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(row) = <span class="self">self</span>.rows.get(<span class="self">self</span>.row_index) {
+            <span class="self">self</span>.row_index += <span class="number">1</span>;
+
+            <span class="comment">// Return the cell (if it exists).
+            </span><span class="kw">return </span><span class="prelude-val">Some</span>(row.cells.get(<span class="self">self</span>.column_index));
+        }
+
+        <span class="prelude-val">None
+    </span>}
+}
+
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_column_generation() {
+        <span class="kw">let </span><span class="kw-2">mut </span>table = Table::new();
+        table.set_header(<span class="kw-2">&amp;</span><span class="macro">vec!</span>[<span class="string">&quot;thr&quot;</span>, <span class="string">&quot;four&quot;</span>, <span class="string">&quot;fivef&quot;</span>]);
+
+        <span class="comment">// When adding a new row, columns are automatically generated
+        </span><span class="macro">assert_eq!</span>(table.columns.len(), <span class="number">3</span>);
+        <span class="comment">// The max content width is also correctly set for each column
+        </span><span class="macro">assert_eq!</span>(table.column_max_content_widths(), <span class="macro">vec!</span>[<span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>]);
+
+        <span class="comment">// When adding a new row, the max content width is updated accordingly
+        </span>table.add_row(<span class="kw-2">&amp;</span><span class="macro">vec!</span>[<span class="string">&quot;four&quot;</span>, <span class="string">&quot;fivef&quot;</span>, <span class="string">&quot;very long text with 23&quot;</span>]);
+        <span class="macro">assert_eq!</span>(table.column_max_content_widths(), <span class="macro">vec!</span>[<span class="number">4</span>, <span class="number">5</span>, <span class="number">22</span>]);
+
+        <span class="comment">// Now add a row that has column lines. The max content width shouldn&#39;t change
+        </span>table.add_row(<span class="kw-2">&amp;</span><span class="macro">vec!</span>[<span class="string">&quot;&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="string">&quot;shorter&quot;</span>]);
+        <span class="macro">assert_eq!</span>(table.column_max_content_widths(), <span class="macro">vec!</span>[<span class="number">4</span>, <span class="number">5</span>, <span class="number">22</span>]);
+
+        <span class="macro">println!</span>(<span class="string">&quot;{table}&quot;</span>);
+    }
+}
+</code></pre></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="comfy_table" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

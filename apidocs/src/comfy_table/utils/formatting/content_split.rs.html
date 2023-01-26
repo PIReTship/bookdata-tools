@@ -1,0 +1,386 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/comfy-table-6.1.4/src/utils/formatting/content_split.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>content_split.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../comfy_table/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
+<span id="2">2</span>
+<span id="3">3</span>
+<span id="4">4</span>
+<span id="5">5</span>
+<span id="6">6</span>
+<span id="7">7</span>
+<span id="8">8</span>
+<span id="9">9</span>
+<span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+</pre><pre class="rust"><code><span class="kw">use </span>unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+
+<span class="kw">use </span><span class="kw">crate</span>::utils::ColumnDisplayInfo;
+
+<span class="doccomment">/// Split a line if it&#39;s longer than the allowed columns (width - padding).
+///
+/// This function tries to do this in a smart way, by splitting the content
+/// with a given delimiter at the very beginning.
+/// These &quot;elements&quot; then get added one-by-one to the lines, until a line is full.
+/// As soon as the line is full, we add it to the result set and start a new line.
+///
+/// This is repeated until there&#39;re no more &quot;elements&quot;.
+///
+/// Mid-element splits only occurs if a element doesn&#39;t fit in a single line by itself.
+</span><span class="kw">pub fn </span>split_line(line: <span class="kw-2">&amp;</span>str, info: <span class="kw-2">&amp;</span>ColumnDisplayInfo, delimiter: char) -&gt; Vec&lt;String&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>lines = Vec::new();
+    <span class="kw">let </span>content_width = usize::from(info.content_width);
+
+    <span class="comment">// Split the line by the given deliminator and turn the content into a stack.
+    // Reverse it, since we want to push/pop without reversing the text.
+    // Also clone it and convert it into a Vec&lt;String&gt;. Otherwise we get some burrowing problems
+    // due to early drops of borrowed values that need to be inserted into `Vec&lt;&amp;str&gt;`
+    </span><span class="kw">let </span><span class="kw-2">mut </span>elements = line
+        .split(delimiter)
+        .map(ToString::to_string)
+        .collect::&lt;Vec&lt;String&gt;&gt;();
+    elements.reverse();
+
+    <span class="kw">let </span><span class="kw-2">mut </span>current_line = String::new();
+    <span class="kw">while let </span><span class="prelude-val">Some</span>(next) = elements.pop() {
+        <span class="kw">let </span>current_length = current_line.width();
+        <span class="kw">let </span>next_length = next.width();
+
+        <span class="comment">// Some helper variables
+        // The length of the current line when combining it with the next element
+        // Add 1 for the delimiter if we are on a non-emtpy line.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>added_length = next_length + current_length;
+        <span class="kw">if </span>!current_line.is_empty() {
+            added_length += <span class="number">1</span>;
+        }
+        <span class="comment">// The remaining width for this column. If we are on a non-empty line, subtract 1 for the delimiter.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>remaining_width = content_width - current_line.width();
+        <span class="kw">if </span>!current_line.is_empty() {
+            remaining_width = remaining_width.saturating_sub(<span class="number">1</span>);
+        }
+
+        <span class="comment">// The next element fits into the current line
+        </span><span class="kw">if </span>added_length &lt;= content_width {
+            <span class="comment">// Only add delimiter, if we&#39;re not on a fresh line
+            </span><span class="kw">if </span>!current_line.is_empty() {
+                current_line.push(delimiter);
+            }
+            current_line += <span class="kw-2">&amp;</span>next;
+
+            <span class="comment">// Already complete the current line, if there isn&#39;t space for more than two chars
+            </span>current_line = check_if_full(<span class="kw-2">&amp;mut </span>lines, content_width, current_line);
+            <span class="kw">continue</span>;
+        }
+
+        <span class="comment">// The next element doesn&#39;t fit in the current line
+
+        // Check, if there&#39;s enough space in the current line in case we decide to split the
+        // element and only append a part of it to the current line.
+        // If there isn&#39;t enough space, we simply push the current line, put the element back
+        // on stack and start with a fresh line.
+        </span><span class="kw">if </span>!current_line.is_empty() &amp;&amp; remaining_width &lt;= MIN_FREE_CHARS {
+            elements.push(next);
+            lines.push(current_line);
+            current_line = String::new();
+
+            <span class="kw">continue</span>;
+        }
+
+        <span class="comment">// Ok. There&#39;s still enough space to fit something in (more than MIN_FREE_CHARS characters)
+        // There are two scenarios:
+        //
+        // 1. The word is too long for a single line.
+        //    In this case, we have to split the element anyways. Let&#39;s fill the remaining space on
+        //    the current line with, start a new line and push the remaining part on the stack.
+        // 2. The word is short enough to fit as a whole into a line
+        //    In that case we simply push the current line and start a new one with the current element
+
+        // Case 1
+        // The element is longer than the specified content_width
+        // Split the word, push the remaining string back on the stack
+        </span><span class="kw">if </span>next_length &gt; content_width {
+            <span class="kw">let </span>new_line = current_line.is_empty();
+
+            <span class="comment">// Only add delimiter, if we&#39;re not on a fresh line
+            </span><span class="kw">if </span>!new_line {
+                current_line.push(delimiter);
+                <span class="comment">//remaining_width = remaining_width.saturating_sub(1);
+            </span>}
+
+            <span class="kw">let </span>(<span class="kw-2">mut </span>next, <span class="kw-2">mut </span>remaining) = split_long_word(remaining_width, <span class="kw-2">&amp;</span>next);
+
+            <span class="comment">// TODO: This is a pretty hefty hack, but it&#39;s needed for now.
+            //
+            // Scenario: We try to split a word that doesn&#39;t fit into the current line.
+            // It&#39;s supposed to be a new line, with a width of 1. However, the next char in line
+            // is a multi-character UTF-8 symbol.
+            //
+            // Since a, for instance, two-character wide symbol doesn&#39;t fit into a 1-character
+            // column, this code would loop endlessly. (There&#39;s no legitimate way to split that
+            // word.)
+            // Hence, we have to live with the fact, that this line will look broken, as we put a
+            // two-character wide symbol into it.
+            </span><span class="kw">if </span>new_line &amp;&amp; next.is_empty() {
+                <span class="kw">let </span><span class="kw-2">mut </span>chars = remaining.chars();
+                next.push(chars.next().unwrap());
+                remaining = chars.collect();
+            }
+
+            current_line += <span class="kw-2">&amp;</span>next;
+            elements.push(remaining);
+
+            <span class="comment">// Push the finished line, and start a new one
+            </span>lines.push(current_line);
+            current_line = String::new();
+
+            <span class="kw">continue</span>;
+        }
+
+        <span class="comment">// Case 2
+        // The element fits into a single line.
+        // Push the current line and initialize the next line with the element.
+        </span>lines.push(current_line);
+        current_line = next.to_string();
+        current_line = check_if_full(<span class="kw-2">&amp;mut </span>lines, content_width, current_line);
+    }
+
+    <span class="kw">if </span>!current_line.is_empty() {
+        lines.push(current_line);
+    }
+
+    lines
+}
+
+<span class="doccomment">/// This is the minimum of available characters per line.
+/// It&#39;s used to check, whether another element can be added to the current line.
+/// Otherwise the line will simply be left as it is and we start with a new one.
+/// Two chars seems like a reasonable approach, since this would require next element to be
+/// a single char + delimiter.
+</span><span class="kw">const </span>MIN_FREE_CHARS: usize = <span class="number">2</span>;
+
+<span class="doccomment">/// Check if the current line is too long and whether we should start a new one
+/// If it&#39;s too long, we add the current line to the list of lines and return a new [String].
+/// Otherwise, we simply return the current line and basically don&#39;t do anything.
+</span><span class="kw">fn </span>check_if_full(lines: <span class="kw-2">&amp;mut </span>Vec&lt;String&gt;, content_width: usize, current_line: String) -&gt; String {
+    <span class="comment">// Already complete the current line, if there isn&#39;t space for more than two chars
+    </span><span class="kw">if </span>current_line.width() &gt; content_width.saturating_sub(MIN_FREE_CHARS) {
+        lines.push(current_line);
+        <span class="kw">return </span>String::new();
+    }
+
+    current_line
+}
+
+<span class="doccomment">/// Splits a long word at a given character width.
+/// This needs some special logic, as we have to take multi-character UTF-8 symbols into account.
+/// When simply splitting at a certain char position, we might end up with a string that&#39;s has a
+/// wider display width than allowed.
+</span><span class="kw">fn </span>split_long_word(allowed_width: usize, word: <span class="kw-2">&amp;</span>str) -&gt; (String, String) {
+    <span class="kw">let </span><span class="kw-2">mut </span>current_width = <span class="number">0</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>splitted = String::new();
+
+    <span class="kw">let </span><span class="kw-2">mut </span>char_iter = word.chars().peekable();
+    <span class="comment">// Check if the string might be too long, one character at a time.
+    // Peek into the next char and check the exit condition.
+    // That is, pushing the next character would result in the string being too long.
+    </span><span class="kw">while let </span><span class="prelude-val">Some</span>(c) = char_iter.peek() {
+        <span class="kw">if </span>(current_width + c.width().unwrap_or(<span class="number">1</span>)) &gt; allowed_width {
+            <span class="kw">break</span>;
+        }
+
+        <span class="comment">// We can unwrap, as we just checked that a suitable character is next in line.
+        </span><span class="kw">let </span>c = char_iter.next().unwrap();
+
+        <span class="comment">// We default to 1 char, if the character length cannot be determined.
+        // The user has to live with this, if they decide to add control characters or some fancy
+        // stuff into their tables. This is considered undefined behavior and we try to handle this
+        // to the best of our capabilities.
+        </span><span class="kw">let </span>character_width = c.width().unwrap_or(<span class="number">1</span>);
+
+        current_width += character_width;
+        splitted.push(c);
+    }
+
+    <span class="comment">// Collect the remaining characters.
+    </span><span class="kw">let </span>remaining = char_iter.collect();
+    (splitted, remaining)
+}
+</code></pre></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="comfy_table" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>
