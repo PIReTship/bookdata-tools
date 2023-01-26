@@ -2,64 +2,96 @@ stages:
   scan-interactions:
     cmd: python ../../run.py --rust goodreads scan interactions --csv --book-map ../../data/goodreads/book_id_map.csv ../../data/goodreads/goodreads_interactions.csv
     deps:
-    - ../../src/cli/goodreads
-    - ../../src/goodreads
-    - ../../data/goodreads/book_id_map.csv
-    - ../../data/goodreads/goodreads_interactions.csv
+      - ../../src/cli/goodreads
+      - ../../src/goodreads
+      - ../../data/goodreads/book_id_map.csv
+      - ../../data/goodreads/goodreads_interactions.csv
     outs:
-    - gr-interactions.parquet
+      - gr-interactions.parquet
 
   cluster-actions:
     cmd: python run.py --rust goodreads cluster-interactions --add-actions --simple -o goodreads/simple/gr-cluster-actions.parquet
     wdir: ../..
     deps:
-    - src/cli/goodreads/cluster.rs
-    - goodreads/simple/gr-interactions.parquet
-    - goodreads/gr-book-link.parquet
+      - src/cli/goodreads/cluster.rs
+      - goodreads/simple/gr-interactions.parquet
+      - goodreads/gr-book-link.parquet
     outs:
-    - goodreads/simple/gr-cluster-actions.parquet
+      - goodreads/simple/gr-cluster-actions.parquet
 
   cluster-ratings:
     cmd: python run.py --rust goodreads cluster-interactions --ratings --simple -o goodreads/simple/gr-cluster-ratings.parquet
     wdir: ../..
     deps:
-    - src/cli/goodreads/cluster.rs
-    - goodreads/simple/gr-interactions.parquet
-    - goodreads/gr-book-link.parquet
+      - src/cli/goodreads/cluster.rs
+      - goodreads/simple/gr-interactions.parquet
+      - goodreads/gr-book-link.parquet
     outs:
-    - goodreads/simple/gr-cluster-ratings.parquet
+      - goodreads/simple/gr-cluster-ratings.parquet
+
+  cluster-ratings-5core:
+    cmd: python ../../run.py --rust kcore -o gr-cluster-ratings-5core.parquet gr-cluster-ratings.parquet
+    deps:
+      - gr-cluster-ratings.parquet
+      - ../../src/cli/kcore.rs
+    outs:
+      - gr-cluster-ratings-5core.parquet
+
+  cluster-actions-5core:
+    cmd: python ../../run.py --rust kcore -o gr-cluster-actions-5core.parquet gr-cluster-actions.parquet
+    deps:
+      - gr-cluster-actions.parquet
+      - ../../src/cli/kcore.rs
+    outs:
+      - gr-cluster-actions-5core.parquet
 
   work-actions:
     cmd: python run.py --rust goodreads cluster-interactions --add-actions --simple --native-works -o goodreads/simple/gr-work-actions.parquet
     wdir: ../..
     deps:
-    - src/cli/goodreads/cluster.rs
-    - goodreads/simple/gr-interactions.parquet
-    - goodreads/gr-book-link.parquet
+      - src/cli/goodreads/cluster.rs
+      - goodreads/simple/gr-interactions.parquet
+      - goodreads/gr-book-link.parquet
     outs:
-    - goodreads/simple/gr-work-actions.parquet
+      - goodreads/simple/gr-work-actions.parquet
 
   work-ratings:
     cmd: python run.py --rust goodreads cluster-interactions --ratings --simple --native-works -o goodreads/simple/gr-work-ratings.parquet
     wdir: ../..
     deps:
-    - src/cli/goodreads/cluster.rs
-    - goodreads/simple/gr-interactions.parquet
-    - goodreads/gr-book-link.parquet
+      - src/cli/goodreads/cluster.rs
+      - goodreads/simple/gr-interactions.parquet
+      - goodreads/gr-book-link.parquet
     outs:
-    - goodreads/simple/gr-work-ratings.parquet
+      - goodreads/simple/gr-work-ratings.parquet
+
+  work-ratings-5core:
+    cmd: python ../../run.py --rust kcore -o gr-work-ratings-5core.parquet gr-work-ratings.parquet
+    deps:
+      - gr-work-ratings.parquet
+      - ../../src/cli/kcore.rs
+    outs:
+      - gr-work-ratings-5core.parquet
+
+  work-actions-5core:
+    cmd: python ../../run.py --rust kcore -o gr-work-actions-5core.parquet gr-work-actions.parquet
+    deps:
+      - gr-work-actions.parquet
+      - ../../src/cli/kcore.rs
+    outs:
+      - gr-work-actions-5core.parquet
 
   schema:
     foreach:
-    - gr-interactions
-    - gr-cluster-actions
-    - gr-cluster-ratings
-    - gr-work-actions
-    - gr-work-ratings
+      - gr-interactions
+      - gr-cluster-actions
+      - gr-cluster-ratings
+      - gr-work-actions
+      - gr-work-ratings
     do:
       cmd: python ../../run.py --rust pq-info -o ${item}.json ${item}.parquet
       deps:
-      - ${item}.parquet
+        - ${item}.parquet
       outs:
-      - ${item}.json:
-          cache: false
+        - ${item}.json:
+            cache: false

@@ -13,6 +13,7 @@ pub mod extract_graph;
 pub mod filter_marc;
 pub mod goodreads;
 pub mod index_names;
+pub mod kcore;
 pub mod link_isbns;
 pub mod openlib;
 pub mod pqinfo;
@@ -86,6 +87,7 @@ pub enum RootCommand {
     Goodreads(goodreads::Goodreads),
     /// Commands for working with clusters.
     Cluster(ClusterCommandWrapper),
+    Kcore(kcore::Kcore),
     PQInfo(pqinfo::PQInfo),
     IntegrationStats(stats::IntegrationStats),
 }
