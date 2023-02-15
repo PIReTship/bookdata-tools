@@ -35,6 +35,7 @@ impl Command for Kcore {
         let actions = ParquetReader::new(file).finish()?;
 
         let mut actions = if let Some(y) = self.year {
+            info!("filtering to year {}", y);
             let start = NaiveDate::from_ymd_opt(y, 1, 1).unwrap();
             let start = start.and_hms_opt(0, 0, 0).unwrap().timestamp();
             let end = NaiveDate::from_ymd_opt(y + 1, 1, 1).unwrap();
