@@ -1,5 +1,6 @@
 use std::fs::File;
 
+use chrono::NaiveDate;
 use clap::Args;
 
 use crate::prelude::*;
@@ -12,6 +13,10 @@ pub struct Kcore {
     /// The size of the k-core.
     #[arg(short = 'k', long = "k", default_value_t = 5)]
     k: u32,
+
+    /// Limit to ratings in a particular year.
+    #[arg(long = "year")]
+    year: Option<i32>,
 
     /// The output file.
     #[arg(short = 'o', long = "output", name = "FILE")]
@@ -27,7 +32,21 @@ impl Command for Kcore {
         info!("computing {}-core for {}", self.k, self.input.display());
 
         let file = File::open(&self.input)?;
-        let mut actions = ParquetReader::new(file).finish()?;
+        let actions = ParquetReader::new(file).finish()?;
+
+        let mut actions = if let Some(y) = self.year {
+            let start = NaiveDate::from_ymd_opt(y, 1, 1).unwrap();
+            let start = start.and_hms_opt(0, 0, 0).unwrap().timestamp();
+            let end = NaiveDate::from_ymd_opt(y + 1, 1, 1).unwrap();
+            let end = end.and_hms_opt(0, 0, 0).unwrap().timestamp();
+            // currently hard-coded for goodreads
+            let col = actions.column("last_time")?;
+            let mask = col.gt_eq(start)? & col.lt(end)?;
+            actions.filter(&mask)?
+        } else {
+            actions
+        };
+
         let mut iters = 0;
         // we proceed iteratively, alternating filtering users and items
         loop {
