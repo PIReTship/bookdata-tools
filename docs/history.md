@@ -17,6 +17,7 @@ following:
 
 -   Extract GoodReads author information into {file}`goodreads/gr-author-info.parquet`.
 -   Extract 5-cores of interaction files.
+-   🪲 GoodReads cluster & work rating timestamps were on incorrect scale
 
 ## Book Data 2.1
 

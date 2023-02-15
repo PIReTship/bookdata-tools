@@ -188,7 +188,7 @@ impl ClusterOp {
             SrcType::Full => frame.select(&[
                 col("user_id").alias("user"),
                 self.id_col().alias("item"),
-                (col("updated").cast(DataType::Int64) / lit(1000)).alias("timestamp"),
+                (col("updated").cast(DataType::Int64)).alias("timestamp"),
                 col("rating"),
             ]),
         }
