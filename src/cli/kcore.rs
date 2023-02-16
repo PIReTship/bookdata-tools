@@ -14,6 +14,14 @@ pub struct Kcore {
     #[arg(short = 'k', long = "k", default_value_t = 5)]
     k: u32,
 
+    /// The user rating count for a (ku,ki)-core
+    #[arg(short = 'U', long = "user-k")]
+    user_k: Option<u32>,
+
+    /// The item rating count for a (ku,ki)-core
+    #[arg(short = 'I', long = "item-k")]
+    item_k: Option<u32>,
+
     /// Limit to ratings in a particular year.
     #[arg(long = "year")]
     year: Option<i32>,
@@ -29,7 +37,9 @@ pub struct Kcore {
 
 impl Command for Kcore {
     fn exec(&self) -> Result<()> {
-        info!("computing {}-core for {}", self.k, self.input.display());
+        let uk = self.user_k.unwrap_or(self.k);
+        let ik = self.item_k.unwrap_or(self.k);
+        info!("computing ({},{})-core for {}", uk, ik, self.input.display());
 
         let file = File::open(&self.input)?;
         let actions = ParquetReader::new(file).finish()?;
@@ -58,11 +68,11 @@ impl Command for Kcore {
                 .column("counts")?
                 .min()
                 .ok_or_else(|| anyhow!("data frame is empty"))?;
-            if ic_min < self.k {
+            if ic_min < ik {
                 info!("filtering items (smallest count: {})", ic_min);
                 let ifilt = ics
                     .lazy()
-                    .filter(col("counts").gt_eq(lit(self.k)))
+                    .filter(col("counts").gt_eq(lit(ik)))
                     .select(&[col("item")]);
                 let afilt = actions.lazy().inner_join(ifilt, "item", "item");
                 actions = afilt.collect()?;
@@ -80,11 +90,11 @@ impl Command for Kcore {
                 .column("counts")?
                 .min()
                 .ok_or_else(|| anyhow!("data frame is empty"))?;
-            if uc_min < self.k {
+            if uc_min < uk {
                 info!("filtering users (smallest count: {})", uc_min);
                 let ufilt = ucs
                     .lazy()
-                    .filter(col("counts").gt_eq(lit(self.k)))
+                    .filter(col("counts").gt_eq(lit(uk)))
                     .select(&[col("user")]);
                 let afilt = actions.lazy().inner_join(ufilt, "user", "user");
                 actions = afilt.collect()?;
