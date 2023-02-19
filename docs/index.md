@@ -51,8 +51,7 @@ implementation/index
 papers
 history
 genindex
-audit-clusters
-audit-gender-changes
+reports/index
 Rust API <https://bookdata.piret.info/apidocs/bookdata/index.html>
 GitHub repository <https://github.com/BoiseState/bookdata-tools>
 ```

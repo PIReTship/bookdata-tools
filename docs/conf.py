@@ -50,6 +50,7 @@ templates_path = ['_templates']
 #     '_extra'
 # ]
 
+nb_execution_mode = 'off'
 
 class ChronoSort(BaseSortingStyle):
     def sorting_key(self, entry):
