@@ -18,12 +18,13 @@ release = version
 ogp_site_url = 'https://bookdata.piret.info'
 
 extensions = [
-    'myst_parser',
+    # 'myst_parser',
     'sphinx.ext.githubpages',
     'sphinxcontrib.bibtex',
     # 'sphinxext.opengraph',
     'sphinxcontrib.mermaid',
     'bookdata.sphinx',
+    'myst_nb',
 ]
 
 myst_enable_extensions = [
