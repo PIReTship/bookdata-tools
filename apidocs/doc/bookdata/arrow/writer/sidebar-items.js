@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["BATCH_SIZE",""]],"fn":[["open_parquet_writer","Open a Parquet writer using BookData defaults."],["vec_to_chunk","Convert a vector of records to a chunk."]],"struct":[["TableWriter","Parquet table writer."]]};

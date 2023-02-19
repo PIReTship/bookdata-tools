@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"static":[["MEMINFO",""]],"struct":[["MemInfo","Startup system is expensive, so we do it once"]]};

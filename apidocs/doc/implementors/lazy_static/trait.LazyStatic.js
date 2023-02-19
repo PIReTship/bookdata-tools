@@ -1,0 +1,4 @@
+(function() {var implementors = {
+"bookdata":[["impl <a class=\"trait\" href=\"lazy_static/trait.LazyStatic.html\" title=\"trait lazy_static::LazyStatic\">LazyStatic</a> for <a class=\"struct\" href=\"bookdata/cleaning/isbns/struct.IGNORE_RE.html\" title=\"struct bookdata::cleaning::isbns::IGNORE_RE\">IGNORE_RE</a>"]],
+"colored":[["impl <a class=\"trait\" href=\"lazy_static/trait.LazyStatic.html\" title=\"trait lazy_static::LazyStatic\">LazyStatic</a> for <a class=\"struct\" href=\"colored/control/struct.SHOULD_COLORIZE.html\" title=\"struct colored::control::SHOULD_COLORIZE\">SHOULD_COLORIZE</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

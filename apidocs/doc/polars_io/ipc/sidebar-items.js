@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["IpcCompression","Compression codec"]],"struct":[["BatchedWriter",""],["IpcReader","Read Arrows IPC format into a DataFrame"],["IpcWriter","Write a DataFrame to Arrow’s IPC format"],["IpcWriterOption",""]]};

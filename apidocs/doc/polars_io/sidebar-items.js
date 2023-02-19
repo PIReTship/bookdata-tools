@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["is_cloud_url","Check if the path is a cloud url."]],"mod":[["csv","(De)serializing CSV files"],["export",""],["ipc",""],["mmap",""],["parquet","Reading Apache parquet files."],["predicates",""],["prelude",""]],"struct":[["RowCount",""]],"trait":[["ArrowReader",""],["SerReader",""],["SerWriter",""],["WriterFactory",""]]};

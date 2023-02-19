@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["OUT_FILE",""]],"struct":[["MutableWorkRecordArray",""],["RawWork","Work records as parsed from JSON."],["WorkRecord","Rows in the processed work Parquet table."],["WorkRecordArray",""],["WorkRecordArrayIterator",""],["WorkWriter","Object writer to transform and write GoodReads works"]]};
