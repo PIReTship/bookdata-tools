@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.26.1/src/logical_plan/optimizer/cache_states.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>cache_states.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.27.2/src/logical_plan/optimizer/cache_states.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>cache_states.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -183,10 +183,12 @@
 <a href="#183" id="183">183</a>
 <a href="#184" id="184">184</a>
 <a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::BTreeMap;
 <span class="kw">use </span>std::sync::Arc;
-
-<span class="kw">use </span>polars_core::prelude::PlIndexSet;
 
 <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
@@ -257,14 +259,14 @@
 
             <span class="kw">use </span>ALogicalPlan::<span class="kw-2">*</span>;
             <span class="kw">match </span>lp {
-                <span class="comment">// don&#39;t allow parallelism as caches need eachothers work
+                <span class="comment">// don&#39;t allow parallelism as caches need each others work
                 // also self-referencing plans can deadlock on the files they lock
                 </span>Join { options, .. } <span class="kw">if </span>has_caches &amp;&amp; options.allow_parallel =&gt; {
                     <span class="kw">if let </span>Join { options, .. } = lp_arena.get_mut(current_node) {
                         options.allow_parallel = <span class="bool-val">false</span>;
                     }
                 }
-                <span class="comment">// don&#39;t allow parallelism as caches need eachothers work
+                <span class="comment">// don&#39;t allow parallelism as caches need each others work
                 // also self-referencing plans can deadlock on the files they lock
                 </span>Union { options, .. } <span class="kw">if </span>has_caches &amp;&amp; options.parallel =&gt; {
                     <span class="kw">if let </span>Union { options, .. } = lp_arena.get_mut(current_node) {
@@ -291,13 +293,9 @@
                         // we never want to naively take parents, as a join or aggregate for instance
                         // change the schema
 
-                        </span><span class="kw">let </span>(children, union_names) =
-                            cache_schema_and_children.entry(<span class="kw-2">*</span>id).or_insert_with(|| {
-                                (
-                                    Vec::new(),
-                                    PlIndexSet::with_capacity_and_hasher(<span class="number">0</span>, Default::default()),
-                                )
-                            });
+                        </span><span class="kw">let </span>(children, union_names) = cache_schema_and_children
+                            .entry(<span class="kw-2">*</span>id)
+                            .or_insert_with(|| (Vec::new(), PlHashSet::new()));
                         children.push(<span class="kw-2">*</span>input);
 
                         <span class="kw">if let </span><span class="prelude-val">Some</span>(names) =
@@ -331,18 +329,28 @@
         // and finally remove that last projection and stitch the subplan
         // back to the cache node again
         </span><span class="kw">if </span>!cache_schema_and_children.is_empty() {
-            <span class="kw">let </span>pd = projection_pushdown::ProjectionPushDown {};
+            <span class="kw">let </span><span class="kw-2">mut </span>pd = ProjectionPushDown::new();
             <span class="kw">for </span>(_cache_id, (children, columns)) <span class="kw">in </span>cache_schema_and_children {
                 <span class="kw">if </span>!columns.is_empty() {
-                    <span class="kw">let </span>projection = columns
-                        .into_iter()
-                        .map(|name| expr_arena.add(AExpr::Column(name)))
-                        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-
                     <span class="kw">for </span>child <span class="kw">in </span>children {
+                        <span class="kw">let </span>columns = <span class="kw-2">&amp;</span>columns;
                         <span class="kw">let </span>child_lp = lp_arena.get(child).clone();
-                        <span class="kw">let </span>new_child = lp_arena.add(child_lp);
 
+                        <span class="comment">// make sure we project in the order of the schema
+                        // if we don&#39;t a union may fail as we would project by the
+                        // order we discovered all values.
+                        </span><span class="kw">let </span>child_schema = child_lp.schema(lp_arena);
+                        <span class="kw">let </span>child_schema = child_schema.as_ref();
+                        <span class="kw">let </span>projection: Vec&lt;<span class="kw">_</span>&gt; = child_schema
+                            .iter_names()
+                            .flat_map(|name| {
+                                columns
+                                    .get(name.as_str())
+                                    .map(|name| expr_arena.add(AExpr::Column(name.clone())))
+                            })
+                            .collect();
+
+                        <span class="kw">let </span>new_child = lp_arena.add(child_lp);
                         <span class="kw">let </span>lp = ALogicalPlanBuilder::new(new_child, expr_arena, lp_arena)
                             .project(projection.clone())
                             .build();

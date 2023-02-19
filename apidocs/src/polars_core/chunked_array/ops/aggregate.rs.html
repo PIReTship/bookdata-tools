@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.26.1/src/chunked_array/ops/aggregate.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>aggregate.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.27.2/src/chunked_array/ops/aggregate.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>aggregate.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1417,22 +1417,13 @@
 <a href="#1417" id="1417">1417</a>
 <a href="#1418" id="1418">1418</a>
 <a href="#1419" id="1419">1419</a>
-<a href="#1420" id="1420">1420</a>
-<a href="#1421" id="1421">1421</a>
-<a href="#1422" id="1422">1422</a>
-<a href="#1423" id="1423">1423</a>
-<a href="#1424" id="1424">1424</a>
-<a href="#1425" id="1425">1425</a>
-<a href="#1426" id="1426">1426</a>
-<a href="#1427" id="1427">1427</a>
-<a href="#1428" id="1428">1428</a>
-<a href="#1429" id="1429">1429</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Implementations of the ChunkAgg trait.
 </span><span class="kw">use </span>std::cmp::Ordering;
 <span class="kw">use </span>std::ops::Add;
 
 <span class="kw">use </span>arrow::compute;
 <span class="kw">use </span>arrow::types::simd::Simd;
+<span class="kw">use </span>arrow::types::NativeType;
 <span class="kw">use </span>num::{Float, ToPrimitive};
 <span class="kw">use </span>polars_arrow::kernels::rolling::{compare_fn_nan_max, compare_fn_nan_min};
 <span class="kw">use </span>polars_arrow::prelude::QuantileInterpolOptions;
@@ -1481,6 +1472,53 @@
     ) -&gt; PolarsResult&lt;Series&gt;;
 }
 
+<span class="kw">fn </span>sum_float_unaligned_slice&lt;T: NumericNative&gt;(values: <span class="kw-2">&amp;</span>[T]) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
+    <span class="prelude-val">Some</span>(values.iter().copied().sum())
+}
+
+<span class="kw">fn </span>sum_float_unaligned&lt;T: NumericNative&gt;(array: <span class="kw-2">&amp;</span>PrimitiveArray&lt;T&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
+    <span class="kw">if </span>array.len() == <span class="number">0 </span>{
+        <span class="kw">return </span><span class="prelude-val">Some</span>(T::zero());
+    }
+    <span class="kw">if </span>array.null_count() == array.len() {
+        <span class="kw">return </span><span class="prelude-val">None</span>;
+    }
+    <span class="prelude-val">Some</span>(array.into_iter().flatten().copied().sum())
+}
+
+<span class="doccomment">/// Floating point arithmetic is non-associative.
+/// The simd chunks are determined by memory location
+/// e.g.
+///
+/// |HEAD|  - | SIMD | - |TAIL|
+///
+/// The SIMD chunks have a certain alignment and depending of the start of the buffer
+/// head and tail may have different sizes, making a sum non-deterministic for the same
+/// values but different memory locations
+</span><span class="kw">fn </span>stable_sum&lt;T: NumericNative + NativeType&gt;(array: <span class="kw-2">&amp;</span>PrimitiveArray&lt;T&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt;
+<span class="kw">where
+    </span>T: NumericNative + NativeType,
+    &lt;T <span class="kw">as </span>Simd&gt;::Simd: Add&lt;Output = &lt;T <span class="kw">as </span>Simd&gt;::Simd&gt;
+        + compute::aggregate::Sum&lt;T&gt;
+        + compute::aggregate::SimdOrd&lt;T&gt;,
+{
+    <span class="kw">if </span>T::is_float() {
+        <span class="kw">use </span>arrow::types::simd::NativeSimd;
+        <span class="kw">let </span>values = array.values().as_slice();
+        <span class="kw">let </span>(a, <span class="kw">_</span>, <span class="kw">_</span>) = &lt;T <span class="kw">as </span>Simd&gt;::Simd::align(values);
+        <span class="comment">// we only choose SIMD path if buffer is aligned to SIMD
+        </span><span class="kw">if </span>a.is_empty() {
+            compute::aggregate::sum_primitive(array)
+        } <span class="kw">else if </span>array.null_count() == <span class="number">0 </span>{
+            sum_float_unaligned_slice(values)
+        } <span class="kw">else </span>{
+            sum_float_unaligned(array)
+        }
+    } <span class="kw">else </span>{
+        compute::aggregate::sum_primitive(array)
+    }
+}
+
 <span class="kw">impl</span>&lt;T&gt; ChunkAgg&lt;T::Native&gt; <span class="kw">for </span>ChunkedArray&lt;T&gt;
 <span class="kw">where
     </span>T: PolarsNumericType,
@@ -1490,7 +1528,7 @@
 {
     <span class="kw">fn </span>sum(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;T::Native&gt; {
         <span class="self">self</span>.downcast_iter()
-            .map(compute::aggregate::sum_primitive)
+            .map(stable_sum)
             .fold(<span class="prelude-val">None</span>, |acc, v| <span class="kw">match </span>v {
                 <span class="prelude-val">Some</span>(v) =&gt; <span class="kw">match </span>acc {
                     <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Some</span>(v),
@@ -1501,7 +1539,7 @@
     }
 
     <span class="kw">fn </span>min(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;T::Native&gt; {
-        <span class="kw">match </span><span class="self">self</span>.is_sorted2() {
+        <span class="kw">match </span><span class="self">self</span>.is_sorted_flag2() {
             IsSorted::Ascending =&gt; {
                 <span class="self">self</span>.first_non_null().and_then(|idx| {
                     <span class="comment">// Safety:
@@ -1530,7 +1568,7 @@
     }
 
     <span class="kw">fn </span>max(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;T::Native&gt; {
-        <span class="kw">match </span><span class="self">self</span>.is_sorted2() {
+        <span class="kw">match </span><span class="self">self</span>.is_sorted_flag2() {
             IsSorted::Ascending =&gt; {
                 <span class="self">self</span>.last_non_null().and_then(|idx| {
                     <span class="comment">// Safety:
@@ -2181,7 +2219,7 @@
 
 <span class="kw">impl </span>Utf8Chunked {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>max_str(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt; {
-        <span class="kw">match </span><span class="self">self</span>.is_sorted2() {
+        <span class="kw">match </span><span class="self">self</span>.is_sorted_flag2() {
             IsSorted::Ascending =&gt; <span class="self">self</span>.get(<span class="self">self</span>.len() - <span class="number">1</span>),
             IsSorted::Descending =&gt; <span class="self">self</span>.get(<span class="number">0</span>),
             IsSorted::Not =&gt; <span class="self">self
@@ -2191,7 +2229,7 @@
         }
     }
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>min_str(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt; {
-        <span class="kw">match </span><span class="self">self</span>.is_sorted2() {
+        <span class="kw">match </span><span class="self">self</span>.is_sorted_flag2() {
             IsSorted::Ascending =&gt; <span class="self">self</span>.get(<span class="number">0</span>),
             IsSorted::Descending =&gt; <span class="self">self</span>.get(<span class="self">self</span>.len() - <span class="number">1</span>),
             IsSorted::Not =&gt; <span class="self">self
@@ -2253,64 +2291,6 @@
 
 <span class="attr">#[cfg(feature = <span class="string">&quot;object&quot;</span>)]
 </span><span class="kw">impl</span>&lt;T: PolarsObject&gt; ChunkAggSeries <span class="kw">for </span>ObjectChunked&lt;T&gt; {}
-
-<span class="kw">impl</span>&lt;T&gt; ArgAgg <span class="kw">for </span>ChunkedArray&lt;T&gt;
-<span class="kw">where
-    </span>T: PolarsNumericType,
-{
-    <span class="kw">fn </span>arg_min(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
-        <span class="kw">match </span><span class="self">self</span>.is_sorted2() {
-            IsSorted::Ascending =&gt; <span class="prelude-val">Some</span>(<span class="number">0</span>),
-            IsSorted::Descending =&gt; <span class="prelude-val">Some</span>(<span class="self">self</span>.len()),
-            IsSorted::Not =&gt; <span class="self">self
-                </span>.into_iter()
-                .enumerate()
-                .reduce(|acc, (idx, val)| <span class="kw">if </span>acc.<span class="number">1 </span>&gt; val { (idx, val) } <span class="kw">else </span>{ acc })
-                .map(|tpl| tpl.<span class="number">0</span>),
-        }
-    }
-    <span class="kw">fn </span>arg_max(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
-        <span class="kw">match </span><span class="self">self</span>.is_sorted2() {
-            IsSorted::Ascending =&gt; <span class="prelude-val">Some</span>(<span class="self">self</span>.len()),
-            IsSorted::Descending =&gt; <span class="prelude-val">Some</span>(<span class="number">0</span>),
-            IsSorted::Not =&gt; <span class="self">self
-                </span>.into_iter()
-                .enumerate()
-                .reduce(|acc, (idx, val)| <span class="kw">if </span>acc.<span class="number">1 </span>&lt; val { (idx, val) } <span class="kw">else </span>{ acc })
-                .map(|tpl| tpl.<span class="number">0</span>),
-        }
-    }
-}
-
-<span class="kw">impl </span>ArgAgg <span class="kw">for </span>BooleanChunked {
-    <span class="kw">fn </span>arg_min(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
-        <span class="kw">if </span><span class="self">self</span>.is_empty() || <span class="self">self</span>.null_count() == <span class="self">self</span>.len() {
-            <span class="prelude-val">None
-        </span>} <span class="kw">else if </span><span class="self">self</span>.all() {
-            <span class="prelude-val">Some</span>(<span class="number">0</span>)
-        } <span class="kw">else </span>{
-            <span class="self">self</span>.into_iter()
-                .position(|opt_val| <span class="macro">matches!</span>(opt_val, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>)))
-        }
-    }
-    <span class="kw">fn </span>arg_max(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
-        <span class="kw">if </span><span class="self">self</span>.is_empty() || <span class="self">self</span>.null_count() == <span class="self">self</span>.len() {
-            <span class="prelude-val">None
-        </span>} <span class="kw">else if </span><span class="self">self</span>.any() {
-            <span class="self">self</span>.into_iter()
-                .position(|opt_val| <span class="macro">matches!</span>(opt_val, <span class="prelude-val">Some</span>(<span class="bool-val">true</span>)))
-        } <span class="kw">else </span>{
-            <span class="prelude-val">Some</span>(<span class="number">0</span>)
-        }
-    }
-}
-<span class="kw">impl </span>ArgAgg <span class="kw">for </span>Utf8Chunked {}
-<span class="attr">#[cfg(feature = <span class="string">&quot;dtype-binary&quot;</span>)]
-</span><span class="kw">impl </span>ArgAgg <span class="kw">for </span>BinaryChunked {}
-<span class="kw">impl </span>ArgAgg <span class="kw">for </span>ListChunked {}
-
-<span class="attr">#[cfg(feature = <span class="string">&quot;object&quot;</span>)]
-</span><span class="kw">impl</span>&lt;T: PolarsObject&gt; ArgAgg <span class="kw">for </span>ObjectChunked&lt;T&gt; {}
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {

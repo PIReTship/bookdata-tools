@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-io-0.26.1/src/parquet/mmap.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mmap.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../polars_io/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-io-0.27.2/src/parquet/mmap.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mmap.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../polars_io/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -56,32 +56,94 @@
 <a href="#56" id="56">56</a>
 <a href="#57" id="57">57</a>
 <a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
 </pre><pre class="rust"><code><span class="kw">use </span>arrow::datatypes::Field;
 <span class="kw">use </span>arrow::io::parquet::read::{
     column_iter_to_arrays, get_field_columns, ArrayIter, BasicDecompressor, ColumnChunkMetaData,
     PageReader,
 };
+<span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+</span><span class="kw">use </span>polars_core::datatypes::PlHashMap;
 
 <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-<span class="doccomment">/// memory maps all columns that are part of the parquet field `field_name`
+<span class="doccomment">/// Store columns data in two scenarios:
+/// 1. a local memory mapped file
+/// 2. data fetched from cloud storage on demand, in this case
+///     a. the key in the hashmap is the start in the file
+///     b. the value in the hashmap is the actual data.
+///
+/// For the fetched case we use a two phase approach:
+///    a. identify all the needed columns
+///    b. asynchronously fetch them in parallel, for example using object_store
+///    c. store the data in this data structure
+///    d. when all the data is available deserialize on multiple threads, for example using rayon
+</span><span class="kw">pub enum </span>ColumnStore&lt;<span class="lifetime">&#39;a</span>&gt; {
+    Local(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]),
+    <span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+    </span>Fetched(PlHashMap&lt;u64, Vec&lt;u8&gt;&gt;),
+}
+
+<span class="doccomment">/// For local files memory maps all columns that are part of the parquet field `field_name`.
+/// For cloud files the relevant memory regions should have been prefetched.
 </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>mmap_columns&lt;<span class="lifetime">&#39;a</span>&gt;(
-    file: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8],
+    store: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ColumnStore,
     columns: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[ColumnChunkMetaData],
     field_name: <span class="kw-2">&amp;</span>str,
 ) -&gt; Vec&lt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ColumnChunkMetaData, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8])&gt; {
     get_field_columns(columns, field_name)
         .into_iter()
-        .map(|meta| _mmap_single_column(file, meta))
+        .map(|meta| _mmap_single_column(store, meta))
         .collect()
 }
 
 <span class="kw">fn </span>_mmap_single_column&lt;<span class="lifetime">&#39;a</span>&gt;(
-    file: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8],
+    store: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ColumnStore,
     meta: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ColumnChunkMetaData,
 ) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ColumnChunkMetaData, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]) {
     <span class="kw">let </span>(start, len) = meta.byte_range();
-    <span class="kw">let </span>chunk = <span class="kw-2">&amp;</span>file[start <span class="kw">as </span>usize..(start + len) <span class="kw">as </span>usize];
+    <span class="kw">let </span>chunk = <span class="kw">match </span>store {
+        ColumnStore::Local(file) =&gt; <span class="kw-2">&amp;</span>file[start <span class="kw">as </span>usize..(start + len) <span class="kw">as </span>usize],
+        <span class="attr">#[cfg(all(feature = <span class="string">&quot;async&quot;</span>, feature = <span class="string">&quot;parquet&quot;</span>))]
+        </span>ColumnStore::Fetched(fetched) =&gt; {
+            <span class="kw">let </span>entry = fetched.get(<span class="kw-2">&amp;</span>start).unwrap_or_else(|| {
+                <span class="macro">panic!</span>(
+                    <span class="string">&quot;mmap_columns: column with start {start} must be prefetched in ColumnStore.\n&quot;
+                </span>)
+            });
+            entry.as_slice()
+        }
+    };
     (meta, chunk)
 }
 

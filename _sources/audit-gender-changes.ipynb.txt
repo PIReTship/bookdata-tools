@@ -1,0 +1,1604 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "587dc7e2",
+   "metadata": {},
+   "source": [
+    "# Book Data Audit\n",
+    "\n",
+    "This notebook audits for significant changes in cluster gender annotations, to allow us to detect the significance of shifts over time.  It depends on the aligned cluster identities in `isbn-version-clusters.parquet`."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "1b28c7e1",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:02.607585Z",
+     "iopub.status.busy": "2023-02-19T00:00:02.607409Z",
+     "iopub.status.idle": "2023-02-19T00:00:02.612061Z",
+     "shell.execute_reply": "2023-02-19T00:00:02.611654Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "from pathlib import Path\n",
+    "from functools import reduce"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "dbea72a8",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:02.613620Z",
+     "iopub.status.busy": "2023-02-19T00:00:02.613480Z",
+     "iopub.status.idle": "2023-02-19T00:00:03.035018Z",
+     "shell.execute_reply": "2023-02-19T00:00:03.034549Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "import polars as pl\n",
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "849f65ef",
+   "metadata": {},
+   "source": [
+    "## Load Data\n",
+    "\n",
+    "Define the versions we care about:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "49c9c5a6",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:03.036723Z",
+     "iopub.status.busy": "2023-02-19T00:00:03.036556Z",
+     "iopub.status.idle": "2023-02-19T00:00:03.038848Z",
+     "shell.execute_reply": "2023-02-19T00:00:03.038539Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "versions = ['pgsql', '2022-03-2.0', '2022-07', '2022-10', '2022-11-2.1', 'current']"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b944e7f6",
+   "metadata": {},
+   "source": [
+    "Load the aligned ISBNs:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "39148cce",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:03.040264Z",
+     "iopub.status.busy": "2023-02-19T00:00:03.040114Z",
+     "iopub.status.idle": "2023-02-19T00:00:09.439906Z",
+     "shell.execute_reply": "2023-02-19T00:00:09.439462Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'pandas.core.frame.DataFrame'>\n",
+      "RangeIndex: 33538726 entries, 0 to 33538725\n",
+      "Data columns (total 8 columns):\n",
+      " #   Column       Dtype  \n",
+      "---  ------       -----  \n",
+      " 0   isbn         object \n",
+      " 1   isbn_id      int32  \n",
+      " 2   current      float64\n",
+      " 3   2022-11-2.1  float64\n",
+      " 4   2022-10      float64\n",
+      " 5   2022-07      float64\n",
+      " 6   2022-03-2.0  float64\n",
+      " 7   pgsql        float64\n",
+      "dtypes: float64(6), int32(1), object(1)\n",
+      "memory usage: 1.9+ GB\n"
+     ]
+    }
+   ],
+   "source": [
+    "isbn_clusters = pd.read_parquet('isbn-version-clusters.parquet')\n",
+    "isbn_clusters.info()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "ac0b6be0",
+   "metadata": {},
+   "source": [
+    "## Different Genders\n",
+    "\n",
+    "How many clusters changed gender?\n",
+    "\n",
+    "To get started, we need a list of genders in order."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "07027867",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:09.441380Z",
+     "iopub.status.busy": "2023-02-19T00:00:09.441253Z",
+     "iopub.status.idle": "2023-02-19T00:00:09.443604Z",
+     "shell.execute_reply": "2023-02-19T00:00:09.443198Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "genders = [\n",
+    "    'ambiguous', 'female', 'male', 'unknown',\n",
+    "    'no-author-rec', 'no-book-author', 'no-book', 'absent'\n",
+    "]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4a31cafd",
+   "metadata": {},
+   "source": [
+    "Let's make a function to read gender info:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "987eeac3",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:09.444932Z",
+     "iopub.status.busy": "2023-02-19T00:00:09.444814Z",
+     "iopub.status.idle": "2023-02-19T00:00:09.448093Z",
+     "shell.execute_reply": "2023-02-19T00:00:09.447702Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "def read_gender(path, map_file=None):\n",
+    "    cg = pl.scan_parquet(path)\n",
+    "    cg = cg.select([\n",
+    "        pl.col('cluster').cast(pl.Int32),\n",
+    "        pl.when(pl.col('gender') == 'no-loc-author')\n",
+    "            .then('no-book-author')\n",
+    "            .when(pl.col('gender') == 'no-viaf-author')\n",
+    "            .then('no-author-rec')\n",
+    "            .otherwise(pl.col('gender'))\n",
+    "            .cast(pl.Categorical)\n",
+    "            .alias('gender')\n",
+    "    ])\n",
+    "    if map_file is not None:\n",
+    "        map = pl.scan_parquet(map_file)\n",
+    "        cg = cg.join(map, on='cluster', how='left')\n",
+    "        cg = cg.select([\n",
+    "            pl.col('common').alias('cluster'),\n",
+    "            pl.col('gender')\n",
+    "        ])\n",
+    "    return cg"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "a7464430",
+   "metadata": {},
+   "source": [
+    "Read each data source's gender info and map to common cluster IDs:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "8b5f4835",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:09.449394Z",
+     "iopub.status.busy": "2023-02-19T00:00:09.449277Z",
+     "iopub.status.idle": "2023-02-19T00:00:09.453202Z",
+     "shell.execute_reply": "2023-02-19T00:00:09.452874Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "gender_cc = {\n",
+    "    v: read_gender(f'{v}/cluster-genders.parquet', f'cluster-map-{v}.parquet')\n",
+    "    for v in versions if v != 'current'\n",
+    "}\n",
+    "gender_cc['current'] = read_gender('../book-links/cluster-genders.parquet')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1160ec59",
+   "metadata": {},
+   "source": [
+    "Set up a sequence of frames for merging:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "565c59ad",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:09.454502Z",
+     "iopub.status.busy": "2023-02-19T00:00:09.454383Z",
+     "iopub.status.idle": "2023-02-19T00:00:09.456945Z",
+     "shell.execute_reply": "2023-02-19T00:00:09.456526Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/tmp/ipykernel_177756/102152750.py:5: DeprecationWarning: All arguments of LazyFrame.unique except for 'subset' will be keyword-only in the next breaking release. Use keyword arguments to silence this warning.\n",
+      "  ]).unique(False)\n"
+     ]
+    }
+   ],
+   "source": [
+    "to_merge = [\n",
+    "    gender_cc[v].select([\n",
+    "        pl.col('cluster'),\n",
+    "        pl.col('gender').alias(v)\n",
+    "    ]).unique(False)\n",
+    "    for v in versions\n",
+    "]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4dfeddb9",
+   "metadata": {},
+   "source": [
+    "Merge and collect results:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "6223359f",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:09.458301Z",
+     "iopub.status.busy": "2023-02-19T00:00:09.458182Z",
+     "iopub.status.idle": "2023-02-19T00:00:51.597092Z",
+     "shell.execute_reply": "2023-02-19T00:00:51.596609Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "cluster_genders = reduce(lambda df1, df2: df1.join(df2, on='cluster', how='outer'), to_merge)\n",
+    "cluster_genders = cluster_genders.collect()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9c088042",
+   "metadata": {},
+   "source": [
+    "For unclear reasons, a few versions have a null cluster. Drop that."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "cc910f9c",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:51.598904Z",
+     "iopub.status.busy": "2023-02-19T00:00:51.598718Z",
+     "iopub.status.idle": "2023-02-19T00:00:51.683731Z",
+     "shell.execute_reply": "2023-02-19T00:00:51.683266Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "cluster_genders = cluster_genders.filter(cluster_genders['cluster'].is_not_null())"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b52538cc",
+   "metadata": {},
+   "source": [
+    "Now we will convert to Pandas and fix missing values:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "3fd4d597",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:51.685425Z",
+     "iopub.status.busy": "2023-02-19T00:00:51.685295Z",
+     "iopub.status.idle": "2023-02-19T00:00:53.567235Z",
+     "shell.execute_reply": "2023-02-19T00:00:53.566780Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "cluster_genders = cluster_genders.to_pandas().set_index('cluster')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9e50ee46",
+   "metadata": {},
+   "source": [
+    "Now we'll unify the categories and their orders:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "3c77f068",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:53.568843Z",
+     "iopub.status.busy": "2023-02-19T00:00:53.568691Z",
+     "iopub.status.idle": "2023-02-19T00:00:55.171392Z",
+     "shell.execute_reply": "2023-02-19T00:00:55.170906Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>pgsql</th>\n",
+       "      <th>2022-03-2.0</th>\n",
+       "      <th>2022-07</th>\n",
+       "      <th>2022-10</th>\n",
+       "      <th>2022-11-2.1</th>\n",
+       "      <th>current</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>cluster</th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>100295920</th>\n",
+       "      <td>absent</td>\n",
+       "      <td>absent</td>\n",
+       "      <td>absent</td>\n",
+       "      <td>absent</td>\n",
+       "      <td>absent</td>\n",
+       "      <td>no-book-author</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>104940568</th>\n",
+       "      <td>absent</td>\n",
+       "      <td>absent</td>\n",
+       "      <td>absent</td>\n",
+       "      <td>absent</td>\n",
+       "      <td>absent</td>\n",
+       "      <td>no-book-author</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>111941464</th>\n",
+       "      <td>no-book-author</td>\n",
+       "      <td>no-book-author</td>\n",
+       "      <td>no-book-author</td>\n",
+       "      <td>no-book-author</td>\n",
+       "      <td>no-book-author</td>\n",
+       "      <td>no-book-author</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>111382792</th>\n",
+       "      <td>absent</td>\n",
+       "      <td>absent</td>\n",
+       "      <td>male</td>\n",
+       "      <td>male</td>\n",
+       "      <td>male</td>\n",
+       "      <td>male</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>111322664</th>\n",
+       "      <td>male</td>\n",
+       "      <td>male</td>\n",
+       "      <td>male</td>\n",
+       "      <td>male</td>\n",
+       "      <td>male</td>\n",
+       "      <td>male</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                    pgsql     2022-03-2.0         2022-07         2022-10  \\\n",
+       "cluster                                                                     \n",
+       "100295920          absent          absent          absent          absent   \n",
+       "104940568          absent          absent          absent          absent   \n",
+       "111941464  no-book-author  no-book-author  no-book-author  no-book-author   \n",
+       "111382792          absent          absent            male            male   \n",
+       "111322664            male            male            male            male   \n",
+       "\n",
+       "              2022-11-2.1         current  \n",
+       "cluster                                    \n",
+       "100295920          absent  no-book-author  \n",
+       "104940568          absent  no-book-author  \n",
+       "111941464  no-book-author  no-book-author  \n",
+       "111382792            male            male  \n",
+       "111322664            male            male  "
+      ]
+     },
+     "execution_count": 12,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "cluster_genders = cluster_genders.apply(lambda vdf: vdf.cat.set_categories(genders, ordered=True))\n",
+    "cluster_genders.fillna('absent', inplace=True)\n",
+    "cluster_genders.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "80b82832",
+   "metadata": {},
+   "source": [
+    "Let's save this file for further analysis:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "f51d6a78",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:55.172903Z",
+     "iopub.status.busy": "2023-02-19T00:00:55.172757Z",
+     "iopub.status.idle": "2023-02-19T00:00:57.780590Z",
+     "shell.execute_reply": "2023-02-19T00:00:57.780091Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "cluster_genders.to_parquet('cluster-version-genders.parquet', compression='zstd')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "15d2fca7",
+   "metadata": {},
+   "source": [
+    "## PostgreSQL to Current\n",
+    "\n",
+    "Now we are ready to actually compare cluster genders across categories. Let's start by comparing original data (PostgreSQL) to current:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "id": "218ab485",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:57.782505Z",
+     "iopub.status.busy": "2023-02-19T00:00:57.782352Z",
+     "iopub.status.idle": "2023-02-19T00:00:58.245702Z",
+     "shell.execute_reply": "2023-02-19T00:00:58.245217Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th>current</th>\n",
+       "      <th>ambiguous</th>\n",
+       "      <th>female</th>\n",
+       "      <th>male</th>\n",
+       "      <th>unknown</th>\n",
+       "      <th>no-author-rec</th>\n",
+       "      <th>no-book-author</th>\n",
+       "      <th>no-book</th>\n",
+       "      <th>absent</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>pgsql</th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>ambiguous</th>\n",
+       "      <td>102786.0</td>\n",
+       "      <td>4575.0</td>\n",
+       "      <td>10492.0</td>\n",
+       "      <td>1788.0</td>\n",
+       "      <td>980.0</td>\n",
+       "      <td>11.0</td>\n",
+       "      <td>4.0</td>\n",
+       "      <td>3572.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>female</th>\n",
+       "      <td>13035.0</td>\n",
+       "      <td>1136097.0</td>\n",
+       "      <td>828.0</td>\n",
+       "      <td>10107.0</td>\n",
+       "      <td>9856.0</td>\n",
+       "      <td>6.0</td>\n",
+       "      <td>30.0</td>\n",
+       "      <td>24152.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>male</th>\n",
+       "      <td>23550.0</td>\n",
+       "      <td>2868.0</td>\n",
+       "      <td>3515645.0</td>\n",
+       "      <td>16026.0</td>\n",
+       "      <td>31682.0</td>\n",
+       "      <td>307.0</td>\n",
+       "      <td>138.0</td>\n",
+       "      <td>55000.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>unknown</th>\n",
+       "      <td>1994.0</td>\n",
+       "      <td>80654.0</td>\n",
+       "      <td>168137.0</td>\n",
+       "      <td>1617551.0</td>\n",
+       "      <td>19640.0</td>\n",
+       "      <td>391.0</td>\n",
+       "      <td>12.0</td>\n",
+       "      <td>11996.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>no-author-rec</th>\n",
+       "      <td>9693.0</td>\n",
+       "      <td>55447.0</td>\n",
+       "      <td>319211.0</td>\n",
+       "      <td>226357.0</td>\n",
+       "      <td>1413416.0</td>\n",
+       "      <td>319.0</td>\n",
+       "      <td>121.0</td>\n",
+       "      <td>11130.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>no-book-author</th>\n",
+       "      <td>6285.0</td>\n",
+       "      <td>93743.0</td>\n",
+       "      <td>181627.0</td>\n",
+       "      <td>111842.0</td>\n",
+       "      <td>177687.0</td>\n",
+       "      <td>2533809.0</td>\n",
+       "      <td>950180.0</td>\n",
+       "      <td>258900.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>no-book</th>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>absent</th>\n",
+       "      <td>60682.0</td>\n",
+       "      <td>542445.0</td>\n",
+       "      <td>1162935.0</td>\n",
+       "      <td>426157.0</td>\n",
+       "      <td>1694301.0</td>\n",
+       "      <td>14981046.0</td>\n",
+       "      <td>790979.0</td>\n",
+       "      <td>1752.0</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "current         ambiguous     female       male    unknown  no-author-rec  \\\n",
+       "pgsql                                                                       \n",
+       "ambiguous        102786.0     4575.0    10492.0     1788.0          980.0   \n",
+       "female            13035.0  1136097.0      828.0    10107.0         9856.0   \n",
+       "male              23550.0     2868.0  3515645.0    16026.0        31682.0   \n",
+       "unknown            1994.0    80654.0   168137.0  1617551.0        19640.0   \n",
+       "no-author-rec      9693.0    55447.0   319211.0   226357.0      1413416.0   \n",
+       "no-book-author     6285.0    93743.0   181627.0   111842.0       177687.0   \n",
+       "no-book               NaN        NaN        NaN        NaN            NaN   \n",
+       "absent            60682.0   542445.0  1162935.0   426157.0      1694301.0   \n",
+       "\n",
+       "current         no-book-author   no-book    absent  \n",
+       "pgsql                                               \n",
+       "ambiguous                 11.0       4.0    3572.0  \n",
+       "female                     6.0      30.0   24152.0  \n",
+       "male                     307.0     138.0   55000.0  \n",
+       "unknown                  391.0      12.0   11996.0  \n",
+       "no-author-rec            319.0     121.0   11130.0  \n",
+       "no-book-author       2533809.0  950180.0  258900.0  \n",
+       "no-book                    NaN       NaN       NaN  \n",
+       "absent              14981046.0  790979.0    1752.0  "
+      ]
+     },
+     "execution_count": 14,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "ct = cluster_genders[['pgsql', 'current']].value_counts().unstack()\n",
+    "ct = ct.reindex(labels=genders, columns=genders)\n",
+    "ct"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "id": "c4ddb1cb",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:58.247244Z",
+     "iopub.status.busy": "2023-02-19T00:00:58.247061Z",
+     "iopub.status.idle": "2023-02-19T00:00:58.282158Z",
+     "shell.execute_reply": "2023-02-19T00:00:58.281787Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<style type=\"text/css\">\n",
+       "#T_c1f7a_row0_col0, #T_c1f7a_row1_col1, #T_c1f7a_row2_col2, #T_c1f7a_row3_col3, #T_c1f7a_row4_col4, #T_c1f7a_row5_col5, #T_c1f7a_row6_col6, #T_c1f7a_row7_col7 {\n",
+       "  font-weight: bold;\n",
+       "}\n",
+       "#T_c1f7a_row4_col2, #T_c1f7a_row4_col3, #T_c1f7a_row5_col6, #T_c1f7a_row7_col5 {\n",
+       "  color: red;\n",
+       "}\n",
+       "</style>\n",
+       "<table id=\"T_c1f7a\">\n",
+       "  <thead>\n",
+       "    <tr>\n",
+       "      <th class=\"index_name level0\" >current</th>\n",
+       "      <th id=\"T_c1f7a_level0_col0\" class=\"col_heading level0 col0\" >ambiguous</th>\n",
+       "      <th id=\"T_c1f7a_level0_col1\" class=\"col_heading level0 col1\" >female</th>\n",
+       "      <th id=\"T_c1f7a_level0_col2\" class=\"col_heading level0 col2\" >male</th>\n",
+       "      <th id=\"T_c1f7a_level0_col3\" class=\"col_heading level0 col3\" >unknown</th>\n",
+       "      <th id=\"T_c1f7a_level0_col4\" class=\"col_heading level0 col4\" >no-author-rec</th>\n",
+       "      <th id=\"T_c1f7a_level0_col5\" class=\"col_heading level0 col5\" >no-book-author</th>\n",
+       "      <th id=\"T_c1f7a_level0_col6\" class=\"col_heading level0 col6\" >no-book</th>\n",
+       "      <th id=\"T_c1f7a_level0_col7\" class=\"col_heading level0 col7\" >absent</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th class=\"index_name level0\" >pgsql</th>\n",
+       "      <th class=\"blank col0\" >&nbsp;</th>\n",
+       "      <th class=\"blank col1\" >&nbsp;</th>\n",
+       "      <th class=\"blank col2\" >&nbsp;</th>\n",
+       "      <th class=\"blank col3\" >&nbsp;</th>\n",
+       "      <th class=\"blank col4\" >&nbsp;</th>\n",
+       "      <th class=\"blank col5\" >&nbsp;</th>\n",
+       "      <th class=\"blank col6\" >&nbsp;</th>\n",
+       "      <th class=\"blank col7\" >&nbsp;</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th id=\"T_c1f7a_level0_row0\" class=\"row_heading level0 row0\" >ambiguous</th>\n",
+       "      <td id=\"T_c1f7a_row0_col0\" class=\"data row0 col0\" >0.827531</td>\n",
+       "      <td id=\"T_c1f7a_row0_col1\" class=\"data row0 col1\" >0.036833</td>\n",
+       "      <td id=\"T_c1f7a_row0_col2\" class=\"data row0 col2\" >0.084471</td>\n",
+       "      <td id=\"T_c1f7a_row0_col3\" class=\"data row0 col3\" >0.014395</td>\n",
+       "      <td id=\"T_c1f7a_row0_col4\" class=\"data row0 col4\" >0.007890</td>\n",
+       "      <td id=\"T_c1f7a_row0_col5\" class=\"data row0 col5\" >0.000089</td>\n",
+       "      <td id=\"T_c1f7a_row0_col6\" class=\"data row0 col6\" >0.000032</td>\n",
+       "      <td id=\"T_c1f7a_row0_col7\" class=\"data row0 col7\" >0.028758</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_c1f7a_level0_row1\" class=\"row_heading level0 row1\" >female</th>\n",
+       "      <td id=\"T_c1f7a_row1_col0\" class=\"data row1 col0\" >0.010916</td>\n",
+       "      <td id=\"T_c1f7a_row1_col1\" class=\"data row1 col1\" >0.951417</td>\n",
+       "      <td id=\"T_c1f7a_row1_col2\" class=\"data row1 col2\" >0.000693</td>\n",
+       "      <td id=\"T_c1f7a_row1_col3\" class=\"data row1 col3\" >0.008464</td>\n",
+       "      <td id=\"T_c1f7a_row1_col4\" class=\"data row1 col4\" >0.008254</td>\n",
+       "      <td id=\"T_c1f7a_row1_col5\" class=\"data row1 col5\" >0.000005</td>\n",
+       "      <td id=\"T_c1f7a_row1_col6\" class=\"data row1 col6\" >0.000025</td>\n",
+       "      <td id=\"T_c1f7a_row1_col7\" class=\"data row1 col7\" >0.020226</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_c1f7a_level0_row2\" class=\"row_heading level0 row2\" >male</th>\n",
+       "      <td id=\"T_c1f7a_row2_col0\" class=\"data row2 col0\" >0.006461</td>\n",
+       "      <td id=\"T_c1f7a_row2_col1\" class=\"data row2 col1\" >0.000787</td>\n",
+       "      <td id=\"T_c1f7a_row2_col2\" class=\"data row2 col2\" >0.964455</td>\n",
+       "      <td id=\"T_c1f7a_row2_col3\" class=\"data row2 col3\" >0.004396</td>\n",
+       "      <td id=\"T_c1f7a_row2_col4\" class=\"data row2 col4\" >0.008691</td>\n",
+       "      <td id=\"T_c1f7a_row2_col5\" class=\"data row2 col5\" >0.000084</td>\n",
+       "      <td id=\"T_c1f7a_row2_col6\" class=\"data row2 col6\" >0.000038</td>\n",
+       "      <td id=\"T_c1f7a_row2_col7\" class=\"data row2 col7\" >0.015088</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_c1f7a_level0_row3\" class=\"row_heading level0 row3\" >unknown</th>\n",
+       "      <td id=\"T_c1f7a_row3_col0\" class=\"data row3 col0\" >0.001049</td>\n",
+       "      <td id=\"T_c1f7a_row3_col1\" class=\"data row3 col1\" >0.042441</td>\n",
+       "      <td id=\"T_c1f7a_row3_col2\" class=\"data row3 col2\" >0.088476</td>\n",
+       "      <td id=\"T_c1f7a_row3_col3\" class=\"data row3 col3\" >0.851175</td>\n",
+       "      <td id=\"T_c1f7a_row3_col4\" class=\"data row3 col4\" >0.010335</td>\n",
+       "      <td id=\"T_c1f7a_row3_col5\" class=\"data row3 col5\" >0.000206</td>\n",
+       "      <td id=\"T_c1f7a_row3_col6\" class=\"data row3 col6\" >0.000006</td>\n",
+       "      <td id=\"T_c1f7a_row3_col7\" class=\"data row3 col7\" >0.006312</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_c1f7a_level0_row4\" class=\"row_heading level0 row4\" >no-author-rec</th>\n",
+       "      <td id=\"T_c1f7a_row4_col0\" class=\"data row4 col0\" >0.004762</td>\n",
+       "      <td id=\"T_c1f7a_row4_col1\" class=\"data row4 col1\" >0.027237</td>\n",
+       "      <td id=\"T_c1f7a_row4_col2\" class=\"data row4 col2\" >0.156807</td>\n",
+       "      <td id=\"T_c1f7a_row4_col3\" class=\"data row4 col3\" >0.111194</td>\n",
+       "      <td id=\"T_c1f7a_row4_col4\" class=\"data row4 col4\" >0.694317</td>\n",
+       "      <td id=\"T_c1f7a_row4_col5\" class=\"data row4 col5\" >0.000157</td>\n",
+       "      <td id=\"T_c1f7a_row4_col6\" class=\"data row4 col6\" >0.000059</td>\n",
+       "      <td id=\"T_c1f7a_row4_col7\" class=\"data row4 col7\" >0.005467</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_c1f7a_level0_row5\" class=\"row_heading level0 row5\" >no-book-author</th>\n",
+       "      <td id=\"T_c1f7a_row5_col0\" class=\"data row5 col0\" >0.001457</td>\n",
+       "      <td id=\"T_c1f7a_row5_col1\" class=\"data row5 col1\" >0.021730</td>\n",
+       "      <td id=\"T_c1f7a_row5_col2\" class=\"data row5 col2\" >0.042101</td>\n",
+       "      <td id=\"T_c1f7a_row5_col3\" class=\"data row5 col3\" >0.025925</td>\n",
+       "      <td id=\"T_c1f7a_row5_col4\" class=\"data row5 col4\" >0.041188</td>\n",
+       "      <td id=\"T_c1f7a_row5_col5\" class=\"data row5 col5\" >0.587336</td>\n",
+       "      <td id=\"T_c1f7a_row5_col6\" class=\"data row5 col6\" >0.220251</td>\n",
+       "      <td id=\"T_c1f7a_row5_col7\" class=\"data row5 col7\" >0.060013</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_c1f7a_level0_row6\" class=\"row_heading level0 row6\" >no-book</th>\n",
+       "      <td id=\"T_c1f7a_row6_col0\" class=\"data row6 col0\" >nan</td>\n",
+       "      <td id=\"T_c1f7a_row6_col1\" class=\"data row6 col1\" >nan</td>\n",
+       "      <td id=\"T_c1f7a_row6_col2\" class=\"data row6 col2\" >nan</td>\n",
+       "      <td id=\"T_c1f7a_row6_col3\" class=\"data row6 col3\" >nan</td>\n",
+       "      <td id=\"T_c1f7a_row6_col4\" class=\"data row6 col4\" >nan</td>\n",
+       "      <td id=\"T_c1f7a_row6_col5\" class=\"data row6 col5\" >nan</td>\n",
+       "      <td id=\"T_c1f7a_row6_col6\" class=\"data row6 col6\" >nan</td>\n",
+       "      <td id=\"T_c1f7a_row6_col7\" class=\"data row6 col7\" >nan</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_c1f7a_level0_row7\" class=\"row_heading level0 row7\" >absent</th>\n",
+       "      <td id=\"T_c1f7a_row7_col0\" class=\"data row7 col0\" >0.003087</td>\n",
+       "      <td id=\"T_c1f7a_row7_col1\" class=\"data row7 col1\" >0.027591</td>\n",
+       "      <td id=\"T_c1f7a_row7_col2\" class=\"data row7 col2\" >0.059151</td>\n",
+       "      <td id=\"T_c1f7a_row7_col3\" class=\"data row7 col3\" >0.021676</td>\n",
+       "      <td id=\"T_c1f7a_row7_col4\" class=\"data row7 col4\" >0.086179</td>\n",
+       "      <td id=\"T_c1f7a_row7_col5\" class=\"data row7 col5\" >0.761995</td>\n",
+       "      <td id=\"T_c1f7a_row7_col6\" class=\"data row7 col6\" >0.040232</td>\n",
+       "      <td id=\"T_c1f7a_row7_col7\" class=\"data row7 col7\" >0.000089</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n"
+      ],
+      "text/plain": [
+       "<pandas.io.formats.style.Styler at 0x7fdffdfe7d60>"
+      ]
+     },
+     "execution_count": 15,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "ctf = ct.divide(ct.sum(axis='columns'), axis='rows')\n",
+    "def style_row(row):\n",
+    "    styles = []\n",
+    "    for col, val in zip(row.index, row.values):\n",
+    "        if col == row.name:\n",
+    "            styles.append('font-weight: bold')\n",
+    "        elif val > 0.1:\n",
+    "            styles.append('color: red')\n",
+    "        else:\n",
+    "            styles.append(None)\n",
+    "    return styles\n",
+    "ctf.style.apply(style_row, 'columns')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f42cd6e6",
+   "metadata": {},
+   "source": [
+    "Most of the change is coming from clusters absent in the original but present in the new.\n",
+    "\n",
+    "There are also quite a few that had no book author in PGSQL, but no book in the current data - not sure what's up with that.  Let's look at more crosstabs."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "id": "385cf5e1",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:58.283819Z",
+     "iopub.status.busy": "2023-02-19T00:00:58.283630Z",
+     "iopub.status.idle": "2023-02-19T00:00:58.286406Z",
+     "shell.execute_reply": "2023-02-19T00:00:58.286071Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "def gender_crosstab(old, new, fractional=True):\n",
+    "    ct = cluster_genders[[old, new]].value_counts().unstack()\n",
+    "    ct = ct.reindex(labels=genders, columns=genders)\n",
+    "\n",
+    "    if fractional:\n",
+    "        ctf = ct.divide(ct.sum(axis='columns'), axis='rows')\n",
+    "        return ctf\n",
+    "    else:\n",
+    "        return ct"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "fa2b42a8",
+   "metadata": {},
+   "source": [
+    "## PostgreSQL to March 2022 (2.0 release)\n",
+    "\n",
+    "This marks the change from PostgreSQL to pure-Rust."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "id": "ca46373f",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:58.287853Z",
+     "iopub.status.busy": "2023-02-19T00:00:58.287712Z",
+     "iopub.status.idle": "2023-02-19T00:00:58.752533Z",
+     "shell.execute_reply": "2023-02-19T00:00:58.752136Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<style type=\"text/css\">\n",
+       "#T_8373f_row0_col0, #T_8373f_row1_col1, #T_8373f_row2_col2, #T_8373f_row3_col3, #T_8373f_row4_col4, #T_8373f_row5_col5, #T_8373f_row6_col6, #T_8373f_row7_col7 {\n",
+       "  font-weight: bold;\n",
+       "}\n",
+       "#T_8373f_row5_col6 {\n",
+       "  color: red;\n",
+       "}\n",
+       "</style>\n",
+       "<table id=\"T_8373f\">\n",
+       "  <thead>\n",
+       "    <tr>\n",
+       "      <th class=\"index_name level0\" >2022-03-2.0</th>\n",
+       "      <th id=\"T_8373f_level0_col0\" class=\"col_heading level0 col0\" >ambiguous</th>\n",
+       "      <th id=\"T_8373f_level0_col1\" class=\"col_heading level0 col1\" >female</th>\n",
+       "      <th id=\"T_8373f_level0_col2\" class=\"col_heading level0 col2\" >male</th>\n",
+       "      <th id=\"T_8373f_level0_col3\" class=\"col_heading level0 col3\" >unknown</th>\n",
+       "      <th id=\"T_8373f_level0_col4\" class=\"col_heading level0 col4\" >no-author-rec</th>\n",
+       "      <th id=\"T_8373f_level0_col5\" class=\"col_heading level0 col5\" >no-book-author</th>\n",
+       "      <th id=\"T_8373f_level0_col6\" class=\"col_heading level0 col6\" >no-book</th>\n",
+       "      <th id=\"T_8373f_level0_col7\" class=\"col_heading level0 col7\" >absent</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th class=\"index_name level0\" >pgsql</th>\n",
+       "      <th class=\"blank col0\" >&nbsp;</th>\n",
+       "      <th class=\"blank col1\" >&nbsp;</th>\n",
+       "      <th class=\"blank col2\" >&nbsp;</th>\n",
+       "      <th class=\"blank col3\" >&nbsp;</th>\n",
+       "      <th class=\"blank col4\" >&nbsp;</th>\n",
+       "      <th class=\"blank col5\" >&nbsp;</th>\n",
+       "      <th class=\"blank col6\" >&nbsp;</th>\n",
+       "      <th class=\"blank col7\" >&nbsp;</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th id=\"T_8373f_level0_row0\" class=\"row_heading level0 row0\" >ambiguous</th>\n",
+       "      <td id=\"T_8373f_row0_col0\" class=\"data row0 col0\" >0.977892</td>\n",
+       "      <td id=\"T_8373f_row0_col1\" class=\"data row0 col1\" >0.002955</td>\n",
+       "      <td id=\"T_8373f_row0_col2\" class=\"data row0 col2\" >0.013920</td>\n",
+       "      <td id=\"T_8373f_row0_col3\" class=\"data row0 col3\" >0.000636</td>\n",
+       "      <td id=\"T_8373f_row0_col4\" class=\"data row0 col4\" >0.000878</td>\n",
+       "      <td id=\"T_8373f_row0_col5\" class=\"data row0 col5\" >nan</td>\n",
+       "      <td id=\"T_8373f_row0_col6\" class=\"data row0 col6\" >nan</td>\n",
+       "      <td id=\"T_8373f_row0_col7\" class=\"data row0 col7\" >0.003720</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_8373f_level0_row1\" class=\"row_heading level0 row1\" >female</th>\n",
+       "      <td id=\"T_8373f_row1_col0\" class=\"data row1 col0\" >0.002192</td>\n",
+       "      <td id=\"T_8373f_row1_col1\" class=\"data row1 col1\" >0.993949</td>\n",
+       "      <td id=\"T_8373f_row1_col2\" class=\"data row1 col2\" >0.000001</td>\n",
+       "      <td id=\"T_8373f_row1_col3\" class=\"data row1 col3\" >0.000301</td>\n",
+       "      <td id=\"T_8373f_row1_col4\" class=\"data row1 col4\" >0.000430</td>\n",
+       "      <td id=\"T_8373f_row1_col5\" class=\"data row1 col5\" >0.000003</td>\n",
+       "      <td id=\"T_8373f_row1_col6\" class=\"data row1 col6\" >0.000005</td>\n",
+       "      <td id=\"T_8373f_row1_col7\" class=\"data row1 col7\" >0.003119</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_8373f_level0_row2\" class=\"row_heading level0 row2\" >male</th>\n",
+       "      <td id=\"T_8373f_row2_col0\" class=\"data row2 col0\" >0.000591</td>\n",
+       "      <td id=\"T_8373f_row2_col1\" class=\"data row2 col1\" >0.000000</td>\n",
+       "      <td id=\"T_8373f_row2_col2\" class=\"data row2 col2\" >0.995942</td>\n",
+       "      <td id=\"T_8373f_row2_col3\" class=\"data row2 col3\" >0.000528</td>\n",
+       "      <td id=\"T_8373f_row2_col4\" class=\"data row2 col4\" >0.000796</td>\n",
+       "      <td id=\"T_8373f_row2_col5\" class=\"data row2 col5\" >0.000002</td>\n",
+       "      <td id=\"T_8373f_row2_col6\" class=\"data row2 col6\" >0.000014</td>\n",
+       "      <td id=\"T_8373f_row2_col7\" class=\"data row2 col7\" >0.002127</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_8373f_level0_row3\" class=\"row_heading level0 row3\" >unknown</th>\n",
+       "      <td id=\"T_8373f_row3_col0\" class=\"data row3 col0\" >0.000043</td>\n",
+       "      <td id=\"T_8373f_row3_col1\" class=\"data row3 col1\" >0.002760</td>\n",
+       "      <td id=\"T_8373f_row3_col2\" class=\"data row3 col2\" >0.005305</td>\n",
+       "      <td id=\"T_8373f_row3_col3\" class=\"data row3 col3\" >0.988900</td>\n",
+       "      <td id=\"T_8373f_row3_col4\" class=\"data row3 col4\" >0.001953</td>\n",
+       "      <td id=\"T_8373f_row3_col5\" class=\"data row3 col5\" >0.000001</td>\n",
+       "      <td id=\"T_8373f_row3_col6\" class=\"data row3 col6\" >0.000003</td>\n",
+       "      <td id=\"T_8373f_row3_col7\" class=\"data row3 col7\" >0.001035</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_8373f_level0_row4\" class=\"row_heading level0 row4\" >no-author-rec</th>\n",
+       "      <td id=\"T_8373f_row4_col0\" class=\"data row4 col0\" >0.000104</td>\n",
+       "      <td id=\"T_8373f_row4_col1\" class=\"data row4 col1\" >0.007917</td>\n",
+       "      <td id=\"T_8373f_row4_col2\" class=\"data row4 col2\" >0.049966</td>\n",
+       "      <td id=\"T_8373f_row4_col3\" class=\"data row4 col3\" >0.031481</td>\n",
+       "      <td id=\"T_8373f_row4_col4\" class=\"data row4 col4\" >0.908597</td>\n",
+       "      <td id=\"T_8373f_row4_col5\" class=\"data row4 col5\" >nan</td>\n",
+       "      <td id=\"T_8373f_row4_col6\" class=\"data row4 col6\" >0.000008</td>\n",
+       "      <td id=\"T_8373f_row4_col7\" class=\"data row4 col7\" >0.001927</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_8373f_level0_row5\" class=\"row_heading level0 row5\" >no-book-author</th>\n",
+       "      <td id=\"T_8373f_row5_col0\" class=\"data row5 col0\" >0.000003</td>\n",
+       "      <td id=\"T_8373f_row5_col1\" class=\"data row5 col1\" >0.000051</td>\n",
+       "      <td id=\"T_8373f_row5_col2\" class=\"data row5 col2\" >0.000198</td>\n",
+       "      <td id=\"T_8373f_row5_col3\" class=\"data row5 col3\" >0.000107</td>\n",
+       "      <td id=\"T_8373f_row5_col4\" class=\"data row5 col4\" >0.000051</td>\n",
+       "      <td id=\"T_8373f_row5_col5\" class=\"data row5 col5\" >0.649174</td>\n",
+       "      <td id=\"T_8373f_row5_col6\" class=\"data row5 col6\" >0.335017</td>\n",
+       "      <td id=\"T_8373f_row5_col7\" class=\"data row5 col7\" >0.015398</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_8373f_level0_row6\" class=\"row_heading level0 row6\" >no-book</th>\n",
+       "      <td id=\"T_8373f_row6_col0\" class=\"data row6 col0\" >nan</td>\n",
+       "      <td id=\"T_8373f_row6_col1\" class=\"data row6 col1\" >nan</td>\n",
+       "      <td id=\"T_8373f_row6_col2\" class=\"data row6 col2\" >nan</td>\n",
+       "      <td id=\"T_8373f_row6_col3\" class=\"data row6 col3\" >nan</td>\n",
+       "      <td id=\"T_8373f_row6_col4\" class=\"data row6 col4\" >nan</td>\n",
+       "      <td id=\"T_8373f_row6_col5\" class=\"data row6 col5\" >nan</td>\n",
+       "      <td id=\"T_8373f_row6_col6\" class=\"data row6 col6\" >nan</td>\n",
+       "      <td id=\"T_8373f_row6_col7\" class=\"data row6 col7\" >nan</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_8373f_level0_row7\" class=\"row_heading level0 row7\" >absent</th>\n",
+       "      <td id=\"T_8373f_row7_col0\" class=\"data row7 col0\" >0.000009</td>\n",
+       "      <td id=\"T_8373f_row7_col1\" class=\"data row7 col1\" >0.000067</td>\n",
+       "      <td id=\"T_8373f_row7_col2\" class=\"data row7 col2\" >0.000349</td>\n",
+       "      <td id=\"T_8373f_row7_col3\" class=\"data row7 col3\" >0.000164</td>\n",
+       "      <td id=\"T_8373f_row7_col4\" class=\"data row7 col4\" >0.000244</td>\n",
+       "      <td id=\"T_8373f_row7_col5\" class=\"data row7 col5\" >0.002756</td>\n",
+       "      <td id=\"T_8373f_row7_col6\" class=\"data row7 col6\" >0.000096</td>\n",
+       "      <td id=\"T_8373f_row7_col7\" class=\"data row7 col7\" >0.996315</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n"
+      ],
+      "text/plain": [
+       "<pandas.io.formats.style.Styler at 0x7fe39382b580>"
+      ]
+     },
+     "execution_count": 17,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "ct = gender_crosstab('pgsql', '2022-03-2.0')\n",
+    "ct.style.apply(style_row, 'columns')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9acf6af9",
+   "metadata": {},
+   "source": [
+    "This is where we change from no-book-author to no-book for a bunch of books; otherwise things are pretty consistent. This major change is likely a result of changes that count more books and book clusters - we had some inner joins in the PostgreSQL version that were questionable, and in particular we didn't really cluster solo ISBNs but now we do.  But now, if we have a solo ISBN from rating data, it gets a cluster with no book record instead of being excluded from the clustering."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5b46f191",
+   "metadata": {},
+   "source": [
+    "## March to July 2022\n",
+    "\n",
+    "We updated a lot of data files and changed the name and ISBN parsing logic."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "id": "ccc0d57f",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:58.754066Z",
+     "iopub.status.busy": "2023-02-19T00:00:58.753929Z",
+     "iopub.status.idle": "2023-02-19T00:00:59.215483Z",
+     "shell.execute_reply": "2023-02-19T00:00:59.215030Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<style type=\"text/css\">\n",
+       "#T_3338f_row0_col0, #T_3338f_row1_col1, #T_3338f_row2_col2, #T_3338f_row3_col3, #T_3338f_row4_col4, #T_3338f_row5_col5, #T_3338f_row6_col6, #T_3338f_row7_col7 {\n",
+       "  font-weight: bold;\n",
+       "}\n",
+       "#T_3338f_row4_col2, #T_3338f_row4_col3 {\n",
+       "  color: red;\n",
+       "}\n",
+       "</style>\n",
+       "<table id=\"T_3338f\">\n",
+       "  <thead>\n",
+       "    <tr>\n",
+       "      <th class=\"index_name level0\" >2022-07</th>\n",
+       "      <th id=\"T_3338f_level0_col0\" class=\"col_heading level0 col0\" >ambiguous</th>\n",
+       "      <th id=\"T_3338f_level0_col1\" class=\"col_heading level0 col1\" >female</th>\n",
+       "      <th id=\"T_3338f_level0_col2\" class=\"col_heading level0 col2\" >male</th>\n",
+       "      <th id=\"T_3338f_level0_col3\" class=\"col_heading level0 col3\" >unknown</th>\n",
+       "      <th id=\"T_3338f_level0_col4\" class=\"col_heading level0 col4\" >no-author-rec</th>\n",
+       "      <th id=\"T_3338f_level0_col5\" class=\"col_heading level0 col5\" >no-book-author</th>\n",
+       "      <th id=\"T_3338f_level0_col6\" class=\"col_heading level0 col6\" >no-book</th>\n",
+       "      <th id=\"T_3338f_level0_col7\" class=\"col_heading level0 col7\" >absent</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th class=\"index_name level0\" >2022-03-2.0</th>\n",
+       "      <th class=\"blank col0\" >&nbsp;</th>\n",
+       "      <th class=\"blank col1\" >&nbsp;</th>\n",
+       "      <th class=\"blank col2\" >&nbsp;</th>\n",
+       "      <th class=\"blank col3\" >&nbsp;</th>\n",
+       "      <th class=\"blank col4\" >&nbsp;</th>\n",
+       "      <th class=\"blank col5\" >&nbsp;</th>\n",
+       "      <th class=\"blank col6\" >&nbsp;</th>\n",
+       "      <th class=\"blank col7\" >&nbsp;</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th id=\"T_3338f_level0_row0\" class=\"row_heading level0 row0\" >ambiguous</th>\n",
+       "      <td id=\"T_3338f_row0_col0\" class=\"data row0 col0\" >0.836221</td>\n",
+       "      <td id=\"T_3338f_row0_col1\" class=\"data row0 col1\" >0.035586</td>\n",
+       "      <td id=\"T_3338f_row0_col2\" class=\"data row0 col2\" >0.083579</td>\n",
+       "      <td id=\"T_3338f_row0_col3\" class=\"data row0 col3\" >0.014798</td>\n",
+       "      <td id=\"T_3338f_row0_col4\" class=\"data row0 col4\" >0.004862</td>\n",
+       "      <td id=\"T_3338f_row0_col5\" class=\"data row0 col5\" >0.000087</td>\n",
+       "      <td id=\"T_3338f_row0_col6\" class=\"data row0 col6\" >0.000016</td>\n",
+       "      <td id=\"T_3338f_row0_col7\" class=\"data row0 col7\" >0.024853</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_3338f_level0_row1\" class=\"row_heading level0 row1\" >female</th>\n",
+       "      <td id=\"T_3338f_row1_col0\" class=\"data row1 col0\" >0.010071</td>\n",
+       "      <td id=\"T_3338f_row1_col1\" class=\"data row1 col1\" >0.963215</td>\n",
+       "      <td id=\"T_3338f_row1_col2\" class=\"data row1 col2\" >0.000488</td>\n",
+       "      <td id=\"T_3338f_row1_col3\" class=\"data row1 col3\" >0.007910</td>\n",
+       "      <td id=\"T_3338f_row1_col4\" class=\"data row1 col4\" >0.001254</td>\n",
+       "      <td id=\"T_3338f_row1_col5\" class=\"data row1 col5\" >0.000002</td>\n",
+       "      <td id=\"T_3338f_row1_col6\" class=\"data row1 col6\" >0.000011</td>\n",
+       "      <td id=\"T_3338f_row1_col7\" class=\"data row1 col7\" >0.017050</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_3338f_level0_row2\" class=\"row_heading level0 row2\" >male</th>\n",
+       "      <td id=\"T_3338f_row2_col0\" class=\"data row2 col0\" >0.006706</td>\n",
+       "      <td id=\"T_3338f_row2_col1\" class=\"data row2 col1\" >0.000646</td>\n",
+       "      <td id=\"T_3338f_row2_col2\" class=\"data row2 col2\" >0.974658</td>\n",
+       "      <td id=\"T_3338f_row2_col3\" class=\"data row2 col3\" >0.003702</td>\n",
+       "      <td id=\"T_3338f_row2_col4\" class=\"data row2 col4\" >0.001364</td>\n",
+       "      <td id=\"T_3338f_row2_col5\" class=\"data row2 col5\" >0.000079</td>\n",
+       "      <td id=\"T_3338f_row2_col6\" class=\"data row2 col6\" >0.000014</td>\n",
+       "      <td id=\"T_3338f_row2_col7\" class=\"data row2 col7\" >0.012830</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_3338f_level0_row3\" class=\"row_heading level0 row3\" >unknown</th>\n",
+       "      <td id=\"T_3338f_row3_col0\" class=\"data row3 col0\" >0.001900</td>\n",
+       "      <td id=\"T_3338f_row3_col1\" class=\"data row3 col1\" >0.040308</td>\n",
+       "      <td id=\"T_3338f_row3_col2\" class=\"data row3 col2\" >0.092940</td>\n",
+       "      <td id=\"T_3338f_row3_col3\" class=\"data row3 col3\" >0.856051</td>\n",
+       "      <td id=\"T_3338f_row3_col4\" class=\"data row3 col4\" >0.003412</td>\n",
+       "      <td id=\"T_3338f_row3_col5\" class=\"data row3 col5\" >0.000200</td>\n",
+       "      <td id=\"T_3338f_row3_col6\" class=\"data row3 col6\" >nan</td>\n",
+       "      <td id=\"T_3338f_row3_col7\" class=\"data row3 col7\" >0.005190</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_3338f_level0_row4\" class=\"row_heading level0 row4\" >no-author-rec</th>\n",
+       "      <td id=\"T_3338f_row4_col0\" class=\"data row4 col0\" >0.003536</td>\n",
+       "      <td id=\"T_3338f_row4_col1\" class=\"data row4 col1\" >0.020632</td>\n",
+       "      <td id=\"T_3338f_row4_col2\" class=\"data row4 col2\" >0.108692</td>\n",
+       "      <td id=\"T_3338f_row4_col3\" class=\"data row4 col3\" >0.101639</td>\n",
+       "      <td id=\"T_3338f_row4_col4\" class=\"data row4 col4\" >0.762115</td>\n",
+       "      <td id=\"T_3338f_row4_col5\" class=\"data row4 col5\" >0.000009</td>\n",
+       "      <td id=\"T_3338f_row4_col6\" class=\"data row4 col6\" >0.000038</td>\n",
+       "      <td id=\"T_3338f_row4_col7\" class=\"data row4 col7\" >0.003339</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_3338f_level0_row5\" class=\"row_heading level0 row5\" >no-book-author</th>\n",
+       "      <td id=\"T_3338f_row5_col0\" class=\"data row5 col0\" >0.002055</td>\n",
+       "      <td id=\"T_3338f_row5_col1\" class=\"data row5 col1\" >0.030434</td>\n",
+       "      <td id=\"T_3338f_row5_col2\" class=\"data row5 col2\" >0.057325</td>\n",
+       "      <td id=\"T_3338f_row5_col3\" class=\"data row5 col3\" >0.035309</td>\n",
+       "      <td id=\"T_3338f_row5_col4\" class=\"data row5 col4\" >0.056236</td>\n",
+       "      <td id=\"T_3338f_row5_col5\" class=\"data row5 col5\" >0.809982</td>\n",
+       "      <td id=\"T_3338f_row5_col6\" class=\"data row5 col6\" >0.000007</td>\n",
+       "      <td id=\"T_3338f_row5_col7\" class=\"data row5 col7\" >0.008653</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_3338f_level0_row6\" class=\"row_heading level0 row6\" >no-book</th>\n",
+       "      <td id=\"T_3338f_row6_col0\" class=\"data row6 col0\" >0.000156</td>\n",
+       "      <td id=\"T_3338f_row6_col1\" class=\"data row6 col1\" >0.002331</td>\n",
+       "      <td id=\"T_3338f_row6_col2\" class=\"data row6 col2\" >0.005260</td>\n",
+       "      <td id=\"T_3338f_row6_col3\" class=\"data row6 col3\" >0.002731</td>\n",
+       "      <td id=\"T_3338f_row6_col4\" class=\"data row6 col4\" >0.004763</td>\n",
+       "      <td id=\"T_3338f_row6_col5\" class=\"data row6 col5\" >0.000635</td>\n",
+       "      <td id=\"T_3338f_row6_col6\" class=\"data row6 col6\" >0.980666</td>\n",
+       "      <td id=\"T_3338f_row6_col7\" class=\"data row6 col7\" >0.003458</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_3338f_level0_row7\" class=\"row_heading level0 row7\" >absent</th>\n",
+       "      <td id=\"T_3338f_row7_col0\" class=\"data row7 col0\" >0.003084</td>\n",
+       "      <td id=\"T_3338f_row7_col1\" class=\"data row7 col1\" >0.027664</td>\n",
+       "      <td id=\"T_3338f_row7_col2\" class=\"data row7 col2\" >0.059202</td>\n",
+       "      <td id=\"T_3338f_row7_col3\" class=\"data row7 col3\" >0.021831</td>\n",
+       "      <td id=\"T_3338f_row7_col4\" class=\"data row7 col4\" >0.086472</td>\n",
+       "      <td id=\"T_3338f_row7_col5\" class=\"data row7 col5\" >0.004783</td>\n",
+       "      <td id=\"T_3338f_row7_col6\" class=\"data row7 col6\" >0.000002</td>\n",
+       "      <td id=\"T_3338f_row7_col7\" class=\"data row7 col7\" >0.796962</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n"
+      ],
+      "text/plain": [
+       "<pandas.io.formats.style.Styler at 0x7fdffdfe7130>"
+      ]
+     },
+     "execution_count": 18,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "ct = gender_crosstab('2022-03-2.0', '2022-07')\n",
+    "ct.style.apply(style_row, 'columns')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "fe7e54e9",
+   "metadata": {},
+   "source": [
+    "Mostly fine; some more are resolved, existing resolutions are pretty consistent."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "ab2b9951",
+   "metadata": {},
+   "source": [
+    "## July 2022 to Oct. 2022\n",
+    "\n",
+    "We changed from DataFusion to Polars and made further ISBN and name parsing changes."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "id": "1008b25b",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:59.217002Z",
+     "iopub.status.busy": "2023-02-19T00:00:59.216857Z",
+     "iopub.status.idle": "2023-02-19T00:00:59.679015Z",
+     "shell.execute_reply": "2023-02-19T00:00:59.678603Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<style type=\"text/css\">\n",
+       "#T_f45c5_row0_col0, #T_f45c5_row1_col1, #T_f45c5_row2_col2, #T_f45c5_row3_col3, #T_f45c5_row4_col4, #T_f45c5_row5_col5, #T_f45c5_row6_col6, #T_f45c5_row7_col7 {\n",
+       "  font-weight: bold;\n",
+       "}\n",
+       "#T_f45c5_row6_col5, #T_f45c5_row6_col7 {\n",
+       "  color: red;\n",
+       "}\n",
+       "</style>\n",
+       "<table id=\"T_f45c5\">\n",
+       "  <thead>\n",
+       "    <tr>\n",
+       "      <th class=\"index_name level0\" >2022-10</th>\n",
+       "      <th id=\"T_f45c5_level0_col0\" class=\"col_heading level0 col0\" >ambiguous</th>\n",
+       "      <th id=\"T_f45c5_level0_col1\" class=\"col_heading level0 col1\" >female</th>\n",
+       "      <th id=\"T_f45c5_level0_col2\" class=\"col_heading level0 col2\" >male</th>\n",
+       "      <th id=\"T_f45c5_level0_col3\" class=\"col_heading level0 col3\" >unknown</th>\n",
+       "      <th id=\"T_f45c5_level0_col4\" class=\"col_heading level0 col4\" >no-author-rec</th>\n",
+       "      <th id=\"T_f45c5_level0_col5\" class=\"col_heading level0 col5\" >no-book-author</th>\n",
+       "      <th id=\"T_f45c5_level0_col6\" class=\"col_heading level0 col6\" >no-book</th>\n",
+       "      <th id=\"T_f45c5_level0_col7\" class=\"col_heading level0 col7\" >absent</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th class=\"index_name level0\" >2022-07</th>\n",
+       "      <th class=\"blank col0\" >&nbsp;</th>\n",
+       "      <th class=\"blank col1\" >&nbsp;</th>\n",
+       "      <th class=\"blank col2\" >&nbsp;</th>\n",
+       "      <th class=\"blank col3\" >&nbsp;</th>\n",
+       "      <th class=\"blank col4\" >&nbsp;</th>\n",
+       "      <th class=\"blank col5\" >&nbsp;</th>\n",
+       "      <th class=\"blank col6\" >&nbsp;</th>\n",
+       "      <th class=\"blank col7\" >&nbsp;</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th id=\"T_f45c5_level0_row0\" class=\"row_heading level0 row0\" >ambiguous</th>\n",
+       "      <td id=\"T_f45c5_row0_col0\" class=\"data row0 col0\" >0.989390</td>\n",
+       "      <td id=\"T_f45c5_row0_col1\" class=\"data row0 col1\" >0.004969</td>\n",
+       "      <td id=\"T_f45c5_row0_col2\" class=\"data row0 col2\" >0.003626</td>\n",
+       "      <td id=\"T_f45c5_row0_col3\" class=\"data row0 col3\" >0.000336</td>\n",
+       "      <td id=\"T_f45c5_row0_col4\" class=\"data row0 col4\" >0.001647</td>\n",
+       "      <td id=\"T_f45c5_row0_col5\" class=\"data row0 col5\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row0_col6\" class=\"data row0 col6\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row0_col7\" class=\"data row0 col7\" >0.000032</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_f45c5_level0_row1\" class=\"row_heading level0 row1\" >female</th>\n",
+       "      <td id=\"T_f45c5_row1_col0\" class=\"data row1 col0\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row1_col1\" class=\"data row1 col1\" >0.995095</td>\n",
+       "      <td id=\"T_f45c5_row1_col2\" class=\"data row1 col2\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row1_col3\" class=\"data row1 col3\" >0.000361</td>\n",
+       "      <td id=\"T_f45c5_row1_col4\" class=\"data row1 col4\" >0.004470</td>\n",
+       "      <td id=\"T_f45c5_row1_col5\" class=\"data row1 col5\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row1_col6\" class=\"data row1 col6\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row1_col7\" class=\"data row1 col7\" >0.000074</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_f45c5_level0_row2\" class=\"row_heading level0 row2\" >male</th>\n",
+       "      <td id=\"T_f45c5_row2_col0\" class=\"data row2 col0\" >0.000001</td>\n",
+       "      <td id=\"T_f45c5_row2_col1\" class=\"data row2 col1\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row2_col2\" class=\"data row2 col2\" >0.994581</td>\n",
+       "      <td id=\"T_f45c5_row2_col3\" class=\"data row2 col3\" >0.000431</td>\n",
+       "      <td id=\"T_f45c5_row2_col4\" class=\"data row2 col4\" >0.004975</td>\n",
+       "      <td id=\"T_f45c5_row2_col5\" class=\"data row2 col5\" >0.000000</td>\n",
+       "      <td id=\"T_f45c5_row2_col6\" class=\"data row2 col6\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row2_col7\" class=\"data row2 col7\" >0.000011</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_f45c5_level0_row3\" class=\"row_heading level0 row3\" >unknown</th>\n",
+       "      <td id=\"T_f45c5_row3_col0\" class=\"data row3 col0\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row3_col1\" class=\"data row3 col1\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row3_col2\" class=\"data row3 col2\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row3_col3\" class=\"data row3 col3\" >0.995468</td>\n",
+       "      <td id=\"T_f45c5_row3_col4\" class=\"data row3 col4\" >0.004492</td>\n",
+       "      <td id=\"T_f45c5_row3_col5\" class=\"data row3 col5\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row3_col6\" class=\"data row3 col6\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row3_col7\" class=\"data row3 col7\" >0.000041</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_f45c5_level0_row4\" class=\"row_heading level0 row4\" >no-author-rec</th>\n",
+       "      <td id=\"T_f45c5_row4_col0\" class=\"data row4 col0\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row4_col1\" class=\"data row4 col1\" >0.000001</td>\n",
+       "      <td id=\"T_f45c5_row4_col2\" class=\"data row4 col2\" >0.000003</td>\n",
+       "      <td id=\"T_f45c5_row4_col3\" class=\"data row4 col3\" >0.000005</td>\n",
+       "      <td id=\"T_f45c5_row4_col4\" class=\"data row4 col4\" >0.999822</td>\n",
+       "      <td id=\"T_f45c5_row4_col5\" class=\"data row4 col5\" >0.000131</td>\n",
+       "      <td id=\"T_f45c5_row4_col6\" class=\"data row4 col6\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row4_col7\" class=\"data row4 col7\" >0.000039</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_f45c5_level0_row5\" class=\"row_heading level0 row5\" >no-book-author</th>\n",
+       "      <td id=\"T_f45c5_row5_col0\" class=\"data row5 col0\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row5_col1\" class=\"data row5 col1\" >0.000000</td>\n",
+       "      <td id=\"T_f45c5_row5_col2\" class=\"data row5 col2\" >0.000001</td>\n",
+       "      <td id=\"T_f45c5_row5_col3\" class=\"data row5 col3\" >0.000000</td>\n",
+       "      <td id=\"T_f45c5_row5_col4\" class=\"data row5 col4\" >0.000000</td>\n",
+       "      <td id=\"T_f45c5_row5_col5\" class=\"data row5 col5\" >0.996610</td>\n",
+       "      <td id=\"T_f45c5_row5_col6\" class=\"data row5 col6\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row5_col7\" class=\"data row5 col7\" >0.003387</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_f45c5_level0_row6\" class=\"row_heading level0 row6\" >no-book</th>\n",
+       "      <td id=\"T_f45c5_row6_col0\" class=\"data row6 col0\" >0.000004</td>\n",
+       "      <td id=\"T_f45c5_row6_col1\" class=\"data row6 col1\" >0.000094</td>\n",
+       "      <td id=\"T_f45c5_row6_col2\" class=\"data row6 col2\" >0.000030</td>\n",
+       "      <td id=\"T_f45c5_row6_col3\" class=\"data row6 col3\" >0.000067</td>\n",
+       "      <td id=\"T_f45c5_row6_col4\" class=\"data row6 col4\" >0.000094</td>\n",
+       "      <td id=\"T_f45c5_row6_col5\" class=\"data row6 col5\" >0.198069</td>\n",
+       "      <td id=\"T_f45c5_row6_col6\" class=\"data row6 col6\" >0.670216</td>\n",
+       "      <td id=\"T_f45c5_row6_col7\" class=\"data row6 col7\" >0.131427</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_f45c5_level0_row7\" class=\"row_heading level0 row7\" >absent</th>\n",
+       "      <td id=\"T_f45c5_row7_col0\" class=\"data row7 col0\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row7_col1\" class=\"data row7 col1\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row7_col2\" class=\"data row7 col2\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row7_col3\" class=\"data row7 col3\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row7_col4\" class=\"data row7 col4\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row7_col5\" class=\"data row7 col5\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row7_col6\" class=\"data row7 col6\" >nan</td>\n",
+       "      <td id=\"T_f45c5_row7_col7\" class=\"data row7 col7\" >1.000000</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n"
+      ],
+      "text/plain": [
+       "<pandas.io.formats.style.Styler at 0x7fe39382b970>"
+      ]
+     },
+     "execution_count": 19,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "ct = gender_crosstab('2022-07', '2022-10')\n",
+    "ct.style.apply(style_row, 'columns')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "04c98fdf",
+   "metadata": {},
+   "source": [
+    "## Oct. 2022 to Current\n",
+    "\n",
+    "We added support for GoodReads CSV data and the Amazon 2018 rating CSV files."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 20,
+   "id": "90911b59",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2023-02-19T00:00:59.680665Z",
+     "iopub.status.busy": "2023-02-19T00:00:59.680510Z",
+     "iopub.status.idle": "2023-02-19T00:01:00.142053Z",
+     "shell.execute_reply": "2023-02-19T00:01:00.141666Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<style type=\"text/css\">\n",
+       "#T_7f4c1_row0_col0, #T_7f4c1_row1_col1, #T_7f4c1_row2_col2, #T_7f4c1_row3_col3, #T_7f4c1_row4_col4, #T_7f4c1_row5_col5, #T_7f4c1_row6_col6, #T_7f4c1_row7_col7 {\n",
+       "  font-weight: bold;\n",
+       "}\n",
+       "#T_7f4c1_row7_col5 {\n",
+       "  color: red;\n",
+       "}\n",
+       "</style>\n",
+       "<table id=\"T_7f4c1\">\n",
+       "  <thead>\n",
+       "    <tr>\n",
+       "      <th class=\"index_name level0\" >current</th>\n",
+       "      <th id=\"T_7f4c1_level0_col0\" class=\"col_heading level0 col0\" >ambiguous</th>\n",
+       "      <th id=\"T_7f4c1_level0_col1\" class=\"col_heading level0 col1\" >female</th>\n",
+       "      <th id=\"T_7f4c1_level0_col2\" class=\"col_heading level0 col2\" >male</th>\n",
+       "      <th id=\"T_7f4c1_level0_col3\" class=\"col_heading level0 col3\" >unknown</th>\n",
+       "      <th id=\"T_7f4c1_level0_col4\" class=\"col_heading level0 col4\" >no-author-rec</th>\n",
+       "      <th id=\"T_7f4c1_level0_col5\" class=\"col_heading level0 col5\" >no-book-author</th>\n",
+       "      <th id=\"T_7f4c1_level0_col6\" class=\"col_heading level0 col6\" >no-book</th>\n",
+       "      <th id=\"T_7f4c1_level0_col7\" class=\"col_heading level0 col7\" >absent</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th class=\"index_name level0\" >2022-10</th>\n",
+       "      <th class=\"blank col0\" >&nbsp;</th>\n",
+       "      <th class=\"blank col1\" >&nbsp;</th>\n",
+       "      <th class=\"blank col2\" >&nbsp;</th>\n",
+       "      <th class=\"blank col3\" >&nbsp;</th>\n",
+       "      <th class=\"blank col4\" >&nbsp;</th>\n",
+       "      <th class=\"blank col5\" >&nbsp;</th>\n",
+       "      <th class=\"blank col6\" >&nbsp;</th>\n",
+       "      <th class=\"blank col7\" >&nbsp;</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th id=\"T_7f4c1_level0_row0\" class=\"row_heading level0 row0\" >ambiguous</th>\n",
+       "      <td id=\"T_7f4c1_row0_col0\" class=\"data row0 col0\" >0.999995</td>\n",
+       "      <td id=\"T_7f4c1_row0_col1\" class=\"data row0 col1\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row0_col2\" class=\"data row0 col2\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row0_col3\" class=\"data row0 col3\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row0_col4\" class=\"data row0 col4\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row0_col5\" class=\"data row0 col5\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row0_col6\" class=\"data row0 col6\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row0_col7\" class=\"data row0 col7\" >0.000005</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_7f4c1_level0_row1\" class=\"row_heading level0 row1\" >female</th>\n",
+       "      <td id=\"T_7f4c1_row1_col0\" class=\"data row1 col0\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row1_col1\" class=\"data row1 col1\" >0.999999</td>\n",
+       "      <td id=\"T_7f4c1_row1_col2\" class=\"data row1 col2\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row1_col3\" class=\"data row1 col3\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row1_col4\" class=\"data row1 col4\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row1_col5\" class=\"data row1 col5\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row1_col6\" class=\"data row1 col6\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row1_col7\" class=\"data row1 col7\" >0.000001</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_7f4c1_level0_row2\" class=\"row_heading level0 row2\" >male</th>\n",
+       "      <td id=\"T_7f4c1_row2_col0\" class=\"data row2 col0\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row2_col1\" class=\"data row2 col1\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row2_col2\" class=\"data row2 col2\" >0.999998</td>\n",
+       "      <td id=\"T_7f4c1_row2_col3\" class=\"data row2 col3\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row2_col4\" class=\"data row2 col4\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row2_col5\" class=\"data row2 col5\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row2_col6\" class=\"data row2 col6\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row2_col7\" class=\"data row2 col7\" >0.000002</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_7f4c1_level0_row3\" class=\"row_heading level0 row3\" >unknown</th>\n",
+       "      <td id=\"T_7f4c1_row3_col0\" class=\"data row3 col0\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row3_col1\" class=\"data row3 col1\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row3_col2\" class=\"data row3 col2\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row3_col3\" class=\"data row3 col3\" >0.999998</td>\n",
+       "      <td id=\"T_7f4c1_row3_col4\" class=\"data row3 col4\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row3_col5\" class=\"data row3 col5\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row3_col6\" class=\"data row3 col6\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row3_col7\" class=\"data row3 col7\" >0.000002</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_7f4c1_level0_row4\" class=\"row_heading level0 row4\" >no-author-rec</th>\n",
+       "      <td id=\"T_7f4c1_row4_col0\" class=\"data row4 col0\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row4_col1\" class=\"data row4 col1\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row4_col2\" class=\"data row4 col2\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row4_col3\" class=\"data row4 col3\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row4_col4\" class=\"data row4 col4\" >0.999999</td>\n",
+       "      <td id=\"T_7f4c1_row4_col5\" class=\"data row4 col5\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row4_col6\" class=\"data row4 col6\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row4_col7\" class=\"data row4 col7\" >0.000001</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_7f4c1_level0_row5\" class=\"row_heading level0 row5\" >no-book-author</th>\n",
+       "      <td id=\"T_7f4c1_row5_col0\" class=\"data row5 col0\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row5_col1\" class=\"data row5 col1\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row5_col2\" class=\"data row5 col2\" >0.000000</td>\n",
+       "      <td id=\"T_7f4c1_row5_col3\" class=\"data row5 col3\" >0.000000</td>\n",
+       "      <td id=\"T_7f4c1_row5_col4\" class=\"data row5 col4\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row5_col5\" class=\"data row5 col5\" >0.999982</td>\n",
+       "      <td id=\"T_7f4c1_row5_col6\" class=\"data row5 col6\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row5_col7\" class=\"data row5 col7\" >0.000017</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_7f4c1_level0_row6\" class=\"row_heading level0 row6\" >no-book</th>\n",
+       "      <td id=\"T_7f4c1_row6_col0\" class=\"data row6 col0\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row6_col1\" class=\"data row6 col1\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row6_col2\" class=\"data row6 col2\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row6_col3\" class=\"data row6 col3\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row6_col4\" class=\"data row6 col4\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row6_col5\" class=\"data row6 col5\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row6_col6\" class=\"data row6 col6\" >1.000000</td>\n",
+       "      <td id=\"T_7f4c1_row6_col7\" class=\"data row6 col7\" >nan</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th id=\"T_7f4c1_level0_row7\" class=\"row_heading level0 row7\" >absent</th>\n",
+       "      <td id=\"T_7f4c1_row7_col0\" class=\"data row7 col0\" >nan</td>\n",
+       "      <td id=\"T_7f4c1_row7_col1\" class=\"data row7 col1\" >0.000000</td>\n",
+       "      <td id=\"T_7f4c1_row7_col2\" class=\"data row7 col2\" >0.000000</td>\n",
+       "      <td id=\"T_7f4c1_row7_col3\" class=\"data row7 col3\" >0.000000</td>\n",
+       "      <td id=\"T_7f4c1_row7_col4\" class=\"data row7 col4\" >0.000000</td>\n",
+       "      <td id=\"T_7f4c1_row7_col5\" class=\"data row7 col5\" >0.927674</td>\n",
+       "      <td id=\"T_7f4c1_row7_col6\" class=\"data row7 col6\" >0.049410</td>\n",
+       "      <td id=\"T_7f4c1_row7_col7\" class=\"data row7 col7\" >0.022915</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n"
+      ],
+      "text/plain": [
+       "<pandas.io.formats.style.Styler at 0x7fdffdfe7910>"
+      ]
+     },
+     "execution_count": 20,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "ct = gender_crosstab('2022-10', 'current')\n",
+    "ct.style.apply(style_row, 'columns')"
+   ]
+  }
+ ],
+ "metadata": {
+  "jupytext": {
+   "formats": "ipynb,py:percent"
+  },
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.9"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

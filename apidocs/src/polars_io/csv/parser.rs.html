@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-io-0.26.1/src/csv/parser.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>parser.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../polars_io/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-io-0.27.2/src/csv/parser.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>parser.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../polars_io/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -645,18 +645,6 @@
 <a href="#645" id="645">645</a>
 <a href="#646" id="646">646</a>
 <a href="#647" id="647">647</a>
-<a href="#648" id="648">648</a>
-<a href="#649" id="649">649</a>
-<a href="#650" id="650">650</a>
-<a href="#651" id="651">651</a>
-<a href="#652" id="652">652</a>
-<a href="#653" id="653">653</a>
-<a href="#654" id="654">654</a>
-<a href="#655" id="655">655</a>
-<a href="#656" id="656">656</a>
-<a href="#657" id="657">657</a>
-<a href="#658" id="658">658</a>
-<a href="#659" id="659">659</a>
 </pre><pre class="rust"><code><span class="kw">use </span>num::traits::Pow;
 <span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
 
@@ -714,11 +702,8 @@
         <span class="kw">let </span>new_input = <span class="kw">unsafe </span>{ input.get_unchecked(pos..) };
         <span class="kw">let </span>line = SplitLines::new(new_input, quote_char.unwrap_or(<span class="string">b&#39;&quot;&#39;</span>), eol_char).next();
 
-        <span class="kw">let </span>count_fields = |line: <span class="kw-2">&amp;</span>[u8]| {
-            SplitFields::new(line, delimiter, quote_char, eol_char)
-                .into_iter()
-                .count()
-        };
+        <span class="kw">let </span>count_fields =
+            |line: <span class="kw-2">&amp;</span>[u8]| SplitFields::new(line, delimiter, quote_char, eol_char).count();
 
         <span class="kw">match </span>(line, expected_fields) {
             <span class="comment">// count the fields, and determine if they are equal to what we expect from the schema
@@ -759,15 +744,8 @@
     <span class="kw">if </span>input.is_empty() {
         <span class="kw">return </span>input;
     }
-    <span class="kw">let </span><span class="kw-2">mut </span>read = <span class="number">0</span>;
-    <span class="kw">let </span>len = input.len();
-    <span class="kw">while </span>read &lt; len {
-        <span class="kw">let </span>b = input[read];
-        <span class="kw">if </span>!f(b) {
-            <span class="kw">break</span>;
-        }
-        read += <span class="number">1</span>;
-    }
+
+    <span class="kw">let </span>read = input.iter().position(|b| !f(<span class="kw-2">*</span>b)).unwrap_or(input.len());
     <span class="kw-2">&amp;</span>input[read..]
 }
 
@@ -1115,9 +1093,10 @@
     quote_char: <span class="prelude-ty">Option</span>&lt;u8&gt;,
     eol_char: u8,
     null_values: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>NullValuesCompiled&gt;,
+    missing_is_null: bool,
     projection: <span class="kw-2">&amp;</span>[usize],
     buffers: <span class="kw-2">&amp;mut </span>[Buffer&lt;<span class="lifetime">&#39;a</span>&gt;],
-    ignore_parser_errors: bool,
+    ignore_errors: bool,
     n_lines: usize,
     <span class="comment">// length or original schema
     </span>schema_len: usize,
@@ -1211,9 +1190,9 @@
                             </span>add_null = <span class="kw">unsafe </span>{ null_values.is_null(field, processed_fields) }
                         }
                         <span class="kw">if </span>add_null {
-                            buf.add_null()
+                            buf.add_null(!missing_is_null &amp;&amp; field.is_empty())
                         } <span class="kw">else </span>{
-                            buf.add(field, ignore_parser_errors, needs_escaping)
+                            buf.add(field, ignore_errors, needs_escaping, missing_is_null)
                                 .map_err(|<span class="kw">_</span>| {
                                     <span class="kw">let </span>bytes_offset = offset + field.as_ptr() <span class="kw">as </span>usize - start;
                                     <span class="kw">let </span>unparsable = String::from_utf8_lossy(field);
@@ -1224,8 +1203,8 @@
                                             \n\
                                             Consider specifying the correct dtype, increasing\n\
                                             the number of records used to infer the schema,\n\
-                                            running the parser with `ignore_parser_errors=true`\n\
-                                            or  adding `{}` to the `null_values` list.&quot;</span>,
+                                            enabling the `ignore_errors` flag, or adding\n\
+                                            `{}` to the `null_values` list.&quot;</span>,
                                             <span class="kw-2">&amp;</span>unparsable,
                                             buf.dtype(),
                                             idx,
@@ -1236,7 +1215,6 @@
                                     )
                                 })<span class="question-mark">?</span>;
                         }
-
                         processed_fields += <span class="number">1</span>;
 
                         <span class="comment">// if we have all projected columns we are done with this line
@@ -1270,11 +1248,9 @@
                 <span class="comment">// SAFETY: processed fields index can never exceed the projection indices.
                 </span>buffers.get_unchecked_mut(processed_fields)
             };
-
-            buf.add_null();
+            buf.add_null(!missing_is_null);
             processed_fields += <span class="number">1</span>;
         }
-
         line_count += <span class="number">1</span>;
     }
 }

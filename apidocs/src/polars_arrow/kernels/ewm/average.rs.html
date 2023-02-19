@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-arrow-0.26.1/src/kernels/ewm/average.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>average.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_arrow/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-arrow-0.27.2/src/kernels/ewm/average.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>average.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_arrow/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -162,31 +162,7 @@
 <a href="#162" id="162">162</a>
 <a href="#163" id="163">163</a>
 <a href="#164" id="164">164</a>
-<a href="#165" id="165">165</a>
-<a href="#166" id="166">166</a>
-<a href="#167" id="167">167</a>
-<a href="#168" id="168">168</a>
-<a href="#169" id="169">169</a>
-<a href="#170" id="170">170</a>
-<a href="#171" id="171">171</a>
-<a href="#172" id="172">172</a>
-<a href="#173" id="173">173</a>
-<a href="#174" id="174">174</a>
-<a href="#175" id="175">175</a>
-<a href="#176" id="176">176</a>
-<a href="#177" id="177">177</a>
-<a href="#178" id="178">178</a>
-<a href="#179" id="179">179</a>
-<a href="#180" id="180">180</a>
-<a href="#181" id="181">181</a>
-<a href="#182" id="182">182</a>
-<a href="#183" id="183">183</a>
-<a href="#184" id="184">184</a>
-<a href="#185" id="185">185</a>
-<a href="#186" id="186">186</a>
-<a href="#187" id="187">187</a>
-<a href="#188" id="188">188</a>
-</pre><pre class="rust"><code><span class="kw">use </span>std::ops::AddAssign;
+</pre><pre class="rust"><code><span class="kw">use </span>std::ops::{AddAssign, MulAssign};
 
 <span class="kw">use </span>arrow::array::PrimitiveArray;
 <span class="kw">use </span>arrow::types::NativeType;
@@ -195,62 +171,48 @@
 <span class="kw">use </span><span class="kw">crate</span>::trusted_len::TrustedLen;
 <span class="kw">use </span><span class="kw">crate</span>::utils::CustomIterTools;
 
-<span class="kw">pub fn </span>ewm_mean&lt;I, T&gt;(xs: I, alpha: T, adjust: bool, min_periods: usize) -&gt; PrimitiveArray&lt;T&gt;
+<span class="kw">pub fn </span>ewm_mean&lt;I, T&gt;(
+    xs: I,
+    alpha: T,
+    adjust: bool,
+    min_periods: usize,
+    ignore_nulls: bool,
+) -&gt; PrimitiveArray&lt;T&gt;
 <span class="kw">where
     </span>I: IntoIterator&lt;Item = <span class="prelude-ty">Option</span>&lt;T&gt;&gt;,
     I::IntoIter: TrustedLen,
-    T: Float + NativeType + AddAssign,
+    T: Float + NativeType + AddAssign + MulAssign,
 {
-    <span class="kw">if </span>alpha.is_one() {
-        <span class="kw">return </span>ewm_mean_alpha_equals_one(xs, min_periods);
-    }
-
-    <span class="kw">let </span>one_sub_alpha = T::one() - alpha;
-
-    <span class="kw">let </span><span class="kw-2">mut </span>opt_mean = <span class="prelude-val">None</span>;
+    <span class="kw">let </span>new_wt = <span class="kw">if </span>adjust { T::one() } <span class="kw">else </span>{ alpha };
+    <span class="kw">let </span>old_wt_factor = T::one() - alpha;
+    <span class="kw">let </span><span class="kw-2">mut </span>old_wt = T::one();
+    <span class="kw">let </span><span class="kw-2">mut </span>weighted_avg = <span class="prelude-val">None</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>non_null_cnt = <span class="number">0usize</span>;
 
-    <span class="kw">let </span>wgt = alpha;
-    <span class="kw">let </span><span class="kw-2">mut </span>wgt_sum = <span class="kw">if </span>adjust { T::zero() } <span class="kw">else </span>{ T::one() };
-
     xs.into_iter()
-        .map(|opt_x| {
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(x) = opt_x {
+        .enumerate()
+        .map(|(i, opt_x)| {
+            <span class="kw">if </span>opt_x.is_some() {
                 non_null_cnt += <span class="number">1</span>;
-
-                <span class="kw">let </span>prev_mean = opt_mean.unwrap_or(x);
-
-                wgt_sum = one_sub_alpha * wgt_sum + wgt;
-
-                <span class="kw">let </span>curr_mean = prev_mean + (x - prev_mean) * wgt / wgt_sum;
-
-                opt_mean = <span class="prelude-val">Some</span>(curr_mean);
+            }
+            <span class="kw">match </span>(i, weighted_avg) {
+                (<span class="number">0</span>, <span class="kw">_</span>) | (<span class="kw">_</span>, <span class="prelude-val">None</span>) =&gt; weighted_avg = opt_x,
+                (<span class="kw">_</span>, <span class="prelude-val">Some</span>(w_avg)) =&gt; {
+                    <span class="kw">if </span>opt_x.is_some() || !ignore_nulls {
+                        old_wt <span class="kw-2">*</span>= old_wt_factor;
+                        <span class="kw">if let </span><span class="prelude-val">Some</span>(x) = opt_x {
+                            <span class="kw">if </span>w_avg != x {
+                                weighted_avg =
+                                    <span class="prelude-val">Some</span>((old_wt * w_avg + new_wt * x) / (old_wt + new_wt));
+                            }
+                            old_wt = <span class="kw">if </span>adjust { old_wt + new_wt } <span class="kw">else </span>{ T::one() };
+                        }
+                    }
+                }
             }
             <span class="kw">match </span>non_null_cnt &lt; min_periods {
                 <span class="bool-val">true </span>=&gt; <span class="prelude-val">None</span>,
-                <span class="bool-val">false </span>=&gt; opt_mean,
-            }
-        })
-        .collect_trusted()
-}
-
-<span class="doccomment">/// To prevent numerical instability (and as a slight optimization), we
-/// special-case ``alpha=1``.
-</span><span class="kw">fn </span>ewm_mean_alpha_equals_one&lt;I, T&gt;(xs: I, min_periods: usize) -&gt; PrimitiveArray&lt;T&gt;
-<span class="kw">where
-    </span>I: IntoIterator&lt;Item = <span class="prelude-ty">Option</span>&lt;T&gt;&gt;,
-    I::IntoIter: TrustedLen,
-    T: Float + NativeType + AddAssign,
-{
-    <span class="kw">let </span><span class="kw-2">mut </span>non_null_count = <span class="number">0usize</span>;
-    xs.into_iter()
-        .map(|opt_x| {
-            <span class="kw">if </span>opt_x.is_some() {
-                non_null_count += <span class="number">1</span>;
-            }
-            <span class="kw">match </span>non_null_count &lt; min_periods {
-                <span class="bool-val">true </span>=&gt; <span class="prelude-val">None</span>,
-                <span class="bool-val">false </span>=&gt; opt_x,
+                <span class="bool-val">false </span>=&gt; weighted_avg,
             }
         })
         .collect_trusted()
@@ -258,120 +220,110 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
+    <span class="kw">use </span><span class="kw">super</span>::<span class="kw">super</span>::assert_allclose;
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">const </span>ALPHA: f64 = <span class="number">0.5</span>;
+    <span class="kw">const </span>EPS: f64 = <span class="number">1e-15</span>;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_ewm_mean_without_null() {
-        <span class="kw">let </span>xs = <span class="macro">vec!</span>[<span class="prelude-val">Some</span>(<span class="number">1.0f32</span>), <span class="prelude-val">Some</span>(<span class="number">2.0f32</span>), <span class="prelude-val">Some</span>(<span class="number">3.0f32</span>)];
-
+        <span class="kw">let </span>xs: Vec&lt;<span class="prelude-ty">Option</span>&lt;f64&gt;&gt; = <span class="macro">vec!</span>[<span class="prelude-val">Some</span>(<span class="number">1.0</span>), <span class="prelude-val">Some</span>(<span class="number">2.0</span>), <span class="prelude-val">Some</span>(<span class="number">3.0</span>)];
         <span class="kw">for </span>adjust <span class="kw">in </span>[<span class="bool-val">false</span>, <span class="bool-val">true</span>] {
-            <span class="kw">let </span>result = ewm_mean(xs.clone().into_iter(), <span class="number">0.5</span>, adjust, <span class="number">0</span>);
-
-            <span class="kw">let </span>expected = <span class="kw">match </span>adjust {
-                <span class="bool-val">false </span>=&gt; PrimitiveArray::from([<span class="prelude-val">Some</span>(<span class="number">1.0f32</span>), <span class="prelude-val">Some</span>(<span class="number">1.5f32</span>), <span class="prelude-val">Some</span>(<span class="number">2.25f32</span>)]),
-                <span class="bool-val">true </span>=&gt; PrimitiveArray::from([
-                    <span class="prelude-val">Some</span>(<span class="number">1.0f32</span>),
-                    <span class="prelude-val">Some</span>(<span class="number">1.6666667f32</span>), <span class="comment">// &lt;-- pandas: 1.66666667
-                    </span><span class="prelude-val">Some</span>(<span class="number">2.42857143</span>),
-                ]),
-            };
-            <span class="macro">assert_eq!</span>(result, expected);
+            <span class="kw">for </span>ignore_nulls <span class="kw">in </span>[<span class="bool-val">false</span>, <span class="bool-val">true</span>] {
+                <span class="kw">for </span>min_periods <span class="kw">in </span>[<span class="number">0</span>, <span class="number">1</span>] {
+                    <span class="kw">let </span>result = ewm_mean(xs.clone(), ALPHA, adjust, min_periods, ignore_nulls);
+                    <span class="kw">let </span>expected = <span class="kw">match </span>adjust {
+                        <span class="bool-val">false </span>=&gt; PrimitiveArray::from([<span class="prelude-val">Some</span>(<span class="number">1.0f64</span>), <span class="prelude-val">Some</span>(<span class="number">1.5f64</span>), <span class="prelude-val">Some</span>(<span class="number">2.25f64</span>)]),
+                        <span class="bool-val">true </span>=&gt; PrimitiveArray::from([
+                            <span class="prelude-val">Some</span>(<span class="number">1.00000000000000000000</span>),
+                            <span class="prelude-val">Some</span>(<span class="number">1.66666666666666674068</span>),
+                            <span class="prelude-val">Some</span>(<span class="number">2.42857142857142838110</span>),
+                        ]),
+                    };
+                    <span class="macro">assert_allclose!</span>(result, expected, <span class="number">1e-15</span>);
+                }
+                <span class="kw">let </span>result = ewm_mean(xs.clone(), ALPHA, adjust, <span class="number">2</span>, ignore_nulls);
+                <span class="kw">let </span>expected = <span class="kw">match </span>adjust {
+                    <span class="bool-val">false </span>=&gt; PrimitiveArray::from([<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">1.5f64</span>), <span class="prelude-val">Some</span>(<span class="number">2.25f64</span>)]),
+                    <span class="bool-val">true </span>=&gt; PrimitiveArray::from([
+                        <span class="prelude-val">None</span>,
+                        <span class="prelude-val">Some</span>(<span class="number">1.66666666666666674068</span>),
+                        <span class="prelude-val">Some</span>(<span class="number">2.42857142857142838110</span>),
+                    ]),
+                };
+                <span class="macro">assert_allclose!</span>(result, expected, EPS);
+            }
         }
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_ewm_mean_with_null() {
-        <span class="kw">let </span>xs = <span class="macro">vec!</span>[<span class="prelude-val">Some</span>(<span class="number">1.0f32</span>), <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">1.0f32</span>), <span class="prelude-val">Some</span>(<span class="number">1.0f32</span>)].into_iter();
-        <span class="kw">let </span>result = ewm_mean(xs, <span class="number">0.5</span>, <span class="bool-val">false</span>, <span class="number">2</span>);
-        <span class="kw">let </span>expected = PrimitiveArray::from([<span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">1.0f32</span>), <span class="prelude-val">Some</span>(<span class="number">1.0f32</span>)]);
-        <span class="macro">assert_eq!</span>(result, expected);
-
-        <span class="kw">let </span>xs = <span class="macro">vec!</span>[<span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">1.0f32</span>), <span class="prelude-val">Some</span>(<span class="number">1.0f32</span>)].into_iter();
-        <span class="kw">let </span>result = ewm_mean(xs, <span class="number">0.5</span>, <span class="bool-val">false</span>, <span class="number">1</span>);
-        <span class="kw">let </span>expected = PrimitiveArray::from([<span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">1.0f32</span>), <span class="prelude-val">Some</span>(<span class="number">1.0f32</span>)]);
-        <span class="macro">assert_eq!</span>(result, expected);
-
-        <span class="kw">let </span>xs = <span class="macro">vec!</span>[
-            <span class="prelude-val">Some</span>(<span class="number">2.0f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">3.0f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">5.0f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">7.0f32</span>),
+        <span class="kw">let </span>xs1 = <span class="macro">vec!</span>[
             <span class="prelude-val">None</span>,
             <span class="prelude-val">None</span>,
+            <span class="prelude-val">Some</span>(<span class="number">5.0f64</span>),
+            <span class="prelude-val">Some</span>(<span class="number">7.0f64</span>),
             <span class="prelude-val">None</span>,
-            <span class="prelude-val">Some</span>(<span class="number">4.0f32</span>),
+            <span class="prelude-val">Some</span>(<span class="number">2.0f64</span>),
+            <span class="prelude-val">Some</span>(<span class="number">1.0f64</span>),
+            <span class="prelude-val">Some</span>(<span class="number">4.0f64</span>),
         ];
-        <span class="kw">let </span>result = ewm_mean(xs, <span class="number">0.5</span>, <span class="bool-val">false</span>, <span class="number">0</span>);
-        <span class="kw">let </span>expected = PrimitiveArray::from([
-            <span class="prelude-val">Some</span>(<span class="number">2.0f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">2.5f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">3.75f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">5.375f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">5.375f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">5.375f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">5.375f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">4.6875f32</span>),
-        ]);
-        <span class="macro">assert_eq!</span>(result, expected);
-
-        <span class="kw">let </span>xs = <span class="macro">vec!</span>[
-            <span class="prelude-val">None</span>,
-            <span class="prelude-val">None</span>,
-            <span class="prelude-val">Some</span>(<span class="number">5.0f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">7.0f32</span>),
-            <span class="prelude-val">None</span>,
-            <span class="prelude-val">Some</span>(<span class="number">2.0f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">1.0f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">4.0f32</span>),
-        ];
-        <span class="kw">let </span>unadjusted_result = ewm_mean(xs.clone().into_iter(), <span class="number">0.5</span>, <span class="bool-val">false</span>, <span class="number">1</span>);
-        <span class="kw">let </span>unadjusted_expected = PrimitiveArray::from([
-            <span class="prelude-val">None</span>,
-            <span class="prelude-val">None</span>,
-            <span class="prelude-val">Some</span>(<span class="number">5.0f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">6.0f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">6.0f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">4.0f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">2.5f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">3.25f32</span>),
-        ]);
-        <span class="macro">assert_eq!</span>(unadjusted_result, unadjusted_expected);
-        <span class="kw">let </span>adjusted_result = ewm_mean(xs.clone().into_iter(), <span class="number">0.5</span>, <span class="bool-val">true</span>, <span class="number">1</span>);
-        <span class="kw">let </span>adjusted_expected = PrimitiveArray::from([
-            <span class="prelude-val">None</span>,
-            <span class="prelude-val">None</span>,
-            <span class="prelude-val">Some</span>(<span class="number">5.0f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">6.33333333f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">6.33333333f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">3.85714286f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">2.3333335f32</span>), <span class="comment">// &lt;-- pandas: 2.33333333
-            </span><span class="prelude-val">Some</span>(<span class="number">3.19354839f32</span>),
-        ]);
-        <span class="macro">assert_eq!</span>(adjusted_result, adjusted_expected);
-
-        <span class="kw">let </span>xs = <span class="macro">vec!</span>[
-            <span class="prelude-val">None</span>,
-            <span class="prelude-val">Some</span>(<span class="number">1.0f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">5.0f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">7.0f32</span>),
-            <span class="prelude-val">None</span>,
-            <span class="prelude-val">Some</span>(<span class="number">2.0f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">1.0f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">4.0f32</span>),
-        ]
-        .into_iter();
-        <span class="kw">let </span>result = ewm_mean(xs, <span class="number">0.5</span>, <span class="bool-val">true</span>, <span class="number">1</span>);
-        <span class="kw">let </span>expected = PrimitiveArray::from([
-            <span class="prelude-val">None</span>,
-            <span class="prelude-val">Some</span>(<span class="number">1.0f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">3.66666667f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">5.57142857f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">5.57142857f32</span>),
-            <span class="prelude-val">Some</span>(<span class="number">3.66666667</span>),
-            <span class="prelude-val">Some</span>(<span class="number">2.2903228f32</span>), <span class="comment">// &lt;-- pandas: 2.29032258
-            </span><span class="prelude-val">Some</span>(<span class="number">3.15873016f32</span>),
-        ]);
-        <span class="macro">assert_eq!</span>(result, expected);
+        <span class="macro">assert_allclose!</span>(
+            ewm_mean(xs1.clone(), <span class="number">0.5</span>, <span class="bool-val">true</span>, <span class="number">0</span>, <span class="bool-val">true</span>),
+            PrimitiveArray::from([
+                <span class="prelude-val">None</span>,
+                <span class="prelude-val">None</span>,
+                <span class="prelude-val">Some</span>(<span class="number">5.00000000000000000000</span>),
+                <span class="prelude-val">Some</span>(<span class="number">6.33333333333333303727</span>),
+                <span class="prelude-val">Some</span>(<span class="number">6.33333333333333303727</span>),
+                <span class="prelude-val">Some</span>(<span class="number">3.85714285714285720630</span>),
+                <span class="prelude-val">Some</span>(<span class="number">2.33333333333333348136</span>),
+                <span class="prelude-val">Some</span>(<span class="number">3.19354838709677402164</span>),
+            ]),
+            EPS
+        );
+        <span class="macro">assert_allclose!</span>(
+            ewm_mean(xs1.clone(), <span class="number">0.5</span>, <span class="bool-val">true</span>, <span class="number">0</span>, <span class="bool-val">false</span>),
+            PrimitiveArray::from([
+                <span class="prelude-val">None</span>,
+                <span class="prelude-val">None</span>,
+                <span class="prelude-val">Some</span>(<span class="number">5.00000000000000000000</span>),
+                <span class="prelude-val">Some</span>(<span class="number">6.33333333333333303727</span>),
+                <span class="prelude-val">Some</span>(<span class="number">6.33333333333333303727</span>),
+                <span class="prelude-val">Some</span>(<span class="number">3.18181818181818165669</span>),
+                <span class="prelude-val">Some</span>(<span class="number">1.88888888888888883955</span>),
+                <span class="prelude-val">Some</span>(<span class="number">3.03389830508474567239</span>),
+            ]),
+            EPS
+        );
+        <span class="macro">assert_allclose!</span>(
+            ewm_mean(xs1.clone(), <span class="number">0.5</span>, <span class="bool-val">false</span>, <span class="number">0</span>, <span class="bool-val">true</span>),
+            PrimitiveArray::from([
+                <span class="prelude-val">None</span>,
+                <span class="prelude-val">None</span>,
+                <span class="prelude-val">Some</span>(<span class="number">5.00000000000000000000</span>),
+                <span class="prelude-val">Some</span>(<span class="number">6.00000000000000000000</span>),
+                <span class="prelude-val">Some</span>(<span class="number">6.00000000000000000000</span>),
+                <span class="prelude-val">Some</span>(<span class="number">4.00000000000000000000</span>),
+                <span class="prelude-val">Some</span>(<span class="number">2.50000000000000000000</span>),
+                <span class="prelude-val">Some</span>(<span class="number">3.25000000000000000000</span>),
+            ]),
+            EPS
+        );
+        <span class="macro">assert_allclose!</span>(
+            ewm_mean(xs1.clone(), <span class="number">0.5</span>, <span class="bool-val">false</span>, <span class="number">0</span>, <span class="bool-val">false</span>),
+            PrimitiveArray::from([
+                <span class="prelude-val">None</span>,
+                <span class="prelude-val">None</span>,
+                <span class="prelude-val">Some</span>(<span class="number">5.00000000000000000000</span>),
+                <span class="prelude-val">Some</span>(<span class="number">6.00000000000000000000</span>),
+                <span class="prelude-val">Some</span>(<span class="number">6.00000000000000000000</span>),
+                <span class="prelude-val">Some</span>(<span class="number">3.33333333333333348136</span>),
+                <span class="prelude-val">Some</span>(<span class="number">2.16666666666666696273</span>),
+                <span class="prelude-val">Some</span>(<span class="number">3.08333333333333348136</span>),
+            ]),
+            EPS
+        );
     }
 }
 </code></pre></div>

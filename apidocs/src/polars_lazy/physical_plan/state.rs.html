@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.26.1/src/physical_plan/state.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>state.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../polars_lazy/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.27.2/src/physical_plan/state.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>state.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../polars_lazy/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -224,7 +224,71 @@
 <a href="#224" id="224">224</a>
 <a href="#225" id="225">225</a>
 <a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
+<span class="kw">use </span>std::sync::atomic::{AtomicU8, Ordering};
 <span class="kw">use </span>std::sync::{Mutex, RwLock};
 
 <span class="kw">use </span>bitflags::bitflags;
@@ -242,7 +306,8 @@
 <span class="kw">pub type </span>GroupsProxyCache = Arc&lt;Mutex&lt;PlHashMap&lt;String, GroupsProxy&gt;&gt;&gt;;
 
 <span class="macro">bitflags! </span>{
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>StateFlags: u8 {
+    <span class="attr">#[repr(transparent)]
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>StateFlags: u8 {
         <span class="doccomment">/// More verbose logging
         </span><span class="kw">const </span>VERBOSE = <span class="number">0x01</span>;
         <span class="doccomment">/// Indicates that window expression&#39;s [`GroupTuples`] may be cached.
@@ -251,6 +316,13 @@
         /// If this is the case, an `explode` will yield more values than rows in original `df`,
         /// this breaks some assumptions
         </span><span class="kw">const </span>OVERLAPPING_GROUPS = <span class="number">0x04</span>;
+        <span class="doccomment">/// A `sort()` in a window function is one level flatter
+        /// Assume we have column a : i32
+        /// than a sort in a groupby. A groupby sorts the groups and returns array: list[i32]
+        /// whereas a window function returns array: i32
+        /// So a `sort().list()` in a groupby returns: list[list[i32]]
+        /// whereas in a window function would return: list[i32]
+        </span><span class="kw">const </span>FINALIZE_WINDOW_AS_LIST = <span class="number">0x08</span>;
     }
 }
 
@@ -269,6 +341,15 @@
         }
         flags
     }
+    <span class="kw">fn </span>as_u8(<span class="self">self</span>) -&gt; u8 {
+        <span class="kw">unsafe </span>{ std::mem::transmute(<span class="self">self</span>) }
+    }
+}
+
+<span class="kw">impl </span>From&lt;u8&gt; <span class="kw">for </span>StateFlags {
+    <span class="kw">fn </span>from(value: u8) -&gt; <span class="self">Self </span>{
+        <span class="kw">unsafe </span>{ std::mem::transmute(value) }
+    }
 }
 
 <span class="doccomment">/// State/ cache that is maintained during the Execution of the physical plan.
@@ -285,7 +366,7 @@
     </span><span class="kw">pub</span>(<span class="kw">super</span>) join_tuples: JoinTuplesCache,
     <span class="comment">// every join/union split gets an increment to distinguish between schema state
     </span><span class="kw">pub</span>(<span class="kw">super</span>) branch_idx: usize,
-    <span class="kw">pub</span>(<span class="kw">super</span>) flags: StateFlags,
+    <span class="kw">pub</span>(<span class="kw">super</span>) flags: AtomicU8,
     <span class="kw">pub</span>(<span class="kw">super</span>) ext_contexts: Arc&lt;Vec&lt;DataFrame&gt;&gt;,
     node_timer: <span class="prelude-ty">Option</span>&lt;NodeTimer&gt;,
 }
@@ -327,7 +408,7 @@
             group_tuples: Default::default(),
             join_tuples: Default::default(),
             branch_idx: <span class="self">self</span>.branch_idx,
-            flags: <span class="self">self</span>.flags,
+            flags: AtomicU8::new(<span class="self">self</span>.flags.load(Ordering::Relaxed)),
             ext_contexts: <span class="self">self</span>.ext_contexts.clone(),
             node_timer: <span class="self">self</span>.node_timer.clone(),
         }
@@ -343,7 +424,7 @@
             group_tuples: <span class="self">self</span>.group_tuples.clone(),
             join_tuples: <span class="self">self</span>.join_tuples.clone(),
             branch_idx: <span class="self">self</span>.branch_idx,
-            flags: <span class="self">self</span>.flags,
+            flags: AtomicU8::new(<span class="self">self</span>.flags.load(Ordering::Relaxed)),
             ext_contexts: <span class="self">self</span>.ext_contexts.clone(),
             node_timer: <span class="self">self</span>.node_timer.clone(),
         }
@@ -363,7 +444,7 @@
             group_tuples: Arc::new(Mutex::new(PlHashMap::default())),
             join_tuples: Arc::new(Mutex::new(PlHashMap::default())),
             branch_idx: <span class="number">0</span>,
-            flags: StateFlags::init(),
+            flags: AtomicU8::new(StateFlags::init().as_u8()),
             ext_contexts: Default::default(),
             node_timer: <span class="prelude-val">None</span>,
         }
@@ -383,7 +464,7 @@
             group_tuples: Default::default(),
             join_tuples: Default::default(),
             branch_idx: <span class="number">0</span>,
-            flags: StateFlags::init(),
+            flags: AtomicU8::new(StateFlags::init().as_u8()),
             ext_contexts: Default::default(),
             node_timer: <span class="prelude-val">None</span>,
         }
@@ -427,21 +508,66 @@
         lock.clear();
     }
 
+    <span class="kw">fn </span>set_flags(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(StateFlags) -&gt; StateFlags) {
+        <span class="kw">let </span>flags: StateFlags = <span class="self">self</span>.flags.load(Ordering::Relaxed).into();
+        <span class="kw">let </span>flags = f(flags);
+        <span class="self">self</span>.flags.store(flags.as_u8(), Ordering::Relaxed);
+    }
+
     <span class="doccomment">/// Indicates that window expression&#39;s [`GroupTuples`] may be cached.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>cache_window(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        <span class="self">self</span>.flags.contains(StateFlags::CACHE_WINDOW_EXPR)
+        <span class="kw">let </span>flags: StateFlags = <span class="self">self</span>.flags.load(Ordering::Relaxed).into();
+        flags.contains(StateFlags::CACHE_WINDOW_EXPR)
     }
 
     <span class="doccomment">/// Indicates that a groupby operations groups may overlap.
     /// If this is the case, an `explode` will yield more values than rows in original `df`,
     /// this breaks some assumptions
-    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>overlapping_groups(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        <span class="self">self</span>.flags.contains(StateFlags::OVERLAPPING_GROUPS)
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>has_overlapping_groups(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">let </span>flags: StateFlags = <span class="self">self</span>.flags.load(Ordering::Relaxed).into();
+        flags.contains(StateFlags::OVERLAPPING_GROUPS)
+    }
+    <span class="attr">#[cfg(feature = <span class="string">&quot;dynamic_groupby&quot;</span>)]
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>set_has_overlapping_groups(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+        <span class="self">self</span>.set_flags(<span class="kw-2">&amp;</span>|<span class="kw-2">mut </span>flags| {
+            flags |= StateFlags::OVERLAPPING_GROUPS;
+            flags
+        })
     }
 
     <span class="doccomment">/// More verbose logging
     </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>verbose(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        <span class="self">self</span>.flags.contains(StateFlags::VERBOSE)
+        <span class="kw">let </span>flags: StateFlags = <span class="self">self</span>.flags.load(Ordering::Relaxed).into();
+        flags.contains(StateFlags::VERBOSE)
+    }
+
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>set_finalize_window_as_list(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+        <span class="self">self</span>.set_flags(<span class="kw-2">&amp;</span>|<span class="kw-2">mut </span>flags| {
+            flags |= StateFlags::FINALIZE_WINDOW_AS_LIST;
+            flags
+        })
+    }
+
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>unset_finalize_window_as_list(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">let </span><span class="kw-2">mut </span>flags: StateFlags = <span class="self">self</span>.flags.load(Ordering::Relaxed).into();
+        <span class="kw">let </span>is_set = flags.contains(StateFlags::FINALIZE_WINDOW_AS_LIST);
+        flags.remove(StateFlags::FINALIZE_WINDOW_AS_LIST);
+        <span class="self">self</span>.flags.store(flags.as_u8(), Ordering::Relaxed);
+        is_set
+    }
+
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>remove_cache_window_flag(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.set_flags(<span class="kw-2">&amp;</span>|<span class="kw-2">mut </span>flags| {
+            flags.remove(StateFlags::CACHE_WINDOW_EXPR);
+            flags
+        });
+    }
+
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>insert_cache_window_flag(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.set_flags(<span class="kw-2">&amp;</span>|<span class="kw-2">mut </span>flags| {
+            flags.insert(StateFlags::CACHE_WINDOW_EXPR);
+            flags
+        });
     }
 }
 

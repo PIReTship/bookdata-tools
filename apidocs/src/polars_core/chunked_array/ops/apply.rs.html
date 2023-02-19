@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.26.1/src/chunked_array/ops/apply.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>apply.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-core-0.27.2/src/chunked_array/ops/apply.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>apply.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -861,14 +861,6 @@
 <a href="#861" id="861">861</a>
 <a href="#862" id="862">862</a>
 <a href="#863" id="863">863</a>
-<a href="#864" id="864">864</a>
-<a href="#865" id="865">865</a>
-<a href="#866" id="866">866</a>
-<a href="#867" id="867">867</a>
-<a href="#868" id="868">868</a>
-<a href="#869" id="869">869</a>
-<a href="#870" id="870">870</a>
-<a href="#871" id="871">871</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Implementations of the ChunkApply Trait.
 </span><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::convert::TryFrom;
@@ -957,7 +949,7 @@
             }
         })
         .collect();
-    ChunkedArray::&lt;S&gt;::from_chunks(name, chunks)
+    <span class="kw">unsafe </span>{ ChunkedArray::&lt;S&gt;::from_chunks(name, chunks) }
 }
 
 <span class="kw">impl</span>&lt;T: PolarsNumericType&gt; ChunkedArray&lt;T&gt; {
@@ -991,7 +983,7 @@
                 .for_each(|arr| arrow::compute::arity_assign::unary(arr, f))
         };
         <span class="comment">// can be in any order now
-        </span><span class="self">self</span>.set_sorted2(IsSorted::Not);
+        </span><span class="self">self</span>.set_sorted_flag(IsSorted::Not);
     }
 }
 
@@ -1012,7 +1004,7 @@
                 to_array::&lt;S&gt;(values, validity.cloned())
             })
             .collect();
-        ChunkedArray::&lt;S&gt;::from_chunks(<span class="self">self</span>.name(), chunks)
+        <span class="kw">unsafe </span>{ ChunkedArray::&lt;S&gt;::from_chunks(<span class="self">self</span>.name(), chunks) }
     }
 
     <span class="kw">fn </span>branch_apply_cast_numeric_no_null&lt;F, S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; ChunkedArray&lt;S&gt;
@@ -1033,7 +1025,7 @@
                 to_array::&lt;S&gt;(values, <span class="prelude-val">None</span>)
             })
             .collect();
-        ChunkedArray::&lt;S&gt;::from_chunks(<span class="self">self</span>.name(), chunks)
+        <span class="kw">unsafe </span>{ ChunkedArray::&lt;S&gt;::from_chunks(<span class="self">self</span>.name(), chunks) }
     }
 
     <span class="kw">fn </span>apply&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
@@ -1042,7 +1034,6 @@
     {
         <span class="kw">let </span>chunks = <span class="self">self
             </span>.data_views()
-            .into_iter()
             .zip(<span class="self">self</span>.iter_validities())
             .map(|(slice, validity)| {
                 <span class="kw">let </span>values = slice.iter().copied().map(f);
@@ -1050,7 +1041,7 @@
                 to_array::&lt;T&gt;(values, validity.cloned())
             })
             .collect();
-        ChunkedArray::&lt;T&gt;::from_chunks(<span class="self">self</span>.name(), chunks)
+        <span class="kw">unsafe </span>{ ChunkedArray::&lt;T&gt;::from_chunks(<span class="self">self</span>.name(), chunks) }
     }
 
     <span class="kw">fn </span>try_apply&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt;
@@ -1059,7 +1050,6 @@
     {
         <span class="kw">let </span><span class="kw-2">mut </span>ca: ChunkedArray&lt;T&gt; = <span class="self">self
             </span>.data_views()
-            .into_iter()
             .zip(<span class="self">self</span>.iter_validities())
             .map(|(slice, validity)| {
                 <span class="kw">let </span>vec: PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt; = slice.iter().copied().map(f).collect();
@@ -1083,7 +1073,7 @@
                 Box::new(arr) <span class="kw">as </span>ArrayRef
             })
             .collect();
-        <span class="self">Self</span>::from_chunks(<span class="self">self</span>.name(), chunks)
+        <span class="kw">unsafe </span>{ <span class="self">Self</span>::from_chunks(<span class="self">self</span>.name(), chunks) }
     }
 
     <span class="kw">fn </span>apply_with_idx&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
@@ -1232,14 +1222,13 @@
     {
         <span class="kw">let </span>chunks = <span class="self">self
             </span>.downcast_iter()
-            .into_iter()
             .map(|array| {
                 <span class="kw">let </span>values = array.values_iter().map(f);
                 <span class="kw">let </span>values = Vec::&lt;<span class="kw">_</span>&gt;::from_trusted_len_iter(values);
                 to_array::&lt;S&gt;(values, array.validity().cloned())
             })
             .collect();
-        ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks)
+        <span class="kw">unsafe </span>{ ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks) }
     }
 
     <span class="kw">fn </span>branch_apply_cast_numeric_no_null&lt;F, S&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; ChunkedArray&lt;S&gt;
@@ -1249,14 +1238,13 @@
     {
         <span class="kw">let </span>chunks = <span class="self">self
             </span>.downcast_iter()
-            .into_iter()
             .map(|array| {
                 <span class="kw">let </span>values = array.into_iter().map(f);
                 <span class="kw">let </span>values = Vec::&lt;<span class="kw">_</span>&gt;::from_trusted_len_iter(values);
                 to_array::&lt;S&gt;(values, array.validity().cloned())
             })
             .collect();
-        ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks)
+        <span class="kw">unsafe </span>{ ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks) }
     }
 
     <span class="kw">fn </span>apply&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
@@ -1326,14 +1314,13 @@
     {
         <span class="kw">let </span>chunks = <span class="self">self
             </span>.downcast_iter()
-            .into_iter()
             .map(|array| {
                 <span class="kw">let </span>values = array.values_iter().map(f);
                 <span class="kw">let </span>values = Vec::&lt;<span class="kw">_</span>&gt;::from_trusted_len_iter(values);
                 to_array::&lt;S&gt;(values, array.validity().cloned())
             })
             .collect();
-        ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks)
+        <span class="kw">unsafe </span>{ ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks) }
     }
 
     <span class="kw">fn </span>branch_apply_cast_numeric_no_null&lt;F, S&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; ChunkedArray&lt;S&gt;
@@ -1343,14 +1330,13 @@
     {
         <span class="kw">let </span>chunks = <span class="self">self
             </span>.downcast_iter()
-            .into_iter()
             .map(|array| {
                 <span class="kw">let </span>values = array.into_iter().map(f);
                 <span class="kw">let </span>values = Vec::&lt;<span class="kw">_</span>&gt;::from_trusted_len_iter(values);
                 to_array::&lt;S&gt;(values, array.validity().cloned())
             })
             .collect();
-        ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks)
+        <span class="kw">unsafe </span>{ ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks) }
     }
 
     <span class="kw">fn </span>apply&lt;F&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, f: F) -&gt; <span class="self">Self
@@ -1413,16 +1399,16 @@
 
 <span class="kw">impl </span>ChunkApplyKernel&lt;BooleanArray&gt; <span class="kw">for </span>BooleanChunked {
     <span class="kw">fn </span>apply_kernel(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>BooleanArray) -&gt; ArrayRef) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>chunks = <span class="self">self</span>.downcast_iter().into_iter().map(f).collect();
-        <span class="self">Self</span>::from_chunks(<span class="self">self</span>.name(), chunks)
+        <span class="kw">let </span>chunks = <span class="self">self</span>.downcast_iter().map(f).collect();
+        <span class="kw">unsafe </span>{ <span class="self">Self</span>::from_chunks(<span class="self">self</span>.name(), chunks) }
     }
 
     <span class="kw">fn </span>apply_kernel_cast&lt;S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>BooleanArray) -&gt; ArrayRef) -&gt; ChunkedArray&lt;S&gt;
     <span class="kw">where
         </span>S: PolarsDataType,
     {
-        <span class="kw">let </span>chunks = <span class="self">self</span>.downcast_iter().into_iter().map(f).collect();
-        ChunkedArray::&lt;S&gt;::from_chunks(<span class="self">self</span>.name(), chunks)
+        <span class="kw">let </span>chunks = <span class="self">self</span>.downcast_iter().map(f).collect();
+        <span class="kw">unsafe </span>{ ChunkedArray::&lt;S&gt;::from_chunks(<span class="self">self</span>.name(), chunks) }
     }
 }
 
@@ -1440,8 +1426,8 @@
     <span class="kw">where
         </span>S: PolarsDataType,
     {
-        <span class="kw">let </span>chunks = <span class="self">self</span>.downcast_iter().into_iter().map(f).collect();
-        ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks)
+        <span class="kw">let </span>chunks = <span class="self">self</span>.downcast_iter().map(f).collect();
+        <span class="kw">unsafe </span>{ ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks) }
     }
 }
 
@@ -1454,8 +1440,8 @@
     <span class="kw">where
         </span>S: PolarsDataType,
     {
-        <span class="kw">let </span>chunks = <span class="self">self</span>.downcast_iter().into_iter().map(f).collect();
-        ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks)
+        <span class="kw">let </span>chunks = <span class="self">self</span>.downcast_iter().map(f).collect();
+        <span class="kw">unsafe </span>{ ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks) }
     }
 }
 
@@ -1469,8 +1455,8 @@
     <span class="kw">where
         </span>S: PolarsDataType,
     {
-        <span class="kw">let </span>chunks = <span class="self">self</span>.downcast_iter().into_iter().map(f).collect();
-        ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks)
+        <span class="kw">let </span>chunks = <span class="self">self</span>.downcast_iter().map(f).collect();
+        <span class="kw">unsafe </span>{ ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks) }
     }
 }
 
@@ -1483,7 +1469,6 @@
         <span class="kw">let </span>dtype = <span class="self">self</span>.inner_dtype();
         <span class="kw">let </span>chunks = <span class="self">self
             </span>.downcast_iter()
-            .into_iter()
             .map(|array| {
                 <span class="kw">unsafe </span>{
                     <span class="kw">let </span>values = array
@@ -1502,7 +1487,7 @@
                 }
             })
             .collect();
-        ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks)
+        <span class="kw">unsafe </span>{ ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks) }
     }
 
     <span class="kw">fn </span>branch_apply_cast_numeric_no_null&lt;F, S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; ChunkedArray&lt;S&gt;
@@ -1513,7 +1498,6 @@
         <span class="kw">let </span>dtype = <span class="self">self</span>.inner_dtype();
         <span class="kw">let </span>chunks = <span class="self">self
             </span>.downcast_iter()
-            .into_iter()
             .map(|array| {
                 <span class="kw">let </span>values = array.iter().map(|x| {
                     <span class="kw">let </span>x = x.map(|x| {
@@ -1532,7 +1516,7 @@
                 }
             })
             .collect();
-        ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks)
+        <span class="kw">unsafe </span>{ ChunkedArray::from_chunks(<span class="self">self</span>.name(), chunks) }
     }
 
     <span class="doccomment">/// Apply a closure `F` elementwise.

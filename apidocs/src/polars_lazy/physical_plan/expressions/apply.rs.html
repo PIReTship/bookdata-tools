@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.26.1/src/physical_plan/expressions/apply.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>apply.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.27.2/src/physical_plan/expressions/apply.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>apply.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -393,9 +393,45 @@
 <a href="#393" id="393">393</a>
 <a href="#394" id="394">394</a>
 <a href="#395" id="395">395</a>
-</pre><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
+<a href="#408" id="408">408</a>
+<a href="#409" id="409">409</a>
+<a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
+<a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+</pre><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
+<span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use </span>polars_arrow::utils::CustomIterTools;
 <span class="kw">use </span>polars_core::frame::groupby::GroupsProxy;
 <span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>polars_core::POOL;
@@ -418,6 +454,8 @@
     <span class="kw">pub </span>collect_groups: ApplyOptions,
     <span class="kw">pub </span>auto_explode: bool,
     <span class="kw">pub </span>allow_rename: bool,
+    <span class="kw">pub </span>pass_name_to_apply: bool,
+    <span class="kw">pub </span>input_schema: <span class="prelude-ty">Option</span>&lt;SchemaRef&gt;,
 }
 
 <span class="kw">impl </span>ApplyExpr {
@@ -434,6 +472,8 @@
             collect_groups,
             auto_explode: <span class="bool-val">false</span>,
             allow_rename: <span class="bool-val">false</span>,
+            pass_name_to_apply: <span class="bool-val">false</span>,
+            input_schema: <span class="prelude-val">None</span>,
         }
     }
 
@@ -467,6 +507,22 @@
         }
         ac
     }
+
+    <span class="kw">fn </span>get_input_schema(<span class="kw-2">&amp;</span><span class="self">self</span>, df: <span class="kw-2">&amp;</span>DataFrame) -&gt; Cow&lt;Schema&gt; {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.input_schema {
+            <span class="prelude-val">Some</span>(schema) =&gt; Cow::Borrowed(schema.as_ref()),
+            <span class="prelude-val">None </span>=&gt; Cow::Owned(df.schema()),
+        }
+    }
+
+    <span class="kw">fn </span>eval_and_flatten(<span class="kw-2">&amp;</span><span class="self">self</span>, inputs: <span class="kw-2">&amp;mut </span>[Series]) -&gt; PolarsResult&lt;Series&gt; {
+        <span class="self">self</span>.function.call_udf(inputs).map(|opt_out| {
+            opt_out.unwrap_or_else(|| {
+                <span class="kw">let </span>field = <span class="self">self</span>.to_field(<span class="self">self</span>.input_schema.as_ref().unwrap()).unwrap();
+                Series::full_null(field.name(), <span class="number">1</span>, field.data_type())
+            })
+        })
+    }
 }
 
 <span class="kw">fn </span>all_unit_length(ca: <span class="kw-2">&amp;</span>ListChunked) -&gt; bool {
@@ -491,17 +547,18 @@
     }
 
     <span class="kw">fn </span>evaluate(<span class="kw-2">&amp;</span><span class="self">self</span>, df: <span class="kw-2">&amp;</span>DataFrame, state: <span class="kw-2">&amp;</span>ExecutionState) -&gt; PolarsResult&lt;Series&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>inputs = <span class="self">self
-            </span>.inputs
-            .par_iter()
-            .map(|e| e.evaluate(df, state))
-            .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>inputs = POOL.install(|| {
+            <span class="self">self</span>.inputs
+                .par_iter()
+                .map(|e| e.evaluate(df, state))
+                .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()
+        })<span class="question-mark">?</span>;
 
         <span class="kw">if </span><span class="self">self</span>.allow_rename {
-            <span class="kw">return </span><span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>inputs);
+            <span class="kw">return </span><span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>inputs);
         }
         <span class="kw">let </span>in_name = inputs[<span class="number">0</span>].name().to_string();
-        <span class="kw">let </span><span class="kw-2">mut </span>out = <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>inputs)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>out = <span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>inputs)<span class="question-mark">?</span>;
         <span class="kw">if </span>in_name != out.name() {
             out.rename(<span class="kw-2">&amp;</span>in_name);
         }
@@ -517,9 +574,9 @@
         <span class="kw">if </span><span class="self">self</span>.inputs.len() == <span class="number">1 </span>{
             <span class="kw">let </span><span class="kw-2">mut </span>ac = <span class="self">self</span>.inputs[<span class="number">0</span>].evaluate_on_groups(df, groups, state)<span class="question-mark">?</span>;
 
-            <span class="kw">match </span>(state.overlapping_groups(), <span class="self">self</span>.collect_groups) {
+            <span class="kw">match </span>(state.has_overlapping_groups(), <span class="self">self</span>.collect_groups) {
                 (<span class="kw">_</span>, ApplyOptions::ApplyList) =&gt; {
-                    <span class="kw">let </span>s = <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>[ac.aggregated()])<span class="question-mark">?</span>;
+                    <span class="kw">let </span>s = <span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>[ac.aggregated()])<span class="question-mark">?</span>;
                     ac.with_series(s, <span class="bool-val">true</span>);
                     <span class="prelude-val">Ok</span>(ac)
                 }
@@ -535,36 +592,39 @@
                         <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">expression_err!</span>(msg, <span class="self">self</span>.expr, ComputeError));
                     }
 
+                    <span class="kw">let </span>name = s.name().to_string();
+                    <span class="kw">let </span>agg = ac.aggregated();
                     <span class="comment">// collection of empty list leads to a null dtype
                     // see: #3687
-                    </span><span class="kw">if </span>s.len() == <span class="number">0 </span>{
+                    </span><span class="kw">if </span>agg.len() == <span class="number">0 </span>{
                         <span class="comment">// create input for the function to determine the output dtype
                         // see #3946
-                        </span><span class="kw">let </span>agg = ac.aggregated();
-                        <span class="kw">let </span>agg = agg.list().unwrap();
+                        </span><span class="kw">let </span>agg = agg.list().unwrap();
                         <span class="kw">let </span>input_dtype = agg.inner_dtype();
 
                         <span class="kw">let </span>input = Series::full_null(<span class="string">&quot;&quot;</span>, <span class="number">0</span>, <span class="kw-2">&amp;</span>input_dtype);
 
-                        <span class="kw">let </span>output = <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>[input])<span class="question-mark">?</span>;
-                        <span class="kw">let </span>ca = ListChunked::full(ac.series().name(), <span class="kw-2">&amp;</span>output, <span class="number">0</span>);
+                        <span class="kw">let </span>output = <span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>[input])<span class="question-mark">?</span>;
+                        <span class="kw">let </span>ca = ListChunked::full(<span class="kw-2">&amp;</span>name, <span class="kw-2">&amp;</span>output, <span class="number">0</span>);
                         <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="self">self</span>.finish_apply_groups(ac, ca));
                     }
 
-                    <span class="kw">let </span>name = s.name().to_string();
-
-                    <span class="kw">let </span><span class="kw-2">mut </span>ca: ListChunked = ac
-                        .aggregated()
-                        .list()
-                        .unwrap()
-                        .par_iter()
-                        .map(|opt_s| {
-                            opt_s.and_then(|s| {
-                                <span class="kw">let </span><span class="kw-2">mut </span>container = [s];
-                                <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>container).ok()
+                    <span class="kw">let </span><span class="kw-2">mut </span>ca: ListChunked = POOL.install(|| {
+                        agg.list()
+                            .unwrap()
+                            .par_iter()
+                            .map(|opt_s| <span class="kw">match </span>opt_s {
+                                <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+                                <span class="prelude-val">Some</span>(<span class="kw-2">mut </span>s) =&gt; {
+                                    <span class="kw">if </span><span class="self">self</span>.pass_name_to_apply {
+                                        s.rename(<span class="kw-2">&amp;</span>name);
+                                    }
+                                    <span class="kw">let </span><span class="kw-2">mut </span>container = [s];
+                                    <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>container)
+                                }
                             })
-                        })
-                        .collect();
+                            .collect::&lt;PolarsResult&lt;<span class="kw">_</span>&gt;&gt;()
+                    })<span class="question-mark">?</span>;
 
                     ca.rename(<span class="kw-2">&amp;</span>name);
                     <span class="prelude-val">Ok</span>(<span class="self">self</span>.finish_apply_groups(ac, ca))
@@ -587,7 +647,7 @@
 
                     <span class="kw">let </span>input = ac.flat_naive().into_owned();
                     <span class="kw">let </span>input_len = input.len();
-                    <span class="kw">let </span>s = <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>[input])<span class="question-mark">?</span>;
+                    <span class="kw">let </span>s = <span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>[input])<span class="question-mark">?</span>;
 
                     check_map_output_len(input_len, s.len(), <span class="kw-2">&amp;</span><span class="self">self</span>.expr)<span class="question-mark">?</span>;
                     ac.with_series(s, <span class="bool-val">false</span>);
@@ -604,10 +664,10 @@
         } <span class="kw">else </span>{
             <span class="kw">let </span><span class="kw-2">mut </span>acs = <span class="self">self</span>.prepare_multiple_inputs(df, groups, state)<span class="question-mark">?</span>;
 
-            <span class="kw">match </span>(state.overlapping_groups(), <span class="self">self</span>.collect_groups) {
+            <span class="kw">match </span>(state.has_overlapping_groups(), <span class="self">self</span>.collect_groups) {
                 (<span class="kw">_</span>, ApplyOptions::ApplyList) =&gt; {
                     <span class="kw">let </span><span class="kw-2">mut </span>s = acs.iter_mut().map(|ac| ac.aggregated()).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-                    <span class="kw">let </span>s = <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>s)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>s = <span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>s)<span class="question-mark">?</span>;
                     <span class="comment">// take the first aggregation context that as that is the input series
                     </span><span class="kw">let </span><span class="kw-2">mut </span>ac = acs.swap_remove(<span class="number">0</span>);
                     ac.with_update_groups(UpdateGroups::WithGroupsLen);
@@ -627,14 +687,15 @@
                         ApplyOptions::ApplyFlat,
                         AggState::AggregatedFlat(<span class="kw">_</span>) | AggState::NotAggregated(<span class="kw">_</span>),
                     ) = (
-                        state.overlapping_groups(),
+                        state.has_overlapping_groups(),
                         <span class="self">self</span>.collect_groups,
                         acs[<span class="number">0</span>].agg_state(),
                     ) {
                         apply_multiple_flat(acs, <span class="self">self</span>.function.as_ref(), <span class="kw-2">&amp;</span><span class="self">self</span>.expr)
                     } <span class="kw">else </span>{
                         <span class="kw">let </span><span class="kw-2">mut </span>container = <span class="macro">vec!</span>[Default::default(); acs.len()];
-                        <span class="kw">let </span>name = acs[<span class="number">0</span>].series().name().to_string();
+                        <span class="kw">let </span>schema = <span class="self">self</span>.get_input_schema(df);
+                        <span class="kw">let </span>field = <span class="self">self</span>.to_field(<span class="kw-2">&amp;</span>schema)<span class="question-mark">?</span>;
 
                         <span class="comment">// aggregate representation of the aggregation contexts
                         // then unpack the lists and finally create iterators from this list chunked arrays.
@@ -646,19 +707,30 @@
                         <span class="comment">// length of the items to iterate over
                         </span><span class="kw">let </span>len = iters[<span class="number">0</span>].size_hint().<span class="number">0</span>;
 
+                        <span class="kw">if </span>len == <span class="number">0 </span>{
+                            <span class="kw">let </span>out = Series::full_null(field.name(), <span class="number">0</span>, <span class="kw-2">&amp;</span>field.dtype);
+
+                            drop(iters);
+                            <span class="comment">// take the first aggregation context that as that is the input series
+                            </span><span class="kw">let </span><span class="kw-2">mut </span>ac = acs.swap_remove(<span class="number">0</span>);
+                            ac.with_series(out, <span class="bool-val">true</span>);
+                            <span class="kw">return </span><span class="prelude-val">Ok</span>(ac);
+                        }
+
                         <span class="kw">let </span><span class="kw-2">mut </span>ca: ListChunked = (<span class="number">0</span>..len)
                             .map(|<span class="kw">_</span>| {
                                 container.clear();
                                 <span class="kw">for </span>iter <span class="kw">in </span><span class="kw-2">&amp;mut </span>iters {
                                     <span class="kw">match </span>iter.next().unwrap() {
-                                        <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">None</span>,
+                                        <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
                                         <span class="prelude-val">Some</span>(s) =&gt; container.push(s.deep_clone()),
                                     }
                                 }
-                                <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>container).ok()
+                                <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>container)
                             })
-                            .collect_trusted();
-                        ca.rename(<span class="kw-2">&amp;</span>name);
+                            .collect::&lt;PolarsResult&lt;<span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
+
+                        ca.rename(<span class="kw-2">&amp;</span>field.name);
                         drop(iters);
 
                         <span class="comment">// take the first aggregation context that as that is the input series
@@ -721,7 +793,7 @@
         .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
     <span class="kw">let </span>input_len = s[<span class="number">0</span>].len();
-    <span class="kw">let </span>s = function.call_udf(<span class="kw-2">&amp;mut </span>s)<span class="question-mark">?</span>;
+    <span class="kw">let </span>s = function.call_udf(<span class="kw-2">&amp;mut </span>s)<span class="question-mark">?</span>.unwrap();
     check_map_output_len(input_len, s.len(), expr)<span class="question-mark">?</span>;
 
     <span class="comment">// take the first aggregation context that as that is the input series
@@ -769,10 +841,10 @@
         <span class="kw">let </span>s = a.evaluate_partitioned(df, groups, state)<span class="question-mark">?</span>;
 
         <span class="kw">if </span><span class="self">self</span>.allow_rename {
-            <span class="kw">return </span><span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>[s]);
+            <span class="kw">return </span><span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>[s]);
         }
         <span class="kw">let </span>in_name = s.name().to_string();
-        <span class="kw">let </span><span class="kw-2">mut </span>out = <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>[s])<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>out = <span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>[s])<span class="question-mark">?</span>;
         <span class="kw">if </span>in_name != out.name() {
             out.rename(<span class="kw-2">&amp;</span>in_name);
         }

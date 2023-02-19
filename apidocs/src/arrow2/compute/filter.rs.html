@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.15.0/src/compute/filter.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>filter.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../arrow2/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.16.0/src/compute/filter.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>filter.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../arrow2/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -310,21 +310,39 @@
 <a href="#310" id="310">310</a>
 <a href="#311" id="311">311</a>
 <a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Contains operators to filter arrays such as [`filter`].
 </span><span class="kw">use </span><span class="kw">crate</span>::array::growable::{make_growable, Growable};
-<span class="kw">use </span><span class="kw">crate</span>::bitmap::utils::{BitChunk, BitChunkIterExact, BitChunksExact};
+<span class="kw">use </span><span class="kw">crate</span>::bitmap::utils::{BitChunkIterExact, BitChunksExact};
 <span class="kw">use </span><span class="kw">crate</span>::bitmap::{utils::SlicesIterator, Bitmap, MutableBitmap};
 <span class="kw">use </span><span class="kw">crate</span>::chunk::Chunk;
 <span class="kw">use </span><span class="kw">crate</span>::datatypes::DataType;
 <span class="kw">use </span><span class="kw">crate</span>::error::Result;
-<span class="kw">use </span><span class="kw">crate</span>::types::simd::{NativeSimd, Simd};
+<span class="kw">use </span><span class="kw">crate</span>::types::simd::Simd;
 <span class="kw">use </span><span class="kw">crate</span>::types::BitChunkOnes;
 <span class="kw">use crate</span>::{array::<span class="kw-2">*</span>, types::NativeType};
-<span class="kw">use </span>num_traits::One;
-<span class="kw">use </span>num_traits::Zero;
 
 <span class="doccomment">/// Function that can filter arbitrary arrays
 </span><span class="kw">pub type </span>Filter&lt;<span class="lifetime">&#39;a</span>&gt; = Box&lt;<span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span><span class="kw">dyn </span>Array) -&gt; Box&lt;<span class="kw">dyn </span>Array&gt; + <span class="lifetime">&#39;a </span>+ Send + Sync&gt;;
+
+<span class="attr">#[inline]
+</span><span class="kw">fn </span>get_leading_ones(chunk: u64) -&gt; u32 {
+    <span class="kw">if </span><span class="macro">cfg!</span>(target_endian = <span class="string">&quot;little&quot;</span>) {
+        chunk.trailing_ones()
+    } <span class="kw">else </span>{
+        chunk.leading_ones()
+    }
+}
 
 <span class="doccomment">/// # Safety
 /// This assumes that the `mask_chunks` contains a number of set/true items equal
@@ -332,29 +350,32 @@
 </span><span class="kw">unsafe fn </span>nonnull_filter_impl&lt;T, I&gt;(values: <span class="kw-2">&amp;</span>[T], <span class="kw-2">mut </span>mask_chunks: I, filter_count: usize) -&gt; Vec&lt;T&gt;
 <span class="kw">where
     </span>T: NativeType + Simd,
-    I: BitChunkIterExact&lt;&lt;&lt;T <span class="kw">as </span>Simd&gt;::Simd <span class="kw">as </span>NativeSimd&gt;::Chunk&gt;,
+    I: BitChunkIterExact&lt;u64&gt;,
 {
-    <span class="kw">let </span><span class="kw-2">mut </span>chunks = values.chunks_exact(T::Simd::LANES);
+    <span class="kw">let </span><span class="kw-2">mut </span>chunks = values.chunks_exact(<span class="number">64</span>);
     <span class="kw">let </span><span class="kw-2">mut </span>new = Vec::&lt;T&gt;::with_capacity(filter_count);
     <span class="kw">let </span><span class="kw-2">mut </span>dst = new.as_mut_ptr();
+
     chunks
         .by_ref()
         .zip(mask_chunks.by_ref())
-        .for_each(|(chunk, validity_chunk)| {
-            <span class="kw">let </span>ones_iter = BitChunkOnes::new(validity_chunk);
+        .for_each(|(chunk, mask_chunk)| {
+            <span class="kw">let </span>ones = mask_chunk.count_ones();
+            <span class="kw">let </span>leading_ones = get_leading_ones(mask_chunk);
 
-            <span class="kw">let </span>(size, <span class="kw">_</span>) = ones_iter.size_hint();
-            <span class="kw">if </span>size == T::Simd::LANES {
-                <span class="comment">// Fast path: all lanes are set
-                </span><span class="kw">unsafe </span>{
+            <span class="kw">if </span>ones == leading_ones {
+                <span class="kw">let </span>size = leading_ones <span class="kw">as </span>usize;
+                <span class="kw">unsafe </span>{
                     std::ptr::copy(chunk.as_ptr(), dst, size);
                     dst = dst.add(size);
                 }
-            } <span class="kw">else </span>{
-                <span class="kw">for </span>pos <span class="kw">in </span>ones_iter {
-                    dst.write(chunk[pos]);
-                    dst = dst.add(<span class="number">1</span>);
-                }
+                <span class="kw">return</span>;
+            }
+
+            <span class="kw">let </span>ones_iter = BitChunkOnes::from_known_count(mask_chunk, ones <span class="kw">as </span>usize);
+            <span class="kw">for </span>pos <span class="kw">in </span>ones_iter {
+                dst.write(<span class="kw-2">*</span>chunk.get_unchecked(pos));
+                dst = dst.add(<span class="number">1</span>);
             }
         });
 
@@ -386,11 +407,11 @@
 ) -&gt; (Vec&lt;T&gt;, MutableBitmap)
 <span class="kw">where
     </span>T: NativeType + Simd,
-    I: BitChunkIterExact&lt;&lt;&lt;T <span class="kw">as </span>Simd&gt;::Simd <span class="kw">as </span>NativeSimd&gt;::Chunk&gt;,
+    I: BitChunkIterExact&lt;u64&gt;,
 {
-    <span class="kw">let </span><span class="kw-2">mut </span>chunks = values.chunks_exact(T::Simd::LANES);
+    <span class="kw">let </span><span class="kw-2">mut </span>chunks = values.chunks_exact(<span class="number">64</span>);
 
-    <span class="kw">let </span><span class="kw-2">mut </span>validity_chunks = validity.chunks::&lt;&lt;T::Simd <span class="kw">as </span>NativeSimd&gt;::Chunk&gt;();
+    <span class="kw">let </span><span class="kw-2">mut </span>validity_chunks = validity.chunks::&lt;u64&gt;();
 
     <span class="kw">let </span><span class="kw-2">mut </span>new = Vec::&lt;T&gt;::with_capacity(filter_count);
     <span class="kw">let </span><span class="kw-2">mut </span>dst = new.as_mut_ptr();
@@ -401,25 +422,26 @@
         .zip(validity_chunks.by_ref())
         .zip(mask_chunks.by_ref())
         .for_each(|((chunk, validity_chunk), mask_chunk)| {
-            <span class="kw">let </span>ones_iter = BitChunkOnes::new(mask_chunk);
-            <span class="kw">let </span>(size, <span class="kw">_</span>) = ones_iter.size_hint();
+            <span class="kw">let </span>ones = mask_chunk.count_ones();
+            <span class="kw">let </span>leading_ones = get_leading_ones(mask_chunk);
 
-            <span class="kw">if </span>size == T::Simd::LANES {
-                <span class="comment">// Fast path: all lanes are set
-                </span><span class="kw">unsafe </span>{
+            <span class="kw">if </span>ones == leading_ones {
+                <span class="kw">let </span>size = leading_ones <span class="kw">as </span>usize;
+                <span class="kw">unsafe </span>{
                     std::ptr::copy(chunk.as_ptr(), dst, size);
                     dst = dst.add(size);
+
                     new_validity.extend_from_slice(validity_chunk.to_ne_bytes().as_ref(), <span class="number">0</span>, size);
                 }
-            } <span class="kw">else </span>{
-                <span class="kw">for </span>pos <span class="kw">in </span>ones_iter {
-                    dst.write(chunk[pos]);
-                    dst = dst.add(<span class="number">1</span>);
-                    new_validity.push(
-                        validity_chunk &amp; (&lt;&lt;&lt;T <span class="kw">as </span>Simd&gt;::Simd <span class="kw">as </span>NativeSimd&gt;::Chunk&gt;::one() &lt;&lt; pos)
-                            &gt; &lt;&lt;&lt;T <span class="kw">as </span>Simd&gt;::Simd <span class="kw">as </span>NativeSimd&gt;::Chunk&gt;::zero(),
-                    );
-                }
+                <span class="kw">return</span>;
+            }
+
+            <span class="comment">// this triggers a bitcount
+            </span><span class="kw">let </span>ones_iter = BitChunkOnes::from_known_count(mask_chunk, ones <span class="kw">as </span>usize);
+            <span class="kw">for </span>pos <span class="kw">in </span>ones_iter {
+                dst.write(<span class="kw-2">*</span>chunk.get_unchecked(pos));
+                dst = dst.add(<span class="number">1</span>);
+                new_validity.push_unchecked(validity_chunk &amp; (<span class="number">1 </span>&lt;&lt; pos) &gt; <span class="number">0</span>);
             }
         });
 
@@ -452,10 +474,10 @@
 
     <span class="kw">let </span>(slice, offset, length) = mask.as_slice();
     <span class="kw">if </span>offset == <span class="number">0 </span>{
-        <span class="kw">let </span>mask_chunks = BitChunksExact::&lt;&lt;T::Simd <span class="kw">as </span>NativeSimd&gt;::Chunk&gt;::new(slice, length);
+        <span class="kw">let </span>mask_chunks = BitChunksExact::&lt;u64&gt;::new(slice, length);
         <span class="kw">unsafe </span>{ null_filter_impl(values, validity, mask_chunks, filter_count) }
     } <span class="kw">else </span>{
-        <span class="kw">let </span>mask_chunks = mask.chunks::&lt;&lt;T::Simd <span class="kw">as </span>NativeSimd&gt;::Chunk&gt;();
+        <span class="kw">let </span>mask_chunks = mask.chunks::&lt;u64&gt;();
         <span class="kw">unsafe </span>{ null_filter_impl(values, validity, mask_chunks, filter_count) }
     }
 }
@@ -466,10 +488,10 @@
 
     <span class="kw">let </span>(slice, offset, length) = mask.as_slice();
     <span class="kw">if </span>offset == <span class="number">0 </span>{
-        <span class="kw">let </span>mask_chunks = BitChunksExact::&lt;&lt;T::Simd <span class="kw">as </span>NativeSimd&gt;::Chunk&gt;::new(slice, length);
+        <span class="kw">let </span>mask_chunks = BitChunksExact::&lt;u64&gt;::new(slice, length);
         <span class="kw">unsafe </span>{ nonnull_filter_impl(values, mask_chunks, filter_count) }
     } <span class="kw">else </span>{
-        <span class="kw">let </span>mask_chunks = mask.chunks::&lt;&lt;T::Simd <span class="kw">as </span>NativeSimd&gt;::Chunk&gt;();
+        <span class="kw">let </span>mask_chunks = mask.chunks::&lt;u64&gt;();
         <span class="kw">unsafe </span>{ nonnull_filter_impl(values, mask_chunks, filter_count) }
     }
 }
