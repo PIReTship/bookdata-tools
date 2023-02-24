@@ -10,7 +10,7 @@ use indicatif::ProgressBar;
 use log::*;
 use serde::de::DeserializeOwned;
 
-use super::compress::{open_gzin_progress, open_solo_zip};
+use super::compress::open_gzin_progress;
 use super::ObjectWriter;
 
 /// Read lines from a file with buffering, decompression, and parsing.
@@ -59,15 +59,6 @@ impl LineProcessor {
     /// Open a line processor from a gzipped source.
     pub fn open_gzip(path: &Path, pb: ProgressBar) -> Result<LineProcessor> {
         let read = open_gzin_progress(path, pb)?;
-        Ok(LineProcessor {
-            reader: Box::new(read),
-        })
-    }
-
-    /// Open a line processor from a zipped source.
-    #[allow(dead_code)]
-    pub fn open_solo_zip(path: &Path) -> Result<LineProcessor> {
-        let read = open_solo_zip(path)?;
         Ok(LineProcessor {
             reader: Box::new(read),
         })

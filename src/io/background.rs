@@ -43,14 +43,6 @@ impl ThreadRead {
             handle: Some(jh),
         })
     }
-
-    /// Create a thread read from an already-existing thread.
-    pub fn create(read: PipeReader, handle: JoinHandle<io::Result<u64>>) -> ThreadRead {
-        ThreadRead {
-            read,
-            handle: Some(handle),
-        }
-    }
 }
 
 impl Read for ThreadRead {
