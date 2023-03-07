@@ -128,13 +128,37 @@
 <a href="#128" id="128">128</a>
 <a href="#129" id="129">129</a>
 <a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::fs::File;
 
 <span class="kw">use </span>chrono::NaiveDate;
 <span class="kw">use </span>clap::Args;
 
 <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span>::polars::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>polars::prelude::<span class="kw-2">*</span>;
 
 <span class="doccomment">/// Compute k-cores of interaction records.
 </span><span class="attr">#[derive(Debug, Clone, Args)]
@@ -156,6 +180,14 @@
     </span><span class="attr">#[arg(long = <span class="string">&quot;year&quot;</span>)]
     </span>year: <span class="prelude-ty">Option</span>&lt;i32&gt;,
 
+    <span class="doccomment">/// Limit ratings to after a particular date (inclusive)
+    </span><span class="attr">#[arg(long = <span class="string">&quot;start-date&quot;</span>)]
+    </span>start: <span class="prelude-ty">Option</span>&lt;NaiveDate&gt;,
+
+    <span class="doccomment">/// Limit ratings to before a particular date (exclusive)
+    </span><span class="attr">#[arg(long = <span class="string">&quot;end-date&quot;</span>)]
+    </span>end: <span class="prelude-ty">Option</span>&lt;NaiveDate&gt;,
+
     <span class="doccomment">/// The output file.
     </span><span class="attr">#[arg(short = <span class="string">&#39;o&#39;</span>, long = <span class="string">&quot;output&quot;</span>, name = <span class="string">&quot;FILE&quot;</span>)]
     </span>output: PathBuf,
@@ -169,24 +201,40 @@
     <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>uk = <span class="self">self</span>.user_k.unwrap_or(<span class="self">self</span>.k);
         <span class="kw">let </span>ik = <span class="self">self</span>.item_k.unwrap_or(<span class="self">self</span>.k);
-        <span class="macro">info!</span>(<span class="string">&quot;computing ({},{})-core for {}&quot;</span>, uk, ik, <span class="self">self</span>.input.display());
+        <span class="macro">info!</span>(
+            <span class="string">&quot;computing ({},{})-core for {}&quot;</span>,
+            uk,
+            ik,
+            <span class="self">self</span>.input.display()
+        );
 
         <span class="kw">let </span>file = File::open(<span class="kw-2">&amp;</span><span class="self">self</span>.input)<span class="question-mark">?</span>;
-        <span class="kw">let </span>actions = ParquetReader::new(file).finish()<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>actions = ParquetReader::new(file).finish()<span class="question-mark">?</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>actions = <span class="kw">if let </span><span class="prelude-val">Some</span>(y) = <span class="self">self</span>.year {
-            <span class="macro">info!</span>(<span class="string">&quot;filtering to year {}&quot;</span>, y);
-            <span class="kw">let </span>start = NaiveDate::from_ymd_opt(y, <span class="number">1</span>, <span class="number">1</span>).unwrap();
+        <span class="kw">let </span>start = <span class="self">self
+            </span>.start
+            .or_else(|| <span class="self">self</span>.year.map(|y| NaiveDate::from_ymd_opt(y, <span class="number">1</span>, <span class="number">1</span>).unwrap()));
+        <span class="kw">let </span>end = <span class="self">self</span>.end.or_else(|| {
+            <span class="self">self</span>.year
+                .map(|y| NaiveDate::from_ymd_opt(y + <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>).unwrap())
+        });
+
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(start) = start {
+            <span class="macro">info!</span>(<span class="string">&quot;removing actions before {}&quot;</span>, start);
             <span class="kw">let </span>start = start.and_hms_opt(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>).unwrap().timestamp();
-            <span class="kw">let </span>end = NaiveDate::from_ymd_opt(y + <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>).unwrap();
+            <span class="comment">// currently hard-coded for goodreads
+            </span><span class="kw">let </span>col = actions.column(<span class="string">&quot;last_time&quot;</span>)<span class="question-mark">?</span>;
+            <span class="kw">let </span>mask = col.gt_eq(start)<span class="question-mark">?</span>;
+            actions = actions.filter(<span class="kw-2">&amp;</span>mask)<span class="question-mark">?</span>;
+        }
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(end) = end {
+            <span class="macro">info!</span>(<span class="string">&quot;removing actions after {}&quot;</span>, end);
             <span class="kw">let </span>end = end.and_hms_opt(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>).unwrap().timestamp();
             <span class="comment">// currently hard-coded for goodreads
             </span><span class="kw">let </span>col = actions.column(<span class="string">&quot;last_time&quot;</span>)<span class="question-mark">?</span>;
-            <span class="kw">let </span>mask = col.gt_eq(start)<span class="question-mark">? </span>&amp; col.lt(end)<span class="question-mark">?</span>;
-            actions.filter(<span class="kw-2">&amp;</span>mask)<span class="question-mark">?
-        </span>} <span class="kw">else </span>{
-            actions
-        };
+            <span class="kw">let </span>mask = col.lt(end)<span class="question-mark">?</span>;
+            actions = actions.filter(<span class="kw-2">&amp;</span>mask)<span class="question-mark">?</span>;
+        }
 
         <span class="kw">let </span><span class="kw-2">mut </span>iters = <span class="number">0</span>;
         <span class="comment">// we proceed iteratively, alternating filtering users and items

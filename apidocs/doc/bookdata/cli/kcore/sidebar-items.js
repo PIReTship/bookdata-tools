@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["Kcore","Compute k-cores of interaction records."]]};

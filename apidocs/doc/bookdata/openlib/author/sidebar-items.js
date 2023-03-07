@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["author_name_records","Get a list of author name records for an author."]],"struct":[["AuthorNameRec","An author-name record in the extracted Parquet."],["AuthorProcessor","Process author records into Parquet."],["AuthorRec","An author record in the extracted Parquet."],["MutableAuthorNameRecArray",""],["MutableAuthorRecArray",""]]};

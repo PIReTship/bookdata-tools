@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["UnstableSeries","A wrapper type that should make it a bit more clear that we should not clone Series"]],"type":[["ArrayBox",""]]};

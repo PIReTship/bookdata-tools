@@ -107,7 +107,6 @@ var sourcesIndex = JSON.parse('{\
 "mio":["",[["event",[],["event.rs","events.rs","mod.rs","source.rs"]],["net",[["tcp",[],["listener.rs","mod.rs","stream.rs"]],["uds",[],["datagram.rs","listener.rs","mod.rs","stream.rs"]]],["mod.rs","udp.rs"]],["sys",[["unix",[["selector",[],["epoll.rs","mod.rs"]],["uds",[],["datagram.rs","listener.rs","mod.rs","socketaddr.rs","stream.rs"]]],["mod.rs","net.rs","pipe.rs","sourcefd.rs","tcp.rs","udp.rs","waker.rs"]]],["mod.rs"]]],["interest.rs","io_source.rs","lib.rs","macros.rs","poll.rs","token.rs","waker.rs"]],\
 "multiversion":["",[],["lib.rs"]],\
 "multiversion_macros":["",[],["dispatcher.rs","lib.rs","meta.rs","multiversion.rs","safe_inner.rs","static_dispatch.rs","target.rs","target_cfg.rs","util.rs"]],\
-"nom8":["",[["bits",[],["complete.rs","mod.rs","streaming.rs"]],["branch",[],["mod.rs"]],["bytes",[],["complete.rs","mod.rs","streaming.rs"]],["character",[],["complete.rs","mod.rs","streaming.rs"]],["combinator",[],["mod.rs"]],["multi",[],["mod.rs"]],["number",[],["complete.rs","mod.rs","streaming.rs"]],["sequence",[],["mod.rs"]]],["error.rs","input.rs","lib.rs","macros.rs","parser.rs","str.rs"]],\
 "now":["",[],["lib.rs"]],\
 "num":["",[],["lib.rs"]],\
 "num_bigint":["",[["bigint",[],["addition.rs","bits.rs","convert.rs","division.rs","multiplication.rs","power.rs","shift.rs","subtraction.rs"]],["biguint",[],["addition.rs","bits.rs","convert.rs","division.rs","iter.rs","monty.rs","multiplication.rs","power.rs","shift.rs","subtraction.rs"]]],["bigint.rs","biguint.rs","lib.rs","macros.rs"]],\
@@ -175,7 +174,7 @@ var sourcesIndex = JSON.parse('{\
 "signal_hook_mio":["",[],["lib.rs"]],\
 "signal_hook_registry":["",[],["half_lock.rs","lib.rs"]],\
 "simdutf8":["",[["implementation",[["x86",[],["avx2.rs","mod.rs","sse42.rs"]]],["algorithm.rs","helpers.rs","mod.rs"]]],["basic.rs","compat.rs","lib.rs"]],\
-"slab":["",[],["lib.rs"]],\
+"slab":["",[],["builder.rs","lib.rs"]],\
 "smallvec":["",[],["lib.rs"]],\
 "smartstring":["",[],["boxed.rs","casts.rs","config.rs","inline.rs","iter.rs","lib.rs","marker_byte.rs","ops.rs"]],\
 "snap":["",[],["bytes.rs","compress.rs","crc32.rs","crc32_table.rs","decompress.rs","error.rs","frame.rs","lib.rs","raw.rs","read.rs","tag.rs","write.rs"]],\
@@ -206,6 +205,7 @@ var sourcesIndex = JSON.parse('{\
 "unicode_normalization":["",[],["__test_api.rs","decompose.rs","lib.rs","lookups.rs","no_std_prelude.rs","normalize.rs","perfect_hash.rs","quick_check.rs","recompose.rs","replace.rs","stream_safe.rs","tables.rs"]],\
 "unicode_width":["",[],["lib.rs","tables.rs"]],\
 "unicode_xid":["",[],["lib.rs","tables.rs"]],\
+"winnow":["",[["bits",[],["complete.rs","mod.rs","streaming.rs"]],["branch",[],["mod.rs"]],["bytes",[],["complete.rs","mod.rs","streaming.rs"]],["character",[],["complete.rs","mod.rs","streaming.rs"]],["combinator",[],["mod.rs"]],["multi",[],["mod.rs"]],["number",[],["complete.rs","mod.rs","streaming.rs"]],["sequence",[],["mod.rs"]],["stream",[],["impls.rs","mod.rs"]],["trace",[],["mod.rs"]]],["error.rs","lib.rs","macros.rs","parser.rs"]],\
 "xxhash_rust":["",[],["lib.rs","xxh3.rs","xxh32_common.rs","xxh3_common.rs","xxh64.rs","xxh64_common.rs"]],\
 "zip":["",[],["compression.rs","cp437.rs","crc32.rs","lib.rs","read.rs","result.rs","spec.rs","types.rs","write.rs","zipcrypto.rs"]],\
 "zstd":["",[["bulk",[],["compressor.rs","decompressor.rs","mod.rs"]],["stream",[["read",[],["mod.rs"]],["write",[],["mod.rs"]],["zio",[],["mod.rs","reader.rs","writer.rs"]]],["functions.rs","mod.rs","raw.rs"]]],["dict.rs","lib.rs"]],\

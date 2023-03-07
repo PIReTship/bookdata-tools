@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["ScanMARC","Scan MARC records and extract basic information."]]};

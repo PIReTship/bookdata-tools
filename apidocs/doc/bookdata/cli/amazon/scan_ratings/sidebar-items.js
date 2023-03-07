@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["ScanRatings","Scan an Amazon rating CSV file into Parquet."]]};

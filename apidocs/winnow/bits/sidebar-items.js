@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["bits","Converts a byte-level input to a bit-level input"],["bool","Parses one specific bit as a bool."],["bytes","Convert a [`bits`] stream back into a byte stream"],["tag","Parse taking `count` bits and comparing them to `pattern`"],["take","Parse taking `count` bits"]],"mod":[["complete","Bit level parsers"],["streaming","Bit level parsers"]]};

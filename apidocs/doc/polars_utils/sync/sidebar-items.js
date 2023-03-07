@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["SyncPtr","Utility that allows use to send pointers to another thread. This is better than going through `usize` as MIRI can follow these."]]};

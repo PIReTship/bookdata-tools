@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"derive":[["ArrowDeserialize","Derive macro for arrow deserialize"],["ArrowField","Derive macro for arrow fields"],["ArrowSerialize","Derive macro for arrow serialize"]]};

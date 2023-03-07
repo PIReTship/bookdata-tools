@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["bytes","Display a number of bytes."],["scalar","An ordinary auto-scaled value."]],"mod":[["quantity","General-purpose quantities with scales."],["scale","Support for rescaling quantities."],["sigfig","Routines for significant figures"],["temporal","Human-readable time features."]]};

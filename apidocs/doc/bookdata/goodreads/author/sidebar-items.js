@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":[["OUT_FILE",""]],"struct":[["AuthorRecord","Rows in the processed work Parquet table."],["AuthorWriter","Object writer to transform and write GoodReads works"],["MutableAuthorRecordArray",""],["RawAuthor","Author records as parsed from JSON."]]};

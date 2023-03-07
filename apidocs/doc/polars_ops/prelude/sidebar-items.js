@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":[["SearchSortedSide",""]],"fn":[["search_sorted",""]],"trait":[["ArgAgg","Argmin/ Argmax"],["AsList",""],["AsUtf8",""],["ChunkedSet",""],["DataFrameJoinOps",""],["DataFrameOps",""],["ListNameSpaceImpl",""],["SeriesMethods",""],["SeriesSealed",""]]};
