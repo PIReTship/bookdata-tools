@@ -4,7 +4,7 @@ use chrono::NaiveDate;
 use clap::Args;
 
 use crate::prelude::*;
-use ::polars::prelude::*;
+use polars::prelude::*;
 
 /// Compute k-cores of interaction records.
 #[derive(Debug, Clone, Args)]
@@ -26,6 +26,14 @@ pub struct Kcore {
     #[arg(long = "year")]
     year: Option<i32>,
 
+    /// Limit ratings to after a particular date (inclusive)
+    #[arg(long = "start-date")]
+    start: Option<NaiveDate>,
+
+    /// Limit ratings to before a particular date (exclusive)
+    #[arg(long = "end-date")]
+    end: Option<NaiveDate>,
+
     /// The output file.
     #[arg(short = 'o', long = "output", name = "FILE")]
     output: PathBuf,
@@ -39,24 +47,40 @@ impl Command for Kcore {
     fn exec(&self) -> Result<()> {
         let uk = self.user_k.unwrap_or(self.k);
         let ik = self.item_k.unwrap_or(self.k);
-        info!("computing ({},{})-core for {}", uk, ik, self.input.display());
+        info!(
+            "computing ({},{})-core for {}",
+            uk,
+            ik,
+            self.input.display()
+        );
 
         let file = File::open(&self.input)?;
-        let actions = ParquetReader::new(file).finish()?;
+        let mut actions = ParquetReader::new(file).finish()?;
 
-        let mut actions = if let Some(y) = self.year {
-            info!("filtering to year {}", y);
-            let start = NaiveDate::from_ymd_opt(y, 1, 1).unwrap();
+        let start = self
+            .start
+            .or_else(|| self.year.map(|y| NaiveDate::from_ymd_opt(y, 1, 1).unwrap()));
+        let end = self.end.or_else(|| {
+            self.year
+                .map(|y| NaiveDate::from_ymd_opt(y + 1, 1, 1).unwrap())
+        });
+
+        if let Some(start) = start {
+            info!("removing actions before {}", start);
             let start = start.and_hms_opt(0, 0, 0).unwrap().timestamp();
-            let end = NaiveDate::from_ymd_opt(y + 1, 1, 1).unwrap();
+            // currently hard-coded for goodreads
+            let col = actions.column("last_time")?;
+            let mask = col.gt_eq(start)?;
+            actions = actions.filter(&mask)?;
+        }
+        if let Some(end) = end {
+            info!("removing actions after {}", end);
             let end = end.and_hms_opt(0, 0, 0).unwrap().timestamp();
             // currently hard-coded for goodreads
             let col = actions.column("last_time")?;
-            let mask = col.gt_eq(start)? & col.lt(end)?;
-            actions.filter(&mask)?
-        } else {
-            actions
-        };
+            let mask = col.lt(end)?;
+            actions = actions.filter(&mask)?;
+        }
 
         let mut iters = 0;
         // we proceed iteratively, alternating filtering users and items
