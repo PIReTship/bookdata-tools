@@ -1,3 +1,11 @@
+subdir loc-mds
+# subdir openlibrary
+# subdir viaf
+# subdir az2014
+# subdir az2018
+# subdir bx
+# subdir goodreads
+
 stage ClusterStats {
     cmd jupytext --to ipynb --execute ClusterStats.py
     dep ClusterStats.py
