@@ -33,17 +33,20 @@ stage html-report -items {
     out {${item}.html}
 }
 
+set pqlf [open parquets.log w]
 set parquets [list]
 foreach stage [list_stages] {
     foreach out [stage_outs $stage] {
         if {[string match *.parquet $out]} {
             lappend parquets [file rootname $out]
+            puts $pqlf ${out}.json
         }
     }
 }
+close $pqlf
 
 stage schema -items [lsort $parquets] {
     cmd python run.py --rust pq-info -o {${item}.json} {${item}.parquet}
     dep {${item}.parquet}
-    out {${item}.json}
+    out -nocache {${item}.json}
 }
