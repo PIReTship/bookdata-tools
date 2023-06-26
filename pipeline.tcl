@@ -1,3 +1,6 @@
+namespace import ::plumber::list_stages
+namespace import ::plumber::stage_*
+
 subdir loc-mds
 # subdir openlibrary
 # subdir viaf
@@ -28,4 +31,19 @@ stage html-report -items {
     cmd jupyter nbconvert --to html {"${item}.ipynb"}
     dep {${item}.ipynb}
     out {${item}.html}
+}
+
+set parquets [list]
+foreach stage [list_stages] {
+    foreach out [stage_outs $stage] {
+        if {[string match *.parquet $out]} {
+            lappend parquets $out
+        }
+    }
+}
+
+stage schema -items [lsort $parquets] {
+    cmd python run.py --rust pq-info -o {${item}.json} {${item}.parquet}
+    dep {${item}.parquet}
+    out {${item}.json}
 }
