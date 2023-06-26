@@ -9,21 +9,21 @@ stage scan-interactions {
 }
 
 stage cluster-actions {
-    cmd python run.py --rust goodreads cluster-interactions --add-actions --simple -o goodreads/simple/gr-cluster-actions.parquet
+    cmd python run.py --rust goodreads cluster-interactions --add-actions --simple -o goodreads/gr-cluster-actions.parquet
     wdir ..
     dep src/cli/goodreads/cluster.rs
-    dep goodreads/simple/gr-interactions.parquet
+    dep goodreads/gr-interactions.parquet
     dep goodreads/gr-book-link.parquet
-    out goodreads/simple/gr-cluster-actions.parquet
+    out goodreads/gr-cluster-actions.parquet
 }
 
 stage cluster-ratings {
-    cmd python run.py --rust goodreads cluster-interactions --ratings --simple -o goodreads/simple/gr-cluster-ratings.parquet
+    cmd python run.py --rust goodreads cluster-interactions --ratings --simple -o goodreads/gr-cluster-ratings.parquet
     wdir ..
     dep src/cli/goodreads/cluster.rs
-    dep goodreads/simple/gr-interactions.parquet
+    dep goodreads/gr-interactions.parquet
     dep goodreads/gr-book-link.parquet
-    out goodreads/simple/gr-cluster-ratings.parquet
+    out goodreads/gr-cluster-ratings.parquet
 }
 
 stage cluster-ratings-5core {
@@ -41,21 +41,21 @@ stage cluster-actions-5core {
 }
 
 stage work-actions {
-    cmd python run.py --rust goodreads cluster-interactions --add-actions --simple --native-works -o goodreads/simple/gr-work-actions.parquet
+    cmd python run.py --rust goodreads cluster-interactions --add-actions --simple --native-works -o goodreads/gr-work-actions.parquet
     wdir ..
     dep src/cli/goodreads/cluster.rs
-    dep goodreads/simple/gr-interactions.parquet
+    dep goodreads/gr-interactions.parquet
     dep goodreads/gr-book-link.parquet
-    out goodreads/simple/gr-work-actions.parquet
+    out goodreads/gr-work-actions.parquet
 }
 
 stage work-ratings {
-    cmd python run.py --rust goodreads cluster-interactions --ratings --simple --native-works -o goodreads/simple/gr-work-ratings.parquet
+    cmd python run.py --rust goodreads cluster-interactions --ratings --simple --native-works -o goodreads/gr-work-ratings.parquet
     wdir ..
     dep src/cli/goodreads/cluster.rs
-    dep goodreads/simple/gr-interactions.parquet
+    dep goodreads/gr-interactions.parquet
     dep goodreads/gr-book-link.parquet
-    out goodreads/simple/gr-work-ratings.parquet
+    out goodreads/gr-work-ratings.parquet
 }
 
 stage work-ratings-5core {

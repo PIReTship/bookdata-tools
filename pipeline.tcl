@@ -10,6 +10,7 @@ subdir az2014
 subdir az2018
 subdir bx
 subdir goodreads
+subdir book-links
 
 stage ClusterStats {
     cmd jupytext --to ipynb --execute ClusterStats.py
