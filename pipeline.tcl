@@ -6,7 +6,7 @@ subdir openlibrary
 # subdir viaf
 # subdir az2014
 # subdir az2018
-# subdir bx
+subdir bx
 # subdir goodreads
 
 stage ClusterStats {
