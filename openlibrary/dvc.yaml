@@ -1,82 +1,56 @@
+---
 stages:
   scan-authors:
     cmd: python ../run.py --rust openlib scan-authors ../data/openlib/ol_dump_authors.txt.gz
     deps:
-    - ../src/cli/openlib.rs
-    - ../src/openlib/
-    - ../data/openlib/ol_dump_authors.txt.gz
+      - ../src/cli/openlib.rs
+      - ../src/openlib/
+      - ../data/openlib/ol_dump_authors.txt.gz
     outs:
-    - authors.parquet
-    - author-names.parquet
-
+      - authors.parquet
+      - author-names.parquet
   scan-works:
     cmd: python ../run.py --rust openlib scan-works ../data/openlib/ol_dump_works.txt.gz
     deps:
-    - ../src/cli/openlib.rs
-    - ../src/openlib/
-    - ../data/openlib/ol_dump_works.txt.gz
-    - authors.parquet
+      - ../src/cli/openlib.rs
+      - ../src/openlib/
+      - ../data/openlib/ol_dump_works.txt.gz
+      - authors.parquet
     outs:
-    - works.parquet
-    - work-authors.parquet
-    - work-subjects.parquet
-    - author-ids-after-works.parquet
-
+      - works.parquet
+      - work-authors.parquet
+      - work-subjects.parquet
+      - author-ids-after-works.parquet
   scan-editions:
     cmd: python ../run.py --rust openlib scan-editions ../data/openlib/ol_dump_editions.txt.gz
     deps:
-    - ../src/cli/openlib.rs
-    - ../src/openlib/
-    - ../data/openlib/ol_dump_editions.txt.gz
-    - authors.parquet
-    - works.parquet
-    - author-ids-after-works.parquet
+      - ../src/cli/openlib.rs
+      - ../src/openlib/
+      - ../data/openlib/ol_dump_editions.txt.gz
+      - authors.parquet
+      - works.parquet
+      - author-ids-after-works.parquet
     outs:
-    - editions.parquet
-    - edition-works.parquet
-    - edition-isbns.parquet
-    - edition-authors.parquet
-    - edition-subjects.parquet
-    - all-works.parquet
-    - all-authors.parquet
-
+      - editions.parquet
+      - edition-works.parquet
+      - edition-isbns.parquet
+      - edition-authors.parquet
+      - edition-subjects.parquet
+      - all-works.parquet
+      - all-authors.parquet
   edition-isbn-ids:
     cmd: python run.py --rust link-isbn-ids -R edition -o openlibrary/edition-isbn-ids.parquet openlibrary/edition-isbns.parquet
     wdir: ..
     deps:
-    - openlibrary/edition-isbns.parquet
-    - book-links/all-isbns.parquet
+      - openlibrary/edition-isbns.parquet
+      - book-links/all-isbns.parquet
     outs:
-    - openlibrary/edition-isbn-ids.parquet
-
+      - openlibrary/edition-isbn-ids.parquet
   work-clusters:
     cmd: python run.py --rust cluster extract-books -n work_id -o openlibrary/work-clusters.parquet OL-W
     wdir: ..
     deps:
-    - book-links/cluster-graph-nodes.parquet
+      - book-links/cluster-graph-nodes.parquet
     outs:
-    - openlibrary/work-clusters.parquet
+      - openlibrary/work-clusters.parquet
 
-  schema:
-    foreach:
-    - authors
-    - author-names
-    - works
-    - work-authors
-    - work-subjects
-    - work-clusters
-    - editions
-    - edition-works
-    - edition-isbns
-    - edition-authors
-    - edition-subjects
-    - all-works
-    - all-authors
-    - edition-isbn-ids
-    do:
-      cmd: python ../run.py --rust pq-info -o ${item}.json ${item}.parquet
-      deps:
-      - ${item}.parquet
-      outs:
-      - ${item}.json:
-          cache: false
