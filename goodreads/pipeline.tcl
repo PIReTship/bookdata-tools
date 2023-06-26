@@ -1,3 +1,8 @@
+set gr_ix_plscript [file join [file dirname [info script]] "pl-${gr_interactions}.tcl"]
+if {![file exists $gr_ix_plscript]} {
+    error "goodreads: unknown interaction type $gr_interactions"
+}
+
 stage scan-book-info {
     cmd python ../run.py --rust goodreads scan books ../data/goodreads/goodreads_books.json.gz
     dep ../src/cli/goodreads
@@ -58,3 +63,5 @@ stage work-gender {
     dep ../book-links/cluster-genders.parquet
     out gr-work-gender.parquet
 }
+
+source $gr_ix_plscript

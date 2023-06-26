@@ -1,6 +1,8 @@
 namespace import ::plumber::list_stages
 namespace import ::plumber::stage_*
 
+source config.tcl
+
 subdir loc-mds
 subdir openlibrary
 subdir viaf
