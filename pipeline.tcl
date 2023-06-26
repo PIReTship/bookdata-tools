@@ -3,6 +3,15 @@ namespace import ::plumber::stage_*
 
 source config.tcl
 
+# cmd alias to run book data commands
+proc ::bdcmd args {
+    namespace import plumber::dsl::stage::*
+    set pfx $::plumber::stage_prefix
+    set rp [root_relpath]
+    set runpy [file join $rp run.py]
+    cmd python [file join $rp run.py] --rust {*}$args
+}
+
 subdir loc-mds
 subdir openlibrary
 subdir viaf

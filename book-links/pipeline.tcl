@@ -1,5 +1,5 @@
 stage collect-isbns {
-    cmd python ../run.py --rust collect-isbns -o all-isbns.parquet all-isbns.toml
+    bdcmd collect-isbns -o all-isbns.parquet all-isbns.toml
     dep ../src/cli/collect_isbns.rs
     dep all-isbns.toml
     dep ../loc-mds/book-isbns.parquet
@@ -12,8 +12,8 @@ stage collect-isbns {
 }
 
 stage cluster {
-    cmd python run.py --rust cluster-books --save-graph book-links/book-graph.mp.zst
     wdir ..
+    bdcmd cluster-books --save-graph book-links/book-graph.mp.zst
     dep src/cli/cluster_books.rs
     dep src/graph/
     dep book-links/all-isbns.parquet
@@ -34,8 +34,8 @@ stage cluster {
 }
 
 stage cluster-ol-first-authors {
-    cmd python run.py --rust cluster extract-authors -o book-links/cluster-ol-first-authors.parquet
     wdir ..
+    bdcmd cluster extract-authors -o book-links/cluster-ol-first-authors.parquet
     dep src/cli/cluster
     dep book-links/isbn-clusters.parquet
     dep openlibrary/edition-isbn-ids.parquet
@@ -45,8 +45,8 @@ stage cluster-ol-first-authors {
 }
 
 stage cluster-loc-first-authors {
-    cmd python run.py --rust cluster extract-authors -o book-links/cluster-loc-first-authors.parquet
     wdir ..
+    bdcmd cluster extract-authors -o book-links/cluster-loc-first-authors.parquet
     dep src/cli/cluster
     dep book-links/isbn-clusters.parquet
     dep loc-mds/book-isbn-ids.parquet
@@ -55,8 +55,8 @@ stage cluster-loc-first-authors {
 }
 
 stage cluster-first-authors {
-    cmd python run.py --rust cluster extract-authors -o book-links/cluster-first-authors.parquet
     wdir ..
+    bdcmd cluster extract-authors -o book-links/cluster-first-authors.parquet
     dep src/cli/cluster
     dep book-links/isbn-clusters.parquet
     dep openlibrary/edition-isbn-ids.parquet
@@ -68,8 +68,8 @@ stage cluster-first-authors {
 }
 
 stage cluster-genders {
-    cmd python run.py --rust cluster extract-author-gender -o book-links/cluster-genders.parquet
     wdir ..
+    bdcmd cluster extract-author-gender -o book-links/cluster-genders.parquet
     dep src/cli/cluster
     dep book-links/cluster-stats.parquet
     dep book-links/cluster-first-authors.parquet
@@ -79,8 +79,8 @@ stage cluster-genders {
 }
 
 stage gender-stats {
-    cmd python run.py --rust integration-stats
     wdir ..
+    bdcmd integration-stats
     dep src/cli/stats.rs
     dep book-links/cluster-genders.parquet
     dep book-links/isbn-clusters.parquet
@@ -95,7 +95,7 @@ stage gender-stats {
 }
 
 stage cluster-hashes {
-    cmd python ../run.py --rust cluster hash -o cluster-hashes.parquet isbn-clusters.parquet
+    bdcmd cluster hash -o cluster-hashes.parquet isbn-clusters.parquet
     dep ../src/cli/cluster/hash.rs
     dep isbn-clusters.parquet
     out cluster-hashes.parquet

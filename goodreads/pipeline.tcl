@@ -4,7 +4,7 @@ if {![file exists $gr_ix_plscript]} {
 }
 
 stage scan-book-info {
-    cmd python ../run.py --rust goodreads scan books ../data/goodreads/goodreads_books.json.gz
+    bdcmd goodreads scan books ../data/goodreads/goodreads_books.json.gz
     dep ../src/cli/goodreads
     dep ../src/goodreads
     dep ../data/goodreads/goodreads_books.json.gz
@@ -15,7 +15,7 @@ stage scan-book-info {
 }
 
 stage scan-work-info {
-    cmd python ../run.py --rust goodreads scan works ../data/goodreads/goodreads_book_works.json.gz
+    bdcmd goodreads scan works ../data/goodreads/goodreads_book_works.json.gz
     dep ../src/cli/goodreads
     dep ../src/goodreads
     dep ../data/goodreads/goodreads_book_works.json.gz
@@ -23,7 +23,7 @@ stage scan-work-info {
 }
 
 stage scan-book-genres {
-    cmd python ../run.py --rust goodreads scan genres ../data/goodreads/goodreads_book_genres_initial.json.gz
+    bdcmd goodreads scan genres ../data/goodreads/goodreads_book_genres_initial.json.gz
     dep ../src/cli/goodreads
     dep ../src/goodreads
     dep ../data/goodreads/goodreads_book_genres_initial.json.gz
@@ -32,7 +32,7 @@ stage scan-book-genres {
 }
 
 stage scan-author-info {
-    cmd python ../run.py --rust goodreads scan authors ../data/goodreads/goodreads_book_authors.json.gz
+    bdcmd goodreads scan authors ../data/goodreads/goodreads_book_authors.json.gz
     dep ../src/cli/goodreads
     dep ../src/goodreads
     dep ../data/goodreads/goodreads_book_authors.json.gz
@@ -40,8 +40,8 @@ stage scan-author-info {
 }
 
 stage book-isbn-ids {
-    cmd python run.py --rust link-isbn-ids -o goodreads/book-isbn-ids.parquet -R book_id  -I isbn10 -I isbn13 -I asin goodreads/gr-book-ids.parquet
     wdir ..
+    bdcmd link-isbn-ids -o goodreads/book-isbn-ids.parquet -R book_id  -I isbn10 -I isbn13 -I asin goodreads/gr-book-ids.parquet
     dep src/cli/goodreads
     dep goodreads/gr-book-ids.parquet
     dep book-links/all-isbns.parquet
@@ -49,15 +49,15 @@ stage book-isbn-ids {
 }
 
 stage book-links {
-    cmd python run.py --rust cluster extract-books -o goodreads/gr-book-link.parquet -n book_id --join-file goodreads/gr-book-ids.parquet --join-field work_id GR-B
     wdir ..
+    bdcmd cluster extract-books -o goodreads/gr-book-link.parquet -n book_id --join-file goodreads/gr-book-ids.parquet --join-field work_id GR-B
     dep goodreads/gr-book-ids.parquet
     dep book-links/cluster-graph-nodes.parquet
     out goodreads/gr-book-link.parquet
 }
 
 stage work-gender {
-    cmd python ../run.py --rust goodreads work-gender
+    bdcmd goodreads work-gender
     dep ../src/cli/goodreads
     dep gr-book-link.parquet
     dep ../book-links/cluster-genders.parquet

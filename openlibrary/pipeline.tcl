@@ -1,5 +1,5 @@
 stage scan-authors {
-    cmd python ../run.py --rust openlib scan-authors ../data/openlib/ol_dump_authors.txt.gz
+    bdcmd openlib scan-authors ../data/openlib/ol_dump_authors.txt.gz
     dep ../src/cli/openlib.rs
     dep ../src/openlib/
     dep ../data/openlib/ol_dump_authors.txt.gz
@@ -7,7 +7,7 @@ stage scan-authors {
     out author-names.parquet
 }
 stage scan-works {
-    cmd python ../run.py --rust openlib scan-works ../data/openlib/ol_dump_works.txt.gz
+    bdcmd openlib scan-works ../data/openlib/ol_dump_works.txt.gz
     dep ../src/cli/openlib.rs
     dep ../src/openlib/
     dep ../data/openlib/ol_dump_works.txt.gz
@@ -18,7 +18,7 @@ stage scan-works {
     out author-ids-after-works.parquet
 }
 stage scan-editions {
-    cmd python ../run.py --rust openlib scan-editions ../data/openlib/ol_dump_editions.txt.gz
+    bdcmd openlib scan-editions ../data/openlib/ol_dump_editions.txt.gz
     dep ../src/cli/openlib.rs
     dep ../src/openlib/
     dep ../data/openlib/ol_dump_editions.txt.gz
@@ -34,15 +34,15 @@ stage scan-editions {
     out all-authors.parquet
 }
 stage edition-isbn-ids {
-    cmd python run.py --rust link-isbn-ids -R edition -o openlibrary/edition-isbn-ids.parquet openlibrary/edition-isbns.parquet
     wdir ..
+    bdcmd link-isbn-ids -R edition -o openlibrary/edition-isbn-ids.parquet openlibrary/edition-isbns.parquet
     dep openlibrary/edition-isbns.parquet
     dep book-links/all-isbns.parquet
     out openlibrary/edition-isbn-ids.parquet
 }
 stage work-clusters {
-    cmd python run.py --rust cluster extract-books -n work_id -o openlibrary/work-clusters.parquet OL-W
     wdir ..
+    bdcmd cluster extract-books -n work_id -o openlibrary/work-clusters.parquet OL-W
     dep book-links/cluster-graph-nodes.parquet
     out openlibrary/work-clusters.parquet
 }
