@@ -17,7 +17,7 @@ stage html-report -items {
     LinkageStats
     ClusterStats
 } {
-    cmd jupyter nbconvert --to html "\${item}.ipynb"
-    dep \${item}.ipynb
-    out \${item}.html
+    cmd jupyter nbconvert --to html {"${item}.ipynb"}
+    dep {${item}.ipynb}
+    out {${item}.html}
 }
