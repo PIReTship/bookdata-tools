@@ -4,8 +4,8 @@ namespace import ::plumber::stage_*
 subdir loc-mds
 subdir openlibrary
 subdir viaf
-# subdir az2014
-# subdir az2018
+subdir az2014
+subdir az2018
 subdir bx
 # subdir goodreads
 
