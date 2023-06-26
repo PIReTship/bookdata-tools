@@ -6,10 +6,7 @@ source config.tcl
 # cmd alias to run book data commands
 proc ::bdcmd args {
     namespace import plumber::dsl::stage::*
-    set pfx $::plumber::stage_prefix
-    set rp [root_relpath]
-    set runpy [file join $rp run.py]
-    cmd python [file join $rp run.py] --rust {*}$args
+    cmd cargo run --release -- {*}$args
 }
 
 subdir loc-mds
@@ -58,7 +55,7 @@ foreach stage [list_stages] {
 close $pqlf
 
 stage schema -items [lsort $parquets] {
-    cmd python run.py --rust pq-info -o {${item}.json} {${item}.parquet}
+    bdcmd pq-info -o {${item}.json} {${item}.parquet}
     dep {${item}.parquet}
     out -nocache {${item}.json}
 }

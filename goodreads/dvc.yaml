@@ -1,7 +1,8 @@
 ---
 stages:
   scan-book-info:
-    cmd: python ../run.py --rust goodreads scan books ../data/goodreads/goodreads_books.json.gz
+    cmd: |-
+      cargo run --release -- goodreads scan books ../data/goodreads/goodreads_books.json.gz
     deps:
       - ../src/cli/goodreads
       - ../src/goodreads
@@ -12,7 +13,8 @@ stages:
       - gr-book-authors.parquet
       - gr-book-series.parquet
   scan-work-info:
-    cmd: python ../run.py --rust goodreads scan works ../data/goodreads/goodreads_book_works.json.gz
+    cmd: |-
+      cargo run --release -- goodreads scan works ../data/goodreads/goodreads_book_works.json.gz
     deps:
       - ../src/cli/goodreads
       - ../src/goodreads
@@ -20,7 +22,8 @@ stages:
     outs:
       - gr-work-info.parquet
   scan-book-genres:
-    cmd: python ../run.py --rust goodreads scan genres ../data/goodreads/goodreads_book_genres_initial.json.gz
+    cmd: |-
+      cargo run --release -- goodreads scan genres ../data/goodreads/goodreads_book_genres_initial.json.gz
     deps:
       - ../src/cli/goodreads
       - ../src/goodreads
@@ -29,7 +32,8 @@ stages:
       - gr-book-genres.parquet
       - gr-genres.parquet
   scan-author-info:
-    cmd: python ../run.py --rust goodreads scan authors ../data/goodreads/goodreads_book_authors.json.gz
+    cmd: |-
+      cargo run --release -- goodreads scan authors ../data/goodreads/goodreads_book_authors.json.gz
     deps:
       - ../src/cli/goodreads
       - ../src/goodreads
@@ -38,7 +42,8 @@ stages:
       - gr-author-info.parquet
   book-isbn-ids:
     wdir: ..
-    cmd: python run.py --rust link-isbn-ids -o goodreads/book-isbn-ids.parquet -R book_id -I isbn10 -I isbn13 -I asin goodreads/gr-book-ids.parquet
+    cmd: |-
+      cargo run --release -- link-isbn-ids -o goodreads/book-isbn-ids.parquet -R book_id -I isbn10 -I isbn13 -I asin goodreads/gr-book-ids.parquet
     deps:
       - src/cli/goodreads
       - goodreads/gr-book-ids.parquet
@@ -47,14 +52,16 @@ stages:
       - goodreads/book-isbn-ids.parquet
   book-links:
     wdir: ..
-    cmd: python run.py --rust cluster extract-books -o goodreads/gr-book-link.parquet -n book_id --join-file goodreads/gr-book-ids.parquet --join-field work_id GR-B
+    cmd: |-
+      cargo run --release -- cluster extract-books -o goodreads/gr-book-link.parquet -n book_id --join-file goodreads/gr-book-ids.parquet --join-field work_id GR-B
     deps:
       - goodreads/gr-book-ids.parquet
       - book-links/cluster-graph-nodes.parquet
     outs:
       - goodreads/gr-book-link.parquet
   work-gender:
-    cmd: python ../run.py --rust goodreads work-gender
+    cmd: |-
+      cargo run --release -- goodreads work-gender
     deps:
       - ../src/cli/goodreads
       - gr-book-link.parquet
@@ -62,7 +69,8 @@ stages:
     outs:
       - gr-work-gender.parquet
   scan-interactions:
-    cmd: python ../run.py --rust goodreads scan interactions --csv --book-map ../data/goodreads/book_id_map.csv ../data/goodreads/goodreads_interactions.csv
+    cmd: |-
+      cargo run --release -- goodreads scan interactions --csv --book-map ../data/goodreads/book_id_map.csv ../data/goodreads/goodreads_interactions.csv
     deps:
       - ../src/cli/goodreads
       - ../src/goodreads
@@ -72,7 +80,8 @@ stages:
       - gr-interactions.parquet
   cluster-actions:
     wdir: ..
-    cmd: python run.py --rust goodreads cluster-interactions --add-actions --simple -o goodreads/gr-cluster-actions.parquet
+    cmd: |-
+      cargo run --release -- goodreads cluster-interactions --add-actions --simple -o goodreads/gr-cluster-actions.parquet
     deps:
       - src/cli/goodreads/cluster.rs
       - goodreads/gr-interactions.parquet
@@ -81,7 +90,8 @@ stages:
       - goodreads/gr-cluster-actions.parquet
   cluster-ratings:
     wdir: ..
-    cmd: python run.py --rust goodreads cluster-interactions --ratings --simple -o goodreads/gr-cluster-ratings.parquet
+    cmd: |-
+      cargo run --release -- goodreads cluster-interactions --ratings --simple -o goodreads/gr-cluster-ratings.parquet
     deps:
       - src/cli/goodreads/cluster.rs
       - goodreads/gr-interactions.parquet
@@ -89,14 +99,16 @@ stages:
     outs:
       - goodreads/gr-cluster-ratings.parquet
   cluster-ratings-5core:
-    cmd: python ../run.py --rust kcore -o gr-cluster-ratings-5core.parquet gr-cluster-ratings.parquet
+    cmd: |-
+      cargo run --release -- kcore -o gr-cluster-ratings-5core.parquet gr-cluster-ratings.parquet
     deps:
       - gr-cluster-ratings.parquet
       - ../src/cli/kcore.rs
     outs:
       - gr-cluster-ratings-5core.parquet
   cluster-actions-5core:
-    cmd: python ../run.py --rust kcore -o gr-cluster-actions-5core.parquet gr-cluster-actions.parquet
+    cmd: |-
+      cargo run --release -- kcore -o gr-cluster-actions-5core.parquet gr-cluster-actions.parquet
     deps:
       - gr-cluster-actions.parquet
       - ../src/cli/kcore.rs
@@ -104,7 +116,8 @@ stages:
       - gr-cluster-actions-5core.parquet
   work-actions:
     wdir: ..
-    cmd: python run.py --rust goodreads cluster-interactions --add-actions --simple --native-works -o goodreads/gr-work-actions.parquet
+    cmd: |-
+      cargo run --release -- goodreads cluster-interactions --add-actions --simple --native-works -o goodreads/gr-work-actions.parquet
     deps:
       - src/cli/goodreads/cluster.rs
       - goodreads/gr-interactions.parquet
@@ -113,7 +126,8 @@ stages:
       - goodreads/gr-work-actions.parquet
   work-ratings:
     wdir: ..
-    cmd: python run.py --rust goodreads cluster-interactions --ratings --simple --native-works -o goodreads/gr-work-ratings.parquet
+    cmd: |-
+      cargo run --release -- goodreads cluster-interactions --ratings --simple --native-works -o goodreads/gr-work-ratings.parquet
     deps:
       - src/cli/goodreads/cluster.rs
       - goodreads/gr-interactions.parquet
@@ -121,14 +135,16 @@ stages:
     outs:
       - goodreads/gr-work-ratings.parquet
   work-ratings-5core:
-    cmd: python ../run.py --rust kcore -o gr-work-ratings-5core.parquet gr-work-ratings.parquet
+    cmd: |-
+      cargo run --release -- kcore -o gr-work-ratings-5core.parquet gr-work-ratings.parquet
     deps:
       - gr-work-ratings.parquet
       - ../src/cli/kcore.rs
     outs:
       - gr-work-ratings-5core.parquet
   work-actions-5core:
-    cmd: python ../run.py --rust kcore -o gr-work-actions-5core.parquet gr-work-actions.parquet
+    cmd: |-
+      cargo run --release -- kcore -o gr-work-actions-5core.parquet gr-work-actions.parquet
     deps:
       - gr-work-actions.parquet
       - ../src/cli/kcore.rs
