@@ -15,14 +15,8 @@ static ACTION_FILES: &[(&str, &str)] = &[
     ("BX-E", "bx/bx-cluster-ratings.parquet"),
     ("AZ14", "az2014/az-cluster-ratings.parquet"),
     ("AZ18", "az2018/az-cluster-ratings.parquet"),
-    (
-        "GR-I",
-        "goodreads/${goodreads.interactions}/gr-cluster-actions.parquet",
-    ),
-    (
-        "GR-E",
-        "goodreads/${goodreads.interactions}/gr-cluster-ratings.parquet",
-    ),
+    ("GR-I", "goodreads/gr-cluster-actions.parquet"),
+    ("GR-E", "goodreads/gr-cluster-ratings.parquet"),
 ];
 
 /// Compute integration statistics.
@@ -33,7 +27,6 @@ pub struct IntegrationStats {}
 impl Command for IntegrationStats {
     fn exec(&self) -> Result<()> {
         require_working_root()?;
-        let config = Config::load()?;
 
         let genders = scan_genders()?;
 
@@ -41,7 +34,6 @@ impl Command for IntegrationStats {
         agg_frames.push(scan_loc(genders.clone())?);
 
         for (name, file) in ACTION_FILES {
-            let file = config.interpolate(file);
             agg_frames.push(scan_actions(&file, genders.clone(), *name)?);
         }
 

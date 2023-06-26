@@ -81,7 +81,6 @@ stage cluster-genders {
 stage gender-stats {
     cmd python run.py --rust integration-stats
     wdir ..
-    dep config.toml
     dep src/cli/stats.rs
     dep book-links/cluster-genders.parquet
     dep book-links/isbn-clusters.parquet
