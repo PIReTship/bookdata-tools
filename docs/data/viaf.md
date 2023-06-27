@@ -12,7 +12,7 @@ rather slow.
 
 :::{note}
 VIAF also does not keep old copies of the dump file.  You may need to edit
-`data/dvc.yaml` to update the VIAF URL to fetch in order to import this data.
+`data/params.yaml` to update the VIAF URL to fetch in order to import this data.
 :::
 
 :::{index} pair: directory; viaf
