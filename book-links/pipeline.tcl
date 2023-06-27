@@ -35,7 +35,7 @@ stage cluster {
 
 stage cluster-ol-first-authors {
     wdir ..
-    bdcmd cluster extract-authors -o book-links/cluster-ol-first-authors.parquet
+    bdcmd cluster extract-authors -o book-links/cluster-ol-first-authors.parquet --first-author -s openlib
     dep src/cli/cluster
     dep book-links/isbn-clusters.parquet
     dep openlibrary/edition-isbn-ids.parquet
@@ -46,7 +46,7 @@ stage cluster-ol-first-authors {
 
 stage cluster-loc-first-authors {
     wdir ..
-    bdcmd cluster extract-authors -o book-links/cluster-loc-first-authors.parquet
+    bdcmd cluster extract-authors -o book-links/cluster-loc-first-authors.parquet --first-author -s loc
     dep src/cli/cluster
     dep book-links/isbn-clusters.parquet
     dep loc-mds/book-isbn-ids.parquet
@@ -56,7 +56,7 @@ stage cluster-loc-first-authors {
 
 stage cluster-first-authors {
     wdir ..
-    bdcmd cluster extract-authors -o book-links/cluster-first-authors.parquet
+    bdcmd cluster extract-authors -o book-links/cluster-first-authors.parquet --first-author -s openlib -s loc
     dep src/cli/cluster
     dep book-links/isbn-clusters.parquet
     dep openlibrary/edition-isbn-ids.parquet
@@ -69,7 +69,7 @@ stage cluster-first-authors {
 
 stage cluster-genders {
     wdir ..
-    bdcmd cluster extract-author-gender -o book-links/cluster-genders.parquet
+    bdcmd cluster extract-author-gender -o book-links/cluster-genders.parquet -A book-links/cluster-first-authors.parquet
     dep src/cli/cluster
     dep book-links/cluster-stats.parquet
     dep book-links/cluster-first-authors.parquet
