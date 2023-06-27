@@ -12,8 +12,7 @@ rather slow.
 
 :::{note}
 VIAF also does not keep old copies of the dump file.  You may need to edit
-`data/viaf-clusters-marc21.xml.gz.dvc` to update the URL to fetch in order to
-import this data.
+`data/dvc.yaml` to update the VIAF URL to fetch in order to import this data.
 :::
 
 :::{index} pair: directory; viaf
