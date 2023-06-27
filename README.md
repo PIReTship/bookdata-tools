@@ -25,6 +25,8 @@ page that describes the data and its appropriate citation.
 See the [documentation site](https://bookdata.piret.info) for details on using and extending
 these tools.
 
+This project uses submodules — clone with `git clone --recursive`.
+
 ## Running Everything
 
 The dependencies are declared in `environment.yml`, in a format suitable for use with
@@ -39,7 +41,7 @@ You can run the entire import process with:
 
 To regenerate or update the lockfiles, run:
 
-    conda-lock lock --mamba -f environment.yml -f dev-environment.yml -f doc-environment.yml
+    conda-lock lock --mamba -f environment.yml -f dev-environment.yml -f audit-environment.yml
 
 [conda-lock]: https://github.com/conda-incubator/conda-lock/
 

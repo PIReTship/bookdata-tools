@@ -7,6 +7,10 @@ title: Setup
 These tools require an Anaconda installation.  It is possible to use them without Anaconda, but we have provided
 the environment definitions to automate use with Anaconda.
 
+This project uses Git submodules, so you should clone it with:
+
+    git clone --recursive https://github.com/PIReTship/bookdata-tools.git
+
 ## System Requirements
 
 You will need:
