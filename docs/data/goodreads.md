@@ -17,7 +17,7 @@ will need the following:
 - Interaction data (the CSV summary file, along with its book and user ID files,
   is used by default; the full JSON file is also supported)
 
-We do not yet support reviews
+We do not yet support reviews.
 
 **If you use this data, cite the paper(s) documented on the data set web site.**
 
@@ -28,11 +28,10 @@ Imported data lives in the `goodreads` directory.
 
 ## Configuration
 
-The `config.toml` file defines what source of GoodReads interaction data is used:
+The `config.tcl` file defines what source of GoodReads interaction data is used:
 
-```toml
-[goodreads]
-interactions = "simple"
+```tcl
+set gr_interactions simple
 ```
 
 The default, `simple`, uses the CSV summary data that you can download directly
