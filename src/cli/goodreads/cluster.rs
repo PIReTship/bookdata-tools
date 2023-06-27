@@ -140,7 +140,7 @@ impl ClusterOp {
 
     /// Load the input.
     fn load_input(&self) -> PolarsResult<LazyFrame> {
-        let path = "goodreads/{}/gr-interactions.parquet";
+        let path = "goodreads/gr-interactions.parquet";
         let data = LazyFrame::scan_parquet(path, Default::default())?;
 
         let links = LazyFrame::scan_parquet("goodreads/gr-book-link.parquet", Default::default())?;
