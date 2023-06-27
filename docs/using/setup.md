@@ -24,7 +24,9 @@ that contains all required runtimes and libraries:
     conda-lock install -n bookdata
     conda activate bookdata
 
-If you don't want to use Anaconda, see the following for more details on dependencies.  If you don't yet have `conda-lock` installed in your base environment, run:
+If you don't want to use Anaconda, see the following for more details on
+dependencies.  If you don't yet have `conda-lock` installed in your base
+environment, run:
 
     conda install -c conda-forge -n base conda-lock=1
 
