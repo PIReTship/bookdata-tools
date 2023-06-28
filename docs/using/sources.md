@@ -9,7 +9,7 @@ need to download yourself and save in the `data` directory.  The data sources ar
 
 -   [Library of Congress MDSConnect Open MARC Records](https://www.loc.gov/cds/products/MDSConnect-books_all.html) (auto-downloaded).
 -   [LoC MDSConnect Name Authorities](https://www.loc.gov/cds/products/MDSConnect-name_authorities.html) (auto-downloaded).
--   [Virtual Internet Authority File](http://viaf.org/viaf/data/) MARC 21 XML data (not automatically downloaded).  Download the `viaf-*-clusters-marc21.xml.gz` file from [VIAF](https://viaf.org/viaf/data) and save it as `data/viaf-clusters-marc21.xml.gz`.
+-   [Virtual Internet Authority File](http://viaf.org/viaf/data/) MARC 21 XML data (auto-downloaded, but usually needs configuration to access current data file; see the [documentation](../data/viaf) for details).
 -   [OpenLibrary Dump](https://openlibrary.org/developers/dumps) (auto-downloaded).
 -   [Amazon Ratings (2014)](http://jmcauley.ucsd.edu/data/amazon/) 'ratings only' data for _Books_ (**not** auto-downloaded — save CSV file in `data/az2014`).  **If you use this data, cite the paper on that site.**
 -   [Amazon Ratings (2018)](https://nijianmo.github.io/amazon/index.html) 'ratings only' data for _Books_ (**not** auto-downloaded — save CSV file in `data/az2014`).  **If you use this data, cite the paper on that site.**
