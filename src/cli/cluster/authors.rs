@@ -9,6 +9,7 @@ use parse_display::{Display, FromStr};
 use crate::arrow::dfext::*;
 use crate::io::object::ThreadObjectWriter;
 use crate::prelude::*;
+use crate::util::logging::data_progress;
 use anyhow::Result;
 use polars::prelude::*;
 
@@ -121,11 +122,8 @@ impl Command for ClusterAuthors {
         debug!("plan: {}", authors.describe_plan());
 
         info!("collecting results");
-        let mut authors = authors.collect()?;
+        let authors = authors.collect()?;
         info!("found {} cluster-author links", authors.height());
-
-        debug!("rechunking author table");
-        authors.rechunk();
 
         info!("saving to {:?}", &self.output);
         // clean up nullability
@@ -147,10 +145,13 @@ impl Command for ClusterAuthors {
             },
         )?;
         let mut writer = ThreadObjectWriter::new(writer);
+        let pb = data_progress(authors.n_chunks());
         for chunk in authors.iter_chunks() {
             writer.write_object(chunk)?;
+            pb.tick();
         }
         writer.finish()?;
+        std::mem::drop(pb);
 
         info!(
             "output file is {}",

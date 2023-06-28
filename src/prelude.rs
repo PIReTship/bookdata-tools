@@ -11,7 +11,7 @@ pub use crate::layout::*;
 pub use crate::util::default;
 pub use crate::util::Timer;
 pub use anyhow::{anyhow, Error, Result};
-pub use arrow2_convert::{ArrowField, ArrowSerialize, ArrowDeserialize};
+pub use arrow2_convert::{ArrowDeserialize, ArrowField, ArrowSerialize};
 pub use clap::Args;
 pub use fallible_iterator::FallibleIterator;
 pub use log::*;

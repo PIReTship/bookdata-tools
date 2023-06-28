@@ -13,6 +13,7 @@ use polars::prelude::*;
 
 use super::index::IdIndex;
 use crate::io::ObjectWriter;
+use crate::util::logging::data_progress;
 
 use anyhow::Result;
 
@@ -76,9 +77,7 @@ impl KeyCollector {
         info!("saving accumulated keys to {:?}", path.as_ref());
 
         debug!("creating data frame");
-        let mut df = self.to_data_frame(id_col, key_col)?;
-        debug!("rechunking");
-        df.rechunk();
+        let df = self.to_data_frame(id_col, key_col)?;
 
         debug!("opening file");
         let file = File::create(path)?;
@@ -90,8 +89,10 @@ impl KeyCollector {
         };
         let mut writer = FileWriter::try_new(file, self.schema(id_col, key_col), options)?;
 
+        let pb = data_progress(df.n_chunks());
         for chunk in df.iter_chunks() {
             writer.write_object(chunk)?;
+            pb.tick();
         }
 
         // FIXME use write_object

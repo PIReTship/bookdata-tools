@@ -57,12 +57,12 @@ impl Command for LinkISBNIds {
             )
         } else {
             let mut melt = MeltArgs::default();
-            melt.id_vars.push(self.rec_field.clone());
+            melt.id_vars.push((&self.rec_field).into());
             for fld in &self.isbn_fields {
-                melt.value_vars.push(fld.clone());
+                melt.value_vars.push(fld.into());
             }
-            melt.value_name = Some("isbn".to_string());
-            melt.variable_name = Some("field".to_string());
+            melt.value_name = Some("isbn".into());
+            melt.variable_name = Some("field".into());
             let rm = records.melt(melt);
             rm.join(isbns, &[col("isbn")], &[col("isbn")], JoinType::Inner)
         };
