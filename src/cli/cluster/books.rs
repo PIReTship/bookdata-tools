@@ -82,8 +82,9 @@ impl Command for ExtractBooks {
         };
 
         info!("collecting results");
-        let frame = results.collect()?;
+        let mut frame = results.collect()?;
         info!("got {} book links", frame.height());
+        frame.as_single_chunk_par();
         let schema = nonnull_schema(&frame);
         let writer = open_parquet_writer(&self.output, schema)?;
         writer.write_and_finish(frame.iter_chunks())?;
