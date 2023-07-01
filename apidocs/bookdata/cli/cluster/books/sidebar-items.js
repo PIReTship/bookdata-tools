@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"static":[["GRAPH_NODE_FILE",""]],"struct":[["ExtractBooks","Extract cluster book codes for a particular namespace."]]};
+window.SIDEBAR_ITEMS = {"static":["GRAPH_NODE_FILE"],"struct":["ExtractBooks"]};

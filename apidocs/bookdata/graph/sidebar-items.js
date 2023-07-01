@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["load_graph","Load a graph from a compressed, encoded file."],["save_graph","Save a graph to a compressed, encoded file."]],"mod":[["gml",""],["load",""],["sources",""]],"struct":[["BookID","A book identifier with optional label used as a graph node."]],"type":[["IdGraph",""],["IdNode",""]]};
+window.SIDEBAR_ITEMS = {"fn":["load_graph","save_graph"],"mod":["gml","load","sources"],"struct":["BookID"],"type":["IdGraph","IdNode"]};

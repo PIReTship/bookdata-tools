@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["xxh3","XXH3 implementation"],["xxh64","64 bit version of xxhash algorithm"]]};
+window.SIDEBAR_ITEMS = {"mod":["xxh3","xxh64"]};

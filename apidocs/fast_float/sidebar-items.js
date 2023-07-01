@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["parse","parse_partial"],"struct":["Error"],"trait":["FastFloat"],"type":["Result"]};

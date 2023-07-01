@@ -13,6 +13,7 @@ These data and integration tools are designed to support several goals:
 - Efficient import and integration
 
 ```{toctree}
+pipeline
 layout
 dataset
 ```
@@ -38,3 +39,5 @@ These goals are realized through a few technology and design decisions:
 4. Implement stages to integrate the data with the rest of the tools.  Again, this
    code can be in Rust or Python.  We usually use Polars (either the Rust or the Python
    API) to efficiently process large data files.
+
+See the [Pipeline DSL](pipeline) for information about how to update the pipeline.

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["OptState","State of the allowed optimizations"]],"type":[["AllowedOptimizations","AllowedOptimizations"]]};
+window.SIDEBAR_ITEMS = {"struct":["OptState"],"type":["AllowedOptimizations"]};

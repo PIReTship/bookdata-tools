@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["get_list_builder",""]],"struct":[["AnonymousListBuilder",""],["AnonymousOwnedListBuilder",""],["ListBooleanChunkedBuilder",""],["ListPrimitiveChunkedBuilder",""],["ListUtf8ChunkedBuilder",""]],"trait":[["ListBuilderTrait",""]]};
+window.SIDEBAR_ITEMS = {"fn":["get_list_builder"],"struct":["AnonymousListBuilder","AnonymousOwnedListBuilder","ListBinaryChunkedBuilder","ListBooleanChunkedBuilder","ListPrimitiveChunkedBuilder","ListUtf8ChunkedBuilder"],"trait":["ListBuilderTrait"]};

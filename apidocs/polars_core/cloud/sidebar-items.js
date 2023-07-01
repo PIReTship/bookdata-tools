@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["CloudType",""]],"struct":[["CloudOptions","Options to conect to various cloud providers."]]};
+window.SIDEBAR_ITEMS = {"enum":["CloudType"],"struct":["CloudOptions"]};

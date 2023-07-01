@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":[["seq",""]]};
+window.SIDEBAR_ITEMS = {"macro":["seq"]};

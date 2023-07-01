@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":[["FromData",""],["FromDataBinary",""],["FromDataUtf8",""]]};
+window.SIDEBAR_ITEMS = {"trait":["FromData","FromDataBinary","FromDataUtf8"]};

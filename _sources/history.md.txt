@@ -18,6 +18,7 @@ following:
 -   Extract GoodReads author information into {file}`goodreads/gr-author-info.parquet`.
 -   Extract 5-cores of interaction files.
 -   🪲 GoodReads cluster & work rating timestamps were on incorrect scale
+-   Use [lightweight DSL](implementation/pipeline) to generate DVC pipelines in a configurable manner
 
 ## Book Data 2.1
 

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":[["ArrayArithmetics",""]]};
+window.SIDEBAR_ITEMS = {"trait":["ArrayArithmetics"]};

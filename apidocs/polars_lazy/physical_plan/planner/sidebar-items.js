@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["create_physical_plan",""]]};
+window.SIDEBAR_ITEMS = {"fn":["create_physical_plan"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["GRCmd",""]],"mod":[["cluster",""],["scan",""],["work_gender",""]],"struct":[["Goodreads","GoodReads processing commands."]]};
+window.SIDEBAR_ITEMS = {"enum":["GRCmd"],"mod":["cluster","scan","work_gender"],"struct":["Goodreads"]};

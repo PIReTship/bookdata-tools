@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["changelog",""]]};
+window.SIDEBAR_ITEMS = {"mod":["changelog"]};

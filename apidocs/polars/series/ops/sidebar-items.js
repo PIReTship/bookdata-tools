@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["NullBehavior",""]]};
+window.SIDEBAR_ITEMS = {"enum":["NullBehavior"]};

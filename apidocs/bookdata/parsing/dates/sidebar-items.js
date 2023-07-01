@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":[["GR_DATE_FMT","The date format used in the GoodReads data."]],"fn":[["check_ts","Check a date and convert to a timestamp."],["maybe_date","Construct a date if all components are defined and specify a valid day."],["parse_gr_date","Parse a GoodReads date."]]};
+window.SIDEBAR_ITEMS = {"constant":["GR_DATE_FMT"],"fn":["check_ts","maybe_date","parse_gr_date"]};

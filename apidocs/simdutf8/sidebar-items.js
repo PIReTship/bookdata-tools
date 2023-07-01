@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["basic","The `basic` API flavor provides barebones UTF-8 checking at the highest speed."],["compat","The `compat` API flavor provides full compatibility with [`std::str::from_utf8()`] and detailed validation errors."]]};
+window.SIDEBAR_ITEMS = {"mod":["basic","compat"]};

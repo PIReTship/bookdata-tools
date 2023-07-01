@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["ExtractGraph","Extract a subgraph."]]};
+window.SIDEBAR_ITEMS = {"struct":["ExtractGraph"]};

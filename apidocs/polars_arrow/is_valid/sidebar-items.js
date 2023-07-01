@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":[["ArrowArray",""],["IsValid",""]]};
+window.SIDEBAR_ITEMS = {"trait":["ArrowArray","IsValid"]};

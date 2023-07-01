@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["compare_fn_nan_max","NaN will be larger than every valid value"],["compare_fn_nan_min","NaN will be smaller than every valid value"]],"mod":[["no_nulls",""],["nulls",""]]};
+window.SIDEBAR_ITEMS = {"fn":["compare_fn_nan_max","compare_fn_nan_min"],"mod":["no_nulls","nulls"]};

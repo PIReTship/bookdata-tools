@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["ProgressStyle",""],["TemplateError",""]],"trait":[["ProgressTracker","Trait for defining stateful or stateless formatters"]]};
+window.SIDEBAR_ITEMS = {"struct":["ProgressStyle","TemplateError"],"trait":["ProgressTracker"]};

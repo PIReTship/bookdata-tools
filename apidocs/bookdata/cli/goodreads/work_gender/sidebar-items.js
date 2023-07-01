@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["link_work_genders",""]]};
+window.SIDEBAR_ITEMS = {"fn":["link_work_genders"]};

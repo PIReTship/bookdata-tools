@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["construct_graph",""]],"struct":[["GraphBuilder",""]],"type":[["NodeMap",""]]};
+window.SIDEBAR_ITEMS = {"fn":["construct_graph"],"struct":["GraphBuilder"],"type":["NodeMap"]};

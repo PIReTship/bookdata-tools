@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["check_length",""]],"struct":[["FieldStruct",""],["InfoStruct",""],["PQInfo","Extract basic information from a Parquet file."]]};
+window.SIDEBAR_ITEMS = {"fn":["check_length"],"struct":["FieldStruct","InfoStruct","PQInfo"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["to_mutable_slice","Safety"]]};
+window.SIDEBAR_ITEMS = {"fn":["to_mutable_slice"]};

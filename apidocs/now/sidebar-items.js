@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["WeekStartDay",""]],"trait":[["DateTimeNow",""],["TimeZoneNow",""]]};
+window.SIDEBAR_ITEMS = {"enum":["WeekStartDay"],"trait":["DateTimeNow","TimeZoneNow"]};

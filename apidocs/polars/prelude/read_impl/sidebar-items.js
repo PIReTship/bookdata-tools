@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["to_batched_owned",""]],"struct":[["BatchedCsvReader",""],["OwnedBatchedCsvReader",""]]};
+window.SIDEBAR_ITEMS = {"fn":["to_batched_owned_mmap","to_batched_owned_read"],"struct":["BatchedCsvReaderMmap","BatchedCsvReaderRead","OwnedBatchedCsvReader","OwnedBatchedCsvReaderMmap"]};

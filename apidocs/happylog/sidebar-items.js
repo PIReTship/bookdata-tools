@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["add_progress","Register a progress bar with the logger. "],["initialize",""],["new_progress","Create a new progress bar."],["new_spinner","Create a new spinner bar."]],"mod":[["clap","Support for command-line argument configuration of the logger."],["util","Utility functions for working with loggers"]]};
+window.SIDEBAR_ITEMS = {"fn":["add_progress","initialize","new_progress","new_spinner"],"mod":["clap","util"]};

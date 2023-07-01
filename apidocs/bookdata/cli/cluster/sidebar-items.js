@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["author_gender","Summarize author gender information for clusters."],["authors","Extract author information for book clusters."],["books","Extract author information for book clusters."],["hash","Extract author information for book clusters."]]};
+window.SIDEBAR_ITEMS = {"mod":["author_gender","authors","books","hash"]};

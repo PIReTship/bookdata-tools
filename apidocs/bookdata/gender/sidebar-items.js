@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["Gender","A gender representation."],["GenderError",""]],"fn":[["resolve_gender",""]]};
+window.SIDEBAR_ITEMS = {"enum":["Gender","GenderError"],"fn":["resolve_gender"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["prelude",""]]};
+window.SIDEBAR_ITEMS = {"mod":["chunked_array","prelude"]};

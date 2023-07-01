@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-plan-0.27.2/src/logical_plan/optimizer/simplify_expr.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>simplify_expr.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-plan-0.30.0/src/logical_plan/optimizer/simplify_expr.rs`."><title>simplify_expr.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_plan" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -692,84 +692,9 @@
 <a href="#692" id="692">692</a>
 <a href="#693" id="693">693</a>
 <a href="#694" id="694">694</a>
-<a href="#695" id="695">695</a>
-<a href="#696" id="696">696</a>
-<a href="#697" id="697">697</a>
-<a href="#698" id="698">698</a>
-<a href="#699" id="699">699</a>
-<a href="#700" id="700">700</a>
-<a href="#701" id="701">701</a>
-<a href="#702" id="702">702</a>
-<a href="#703" id="703">703</a>
-<a href="#704" id="704">704</a>
-<a href="#705" id="705">705</a>
-<a href="#706" id="706">706</a>
-<a href="#707" id="707">707</a>
-<a href="#708" id="708">708</a>
-<a href="#709" id="709">709</a>
-<a href="#710" id="710">710</a>
-<a href="#711" id="711">711</a>
-<a href="#712" id="712">712</a>
-<a href="#713" id="713">713</a>
-<a href="#714" id="714">714</a>
-<a href="#715" id="715">715</a>
-<a href="#716" id="716">716</a>
-<a href="#717" id="717">717</a>
-<a href="#718" id="718">718</a>
-<a href="#719" id="719">719</a>
-<a href="#720" id="720">720</a>
-<a href="#721" id="721">721</a>
-<a href="#722" id="722">722</a>
-<a href="#723" id="723">723</a>
-<a href="#724" id="724">724</a>
-<a href="#725" id="725">725</a>
-<a href="#726" id="726">726</a>
-<a href="#727" id="727">727</a>
-<a href="#728" id="728">728</a>
-<a href="#729" id="729">729</a>
-<a href="#730" id="730">730</a>
-<a href="#731" id="731">731</a>
-<a href="#732" id="732">732</a>
-<a href="#733" id="733">733</a>
-<a href="#734" id="734">734</a>
-<a href="#735" id="735">735</a>
-<a href="#736" id="736">736</a>
-<a href="#737" id="737">737</a>
-<a href="#738" id="738">738</a>
-<a href="#739" id="739">739</a>
-<a href="#740" id="740">740</a>
-<a href="#741" id="741">741</a>
-<a href="#742" id="742">742</a>
-<a href="#743" id="743">743</a>
-<a href="#744" id="744">744</a>
-<a href="#745" id="745">745</a>
-<a href="#746" id="746">746</a>
-<a href="#747" id="747">747</a>
-<a href="#748" id="748">748</a>
-<a href="#749" id="749">749</a>
-<a href="#750" id="750">750</a>
-<a href="#751" id="751">751</a>
-<a href="#752" id="752">752</a>
-<a href="#753" id="753">753</a>
-<a href="#754" id="754">754</a>
-<a href="#755" id="755">755</a>
-<a href="#756" id="756">756</a>
-<a href="#757" id="757">757</a>
-<a href="#758" id="758">758</a>
-<a href="#759" id="759">759</a>
-<a href="#760" id="760">760</a>
-<a href="#761" id="761">761</a>
-<a href="#762" id="762">762</a>
-<a href="#763" id="763">763</a>
-<a href="#764" id="764">764</a>
-<a href="#765" id="765">765</a>
-<a href="#766" id="766">766</a>
-<a href="#767" id="767">767</a>
-<a href="#768" id="768">768</a>
-</pre><pre class="rust"><code><span class="kw">use </span>polars_core::export::chrono;
-<span class="kw">use </span>polars_utils::arena::Arena;
+</pre></div><pre class="rust"><code><span class="kw">use </span>polars_utils::arena::Arena;
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;strings&quot;</span>)]
+<span class="attr">#[cfg(all(feature = <span class="string">&quot;strings&quot;</span>, feature = <span class="string">&quot;concat_str&quot;</span>))]
 </span><span class="kw">use </span><span class="kw">crate</span>::dsl::function_expr::StringFunction;
 <span class="kw">use </span><span class="kw">crate</span>::logical_plan::optimizer::stack_opt::OptimizationRule;
 <span class="kw">use </span><span class="kw">crate</span>::logical_plan::<span class="kw-2">*</span>;
@@ -1023,7 +948,7 @@
             }
             AExpr::Function {
                 input,
-                function: FunctionExpr::Not,
+                function: FunctionExpr::Boolean(BooleanFunction::IsNot),
                 ..
             } =&gt; {
                 <span class="kw">let </span>y = expr_arena.get(input[<span class="number">0</span>]);
@@ -1032,7 +957,7 @@
                     <span class="comment">// not(not x) =&gt; x
                     </span>AExpr::Function {
                         input,
-                        function: FunctionExpr::Not,
+                        function: FunctionExpr::Boolean(BooleanFunction::IsNot),
                         ..
                     } =&gt; <span class="prelude-val">Some</span>(expr_arena.get(input[<span class="number">0</span>]).clone()),
                     <span class="comment">// not(lit x) =&gt; !x
@@ -1169,7 +1094,7 @@
                     input: <span class="macro">vec!</span>[left_ae, right_ae],
                     function: StringFunction::ConcatHorizontal(<span class="string">&quot;&quot;</span>.to_string()).into(),
                     options: FunctionOptions {
-                        collect_groups: ApplyOptions::ApplyGroups,
+                        collect_groups: ApplyOptions::ApplyFlat,
                         input_wildcard_expansion: <span class="bool-val">true</span>,
                         auto_explode: <span class="bool-val">true</span>,
                         ..Default::default()
@@ -1227,7 +1152,7 @@
                 <span class="comment">// lit(left) + lit(right) =&gt; lit(left + right)
                 </span><span class="attr">#[allow(clippy::manual_map)]
                 </span><span class="kw">let </span>out = <span class="kw">match </span>op {
-                    Operator::Plus =&gt; {
+                    Plus =&gt; {
                         <span class="kw">match </span><span class="macro">eval_binary_same_type!</span>(left_aexpr, +, right_aexpr) {
                             <span class="prelude-val">Some</span>(new) =&gt; <span class="prelude-val">Some</span>(new),
                             <span class="prelude-val">None </span>=&gt; {
@@ -1251,10 +1176,10 @@
                             }
                         }
                     }
-                    Operator::Minus =&gt; <span class="macro">eval_binary_same_type!</span>(left_aexpr, -, right_aexpr),
-                    Operator::Multiply =&gt; <span class="macro">eval_binary_same_type!</span>(left_aexpr, <span class="kw-2">*</span>, right_aexpr),
-                    Operator::Divide =&gt; <span class="macro">eval_binary_same_type!</span>(left_aexpr, /, right_aexpr),
-                    Operator::TrueDivide =&gt; {
+                    Minus =&gt; <span class="macro">eval_binary_same_type!</span>(left_aexpr, -, right_aexpr),
+                    Multiply =&gt; <span class="macro">eval_binary_same_type!</span>(left_aexpr, <span class="kw-2">*</span>, right_aexpr),
+                    Divide =&gt; <span class="macro">eval_binary_same_type!</span>(left_aexpr, /, right_aexpr),
+                    TrueDivide =&gt; {
                         <span class="kw">if let </span>(AExpr::Literal(lit_left), AExpr::Literal(lit_right)) =
                             (left_aexpr, right_aexpr)
                         {
@@ -1299,17 +1224,17 @@
                             <span class="prelude-val">None
                         </span>}
                     }
-                    Operator::FloorDivide =&gt; <span class="prelude-val">None</span>,
-                    Operator::Modulus =&gt; <span class="macro">eval_binary_same_type!</span>(left_aexpr, %, right_aexpr),
-                    Operator::Lt =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, &lt;, right_aexpr),
-                    Operator::Gt =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, &gt;, right_aexpr),
-                    Operator::Eq =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, ==, right_aexpr),
-                    Operator::NotEq =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, !=, right_aexpr),
-                    Operator::GtEq =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, &gt;=, right_aexpr),
-                    Operator::LtEq =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, &lt;=, right_aexpr),
-                    Operator::And =&gt; eval_bitwise(left_aexpr, right_aexpr, |l, r| l &amp; r),
-                    Operator::Or =&gt; eval_bitwise(left_aexpr, right_aexpr, |l, r| l | r),
-                    Operator::Xor =&gt; eval_bitwise(left_aexpr, right_aexpr, |l, r| l ^ r),
+                    Modulus =&gt; <span class="macro">eval_binary_same_type!</span>(left_aexpr, %, right_aexpr),
+                    Lt =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, &lt;, right_aexpr),
+                    Gt =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, &gt;, right_aexpr),
+                    Eq | EqValidity =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, ==, right_aexpr),
+                    NotEq | NotEqValidity =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, !=, right_aexpr),
+                    GtEq =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, &gt;=, right_aexpr),
+                    LtEq =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, &lt;=, right_aexpr),
+                    And =&gt; eval_bitwise(left_aexpr, right_aexpr, |l, r| l &amp; r),
+                    Or =&gt; eval_bitwise(left_aexpr, right_aexpr, |l, r| l | r),
+                    Xor =&gt; eval_bitwise(left_aexpr, right_aexpr, |l, r| l ^ r),
+                    FloorDivide =&gt; <span class="prelude-val">None</span>,
                 };
                 <span class="kw">if </span>out.is_some() {
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(out);
@@ -1325,7 +1250,7 @@
                     <span class="comment">// null == column -&gt; column.is_null()
                     </span>(<span class="bool-val">true</span>, Eq, <span class="bool-val">false</span>) =&gt; <span class="prelude-val">Some</span>(AExpr::Function {
                         input: <span class="macro">vec!</span>[<span class="kw-2">*</span>right],
-                        function: FunctionExpr::IsNull,
+                        function: BooleanFunction::IsNull.into(),
                         options: FunctionOptions {
                             collect_groups: ApplyOptions::ApplyGroups,
                             ..Default::default()
@@ -1334,7 +1259,7 @@
                     <span class="comment">// column == null -&gt; column.is_null()
                     </span>(<span class="bool-val">false</span>, Eq, <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Some</span>(AExpr::Function {
                         input: <span class="macro">vec!</span>[<span class="kw-2">*</span>left],
-                        function: FunctionExpr::IsNull,
+                        function: BooleanFunction::IsNull.into(),
                         options: FunctionOptions {
                             collect_groups: ApplyOptions::ApplyGroups,
                             ..Default::default()
@@ -1343,7 +1268,7 @@
                     <span class="comment">// null != column -&gt; column.is_not_null()
                     </span>(<span class="bool-val">true</span>, NotEq, <span class="bool-val">false</span>) =&gt; <span class="prelude-val">Some</span>(AExpr::Function {
                         input: <span class="macro">vec!</span>[<span class="kw-2">*</span>right],
-                        function: FunctionExpr::IsNotNull,
+                        function: BooleanFunction::IsNotNull.into(),
                         options: FunctionOptions {
                             collect_groups: ApplyOptions::ApplyGroups,
                             ..Default::default()
@@ -1352,7 +1277,7 @@
                     <span class="comment">// column != null -&gt; column.is_not_null()
                     </span>(<span class="bool-val">false</span>, NotEq, <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Some</span>(AExpr::Function {
                         input: <span class="macro">vec!</span>[<span class="kw-2">*</span>left],
-                        function: FunctionExpr::IsNotNull,
+                        function: BooleanFunction::IsNotNull.into(),
                         options: FunctionOptions {
                             collect_groups: ApplyOptions::ApplyGroups,
                             ..Default::default()
@@ -1378,10 +1303,14 @@
                             options,
                         })
                     }
-                    AExpr::SortBy { expr, by, reverse } =&gt; <span class="prelude-val">Some</span>(AExpr::SortBy {
+                    AExpr::SortBy {
+                        expr,
+                        by,
+                        descending,
+                    } =&gt; <span class="prelude-val">Some</span>(AExpr::SortBy {
                         expr: <span class="kw-2">*</span>expr,
                         by: by.clone(),
-                        reverse: reverse.iter().map(|r| !<span class="kw-2">*</span>r).collect(),
+                        descending: descending.iter().map(|r| !<span class="kw-2">*</span>r).collect(),
                     }),
                     <span class="comment">// TODO: add support for cumsum and other operation that allow reversing.
                     </span><span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
@@ -1432,89 +1361,12 @@
 
 <span class="kw">fn </span>inline_cast(input: <span class="kw-2">&amp;</span>AExpr, dtype: <span class="kw-2">&amp;</span>DataType) -&gt; <span class="prelude-ty">Option</span>&lt;AExpr&gt; {
     <span class="kw">match </span>(input, dtype) {
-        <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-i8&quot;</span>)]
-        </span>(AExpr::Literal(LiteralValue::Int8(v)), DataType::Int64) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Int64(<span class="kw-2">*</span>v <span class="kw">as </span>i64)))
-        }
-        <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-i16&quot;</span>)]
-        </span>(AExpr::Literal(LiteralValue::Int16(v)), DataType::Int64) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Int64(<span class="kw-2">*</span>v <span class="kw">as </span>i64)))
-        }
-        (AExpr::Literal(LiteralValue::Int32(v)), DataType::Int64) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Int64(<span class="kw-2">*</span>v <span class="kw">as </span>i64)))
-        }
-        (AExpr::Literal(LiteralValue::UInt32(v)), DataType::Int64) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Int64(<span class="kw-2">*</span>v <span class="kw">as </span>i64)))
-        }
-        (AExpr::Literal(LiteralValue::Float32(v)), DataType::Float64) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>v <span class="kw">as </span>f64)))
-        }
-
-        <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-i8&quot;</span>)]
-        </span>(AExpr::Literal(LiteralValue::Int8(v)), DataType::Float64) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>v <span class="kw">as </span>f64)))
-        }
-        <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-i16&quot;</span>)]
-        </span>(AExpr::Literal(LiteralValue::Int16(v)), DataType::Float64) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>v <span class="kw">as </span>f64)))
-        }
-        (AExpr::Literal(LiteralValue::Int32(v)), DataType::Float64) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>v <span class="kw">as </span>f64)))
-        }
-        (AExpr::Literal(LiteralValue::Int64(v)), DataType::Float64) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>v <span class="kw">as </span>f64)))
-        }
-        <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-u8&quot;</span>)]
-        </span>(AExpr::Literal(LiteralValue::UInt8(v)), DataType::Float64) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>v <span class="kw">as </span>f64)))
-        }
-        <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-u16&quot;</span>)]
-        </span>(AExpr::Literal(LiteralValue::UInt16(v)), DataType::Float64) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>v <span class="kw">as </span>f64)))
-        }
-        (AExpr::Literal(LiteralValue::UInt32(v)), DataType::Float64) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>v <span class="kw">as </span>f64)))
-        }
-        (AExpr::Literal(LiteralValue::UInt64(v)), DataType::Float64) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>v <span class="kw">as </span>f64)))
-        }
-
-        <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-i8&quot;</span>)]
-        </span>(AExpr::Literal(LiteralValue::Int8(v)), DataType::Float32) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(<span class="kw-2">*</span>v <span class="kw">as </span>f32)))
-        }
-        <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-i16&quot;</span>)]
-        </span>(AExpr::Literal(LiteralValue::Int16(v)), DataType::Float32) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(<span class="kw-2">*</span>v <span class="kw">as </span>f32)))
-        }
-        (AExpr::Literal(LiteralValue::Int32(v)), DataType::Float32) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(<span class="kw-2">*</span>v <span class="kw">as </span>f32)))
-        }
-        (AExpr::Literal(LiteralValue::Int64(v)), DataType::Float32) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(<span class="kw-2">*</span>v <span class="kw">as </span>f32)))
-        }
-        <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-u8&quot;</span>)]
-        </span>(AExpr::Literal(LiteralValue::UInt8(v)), DataType::Float32) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(<span class="kw-2">*</span>v <span class="kw">as </span>f32)))
-        }
-        <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-u16&quot;</span>)]
-        </span>(AExpr::Literal(LiteralValue::UInt16(v)), DataType::Float32) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(<span class="kw-2">*</span>v <span class="kw">as </span>f32)))
-        }
-        (AExpr::Literal(LiteralValue::UInt32(v)), DataType::Float32) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(<span class="kw-2">*</span>v <span class="kw">as </span>f32)))
-        }
-        (AExpr::Literal(LiteralValue::UInt64(v)), DataType::Float32) =&gt; {
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(<span class="kw-2">*</span>v <span class="kw">as </span>f32)))
-        }
         <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-duration&quot;</span>)]
-        </span>(AExpr::Literal(LiteralValue::Int64(v)), DataType::Duration(tu)) =&gt; {
-            <span class="kw">let </span>dur = <span class="kw">match </span>tu {
-                TimeUnit::Nanoseconds =&gt; chrono::Duration::nanoseconds(<span class="kw-2">*</span>v),
-                TimeUnit::Microseconds =&gt; chrono::Duration::microseconds(<span class="kw-2">*</span>v),
-                TimeUnit::Milliseconds =&gt; chrono::Duration::milliseconds(<span class="kw-2">*</span>v),
-            };
-            <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Duration(dur, <span class="kw-2">*</span>tu)))
+        </span>(AExpr::Literal(lv), <span class="kw">_</span>) <span class="kw">if </span>!<span class="macro">matches!</span>(dtype, DataType::Unknown) =&gt; {
+            <span class="kw">let </span>av = lv.to_anyvalue()<span class="question-mark">?</span>;
+            <span class="kw">let </span>out = av.cast(dtype).ok()<span class="question-mark">?</span>;
+            <span class="kw">let </span>lv: LiteralValue = out.try_into().ok()<span class="question-mark">?</span>;
+            <span class="prelude-val">Some</span>(AExpr::Literal(lv))
         }
         <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
     }
@@ -1534,5 +1386,4 @@
         AExpr::Literal(LiteralValue::Int8(<span class="number">0</span>))
     ))
 }
-</code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_plan" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
+</code></pre></div></section></main></body></html>

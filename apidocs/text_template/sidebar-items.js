@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["Piece","A piece of template, either text or a placeholder to be substituted."]],"struct":[["Template","Main data structure of this crate."],["TemplateError","Returned by `Template::try_fill_in` in case of an error."],["Text","Simple wrapper around Vec<&str>, returned from `Template::fill_in`."]]};
+window.SIDEBAR_ITEMS = {"enum":["Piece"],"struct":["Template","TemplateError","Text"]};

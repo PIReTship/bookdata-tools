@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/polars-lazy-0.27.2/src/physical_plan/expressions/window.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>window.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-lazy-0.30.0/src/physical_plan/expressions/window.rs`."><title>window.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_lazy" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -822,12 +822,11 @@
 <a href="#822" id="822">822</a>
 <a href="#823" id="823">823</a>
 <a href="#824" id="824">824</a>
-<a href="#825" id="825">825</a>
-</pre><pre class="rust"><code><span class="kw">use </span>std::fmt::Write;
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt::Write;
 <span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use </span>polars_arrow::bit_util::unset_bit_raw;
 <span class="kw">use </span>polars_arrow::export::arrow::array::PrimitiveArray;
+<span class="kw">use </span>polars_core::export::arrow::bitmap::Bitmap;
 <span class="kw">use </span>polars_core::frame::groupby::{GroupBy, GroupsProxy};
 <span class="kw">use </span>polars_core::frame::hash_join::{
     default_join_ids, private_left_join_multiple_keys, JoinOptIds,
@@ -835,14 +834,13 @@
 <span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>polars_core::series::IsSorted;
 <span class="kw">use </span>polars_core::utils::_split_offsets;
-<span class="kw">use </span>polars_core::utils::arrow::bitmap::MutableBitmap;
 <span class="kw">use </span>polars_core::{downcast_as_macro_arg_physical, POOL};
+<span class="kw">use </span>polars_utils::format_smartstring;
 <span class="kw">use </span>polars_utils::sort::perfect_sort;
 <span class="kw">use </span>polars_utils::sync::SyncPtr;
 <span class="kw">use </span>rayon::prelude::<span class="kw-2">*</span>;
 
 <span class="kw">use super</span>::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::physical_plan::expression_err;
 <span class="kw">use </span><span class="kw">crate</span>::physical_plan::state::ExecutionState;
 <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 
@@ -866,15 +864,13 @@
     </span>Join,
     <span class="comment">// explode now
     </span>Explode,
-    <span class="comment">// will be exploded by subsequent `.flatten()` call
-    </span>ExplodeLater,
-    <span class="comment">// Use an argsort to map the values back
+    <span class="comment">// Use an arg_sort to map the values back
     </span>Map,
     Nothing,
 }
 
 <span class="kw">impl </span>WindowExpr {
-    <span class="kw">fn </span>map_list_agg_by_argsort(
+    <span class="kw">fn </span>map_list_agg_by_arg_sort(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         out_column: Series,
         flattened: Series,
@@ -890,7 +886,7 @@
         // that saves an allocation
         </span><span class="kw">let </span><span class="kw-2">mut </span>take_idx = <span class="macro">vec!</span>[];
 
-        <span class="comment">// groups are not changed, we can map by doing a standard argsort.
+        <span class="comment">// groups are not changed, we can map by doing a standard arg_sort.
         </span><span class="kw">if </span>std::ptr::eq(ac.groups().as_ref(), gb.get_groups()) {
             <span class="kw">let </span><span class="kw-2">mut </span>iter = <span class="number">0</span>..flattened.len() <span class="kw">as </span>IdxSize;
             <span class="kw">match </span>ac.groups().as_ref() {
@@ -906,7 +902,7 @@
                 }
             }
         }
-        <span class="comment">// groups are changed, we use the new group indexes as arguments of the argsort
+        <span class="comment">// groups are changed, we use the new group indexes as arguments of the arg_sort
         // and sort by the old indexes
         </span><span class="kw">else </span>{
             <span class="kw">let </span><span class="kw-2">mut </span>original_idx = Vec::with_capacity(out_column.len());
@@ -952,7 +948,7 @@
     }
 
     <span class="attr">#[allow(clippy::too_many_arguments)]
-    </span><span class="kw">fn </span>map_by_argsort(
+    </span><span class="kw">fn </span>map_by_arg_sort(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         df: <span class="kw-2">&amp;</span>DataFrame,
         out_column: Series,
@@ -963,10 +959,10 @@
         state: <span class="kw-2">&amp;</span>ExecutionState,
         cache_key: <span class="kw-2">&amp;</span>str,
     ) -&gt; PolarsResult&lt;Series&gt; {
-        <span class="comment">// we use an argsort to map the values back
+        <span class="comment">// we use an arg_sort to map the values back
 
         // This is a bit more complicated because the final group tuples may differ from the original
-        // so we use the original indices as idx values to argsort the original column
+        // so we use the original indices as idx values to arg_sort the original column
         //
         // The example below shows the naive version without group tuple mapping
 
@@ -981,11 +977,11 @@
         //
         // [0, 2, 3, 1]
         //
-        // argsort
+        // arg_sort
         //
         // [0, 3, 1, 2]
         //
-        // take by argsorted indexes and voila groups mapped
+        // take by arg_sorted indexes and voila groups mapped
         // [0, 1, 2, 3]
 
         </span><span class="kw">if </span>flattened.len() != df.height() {
@@ -1001,30 +997,26 @@
                         </span>}
                     });
 
-            <span class="kw">return if let </span><span class="prelude-val">Some</span>((output, group)) = non_matching_group {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>((output, group)) = non_matching_group {
                 <span class="kw">let </span>first = group.first();
                 <span class="kw">let </span>group = groupby_columns
                     .iter()
-                    .map(|s| <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, s.get(first <span class="kw">as </span>usize).unwrap()))
+                    .map(|s| <span class="macro">format_smartstring!</span>(<span class="string">&quot;{}&quot;</span>, s.get(first <span class="kw">as </span>usize).unwrap()))
                     .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-                <span class="kw">let </span>err_msg = <span class="macro">format!</span>(
-                    <span class="string">&quot;{}\n&gt; Group: &quot;</span>,
-                    <span class="string">&quot;The length of the window expression did not match that of the group.&quot;
-                </span>);
-                <span class="kw">let </span>err_msg = column_delimited(err_msg, <span class="kw-2">&amp;</span>group);
-                <span class="kw">let </span>err_msg = <span class="macro">format!</span>(
-                    <span class="string">&quot;{}\n&gt; Group length: {}\n&gt; Output: &#39;{:?}&#39;&quot;</span>,
-                    err_msg,
-                    group.len(),
-                    output.unwrap()
+                <span class="macro">polars_bail!</span>(
+                    expr = <span class="self">self</span>.expr, ComputeError:
+                    <span class="string">&quot;the length of the window expression did not match that of the group\
+                    \n&gt; group: {}\n&gt; group length: {}\n&gt; output: &#39;{:?}&#39;&quot;</span>,
+                    comma_delimited(String::new(), <span class="kw-2">&amp;</span>group), group.len(), output.unwrap()
                 );
-                <span class="prelude-val">Err</span>(<span class="macro">expression_err!</span>(err_msg, <span class="self">self</span>.expr, ComputeError))
             } <span class="kw">else </span>{
-                <span class="kw">let </span>msg = <span class="string">&quot;The length of the window expression did not match that of the group.&quot;</span>;
-                <span class="prelude-val">Err</span>(<span class="macro">expression_err!</span>(msg, <span class="self">self</span>.expr, ComputeError))
+                <span class="macro">polars_bail!</span>(
+                    expr = <span class="self">self</span>.expr, ComputeError:
+                    <span class="string">&quot;the length of the window expression did not match that of the group&quot;
+                </span>);
             };
         }
-        <span class="self">self</span>.map_list_agg_by_argsort(out_column, flattened, ac, gb, state, cache_key)
+        <span class="self">self</span>.map_list_agg_by_arg_sort(out_column, flattened, ac, gb, state, cache_key)
     }
 
     <span class="kw">fn </span>run_aggregation&lt;<span class="lifetime">&#39;a</span>&gt;(
@@ -1040,13 +1032,13 @@
     }
 
     <span class="kw">fn </span>is_explicit_list_agg(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        <span class="comment">// col(&quot;foo&quot;).list()
-        // col(&quot;foo&quot;).list().alias()
+        <span class="comment">// col(&quot;foo&quot;).implode()
+        // col(&quot;foo&quot;).implode().alias()
         // ..
-        // col(&quot;foo&quot;).list().alias().alias()
+        // col(&quot;foo&quot;).implode().alias().alias()
         //
         // but not:
-        // col(&quot;foo&quot;).list().sum().alias()
+        // col(&quot;foo&quot;).implode().sum().alias()
         // ..
         // col(&quot;foo&quot;).min()
         </span><span class="kw">let </span><span class="kw-2">mut </span>explicit_list = <span class="bool-val">false</span>;
@@ -1056,7 +1048,7 @@
                 </span><span class="kw">let </span><span class="kw-2">mut </span>finishes_list = <span class="bool-val">false</span>;
                 <span class="kw">for </span>e <span class="kw">in </span><span class="kw-2">&amp;**</span>function {
                     <span class="kw">match </span>e {
-                        Expr::Agg(AggExpr::List(<span class="kw">_</span>)) =&gt; {
+                        Expr::Agg(AggExpr::Implode(<span class="kw">_</span>)) =&gt; {
                             finishes_list = <span class="bool-val">true</span>;
                         }
                         Expr::Alias(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; {}
@@ -1151,27 +1143,24 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         agg_state: <span class="kw-2">&amp;</span>AggState,
         sorted_keys: bool,
-        explicit_list: bool,
         gb: <span class="kw-2">&amp;</span>GroupBy,
     ) -&gt; PolarsResult&lt;MapStrategy&gt; {
-        <span class="kw">match </span>(<span class="self">self</span>.options.explode, explicit_list, agg_state) {
+        <span class="kw">match </span>(<span class="self">self</span>.options.mapping, agg_state) {
             <span class="comment">// Explode
             // `(col(&quot;x&quot;).sum() * col(&quot;y&quot;)).list().over(&quot;groups&quot;).flatten()`
-            </span>(<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(MapStrategy::ExplodeLater),
-            <span class="comment">// Explode all the aggregated lists. Maybe add later?
-            </span>(<span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="kw">_</span>) =&gt; {
-                <span class="kw">let </span>msg = <span class="string">&quot;This operation is likely not what you want (you may need &#39;.list()&#39;). Please open an issue if you really want to do this&quot;</span>;
-                <span class="prelude-val">Err</span>(<span class="macro">expression_err!</span>(msg, <span class="self">self</span>.expr, ComputeError))
-            }
-            <span class="comment">// explicit list
-            // `(col(&quot;x&quot;).sum() * col(&quot;y&quot;)).list().over(&quot;groups&quot;)`
-            </span>(<span class="bool-val">false</span>, <span class="bool-val">true</span>, <span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(MapStrategy::Join),
-            <span class="comment">// aggregations
+            </span>(WindowMapping::Explode, <span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(MapStrategy::Explode),
+            <span class="comment">// // explicit list
+            // // `(col(&quot;x&quot;).sum() * col(&quot;y&quot;)).list().over(&quot;groups&quot;)`
+            // (false, false, _) =&gt; Ok(MapStrategy::Join),
+            // aggregations
             //`sum(&quot;foo&quot;).over(&quot;groups&quot;)`
-            </span>(<span class="bool-val">false</span>, <span class="bool-val">false</span>, AggState::AggregatedFlat(<span class="kw">_</span>)) =&gt; <span class="prelude-val">Ok</span>(MapStrategy::Join),
+            </span>(<span class="kw">_</span>, AggState::AggregatedFlat(<span class="kw">_</span>)) =&gt; <span class="prelude-val">Ok</span>(MapStrategy::Join),
             <span class="comment">// no explicit aggregations, map over the groups
             //`(col(&quot;x&quot;).sum() * col(&quot;y&quot;)).over(&quot;groups&quot;)`
-            </span>(<span class="bool-val">false</span>, <span class="bool-val">false</span>, AggState::AggregatedList(<span class="kw">_</span>)) =&gt; {
+            </span>(WindowMapping::Join, AggState::AggregatedList(<span class="kw">_</span>)) =&gt; <span class="prelude-val">Ok</span>(MapStrategy::Join),
+            <span class="comment">// no explicit aggregations, map over the groups
+            //`(col(&quot;x&quot;).sum() * col(&quot;y&quot;)).over(&quot;groups&quot;)`
+            </span>(WindowMapping::GroupsToRows, AggState::AggregatedList(<span class="kw">_</span>)) =&gt; {
                 <span class="kw">if </span>sorted_keys {
                     <span class="kw">if let </span>GroupsProxy::Idx(g) = gb.get_groups() {
                         <span class="macro">debug_assert!</span>(g.is_sorted_flag())
@@ -1188,7 +1177,7 @@
             // or an aggregation that has been flattened
             // we have to check which one
             //`col(&quot;foo&quot;).over(&quot;groups&quot;)`
-            </span>(<span class="bool-val">false</span>, <span class="bool-val">false</span>, AggState::NotAggregated(<span class="kw">_</span>)) =&gt; {
+            </span>(WindowMapping::GroupsToRows, AggState::NotAggregated(<span class="kw">_</span>)) =&gt; {
                 <span class="comment">// col()
                 // or col().alias()
                 </span><span class="kw">if </span><span class="self">self</span>.is_simple_column_expr() {
@@ -1197,8 +1186,9 @@
                     <span class="prelude-val">Ok</span>(MapStrategy::Map)
                 }
             }
+            (WindowMapping::Join, AggState::NotAggregated(<span class="kw">_</span>)) =&gt; <span class="prelude-val">Ok</span>(MapStrategy::Join),
             <span class="comment">// literals, do nothing and let broadcast
-            </span>(<span class="bool-val">false</span>, <span class="bool-val">false</span>, AggState::Literal(<span class="kw">_</span>)) =&gt; <span class="prelude-val">Ok</span>(MapStrategy::Nothing),
+            </span>(<span class="kw">_</span>, AggState::Literal(<span class="kw">_</span>)) =&gt; <span class="prelude-val">Ok</span>(MapStrategy::Nothing),
         }
     }
 }
@@ -1235,7 +1225,13 @@
         //          This can be used to reverse, sort, shuffle etc. the values in a group
 
         // 4. select the final column and return
-        </span><span class="kw">let </span>groupby_columns = <span class="self">self
+
+        </span><span class="kw">if </span>df.height() == <span class="number">0 </span>{
+            <span class="kw">let </span>field = <span class="self">self</span>.phys_function.to_field(<span class="kw-2">&amp;</span>df.schema())<span class="question-mark">?</span>;
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(Series::full_null(field.name(), <span class="number">0</span>, field.data_type()));
+        }
+
+        <span class="kw">let </span>groupby_columns = <span class="self">self
             </span>.group_by
             .iter()
             .map(|e| e.evaluate(df, state))
@@ -1250,18 +1246,8 @@
         });
         <span class="kw">let </span>explicit_list_agg = <span class="self">self</span>.is_explicit_list_agg();
 
-        <span class="comment">// A `sort()` in a window function is one level flatter
-        // Assume we have column a : i32
-        // than a sort in a groupby. A groupby sorts the groups and returns array: list[i32]
-        // whereas a window function returns array: i32
-        // So a `sort().list()` in a groupby returns: list[list[i32]]
-        // whereas in a window function would return: list[i32]
-        </span><span class="kw">if </span>explicit_list_agg {
-            state.set_finalize_window_as_list();
-        }
-
         <span class="comment">// if we flatten this column we need to make sure the groups are sorted.
-        </span><span class="kw">let </span><span class="kw-2">mut </span>sort_groups = <span class="self">self</span>.options.explode ||
+        </span><span class="kw">let </span><span class="kw-2">mut </span>sort_groups = <span class="macro">matches!</span>(<span class="self">self</span>.options.mapping, WindowMapping::Explode) ||
             <span class="comment">// if not
             //      `col().over()`
             // and not
@@ -1285,7 +1271,7 @@
         };
 
         <span class="comment">// Try to get cached grouptuples
-        </span><span class="kw">let </span>(groups, <span class="kw">_</span>, cache_key) = <span class="kw">if </span>state.cache_window() {
+        </span><span class="kw">let </span>(<span class="kw-2">mut </span>groups, <span class="kw">_</span>, cache_key) = <span class="kw">if </span>state.cache_window() {
             <span class="kw">let </span><span class="kw-2">mut </span>cache_key = String::with_capacity(<span class="number">32 </span>* groupby_columns.len());
             <span class="macro">write!</span>(<span class="kw-2">&amp;mut </span>cache_key, <span class="string">&quot;{}&quot;</span>, state.branch_idx).unwrap();
             <span class="kw">for </span>s <span class="kw">in </span><span class="kw-2">&amp;</span>groupby_columns {
@@ -1300,9 +1286,6 @@
                 <span class="kw">if </span>df.height() &gt; <span class="number">0 </span>{
                     <span class="macro">assert!</span>(!gt.is_empty());
                 };
-                <span class="kw">if </span>sort_groups {
-                    gt.sort()
-                }
 
                 <span class="comment">// We take now, but it is important that we set this before we return!
                 // a next windows function may get this cached key and get an empty if this
@@ -1321,12 +1304,20 @@
             .iter()
             .map(|s| s.as_ref().to_string())
             .collect();
+
+        <span class="comment">// some window expressions need sorted groups
+        // to make sure that the caches align we sort
+        // the groups, so that the cached groups and join keys
+        // are consistent among all windows
+        </span><span class="kw">if </span>sort_groups || state.cache_window() {
+            groups.sort()
+        }
         <span class="kw">let </span>gb = GroupBy::new(df, groupby_columns.clone(), groups, <span class="prelude-val">Some</span>(apply_columns));
 
         <span class="kw">let </span><span class="kw-2">mut </span>ac = <span class="self">self</span>.run_aggregation(df, state, <span class="kw-2">&amp;</span>gb)<span class="question-mark">?</span>;
 
         <span class="kw">use </span>MapStrategy::<span class="kw-2">*</span>;
-        <span class="kw">match </span><span class="self">self</span>.determine_map_strategy(ac.agg_state(), sorted_keys, explicit_list_agg, <span class="kw-2">&amp;</span>gb)<span class="question-mark">? </span>{
+        <span class="kw">match </span><span class="self">self</span>.determine_map_strategy(ac.agg_state(), sorted_keys, <span class="kw-2">&amp;</span>gb)<span class="question-mark">? </span>{
             Nothing =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>out = ac.flat_naive().into_owned();
                 cache_gb(gb, state, <span class="kw-2">&amp;</span>cache_key);
@@ -1343,14 +1334,6 @@
                 }
                 <span class="prelude-val">Ok</span>(out)
             }
-            ExplodeLater =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>out = ac.aggregated();
-                cache_gb(gb, state, <span class="kw-2">&amp;</span>cache_key);
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(name) = <span class="kw-2">&amp;</span><span class="self">self</span>.out_name {
-                    out.rename(name.as_ref());
-                }
-                <span class="prelude-val">Ok</span>(out)
-            }
             Map =&gt; {
                 <span class="comment">// TODO!
                 // investigate if sorted arrays can be return directly
@@ -1361,7 +1344,7 @@
                 </span><span class="kw">let </span>ac = <span class="kw">unsafe </span>{
                     std::mem::transmute::&lt;AggregationContext&lt;<span class="lifetime">&#39;_</span>&gt;, AggregationContext&lt;<span class="lifetime">&#39;static</span>&gt;&gt;(ac)
                 };
-                <span class="self">self</span>.map_by_argsort(
+                <span class="self">self</span>.map_by_arg_sort(
                     df,
                     out_column,
                     flattened,
@@ -1376,10 +1359,11 @@
                 <span class="kw">let </span>out_column = ac.aggregated();
                 <span class="comment">// we try to flatten/extend the array by repeating the aggregated value n times
                 // where n is the number of members in that group. That way we can try to reuse
-                // the same map by argsort logic as done for listed aggregations
-                </span><span class="kw">match </span>(
+                // the same map by arg_sort logic as done for listed aggregations
+                </span><span class="kw">let </span>update_groups = !<span class="macro">matches!</span>(<span class="kw-2">&amp;</span>ac.update_groups, UpdateGroups::No);
+                <span class="kw">match </span>(
                     <span class="kw-2">&amp;</span>ac.update_groups,
-                    set_by_groups(<span class="kw-2">&amp;</span>out_column, <span class="kw-2">&amp;</span>ac.groups, df.height()),
+                    set_by_groups(<span class="kw-2">&amp;</span>out_column, <span class="kw-2">&amp;</span>ac.groups, df.height(), update_groups),
                 ) {
                     <span class="comment">// for aggregations that reduce like sum, mean, first and are numeric
                     // we take the group locations to directly map them to the right place
@@ -1447,9 +1431,7 @@
         _groups: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GroupsProxy,
         _state: <span class="kw-2">&amp;</span>ExecutionState,
     ) -&gt; PolarsResult&lt;AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-        <span class="prelude-val">Err</span>(PolarsError::InvalidOperation(
-            <span class="string">&quot;window expression not allowed in aggregation&quot;</span>.into(),
-        ))
+        <span class="macro">polars_bail!</span>(InvalidOperation: <span class="string">&quot;window expression not allowed in aggregation&quot;</span>);
     }
 
     <span class="kw">fn </span>as_expression(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Expr&gt; {
@@ -1493,7 +1475,15 @@
 }
 
 <span class="doccomment">/// Simple reducing aggregation can be set by the groups
-</span><span class="kw">fn </span>set_by_groups(s: <span class="kw-2">&amp;</span>Series, groups: <span class="kw-2">&amp;</span>GroupsProxy, len: usize) -&gt; <span class="prelude-ty">Option</span>&lt;Series&gt; {
+</span><span class="kw">fn </span>set_by_groups(
+    s: <span class="kw-2">&amp;</span>Series,
+    groups: <span class="kw-2">&amp;</span>GroupsProxy,
+    len: usize,
+    update_groups: bool,
+) -&gt; <span class="prelude-ty">Option</span>&lt;Series&gt; {
+    <span class="kw">if </span>update_groups {
+        <span class="kw">return </span><span class="prelude-val">None</span>;
+    }
     <span class="kw">if </span>s.dtype().to_physical().is_numeric() {
         <span class="kw">let </span>dtype = s.dtype();
         <span class="kw">let </span>s = s.to_physical_repr();
@@ -1576,13 +1566,15 @@
         </span><span class="kw">unsafe </span>{ values.set_len(len) }
         <span class="prelude-val">Some</span>(ChunkedArray::new_vec(ca.name(), values).into_series())
     } <span class="kw">else </span>{
-        <span class="kw">let </span><span class="kw-2">mut </span>validity = MutableBitmap::with_capacity(len);
-        validity.extend_constant(len, <span class="bool-val">true</span>);
-        <span class="kw">let </span>validity_ptr = validity.as_slice_mut().as_mut_ptr();
+        <span class="comment">// We don&#39;t use a mutable bitmap as bits will have have race conditions!
+        // A single byte might alias if we write from single threads.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>validity: Vec&lt;bool&gt; = Vec::with_capacity(len);
+        <span class="kw">let </span>validity_ptr = validity.as_mut_ptr();
         <span class="kw">let </span>sync_ptr_validity = <span class="kw">unsafe </span>{ SyncPtr::new(validity_ptr) };
 
         <span class="kw">let </span>n_threads = POOL.current_num_threads();
         <span class="kw">let </span>offsets = _split_offsets(ca.len(), n_threads);
+
         <span class="kw">match </span>groups {
             GroupsProxy::Idx(groups) =&gt; offsets.par_iter().for_each(|(offset, offset_len)| {
                 <span class="kw">let </span>offset = <span class="kw-2">*</span>offset;
@@ -1590,6 +1582,7 @@
                 <span class="kw">let </span>ca = ca.slice(offset <span class="kw">as </span>i64, offset_len);
                 <span class="kw">let </span>groups = <span class="kw-2">&amp;</span>groups.all()[offset..offset + offset_len];
                 <span class="kw">let </span>values_ptr = sync_ptr_values.get();
+                <span class="kw">let </span>validity_ptr = sync_ptr_validity.get();
 
                 ca.into_iter().zip(groups.iter()).for_each(|(opt_v, g)| {
                     <span class="kw">for </span>idx <span class="kw">in </span>g {
@@ -1599,10 +1592,11 @@
                             <span class="kw">match </span>opt_v {
                                 <span class="prelude-val">Some</span>(v) =&gt; {
                                     <span class="kw-2">*</span>values_ptr.add(idx) = v;
+                                    <span class="kw-2">*</span>validity_ptr.add(idx) = <span class="bool-val">true</span>;
                                 }
                                 <span class="prelude-val">None </span>=&gt; {
                                     <span class="kw-2">*</span>values_ptr.add(idx) = T::Native::default();
-                                    unset_bit_raw(sync_ptr_validity.get(), idx)
+                                    <span class="kw-2">*</span>validity_ptr.add(idx) = <span class="bool-val">false</span>;
                                 }
                             };
                         }
@@ -1616,6 +1610,7 @@
                     <span class="kw">let </span>ca = ca.slice(offset <span class="kw">as </span>i64, offset_len);
                     <span class="kw">let </span>groups = <span class="kw-2">&amp;</span>groups[offset..offset + offset_len];
                     <span class="kw">let </span>values_ptr = sync_ptr_values.get();
+                    <span class="kw">let </span>validity_ptr = sync_ptr_validity.get();
 
                     <span class="kw">for </span>(opt_v, [start, g_len]) <span class="kw">in </span>ca.into_iter().zip(groups.iter()) {
                         <span class="kw">let </span>start = <span class="kw-2">*</span>start <span class="kw">as </span>usize;
@@ -1626,10 +1621,11 @@
                                 <span class="kw">match </span>opt_v {
                                     <span class="prelude-val">Some</span>(v) =&gt; {
                                         <span class="kw-2">*</span>values_ptr.add(idx) = v;
+                                        <span class="kw-2">*</span>validity_ptr.add(idx) = <span class="bool-val">true</span>;
                                     }
                                     <span class="prelude-val">None </span>=&gt; {
                                         <span class="kw-2">*</span>values_ptr.add(idx) = T::Native::default();
-                                        unset_bit_raw(sync_ptr_validity.get(), idx)
+                                        <span class="kw-2">*</span>validity_ptr.add(idx) = <span class="bool-val">false</span>;
                                     }
                                 };
                             }
@@ -1640,13 +1636,14 @@
         }
         <span class="comment">// safety: we have written all slots
         </span><span class="kw">unsafe </span>{ values.set_len(len) }
+        <span class="kw">unsafe </span>{ validity.set_len(len) }
+        <span class="kw">let </span>validity = Bitmap::from(validity);
         <span class="kw">let </span>arr = PrimitiveArray::new(
             T::get_dtype().to_physical().to_arrow(),
             values.into(),
-            <span class="prelude-val">Some</span>(validity.into()),
+            <span class="prelude-val">Some</span>(validity),
         );
         <span class="prelude-val">Some</span>(Series::try_from((ca.name(), arr.boxed())).unwrap())
     }
 }
-</code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_lazy" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
+</code></pre></div></section></main></body></html>

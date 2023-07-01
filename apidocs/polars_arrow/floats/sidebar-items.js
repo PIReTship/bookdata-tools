@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["f32_to_ordablef32","f64_to_ordablef64"],"struct":["OrdFloat"]};

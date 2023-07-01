@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":[["MutableBitmapExtension",""]],"type":[["LargeBinaryArray",""],["LargeListArray",""],["LargeStringArray",""]]};
+window.SIDEBAR_ITEMS = {"trait":["MutableBitmapExtension"],"type":["LargeBinaryArray","LargeListArray","LargeStringArray"]};

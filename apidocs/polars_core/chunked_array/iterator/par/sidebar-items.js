@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["list",""],["utf8",""]]};
+window.SIDEBAR_ITEMS = {"mod":["list","utf8"]};

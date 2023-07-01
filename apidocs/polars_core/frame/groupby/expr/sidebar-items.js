@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":[["PhysicalAggExpr",""]]};
+window.SIDEBAR_ITEMS = {"trait":["PhysicalAggExpr"]};

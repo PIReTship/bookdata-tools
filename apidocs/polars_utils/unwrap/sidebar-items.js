@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":[["UnwrapUncheckedRelease",""]]};
+window.SIDEBAR_ITEMS = {"trait":["UnwrapUncheckedRelease"]};

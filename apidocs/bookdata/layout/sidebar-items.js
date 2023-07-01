@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["check_project_manifest","Check the TOML manifest to see if we’re bookdata."],["find_path_root","Find the root path for the repository."],["is_bookdata_root",""],["require_working_dir","Expect that we are in a particular subdirectory."],["require_working_root","Require that we are in the root directory."]],"struct":[["Config","Configuration data."]]};
+window.SIDEBAR_ITEMS = {"fn":["check_project_manifest","find_path_root","is_bookdata_root","require_working_dir","require_working_root"]};

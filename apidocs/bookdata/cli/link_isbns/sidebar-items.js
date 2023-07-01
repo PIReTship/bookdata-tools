@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"static":[["ALL_ISBNS_FILE",""]],"struct":[["LinkISBNIds","Link records to ISBN IDs."]]};
+window.SIDEBAR_ITEMS = {"static":["ALL_ISBNS_FILE"],"struct":["LinkISBNIds"]};

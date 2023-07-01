@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":[["parser","The main macro for creating a PEG parser."]]};
+window.SIDEBAR_ITEMS = {"macro":["parser"]};

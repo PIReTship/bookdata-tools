@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["cast",""]]};
+window.SIDEBAR_ITEMS = {"fn":["cast"]};

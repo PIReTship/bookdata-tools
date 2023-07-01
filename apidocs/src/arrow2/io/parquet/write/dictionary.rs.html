@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/arrow2-0.16.0/src/io/parquet/write/dictionary.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>dictionary.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../../arrow2/index.html"><img class="rust-logo" src="../../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrow2-0.17.2/src/io/parquet/write/dictionary.rs`."><title>dictionary.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="arrow2" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../../arrow2/index.html"><img class="rust-logo" src="../../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -246,7 +246,43 @@
 <a href="#246" id="246">246</a>
 <a href="#247" id="247">247</a>
 <a href="#248" id="248">248</a>
-</pre><pre class="rust"><code><span class="kw">use </span>parquet2::{
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>parquet2::{
     encoding::{hybrid_rle::encode_u32, Encoding},
     page::{DictPage, Page},
     schema::types::PrimitiveType,
@@ -323,7 +359,6 @@
     nested: <span class="kw-2">&amp;</span>[Nested],
     options: WriteOptions,
     buffer: <span class="kw-2">&amp;mut </span>Vec&lt;u8&gt;,
-    offset: usize,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(usize, usize)&gt; {
     <span class="kw">if </span>nested.len() == <span class="number">1 </span>{
         <span class="kw">let </span>is_optional = is_nullable(<span class="kw-2">&amp;</span>type_.field_info);
@@ -331,7 +366,7 @@
         <span class="kw">let </span>definition_levels_byte_length = buffer.len();
         <span class="prelude-val">Ok</span>((<span class="number">0</span>, definition_levels_byte_length))
     } <span class="kw">else </span>{
-        nested::write_rep_and_def(options.version, nested, buffer, offset)
+        nested::write_rep_and_def(options.version, nested, buffer)
     }
 }
 
@@ -353,7 +388,7 @@
     array: <span class="kw-2">&amp;</span>DictionaryArray&lt;K&gt;,
     type_: PrimitiveType,
     nested: <span class="kw-2">&amp;</span>[Nested],
-    statistics: ParquetStatistics,
+    statistics: <span class="prelude-ty">Option</span>&lt;ParquetStatistics&gt;,
     options: WriteOptions,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;Page&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[];
@@ -363,23 +398,29 @@
     </span><span class="kw">let </span>validity = normalized_validity(array);
     <span class="kw">let </span>(start, len) = slice_nested_leaf(nested);
 
+    <span class="kw">let </span><span class="kw-2">mut </span>nested = nested.to_vec();
+    <span class="kw">let </span>array = array.clone().sliced(start, len);
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(Nested::Primitive(<span class="kw">_</span>, <span class="kw">_</span>, c)) = nested.last_mut() {
+        <span class="kw-2">*</span>c = len;
+    } <span class="kw">else </span>{
+        <span class="macro">unreachable!</span>(<span class="string">&quot;&quot;</span>)
+    }
+
     <span class="kw">let </span>(repetition_levels_byte_length, definition_levels_byte_length) = serialize_levels(
         validity.as_ref(),
         array.len(),
         <span class="kw-2">&amp;</span>type_,
-        nested,
+        <span class="kw-2">&amp;</span>nested,
         options,
         <span class="kw-2">&amp;mut </span>buffer,
-        start,
     )<span class="question-mark">?</span>;
-    <span class="kw">let </span>array = array.slice(start, len);
 
     serialize_keys_values(<span class="kw-2">&amp;</span>array, validity.as_ref(), <span class="kw-2">&amp;mut </span>buffer)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>(num_values, num_rows) = <span class="kw">if </span>nested.len() == <span class="number">1 </span>{
         (array.len(), array.len())
     } <span class="kw">else </span>{
-        (nested::num_values(nested), nested[<span class="number">0</span>].len())
+        (nested::num_values(<span class="kw-2">&amp;</span>nested), nested[<span class="number">0</span>].len())
     };
 
     utils::build_plain_page(
@@ -389,7 +430,7 @@
         array.null_count(),
         repetition_levels_byte_length,
         definition_levels_byte_length,
-        <span class="prelude-val">Some</span>(statistics),
+        statistics,
         type_,
         options,
         Encoding::RleDictionary,
@@ -402,8 +443,15 @@
         <span class="kw">let </span>values = <span class="macro-nonterminal">$array</span>.values().as_any().downcast_ref().unwrap();
 
         <span class="kw">let </span>buffer = primitive_encode_plain::&lt;<span class="macro-nonterminal">$from</span>, <span class="macro-nonterminal">$to</span>&gt;(values, <span class="bool-val">false</span>, <span class="macro">vec!</span>[]);
-        <span class="kw">let </span>stats = primitive_build_statistics::&lt;<span class="macro-nonterminal">$from</span>, <span class="macro-nonterminal">$to</span>&gt;(values, <span class="macro-nonterminal">$type_</span>.clone());
-        <span class="kw">let </span>stats = serialize_statistics(<span class="kw-2">&amp;</span>stats);
+
+        <span class="kw">let </span>stats: <span class="prelude-ty">Option</span>&lt;ParquetStatistics&gt; = <span class="kw">if </span><span class="macro-nonterminal">$options</span>.write_statistics {
+            <span class="kw">let </span><span class="kw-2">mut </span>stats = primitive_build_statistics::&lt;<span class="macro-nonterminal">$from</span>, <span class="macro-nonterminal">$to</span>&gt;(values, <span class="macro-nonterminal">$type_</span>.clone());
+            stats.null_count = <span class="prelude-val">Some</span>(<span class="macro-nonterminal">$array</span>.null_count() <span class="kw">as </span>i64);
+            <span class="kw">let </span>stats = serialize_statistics(<span class="kw-2">&amp;</span>stats);
+            <span class="prelude-val">Some</span>(stats)
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>};
         (DictPage::new(buffer, values.len(), <span class="bool-val">false</span>), stats)
     }};
 }
@@ -418,69 +466,93 @@
     <span class="kw">match </span>encoding {
         Encoding::PlainDictionary | Encoding::RleDictionary =&gt; {
             <span class="comment">// write DictPage
-            </span><span class="kw">let </span>(dict_page, statistics) = <span class="kw">match </span>array.values().data_type().to_logical_type() {
-                DataType::Int8 =&gt; <span class="macro">dyn_prim!</span>(i8, i32, array, options, type_),
-                DataType::Int16 =&gt; <span class="macro">dyn_prim!</span>(i16, i32, array, options, type_),
-                DataType::Int32 | DataType::Date32 | DataType::Time32(<span class="kw">_</span>) =&gt; {
-                    <span class="macro">dyn_prim!</span>(i32, i32, array, options, type_)
-                }
-                DataType::Int64
-                | DataType::Date64
-                | DataType::Time64(<span class="kw">_</span>)
-                | DataType::Timestamp(<span class="kw">_</span>, <span class="kw">_</span>)
-                | DataType::Duration(<span class="kw">_</span>) =&gt; <span class="macro">dyn_prim!</span>(i64, i64, array, options, type_),
-                DataType::UInt8 =&gt; <span class="macro">dyn_prim!</span>(u8, i32, array, options, type_),
-                DataType::UInt16 =&gt; <span class="macro">dyn_prim!</span>(u16, i32, array, options, type_),
-                DataType::UInt32 =&gt; <span class="macro">dyn_prim!</span>(u32, i32, array, options, type_),
-                DataType::UInt64 =&gt; <span class="macro">dyn_prim!</span>(u64, i64, array, options, type_),
-                DataType::Float32 =&gt; <span class="macro">dyn_prim!</span>(f32, f32, array, options, type_),
-                DataType::Float64 =&gt; <span class="macro">dyn_prim!</span>(f64, f64, array, options, type_),
-                DataType::Utf8 =&gt; {
-                    <span class="kw">let </span>array = array.values().as_any().downcast_ref().unwrap();
+            </span><span class="kw">let </span>(dict_page, statistics): (<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;ParquetStatistics&gt;) =
+                <span class="kw">match </span>array.values().data_type().to_logical_type() {
+                    DataType::Int8 =&gt; <span class="macro">dyn_prim!</span>(i8, i32, array, options, type_),
+                    DataType::Int16 =&gt; <span class="macro">dyn_prim!</span>(i16, i32, array, options, type_),
+                    DataType::Int32 | DataType::Date32 | DataType::Time32(<span class="kw">_</span>) =&gt; {
+                        <span class="macro">dyn_prim!</span>(i32, i32, array, options, type_)
+                    }
+                    DataType::Int64
+                    | DataType::Date64
+                    | DataType::Time64(<span class="kw">_</span>)
+                    | DataType::Timestamp(<span class="kw">_</span>, <span class="kw">_</span>)
+                    | DataType::Duration(<span class="kw">_</span>) =&gt; <span class="macro">dyn_prim!</span>(i64, i64, array, options, type_),
+                    DataType::UInt8 =&gt; <span class="macro">dyn_prim!</span>(u8, i32, array, options, type_),
+                    DataType::UInt16 =&gt; <span class="macro">dyn_prim!</span>(u16, i32, array, options, type_),
+                    DataType::UInt32 =&gt; <span class="macro">dyn_prim!</span>(u32, i32, array, options, type_),
+                    DataType::UInt64 =&gt; <span class="macro">dyn_prim!</span>(u64, i64, array, options, type_),
+                    DataType::Float32 =&gt; <span class="macro">dyn_prim!</span>(f32, f32, array, options, type_),
+                    DataType::Float64 =&gt; <span class="macro">dyn_prim!</span>(f64, f64, array, options, type_),
+                    DataType::Utf8 =&gt; {
+                        <span class="kw">let </span>array = array.values().as_any().downcast_ref().unwrap();
 
-                    <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[];
-                    utf8_encode_plain::&lt;i32&gt;(array, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut </span>buffer);
-                    <span class="kw">let </span>stats = utf8_build_statistics(array, type_.clone());
-                    (DictPage::new(buffer, array.len(), <span class="bool-val">false</span>), stats)
-                }
-                DataType::LargeUtf8 =&gt; {
-                    <span class="kw">let </span>array = array.values().as_any().downcast_ref().unwrap();
+                        <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[];
+                        utf8_encode_plain::&lt;i32&gt;(array, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut </span>buffer);
+                        <span class="kw">let </span>stats = <span class="kw">if </span>options.write_statistics {
+                            <span class="prelude-val">Some</span>(utf8_build_statistics(array, type_.clone()))
+                        } <span class="kw">else </span>{
+                            <span class="prelude-val">None
+                        </span>};
+                        (DictPage::new(buffer, array.len(), <span class="bool-val">false</span>), stats)
+                    }
+                    DataType::LargeUtf8 =&gt; {
+                        <span class="kw">let </span>array = array.values().as_any().downcast_ref().unwrap();
 
-                    <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[];
-                    utf8_encode_plain::&lt;i64&gt;(array, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut </span>buffer);
-                    <span class="kw">let </span>stats = utf8_build_statistics(array, type_.clone());
-                    (DictPage::new(buffer, array.len(), <span class="bool-val">false</span>), stats)
-                }
-                DataType::Binary =&gt; {
-                    <span class="kw">let </span>array = array.values().as_any().downcast_ref().unwrap();
+                        <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[];
+                        utf8_encode_plain::&lt;i64&gt;(array, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut </span>buffer);
+                        <span class="kw">let </span>stats = <span class="kw">if </span>options.write_statistics {
+                            <span class="prelude-val">Some</span>(utf8_build_statistics(array, type_.clone()))
+                        } <span class="kw">else </span>{
+                            <span class="prelude-val">None
+                        </span>};
+                        (DictPage::new(buffer, array.len(), <span class="bool-val">false</span>), stats)
+                    }
+                    DataType::Binary =&gt; {
+                        <span class="kw">let </span>array = array.values().as_any().downcast_ref().unwrap();
 
-                    <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[];
-                    binary_encode_plain::&lt;i32&gt;(array, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut </span>buffer);
-                    <span class="kw">let </span>stats = binary_build_statistics(array, type_.clone());
-                    (DictPage::new(buffer, array.len(), <span class="bool-val">false</span>), stats)
-                }
-                DataType::LargeBinary =&gt; {
-                    <span class="kw">let </span>array = array.values().as_any().downcast_ref().unwrap();
+                        <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[];
+                        binary_encode_plain::&lt;i32&gt;(array, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut </span>buffer);
+                        <span class="kw">let </span>stats = <span class="kw">if </span>options.write_statistics {
+                            <span class="prelude-val">Some</span>(binary_build_statistics(array, type_.clone()))
+                        } <span class="kw">else </span>{
+                            <span class="prelude-val">None
+                        </span>};
+                        (DictPage::new(buffer, array.len(), <span class="bool-val">false</span>), stats)
+                    }
+                    DataType::LargeBinary =&gt; {
+                        <span class="kw">let </span>values = array.values().as_any().downcast_ref().unwrap();
 
-                    <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[];
-                    binary_encode_plain::&lt;i64&gt;(array, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut </span>buffer);
-                    <span class="kw">let </span>stats = binary_build_statistics(array, type_.clone());
-                    (DictPage::new(buffer, array.len(), <span class="bool-val">false</span>), stats)
-                }
-                DataType::FixedSizeBinary(<span class="kw">_</span>) =&gt; {
-                    <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[];
-                    <span class="kw">let </span>array = array.values().as_any().downcast_ref().unwrap();
-                    fixed_binary_encode_plain(array, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut </span>buffer);
-                    <span class="kw">let </span>stats = fixed_binary_build_statistics(array, type_.clone());
-                    <span class="kw">let </span>stats = serialize_statistics(<span class="kw-2">&amp;</span>stats);
-                    (DictPage::new(buffer, array.len(), <span class="bool-val">false</span>), stats)
-                }
-                other =&gt; {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::NotYetImplemented(<span class="macro">format!</span>(
-                        <span class="string">&quot;Writing dictionary arrays to parquet only support data type {other:?}&quot;
-                    </span>)))
-                }
-            };
+                        <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[];
+                        binary_encode_plain::&lt;i64&gt;(values, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut </span>buffer);
+                        <span class="kw">let </span>stats = <span class="kw">if </span>options.write_statistics {
+                            <span class="kw">let </span><span class="kw-2">mut </span>stats = binary_build_statistics(values, type_.clone());
+                            stats.null_count = <span class="prelude-val">Some</span>(array.null_count() <span class="kw">as </span>i64);
+                            <span class="prelude-val">Some</span>(stats)
+                        } <span class="kw">else </span>{
+                            <span class="prelude-val">None
+                        </span>};
+                        (DictPage::new(buffer, values.len(), <span class="bool-val">false</span>), stats)
+                    }
+                    DataType::FixedSizeBinary(<span class="kw">_</span>) =&gt; {
+                        <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[];
+                        <span class="kw">let </span>array = array.values().as_any().downcast_ref().unwrap();
+                        fixed_binary_encode_plain(array, <span class="bool-val">false</span>, <span class="kw-2">&amp;mut </span>buffer);
+                        <span class="kw">let </span>stats = <span class="kw">if </span>options.write_statistics {
+                            <span class="kw">let </span><span class="kw-2">mut </span>stats = fixed_binary_build_statistics(array, type_.clone());
+                            stats.null_count = <span class="prelude-val">Some</span>(array.null_count() <span class="kw">as </span>i64);
+                            <span class="prelude-val">Some</span>(serialize_statistics(<span class="kw-2">&amp;</span>stats))
+                        } <span class="kw">else </span>{
+                            <span class="prelude-val">None
+                        </span>};
+                        (DictPage::new(buffer, array.len(), <span class="bool-val">false</span>), stats)
+                    }
+                    other =&gt; {
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::NotYetImplemented(<span class="macro">format!</span>(
+                            <span class="string">&quot;Writing dictionary arrays to parquet only support data type {other:?}&quot;
+                        </span>)))
+                    }
+                };
             <span class="kw">let </span>dict_page = Page::Dict(dict_page);
 
             <span class="comment">// write DataPage pointing to DictPage
@@ -494,5 +566,4 @@
         )),
     }
 }
-</code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="arrow2" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
+</code></pre></div></section></main></body></html>

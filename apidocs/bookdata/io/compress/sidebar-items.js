@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["open_gzin_progress","Open a gzip-compressed file for input, with a progress bar."]]};
+window.SIDEBAR_ITEMS = {"fn":["open_gzin_progress"]};

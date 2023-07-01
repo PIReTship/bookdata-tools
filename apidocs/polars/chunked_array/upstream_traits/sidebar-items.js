@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":[["PolarsAsRef","Local AsRef trait to circumvent the orphan rule."]]};
+window.SIDEBAR_ITEMS = {"trait":["PolarsAsRef"]};

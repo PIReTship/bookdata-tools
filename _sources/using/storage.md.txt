@@ -29,7 +29,7 @@ What you need to do:
 -   Configure your remote as the default (with `dvc remote default`).
 
 :::{tip}
-Since we have a server with a lot of disk space, our research group uses [MinIO](https://min.io/)
+Since we have a server with a lot of disk space, our research group uses [Garage](https://garagehq.deuxfleurs.fr/)
 as our DVC remote.  It is an S3-compatible storage server that lets us use DVC with good performance
 and without incurring the costs of storing in the Amazon public cloud.
 :::

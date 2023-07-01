@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["StringAccumulator","Activatable data acumulator."]]};
+window.SIDEBAR_ITEMS = {"struct":["StringAccumulator"]};
