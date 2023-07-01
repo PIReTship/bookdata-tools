@@ -39,8 +39,10 @@ impl Command for IntegrationStats {
 
         let results = concat(agg_frames, true, true)?;
         info!("collecting results");
-        debug!("plan: {:?}", results.describe_optimized_plan()?);
+        info!("plan:\n{}", results.describe_optimized_plan()?);
         let mut results = results.collect()?;
+        // debug!("rechunking for writing");
+        // results.as_single_chunk_par();
 
         info!("saving {} records to {}", results.height(), STAT_FILE);
         let writer = File::create(STAT_FILE)?;
