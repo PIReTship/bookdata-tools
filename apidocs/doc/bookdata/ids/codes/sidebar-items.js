@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["NAMESPACES","NS_EDITION","NS_GR_BOOK","NS_GR_WORK","NS_ISBN","NS_LOC_INSTANCE","NS_LOC_REC","NS_LOC_WORK","NS_MULT_BASE","NS_WORK"],"fn":["ns_of_book_code"],"struct":["NS"]};

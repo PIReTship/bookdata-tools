@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ParseResult"],"fn":["__stability","__static_ref_initialize","clean_asin_chars","clean_isbn_chars","parse_isbn_string"],"mod":["isbn_parser"],"static":["IGNORES","LAZY"],"struct":["IGNORE_RE","ISBN"]};

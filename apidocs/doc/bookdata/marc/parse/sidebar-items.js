@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Src"],"fn":["next_line","next_qxr","parse_record","read_code_attrs","read_record","read_records","read_records_delim","read_sf_code_attr","read_tag_attr"],"struct":["Codes","Records"]};

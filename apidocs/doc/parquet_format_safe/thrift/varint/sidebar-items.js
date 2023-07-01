@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"trait":["VarInt","VarIntAsyncReader","VarIntAsyncWriter","VarIntReader","VarIntWriter"]};

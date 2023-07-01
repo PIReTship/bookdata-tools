@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["id_col"],"struct":["GRBooks","GRWorks","ISBN","LOC","OLEditions","OLWorks"],"trait":["EdgeRead","NodeRead"]};

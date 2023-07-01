@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["flatten_df_iter","flatten_par","flatten_series"]};

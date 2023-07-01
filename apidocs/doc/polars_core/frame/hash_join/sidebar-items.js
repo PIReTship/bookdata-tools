@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["JoinType"],"fn":["_inner_join_multiple_keys","_join_suffix_name","_left_join_multiple_keys","_outer_join_multiple_keys","_sort_or_hash_inner","default_join_ids","private_left_join_multiple_keys"],"type":["ChunkId","JoinIds","JoinOptIds","LeftJoinIds"]};

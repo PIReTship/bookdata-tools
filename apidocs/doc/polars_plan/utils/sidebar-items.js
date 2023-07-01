@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["aexpr_to_leaf_name","aexpr_to_leaf_names","aexpr_to_leaf_names_iter","combine_predicates_expr","comma_delimited","expr_is_projected_upstream","expr_output_name","expr_to_leaf_column_name","expr_to_leaf_column_names","expressions_to_schema","has_aexpr","has_aexpr_window","has_null"],"trait":["PushNode"]};

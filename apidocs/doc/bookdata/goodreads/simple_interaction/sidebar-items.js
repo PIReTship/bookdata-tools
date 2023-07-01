@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["OUT_FILE"],"fn":["read_book_map","scan_interaction_csv"],"struct":["IntRecord","IntRecordArray","IntRecordArrayIterator","MutableIntRecordArray","RawBookMap","RawInteraction"]};

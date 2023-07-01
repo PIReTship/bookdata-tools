@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["MultiSource"],"fn":["read_source"],"struct":["CollectISBNs","ISBNSource"],"type":["SourceSet"]};

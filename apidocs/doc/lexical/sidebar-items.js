@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Error"],"fn":["format_error","format_is_valid","parse","parse_partial","parse_partial_with_options","parse_with_options"],"mod":["format","parse_integer_options"],"struct":["NumberFormatBuilder","ParseIntegerOptions","ParseIntegerOptionsBuilder"],"trait":["FromLexical","FromLexicalWithOptions","ParseOptions"],"type":["Result"]};

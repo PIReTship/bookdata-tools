@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["errors","vectors"],"struct":["Builder","Offset","UnionOffset"],"trait":["ReadAsRoot","VectorRead","VectorWrite","WriteAs","WriteAsDefault","WriteAsOffset","WriteAsOptional","WriteAsOptionalUnion","WriteAsUnion"],"type":["Result"]};

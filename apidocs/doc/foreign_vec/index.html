@@ -1,0 +1,105 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="This library offers `ForeignVec`, a zero-cost abstraction to store either `Vec&lt;T&gt;` or an immutable region aligned with `T` allocated by an external allocator."><title>foreign_vec - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="foreign_vec" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="logo-container" href="../foreign_vec/index.html"><img class="rust-logo" src="../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2></h2></nav><nav class="sidebar"><a class="logo-container" href="../foreign_vec/index.html"><img class="rust-logo" src="../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 class="location"><a href="#">Crate foreign_vec</a></h2><div class="sidebar-elems"><ul class="block"><li class="version">Version 0.1.0</li><li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#structs">Structs</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Crate <a class="mod" href="#">foreign_vec</a><button id="copy-path" title="Copy item path to clipboard"><img src="../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="srclink" href="../src/foreign_vec/lib.rs.html#1-106">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>This library offers <a href="struct.ForeignVec.html" title="struct foreign_vec::ForeignVec"><code>ForeignVec</code></a>, a zero-cost abstraction to store either <a href="https://doc.rust-lang.org/1.70.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec"><code>Vec&lt;T&gt;</code></a>
+or an immutable region aligned with <code>T</code> allocated by an external allocator.</p>
+<p>The primary use-case of this library is when you have an in-memory representation
+in both Rust and other languages and you have a specification to share
+(immutable) vectors across language boundaries at zero cost, via FFI.</p>
+<p>In this scenario, you may want to still offer all the benefits of Rust’s <code>Vec</code>
+when it comes to mutable access, while providing a read-only access when the
+data came from a foreign interface. In other words, given</p>
+<ul>
+<li>an in-memory format</li>
+<li>an FFI specification to share immutable memory regions at zero cost at language
+boundaries</li>
+</ul>
+<p>then, <a href="struct.ForeignVec.html" title="struct foreign_vec::ForeignVec"><code>ForeignVec</code></a> offers an interface to</p>
+<ul>
+<li>allow zero-cost immutable access via <code>core::ops::Deref&lt;T&gt;</code> to <code>Vec&lt;T&gt;</code> or
+the foreign vector</li>
+<li>allow access to <code>&amp;mut Vec&lt;T&gt;</code> when it is allocated by Rust</li>
+</ul>
+<p>The crucial point here is “zero-cost immutable access”. The usual idiom
+here is to have an <code>enum</code> with two variants, <code>Native(Vec&lt;T&gt;)</code> and another.
+However, such enum incurs a significant (<code>+50%</code>) cost when deferring the enum
+into <code>&amp;[T]</code>.</p>
+<p>The complete test:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>foreign_vec::ForeignVec;
+
+<span class="comment">// say that we have a foreign struct allocated by an external allocator (e.g. C++)
+// owning an immutable memory region
+</span><span class="attr">#[repr(C)]
+</span><span class="kw">struct </span>Foreign {
+    ptr: <span class="kw-2">*const </span>i32,
+    length: usize,
+    <span class="comment">// this is usually created at the FFI boundary; `capacity` is usually &quot;hidden&quot; in that
+    // it could contain a C++ `shared_ptr` or something else describing the region
+    // &quot;on the other side&quot;.
+    </span>capacity: usize,
+}
+
+<span class="comment">// whose drop calls an external function that deallocates the region
+</span><span class="kw">impl </span>Drop <span class="kw">for </span>Foreign {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="comment">// mocking an external deallocation
+        </span><span class="kw">unsafe </span>{ Vec::from_raw_parts(<span class="self">self</span>.ptr <span class="kw">as </span><span class="kw-2">*mut </span>i32, <span class="self">self</span>.length, <span class="self">self</span>.capacity) };
+    }
+}
+
+<span class="comment">// The type that we use on the library uses `foreign_vec`
+// this could be a generic over `T` when the in-memory format supports multiple types.
+</span><span class="kw">type </span>MyForeignVec = ForeignVec&lt;Foreign, i32&gt;;
+
+<span class="attr">#[test]
+</span><span class="kw">fn </span>test_vec() {
+    <span class="comment">// we can use it with `Vec`:
+    </span><span class="kw">let </span>expected: <span class="kw-2">&amp;</span>[i32] = <span class="kw-2">&amp;</span>[<span class="number">1</span>, <span class="number">2</span>];
+
+    <span class="comment">// when we have a vector, we can use `.into()`
+    </span><span class="kw">let </span>vec = expected.to_vec();
+    <span class="kw">let </span><span class="kw-2">mut </span>vec: MyForeignVec = vec.into();
+
+    <span class="comment">// deref works as expected
+    </span><span class="macro">assert_eq!</span>(<span class="kw-2">&amp;*</span>vec, expected);
+
+    <span class="comment">// debug works as expected
+    </span><span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, vec), <span class="string">&quot;[1, 2]&quot;</span>);
+
+    <span class="comment">// you can retrieve a mut vec (since it is allocated by Rust)
+    </span><span class="macro">assert_eq!</span>(vec.get_vec(), <span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut </span><span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>]));
+
+    <span class="comment">// this calls `Vec::drop`, as usual
+    </span>drop(vec)
+}
+
+<span class="comment">// this is just `Vec::into_raw_parts`, which is only available in unstable channels
+</span><span class="kw">fn </span>into_raw_parts&lt;T&gt;(vec: Vec&lt;T&gt;) -&gt; (<span class="kw-2">*mut </span>T, usize, usize) {
+    <span class="kw">let </span>r = (vec.as_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>T, vec.len(), vec.capacity());
+    std::mem::forget(vec);
+    r
+}
+
+<span class="attr">#[test]
+</span><span class="kw">fn </span>test_foreign() {
+    <span class="comment">// on an externally allocated pointer (here from Rust, but a foreign call would do the same)
+    </span><span class="kw">let </span>expected: <span class="kw-2">&amp;</span>[i32] = <span class="kw-2">&amp;</span>[<span class="number">1</span>, <span class="number">2</span>];
+
+    <span class="kw">let </span>a = expected.to_vec();
+    <span class="kw">let </span>(ptr, length, capacity) = into_raw_parts(a);
+    <span class="comment">// this is usually created at the FFI boundary; `capacity` is usually &quot;hidden&quot; in that
+    // it could contain a C++ `shared_ptr` instead.
+    </span><span class="kw">let </span>a = Foreign {
+        ptr,
+        length,
+        capacity,
+    };
+
+    <span class="comment">// create a `MyForeignVec` from a foreign that implements `Deref`.
+    </span><span class="kw">let </span><span class="kw-2">mut </span>vec = <span class="kw">unsafe </span>{ MyForeignVec::from_foreign(a.ptr, a.length, a) };
+    <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;*</span>vec, expected);
+    <span class="macro">assert_eq!</span>(vec.get_vec(), <span class="prelude-val">None</span>);
+
+    <span class="comment">// this calls `Foreign::drop`, which calls the foreign function
+    </span>drop(vec);
+}
+</code></pre></div>
+</div></details><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2><ul class="item-table"><li><div class="item-name"><a class="struct" href="struct.ForeignVec.html" title="struct foreign_vec::ForeignVec">ForeignVec</a></div><div class="desc docblock-short">A continuous memory region that may be allocated externally.</div></li></ul></section></div></main></body></html>

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["get_reader_bytes","infer_file_schema","is_compressed"]};

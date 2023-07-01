@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["RatingDedup","TimelessRatingRecord","TimestampRatingRecord"],"trait":["FromRatingSet"]};

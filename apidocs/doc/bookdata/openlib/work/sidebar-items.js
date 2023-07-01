@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["MutableWorkAuthorRecArray","MutableWorkRecArray","MutableWorkSubjectRecArray","WorkAuthorRec","WorkAuthorRecArray","WorkAuthorRecArrayIterator","WorkProcessor","WorkRec","WorkRecArray","WorkRecArrayIterator","WorkSubjectRec","WorkSubjectRecArray","WorkSubjectRecArrayIterator"]};

@@ -94,7 +94,7 @@ the underlying DVC pipeline YAML entries — see [the docs][yaml] for details):
 :   Specify an output for the stage:
 
     ```tcl
-    dep output-file.parquet
+    out output-file.parquet
     ```
 
     This option takes a couple of options.  `-nocache` turns off the DVC cache for
@@ -102,7 +102,7 @@ the underlying DVC pipeline YAML entries — see [the docs][yaml] for details):
     separately in the DVC cache:
 
     ```tcl
-    dep -nocache some-summary-output.json
+    out -nocache some-summary-output.json
     ```
 
     The `-metric` option registers the output as a metric instead of an output, so

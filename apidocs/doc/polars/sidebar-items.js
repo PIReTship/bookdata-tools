@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":["apply_method_all_arrow_series","df"],"mod":["chunked_array","datatypes","doc","docs","error","export","frame","functions","prelude","series","testing"]};

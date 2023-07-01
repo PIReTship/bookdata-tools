@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["decode_chunk","scan_parquet_file"],"struct":["RecordIter"]};
