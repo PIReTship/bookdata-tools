@@ -39,7 +39,7 @@ impl Command for IntegrationStats {
 
         let results = concat(agg_frames, true, true)?;
         info!("collecting results");
-        info!("plan:\n{}", results.describe_optimized_plan()?);
+        debug!("plan:\n{}", results.describe_optimized_plan()?);
         let mut results = results.collect()?;
         // debug!("rechunking for writing");
         // results.as_single_chunk_par();
