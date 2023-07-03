@@ -19,27 +19,22 @@ subdir goodreads
 subdir book-links
 
 stage ClusterStats {
-    cmd jupytext --to ipynb --execute ClusterStats.py
-    dep ClusterStats.py
+    cmd quarto render ClusterStats.qmd
+    dep ClusterStats.qmd
     dep book-links/cluster-stats.parquet
     out -nocache ClusterStats.ipynb
+    out ClusterStats.html
+    out ClusterStats_files
 }
 
 stage LinkageStats {
-    cmd jupytext --to ipynb --execute LinkageStats.py
-    dep LinkageStats.py
+    cmd quarto render LinkageStats.qmd
+    dep LinkageStats.qmd
     dep book-links/gender-stats.csv
     out -nocache LinkageStats.ipynb
+    out LinkageStats.html
+    out LinkageStats_files
     out -metric book-coverage.json
-}
-
-stage html-report -items {
-    LinkageStats
-    ClusterStats
-} {
-    cmd jupyter nbconvert --to html {"${item}.ipynb"}
-    dep {${item}.ipynb}
-    out {${item}.html}
 }
 
 set pqlf [open parquets.log w]

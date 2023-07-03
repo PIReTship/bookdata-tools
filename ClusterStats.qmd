@@ -1,0 +1,147 @@
+---
+title: Book Clustering Statistics
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .qmd
+      format_name: quarto
+      format_version: '1.0'
+      jupytext_version: 1.14.7
+  kernelspec:
+    display_name: Python 3 (ipykernel)
+    language: python
+    name: python3
+---
+
+
+This notebook provides statistics on the results of our book clustering.
+
+
+## Setup
+
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+```
+
+## Load Data
+
+Let's start by getting our clusters and their statistics:
+
+```{python}
+clusters = pd.read_parquet('book-links/cluster-stats.parquet')
+clusters.info()
+```
+
+```{python}
+clusters.set_index('cluster', inplace=True)
+```
+
+Describe the count columns for basic descriptive stats:
+
+```{python}
+clusters.describe()
+```
+
+75% of clusters only contain 2 ISBNs (probably -10 and -13) and one book. OpenLibrary also contributes to the largest number of clusters.
+
+## Clusters per Source
+
+How many clusters are connected to each source?
+
+```{python}
+src_counts = pd.Series(dict(
+    (c, np.sum(clusters[c] > 0)) for c in clusters.columns
+))
+src_counts
+```
+
+```{python}
+src_counts.plot.barh()
+plt.xlabel('# of Clusters')
+plt.show()
+```
+
+## Distributions
+
+Let's look at the distributions of cluster sizes.
+
+```{python}
+size_dist = pd.concat(dict(
+    (c, clusters[c].value_counts()) for c in clusters.columns if c != 'n_nodes'
+), names=['RecType'])
+size_dist.index.set_names(['RecType', 'RecCount'], inplace=True)
+size_dist = size_dist.reset_index(name='Clusters')
+size_dist.head()
+```
+
+```{python}
+for rt, data in size_dist.groupby('RecType'):
+    plt.scatter(data['RecCount'], data['Clusters'], marker='1', label=rt)
+plt.legend()
+plt.xlabel('# of Records')
+plt.xscale('log')
+plt.ylabel('# of Clusters')
+plt.yscale('log')
+plt.show()
+```
+
+Looks mostly fine - we expect a lot of power laws - but the number of clusters with merged GoodReads works is concerning.
+
+## GoodReads Work Merging
+
+Why are GoodReads works merging? Let's look at those.
+
+```{python}
+gr_big = clusters[clusters['n_gr_works'] > 1].sort_values('n_gr_works', ascending=False)
+gr_big.info()
+```
+
+We have a lot of these clusters. What fraction of the GoodReads-affected clusters is this?
+
+```{python}
+len(gr_big) / clusters['n_gr_books'].count()
+```
+
+Less than 1%. Not bad, but let's look.
+
+```{python}
+gr_big.head()
+```
+
+## Large Cluster Debugging
+
+We have some pretty big clusters:
+
+```{python}
+big = clusters.nlargest(5, 'n_nodes')
+big
+```
+
+What is up with this? We should figure out what went wrong, if we can.  What are its ISBNs?
+
+```{python}
+isbns = pd.read_parquet('book-links/all-isbns.parquet').set_index('isbn_id')
+isbns.head()
+```
+
+```{python}
+links = pd.read_parquet('book-links/isbn-clusters.parquet', columns=['isbn_id', 'cluster'])
+links.head()
+```
+
+```{python}
+big_id = big.index[0]
+bl = links[links['cluster'] == big_id].drop(columns=['cluster'])
+bl = bl.join(isbns, on='isbn_id')
+bl.sort_values('isbn')
+```
+
+What are the things with the highest record count (besides ratings)?
+
+```{python}
+bl['btot'] = bl.iloc[:, 2:-2].sum(axis=1)
+bl.nlargest(20, 'btot')
+```
+
