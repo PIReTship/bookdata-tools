@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["AVX2","NEON","SSE"],"trait":["SIMDArgMinMax"]};

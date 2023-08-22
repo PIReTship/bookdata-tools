@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["NullStrategy","UniqueKeepStrategy"],"mod":["explode","groupby","hash_join","row"],"struct":["DataFrame","PhysRecordBatchIter","RecordBatchIter"],"type":["ArrowChunk"]};

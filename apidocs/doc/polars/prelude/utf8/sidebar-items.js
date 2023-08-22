@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"trait":["BinaryFromIter","Utf8FromIter"]};

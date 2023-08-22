@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["AUTHOR_FILE","ID_FILE","INFO_FILE","SERIES_FILE"],"struct":["BookAuthorRecord","BookIdRecord","BookRecord","BookSeriesRecord","BookWriter","MutableBookAuthorRecordArray","MutableBookIdRecordArray","MutableBookRecordArray","MutableBookSeriesRecordArray","RawAuthor","RawBook"]};

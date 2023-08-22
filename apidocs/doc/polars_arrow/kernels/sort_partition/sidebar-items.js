@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["create_clean_partitions","partition_to_groups","partition_to_groups_amortized"]};

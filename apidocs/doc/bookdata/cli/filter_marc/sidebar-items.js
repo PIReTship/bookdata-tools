@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["BATCH_SIZE"],"fn":["scan_records","write_cols","write_records"],"struct":["FilterMARC","FilterSpec","OutputSpec"]};

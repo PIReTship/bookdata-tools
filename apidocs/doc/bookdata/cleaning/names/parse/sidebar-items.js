@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["parse_name_entry"],"mod":["name_parser"]};

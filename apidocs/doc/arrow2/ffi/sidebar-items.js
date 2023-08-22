@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["export_array_to_c","export_field_to_c","export_iterator","import_array_from_c","import_field_from_c"],"mod":["mmap"],"struct":["ArrowArray","ArrowArrayStream","ArrowArrayStreamReader","ArrowSchema"]};

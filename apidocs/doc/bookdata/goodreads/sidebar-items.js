@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["author","book","genres","interaction","simple_interaction","work"]};

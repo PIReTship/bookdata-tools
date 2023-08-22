@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["CsvEncoding","NullValues"],"mod":["read_impl","utils"],"struct":["CsvReader","CsvWriter"]};

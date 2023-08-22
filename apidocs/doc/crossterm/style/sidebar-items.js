@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["Attribute","Color","Colored"],"fn":["available_color_count","style"],"struct":["Attributes","Colors","ContentStyle","Print","PrintStyledContent","ResetColor","SetAttribute","SetAttributes","SetBackgroundColor","SetColors","SetForegroundColor","SetStyle","SetUnderlineColor","StyledContent"],"trait":["Stylize"]};

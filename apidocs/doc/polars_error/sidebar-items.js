@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["ArrowError","PolarsError"],"fn":["to_compute_err"],"macro":["polars_bail","polars_ensure","polars_err"],"struct":["ErrString"],"type":["PolarsResult"]};

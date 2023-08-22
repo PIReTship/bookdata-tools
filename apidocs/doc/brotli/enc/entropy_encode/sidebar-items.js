@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["BrotliConvertBitDepthsToSymbols","BrotliCreateHuffmanTree","BrotliOptimizeHuffmanCountsForRle","BrotliSetDepth","BrotliWriteHuffmanTree","DecideOverRleUse","InitHuffmanTree","NewHuffmanTree","SortHuffmanTreeItems"],"struct":["HuffmanTree","SortHuffmanTree"],"trait":["HuffmanComparator"]};

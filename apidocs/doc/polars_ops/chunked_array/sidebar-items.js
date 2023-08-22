@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["list"],"trait":["AsBinary","AsUtf8","BinaryNameSpaceImpl","ChunkedSet","Utf8NameSpaceImpl"]};

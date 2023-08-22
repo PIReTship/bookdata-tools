@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["IsLateral","IsOptional","ParserError","WildcardExpr"],"struct":["Parser","ParserOptions"]};

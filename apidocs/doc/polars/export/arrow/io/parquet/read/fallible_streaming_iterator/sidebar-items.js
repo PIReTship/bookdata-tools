@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["convert","empty"],"struct":["Convert","Empty","Filter","Fuse","Map","MapErr","MapRef","Skip","SkipWhile","Take","TakeWhile"],"trait":["DoubleEndedFallibleStreamingIterator","FallibleStreamingIterator"]};
