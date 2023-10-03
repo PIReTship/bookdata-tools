@@ -8,9 +8,9 @@ jupyter:
       format_version: '1.0'
       jupytext_version: 1.14.7
   kernelspec:
-    display_name: Python 3 (ipykernel)
-    language: python
-    name: python3
+    display_name: R
+    language: R
+    name: ir
 ---
 
 
@@ -20,8 +20,8 @@ This notebook provides statistics on the results of our book clustering.
 ## Setup
 
 ```{r}
-library(tidyverse)
-library(arrow)
+library(tidyverse, warn.conflicts=FALSE)
+library(arrow, warn.conflicts=FALSE)
 ```
 
 I want to use `theme_minimal()` by default:
@@ -44,6 +44,7 @@ Describe the count columns for basic descriptive stats:
 ```{r}
 clusters %>%
   select(-cluster) %>%
+  collect() %>%
   summary()
 ```
 
@@ -56,6 +57,7 @@ How many clusters are connected to each source?
 ```{r}
 src_counts = clusters %>%
   summarize(across(-cluster, ~ sum(.x > 0))) %>%
+  collect() %>%
   pivot_longer(everything(), names_to="source", values_to="count")
 src_counts
 ```
@@ -71,7 +73,7 @@ Let's look at the distributions of cluster sizes.  Let's first compute histogram
 of the number of records per cluster for each cluster type.
 
 ```{r}
-size_dists = clusters %>%
+size_dists = collect(clusters) %>%
   gather(rec_type, nrecs, -cluster, factor_key=TRUE) %>%
   summarize(count=n(), .by=c("rec_type", "nrecs"))
 head(size_dists)
