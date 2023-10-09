@@ -88,7 +88,7 @@ We're going to want to compute versions of this table as fractions, e.g. the fra
 fractionalize = function(data, columns, unlinked=NULL) {
     fracs = select(data, dataset | all_of(columns))
     if (!is.null(unlinked)) {
-        fracs = mutate(fracs, unlinked=rowSums(select(data, all_of(columns))))
+        fracs = mutate(fracs, unlinked=rowSums(select(data, all_of(unlinked))))
     }
     totals = rowSums(select(fracs, !dataset))
     fracs %>% mutate(across(!dataset, ~ .x / totals))
@@ -107,7 +107,7 @@ plot_bars = function(data) {
     tall = tall %>% mutate(status=ordered(status, codes))
     ggplot(tall) +
         aes(y=dataset, x=fraction, fill=status) +
-        geom_col(position=position_stack(reverse=TRUE)) +
+        geom_col(position=position_stack(reverse=TRUE), width=0.5) +
         geom_text(aes(label=if_else(fraction >= 0.1,
                                     sprintf("%.1f%%", fraction * 100),
                                     "")),
