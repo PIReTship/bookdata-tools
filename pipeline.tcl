@@ -31,6 +31,7 @@ stage LinkageStats {
     cmd quarto render LinkageStats.qmd
     dep LinkageStats.qmd
     dep book-links/gender-stats.csv
+    out -nocache LinkageStats.ipynb
     out LinkageStats.html
     out LinkageStats_files
     out -metric book-coverage.json
