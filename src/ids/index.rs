@@ -135,7 +135,7 @@ impl IdIndex<String> {
     /// This assumes the Parquet file has the following columns:
     ///
     /// - `key`, of type `String`, storing the keys
-    /// - `id`, of type `u32`, storing the IDs
+    /// - `id`, of type `i32`, storing the IDs
     pub fn load_standard<P: AsRef<Path>>(path: P) -> Result<IdIndex<String>> {
         IdIndex::load(path, "id", "key")
     }
