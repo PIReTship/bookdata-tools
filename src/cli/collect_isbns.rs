@@ -6,9 +6,6 @@ use std::fs::read_to_string;
 use serde::Deserialize;
 use toml;
 
-use friendly::bytes;
-
-use crate::ids::collector::KeyCollector;
 use crate::prelude::Result;
 use crate::prelude::*;
 use polars::prelude::*;
@@ -53,11 +50,10 @@ impl MultiSource {
 }
 
 /// Read a single ISBN source into the accumulator.
-fn read_source(kc: &mut KeyCollector, name: &str, src: &ISBNSource) -> Result<()> {
-    let mut acc = kc.accum(name);
+fn scan_source(name: &str, src: &ISBNSource) -> Result<LazyFrame> {
     let id_col = src.column.as_deref().unwrap_or("isbn");
 
-    info!("reading ISBNs from {} (column {})", src.path, id_col);
+    info!("scanning ISBNs from {} (column {})", src.path, id_col);
 
     let df = if src.path.ends_with(".csv") {
         LazyCsvReader::new(src.path.to_string())
@@ -66,17 +62,11 @@ fn read_source(kc: &mut KeyCollector, name: &str, src: &ISBNSource) -> Result<()
     } else {
         LazyFrame::scan_parquet(src.path.to_string(), Default::default())?
     };
-    let df = df.select(&[col(id_col)]);
+    let df = df.select(&[col(id_col).alias("isbn")]);
     let df = df.drop_nulls(None);
+    let df = df.groupby(["isbn"]).agg([count().alias(name)]);
 
-    let df = df.collect()?;
-
-    let isbns = df.column(id_col)?.utf8()?;
-
-    info!("adding {} ISBNs", isbns.len());
-    acc.add_keys(isbns.into_iter().flatten());
-
-    Ok(())
+    Ok(df)
 }
 
 impl Command for CollectISBNs {
@@ -84,17 +74,46 @@ impl Command for CollectISBNs {
         info!("reading spec from {}", self.source_file.display());
         let spec = read_to_string(&self.source_file)?;
         let spec: SourceSet = toml::de::from_str(&spec)?;
+        let ndfs = spec.len();
 
-        let mut kc = KeyCollector::new();
-        for (name, ms) in spec {
+        let mut df: Option<LazyFrame> = None;
+        let mut columns = vec!["isbn"];
+        for (name, ms) in &spec {
+            let mut n = 0;
             for source in ms.to_list() {
-                read_source(&mut kc, &name, source)?;
+                let sdf = scan_source(name, source)?;
+                if let Some(cur) = df {
+                    let mut jdf =
+                        cur.join(sdf, &[col("isbn")], &[col("isbn")], JoinType::Outer.into());
+                    if n > 0 {
+                        let mut cols: Vec<Expr> = columns.iter().map(|n| col(n)).collect();
+                        cols.push(
+                            (col(name).fill_null(0) + col(&format!("{}_right", name)).fill_null(0))
+                                .alias(name),
+                        );
+                        jdf = jdf.select(&cols);
+                    }
+                    df = Some(jdf);
+                } else {
+                    df = Some(sdf);
+                }
+                n += 1;
             }
+            columns.push(name);
         }
+        let df = df.ok_or_else(|| anyhow!("no source files loaded"))?;
+        let df = df.fill_null(lit(0));
+        let df = df.with_row_count("isbn_id", Some(1));
+        info!("collecting ISBNs from {} sources", ndfs);
+        let df = df.collect()?;
 
-        info!("saving {} ISBNs to {}", kc.len(), self.out_file.display());
-        let n = kc.save("isbn", "isbn_id", &self.out_file)?;
-        info!("wrote {} rows in {}", n, bytes(file_size(&self.out_file)?));
+        info!(
+            "saving {} ISBNs to {}",
+            df.height(),
+            self.out_file.display()
+        );
+        save_df_parquet(df, &self.out_file)?;
+        info!("wrote ISBN collection file");
 
         Ok(())
     }
