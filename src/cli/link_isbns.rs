@@ -1,7 +1,7 @@
 use clap::Args;
 
 use crate::{
-    arrow::{polars::nonnull_schema, writer::open_parquet_writer},
+    arrow::{polars::nonnull_schema, writer::open_polars_writer},
     prelude::*,
 };
 use polars::prelude::*;
@@ -53,7 +53,7 @@ impl Command for LinkISBNIds {
                 isbns,
                 &[col(self.isbn_fields[0].as_str())],
                 &[col("isbn")],
-                JoinType::Inner,
+                JoinType::Inner.into(),
             )
         } else {
             let mut melt = MeltArgs::default();
@@ -64,7 +64,12 @@ impl Command for LinkISBNIds {
             melt.value_name = Some("isbn".into());
             melt.variable_name = Some("field".into());
             let rm = records.melt(melt);
-            rm.join(isbns, &[col("isbn")], &[col("isbn")], JoinType::Inner)
+            rm.join(
+                isbns,
+                &[col("isbn")],
+                &[col("isbn")],
+                JoinType::Inner.into(),
+            )
         };
         let filtered = merged
             .filter(col("isbn").is_not_null())
@@ -85,7 +90,7 @@ impl Command for LinkISBNIds {
 
         info!("saving {} links to {:?}", frame.height(), &self.outfile);
         let schema = nonnull_schema(&frame);
-        let writer = open_parquet_writer(&self.outfile, schema)?;
+        let writer = open_polars_writer(&self.outfile, schema)?;
         writer.write_and_finish(frame.iter_chunks())?;
 
         Ok(())

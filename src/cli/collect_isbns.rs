@@ -64,7 +64,7 @@ fn scan_source(name: &str, src: &ISBNSource) -> Result<LazyFrame> {
     };
     let df = df.select(&[col(id_col).alias("isbn")]);
     let df = df.drop_nulls(None);
-    let df = df.groupby(["isbn"]).agg([count().alias(name)]);
+    let df = df.group_by(["isbn"]).agg([count().alias(name)]);
 
     Ok(df)
 }

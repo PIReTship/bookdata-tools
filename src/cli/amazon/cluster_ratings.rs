@@ -22,7 +22,7 @@ impl Command for ClusterRatings {
 
         let ratings = LazyFrame::scan_parquet(&self.infile, default())?;
 
-        let joined = ratings.join(isbns, &[col("asin")], &[col("isbn")], JoinType::Inner);
+        let joined = ratings.join(isbns, &[col("asin")], &[col("isbn")], JoinType::Inner.into());
         let joined = joined
             .select(&[
                 col("user"),
@@ -32,7 +32,7 @@ impl Command for ClusterRatings {
             ])
             .sort("timestamp", default());
 
-        let actions = joined.groupby(&[col("user"), col("item")]).agg(&[
+        let actions = joined.group_by(&[col("user"), col("item")]).agg(&[
             col("rating").median().alias("rating"),
             col("rating").last().alias("last_rating"),
             col("timestamp").min().alias("first_time"),

@@ -2,7 +2,7 @@
 use std::path::PathBuf;
 
 use crate::arrow::polars::nonnull_schema;
-use crate::arrow::writer::open_parquet_writer;
+use crate::arrow::writer::open_polars_writer;
 use crate::ids::codes::*;
 use crate::prelude::*;
 use polars::prelude::*;
@@ -70,7 +70,7 @@ impl Command for ExtractBooks {
                 join,
                 &[col(&self.field_name)],
                 &[col(&self.field_name)],
-                JoinType::Left,
+                JoinType::Left.into(),
             );
             if let Some(fld) = &self.join_field {
                 join.select(&[col(&self.field_name), col(fld), col("cluster")])
@@ -86,7 +86,7 @@ impl Command for ExtractBooks {
         info!("got {} book links", frame.height());
         frame.as_single_chunk_par();
         let schema = nonnull_schema(&frame);
-        let writer = open_parquet_writer(&self.output, schema)?;
+        let writer = open_polars_writer(&self.output, schema)?;
         writer.write_and_finish(frame.iter_chunks())?;
 
         Ok(())

@@ -11,6 +11,10 @@ use arrow2::datatypes::*;
 use arrow2::io::parquet::write::*;
 use arrow2_convert::serialize::ArrowSerialize;
 use log::*;
+use polars::prelude::ArrowSchema;
+use polars_arrow::array::Array as PArray;
+use polars_arrow::chunk::Chunk as PChunk;
+use polars_arrow::io::parquet::write as plw;
 
 use crate::io::object::{ObjectWriter, ThreadObjectWriter};
 use crate::io::DataSink;
@@ -34,6 +38,30 @@ pub fn open_parquet_writer<P: AsRef<Path>>(path: P, schema: Schema) -> Result<Fi
         .write(true)
         .open(path)?;
     let writer = FileWriter::try_new(file, schema, options)?;
+
+    Ok(writer)
+}
+
+/// Open a Parquet writer using BookData defaults.
+pub fn open_polars_writer<P: AsRef<Path>>(
+    path: P,
+    schema: ArrowSchema,
+) -> Result<plw::FileWriter<File>> {
+    let compression = plw::CompressionOptions::Zstd(None);
+    let options = plw::WriteOptions {
+        write_statistics: true,
+        version: Version::V2,
+        compression,
+        data_pagesize_limit: None,
+    };
+
+    info!("creating Parquet file {:?}", path.as_ref());
+    let file = OpenOptions::new()
+        .create(true)
+        .truncate(true)
+        .write(true)
+        .open(path)?;
+    let writer = plw::FileWriter::try_new(file, schema, options)?;
 
     Ok(writer)
 }
@@ -168,6 +196,7 @@ where
     Ok(chunk)
 }
 
+/// Implementation of object writer for Arrow2 writers
 impl<W> ObjectWriter<Chunk<Box<dyn Array + 'static>>> for FileWriter<W>
 where
     W: Write,
@@ -182,6 +211,34 @@ where
         let options = self.options();
         let chunks = vec![Ok(chunk)];
         let groups = RowGroupIterator::try_new(chunks.into_iter(), &schema, options, encodings)?;
+        for group in groups {
+            self.write(group?)?;
+        }
+        Ok(())
+    }
+
+    fn finish(mut self) -> Result<usize> {
+        self.end(None)?;
+        Ok(0)
+    }
+}
+
+/// Implementation of object writer for Polars Arrow writers
+impl<W> ObjectWriter<PChunk<Box<dyn PArray + 'static>>> for plw::FileWriter<W>
+where
+    W: Write,
+{
+    fn write_object(&mut self, chunk: PChunk<Box<dyn PArray + 'static>>) -> Result<()> {
+        let schema = self.schema();
+        let encodings: Vec<_> = schema
+            .fields
+            .iter()
+            .map(|f| plw::transverse(&f.data_type, |_| Encoding::Plain))
+            .collect();
+        let options = self.options();
+        let chunks = vec![Ok(chunk)];
+        let groups =
+            plw::RowGroupIterator::try_new(chunks.into_iter(), &schema, options, encodings)?;
         for group in groups {
             self.write(group?)?;
         }

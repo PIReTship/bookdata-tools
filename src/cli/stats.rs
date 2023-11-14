@@ -37,7 +37,7 @@ impl Command for IntegrationStats {
             agg_frames.push(scan_actions(&file, genders.clone(), *name)?);
         }
 
-        let results = concat(agg_frames, true, true)?;
+        let results = concat(agg_frames, default())?;
         info!("collecting results");
         debug!("plan:\n{}", results.describe_optimized_plan()?);
         let mut results = results.collect()?;
@@ -67,7 +67,7 @@ fn scan_loc(genders: LazyFrame) -> Result<LazyFrame> {
 
     let bg = books.inner_join(genders, col("cluster"), col("cluster"));
     let bg = bg
-        .groupby([col("gender")])
+        .group_by([col("gender")])
         .agg([col("cluster").n_unique().alias("n_books")])
         .select([
             lit("LOC-MDS").alias("dataset"),
@@ -83,9 +83,9 @@ fn scan_actions(file: &str, genders: LazyFrame, name: &str) -> Result<LazyFrame>
     info!("scanning data {} from {}", name, file);
     let df = LazyFrame::scan_parquet(file, default())?;
 
-    let df = df.join(genders, &[col("item")], &[col("cluster")], JoinType::Inner);
+    let df = df.join(genders, &[col("item")], &[col("cluster")], JoinType::Inner.into());
     let df = df
-        .groupby([col("gender")])
+        .group_by([col("gender")])
         .agg(&[
             col("item").n_unique().alias("n_books"),
             col("item").count().alias("n_actions"),

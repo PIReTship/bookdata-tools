@@ -122,7 +122,7 @@ impl ClusterOp {
         let interactions = self.project_and_sort(interactions);
         let actions = interactions
             .clone()
-            .groupby(&[col("user"), col("item")])
+            .group_by(&[col("user"), col("item")])
             .agg(self.aggregates());
 
         let actions = self.maybe_integrate_ratings(actions, &interactions);
@@ -145,7 +145,12 @@ impl ClusterOp {
 
         let links = LazyFrame::scan_parquet("goodreads/gr-book-link.parquet", Default::default())?;
 
-        let data = data.join(links, &[col("book_id")], &[col("book_id")], JoinType::Inner);
+        let data = data.join(
+            links,
+            &[col("book_id")],
+            &[col("book_id")],
+            JoinType::Inner.into(),
+        );
         Ok(data)
     }
 
@@ -226,13 +231,13 @@ impl ClusterOp {
             ActionType::AddActions => {
                 let ratings = source.clone().filter(col("rating").is_not_null());
                 let ratings = ratings
-                    .groupby(["user", "item"])
+                    .group_by(["user", "item"])
                     .agg(&[col("rating").last().alias("last_rating")]);
                 actions.join(
                     ratings,
                     &[col("user"), col("item")],
                     &[col("user"), col("item")],
-                    JoinType::Left,
+                    JoinType::Left.into(),
                 )
             }
             _ => actions,
