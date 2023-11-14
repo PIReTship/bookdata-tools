@@ -91,7 +91,7 @@ pub fn viaf_author_table() -> Result<AuthorTable> {
     for (rec_id, names) in pb.wrap_iter(rec_names.into_iter()) {
         let genders = rec_genders.get(&rec_id).unwrap_or(&empty);
         for name in names {
-            let mut rec = table.entry(name).or_default();
+            let rec = table.entry(name).or_default();
             rec.n_author_recs += 1;
             for g in genders {
                 rec.genders.insert(g.clone());

@@ -9,7 +9,6 @@ use crate::gender::*;
 use crate::prelude::*;
 use crate::util::logging::item_progress;
 use anyhow::Result;
-#[allow(unused_imports)]
 use arrow2_convert::field::LargeString;
 use polars::prelude::*;
 
@@ -44,7 +43,7 @@ pub fn read_resolve(path: &Path, authors: &AuthorTable) -> Result<ClusterTable> 
 
     for row in pb.wrap_iter(iter) {
         let row: ClusterAuthor = row?;
-        let mut rec = table.entry(row.cluster).or_default();
+        let rec = table.entry(row.cluster).or_default();
         rec.n_book_authors += 1;
         if let Some(info) = authors.get(row.author_name.as_str()) {
             rec.n_author_recs += info.n_author_recs;
