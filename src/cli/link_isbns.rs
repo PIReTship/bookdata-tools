@@ -44,8 +44,8 @@ impl Command for LinkISBNIds {
         info!("record field: {}", &self.rec_field);
         info!("ISBN fields: {:?}", &self.isbn_fields);
 
-        let isbns = LazyFrame::scan_parquet(ALL_ISBNS_FILE, default())?;
-        let records = LazyFrame::scan_parquet(&self.infile, default())?;
+        let isbns = scan_df_parquet(ALL_ISBNS_FILE)?;
+        let records = scan_df_parquet(&self.infile)?;
 
         let merged = if self.isbn_fields.len() == 1 {
             // one column, join on it

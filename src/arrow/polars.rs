@@ -11,7 +11,8 @@ const ROW_GROUP_SIZE: usize = 1000_000;
 /// Get a schema from a data frame with maximal nullability.
 pub fn nonnull_schema(df: &DataFrame) -> ArrowSchema {
     let schema = df.schema().to_arrow();
-    ArrowSchema {
+    debug!("de-nullifying schema: {:?}", schema);
+    let clean = ArrowSchema {
         fields: schema
             .fields
             .into_iter()
@@ -21,7 +22,9 @@ pub fn nonnull_schema(df: &DataFrame) -> ArrowSchema {
             })
             .collect(),
         metadata: schema.metadata,
-    }
+    };
+    debug!("converted schema: {:?}", clean);
+    clean
 }
 
 /// Save a data frame to a Parquet file.
