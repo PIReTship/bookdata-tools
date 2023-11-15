@@ -31,6 +31,7 @@ pub fn nonnull_schema(df: &DataFrame) -> ArrowSchema {
 pub fn save_df_parquet<P: AsRef<Path>>(df: DataFrame, path: P) -> Result<()> {
     let path = path.as_ref();
     debug!("writing file {}", path.display());
+    debug!("{}: schema {:?}", path.display(), df.schema());
     let mut df = df;
     let file = File::create(path)?;
     let size = ParquetWriter::new(file)
