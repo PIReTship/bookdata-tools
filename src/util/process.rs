@@ -29,6 +29,6 @@ pub fn log_process_stats() {
         duration(system)
     );
 
-    let mem = usage.ru_maxrss * 1024;
+    let mem = usage.ru_maxrss;
     info!("max RSS (memory use): {}", bytes(mem));
 }
