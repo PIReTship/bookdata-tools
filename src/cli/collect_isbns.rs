@@ -60,7 +60,7 @@ fn scan_source(name: &str, src: &ISBNSource) -> Result<LazyFrame> {
             .has_header(true)
             .finish()?
     } else {
-        LazyFrame::scan_parquet(src.path.to_string(), Default::default())?
+        scan_df_parquet(&src.path)?
     };
     let df = df.select(&[col(id_col).alias("isbn")]);
     let df = df.drop_nulls(None);
@@ -104,6 +104,9 @@ impl Command for CollectISBNs {
         let df = df.ok_or_else(|| anyhow!("no source files loaded"))?;
         let df = df.fill_null(lit(0));
         let df = df.with_row_count("isbn_id", Some(1));
+        let mut cast = vec![col("isbn_id").cast(DataType::Int32)];
+        cast.extend(columns.iter().map(|c| col(c)));
+        let df = df.select(&cast);
         info!("collecting ISBNs from {} sources", ndfs);
         let df = df.collect()?;
 
