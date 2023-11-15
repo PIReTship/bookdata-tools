@@ -2,6 +2,7 @@ use std::fs::File;
 use std::path::Path;
 
 use anyhow::Result;
+use log::*;
 
 use polars::prelude::*;
 
@@ -23,12 +24,25 @@ pub fn nonnull_schema(df: &DataFrame) -> ArrowSchema {
     }
 }
 
+/// Save a data frame to a Parquet file.
 pub fn save_df_parquet<P: AsRef<Path>>(df: DataFrame, path: P) -> Result<()> {
+    let path = path.as_ref();
+    debug!("writing file {}", path.display());
     let mut df = df;
     let file = File::create(path)?;
-    ParquetWriter::new(file)
+    let size = ParquetWriter::new(file)
         .with_compression(ParquetCompression::Zstd(None))
         .with_row_group_size(Some(ROW_GROUP_SIZE))
         .finish(&mut df)?;
+    debug!("{}: wrote {}", path.display(), friendly::bytes(size));
     Ok(())
+}
+
+/// Scan a Parquet file into a data frame.
+pub fn scan_df_parquet<P: AsRef<Path>>(file: P) -> Result<LazyFrame> {
+    let file = file.as_ref();
+    debug!("scanning file {}", file.display());
+    let df = LazyFrame::scan_parquet(file, ScanArgsParquet::default())?;
+    debug!("{}: schema {:?}", file.display(), df.schema()?);
+    Ok(df)
 }

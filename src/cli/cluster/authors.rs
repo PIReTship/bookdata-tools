@@ -40,19 +40,19 @@ pub struct ClusterAuthors {
 fn scan_openlib(first_only: bool) -> Result<LazyFrame> {
     info!("scanning OpenLibrary author data");
     info!("reading ISBN clusters");
-    let icl = LazyFrame::scan_parquet("book-links/isbn-clusters.parquet", default())?;
+    let icl = scan_df_parquet("book-links/isbn-clusters.parquet")?;
     let icl = icl.select(&[col("isbn_id"), col("cluster")]);
     info!("reading OL edition IDs");
-    let edl = LazyFrame::scan_parquet("openlibrary/edition-isbn-ids.parquet", default())?;
+    let edl = scan_df_parquet("openlibrary/edition-isbn-ids.parquet")?;
     let edl = edl.filter(col("isbn_id").is_not_null());
     info!("reading OL edition authors");
-    let mut eau = LazyFrame::scan_parquet("openlibrary/edition-authors.parquet", default())?;
+    let mut eau = scan_df_parquet("openlibrary/edition-authors.parquet")?;
     if first_only {
         eau = eau.filter(col("pos").eq(0i16));
     }
 
     info!("reading OL author names");
-    let auth = LazyFrame::scan_parquet("openlibrary/author-names.parquet", default())?;
+    let auth = scan_df_parquet("openlibrary/author-names.parquet")?;
     let linked = icl.join(
         edl,
         [col("isbn_id")],
@@ -84,14 +84,14 @@ fn scan_loc(first_only: bool) -> Result<LazyFrame> {
     }
 
     info!("reading ISBN clusters");
-    let icl = LazyFrame::scan_parquet("book-links/isbn-clusters.parquet", default())?;
+    let icl = scan_df_parquet("book-links/isbn-clusters.parquet")?;
     let icl = icl.select([col("isbn_id"), col("cluster")]);
 
     info!("reading LOC book records");
-    let books = LazyFrame::scan_parquet("loc-mds/book-isbn-ids.parquet", default())?;
+    let books = scan_df_parquet("loc-mds/book-isbn-ids.parquet")?;
 
     info!("reading LOC book authors");
-    let authors = LazyFrame::scan_parquet("loc-mds/book-authors.parquet", default())?;
+    let authors = scan_df_parquet("loc-mds/book-authors.parquet")?;
     let authors = authors.filter(col("author_name").is_not_null());
 
     let linked = icl.join(
