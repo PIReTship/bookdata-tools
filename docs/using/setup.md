@@ -15,6 +15,7 @@ This project uses Git submodules, so you should clone it with:
 
 You will need:
 
+- A Unix-like environment (macOS or Linux)
 - Anaconda or Miniconda
 - 250GB of disk space
 - At least 24 GB of memory (lower may be possible)
@@ -32,7 +33,7 @@ If you don't want to use Anaconda, see the following for more details on
 dependencies.  If you don't yet have `conda-lock` installed in your base
 environment, run:
 
-    conda install -c conda-forge -n base conda-lock=1
+    conda install -c conda-forge -n base conda-lock=2
 
 ### Python
 
