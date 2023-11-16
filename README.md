@@ -30,8 +30,8 @@ This project uses submodules — clone with `git clone --recursive`.
 ## Running Everything
 
 The dependencies are declared in `environment.yml`, in a format suitable for use with
-[conda-lock][].  We provide lockfiles for Windows, macOS, and Linux; to create a Conda
-environment, run:
+[conda-lock][].  We also provide a lockfile for reproducible dependencies; to install
+the environment, run:
 
     conda-lock install -n bookdata conda-lock.yml
 
@@ -41,7 +41,7 @@ You can run the entire import process with:
 
 To regenerate or update the lockfiles, run:
 
-    conda-lock lock --mamba -f environment.yml -f dev-environment.yml -f audit-environment.yml
+    conda lock -f environment.yml
 
 [conda-lock]: https://github.com/conda-incubator/conda-lock/
 
