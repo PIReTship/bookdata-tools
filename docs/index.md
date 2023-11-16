@@ -1,8 +1,4 @@
----
-title: Overview
----
-
-# Book Data Tools
+# Overview {.unnumbered}
 
 The PIReT Book Data Tools are a set of tools for ingesting, integrating, and
 indexing a variety of sources of book data, created by the [People and
@@ -41,20 +37,6 @@ appropriate original source paper.**  For each data set below, we have provided 
 page that describes the data and its appropriate citation.
 
 See the [Setup page](using/setup.md) to get started and for system requirements.
-
-```{toctree}
-:maxdepth: 1
-
-using/index
-data/index
-implementation/index
-papers
-history
-genindex
-reports/index
-Rust API <https://bookdata.piret.info/apidocs/bookdata/index.html>
-GitHub repository <https://github.com/BoiseState/bookdata-tools>
-```
 
 ## Video
 

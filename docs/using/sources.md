@@ -1,8 +1,4 @@
----
-title: Source Data
----
-
-# Downloading Source Data
+# Source Data
 
 These import tools will integrate several data sets. Some of them are auto-downloaded, but others you will
 need to download yourself and save in the `data` directory.  The data sources are:
