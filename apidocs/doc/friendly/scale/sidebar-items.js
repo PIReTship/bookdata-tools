@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Scale"],"struct":["Binary","Decimal"],"trait":["Prefix","PrefixFamily"]};

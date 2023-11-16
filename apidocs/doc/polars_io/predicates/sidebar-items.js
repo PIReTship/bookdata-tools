@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["BatchStats","ColumnStats"],"trait":["PhysicalIoExpr","StatsEvaluator"]};

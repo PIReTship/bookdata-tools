@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["GENRE_FILE","OUT_FILE"],"struct":["BookGenreRecord","BookGenreWriter","MutableBookGenreRecordArray","RawBookGenre"]};

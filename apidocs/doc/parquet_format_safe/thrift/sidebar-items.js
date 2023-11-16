@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ApplicationErrorKind","Error","ProtocolErrorKind","TransportErrorKind"],"fn":["new_application_error","new_protocol_error","new_transport_error"],"mod":["protocol","varint"],"struct":["ApplicationError","ProtocolError","TransportError"],"type":["Result"]};

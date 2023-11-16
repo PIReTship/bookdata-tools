@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["JoinBuilder","LazyCsvReader","LazyFrame","LazyGroupBy","OptState","ScanArgsAnonymous","ScanArgsParquet"],"trait":["IntoLazy","LazyFileListReader"],"type":["AllowedOptimizations","PathIterator"]};

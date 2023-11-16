@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DATA_PROGRESS_TMPL","ITEM_PROGRESS_TMPL"],"fn":["data_progress","item_progress"],"struct":["Friendly","Len","Pos","Rate"],"trait":["FieldExtract"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["take_bitmap_unchecked"]};

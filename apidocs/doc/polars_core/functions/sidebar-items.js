@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["cov","pearson_corr"]};

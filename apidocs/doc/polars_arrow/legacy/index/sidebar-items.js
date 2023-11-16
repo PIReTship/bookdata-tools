@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["indexes_to_usizes"],"trait":["IndexToUsize"],"type":["IdxArr","IdxSize"]};

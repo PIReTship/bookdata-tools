@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["author","edition","source","work"]};

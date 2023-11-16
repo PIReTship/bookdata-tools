@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["NULL"],"enum":["JoinType","JoinValidation","LiteralValue","LogicalPlan"],"struct":["AnonymousScanOptions","CsvWriterOptions","JoinArgs","Null","ParquetWriteOptions"],"trait":["AnonymousScan","Literal"]};

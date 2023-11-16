@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["Decompressor"],"trait":["Compressed","Decompressed","FallibleStreamingIterator"]};

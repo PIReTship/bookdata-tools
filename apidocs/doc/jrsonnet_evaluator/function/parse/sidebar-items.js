@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["parse_builtin_call","parse_default_function_call","parse_function_call"]};

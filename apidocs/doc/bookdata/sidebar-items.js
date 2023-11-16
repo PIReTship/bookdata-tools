@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["main"],"macro":["json_from_str"],"mod":["amazon","arrow","cleaning","cli","gender","goodreads","graph","ids","interactions","io","layout","marc","openlib","parsing","prelude","tsv","util"],"static":["GLOBAL"]};
