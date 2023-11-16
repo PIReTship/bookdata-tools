@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-time-0.30.0/src/chunkedarray/utf8/infer.rs`."><title>infer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_time" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_time/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-time-0.34.2/src/chunkedarray/utf8/infer.rs`."><title>infer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_time" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_time/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -493,14 +493,10 @@
 <a href="#493" id="493">493</a>
 <a href="#494" id="494">494</a>
 <a href="#495" id="495">495</a>
-<a href="#496" id="496">496</a>
-<a href="#497" id="497">497</a>
-<a href="#498" id="498">498</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>chrono::{DateTime, NaiveDate, NaiveDateTime};
+</pre></div><pre class="rust"><code><span class="kw">use </span>arrow::array::PrimitiveArray;
+<span class="kw">use </span>chrono::{DateTime, NaiveDate, NaiveDateTime};
 <span class="kw">use </span>once_cell::sync::Lazy;
-<span class="kw">use </span>polars_arrow::export::arrow::array::PrimitiveArray;
 <span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span>polars_core::utils::arrow::types::NativeType;
 <span class="kw">use </span>regex::Regex;
 
 <span class="kw">use </span><span class="kw">super</span>::patterns::{<span class="self">self</span>, Pattern};
@@ -635,19 +631,25 @@
 }
 
 <span class="kw">pub trait </span>StrpTimeParser&lt;T&gt; {
-    <span class="kw">fn </span>parse_bytes(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt;;
+    <span class="kw">fn </span>parse_bytes(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val: <span class="kw-2">&amp;</span>[u8], time_unit: <span class="prelude-ty">Option</span>&lt;TimeUnit&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt;;
 }
 
 <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-datetime&quot;</span>)]
-</span><span class="kw">impl </span>StrpTimeParser&lt;i64&gt; <span class="kw">for </span>DatetimeInfer&lt;i64&gt; {
-    <span class="kw">fn </span>parse_bytes(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Option</span>&lt;i64&gt; {
+</span><span class="kw">impl </span>StrpTimeParser&lt;i64&gt; <span class="kw">for </span>DatetimeInfer&lt;Int64Type&gt; {
+    <span class="kw">fn </span>parse_bytes(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val: <span class="kw-2">&amp;</span>[u8], time_unit: <span class="prelude-ty">Option</span>&lt;TimeUnit&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;i64&gt; {
         <span class="kw">if </span><span class="self">self</span>.fmt_len == <span class="number">0 </span>{
             <span class="self">self</span>.fmt_len = strptime::fmt_len(<span class="self">self</span>.latest_fmt.as_bytes())<span class="question-mark">?</span>;
         }
+        <span class="kw">let </span>transform = <span class="kw">match </span>time_unit {
+            <span class="prelude-val">Some</span>(TimeUnit::Nanoseconds) =&gt; datetime_to_timestamp_ns,
+            <span class="prelude-val">Some</span>(TimeUnit::Microseconds) =&gt; datetime_to_timestamp_us,
+            <span class="prelude-val">Some</span>(TimeUnit::Milliseconds) =&gt; datetime_to_timestamp_ms,
+            <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(), <span class="comment">// time_unit has to be provided for datetime
+        </span>};
         <span class="kw">unsafe </span>{
             <span class="self">self</span>.transform_bytes
                 .parse(val, <span class="self">self</span>.latest_fmt.as_bytes(), <span class="self">self</span>.fmt_len)
-                .map(datetime_to_timestamp_us)
+                .map(transform)
                 .or_else(|| {
                     <span class="comment">// TODO! this will try all patterns.
                     // somehow we must early escape if value is invalid
@@ -671,8 +673,8 @@
 }
 
 <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-date&quot;</span>)]
-</span><span class="kw">impl </span>StrpTimeParser&lt;i32&gt; <span class="kw">for </span>DatetimeInfer&lt;i32&gt; {
-    <span class="kw">fn </span>parse_bytes(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt; {
+</span><span class="kw">impl </span>StrpTimeParser&lt;i32&gt; <span class="kw">for </span>DatetimeInfer&lt;Int32Type&gt; {
+    <span class="kw">fn </span>parse_bytes(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val: <span class="kw-2">&amp;</span>[u8], _time_unit: <span class="prelude-ty">Option</span>&lt;TimeUnit&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt; {
         <span class="kw">if </span><span class="self">self</span>.fmt_len == <span class="number">0 </span>{
             <span class="self">self</span>.fmt_len = strptime::fmt_len(<span class="self">self</span>.latest_fmt.as_bytes())<span class="question-mark">?</span>;
         }
@@ -703,59 +705,63 @@
 }
 
 <span class="attr">#[derive(Clone)]
-</span><span class="kw">pub struct </span>DatetimeInfer&lt;T&gt; {
+</span><span class="kw">pub struct </span>DatetimeInfer&lt;T: PolarsNumericType&gt; {
     <span class="kw">pub </span>pattern: Pattern,
     patterns: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str],
     latest_fmt: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
-    transform: <span class="kw">fn</span>(<span class="kw-2">&amp;</span>str, <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt;,
+    transform: <span class="kw">fn</span>(<span class="kw-2">&amp;</span>str, <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;T::Native&gt;,
     transform_bytes: StrpTimeState,
     fmt_len: u16,
     <span class="kw">pub </span>logical_type: DataType,
 }
 
+<span class="kw">pub trait </span>TryFromWithUnit&lt;T&gt;: Sized {
+    <span class="kw">type </span>Error;
+    <span class="kw">fn </span>try_from_with_unit(pattern: T, unit: <span class="prelude-ty">Option</span>&lt;TimeUnit&gt;) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt;;
+}
+
 <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-datetime&quot;</span>)]
-</span><span class="kw">impl </span>TryFrom&lt;Pattern&gt; <span class="kw">for </span>DatetimeInfer&lt;i64&gt; {
+</span><span class="kw">impl </span>TryFromWithUnit&lt;Pattern&gt; <span class="kw">for </span>DatetimeInfer&lt;Int64Type&gt; {
     <span class="kw">type </span>Error = PolarsError;
 
-    <span class="kw">fn </span>try_from(value: Pattern) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">match </span>value {
-            Pattern::DatetimeDMY =&gt; <span class="prelude-val">Ok</span>(DatetimeInfer {
-                pattern: Pattern::DatetimeDMY,
-                patterns: patterns::DATETIME_D_M_Y,
-                latest_fmt: patterns::DATETIME_D_M_Y[<span class="number">0</span>],
-                transform: transform_datetime_us,
-                transform_bytes: StrpTimeState::default(),
-                fmt_len: <span class="number">0</span>,
-                logical_type: DataType::Datetime(TimeUnit::Microseconds, <span class="prelude-val">None</span>),
-            }),
-            Pattern::DatetimeYMD =&gt; <span class="prelude-val">Ok</span>(DatetimeInfer {
-                pattern: Pattern::DatetimeYMD,
-                patterns: patterns::DATETIME_Y_M_D,
-                latest_fmt: patterns::DATETIME_Y_M_D[<span class="number">0</span>],
-                transform: transform_datetime_us,
-                transform_bytes: StrpTimeState::default(),
-                fmt_len: <span class="number">0</span>,
-                logical_type: DataType::Datetime(TimeUnit::Microseconds, <span class="prelude-val">None</span>),
-            }),
-            Pattern::DatetimeYMDZ =&gt; <span class="prelude-val">Ok</span>(DatetimeInfer {
-                pattern: Pattern::DatetimeYMDZ,
-                patterns: patterns::DATETIME_Y_M_D_Z,
-                latest_fmt: patterns::DATETIME_Y_M_D_Z[<span class="number">0</span>],
-                transform: transform_tzaware_datetime_us,
-                transform_bytes: StrpTimeState::default(),
-                fmt_len: <span class="number">0</span>,
-                logical_type: DataType::Datetime(TimeUnit::Microseconds, <span class="prelude-val">None</span>),
-            }),
-            <span class="kw">_ </span>=&gt; <span class="macro">polars_bail!</span>(ComputeError: <span class="string">&quot;could not convert pattern&quot;</span>),
-        }
+    <span class="kw">fn </span>try_from_with_unit(value: Pattern, time_unit: <span class="prelude-ty">Option</span>&lt;TimeUnit&gt;) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let </span>time_unit = time_unit.expect(<span class="string">&quot;time_unit must be provided for datetime&quot;</span>);
+
+        <span class="kw">let </span>transform = <span class="kw">match </span>(time_unit, value) {
+            (TimeUnit::Milliseconds, Pattern::DatetimeYMDZ) =&gt; transform_tzaware_datetime_ms,
+            (TimeUnit::Milliseconds, <span class="kw">_</span>) =&gt; transform_datetime_ms,
+            (TimeUnit::Microseconds, Pattern::DatetimeYMDZ) =&gt; transform_tzaware_datetime_us,
+            (TimeUnit::Microseconds, <span class="kw">_</span>) =&gt; transform_datetime_us,
+            (TimeUnit::Nanoseconds, Pattern::DatetimeYMDZ) =&gt; transform_tzaware_datetime_ns,
+            (TimeUnit::Nanoseconds, <span class="kw">_</span>) =&gt; transform_datetime_ns,
+        };
+        <span class="kw">let </span>(pattern, patterns) = <span class="kw">match </span>value {
+            Pattern::DatetimeDMY | Pattern::DateDMY =&gt; {
+                (Pattern::DatetimeDMY, patterns::DATETIME_D_M_Y)
+            },
+            Pattern::DatetimeYMD | Pattern::DateYMD =&gt; {
+                (Pattern::DatetimeYMD, patterns::DATETIME_Y_M_D)
+            },
+            Pattern::DatetimeYMDZ =&gt; (Pattern::DatetimeYMDZ, patterns::DATETIME_Y_M_D_Z),
+        };
+
+        <span class="prelude-val">Ok</span>(DatetimeInfer {
+            pattern,
+            patterns,
+            latest_fmt: patterns[<span class="number">0</span>],
+            transform,
+            transform_bytes: StrpTimeState::default(),
+            fmt_len: <span class="number">0</span>,
+            logical_type: DataType::Datetime(time_unit, <span class="prelude-val">None</span>),
+        })
     }
 }
 
 <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-date&quot;</span>)]
-</span><span class="kw">impl </span>TryFrom&lt;Pattern&gt; <span class="kw">for </span>DatetimeInfer&lt;i32&gt; {
+</span><span class="kw">impl </span>TryFromWithUnit&lt;Pattern&gt; <span class="kw">for </span>DatetimeInfer&lt;Int32Type&gt; {
     <span class="kw">type </span>Error = PolarsError;
 
-    <span class="kw">fn </span>try_from(value: Pattern) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>try_from_with_unit(value: Pattern, _time_unit: <span class="prelude-ty">Option</span>&lt;TimeUnit&gt;) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt; {
         <span class="kw">match </span>value {
             Pattern::DateDMY =&gt; <span class="prelude-val">Ok</span>(DatetimeInfer {
                 pattern: Pattern::DateDMY,
@@ -780,8 +786,8 @@
     }
 }
 
-<span class="kw">impl</span>&lt;T: NativeType&gt; DatetimeInfer&lt;T&gt; {
-    <span class="kw">pub fn </span>parse(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
+<span class="kw">impl</span>&lt;T: PolarsNumericType&gt; DatetimeInfer&lt;T&gt; {
+    <span class="kw">pub fn </span>parse(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;T::Native&gt; {
         <span class="kw">match </span>(<span class="self">self</span>.transform)(val, <span class="self">self</span>.latest_fmt) {
             <span class="prelude-val">Some</span>(parsed) =&gt; <span class="prelude-val">Some</span>(parsed),
             <span class="comment">// try other patterns
@@ -797,33 +803,27 @@
                     }
                 }
                 <span class="prelude-val">None
-            </span>}
+            </span>},
         }
     }
+}
 
+<span class="kw">impl</span>&lt;T: PolarsNumericType&gt; DatetimeInfer&lt;T&gt;
+<span class="kw">where
+    </span>ChunkedArray&lt;T&gt;: IntoSeries,
+{
     <span class="kw">fn </span>coerce_utf8(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ca: <span class="kw-2">&amp;</span>Utf8Chunked) -&gt; Series {
-        <span class="kw">let </span>chunks = ca
-            .downcast_iter()
-            .map(|array| {
-                <span class="kw">let </span>iter = array
-                    .into_iter()
-                    .map(|opt_val| opt_val.and_then(|val| <span class="self">self</span>.parse(val)));
-                Box::new(PrimitiveArray::from_trusted_len_iter(iter)) <span class="kw">as </span>ArrayRef
-            })
-            .collect();
-        <span class="kw">let </span><span class="kw-2">mut </span>out = <span class="kw">match </span><span class="self">self</span>.logical_type {
-            DataType::Date =&gt; <span class="kw">unsafe </span>{ Int32Chunked::from_chunks(ca.name(), chunks) }
-                .into_series()
-                .cast(<span class="kw-2">&amp;</span><span class="self">self</span>.logical_type)
-                .unwrap(),
-            DataType::Datetime(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="kw">unsafe </span>{ Int64Chunked::from_chunks(ca.name(), chunks) }
-                .into_series()
-                .cast(<span class="kw-2">&amp;</span><span class="self">self</span>.logical_type)
-                .unwrap(),
-            <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
-        };
-        out.rename(ca.name());
-        out
+        <span class="kw">let </span>chunks = ca.downcast_iter().map(|array| {
+            <span class="kw">let </span>iter = array
+                .into_iter()
+                .map(|opt_val| opt_val.and_then(|val| <span class="self">self</span>.parse(val)));
+            PrimitiveArray::from_trusted_len_iter(iter)
+        });
+        ChunkedArray::from_chunk_iter(ca.name(), chunks)
+            .into_series()
+            .cast(<span class="kw-2">&amp;</span><span class="self">self</span>.logical_type)
+            .unwrap()
+            .with_name(ca.name())
     }
 }
 
@@ -932,6 +932,7 @@
     ca: <span class="kw-2">&amp;</span>Utf8Chunked,
     tu: TimeUnit,
     tz: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>TimeZone&gt;,
+    _ambiguous: <span class="kw-2">&amp;</span>Utf8Chunked,
 ) -&gt; PolarsResult&lt;DatetimeChunked&gt; {
     <span class="kw">match </span>ca.first_non_null() {
         <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Ok</span>(Int64Chunked::full_null(ca.name(), ca.len()).into_datetime(tu, tz.cloned())),
@@ -941,42 +942,35 @@
                 .into_iter()
                 .find_map(|opt_val| opt_val.and_then(infer_pattern_datetime_single))
                 .ok_or_else(|| <span class="macro">polars_err!</span>(parse_fmt_idk = <span class="string">&quot;date&quot;</span>))<span class="question-mark">?</span>;
-            <span class="kw">let </span><span class="kw-2">mut </span>infer = DatetimeInfer::&lt;i64&gt;::try_from(pattern)<span class="question-mark">?</span>;
-            <span class="kw">match </span>(tu, pattern) {
-                (TimeUnit::Nanoseconds, Pattern::DatetimeYMDZ) =&gt; {
-                    infer.transform = transform_tzaware_datetime_ns
-                }
-                (TimeUnit::Microseconds, Pattern::DatetimeYMDZ) =&gt; {
-                    infer.transform = transform_tzaware_datetime_us
-                }
-                (TimeUnit::Milliseconds, Pattern::DatetimeYMDZ) =&gt; {
-                    infer.transform = transform_tzaware_datetime_ms
-                }
-                (TimeUnit::Nanoseconds, <span class="kw">_</span>) =&gt; infer.transform = transform_datetime_ns,
-                (TimeUnit::Microseconds, <span class="kw">_</span>) =&gt; infer.transform = transform_datetime_us,
-                (TimeUnit::Milliseconds, <span class="kw">_</span>) =&gt; infer.transform = transform_datetime_ms,
-            }
-            <span class="kw">if </span>tz.is_some() &amp;&amp; pattern == Pattern::DatetimeYMDZ {
-                <span class="macro">polars_bail!</span>(ComputeError: <span class="string">&quot;cannot parse tz-aware values with tz-aware dtype - please drop the time zone from the dtype.&quot;</span>)
+            <span class="kw">let </span><span class="kw-2">mut </span>infer = DatetimeInfer::&lt;Int64Type&gt;::try_from_with_unit(pattern, <span class="prelude-val">Some</span>(tu))<span class="question-mark">?</span>;
+            <span class="kw">if </span>pattern == Pattern::DatetimeYMDZ
+                &amp;&amp; tz.is_some()
+                &amp;&amp; tz.map(|x| x.as_str()) != <span class="prelude-val">Some</span>(<span class="string">&quot;UTC&quot;</span>)
+            {
+                <span class="macro">polars_bail!</span>(ComputeError: <span class="string">&quot;offset-aware datetimes are converted to UTC. \
+                    Please either drop the time zone from the function call, or set it to UTC. \
+                    To convert to a different time zone, please use `convert_time_zone`.&quot;</span>)
             }
             <span class="kw">match </span>pattern {
                 <span class="attr">#[cfg(feature = <span class="string">&quot;timezones&quot;</span>)]
                 </span>Pattern::DatetimeYMDZ =&gt; infer.coerce_utf8(ca).datetime().map(|ca| {
                     <span class="kw">let </span><span class="kw-2">mut </span>ca = ca.clone();
                     ca.set_time_unit(tu);
-                    ca.replace_time_zone(<span class="prelude-val">Some</span>(<span class="string">&quot;UTC&quot;</span>), <span class="prelude-val">None</span>)
+                    polars_ops::prelude::replace_time_zone(<span class="kw-2">&amp;</span>ca, <span class="prelude-val">Some</span>(<span class="string">&quot;UTC&quot;</span>), _ambiguous)
                 })<span class="question-mark">?</span>,
                 <span class="kw">_ </span>=&gt; infer.coerce_utf8(ca).datetime().map(|ca| {
                     <span class="kw">let </span><span class="kw-2">mut </span>ca = ca.clone();
                     ca.set_time_unit(tu);
                     <span class="kw">match </span>tz {
                         <span class="attr">#[cfg(feature = <span class="string">&quot;timezones&quot;</span>)]
-                        </span><span class="prelude-val">Some</span>(tz) =&gt; ca.replace_time_zone(<span class="prelude-val">Some</span>(tz), <span class="prelude-val">None</span>),
+                        </span><span class="prelude-val">Some</span>(tz) =&gt; {
+                            polars_ops::prelude::replace_time_zone(<span class="kw-2">&amp;</span>ca, <span class="prelude-val">Some</span>(tz), _ambiguous)
+                        },
                         <span class="kw">_ </span>=&gt; <span class="prelude-val">Ok</span>(ca),
                     }
                 })<span class="question-mark">?</span>,
             }
-        }
+        },
     }
 }
 <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-date&quot;</span>)]
@@ -989,9 +983,9 @@
                 .into_iter()
                 .find_map(|opt_val| opt_val.and_then(infer_pattern_date_single))
                 .ok_or_else(|| <span class="macro">polars_err!</span>(parse_fmt_idk = <span class="string">&quot;date&quot;</span>))<span class="question-mark">?</span>;
-            <span class="kw">let </span><span class="kw-2">mut </span>infer = DatetimeInfer::&lt;i32&gt;::try_from(pattern).unwrap();
+            <span class="kw">let </span><span class="kw-2">mut </span>infer = DatetimeInfer::&lt;Int32Type&gt;::try_from_with_unit(pattern, <span class="prelude-val">None</span>).unwrap();
             infer.coerce_utf8(ca).date().cloned()
-        }
+        },
     }
 }
 </code></pre></div></section></main></body></html>

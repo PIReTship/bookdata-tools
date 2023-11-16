@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["intern_bytes","intern_str"],"struct":["IBytes","IStr"]};

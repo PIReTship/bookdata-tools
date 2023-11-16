@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["is_reverse_sorted_max_nulls","rolling_max","rolling_mean","rolling_min","rolling_quantile","rolling_sum","rolling_var"],"struct":["MaxWindow","MeanWindow","MinMaxWindow","MinWindow","QuantileWindow","SortedMinMax","SumWindow","VarWindow"],"trait":["RollingAggWindowNulls"]};

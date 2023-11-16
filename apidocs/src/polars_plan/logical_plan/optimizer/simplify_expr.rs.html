@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-plan-0.30.0/src/logical_plan/optimizer/simplify_expr.rs`."><title>simplify_expr.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_plan" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-plan-0.34.2/src/logical_plan/optimizer/simplify_expr.rs`."><title>simplify_expr.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_plan" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -692,6 +692,45 @@
 <a href="#692" id="692">692</a>
 <a href="#693" id="693">693</a>
 <a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
+<a href="#697" id="697">697</a>
+<a href="#698" id="698">698</a>
+<a href="#699" id="699">699</a>
+<a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
+<a href="#705" id="705">705</a>
+<a href="#706" id="706">706</a>
+<a href="#707" id="707">707</a>
+<a href="#708" id="708">708</a>
+<a href="#709" id="709">709</a>
+<a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>polars_utils::arena::Arena;
 
 <span class="attr">#[cfg(all(feature = <span class="string">&quot;strings&quot;</span>, feature = <span class="string">&quot;concat_str&quot;</span>))]
@@ -801,7 +840,7 @@
 
 <span class="kw">impl </span>OptimizationRule <span class="kw">for </span>SimplifyBooleanRule {
     <span class="kw">fn </span>optimize_expr(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
         expr_node: Node,
         <span class="kw">_</span>: <span class="kw-2">&amp;</span>Arena&lt;ALogicalPlan&gt;,
@@ -819,8 +858,9 @@
                 AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">true</span>))
             ) =&gt;
             {
-                <span class="prelude-val">Some</span>(expr_arena.get(<span class="kw-2">*</span>right).clone())
-            }
+                <span class="comment">// We alias because of the left-hand naming rule.
+                </span><span class="prelude-val">Some</span>(AExpr::Alias(<span class="kw-2">*</span>right, <span class="string">&quot;literal&quot;</span>.into()))
+            },
             <span class="comment">// x AND true =&gt; x
             </span>AExpr::BinaryExpr {
                 left,
@@ -832,31 +872,39 @@
             ) =&gt;
             {
                 <span class="prelude-val">Some</span>(expr_arena.get(<span class="kw-2">*</span>left).clone())
-            }
+            },
+
             <span class="comment">// x AND false -&gt; false
-            </span>AExpr::BinaryExpr {
-                op: Operator::And,
-                right,
-                ..
-            } <span class="kw">if </span><span class="macro">matches!</span>(
-                expr_arena.get(<span class="kw-2">*</span>right),
-                AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">false</span>))
-            ) =&gt;
-            {
-                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">false</span>)))
-            }
-            <span class="comment">// false AND x -&gt; false
+            // FIXME: we need an optimizer redesign to allow x &amp; false to be optimized
+            // in general as we can forget the length of a series otherwise.
             </span>AExpr::BinaryExpr {
                 left,
                 op: Operator::And,
-                ..
+                right,
+            } <span class="kw">if </span><span class="macro">matches!</span>(expr_arena.get(<span class="kw-2">*</span>left), AExpr::Literal(<span class="kw">_</span>))
+                &amp;&amp; <span class="macro">matches!</span>(
+                    expr_arena.get(<span class="kw-2">*</span>right),
+                    AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">false</span>))
+                ) =&gt;
+            {
+                <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">false</span>)))
+            },
+
+            <span class="comment">// false AND x -&gt; false
+            // FIXME: we need an optimizer redesign to allow false &amp; x to be optimized
+            // in general as we can forget the length of a series otherwise.
+            </span>AExpr::BinaryExpr {
+                left,
+                op: Operator::And,
+                right,
             } <span class="kw">if </span><span class="macro">matches!</span>(
                 expr_arena.get(<span class="kw-2">*</span>left),
                 AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">false</span>))
-            ) =&gt;
+            ) &amp;&amp; <span class="macro">matches!</span>(expr_arena.get(<span class="kw-2">*</span>right), AExpr::Literal(<span class="kw">_</span>)) =&gt;
             {
                 <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">false</span>)))
-            }
+            },
+
             <span class="comment">// false or x =&gt; x
             </span>AExpr::BinaryExpr {
                 left,
@@ -867,8 +915,9 @@
                 AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">false</span>))
             ) =&gt;
             {
-                <span class="prelude-val">Some</span>(expr_arena.get(<span class="kw-2">*</span>right).clone())
-            }
+                <span class="comment">// We alias because of the left-hand naming rule.
+                </span><span class="prelude-val">Some</span>(AExpr::Alias(<span class="kw-2">*</span>right, <span class="string">&quot;literal&quot;</span>.into()))
+            },
             <span class="comment">// x or false =&gt; x
             </span>AExpr::BinaryExpr {
                 left,
@@ -881,46 +930,39 @@
             ) =&gt;
             {
                 <span class="prelude-val">Some</span>(expr_arena.get(<span class="kw-2">*</span>left).clone())
-            }
-
-            <span class="comment">// false OR x =&gt; x
-            </span>AExpr::BinaryExpr {
-                left,
-                op: Operator::Or,
-                right,
-            } <span class="kw">if </span><span class="macro">matches!</span>(
-                expr_arena.get(<span class="kw-2">*</span>left),
-                AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">false</span>))
-            ) =&gt;
-            {
-                <span class="prelude-val">Some</span>(expr_arena.get(<span class="kw-2">*</span>right).clone())
-            }
+            },
 
             <span class="comment">// true OR x =&gt; true
+            // FIXME: we need an optimizer redesign to allow true | x to be optimized
+            // in general as we can forget the length of a series otherwise.
             </span>AExpr::BinaryExpr {
+                left,
                 op: Operator::Or,
                 right,
-                ..
-            } <span class="kw">if </span><span class="macro">matches!</span>(
-                expr_arena.get(<span class="kw-2">*</span>right),
-                AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">true</span>))
-            ) =&gt;
+            } <span class="kw">if </span><span class="macro">matches!</span>(expr_arena.get(<span class="kw-2">*</span>left), AExpr::Literal(<span class="kw">_</span>))
+                &amp;&amp; <span class="macro">matches!</span>(
+                    expr_arena.get(<span class="kw-2">*</span>right),
+                    AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">true</span>))
+                ) =&gt;
             {
                 <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">true</span>)))
-            }
+            },
 
             <span class="comment">// x OR true =&gt; true
+            // FIXME: we need an optimizer redesign to allow true | x to be optimized
+            // in general as we can forget the length of a series otherwise.
             </span>AExpr::BinaryExpr {
-                op: Operator::Or,
                 left,
-                ..
+                op: Operator::Or,
+                right,
             } <span class="kw">if </span><span class="macro">matches!</span>(
                 expr_arena.get(<span class="kw-2">*</span>left),
                 AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">true</span>))
-            ) =&gt;
+            ) &amp;&amp; <span class="macro">matches!</span>(expr_arena.get(<span class="kw-2">*</span>right), AExpr::Literal(<span class="kw">_</span>)) =&gt;
             {
                 <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(<span class="bool-val">true</span>)))
-            }
+            },
+
             AExpr::Ternary {
                 truthy, predicate, ..
             } <span class="kw">if </span><span class="macro">matches!</span>(
@@ -929,7 +971,7 @@
             ) =&gt;
             {
                 <span class="prelude-val">Some</span>(expr_arena.get(<span class="kw-2">*</span>truthy).clone())
-            }
+            },
             AExpr::Ternary {
                 truthy,
                 falsy,
@@ -940,15 +982,12 @@
             ) =&gt;
             {
                 <span class="kw">let </span>names = aexpr_to_leaf_names(<span class="kw-2">*</span>truthy, expr_arena);
-                <span class="kw">if </span>names.is_empty() {
-                    <span class="prelude-val">None
-                </span>} <span class="kw">else </span>{
-                    <span class="prelude-val">Some</span>(AExpr::Alias(<span class="kw-2">*</span>falsy, names[<span class="number">0</span>].clone()))
-                }
-            }
+                <span class="kw">let </span>name = names.get(<span class="number">0</span>).map(Arc::clone).unwrap_or_else(|| <span class="string">&quot;&quot;</span>.into());
+                <span class="prelude-val">Some</span>(AExpr::Alias(<span class="kw-2">*</span>falsy, name))
+            },
             AExpr::Function {
                 input,
-                function: FunctionExpr::Boolean(BooleanFunction::IsNot),
+                function: FunctionExpr::Boolean(BooleanFunction::Not),
                 ..
             } =&gt; {
                 <span class="kw">let </span>y = expr_arena.get(input[<span class="number">0</span>]);
@@ -957,16 +996,16 @@
                     <span class="comment">// not(not x) =&gt; x
                     </span>AExpr::Function {
                         input,
-                        function: FunctionExpr::Boolean(BooleanFunction::IsNot),
+                        function: FunctionExpr::Boolean(BooleanFunction::Not),
                         ..
                     } =&gt; <span class="prelude-val">Some</span>(expr_arena.get(input[<span class="number">0</span>]).clone()),
                     <span class="comment">// not(lit x) =&gt; !x
                     </span>AExpr::Literal(LiteralValue::Boolean(b)) =&gt; {
                         <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(!b)))
-                    }
+                    },
                     <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
                 }
-            }
+            },
             <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
         };
         <span class="prelude-val">Ok</span>(out)
@@ -981,7 +1020,7 @@
         <span class="kw">return match </span>(lit_left, lit_right) {
             (LiteralValue::Boolean(x), LiteralValue::Boolean(y)) =&gt; {
                 <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Boolean(operation(<span class="kw-2">*</span>x, <span class="kw-2">*</span>y))))
-            }
+            },
             <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
         };
     }
@@ -1044,7 +1083,7 @@
                     } <span class="kw">else </span>{
                         <span class="prelude-val">None
                     </span>}
-                }
+                },
                 <span class="comment">// concat + str
                 </span>(
                     AExpr::Function {
@@ -1066,7 +1105,7 @@
                     } <span class="kw">else </span>{
                         <span class="prelude-val">None
                     </span>}
-                }
+                },
                 <span class="comment">// str + concat
                 </span>(
                     <span class="kw">_</span>,
@@ -1089,14 +1128,14 @@
                     } <span class="kw">else </span>{
                         <span class="prelude-val">None
                     </span>}
-                }
+                },
                 <span class="kw">_ </span>=&gt; <span class="prelude-val">Some</span>(AExpr::Function {
                     input: <span class="macro">vec!</span>[left_ae, right_ae],
                     function: StringFunction::ConcatHorizontal(<span class="string">&quot;&quot;</span>.to_string()).into(),
                     options: FunctionOptions {
-                        collect_groups: ApplyOptions::ApplyFlat,
+                        collect_groups: ApplyOptions::ElementWise,
                         input_wildcard_expansion: <span class="bool-val">true</span>,
-                        auto_explode: <span class="bool-val">true</span>,
+                        returns_scalar: <span class="bool-val">false</span>,
                         ..Default::default()
                     },
                 }),
@@ -1134,7 +1173,7 @@
 <span class="kw">impl </span>OptimizationRule <span class="kw">for </span>SimplifyExprRule {
     <span class="attr">#[allow(clippy::float_cmp)]
     </span><span class="kw">fn </span>optimize_expr(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         expr_arena: <span class="kw-2">&amp;mut </span>Arena&lt;AExpr&gt;,
         expr_node: Node,
         _lp_arena: <span class="kw-2">&amp;</span>Arena&lt;ALogicalPlan&gt;,
@@ -1173,9 +1212,9 @@
                                 </span>{
                                     <span class="prelude-val">None
                                 </span>}
-                            }
+                            },
                         }
-                    }
+                    },
                     Minus =&gt; <span class="macro">eval_binary_same_type!</span>(left_aexpr, -, right_aexpr),
                     Multiply =&gt; <span class="macro">eval_binary_same_type!</span>(left_aexpr, <span class="kw-2">*</span>, right_aexpr),
                     Divide =&gt; <span class="macro">eval_binary_same_type!</span>(left_aexpr, /, right_aexpr),
@@ -1186,10 +1225,10 @@
                             <span class="kw">match </span>(lit_left, lit_right) {
                                 (LiteralValue::Float32(x), LiteralValue::Float32(y)) =&gt; {
                                     <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float32(x / y)))
-                                }
+                                },
                                 (LiteralValue::Float64(x), LiteralValue::Float64(y)) =&gt; {
                                     <span class="prelude-val">Some</span>(AExpr::Literal(LiteralValue::Float64(x / y)))
-                                }
+                                },
                                 <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-i8&quot;</span>)]
                                 </span>(LiteralValue::Int8(x), LiteralValue::Int8(y)) =&gt; <span class="prelude-val">Some</span>(
                                     AExpr::Literal(LiteralValue::Float64(<span class="kw-2">*</span>x <span class="kw">as </span>f64 / <span class="kw-2">*</span>y <span class="kw">as </span>f64)),
@@ -1223,7 +1262,7 @@
                         } <span class="kw">else </span>{
                             <span class="prelude-val">None
                         </span>}
-                    }
+                    },
                     Modulus =&gt; <span class="macro">eval_binary_same_type!</span>(left_aexpr, %, right_aexpr),
                     Lt =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, &lt;, right_aexpr),
                     Gt =&gt; <span class="macro">eval_binary_bool_type!</span>(left_aexpr, &gt;, right_aexpr),
@@ -1252,7 +1291,7 @@
                         input: <span class="macro">vec!</span>[<span class="kw-2">*</span>right],
                         function: BooleanFunction::IsNull.into(),
                         options: FunctionOptions {
-                            collect_groups: ApplyOptions::ApplyGroups,
+                            collect_groups: ApplyOptions::GroupWise,
                             ..Default::default()
                         },
                     }),
@@ -1261,7 +1300,7 @@
                         input: <span class="macro">vec!</span>[<span class="kw-2">*</span>left],
                         function: BooleanFunction::IsNull.into(),
                         options: FunctionOptions {
-                            collect_groups: ApplyOptions::ApplyGroups,
+                            collect_groups: ApplyOptions::GroupWise,
                             ..Default::default()
                         },
                     }),
@@ -1270,7 +1309,7 @@
                         input: <span class="macro">vec!</span>[<span class="kw-2">*</span>right],
                         function: BooleanFunction::IsNotNull.into(),
                         options: FunctionOptions {
-                            collect_groups: ApplyOptions::ApplyGroups,
+                            collect_groups: ApplyOptions::GroupWise,
                             ..Default::default()
                         },
                     }),
@@ -1279,13 +1318,13 @@
                         input: <span class="macro">vec!</span>[<span class="kw-2">*</span>left],
                         function: BooleanFunction::IsNotNull.into(),
                         options: FunctionOptions {
-                            collect_groups: ApplyOptions::ApplyGroups,
+                            collect_groups: ApplyOptions::GroupWise,
                             ..Default::default()
                         },
                     }),
                     <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
                 }
-            }
+            },
             <span class="comment">// sort().reverse() -&gt; sort(reverse)
             // sort_by().reverse() -&gt; sort_by(reverse)
             </span>AExpr::Function {
@@ -1302,7 +1341,7 @@
                             expr: <span class="kw-2">*</span>expr,
                             options,
                         })
-                    }
+                    },
                     AExpr::SortBy {
                         expr,
                         by,
@@ -1315,14 +1354,15 @@
                     <span class="comment">// TODO: add support for cumsum and other operation that allow reversing.
                     </span><span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
                 }
-            }
+            },
             AExpr::Cast {
-                expr, data_type, ..
+                expr,
+                data_type,
+                strict,
             } =&gt; {
                 <span class="kw">let </span>input = expr_arena.get(<span class="kw-2">*</span>expr);
-                <span class="comment">// faster casts (we only do strict casts)
-                </span>inline_cast(input, data_type)
-            }
+                inline_cast(input, data_type, <span class="kw-2">*</span>strict)<span class="question-mark">?
+            </span>},
             <span class="comment">// flatten nested concat_str calls
             </span><span class="attr">#[cfg(all(feature = <span class="string">&quot;strings&quot;</span>, feature = <span class="string">&quot;concat_str&quot;</span>))]
             </span>AExpr::Function {
@@ -1351,7 +1391,7 @@
                 } <span class="kw">else </span>{
                     <span class="prelude-val">None
                 </span>}
-            }
+            },
 
             <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
         };
@@ -1359,17 +1399,55 @@
     }
 }
 
-<span class="kw">fn </span>inline_cast(input: <span class="kw-2">&amp;</span>AExpr, dtype: <span class="kw-2">&amp;</span>DataType) -&gt; <span class="prelude-ty">Option</span>&lt;AExpr&gt; {
-    <span class="kw">match </span>(input, dtype) {
-        <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-duration&quot;</span>)]
-        </span>(AExpr::Literal(lv), <span class="kw">_</span>) <span class="kw">if </span>!<span class="macro">matches!</span>(dtype, DataType::Unknown) =&gt; {
-            <span class="kw">let </span>av = lv.to_anyvalue()<span class="question-mark">?</span>;
-            <span class="kw">let </span>out = av.cast(dtype).ok()<span class="question-mark">?</span>;
-            <span class="kw">let </span>lv: LiteralValue = out.try_into().ok()<span class="question-mark">?</span>;
-            <span class="prelude-val">Some</span>(AExpr::Literal(lv))
-        }
-        <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-    }
+<span class="kw">fn </span>inline_cast(input: <span class="kw-2">&amp;</span>AExpr, dtype: <span class="kw-2">&amp;</span>DataType, strict: bool) -&gt; PolarsResult&lt;<span class="prelude-ty">Option</span>&lt;AExpr&gt;&gt; {
+    <span class="kw">let </span>lv = <span class="kw">match </span>(input, dtype) {
+        (AExpr::Literal(lv), <span class="kw">_</span>) <span class="kw">if </span>!<span class="macro">matches!</span>(dtype, DataType::Unknown) =&gt; <span class="kw">match </span>lv {
+            LiteralValue::Series(s) =&gt; {
+                <span class="kw">let </span>s = <span class="kw">if </span>strict {
+                    s.strict_cast(dtype)
+                } <span class="kw">else </span>{
+                    s.cast(dtype)
+                }<span class="question-mark">?</span>;
+                LiteralValue::Series(SpecialEq::new(s))
+            },
+            <span class="kw">_ </span>=&gt; {
+                <span class="kw">let </span><span class="prelude-val">Some</span>(av) = lv.to_anyvalue() <span class="kw">else </span>{
+                    <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
+                };
+                <span class="kw">match </span>(av, dtype) {
+                    <span class="comment">// casting null always remains null
+                    </span>(AnyValue::Null, <span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+                    <span class="comment">// series cast should do this one
+                    </span><span class="attr">#[cfg(feature = <span class="string">&quot;dtype-datetime&quot;</span>)]
+                    </span>(AnyValue::Datetime(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>), DataType::Datetime(<span class="kw">_</span>, <span class="kw">_</span>)) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+                    <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-duration&quot;</span>)]
+                    </span>(AnyValue::Duration(<span class="kw">_</span>, <span class="kw">_</span>), <span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+                    <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-categorical&quot;</span>)]
+                    </span>(AnyValue::Categorical(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>), <span class="kw">_</span>) | (<span class="kw">_</span>, DataType::Categorical(<span class="kw">_</span>)) =&gt; {
+                        <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
+                    },
+                    <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-struct&quot;</span>)]
+                    </span>(<span class="kw">_</span>, DataType::Struct(<span class="kw">_</span>)) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+                    (av, <span class="kw">_</span>) =&gt; {
+                        <span class="comment">// raise in debug builds so we can fix them
+                        // in release we continue and apply the cast later
+                        </span><span class="attr">#[cfg(debug_assertions)]
+                        </span><span class="kw">let </span>out = { av.cast(dtype)<span class="question-mark">? </span>};
+                        <span class="attr">#[cfg(not(debug_assertions))]
+                        </span><span class="kw">let </span>out = {
+                            <span class="kw">match </span>av.cast(<span class="kw-2">&amp;</span>dtype) {
+                                <span class="prelude-val">Ok</span>(out) =&gt; out,
+                                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+                            }
+                        };
+                        out.try_into()<span class="question-mark">?
+                    </span>},
+                }
+            },
+        },
+        <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+    };
+    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(AExpr::Literal(lv)))
 }
 
 <span class="attr">#[test]

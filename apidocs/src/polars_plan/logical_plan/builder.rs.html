@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-plan-0.30.0/src/logical_plan/builder.rs`."><title>builder.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="polars_plan" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../polars_plan/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-plan-0.34.2/src/logical_plan/builder.rs`."><title>builder.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="polars_plan" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../polars_plan/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -777,32 +777,179 @@
 <a href="#777" id="777">777</a>
 <a href="#778" id="778">778</a>
 <a href="#779" id="779">779</a>
+<a href="#780" id="780">780</a>
+<a href="#781" id="781">781</a>
+<a href="#782" id="782">782</a>
+<a href="#783" id="783">783</a>
+<a href="#784" id="784">784</a>
+<a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a>
+<a href="#787" id="787">787</a>
+<a href="#788" id="788">788</a>
+<a href="#789" id="789">789</a>
+<a href="#790" id="790">790</a>
+<a href="#791" id="791">791</a>
+<a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
+<a href="#806" id="806">806</a>
+<a href="#807" id="807">807</a>
+<a href="#808" id="808">808</a>
+<a href="#809" id="809">809</a>
+<a href="#810" id="810">810</a>
+<a href="#811" id="811">811</a>
+<a href="#812" id="812">812</a>
+<a href="#813" id="813">813</a>
+<a href="#814" id="814">814</a>
+<a href="#815" id="815">815</a>
+<a href="#816" id="816">816</a>
+<a href="#817" id="817">817</a>
+<a href="#818" id="818">818</a>
+<a href="#819" id="819">819</a>
+<a href="#820" id="820">820</a>
+<a href="#821" id="821">821</a>
+<a href="#822" id="822">822</a>
+<a href="#823" id="823">823</a>
+<a href="#824" id="824">824</a>
+<a href="#825" id="825">825</a>
+<a href="#826" id="826">826</a>
+<a href="#827" id="827">827</a>
+<a href="#828" id="828">828</a>
+<a href="#829" id="829">829</a>
+<a href="#830" id="830">830</a>
+<a href="#831" id="831">831</a>
+<a href="#832" id="832">832</a>
+<a href="#833" id="833">833</a>
+<a href="#834" id="834">834</a>
+<a href="#835" id="835">835</a>
+<a href="#836" id="836">836</a>
+<a href="#837" id="837">837</a>
+<a href="#838" id="838">838</a>
+<a href="#839" id="839">839</a>
+<a href="#840" id="840">840</a>
+<a href="#841" id="841">841</a>
+<a href="#842" id="842">842</a>
+<a href="#843" id="843">843</a>
+<a href="#844" id="844">844</a>
+<a href="#845" id="845">845</a>
+<a href="#846" id="846">846</a>
+<a href="#847" id="847">847</a>
+<a href="#848" id="848">848</a>
+<a href="#849" id="849">849</a>
+<a href="#850" id="850">850</a>
+<a href="#851" id="851">851</a>
+<a href="#852" id="852">852</a>
+<a href="#853" id="853">853</a>
+<a href="#854" id="854">854</a>
+<a href="#855" id="855">855</a>
+<a href="#856" id="856">856</a>
+<a href="#857" id="857">857</a>
+<a href="#858" id="858">858</a>
+<a href="#859" id="859">859</a>
+<a href="#860" id="860">860</a>
+<a href="#861" id="861">861</a>
+<a href="#862" id="862">862</a>
+<a href="#863" id="863">863</a>
+<a href="#864" id="864">864</a>
+<a href="#865" id="865">865</a>
+<a href="#866" id="866">866</a>
+<a href="#867" id="867">867</a>
+<a href="#868" id="868">868</a>
+<a href="#869" id="869">869</a>
+<a href="#870" id="870">870</a>
+<a href="#871" id="871">871</a>
+<a href="#872" id="872">872</a>
+<a href="#873" id="873">873</a>
+<a href="#874" id="874">874</a>
+<a href="#875" id="875">875</a>
+<a href="#876" id="876">876</a>
+<a href="#877" id="877">877</a>
+<a href="#878" id="878">878</a>
+<a href="#879" id="879">879</a>
+<a href="#880" id="880">880</a>
+<a href="#881" id="881">881</a>
+<a href="#882" id="882">882</a>
+<a href="#883" id="883">883</a>
+<a href="#884" id="884">884</a>
+<a href="#885" id="885">885</a>
+<a href="#886" id="886">886</a>
+<a href="#887" id="887">887</a>
+<a href="#888" id="888">888</a>
+<a href="#889" id="889">889</a>
+<a href="#890" id="890">890</a>
+<a href="#891" id="891">891</a>
+<a href="#892" id="892">892</a>
+<a href="#893" id="893">893</a>
+<a href="#894" id="894">894</a>
+<a href="#895" id="895">895</a>
+<a href="#896" id="896">896</a>
+<a href="#897" id="897">897</a>
+<a href="#898" id="898">898</a>
+<a href="#899" id="899">899</a>
+<a href="#900" id="900">900</a>
+<a href="#901" id="901">901</a>
+<a href="#902" id="902">902</a>
+<a href="#903" id="903">903</a>
+<a href="#904" id="904">904</a>
+<a href="#905" id="905">905</a>
+<a href="#906" id="906">906</a>
+<a href="#907" id="907">907</a>
+<a href="#908" id="908">908</a>
+<a href="#909" id="909">909</a>
+<a href="#910" id="910">910</a>
+<a href="#911" id="911">911</a>
+<a href="#912" id="912">912</a>
+<a href="#913" id="913">913</a>
+<a href="#914" id="914">914</a>
+<a href="#915" id="915">915</a>
+<a href="#916" id="916">916</a>
 </pre></div><pre class="rust"><code><span class="attr">#[cfg(feature = <span class="string">&quot;csv&quot;</span>)]
 </span><span class="kw">use </span>std::io::{Read, Seek};
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
-</span><span class="kw">use </span>polars_core::cloud::CloudOptions;
 <span class="kw">use </span>polars_core::frame::explode::MeltArgs;
 <span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span>polars_core::utils::try_get_supertype;
+<span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
+</span><span class="kw">use </span>polars_io::cloud::CloudOptions;
 <span class="attr">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
 </span><span class="kw">use </span>polars_io::ipc::IpcReader;
 <span class="attr">#[cfg(all(feature = <span class="string">&quot;parquet&quot;</span>, feature = <span class="string">&quot;async&quot;</span>))]
 </span><span class="kw">use </span>polars_io::parquet::ParquetAsyncReader;
 <span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
 </span><span class="kw">use </span>polars_io::parquet::ParquetReader;
-<span class="attr">#[cfg(any(feature = <span class="string">&quot;parquet&quot;</span>, feature = <span class="string">&quot;parquet_async&quot;</span>, feature = <span class="string">&quot;csv&quot;</span>))]
+<span class="attr">#[cfg(all(feature = <span class="string">&quot;cloud&quot;</span>, feature = <span class="string">&quot;parquet&quot;</span>))]
+</span><span class="kw">use </span>polars_io::pl_async::get_runtime;
+<span class="attr">#[cfg(any(
+    feature = <span class="string">&quot;parquet&quot;</span>,
+    feature = <span class="string">&quot;parquet_async&quot;</span>,
+    feature = <span class="string">&quot;csv&quot;</span>,
+    feature = <span class="string">&quot;ipc&quot;
+</span>))]
 </span><span class="kw">use </span>polars_io::RowCount;
 <span class="attr">#[cfg(feature = <span class="string">&quot;csv&quot;</span>)]
 </span><span class="kw">use </span>polars_io::{
-    csv::utils::{get_reader_bytes, infer_file_schema, is_compressed},
+    csv::utils::{infer_file_schema, is_compressed},
     csv::CsvEncoding,
     csv::NullValues,
+    utils::get_reader_bytes,
 };
 
+<span class="kw">use </span><span class="kw">super</span>::builder_functions::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::logical_plan::functions::FunctionNode;
 <span class="kw">use </span><span class="kw">crate</span>::logical_plan::projection::{is_regex_projection, rewrite_projections};
 <span class="kw">use </span><span class="kw">crate</span>::logical_plan::schema::{det_join_schema, FileInfo};
+<span class="attr">#[cfg(feature = <span class="string">&quot;python&quot;</span>)]
+</span><span class="kw">use </span><span class="kw">crate</span>::prelude::python_udf::PythonFunction;
 <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::utils;
 
@@ -815,7 +962,7 @@
     <span class="prelude-val">Ok</span>((exprs, schema))
 }
 
-<span class="kw">pub struct </span>LogicalPlanBuilder(LogicalPlan);
+<span class="kw">pub struct </span>LogicalPlanBuilder(<span class="kw">pub </span>LogicalPlan);
 
 <span class="kw">impl </span>From&lt;LogicalPlan&gt; <span class="kw">for </span>LogicalPlanBuilder {
     <span class="kw">fn </span>from(lp: LogicalPlan) -&gt; <span class="self">Self </span>{
@@ -853,36 +1000,51 @@
     };
 }
 
+<span class="attr">#[cfg(any(feature = <span class="string">&quot;parquet&quot;</span>, feature = <span class="string">&quot;parquet_async&quot;</span>,))]
+</span><span class="kw">fn </span>prepare_schema(<span class="kw-2">mut </span>schema: SchemaRef, row_count: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>RowCount&gt;) -&gt; SchemaRef {
+    <span class="kw">let </span>schema_mut = Arc::make_mut(<span class="kw-2">&amp;mut </span>schema);
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(rc) = row_count {
+        <span class="kw">let _ </span>= schema_mut.insert_at_index(<span class="number">0</span>, rc.name.as_str().into(), IDX_DTYPE);
+    }
+    schema
+}
+
 <span class="kw">impl </span>LogicalPlanBuilder {
     <span class="kw">pub fn </span>anonymous_scan(
         function: Arc&lt;<span class="kw">dyn </span>AnonymousScan&gt;,
-        schema: <span class="prelude-ty">Option</span>&lt;Schema&gt;,
+        schema: <span class="prelude-ty">Option</span>&lt;SchemaRef&gt;,
         infer_schema_length: <span class="prelude-ty">Option</span>&lt;usize&gt;,
         skip_rows: <span class="prelude-ty">Option</span>&lt;usize&gt;,
         n_rows: <span class="prelude-ty">Option</span>&lt;usize&gt;,
         name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
     ) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">let </span>schema = Arc::new(<span class="kw">match </span>schema {
+        <span class="kw">let </span>schema = <span class="kw">match </span>schema {
             <span class="prelude-val">Some</span>(s) =&gt; s,
             <span class="prelude-val">None </span>=&gt; function.schema(infer_schema_length)<span class="question-mark">?</span>,
-        });
-
-        <span class="kw">let </span>file_info = FileInfo {
-            schema: schema.clone(),
-            row_estimation: (n_rows, n_rows.unwrap_or(usize::MAX)),
         };
-        <span class="prelude-val">Ok</span>(LogicalPlan::AnonymousScan {
-            function,
+
+        <span class="kw">let </span>file_info = FileInfo::new(schema.clone(), (n_rows, n_rows.unwrap_or(usize::MAX)));
+        <span class="kw">let </span>file_options = FileScanOptions {
+            n_rows,
+            with_columns: <span class="prelude-val">None</span>,
+            cache: <span class="bool-val">false</span>,
+            row_count: <span class="prelude-val">None</span>,
+            rechunk: <span class="bool-val">false</span>,
+            file_counter: Default::default(),
+            hive_partitioning: <span class="bool-val">false</span>,
+        };
+
+        <span class="prelude-val">Ok</span>(LogicalPlan::Scan {
+            paths: Arc::new([]),
             file_info,
             predicate: <span class="prelude-val">None</span>,
-            options: AnonymousScanOptions {
-                fmt_str: name,
-                schema,
-                skip_rows,
-                n_rows,
-                output_schema: <span class="prelude-val">None</span>,
-                with_columns: <span class="prelude-val">None</span>,
-                predicate: <span class="prelude-val">None</span>,
+            file_options,
+            scan_type: FileScan::Anonymous {
+                function,
+                options: Arc::new(AnonymousScanOptions {
+                    fmt_str: name,
+                    skip_rows,
+                }),
             },
         }
         .into())
@@ -890,8 +1052,8 @@
 
     <span class="attr">#[cfg(any(feature = <span class="string">&quot;parquet&quot;</span>, feature = <span class="string">&quot;parquet_async&quot;</span>))]
     #[allow(clippy::too_many_arguments)]
-    </span><span class="kw">pub fn </span>scan_parquet&lt;P: Into&lt;std::path::PathBuf&gt;&gt;(
-        path: P,
+    </span><span class="kw">pub fn </span>scan_parquet&lt;P: Into&lt;Arc&lt;[std::path::PathBuf]&gt;&gt;&gt;(
+        paths: P,
         n_rows: <span class="prelude-ty">Option</span>&lt;usize&gt;,
         cache: bool,
         parallel: polars_io::parquet::ParallelStrategy,
@@ -900,54 +1062,77 @@
         low_memory: bool,
         cloud_options: <span class="prelude-ty">Option</span>&lt;CloudOptions&gt;,
         use_statistics: bool,
+        hive_partitioning: bool,
     ) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt; {
         <span class="kw">use </span>polars_io::{is_cloud_url, SerReader <span class="kw">as _</span>};
 
-        <span class="kw">let </span>path = path.into();
-        <span class="kw">let </span>file_info: PolarsResult&lt;FileInfo&gt; = <span class="kw">if </span>is_cloud_url(<span class="kw-2">&amp;</span>path) {
-            <span class="attr">#[cfg(not(feature = <span class="string">&quot;async&quot;</span>))]
+        <span class="kw">let </span>paths = paths.into();
+        <span class="macro">polars_ensure!</span>(paths.len() &gt;= <span class="number">1</span>, ComputeError: <span class="string">&quot;expected at least 1 path&quot;</span>);
+
+        <span class="comment">// Use first path to get schema.
+        </span><span class="kw">let </span>path = <span class="kw-2">&amp;</span>paths[<span class="number">0</span>];
+
+        <span class="kw">let </span>(schema, num_rows, metadata) = <span class="kw">if </span>is_cloud_url(path) {
+            <span class="attr">#[cfg(not(feature = <span class="string">&quot;cloud&quot;</span>))]
             </span><span class="macro">panic!</span>(
                 <span class="string">&quot;One or more of the cloud storage features (&#39;aws&#39;, &#39;gcp&#39;, ...) must be enabled.&quot;
             </span>);
 
-            <span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">&quot;cloud&quot;</span>)]
             </span>{
                 <span class="kw">let </span>uri = path.to_string_lossy();
-                <span class="kw">let </span>(schema, num_rows) =
-                    ParquetAsyncReader::file_info(<span class="kw-2">&amp;</span>uri, cloud_options.as_ref())<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(FileInfo {
-                    schema: Arc::new(schema),
-                    row_estimation: (<span class="prelude-val">Some</span>(num_rows), num_rows),
-                })
-            }
-        } <span class="kw">else </span>{
-            <span class="kw">let </span>file = std::fs::File::open(<span class="kw-2">&amp;</span>path)<span class="question-mark">?</span>;
-            <span class="kw">let </span><span class="kw-2">mut </span>reader = ParquetReader::new(file);
-            <span class="kw">let </span>schema = Arc::new(reader.schema()<span class="question-mark">?</span>);
-            <span class="kw">let </span>num_rows = reader.num_rows()<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(FileInfo {
-                schema,
-                row_estimation: (<span class="prelude-val">Some</span>(num_rows), num_rows),
-            })
-        };
-        <span class="kw">let </span>file_info = file_info<span class="question-mark">?</span>;
+                get_runtime().block_on(<span class="kw">async </span>{
+                    <span class="kw">let </span><span class="kw-2">mut </span>reader =
+                        ParquetAsyncReader::from_uri(<span class="kw-2">&amp;</span>uri, cloud_options.as_ref(), <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)
+                            .<span class="kw">await</span><span class="question-mark">?</span>;
+                    <span class="kw">let </span>schema = reader.schema().<span class="kw">await</span><span class="question-mark">?</span>;
+                    <span class="kw">let </span>num_rows = reader.num_rows().<span class="kw">await</span><span class="question-mark">?</span>;
+                    <span class="kw">let </span>metadata = reader.get_metadata().<span class="kw">await</span><span class="question-mark">?</span>.clone();
 
-        <span class="prelude-val">Ok</span>(LogicalPlan::ParquetScan {
-            path,
+                    PolarsResult::Ok((schema, <span class="prelude-val">Some</span>(num_rows), <span class="prelude-val">Some</span>(metadata)))
+                })<span class="question-mark">?
+            </span>}
+        } <span class="kw">else </span>{
+            <span class="kw">let </span>file = polars_utils::open_file(path)<span class="question-mark">?</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>reader = ParquetReader::new(file);
+            (
+                prepare_schema(reader.schema()<span class="question-mark">?</span>, row_count.as_ref()),
+                <span class="prelude-val">Some</span>(reader.num_rows()<span class="question-mark">?</span>),
+                <span class="prelude-val">Some</span>(reader.get_metadata()<span class="question-mark">?</span>.clone()),
+            )
+        };
+
+        <span class="kw">let </span><span class="kw-2">mut </span>file_info = FileInfo::new(schema, (num_rows, num_rows.unwrap_or(<span class="number">0</span>)));
+
+        <span class="comment">// We set the hive partitions of the first path to determine the schema.
+        // On iteration the partition values will be re-set per file.
+        </span><span class="kw">if </span>hive_partitioning {
+            file_info.init_hive_partitions(path.as_path());
+        }
+
+        <span class="kw">let </span>options = FileScanOptions {
+            with_columns: <span class="prelude-val">None</span>,
+            cache,
+            n_rows,
+            rechunk,
+            row_count,
+            file_counter: Default::default(),
+            hive_partitioning,
+        };
+        <span class="prelude-val">Ok</span>(LogicalPlan::Scan {
+            paths,
             file_info,
+            file_options: options,
             predicate: <span class="prelude-val">None</span>,
-            options: ParquetOptions {
-                n_rows,
-                with_columns: <span class="prelude-val">None</span>,
-                cache,
-                parallel,
-                row_count,
-                rechunk,
-                file_counter: Default::default(),
-                low_memory,
-                use_statistics,
+            scan_type: FileScan::Parquet {
+                options: ParquetOptions {
+                    parallel,
+                    low_memory,
+                    use_statistics,
+                },
+                cloud_options,
+                metadata,
             },
-            cloud_options,
         }
         .into())
     }
@@ -956,24 +1141,42 @@
     </span><span class="kw">pub fn </span>scan_ipc&lt;P: Into&lt;std::path::PathBuf&gt;&gt;(
         path: P,
         options: IpcScanOptions,
+        n_rows: <span class="prelude-ty">Option</span>&lt;usize&gt;,
+        cache: bool,
+        row_count: <span class="prelude-ty">Option</span>&lt;RowCount&gt;,
+        rechunk: bool,
     ) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt; {
         <span class="kw">use </span>polars_io::SerReader <span class="kw">as _</span>;
 
         <span class="kw">let </span>path = path.into();
-        <span class="kw">let </span>file = std::fs::File::open(<span class="kw-2">&amp;</span>path)<span class="question-mark">?</span>;
+        <span class="kw">let </span>file = polars_utils::open_file(<span class="kw-2">&amp;</span>path)<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>reader = IpcReader::new(file);
-        <span class="kw">let </span>schema = Arc::new(reader.schema()<span class="question-mark">?</span>);
+
+        <span class="kw">let </span><span class="kw-2">mut </span>schema = reader.schema()<span class="question-mark">?</span>;
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(rc) = <span class="kw-2">&amp;</span>row_count {
+            <span class="kw">let _ </span>= schema.insert_at_index(<span class="number">0</span>, rc.name.as_str().into(), IDX_DTYPE);
+        }
+        <span class="kw">let </span>schema = Arc::new(schema);
 
         <span class="kw">let </span>num_rows = reader._num_rows()<span class="question-mark">?</span>;
-        <span class="kw">let </span>file_info = FileInfo {
-            schema,
-            row_estimation: (<span class="prelude-val">None</span>, num_rows),
+        <span class="kw">let </span>file_info = FileInfo::new(schema, (<span class="prelude-val">None</span>, num_rows));
+
+        <span class="kw">let </span>file_options = FileScanOptions {
+            with_columns: <span class="prelude-val">None</span>,
+            cache,
+            n_rows,
+            rechunk,
+            row_count,
+            file_counter: Default::default(),
+            <span class="comment">// TODO! add
+            </span>hive_partitioning: <span class="bool-val">false</span>,
         };
-        <span class="prelude-val">Ok</span>(LogicalPlan::IpcScan {
-            path,
+        <span class="prelude-val">Ok</span>(LogicalPlan::Scan {
+            paths: Arc::new([path]),
             file_info,
+            file_options,
             predicate: <span class="prelude-val">None</span>,
-            options: options.into(),
+            scan_type: FileScan::Ipc { options },
         }
         .into())
     }
@@ -982,13 +1185,13 @@
     #[cfg(feature = <span class="string">&quot;csv&quot;</span>)]
     </span><span class="kw">pub fn </span>scan_csv&lt;P: Into&lt;std::path::PathBuf&gt;&gt;(
         path: P,
-        delimiter: u8,
+        separator: u8,
         has_header: bool,
         ignore_errors: bool,
         <span class="kw-2">mut </span>skip_rows: usize,
         n_rows: <span class="prelude-ty">Option</span>&lt;usize&gt;,
         cache: bool,
-        schema: <span class="prelude-ty">Option</span>&lt;Arc&lt;Schema&gt;&gt;,
+        <span class="kw-2">mut </span>schema: <span class="prelude-ty">Option</span>&lt;Arc&lt;Schema&gt;&gt;,
         schema_overwrite: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Schema&gt;,
         low_memory: bool,
         comment_char: <span class="prelude-ty">Option</span>&lt;u8&gt;,
@@ -1001,12 +1204,27 @@
         encoding: CsvEncoding,
         row_count: <span class="prelude-ty">Option</span>&lt;RowCount&gt;,
         try_parse_dates: bool,
+        raise_if_empty: bool,
+        truncate_ragged_lines: bool,
     ) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>path = path.into();
-        <span class="kw">let </span><span class="kw-2">mut </span>file = std::fs::File::open(<span class="kw-2">&amp;</span>path)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>file = polars_utils::open_file(<span class="kw-2">&amp;</span>path).map_err(|e| {
+            <span class="kw">let </span>path = path.to_string_lossy();
+            <span class="kw">if </span>path.len() &gt; <span class="number">88 </span>{
+                <span class="kw">let </span>path: String = path.chars().skip(path.len() - <span class="number">88</span>).collect();
+                <span class="macro">polars_err!</span>(ComputeError: <span class="string">&quot;error open file: ...{}, {}&quot;</span>, path, e)
+            } <span class="kw">else </span>{
+                <span class="macro">polars_err!</span>(ComputeError: <span class="string">&quot;error open file: {}, {}&quot;</span>, path, e)
+            }
+        })<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>paths = Arc::new([path]);
+
         <span class="kw">let </span><span class="kw-2">mut </span>magic_nr = [<span class="number">0u8</span>; <span class="number">2</span>];
-        file.read_exact(<span class="kw-2">&amp;mut </span>magic_nr)
-            .map_err(|<span class="kw">_</span>| <span class="macro">polars_err!</span>(NoData: <span class="string">&quot;empty csv&quot;</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span>res = file.read_exact(<span class="kw-2">&amp;mut </span>magic_nr);
+        <span class="kw">if </span>raise_if_empty {
+            res.map_err(|<span class="kw">_</span>| <span class="macro">polars_err!</span>(NoData: <span class="string">&quot;empty CSV&quot;</span>))<span class="question-mark">?</span>;
+        };
         <span class="macro">polars_ensure!</span>(
             !is_compressed(<span class="kw-2">&amp;</span>magic_nr),
             ComputeError: <span class="string">&quot;cannot scan compressed csv; use `read_csv` for compressed data&quot;</span>,
@@ -1016,9 +1234,9 @@
 
         <span class="comment">// TODO! delay inferring schema until absolutely necessary
         // this needs a way to estimated bytes/rows.
-        </span><span class="kw">let </span>(inferred_schema, rows_read, bytes_read) = infer_file_schema(
+        </span><span class="kw">let </span>(<span class="kw-2">mut </span>inferred_schema, rows_read, bytes_read) = infer_file_schema(
             <span class="kw-2">&amp;</span>reader_bytes,
-            delimiter,
+            separator,
             infer_schema_length,
             has_header,
             schema_overwrite,
@@ -1029,40 +1247,63 @@
             eol_char,
             null_values.as_ref(),
             try_parse_dates,
+            raise_if_empty,
         )<span class="question-mark">?</span>;
+
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(rc) = <span class="kw-2">&amp;</span>row_count {
+            <span class="kw">match </span>schema {
+                <span class="prelude-val">None </span>=&gt; {
+                    <span class="kw">let _ </span>= inferred_schema.insert_at_index(<span class="number">0</span>, rc.name.as_str().into(), IDX_DTYPE);
+                },
+                <span class="prelude-val">Some</span>(inner) =&gt; {
+                    schema = <span class="prelude-val">Some</span>(Arc::new(
+                        inner
+                            .new_inserting_at_index(<span class="number">0</span>, rc.name.as_str().into(), IDX_DTYPE)
+                            .unwrap(),
+                    ));
+                },
+            }
+        }
 
         <span class="kw">let </span>schema = schema.unwrap_or_else(|| Arc::new(inferred_schema));
         <span class="kw">let </span>n_bytes = reader_bytes.len();
         <span class="kw">let </span>estimated_n_rows = (rows_read <span class="kw">as </span>f64 / bytes_read <span class="kw">as </span>f64 * n_bytes <span class="kw">as </span>f64) <span class="kw">as </span>usize;
 
         skip_rows += skip_rows_after_header;
-        <span class="kw">let </span>file_info = FileInfo {
-            schema,
-            row_estimation: (<span class="prelude-val">None</span>, estimated_n_rows),
+        <span class="kw">let </span>file_info = FileInfo::new(schema, (<span class="prelude-val">None</span>, estimated_n_rows));
+
+        <span class="kw">let </span>options = FileScanOptions {
+            with_columns: <span class="prelude-val">None</span>,
+            cache,
+            n_rows,
+            rechunk,
+            row_count,
+            file_counter: Default::default(),
+            <span class="comment">// TODO! add
+            </span>hive_partitioning: <span class="bool-val">false</span>,
         };
-        <span class="prelude-val">Ok</span>(LogicalPlan::CsvScan {
-            path,
+        <span class="prelude-val">Ok</span>(LogicalPlan::Scan {
+            paths,
             file_info,
-            options: CsvParserOptions {
-                has_header,
-                delimiter,
-                ignore_errors,
-                skip_rows,
-                n_rows,
-                with_columns: <span class="prelude-val">None</span>,
-                low_memory,
-                cache,
-                comment_char,
-                quote_char,
-                eol_char,
-                null_values,
-                rechunk,
-                encoding,
-                row_count,
-                try_parse_dates,
-                file_counter: Default::default(),
-            },
+            file_options: options,
             predicate: <span class="prelude-val">None</span>,
+            scan_type: FileScan::Csv {
+                options: CsvParserOptions {
+                    has_header,
+                    separator,
+                    ignore_errors,
+                    skip_rows,
+                    low_memory,
+                    comment_char,
+                    quote_char,
+                    eol_char,
+                    null_values,
+                    encoding,
+                    try_parse_dates,
+                    raise_if_empty,
+                    truncate_ragged_lines,
+                },
+            },
         }
         .into())
     }
@@ -1078,7 +1319,45 @@
         .into()
     }
 
-    <span class="kw">pub fn </span>project(<span class="self">self</span>, exprs: Vec&lt;Expr&gt;) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>drop_columns(<span class="self">self</span>, to_drop: PlHashSet&lt;String&gt;) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>schema = <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.schema(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, into);
+
+        <span class="kw">let </span><span class="kw-2">mut </span>output_schema = Schema::with_capacity(schema.len().saturating_sub(to_drop.len()));
+        <span class="kw">let </span>columns = schema
+            .iter()
+            .filter_map(|(col_name, dtype)| {
+                <span class="kw">if </span>to_drop.contains(col_name.as_str()) {
+                    <span class="prelude-val">None
+                </span>} <span class="kw">else </span>{
+                    <span class="kw">let </span>out = <span class="prelude-val">Some</span>(col(col_name));
+                    output_schema.with_column(col_name.clone(), dtype.clone());
+                    out
+                }
+            })
+            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+
+        <span class="kw">if </span>columns.is_empty() {
+            <span class="self">self</span>.map(
+                |<span class="kw">_</span>| <span class="prelude-val">Ok</span>(DataFrame::new_no_checks(<span class="macro">vec!</span>[])),
+                AllowedOptimizations::default(),
+                <span class="prelude-val">Some</span>(Arc::new(|<span class="kw">_</span>: <span class="kw-2">&amp;</span>Schema| <span class="prelude-val">Ok</span>(Arc::new(Schema::default())))),
+                <span class="string">&quot;EMPTY PROJECTION&quot;</span>,
+            )
+        } <span class="kw">else </span>{
+            LogicalPlan::Projection {
+                expr: columns,
+                input: Box::new(<span class="self">self</span>.<span class="number">0</span>),
+                schema: Arc::new(output_schema),
+                options: ProjectionOptions {
+                    run_parallel: <span class="bool-val">false</span>,
+                    duplicate_check: <span class="bool-val">false</span>,
+                },
+            }
+            .into()
+        }
+    }
+
+    <span class="kw">pub fn </span>project(<span class="self">self</span>, exprs: Vec&lt;Expr&gt;, options: ProjectionOptions) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>schema = <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.schema(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, into);
         <span class="kw">let </span>(exprs, schema) = <span class="macro">try_delayed!</span>(prepare_projection(exprs, <span class="kw-2">&amp;</span>schema), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, into);
 
@@ -1094,20 +1373,10 @@
                 expr: exprs,
                 input: Box::new(<span class="self">self</span>.<span class="number">0</span>),
                 schema: Arc::new(schema),
+                options,
             }
             .into()
         }
-    }
-
-    <span class="kw">pub fn </span>project_local(<span class="self">self</span>, exprs: Vec&lt;Expr&gt;) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>schema = <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.schema(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, into);
-        <span class="kw">let </span>(exprs, schema) = <span class="macro">try_delayed!</span>(prepare_projection(exprs, <span class="kw-2">&amp;</span>schema), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, into);
-        LogicalPlan::LocalProjection {
-            expr: exprs,
-            input: Box::new(<span class="self">self</span>.<span class="number">0</span>),
-            schema: Arc::new(schema),
-        }
-        .into()
     }
 
     <span class="kw">pub fn </span>fill_null(<span class="self">self</span>, fill_value: Expr) -&gt; <span class="self">Self </span>{
@@ -1116,7 +1385,7 @@
             .iter_names()
             .map(|name| col(name).fill_null(fill_value.clone()))
             .collect();
-        <span class="self">self</span>.project_local(exprs)
+        <span class="self">self</span>.project(exprs, Default::default())
     }
 
     <span class="kw">pub fn </span>fill_nan(<span class="self">self</span>, fill_value: Expr) -&gt; <span class="self">Self </span>{
@@ -1127,14 +1396,20 @@
             .filter_map(|(name, dtype)| <span class="kw">match </span>dtype {
                 DataType::Float32 | DataType::Float64 =&gt; {
                     <span class="prelude-val">Some</span>(col(name).fill_nan(fill_value.clone()).alias(name))
-                }
+                },
                 <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
             })
             .collect();
-        <span class="self">self</span>.with_columns(exprs)
+        <span class="self">self</span>.with_columns(
+            exprs,
+            ProjectionOptions {
+                run_parallel: <span class="bool-val">false</span>,
+                duplicate_check: <span class="bool-val">false</span>,
+            },
+        )
     }
 
-    <span class="kw">pub fn </span>with_columns(<span class="self">self</span>, exprs: Vec&lt;Expr&gt;) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>with_columns(<span class="self">self</span>, exprs: Vec&lt;Expr&gt;, options: ProjectionOptions) -&gt; <span class="self">Self </span>{
         <span class="comment">// current schema
         </span><span class="kw">let </span>schema = <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.schema(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, into);
         <span class="kw">let </span><span class="kw-2">mut </span>new_schema = (<span class="kw-2">**</span>schema).clone();
@@ -1162,6 +1437,7 @@
             input: Box::new(<span class="self">self</span>.<span class="number">0</span>),
             exprs,
             schema: Arc::new(new_schema),
+            options,
         }
         .into()
     }
@@ -1201,9 +1477,11 @@
     </span><span class="kw">pub fn </span>filter(<span class="self">self</span>, predicate: Expr) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>predicate = <span class="kw">if </span>has_expr(<span class="kw-2">&amp;</span>predicate, |e| <span class="kw">match </span>e {
             Expr::Column(name) =&gt; is_regex_projection(name),
-            Expr::Wildcard | Expr::RenameAlias { .. } | Expr::Columns(<span class="kw">_</span>) | Expr::DtypeColumn(<span class="kw">_</span>) =&gt; {
-                <span class="bool-val">true
-            </span>}
+            Expr::Wildcard
+            | Expr::RenameAlias { .. }
+            | Expr::Columns(<span class="kw">_</span>)
+            | Expr::DtypeColumn(<span class="kw">_</span>)
+            | Expr::Nth(<span class="kw">_</span>) =&gt; <span class="bool-val">true</span>,
             <span class="kw">_ </span>=&gt; <span class="bool-val">false</span>,
         }) {
             <span class="kw">let </span>schema = <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.schema(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, into);
@@ -1216,13 +1494,13 @@
                 <span class="number">1 </span>=&gt; {
                     <span class="comment">// all good
                     </span>rewritten.pop().unwrap()
-                }
+                },
                 <span class="number">0 </span>=&gt; {
                     <span class="kw">let </span>msg = <span class="string">&quot;The predicate expanded to zero expressions. \
                         This may for example be caused by a regex not matching column names or \
                         a column dtype match not hitting any dtypes in the DataFrame&quot;</span>;
                     <span class="kw">return </span><span class="macro">raise_err!</span>(<span class="macro">polars_err!</span>(ComputeError: msg), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, into);
-                }
+                },
                 <span class="kw">_ </span>=&gt; {
                     <span class="kw">let </span><span class="kw-2">mut </span>expanded = String::new();
                     <span class="kw">for </span>e <span class="kw">in </span>rewritten.iter().take(<span class="number">5</span>) {
@@ -1239,10 +1517,10 @@
                             This is ambiguous. Try to combine the predicates with the &#39;all&#39; or `any&#39; expression.&quot;</span>)
                     } <span class="kw">else </span>{
                         <span class="macro">format!</span>(<span class="string">&quot;The predicate passed to &#39;LazyFrame.filter&#39; expanded to multiple expressions: \n\n{expanded}\n\
-                            This is ambiguous. Try to combine the predicates with the &#39;all_exprs&#39; or `any_exprs&#39; expression.&quot;</span>)
+                            This is ambiguous. Try to combine the predicates with the &#39;all_horizontal&#39; or `any_horizontal&#39; expression.&quot;</span>)
                     };
                     <span class="kw">return </span><span class="macro">raise_err!</span>(<span class="macro">polars_err!</span>(ComputeError: msg), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, into);
-                }
+                },
             }
         } <span class="kw">else </span>{
             predicate
@@ -1254,14 +1532,14 @@
         .into()
     }
 
-    <span class="kw">pub fn </span>groupby&lt;E: AsRef&lt;[Expr]&gt;&gt;(
+    <span class="kw">pub fn </span>group_by&lt;E: AsRef&lt;[Expr]&gt;&gt;(
         <span class="self">self</span>,
         keys: Vec&lt;Expr&gt;,
         aggs: E,
         apply: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>DataFrameUdf&gt;&gt;,
         maintain_order: bool,
-        <span class="attr">#[cfg(feature = <span class="string">&quot;dynamic_groupby&quot;</span>)] </span>dynamic_options: <span class="prelude-ty">Option</span>&lt;DynamicGroupOptions&gt;,
-        <span class="attr">#[cfg(feature = <span class="string">&quot;dynamic_groupby&quot;</span>)] </span>rolling_options: <span class="prelude-ty">Option</span>&lt;RollingGroupOptions&gt;,
+        <span class="attr">#[cfg(feature = <span class="string">&quot;dynamic_group_by&quot;</span>)] </span>dynamic_options: <span class="prelude-ty">Option</span>&lt;DynamicGroupOptions&gt;,
+        <span class="attr">#[cfg(feature = <span class="string">&quot;dynamic_group_by&quot;</span>)] </span>rolling_options: <span class="prelude-ty">Option</span>&lt;RollingGroupOptions&gt;,
     ) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>current_schema = <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.schema(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, into);
         <span class="kw">let </span>current_schema = current_schema.as_ref();
@@ -1302,7 +1580,7 @@
             <span class="macro">try_delayed!</span>(check_names(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, into)
         }
 
-        <span class="attr">#[cfg(feature = <span class="string">&quot;dynamic_groupby&quot;</span>)]
+        <span class="attr">#[cfg(feature = <span class="string">&quot;dynamic_group_by&quot;</span>)]
         </span>{
             <span class="kw">let </span>index_columns = <span class="kw-2">&amp;</span>[
                 rolling_options
@@ -1324,14 +1602,14 @@
             }
         }
 
-        <span class="attr">#[cfg(feature = <span class="string">&quot;dynamic_groupby&quot;</span>)]
+        <span class="attr">#[cfg(feature = <span class="string">&quot;dynamic_group_by&quot;</span>)]
         </span><span class="kw">let </span>options = GroupbyOptions {
             dynamic: dynamic_options,
             rolling: rolling_options,
             slice: <span class="prelude-val">None</span>,
         };
 
-        <span class="attr">#[cfg(not(feature = <span class="string">&quot;dynamic_groupby&quot;</span>))]
+        <span class="attr">#[cfg(not(feature = <span class="string">&quot;dynamic_group_by&quot;</span>))]
         </span><span class="kw">let </span>options = GroupbyOptions { slice: <span class="prelude-val">None </span>};
 
         LogicalPlan::Aggregate {
@@ -1341,7 +1619,7 @@
             schema: Arc::new(schema),
             apply,
             maintain_order,
-            options,
+            options: Arc::new(options),
         }
         .into()
     }
@@ -1362,7 +1640,13 @@
         .into()
     }
 
-    <span class="kw">pub fn </span>sort(<span class="self">self</span>, by_column: Vec&lt;Expr&gt;, descending: Vec&lt;bool&gt;, null_last: bool) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>sort(
+        <span class="self">self</span>,
+        by_column: Vec&lt;Expr&gt;,
+        descending: Vec&lt;bool&gt;,
+        null_last: bool,
+        maintain_order: bool,
+    ) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>schema = <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.schema(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, into);
         <span class="kw">let </span>by_column = <span class="macro">try_delayed!</span>(rewrite_projections(by_column, <span class="kw-2">&amp;</span>schema, <span class="kw-2">&amp;</span>[]), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, into);
         LogicalPlan::Sort {
@@ -1372,6 +1656,7 @@
                 descending,
                 nulls_last: null_last,
                 slice: <span class="prelude-val">None</span>,
+                maintain_order,
             },
         }
         .into()
@@ -1381,23 +1666,20 @@
         <span class="kw">let </span>schema = <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.schema(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, into);
         <span class="kw">let </span>columns = <span class="macro">try_delayed!</span>(rewrite_projections(columns, <span class="kw-2">&amp;</span>schema, <span class="kw-2">&amp;</span>[]), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, into);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>schema = (<span class="kw-2">**</span>schema).clone();
-
         <span class="comment">// columns to string
         </span><span class="kw">let </span>columns = columns
             .iter()
             .map(|e| {
                 <span class="kw">if let </span>Expr::Column(name) = e {
-                    <span class="kw">if let </span><span class="prelude-val">Some</span>(DataType::List(inner)) = schema.get(name) {
-                        <span class="kw">let </span>inner = <span class="kw-2">*</span>inner.clone();
-                        schema.with_column(name.as_ref().into(), inner);
-                    }
                     name.clone()
                 } <span class="kw">else </span>{
                     <span class="macro">panic!</span>(<span class="string">&quot;expected column expression&quot;</span>)
                 }
             })
-            .collect();
+            .collect::&lt;Arc&lt;[Arc&lt;str&gt;]&gt;&gt;();
+
+        <span class="kw">let </span><span class="kw-2">mut </span>schema = (<span class="kw-2">**</span>schema).clone();
+        <span class="macro">try_delayed!</span>(explode_schema(<span class="kw-2">&amp;mut </span>schema, <span class="kw-2">&amp;</span>columns), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, into);
 
         LogicalPlan::MapFunction {
             input: Box::new(<span class="self">self</span>.<span class="number">0</span>),
@@ -1415,6 +1697,22 @@
         LogicalPlan::MapFunction {
             input: Box::new(<span class="self">self</span>.<span class="number">0</span>),
             function: FunctionNode::Melt { args, schema },
+        }
+        .into()
+    }
+
+    <span class="kw">pub fn </span>row_count(<span class="self">self</span>, name: <span class="kw-2">&amp;</span>str, offset: <span class="prelude-ty">Option</span>&lt;IdxSize&gt;) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>schema = <span class="macro">try_delayed!</span>(<span class="self">self</span>.<span class="number">0</span>.schema(), <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, into).into_owned();
+        <span class="kw">let </span>schema_mut = Arc::make_mut(<span class="kw-2">&amp;mut </span>schema);
+        row_count_schema(schema_mut, name);
+
+        LogicalPlan::MapFunction {
+            input: Box::new(<span class="self">self</span>.<span class="number">0</span>),
+            function: FunctionNode::RowCount {
+                name: Arc::from(name),
+                offset,
+                schema,
+            },
         }
         .into()
     }
@@ -1441,7 +1739,7 @@
         other: LogicalPlan,
         left_on: Vec&lt;Expr&gt;,
         right_on: Vec&lt;Expr&gt;,
-        options: JoinOptions,
+        options: Arc&lt;JoinOptions&gt;,
     ) -&gt; <span class="self">Self </span>{
         <span class="kw">for </span>e <span class="kw">in </span>left_on.iter().chain(right_on.iter()) {
             <span class="kw">if </span>has_expr(e, |e| <span class="macro">matches!</span>(e, Expr::Alias(<span class="kw">_</span>, <span class="kw">_</span>))) {
@@ -1484,6 +1782,28 @@
         .into()
     }
 
+    <span class="attr">#[cfg(feature = <span class="string">&quot;python&quot;</span>)]
+    </span><span class="kw">pub fn </span>map_python(
+        <span class="self">self</span>,
+        function: PythonFunction,
+        optimizations: AllowedOptimizations,
+        schema: <span class="prelude-ty">Option</span>&lt;SchemaRef&gt;,
+        validate_output: bool,
+    ) -&gt; <span class="self">Self </span>{
+        LogicalPlan::MapFunction {
+            input: Box::new(<span class="self">self</span>.<span class="number">0</span>),
+            function: FunctionNode::OpaquePython {
+                function,
+                schema,
+                predicate_pd: optimizations.predicate_pushdown,
+                projection_pd: optimizations.projection_pushdown,
+                streamable: optimizations.streaming,
+                validate_output,
+            },
+        }
+        .into()
+    }
+
     <span class="kw">pub fn </span>map&lt;F&gt;(
         <span class="self">self</span>,
         function: F,
@@ -1509,51 +1829,5 @@
         }
         .into()
     }
-}
-
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>det_melt_schema(args: <span class="kw-2">&amp;</span>MeltArgs, input_schema: <span class="kw-2">&amp;</span>Schema) -&gt; SchemaRef {
-    <span class="kw">let </span><span class="kw-2">mut </span>new_schema = args
-        .id_vars
-        .iter()
-        .map(|id| Field::new(id, input_schema.get(id).unwrap().clone()))
-        .collect::&lt;Schema&gt;();
-    <span class="kw">let </span>variable_name = args
-        .variable_name
-        .as_ref()
-        .cloned()
-        .unwrap_or_else(|| <span class="string">&quot;variable&quot;</span>.into());
-    <span class="kw">let </span>value_name = args
-        .value_name
-        .as_ref()
-        .cloned()
-        .unwrap_or_else(|| <span class="string">&quot;value&quot;</span>.into());
-
-    new_schema.with_column(variable_name, DataType::Utf8);
-
-    <span class="comment">// We need to determine the supertype of all value columns.
-    </span><span class="kw">let </span><span class="kw-2">mut </span>st = <span class="prelude-val">None</span>;
-
-    <span class="comment">// take all columns that are not in `id_vars` as `value_var`
-    </span><span class="kw">if </span>args.value_vars.is_empty() {
-        <span class="kw">let </span>id_vars = PlHashSet::from_iter(<span class="kw-2">&amp;</span>args.id_vars);
-        <span class="kw">for </span>(name, dtype) <span class="kw">in </span>input_schema.iter() {
-            <span class="kw">if </span>!id_vars.contains(name) {
-                <span class="kw">match </span><span class="kw-2">&amp;</span>st {
-                    <span class="prelude-val">None </span>=&gt; st = <span class="prelude-val">Some</span>(dtype.clone()),
-                    <span class="prelude-val">Some</span>(st_) =&gt; st = <span class="prelude-val">Some</span>(try_get_supertype(st_, dtype).unwrap()),
-                }
-            }
-        }
-    } <span class="kw">else </span>{
-        <span class="kw">for </span>name <span class="kw">in </span><span class="kw-2">&amp;</span>args.value_vars {
-            <span class="kw">let </span>dtype = input_schema.get(name).unwrap();
-            <span class="kw">match </span><span class="kw-2">&amp;</span>st {
-                <span class="prelude-val">None </span>=&gt; st = <span class="prelude-val">Some</span>(dtype.clone()),
-                <span class="prelude-val">Some</span>(st_) =&gt; st = <span class="prelude-val">Some</span>(try_get_supertype(st_, dtype).unwrap()),
-            }
-        }
-    }
-    new_schema.with_column(value_name, st.unwrap());
-    Arc::new(new_schema)
 }
 </code></pre></div></section></main></body></html>

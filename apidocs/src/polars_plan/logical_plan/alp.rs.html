@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-plan-0.30.0/src/logical_plan/alp.rs`."><title>alp.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="polars_plan" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../polars_plan/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-plan-0.34.2/src/logical_plan/alp.rs`."><title>alp.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="polars_plan" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../polars_plan/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -470,373 +470,23 @@
 <a href="#470" id="470">470</a>
 <a href="#471" id="471">471</a>
 <a href="#472" id="472">472</a>
-<a href="#473" id="473">473</a>
-<a href="#474" id="474">474</a>
-<a href="#475" id="475">475</a>
-<a href="#476" id="476">476</a>
-<a href="#477" id="477">477</a>
-<a href="#478" id="478">478</a>
-<a href="#479" id="479">479</a>
-<a href="#480" id="480">480</a>
-<a href="#481" id="481">481</a>
-<a href="#482" id="482">482</a>
-<a href="#483" id="483">483</a>
-<a href="#484" id="484">484</a>
-<a href="#485" id="485">485</a>
-<a href="#486" id="486">486</a>
-<a href="#487" id="487">487</a>
-<a href="#488" id="488">488</a>
-<a href="#489" id="489">489</a>
-<a href="#490" id="490">490</a>
-<a href="#491" id="491">491</a>
-<a href="#492" id="492">492</a>
-<a href="#493" id="493">493</a>
-<a href="#494" id="494">494</a>
-<a href="#495" id="495">495</a>
-<a href="#496" id="496">496</a>
-<a href="#497" id="497">497</a>
-<a href="#498" id="498">498</a>
-<a href="#499" id="499">499</a>
-<a href="#500" id="500">500</a>
-<a href="#501" id="501">501</a>
-<a href="#502" id="502">502</a>
-<a href="#503" id="503">503</a>
-<a href="#504" id="504">504</a>
-<a href="#505" id="505">505</a>
-<a href="#506" id="506">506</a>
-<a href="#507" id="507">507</a>
-<a href="#508" id="508">508</a>
-<a href="#509" id="509">509</a>
-<a href="#510" id="510">510</a>
-<a href="#511" id="511">511</a>
-<a href="#512" id="512">512</a>
-<a href="#513" id="513">513</a>
-<a href="#514" id="514">514</a>
-<a href="#515" id="515">515</a>
-<a href="#516" id="516">516</a>
-<a href="#517" id="517">517</a>
-<a href="#518" id="518">518</a>
-<a href="#519" id="519">519</a>
-<a href="#520" id="520">520</a>
-<a href="#521" id="521">521</a>
-<a href="#522" id="522">522</a>
-<a href="#523" id="523">523</a>
-<a href="#524" id="524">524</a>
-<a href="#525" id="525">525</a>
-<a href="#526" id="526">526</a>
-<a href="#527" id="527">527</a>
-<a href="#528" id="528">528</a>
-<a href="#529" id="529">529</a>
-<a href="#530" id="530">530</a>
-<a href="#531" id="531">531</a>
-<a href="#532" id="532">532</a>
-<a href="#533" id="533">533</a>
-<a href="#534" id="534">534</a>
-<a href="#535" id="535">535</a>
-<a href="#536" id="536">536</a>
-<a href="#537" id="537">537</a>
-<a href="#538" id="538">538</a>
-<a href="#539" id="539">539</a>
-<a href="#540" id="540">540</a>
-<a href="#541" id="541">541</a>
-<a href="#542" id="542">542</a>
-<a href="#543" id="543">543</a>
-<a href="#544" id="544">544</a>
-<a href="#545" id="545">545</a>
-<a href="#546" id="546">546</a>
-<a href="#547" id="547">547</a>
-<a href="#548" id="548">548</a>
-<a href="#549" id="549">549</a>
-<a href="#550" id="550">550</a>
-<a href="#551" id="551">551</a>
-<a href="#552" id="552">552</a>
-<a href="#553" id="553">553</a>
-<a href="#554" id="554">554</a>
-<a href="#555" id="555">555</a>
-<a href="#556" id="556">556</a>
-<a href="#557" id="557">557</a>
-<a href="#558" id="558">558</a>
-<a href="#559" id="559">559</a>
-<a href="#560" id="560">560</a>
-<a href="#561" id="561">561</a>
-<a href="#562" id="562">562</a>
-<a href="#563" id="563">563</a>
-<a href="#564" id="564">564</a>
-<a href="#565" id="565">565</a>
-<a href="#566" id="566">566</a>
-<a href="#567" id="567">567</a>
-<a href="#568" id="568">568</a>
-<a href="#569" id="569">569</a>
-<a href="#570" id="570">570</a>
-<a href="#571" id="571">571</a>
-<a href="#572" id="572">572</a>
-<a href="#573" id="573">573</a>
-<a href="#574" id="574">574</a>
-<a href="#575" id="575">575</a>
-<a href="#576" id="576">576</a>
-<a href="#577" id="577">577</a>
-<a href="#578" id="578">578</a>
-<a href="#579" id="579">579</a>
-<a href="#580" id="580">580</a>
-<a href="#581" id="581">581</a>
-<a href="#582" id="582">582</a>
-<a href="#583" id="583">583</a>
-<a href="#584" id="584">584</a>
-<a href="#585" id="585">585</a>
-<a href="#586" id="586">586</a>
-<a href="#587" id="587">587</a>
-<a href="#588" id="588">588</a>
-<a href="#589" id="589">589</a>
-<a href="#590" id="590">590</a>
-<a href="#591" id="591">591</a>
-<a href="#592" id="592">592</a>
-<a href="#593" id="593">593</a>
-<a href="#594" id="594">594</a>
-<a href="#595" id="595">595</a>
-<a href="#596" id="596">596</a>
-<a href="#597" id="597">597</a>
-<a href="#598" id="598">598</a>
-<a href="#599" id="599">599</a>
-<a href="#600" id="600">600</a>
-<a href="#601" id="601">601</a>
-<a href="#602" id="602">602</a>
-<a href="#603" id="603">603</a>
-<a href="#604" id="604">604</a>
-<a href="#605" id="605">605</a>
-<a href="#606" id="606">606</a>
-<a href="#607" id="607">607</a>
-<a href="#608" id="608">608</a>
-<a href="#609" id="609">609</a>
-<a href="#610" id="610">610</a>
-<a href="#611" id="611">611</a>
-<a href="#612" id="612">612</a>
-<a href="#613" id="613">613</a>
-<a href="#614" id="614">614</a>
-<a href="#615" id="615">615</a>
-<a href="#616" id="616">616</a>
-<a href="#617" id="617">617</a>
-<a href="#618" id="618">618</a>
-<a href="#619" id="619">619</a>
-<a href="#620" id="620">620</a>
-<a href="#621" id="621">621</a>
-<a href="#622" id="622">622</a>
-<a href="#623" id="623">623</a>
-<a href="#624" id="624">624</a>
-<a href="#625" id="625">625</a>
-<a href="#626" id="626">626</a>
-<a href="#627" id="627">627</a>
-<a href="#628" id="628">628</a>
-<a href="#629" id="629">629</a>
-<a href="#630" id="630">630</a>
-<a href="#631" id="631">631</a>
-<a href="#632" id="632">632</a>
-<a href="#633" id="633">633</a>
-<a href="#634" id="634">634</a>
-<a href="#635" id="635">635</a>
-<a href="#636" id="636">636</a>
-<a href="#637" id="637">637</a>
-<a href="#638" id="638">638</a>
-<a href="#639" id="639">639</a>
-<a href="#640" id="640">640</a>
-<a href="#641" id="641">641</a>
-<a href="#642" id="642">642</a>
-<a href="#643" id="643">643</a>
-<a href="#644" id="644">644</a>
-<a href="#645" id="645">645</a>
-<a href="#646" id="646">646</a>
-<a href="#647" id="647">647</a>
-<a href="#648" id="648">648</a>
-<a href="#649" id="649">649</a>
-<a href="#650" id="650">650</a>
-<a href="#651" id="651">651</a>
-<a href="#652" id="652">652</a>
-<a href="#653" id="653">653</a>
-<a href="#654" id="654">654</a>
-<a href="#655" id="655">655</a>
-<a href="#656" id="656">656</a>
-<a href="#657" id="657">657</a>
-<a href="#658" id="658">658</a>
-<a href="#659" id="659">659</a>
-<a href="#660" id="660">660</a>
-<a href="#661" id="661">661</a>
-<a href="#662" id="662">662</a>
-<a href="#663" id="663">663</a>
-<a href="#664" id="664">664</a>
-<a href="#665" id="665">665</a>
-<a href="#666" id="666">666</a>
-<a href="#667" id="667">667</a>
-<a href="#668" id="668">668</a>
-<a href="#669" id="669">669</a>
-<a href="#670" id="670">670</a>
-<a href="#671" id="671">671</a>
-<a href="#672" id="672">672</a>
-<a href="#673" id="673">673</a>
-<a href="#674" id="674">674</a>
-<a href="#675" id="675">675</a>
-<a href="#676" id="676">676</a>
-<a href="#677" id="677">677</a>
-<a href="#678" id="678">678</a>
-<a href="#679" id="679">679</a>
-<a href="#680" id="680">680</a>
-<a href="#681" id="681">681</a>
-<a href="#682" id="682">682</a>
-<a href="#683" id="683">683</a>
-<a href="#684" id="684">684</a>
-<a href="#685" id="685">685</a>
-<a href="#686" id="686">686</a>
-<a href="#687" id="687">687</a>
-<a href="#688" id="688">688</a>
-<a href="#689" id="689">689</a>
-<a href="#690" id="690">690</a>
-<a href="#691" id="691">691</a>
-<a href="#692" id="692">692</a>
-<a href="#693" id="693">693</a>
-<a href="#694" id="694">694</a>
-<a href="#695" id="695">695</a>
-<a href="#696" id="696">696</a>
-<a href="#697" id="697">697</a>
-<a href="#698" id="698">698</a>
-<a href="#699" id="699">699</a>
-<a href="#700" id="700">700</a>
-<a href="#701" id="701">701</a>
-<a href="#702" id="702">702</a>
-<a href="#703" id="703">703</a>
-<a href="#704" id="704">704</a>
-<a href="#705" id="705">705</a>
-<a href="#706" id="706">706</a>
-<a href="#707" id="707">707</a>
-<a href="#708" id="708">708</a>
-<a href="#709" id="709">709</a>
-<a href="#710" id="710">710</a>
-<a href="#711" id="711">711</a>
-<a href="#712" id="712">712</a>
-<a href="#713" id="713">713</a>
-<a href="#714" id="714">714</a>
-<a href="#715" id="715">715</a>
-<a href="#716" id="716">716</a>
-<a href="#717" id="717">717</a>
-<a href="#718" id="718">718</a>
-<a href="#719" id="719">719</a>
-<a href="#720" id="720">720</a>
-<a href="#721" id="721">721</a>
-<a href="#722" id="722">722</a>
-<a href="#723" id="723">723</a>
-<a href="#724" id="724">724</a>
-<a href="#725" id="725">725</a>
-<a href="#726" id="726">726</a>
-<a href="#727" id="727">727</a>
-<a href="#728" id="728">728</a>
-<a href="#729" id="729">729</a>
-<a href="#730" id="730">730</a>
-<a href="#731" id="731">731</a>
-<a href="#732" id="732">732</a>
-<a href="#733" id="733">733</a>
-<a href="#734" id="734">734</a>
-<a href="#735" id="735">735</a>
-<a href="#736" id="736">736</a>
-<a href="#737" id="737">737</a>
-<a href="#738" id="738">738</a>
-<a href="#739" id="739">739</a>
-<a href="#740" id="740">740</a>
-<a href="#741" id="741">741</a>
-<a href="#742" id="742">742</a>
-<a href="#743" id="743">743</a>
-<a href="#744" id="744">744</a>
-<a href="#745" id="745">745</a>
-<a href="#746" id="746">746</a>
-<a href="#747" id="747">747</a>
-<a href="#748" id="748">748</a>
-<a href="#749" id="749">749</a>
-<a href="#750" id="750">750</a>
-<a href="#751" id="751">751</a>
-<a href="#752" id="752">752</a>
-<a href="#753" id="753">753</a>
-<a href="#754" id="754">754</a>
-<a href="#755" id="755">755</a>
-<a href="#756" id="756">756</a>
-<a href="#757" id="757">757</a>
-<a href="#758" id="758">758</a>
-<a href="#759" id="759">759</a>
-<a href="#760" id="760">760</a>
-<a href="#761" id="761">761</a>
-<a href="#762" id="762">762</a>
-<a href="#763" id="763">763</a>
-<a href="#764" id="764">764</a>
-<a href="#765" id="765">765</a>
-<a href="#766" id="766">766</a>
-<a href="#767" id="767">767</a>
-<a href="#768" id="768">768</a>
-<a href="#769" id="769">769</a>
-<a href="#770" id="770">770</a>
-<a href="#771" id="771">771</a>
-<a href="#772" id="772">772</a>
-<a href="#773" id="773">773</a>
-<a href="#774" id="774">774</a>
-<a href="#775" id="775">775</a>
-<a href="#776" id="776">776</a>
-<a href="#777" id="777">777</a>
-<a href="#778" id="778">778</a>
-<a href="#779" id="779">779</a>
-<a href="#780" id="780">780</a>
-<a href="#781" id="781">781</a>
-<a href="#782" id="782">782</a>
-<a href="#783" id="783">783</a>
-<a href="#784" id="784">784</a>
-<a href="#785" id="785">785</a>
-<a href="#786" id="786">786</a>
-<a href="#787" id="787">787</a>
-<a href="#788" id="788">788</a>
-<a href="#789" id="789">789</a>
-<a href="#790" id="790">790</a>
-<a href="#791" id="791">791</a>
-<a href="#792" id="792">792</a>
-<a href="#793" id="793">793</a>
-<a href="#794" id="794">794</a>
-<a href="#795" id="795">795</a>
-<a href="#796" id="796">796</a>
-<a href="#797" id="797">797</a>
-<a href="#798" id="798">798</a>
-<a href="#799" id="799">799</a>
-<a href="#800" id="800">800</a>
-<a href="#801" id="801">801</a>
-<a href="#802" id="802">802</a>
-<a href="#803" id="803">803</a>
-<a href="#804" id="804">804</a>
-<a href="#805" id="805">805</a>
-<a href="#806" id="806">806</a>
-<a href="#807" id="807">807</a>
-<a href="#808" id="808">808</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
-<span class="attr">#[cfg(any(feature = <span class="string">&quot;ipc&quot;</span>, feature = <span class="string">&quot;csv&quot;</span>, feature = <span class="string">&quot;parquet&quot;</span>))]
-</span><span class="kw">use </span>std::path::PathBuf;
+<span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
-</span><span class="kw">use </span>polars_core::cloud::CloudOptions;
 <span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>polars_utils::arena::{Arena, Node};
 
+<span class="kw">use </span><span class="kw">super</span>::projection_expr::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::logical_plan::functions::FunctionNode;
-<span class="kw">use </span><span class="kw">crate</span>::logical_plan::schema::{det_join_schema, FileInfo};
-<span class="attr">#[cfg(feature = <span class="string">&quot;csv&quot;</span>)]
-</span><span class="kw">use </span><span class="kw">crate</span>::logical_plan::CsvParserOptions;
-<span class="attr">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
-</span><span class="kw">use </span><span class="kw">crate</span>::logical_plan::IpcScanOptionsInner;
-<span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
-</span><span class="kw">use </span><span class="kw">crate</span>::logical_plan::ParquetOptions;
+<span class="kw">use </span><span class="kw">crate</span>::logical_plan::schema::FileInfo;
+<span class="kw">use </span><span class="kw">crate</span>::logical_plan::FileScan;
 <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::utils::{aexprs_to_schema, PushNode};
+<span class="kw">use </span><span class="kw">crate</span>::utils::PushNode;
 
-<span class="doccomment">/// ALogicalPlan is a representation of LogicalPlan with Nodes which are allocated in an Arena
+<span class="doccomment">/// [`ALogicalPlan`] is a representation of [`LogicalPlan`] with [`Node`]s which are allocated in an [`Arena`]
 </span><span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub enum </span>ALogicalPlan {
-    AnonymousScan {
-        function: Arc&lt;<span class="kw">dyn </span>AnonymousScan&gt;,
-        file_info: FileInfo,
-        output_schema: <span class="prelude-ty">Option</span>&lt;SchemaRef&gt;,
-        predicate: <span class="prelude-ty">Option</span>&lt;Node&gt;,
-        options: AnonymousScanOptions,
-    },
     <span class="attr">#[cfg(feature = <span class="string">&quot;python&quot;</span>)]
     </span>PythonScan {
         options: PythonOptions,
@@ -851,33 +501,15 @@
         input: Node,
         predicate: Node,
     },
-    <span class="attr">#[cfg(feature = <span class="string">&quot;csv&quot;</span>)]
-    </span>CsvScan {
-        path: PathBuf,
+    Scan {
+        paths: Arc&lt;[PathBuf]&gt;,
         file_info: FileInfo,
-        <span class="comment">// schema of the projected file
-        </span>output_schema: <span class="prelude-ty">Option</span>&lt;SchemaRef&gt;,
-        options: CsvParserOptions,
         predicate: <span class="prelude-ty">Option</span>&lt;Node&gt;,
-    },
-    <span class="attr">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
-    </span>IpcScan {
-        path: PathBuf,
-        file_info: FileInfo,
-        <span class="comment">// schema of the projected file
+        <span class="doccomment">/// schema of the projected file
         </span>output_schema: <span class="prelude-ty">Option</span>&lt;SchemaRef&gt;,
-        options: IpcScanOptionsInner,
-        predicate: <span class="prelude-ty">Option</span>&lt;Node&gt;,
-    },
-    <span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
-    </span>ParquetScan {
-        path: PathBuf,
-        file_info: FileInfo,
-        <span class="comment">// schema of the projected file
-        </span>output_schema: <span class="prelude-ty">Option</span>&lt;SchemaRef&gt;,
-        predicate: <span class="prelude-ty">Option</span>&lt;Node&gt;,
-        options: ParquetOptions,
-        cloud_options: <span class="prelude-ty">Option</span>&lt;CloudOptions&gt;,
+        scan_type: FileScan,
+        <span class="doccomment">/// generic options that can be used for all file types.
+        </span>file_options: FileScanOptions,
     },
     DataFrameScan {
         df: Arc&lt;DataFrame&gt;,
@@ -889,13 +521,9 @@
     },
     Projection {
         input: Node,
-        expr: Vec&lt;Node&gt;,
+        expr: ProjectionExprs,
         schema: SchemaRef,
-    },
-    LocalProjection {
-        expr: Vec&lt;Node&gt;,
-        input: Node,
-        schema: SchemaRef,
+        options: ProjectionOptions,
     },
     Sort {
         input: Node,
@@ -914,7 +542,7 @@
         schema: SchemaRef,
         apply: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>DataFrameUdf&gt;&gt;,
         maintain_order: bool,
-        options: GroupbyOptions,
+        options: Arc&lt;GroupbyOptions&gt;,
     },
     Join {
         input_left: Node,
@@ -922,12 +550,13 @@
         schema: SchemaRef,
         left_on: Vec&lt;Node&gt;,
         right_on: Vec&lt;Node&gt;,
-        options: JoinOptions,
+        options: Arc&lt;JoinOptions&gt;,
     },
     HStack {
         input: Node,
-        exprs: Vec&lt;Node&gt;,
+        exprs: ProjectionExprs,
         schema: SchemaRef,
+        options: ProjectionOptions,
     },
     Distinct {
         input: Node,
@@ -946,9 +575,9 @@
         contexts: Vec&lt;Node&gt;,
         schema: SchemaRef,
     },
-    FileSink {
+    Sink {
         input: Node,
-        payload: FileSinkOptions,
+        payload: SinkType,
     },
 }
 
@@ -969,15 +598,9 @@
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>scan_schema(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>SchemaRef {
         <span class="kw">use </span>ALogicalPlan::<span class="kw-2">*</span>;
         <span class="kw">match </span><span class="self">self </span>{
+            Scan { file_info, .. } =&gt; <span class="kw-2">&amp;</span>file_info.schema,
             <span class="attr">#[cfg(feature = <span class="string">&quot;python&quot;</span>)]
             </span>PythonScan { options, .. } =&gt; <span class="kw-2">&amp;</span>options.schema,
-            <span class="attr">#[cfg(feature = <span class="string">&quot;csv&quot;</span>)]
-            </span>CsvScan { file_info, .. } =&gt; <span class="kw-2">&amp;</span>file_info.schema,
-            <span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
-            </span>ParquetScan { file_info, .. } =&gt; <span class="kw-2">&amp;</span>file_info.schema,
-            <span class="attr">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
-            </span>IpcScan { file_info, .. } =&gt; <span class="kw-2">&amp;</span>file_info.schema,
-            AnonymousScan { file_info, .. } =&gt; <span class="kw-2">&amp;</span>file_info.schema,
             <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
         }
     }
@@ -985,20 +608,13 @@
     <span class="kw">pub fn </span>name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str {
         <span class="kw">use </span>ALogicalPlan::<span class="kw-2">*</span>;
         <span class="kw">match </span><span class="self">self </span>{
-            AnonymousScan { .. } =&gt; <span class="string">&quot;anonymous_scan&quot;</span>,
+            Scan { scan_type, .. } =&gt; scan_type.into(),
             <span class="attr">#[cfg(feature = <span class="string">&quot;python&quot;</span>)]
             </span>PythonScan { .. } =&gt; <span class="string">&quot;python_scan&quot;</span>,
             Slice { .. } =&gt; <span class="string">&quot;slice&quot;</span>,
             Selection { .. } =&gt; <span class="string">&quot;selection&quot;</span>,
-            <span class="attr">#[cfg(feature = <span class="string">&quot;csv&quot;</span>)]
-            </span>CsvScan { .. } =&gt; <span class="string">&quot;csv_scan&quot;</span>,
-            <span class="attr">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
-            </span>IpcScan { .. } =&gt; <span class="string">&quot;ipc_scan&quot;</span>,
-            <span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
-            </span>ParquetScan { .. } =&gt; <span class="string">&quot;parquet_scan&quot;</span>,
             DataFrameScan { .. } =&gt; <span class="string">&quot;df&quot;</span>,
             Projection { .. } =&gt; <span class="string">&quot;projection&quot;</span>,
-            LocalProjection { .. } =&gt; <span class="string">&quot;local_projection&quot;</span>,
             Sort { .. } =&gt; <span class="string">&quot;sort&quot;</span>,
             Cache { .. } =&gt; <span class="string">&quot;cache&quot;</span>,
             Aggregate { .. } =&gt; <span class="string">&quot;aggregate&quot;</span>,
@@ -1008,7 +624,12 @@
             MapFunction { .. } =&gt; <span class="string">&quot;map_function&quot;</span>,
             Union { .. } =&gt; <span class="string">&quot;union&quot;</span>,
             ExtContext { .. } =&gt; <span class="string">&quot;ext_context&quot;</span>,
-            FileSink { .. } =&gt; <span class="string">&quot;file_sink&quot;</span>,
+            Sink { payload, .. } =&gt; <span class="kw">match </span>payload {
+                SinkType::Memory =&gt; <span class="string">&quot;sink (memory)&quot;</span>,
+                SinkType::File { .. } =&gt; <span class="string">&quot;sink (file)&quot;</span>,
+                <span class="attr">#[cfg(feature = <span class="string">&quot;cloud&quot;</span>)]
+                </span>SinkType::Cloud { .. } =&gt; <span class="string">&quot;sink (cloud)&quot;</span>,
+            },
         }
     }
 
@@ -1017,20 +638,13 @@
         <span class="kw">use </span>ALogicalPlan::<span class="kw-2">*</span>;
         <span class="kw">let </span>schema = <span class="kw">match </span><span class="self">self </span>{
             <span class="attr">#[cfg(feature = <span class="string">&quot;python&quot;</span>)]
-            </span>PythonScan { options, .. } =&gt; <span class="kw-2">&amp;</span>options.schema,
+            </span>PythonScan { options, .. } =&gt; options.output_schema.as_ref().unwrap_or(<span class="kw-2">&amp;</span>options.schema),
             Union { inputs, .. } =&gt; <span class="kw">return </span>arena.get(inputs[<span class="number">0</span>]).schema(arena),
             Cache { input, .. } =&gt; <span class="kw">return </span>arena.get(<span class="kw-2">*</span>input).schema(arena),
             Sort { input, .. } =&gt; <span class="kw">return </span>arena.get(<span class="kw-2">*</span>input).schema(arena),
-            <span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
-            </span>ParquetScan {
-                file_info,
+            Scan {
                 output_schema,
-                ..
-            } =&gt; output_schema.as_ref().unwrap_or(<span class="kw-2">&amp;</span>file_info.schema),
-            <span class="attr">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
-            </span>IpcScan {
                 file_info,
-                output_schema,
                 ..
             } =&gt; output_schema.as_ref().unwrap_or(<span class="kw-2">&amp;</span>file_info.schema),
             DataFrameScan {
@@ -1038,26 +652,12 @@
                 output_schema,
                 ..
             } =&gt; output_schema.as_ref().unwrap_or(schema),
-            AnonymousScan {
-                file_info,
-                output_schema,
-                ..
-            } =&gt; output_schema.as_ref().unwrap_or(<span class="kw-2">&amp;</span>file_info.schema),
             Selection { input, .. } =&gt; <span class="kw">return </span>arena.get(<span class="kw-2">*</span>input).schema(arena),
-            <span class="attr">#[cfg(feature = <span class="string">&quot;csv&quot;</span>)]
-            </span>CsvScan {
-                file_info,
-                output_schema,
-                ..
-            } =&gt; output_schema.as_ref().unwrap_or(<span class="kw-2">&amp;</span>file_info.schema),
             Projection { schema, .. } =&gt; schema,
-            LocalProjection { schema, .. } =&gt; schema,
             Aggregate { schema, .. } =&gt; schema,
             Join { schema, .. } =&gt; schema,
             HStack { schema, .. } =&gt; schema,
-            Distinct { input, .. } | FileSink { input, .. } =&gt; {
-                <span class="kw">return </span>arena.get(<span class="kw-2">*</span>input).schema(arena)
-            }
+            Distinct { input, .. } | Sink { input, .. } =&gt; <span class="kw">return </span>arena.get(<span class="kw-2">*</span>input).schema(arena),
             Slice { input, .. } =&gt; <span class="kw">return </span>arena.get(<span class="kw-2">*</span>input).schema(arena),
             MapFunction { input, function } =&gt; {
                 <span class="kw">let </span>input_schema = arena.get(<span class="kw-2">*</span>input).schema(arena);
@@ -1065,10 +665,10 @@
                 <span class="kw">return match </span>input_schema {
                     Cow::Owned(schema) =&gt; {
                         Cow::Owned(function.schema(<span class="kw-2">&amp;</span>schema).unwrap().into_owned())
-                    }
+                    },
                     Cow::Borrowed(schema) =&gt; function.schema(schema).unwrap(),
                 };
-            }
+            },
             ExtContext { schema, .. } =&gt; schema,
         };
         Cow::Borrowed(schema)
@@ -1103,15 +703,13 @@
                 input: inputs[<span class="number">0</span>],
                 predicate: exprs[<span class="number">0</span>],
             },
-            LocalProjection { schema, .. } =&gt; LocalProjection {
+            Projection {
+                schema, options, ..
+            } =&gt; Projection {
                 input: inputs[<span class="number">0</span>],
-                expr: exprs,
+                expr: ProjectionExprs::new(exprs),
                 schema: schema.clone(),
-            },
-            Projection { schema, .. } =&gt; Projection {
-                input: inputs[<span class="number">0</span>],
-                expr: exprs,
-                schema: schema.clone(),
+                options: <span class="kw-2">*</span>options,
             },
             Aggregate {
                 keys,
@@ -1158,79 +756,35 @@
                 input: inputs[<span class="number">0</span>],
                 options: options.clone(),
             },
-            HStack { schema, .. } =&gt; HStack {
+            HStack {
+                schema, options, ..
+            } =&gt; HStack {
                 input: inputs[<span class="number">0</span>],
-                exprs,
+                exprs: ProjectionExprs::new(exprs),
                 schema: schema.clone(),
+                options: <span class="kw-2">*</span>options,
             },
-            <span class="attr">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
-            </span>IpcScan {
-                path,
+            Scan {
+                paths,
                 file_info,
                 output_schema,
-                options,
                 predicate,
-                ..
+                file_options: options,
+                scan_type,
             } =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>new_predicate = <span class="prelude-val">None</span>;
                 <span class="kw">if </span>predicate.is_some() {
                     new_predicate = exprs.pop()
                 }
-
-                IpcScan {
-                    path: path.clone(),
+                Scan {
+                    paths: paths.clone(),
                     file_info: file_info.clone(),
                     output_schema: output_schema.clone(),
+                    file_options: options.clone(),
                     predicate: new_predicate,
-                    options: options.clone(),
+                    scan_type: scan_type.clone(),
                 }
-            }
-
-            <span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
-            </span>ParquetScan {
-                path,
-                file_info,
-                output_schema,
-                predicate,
-                options,
-                cloud_options,
-                ..
-            } =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>new_predicate = <span class="prelude-val">None</span>;
-                <span class="kw">if </span>predicate.is_some() {
-                    new_predicate = exprs.pop()
-                }
-
-                ParquetScan {
-                    path: path.clone(),
-                    file_info: file_info.clone(),
-                    output_schema: output_schema.clone(),
-                    predicate: new_predicate,
-                    options: options.clone(),
-                    cloud_options: cloud_options.clone(),
-                }
-            }
-            <span class="attr">#[cfg(feature = <span class="string">&quot;csv&quot;</span>)]
-            </span>CsvScan {
-                path,
-                file_info,
-                output_schema,
-                predicate,
-                options,
-                ..
-            } =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>new_predicate = <span class="prelude-val">None</span>;
-                <span class="kw">if </span>predicate.is_some() {
-                    new_predicate = exprs.pop()
-                }
-                CsvScan {
-                    path: path.clone(),
-                    file_info: file_info.clone(),
-                    output_schema: output_schema.clone(),
-                    options: options.clone(),
-                    predicate: new_predicate,
-                }
-            }
+            },
             DataFrameScan {
                 df,
                 schema,
@@ -1250,27 +804,7 @@
                     projection: projection.clone(),
                     selection: new_selection,
                 }
-            }
-            AnonymousScan {
-                function,
-                file_info,
-                output_schema,
-                predicate,
-                options,
-            } =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>new_predicate = <span class="prelude-val">None</span>;
-                <span class="kw">if </span>predicate.is_some() {
-                    new_predicate = exprs.pop()
-                }
-
-                AnonymousScan {
-                    function: function.clone(),
-                    file_info: file_info.clone(),
-                    output_schema: output_schema.clone(),
-                    predicate: new_predicate,
-                    options: options.clone(),
-                }
-            }
+            },
             MapFunction { function, .. } =&gt; MapFunction {
                 input: inputs[<span class="number">0</span>],
                 function: function.clone(),
@@ -1280,7 +814,7 @@
                 contexts: inputs,
                 schema: schema.clone(),
             },
-            FileSink { payload, .. } =&gt; FileSink {
+            Sink { payload, .. } =&gt; Sink {
                 input: inputs.pop().unwrap(),
                 payload: payload.clone(),
             },
@@ -1291,53 +825,34 @@
     </span><span class="kw">pub fn </span>copy_exprs(<span class="kw-2">&amp;</span><span class="self">self</span>, container: <span class="kw-2">&amp;mut </span>Vec&lt;Node&gt;) {
         <span class="kw">use </span>ALogicalPlan::<span class="kw-2">*</span>;
         <span class="kw">match </span><span class="self">self </span>{
-            Slice { .. } | Cache { .. } | Distinct { .. } | Union { .. } | MapFunction { .. } =&gt; {}
+            Slice { .. } | Cache { .. } | Distinct { .. } | Union { .. } | MapFunction { .. } =&gt; {},
             Sort { by_column, .. } =&gt; container.extend_from_slice(by_column),
             Selection { predicate, .. } =&gt; container.push(<span class="kw-2">*</span>predicate),
             Projection { expr, .. } =&gt; container.extend_from_slice(expr),
-            LocalProjection { expr, .. } =&gt; container.extend_from_slice(expr),
             Aggregate { keys, aggs, .. } =&gt; {
                 <span class="kw">let </span>iter = keys.iter().copied().chain(aggs.iter().copied());
                 container.extend(iter)
-            }
+            },
             Join {
                 left_on, right_on, ..
             } =&gt; {
                 <span class="kw">let </span>iter = left_on.iter().copied().chain(right_on.iter().copied());
                 container.extend(iter)
-            }
+            },
             HStack { exprs, .. } =&gt; container.extend_from_slice(exprs),
-            <span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
-            </span>ParquetScan { predicate, .. } =&gt; {
+            Scan { predicate, .. } =&gt; {
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(node) = predicate {
                     container.push(<span class="kw-2">*</span>node)
                 }
-            }
-            <span class="attr">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
-            </span>IpcScan { predicate, .. } =&gt; {
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(node) = predicate {
-                    container.push(<span class="kw-2">*</span>node)
-                }
-            }
-            <span class="attr">#[cfg(feature = <span class="string">&quot;csv&quot;</span>)]
-            </span>CsvScan { predicate, .. } =&gt; {
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(node) = predicate {
-                    container.push(<span class="kw-2">*</span>node)
-                }
-            }
+            },
             DataFrameScan { selection, .. } =&gt; {
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(expr) = selection {
                     container.push(<span class="kw-2">*</span>expr)
                 }
-            }
+            },
             <span class="attr">#[cfg(feature = <span class="string">&quot;python&quot;</span>)]
-            </span>PythonScan { .. } =&gt; {}
-            AnonymousScan { predicate, .. } =&gt; {
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(node) = predicate {
-                    container.push(<span class="kw-2">*</span>node)
-                }
-            }
-            ExtContext { .. } | FileSink { .. } =&gt; {}
+            </span>PythonScan { .. } =&gt; {},
+            ExtContext { .. } | Sink { .. } =&gt; {},
         }
     }
 
@@ -1362,11 +877,10 @@
                     container.push_node(<span class="kw-2">*</span>node);
                 }
                 <span class="kw">return</span>;
-            }
+            },
             Slice { input, .. } =&gt; <span class="kw-2">*</span>input,
             Selection { input, .. } =&gt; <span class="kw-2">*</span>input,
             Projection { input, .. } =&gt; <span class="kw-2">*</span>input,
-            LocalProjection { input, .. } =&gt; <span class="kw-2">*</span>input,
             Sort { input, .. } =&gt; <span class="kw-2">*</span>input,
             Cache { input, .. } =&gt; <span class="kw-2">*</span>input,
             Aggregate { input, .. } =&gt; <span class="kw-2">*</span>input,
@@ -1378,11 +892,11 @@
                 container.push_node(<span class="kw-2">*</span>input_left);
                 container.push_node(<span class="kw-2">*</span>input_right);
                 <span class="kw">return</span>;
-            }
+            },
             HStack { input, .. } =&gt; <span class="kw-2">*</span>input,
             Distinct { input, .. } =&gt; <span class="kw-2">*</span>input,
             MapFunction { input, .. } =&gt; <span class="kw-2">*</span>input,
-            FileSink { input, .. } =&gt; <span class="kw-2">*</span>input,
+            Sink { input, .. } =&gt; <span class="kw-2">*</span>input,
             ExtContext {
                 input, contexts, ..
             } =&gt; {
@@ -1390,15 +904,9 @@
                     container.push_node(<span class="kw-2">*</span>n)
                 }
                 <span class="kw-2">*</span>input
-            }
-            <span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
-            </span>ParquetScan { .. } =&gt; <span class="kw">return</span>,
-            <span class="attr">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
-            </span>IpcScan { .. } =&gt; <span class="kw">return</span>,
-            <span class="attr">#[cfg(feature = <span class="string">&quot;csv&quot;</span>)]
-            </span>CsvScan { .. } =&gt; <span class="kw">return</span>,
+            },
+            Scan { .. } =&gt; <span class="kw">return</span>,
             DataFrameScan { .. } =&gt; <span class="kw">return</span>,
-            AnonymousScan { .. } =&gt; <span class="kw">return</span>,
             <span class="attr">#[cfg(feature = <span class="string">&quot;python&quot;</span>)]
             </span>PythonScan { .. } =&gt; <span class="kw">return</span>,
         };
@@ -1423,195 +931,15 @@
     }
 }
 
-<span class="kw">pub struct </span>ALogicalPlanBuilder&lt;<span class="lifetime">&#39;a</span>&gt; {
-    root: Node,
-    expr_arena: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Arena&lt;AExpr&gt;,
-    lp_arena: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Arena&lt;ALogicalPlan&gt;,
-}
+<span class="attr">#[cfg(test)]
+</span><span class="kw">mod </span>test {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; ALogicalPlanBuilder&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(
-        root: Node,
-        expr_arena: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Arena&lt;AExpr&gt;,
-        lp_arena: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Arena&lt;ALogicalPlan&gt;,
-    ) -&gt; <span class="self">Self </span>{
-        ALogicalPlanBuilder {
-            root,
-            expr_arena,
-            lp_arena,
-        }
-    }
-
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>from_lp(
-        lp: ALogicalPlan,
-        expr_arena: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Arena&lt;AExpr&gt;,
-        lp_arena: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Arena&lt;ALogicalPlan&gt;,
-    ) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>root = lp_arena.add(lp);
-        ALogicalPlanBuilder {
-            root,
-            expr_arena,
-            lp_arena,
-        }
-    }
-
-    <span class="kw">pub fn </span>project_local(<span class="self">self</span>, exprs: Vec&lt;Node&gt;) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>input_schema = <span class="self">self</span>.lp_arena.get(<span class="self">self</span>.root).schema(<span class="self">self</span>.lp_arena);
-        <span class="kw">let </span>schema = aexprs_to_schema(<span class="kw-2">&amp;</span>exprs, <span class="kw-2">&amp;</span>input_schema, Context::Default, <span class="self">self</span>.expr_arena);
-        <span class="kw">let </span>lp = ALogicalPlan::LocalProjection {
-            expr: exprs,
-            input: <span class="self">self</span>.root,
-            schema: Arc::new(schema),
-        };
-        <span class="kw">let </span>node = <span class="self">self</span>.lp_arena.add(lp);
-        ALogicalPlanBuilder::new(node, <span class="self">self</span>.expr_arena, <span class="self">self</span>.lp_arena)
-    }
-
-    <span class="kw">pub fn </span>project(<span class="self">self</span>, exprs: Vec&lt;Node&gt;) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>input_schema = <span class="self">self</span>.lp_arena.get(<span class="self">self</span>.root).schema(<span class="self">self</span>.lp_arena);
-        <span class="kw">let </span>schema = aexprs_to_schema(<span class="kw-2">&amp;</span>exprs, <span class="kw-2">&amp;</span>input_schema, Context::Default, <span class="self">self</span>.expr_arena);
-
-        <span class="comment">// if len == 0, no projection has to be done. This is a select all operation.
-        </span><span class="kw">if </span>!exprs.is_empty() {
-            <span class="kw">let </span>lp = ALogicalPlan::Projection {
-                expr: exprs,
-                input: <span class="self">self</span>.root,
-                schema: Arc::new(schema),
-            };
-            <span class="kw">let </span>node = <span class="self">self</span>.lp_arena.add(lp);
-            ALogicalPlanBuilder::new(node, <span class="self">self</span>.expr_arena, <span class="self">self</span>.lp_arena)
-        } <span class="kw">else </span>{
-            <span class="self">self
-        </span>}
-    }
-
-    <span class="kw">pub fn </span>build(<span class="self">self</span>) -&gt; ALogicalPlan {
-        <span class="kw">if </span><span class="self">self</span>.root.<span class="number">0 </span>== <span class="self">self</span>.lp_arena.len() {
-            <span class="self">self</span>.lp_arena.pop().unwrap()
-        } <span class="kw">else </span>{
-            <span class="self">self</span>.lp_arena.take(<span class="self">self</span>.root)
-        }
-    }
-
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>schema(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>) -&gt; Cow&lt;<span class="lifetime">&#39;a</span>, SchemaRef&gt; {
-        <span class="self">self</span>.lp_arena.get(<span class="self">self</span>.root).schema(<span class="self">self</span>.lp_arena)
-    }
-
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>with_columns(<span class="self">self</span>, exprs: Vec&lt;Node&gt;) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>schema = <span class="self">self</span>.schema();
-        <span class="kw">let </span><span class="kw-2">mut </span>new_schema = (<span class="kw-2">**</span>schema).clone();
-
-        <span class="kw">for </span>e <span class="kw">in </span><span class="kw-2">&amp;</span>exprs {
-            <span class="kw">let </span>field = <span class="self">self
-                </span>.expr_arena
-                .get(<span class="kw-2">*</span>e)
-                .to_field(<span class="kw-2">&amp;</span>schema, Context::Default, <span class="self">self</span>.expr_arena)
-                .unwrap();
-
-            new_schema.with_column(field.name().clone(), field.data_type().clone());
-        }
-
-        <span class="kw">let </span>lp = ALogicalPlan::HStack {
-            input: <span class="self">self</span>.root,
-            exprs,
-            schema: Arc::new(new_schema),
-        };
-        <span class="kw">let </span>root = <span class="self">self</span>.lp_arena.add(lp);
-        <span class="self">Self</span>::new(root, <span class="self">self</span>.expr_arena, <span class="self">self</span>.lp_arena)
-    }
-
-    <span class="kw">pub fn </span>groupby(
-        <span class="self">self</span>,
-        keys: Vec&lt;Node&gt;,
-        aggs: Vec&lt;Node&gt;,
-        apply: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>DataFrameUdf&gt;&gt;,
-        maintain_order: bool,
-        options: GroupbyOptions,
-    ) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>current_schema = <span class="self">self</span>.schema();
-        <span class="comment">// TODO! add this line if LogicalPlan is dropped in favor of ALogicalPlan
-        // let aggs = rewrite_projections(aggs, current_schema);
-
-        </span><span class="kw">let </span><span class="kw-2">mut </span>schema =
-            aexprs_to_schema(<span class="kw-2">&amp;</span>keys, <span class="kw-2">&amp;</span>current_schema, Context::Default, <span class="self">self</span>.expr_arena);
-        <span class="kw">let </span>other = aexprs_to_schema(
-            <span class="kw-2">&amp;</span>aggs,
-            <span class="kw-2">&amp;</span>current_schema,
-            Context::Aggregation,
-            <span class="self">self</span>.expr_arena,
-        );
-        schema.merge(other);
-
-        <span class="attr">#[cfg(feature = <span class="string">&quot;dynamic_groupby&quot;</span>)]
-        </span>{
-            <span class="kw">let </span>index_columns = <span class="kw-2">&amp;</span>[
-                options
-                    .rolling
-                    .as_ref()
-                    .map(|options| <span class="kw-2">&amp;</span>options.index_column),
-                options
-                    .dynamic
-                    .as_ref()
-                    .map(|options| <span class="kw-2">&amp;</span>options.index_column),
-            ];
-            <span class="kw">for </span><span class="kw-2">&amp;</span>name <span class="kw">in </span>index_columns.iter().flatten() {
-                <span class="kw">let </span>dtype = current_schema.get(name).unwrap();
-                schema.with_column(name.clone(), dtype.clone());
-            }
-        }
-
-        <span class="kw">let </span>lp = ALogicalPlan::Aggregate {
-            input: <span class="self">self</span>.root,
-            keys,
-            aggs,
-            schema: Arc::new(schema),
-            apply,
-            maintain_order,
-            options,
-        };
-        <span class="kw">let </span>root = <span class="self">self</span>.lp_arena.add(lp);
-        <span class="self">Self</span>::new(root, <span class="self">self</span>.expr_arena, <span class="self">self</span>.lp_arena)
-    }
-
-    <span class="kw">pub fn </span>join(
-        <span class="self">self</span>,
-        other: Node,
-        left_on: Vec&lt;Node&gt;,
-        right_on: Vec&lt;Node&gt;,
-        options: JoinOptions,
-    ) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>schema_left = <span class="self">self</span>.schema();
-        <span class="kw">let </span>schema_right = <span class="self">self</span>.lp_arena.get(other).schema(<span class="self">self</span>.lp_arena);
-
-        <span class="kw">let </span>left_on_exprs = left_on
-            .iter()
-            .map(|node| node_to_expr(<span class="kw-2">*</span>node, <span class="self">self</span>.expr_arena))
-            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-        <span class="kw">let </span>right_on_exprs = right_on
-            .iter()
-            .map(|node| node_to_expr(<span class="kw-2">*</span>node, <span class="self">self</span>.expr_arena))
-            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-
-        <span class="kw">let </span>schema = det_join_schema(
-            <span class="kw-2">&amp;</span>schema_left,
-            <span class="kw-2">&amp;</span>schema_right,
-            <span class="kw-2">&amp;</span>left_on_exprs,
-            <span class="kw-2">&amp;</span>right_on_exprs,
-            <span class="kw-2">&amp;</span>options,
-        )
-        .unwrap();
-
-        <span class="kw">let </span>lp = ALogicalPlan::Join {
-            input_left: <span class="self">self</span>.root,
-            input_right: other,
-            schema,
-            left_on,
-            right_on,
-            options,
-        };
-
-        <span class="kw">let </span>root = <span class="self">self</span>.lp_arena.add(lp);
-        <span class="self">Self</span>::new(root, <span class="self">self</span>.expr_arena, <span class="self">self</span>.lp_arena)
+    <span class="comment">// skipped for now
+    </span><span class="attr">#[ignore]
+    #[test]
+    </span><span class="kw">fn </span>test_alp_size() {
+        <span class="macro">assert!</span>(std::mem::size_of::&lt;ALogicalPlan&gt;() &lt;= <span class="number">152</span>);
     }
 }
 </code></pre></div></section></main></body></html>

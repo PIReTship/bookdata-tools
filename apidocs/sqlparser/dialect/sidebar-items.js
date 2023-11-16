@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["dialect_from_str"],"struct":["AnsiDialect","BigQueryDialect","ClickHouseDialect","DuckDbDialect","GenericDialect","HiveDialect","MsSqlDialect","MySqlDialect","PostgreSqlDialect","RedshiftSqlDialect","SQLiteDialect","SnowflakeDialect"],"trait":["Dialect"]};

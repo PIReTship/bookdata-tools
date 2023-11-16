@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"derive":["AsRefStr","AsStaticStr","Display","EnumCount","EnumDiscriminants","EnumIter","EnumMessage","EnumProperty","EnumString","EnumVariantNames","FromRepr","IntoStaticStr","ToString"]};
+window.SIDEBAR_ITEMS = {"derive":["AsRefStr","AsStaticStr","Display","EnumCount","EnumDiscriminants","EnumIs","EnumIter","EnumMessage","EnumProperty","EnumString","EnumTryAs","EnumVariantNames","FromRepr","IntoStaticStr","ToString"]};

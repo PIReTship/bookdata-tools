@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["BatchStats","ColumnStats"]};
+window.SIDEBAR_ITEMS = {};

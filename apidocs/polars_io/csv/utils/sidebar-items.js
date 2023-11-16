@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["get_reader_bytes","infer_file_schema","is_compressed"]};
+window.SIDEBAR_ITEMS = {"fn":["infer_file_schema","infer_file_schema_inner","is_compressed"]};

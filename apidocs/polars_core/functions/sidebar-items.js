@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["cov_f","cov_i","pearson_corr_f","pearson_corr_i"]};
+window.SIDEBAR_ITEMS = {"fn":["cov","pearson_corr"]};

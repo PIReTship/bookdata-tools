@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-lazy-0.30.0/src/physical_plan/planner/expr.rs`."><title>expr.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_lazy" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-lazy-0.34.2/src/physical_plan/planner/expr.rs`."><title>expr.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_lazy" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -590,7 +590,23 @@
 <a href="#590" id="590">590</a>
 <a href="#591" id="591">591</a>
 <a href="#592" id="592">592</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>polars_core::frame::groupby::GroupByMethod;
+<a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
+<a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a>
+<a href="#598" id="598">598</a>
+<a href="#599" id="599">599</a>
+<a href="#600" id="600">600</a>
+<a href="#601" id="601">601</a>
+<a href="#602" id="602">602</a>
+<a href="#603" id="603">603</a>
+<a href="#604" id="604">604</a>
+<a href="#605" id="605">605</a>
+<a href="#606" id="606">606</a>
+<a href="#607" id="607">607</a>
+<a href="#608" id="608">608</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>polars_core::frame::group_by::GroupByMethod;
 <span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>polars_core::series::IsSorted;
 <span class="kw">use </span>polars_core::utils::_split_offsets;
@@ -649,6 +665,7 @@
 </span><span class="kw">struct </span>LocalConversionState {
     has_implode: bool,
     has_window: bool,
+    has_lit: bool,
 }
 
 <span class="kw">impl </span>ExpressionConversionState {
@@ -686,64 +703,79 @@
         Window {
             <span class="kw-2">mut </span>function,
             partition_by,
-            order_by: <span class="kw">_</span>,
             options,
         } =&gt; {
             state.set_window();
-            <span class="comment">// TODO! Order by
-            </span><span class="kw">let </span>group_by = create_physical_expressions(
-                <span class="kw-2">&amp;</span>partition_by,
-                Context::Default,
-                expr_arena,
-                schema,
-                state,
-            )<span class="question-mark">?</span>;
-
-            <span class="comment">// set again as the state can be reset
-            </span>state.set_window();
             <span class="kw">let </span>phys_function =
                 create_physical_expr(function, Context::Aggregation, expr_arena, schema, state)<span class="question-mark">?</span>;
+
             <span class="kw">let </span><span class="kw-2">mut </span>out_name = <span class="prelude-val">None</span>;
-            <span class="kw">let </span><span class="kw-2">mut </span>apply_columns = aexpr_to_leaf_names(function, expr_arena);
-            <span class="comment">// sort and then dedup removes consecutive duplicates == all duplicates
-            </span>apply_columns.sort();
-            apply_columns.dedup();
-
-            <span class="kw">if </span>apply_columns.is_empty() {
-                <span class="kw">if </span>has_aexpr(function, expr_arena, |e| <span class="macro">matches!</span>(e, AExpr::Literal(<span class="kw">_</span>))) {
-                    apply_columns.push(Arc::from(<span class="string">&quot;literal&quot;</span>))
-                } <span class="kw">else if </span>has_aexpr(function, expr_arena, |e| <span class="macro">matches!</span>(e, AExpr::Count)) {
-                    apply_columns.push(Arc::from(<span class="string">&quot;count&quot;</span>))
-                } <span class="kw">else </span>{
-                    <span class="kw">let </span>e = node_to_expr(function, expr_arena);
-                    <span class="macro">polars_bail!</span>(
-                        ComputeError:
-                        <span class="string">&quot;cannot apply a window function, did not find a root column; \
-                        this is likely due to a syntax error in this expression: {:?}&quot;</span>, e
-                    );
-                }
-            }
-
             <span class="kw">if let </span>Alias(expr, name) = expr_arena.get(function) {
                 function = <span class="kw-2">*</span>expr;
                 out_name = <span class="prelude-val">Some</span>(name.clone());
             };
-            <span class="kw">let </span>function = node_to_expr(function, expr_arena);
+            <span class="kw">let </span>function_expr = node_to_expr(function, expr_arena);
+            <span class="kw">let </span>expr = node_to_expr(expression, expr_arena);
 
-            <span class="prelude-val">Ok</span>(Arc::new(WindowExpr {
-                group_by,
-                apply_columns,
-                out_name,
-                function,
-                phys_function,
-                options,
-                expr: node_to_expr(expression, expr_arena),
-            }))
-        }
-        Literal(value) =&gt; <span class="prelude-val">Ok</span>(Arc::new(LiteralExpr::new(
-            value,
-            node_to_expr(expression, expr_arena),
-        ))),
+            <span class="kw">match </span>options {
+                WindowType::Over(mapping) =&gt; {
+                    <span class="comment">// set again as the state can be reset
+                    </span>state.set_window();
+                    <span class="comment">// TODO! Order by
+                    </span><span class="kw">let </span>group_by = create_physical_expressions(
+                        <span class="kw-2">&amp;</span>partition_by,
+                        Context::Default,
+                        expr_arena,
+                        schema,
+                        state,
+                    )<span class="question-mark">?</span>;
+                    <span class="kw">let </span><span class="kw-2">mut </span>apply_columns = aexpr_to_leaf_names(function, expr_arena);
+                    <span class="comment">// sort and then dedup removes consecutive duplicates == all duplicates
+                    </span>apply_columns.sort();
+                    apply_columns.dedup();
+
+                    <span class="kw">if </span>apply_columns.is_empty() {
+                        <span class="kw">if </span>has_aexpr(function, expr_arena, |e| <span class="macro">matches!</span>(e, AExpr::Literal(<span class="kw">_</span>))) {
+                            apply_columns.push(Arc::from(<span class="string">&quot;literal&quot;</span>))
+                        } <span class="kw">else if </span>has_aexpr(function, expr_arena, |e| <span class="macro">matches!</span>(e, AExpr::Count)) {
+                            apply_columns.push(Arc::from(<span class="string">&quot;count&quot;</span>))
+                        } <span class="kw">else </span>{
+                            <span class="kw">let </span>e = node_to_expr(function, expr_arena);
+                            <span class="macro">polars_bail!</span>(
+                                ComputeError:
+                                <span class="string">&quot;cannot apply a window function, did not find a root column; \
+                                this is likely due to a syntax error in this expression: {:?}&quot;</span>, e
+                            );
+                        }
+                    }
+
+                    <span class="prelude-val">Ok</span>(Arc::new(WindowExpr {
+                        group_by,
+                        apply_columns,
+                        out_name,
+                        function: function_expr,
+                        phys_function,
+                        mapping,
+                        expr,
+                    }))
+                },
+                <span class="attr">#[cfg(feature = <span class="string">&quot;dynamic_group_by&quot;</span>)]
+                </span>WindowType::Rolling(options) =&gt; <span class="prelude-val">Ok</span>(Arc::new(RollingExpr {
+                    function: function_expr,
+                    phys_function,
+                    out_name,
+                    options,
+                    expr,
+                })),
+            }
+        },
+        Literal(value) =&gt; {
+            state.local.has_lit = <span class="bool-val">true</span>;
+            <span class="prelude-val">Ok</span>(Arc::new(LiteralExpr::new(
+                value,
+                node_to_expr(expression, expr_arena),
+            )))
+        },
         BinaryExpr { left, op, right } =&gt; {
             <span class="kw">let </span>lhs = create_physical_expr(left, ctxt, expr_arena, schema, state)<span class="question-mark">?</span>;
             <span class="kw">let </span>rhs = create_physical_expr(right, ctxt, expr_arena, schema, state)<span class="question-mark">?</span>;
@@ -752,8 +784,9 @@
                 op,
                 rhs,
                 node_to_expr(expression, expr_arena),
+                state.local.has_lit,
             )))
-        }
+        },
         Column(column) =&gt; <span class="prelude-val">Ok</span>(Arc::new(ColumnExpr::new(
             column,
             node_to_expr(expression, expr_arena),
@@ -766,16 +799,21 @@
                 options,
                 node_to_expr(expression, expr_arena),
             )))
-        }
-        Take { expr, idx } =&gt; {
+        },
+        Take {
+            expr,
+            idx,
+            returns_scalar,
+        } =&gt; {
             <span class="kw">let </span>phys_expr = create_physical_expr(expr, ctxt, expr_arena, schema, state)<span class="question-mark">?</span>;
             <span class="kw">let </span>phys_idx = create_physical_expr(idx, ctxt, expr_arena, schema, state)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Arc::new(TakeExpr {
                 phys_expr,
                 idx: phys_idx,
                 expr: node_to_expr(expression, expr_arena),
+                returns_scalar,
             }))
-        }
+        },
         SortBy {
             expr,
             by,
@@ -790,7 +828,7 @@
                 descending,
                 node_to_expr(expression, expr_arena),
             )))
-        }
+        },
         Filter { input, by } =&gt; {
             <span class="kw">let </span>phys_input = create_physical_expr(input, ctxt, expr_arena, schema, state)<span class="question-mark">?</span>;
             <span class="kw">let </span>phys_by = create_physical_expr(by, ctxt, expr_arena, schema, state)<span class="question-mark">?</span>;
@@ -799,7 +837,7 @@
                 phys_by,
                 node_to_expr(expression, expr_arena),
             )))
-        }
+        },
         Alias(expr, name) =&gt; {
             <span class="kw">let </span>phys_expr = create_physical_expr(expr, ctxt, expr_arena, schema, state)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Arc::new(AliasExpr::new(
@@ -807,7 +845,7 @@
                 name,
                 node_to_expr(expression, expr_arena),
             )))
-        }
+        },
         Agg(agg) =&gt; {
             <span class="kw">let </span>expr = agg.get_input().first();
             <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena, schema, state)<span class="question-mark">?</span>;
@@ -845,7 +883,7 @@
                                 <span class="kw">match </span>s.is_sorted_flag() {
                                     IsSorted::Ascending | IsSorted::Descending =&gt; {
                                         <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(s.min_as_series()))
-                                    }
+                                    },
                                     IsSorted::Not =&gt; parallel_op_series(
                                         |s| <span class="prelude-val">Ok</span>(s.min_as_series()),
                                         s,
@@ -854,7 +892,7 @@
                                     ),
                                 }
                             }) <span class="kw">as </span>Arc&lt;<span class="kw">dyn </span>SeriesUdf&gt;)
-                        }
+                        },
                         AAggExpr::Max { propagate_nans, .. } =&gt; {
                             <span class="kw">let </span>state = <span class="kw-2">*</span>state;
                             SpecialEq::new(Arc::new(<span class="kw">move </span>|s: <span class="kw-2">&amp;mut </span>[Series]| {
@@ -881,7 +919,7 @@
                                 <span class="kw">match </span>s.is_sorted_flag() {
                                     IsSorted::Ascending | IsSorted::Descending =&gt; {
                                         <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(s.max_as_series()))
-                                    }
+                                    },
                                     IsSorted::Not =&gt; parallel_op_series(
                                         |s| <span class="prelude-val">Ok</span>(s.max_as_series()),
                                         s,
@@ -890,7 +928,7 @@
                                     ),
                                 }
                             }) <span class="kw">as </span>Arc&lt;<span class="kw">dyn </span>SeriesUdf&gt;)
-                        }
+                        },
                         AAggExpr::Median(<span class="kw">_</span>) =&gt; SpecialEq::new(Arc::new(<span class="kw">move </span>|s: <span class="kw-2">&amp;mut </span>[Series]| {
                             <span class="kw">let </span>s = std::mem::take(<span class="kw-2">&amp;mut </span>s[<span class="number">0</span>]);
                             <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(s.median_as_series()))
@@ -906,7 +944,7 @@
                                     )
                                 })
                             }) <span class="kw">as </span>Arc&lt;<span class="kw">dyn </span>SeriesUdf&gt;)
-                        }
+                        },
                         AAggExpr::First(<span class="kw">_</span>) =&gt; SpecialEq::new(Arc::new(<span class="kw">move </span>|s: <span class="kw-2">&amp;mut </span>[Series]| {
                             <span class="kw">let </span>s = std::mem::take(<span class="kw-2">&amp;mut </span>s[<span class="number">0</span>]);
                             <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(s.head(<span class="prelude-val">Some</span>(<span class="number">1</span>))))
@@ -927,17 +965,17 @@
                                 <span class="kw">let </span>s = <span class="kw-2">&amp;</span>s[<span class="number">0</span>];
                                 s.implode().map(|ca| <span class="prelude-val">Some</span>(ca.into_series()))
                             }) <span class="kw">as </span>Arc&lt;<span class="kw">dyn </span>SeriesUdf&gt;)
-                        }
+                        },
                         AAggExpr::Quantile { .. } =&gt; {
                             <span class="macro">unreachable!</span>()
-                        }
+                        },
                         AAggExpr::Sum(<span class="kw">_</span>) =&gt; {
                             <span class="kw">let </span>state = <span class="kw-2">*</span>state;
                             SpecialEq::new(Arc::new(<span class="kw">move </span>|s: <span class="kw-2">&amp;mut </span>[Series]| {
                                 <span class="kw">let </span>s = std::mem::take(<span class="kw-2">&amp;mut </span>s[<span class="number">0</span>]);
                                 parallel_op_series(|s| <span class="prelude-val">Ok</span>(s.sum_as_series()), s, <span class="prelude-val">None</span>, state)
                             }) <span class="kw">as </span>Arc&lt;<span class="kw">dyn </span>SeriesUdf&gt;)
-                        }
+                        },
                         AAggExpr::Count(<span class="kw">_</span>) =&gt; SpecialEq::new(Arc::new(<span class="kw">move </span>|s: <span class="kw-2">&amp;mut </span>[Series]| {
                             <span class="kw">let </span>s = std::mem::take(<span class="kw-2">&amp;mut </span>s[<span class="number">0</span>]);
                             <span class="kw">let </span>count = s.len();
@@ -951,24 +989,24 @@
                                 <span class="kw">let </span>s = std::mem::take(<span class="kw-2">&amp;mut </span>s[<span class="number">0</span>]);
                                 <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(s.std_as_series(ddof)))
                             }) <span class="kw">as </span>Arc&lt;<span class="kw">dyn </span>SeriesUdf&gt;)
-                        }
+                        },
                         AAggExpr::Var(<span class="kw">_</span>, ddof) =&gt; {
                             SpecialEq::new(Arc::new(<span class="kw">move </span>|s: <span class="kw-2">&amp;mut </span>[Series]| {
                                 <span class="kw">let </span>s = std::mem::take(<span class="kw-2">&amp;mut </span>s[<span class="number">0</span>]);
                                 <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(s.var_as_series(ddof)))
                             }) <span class="kw">as </span>Arc&lt;<span class="kw">dyn </span>SeriesUdf&gt;)
-                        }
+                        },
                         AAggExpr::AggGroups(<span class="kw">_</span>) =&gt; {
                             <span class="macro">panic!</span>(<span class="string">&quot;agg groups expression only supported in aggregation context&quot;</span>)
-                        }
+                        },
                     };
                     <span class="prelude-val">Ok</span>(Arc::new(ApplyExpr::new_minimal(
                         <span class="macro">vec!</span>[input],
                         function,
                         node_to_expr(expression, expr_arena),
-                        ApplyOptions::ApplyFlat,
+                        ApplyOptions::ElementWise,
                     )))
-                }
+                },
                 <span class="kw">_ </span>=&gt; {
                     <span class="kw">if let </span>AAggExpr::Quantile {
                         expr,
@@ -992,9 +1030,9 @@
                         .transpose()<span class="question-mark">?</span>;
                     <span class="kw">let </span>agg_method: GroupByMethod = agg.into();
                     <span class="prelude-val">Ok</span>(Arc::new(AggregationExpr::new(input, agg_method, field)))
-                }
+                },
             }
-        }
+        },
         Cast {
             expr,
             data_type,
@@ -1007,22 +1045,30 @@
                 expr: node_to_expr(expression, expr_arena),
                 strict,
             }))
-        }
+        },
         Ternary {
             predicate,
             truthy,
             falsy,
         } =&gt; {
+            <span class="kw">let </span><span class="kw-2">mut </span>lit_count = <span class="number">0u8</span>;
+            state.reset();
             <span class="kw">let </span>predicate = create_physical_expr(predicate, ctxt, expr_arena, schema, state)<span class="question-mark">?</span>;
+            lit_count += state.local.has_lit <span class="kw">as </span>u8;
+            state.reset();
             <span class="kw">let </span>truthy = create_physical_expr(truthy, ctxt, expr_arena, schema, state)<span class="question-mark">?</span>;
+            lit_count += state.local.has_lit <span class="kw">as </span>u8;
+            state.reset();
             <span class="kw">let </span>falsy = create_physical_expr(falsy, ctxt, expr_arena, schema, state)<span class="question-mark">?</span>;
+            lit_count += state.local.has_lit <span class="kw">as </span>u8;
             <span class="prelude-val">Ok</span>(Arc::new(TernaryExpr::new(
                 predicate,
                 truthy,
                 falsy,
                 node_to_expr(expression, expr_arena),
+                lit_count &lt; <span class="number">2</span>,
             )))
-        }
+        },
         AnonymousFunction {
             input,
             function,
@@ -1030,7 +1076,7 @@
             options,
         } =&gt; {
             <span class="kw">let </span>is_reducing_aggregation =
-                options.auto_explode &amp;&amp; <span class="macro">matches!</span>(options.collect_groups, ApplyOptions::ApplyGroups);
+                options.returns_scalar &amp;&amp; <span class="macro">matches!</span>(options.collect_groups, ApplyOptions::GroupWise);
             <span class="comment">// will be reset in the function so get that here
             </span><span class="kw">let </span>has_window = state.local.has_window;
             <span class="kw">let </span>input = create_physical_expressions_check_state(
@@ -1045,18 +1091,15 @@
                 },
             )<span class="question-mark">?</span>;
 
-            <span class="prelude-val">Ok</span>(Arc::new(ApplyExpr {
-                inputs: input,
+            <span class="prelude-val">Ok</span>(Arc::new(ApplyExpr::new(
+                input,
                 function,
-                expr: node_to_expr(expression, expr_arena),
-                collect_groups: options.collect_groups,
-                auto_explode: options.auto_explode,
-                allow_rename: options.allow_rename,
-                pass_name_to_apply: options.pass_name_to_apply,
-                input_schema: schema.cloned(),
-                allow_threading: !state.has_cache,
-            }))
-        }
+                node_to_expr(expression, expr_arena),
+                options,
+                !state.has_cache,
+                schema.cloned(),
+            )))
+        },
         Function {
             input,
             function,
@@ -1064,7 +1107,7 @@
             ..
         } =&gt; {
             <span class="kw">let </span>is_reducing_aggregation =
-                options.auto_explode &amp;&amp; <span class="macro">matches!</span>(options.collect_groups, ApplyOptions::ApplyGroups);
+                options.returns_scalar &amp;&amp; <span class="macro">matches!</span>(options.collect_groups, ApplyOptions::GroupWise);
             <span class="comment">// will be reset in the function so get that here
             </span><span class="kw">let </span>has_window = state.local.has_window;
             <span class="kw">let </span>input = create_physical_expressions_check_state(
@@ -1079,18 +1122,15 @@
                 },
             )<span class="question-mark">?</span>;
 
-            <span class="prelude-val">Ok</span>(Arc::new(ApplyExpr {
-                inputs: input,
-                function: function.into(),
-                expr: node_to_expr(expression, expr_arena),
-                collect_groups: options.collect_groups,
-                auto_explode: options.auto_explode,
-                allow_rename: options.allow_rename,
-                pass_name_to_apply: options.pass_name_to_apply,
-                input_schema: schema.cloned(),
-                allow_threading: !state.has_cache,
-            }))
-        }
+            <span class="prelude-val">Ok</span>(Arc::new(ApplyExpr::new(
+                input,
+                function.into(),
+                node_to_expr(expression, expr_arena),
+                options,
+                !state.has_cache,
+                schema.cloned(),
+            )))
+        },
         Slice {
             input,
             offset,
@@ -1106,7 +1146,7 @@
                 length,
                 expr: node_to_expr(expression, expr_arena),
             }))
-        }
+        },
         Explode(expr) =&gt; {
             <span class="kw">let </span>input = create_physical_expr(expr, ctxt, expr_arena, schema, state)<span class="question-mark">?</span>;
             <span class="kw">let </span>function =
@@ -1116,18 +1156,9 @@
                 <span class="macro">vec!</span>[input],
                 function,
                 node_to_expr(expression, expr_arena),
-                ApplyOptions::ApplyGroups,
+                ApplyOptions::GroupWise,
             )))
-        }
-        Cache { input, id } =&gt; {
-            state.has_cache = <span class="bool-val">true</span>;
-            <span class="kw">let </span>input = create_physical_expr(input, ctxt, expr_arena, schema, state)<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(Arc::new(CacheExpr::new(
-                input,
-                node_to_expr(expression, expr_arena),
-                id,
-            )))
-        }
+        },
         Wildcard =&gt; <span class="macro">panic!</span>(<span class="string">&quot;should be no wildcard at this point&quot;</span>),
         Nth(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;should be no nth at this point&quot;</span>),
     }
@@ -1175,11 +1206,12 @@
 
     <span class="kw">let </span><span class="kw-2">mut </span>iter = chunks.into_iter();
     <span class="kw">let </span>first = iter.next().unwrap();
-    <span class="kw">let </span>out = iter.fold(first, |<span class="kw-2">mut </span>acc, s| {
-        acc.append(<span class="kw-2">&amp;</span>s).unwrap();
+    <span class="kw">let </span>dtype = first.dtype();
+    <span class="kw">let </span>out = iter.fold(first.to_physical_repr().into_owned(), |<span class="kw-2">mut </span>acc, s| {
+        acc.append(<span class="kw-2">&amp;</span>s.to_physical_repr()).unwrap();
         acc
     });
 
-    f(out).map(<span class="prelude-val">Some</span>)
+    <span class="kw">unsafe </span>{ f(out.cast_unchecked(dtype).unwrap()).map(<span class="prelude-val">Some</span>) }
 }
 </code></pre></div></section></main></body></html>

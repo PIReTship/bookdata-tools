@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ErrorKind"],"struct":["Error","StackTrace","StackTraceElement"],"trait":["ErrorSource","ResultExt"],"type":["Result"]};

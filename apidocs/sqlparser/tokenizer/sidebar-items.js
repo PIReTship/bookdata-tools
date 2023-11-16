@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["Token","Whitespace"],"struct":["Location","TokenWithLocation","Tokenizer","TokenizerError","Word"]};

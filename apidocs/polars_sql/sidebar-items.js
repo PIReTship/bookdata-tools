@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["keywords"],"struct":["SQLContext"]};

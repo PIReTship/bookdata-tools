@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-io-0.30.0/src/csv/buffer.rs`."><title>buffer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="polars_io" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../polars_io/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-io-0.34.2/src/csv/buffer.rs`."><title>buffer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="polars_io" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../polars_io/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -814,14 +814,41 @@
 <a href="#814" id="814">814</a>
 <a href="#815" id="815">815</a>
 <a href="#816" id="816">816</a>
+<a href="#817" id="817">817</a>
+<a href="#818" id="818">818</a>
+<a href="#819" id="819">819</a>
+<a href="#820" id="820">820</a>
+<a href="#821" id="821">821</a>
+<a href="#822" id="822">822</a>
+<a href="#823" id="823">823</a>
+<a href="#824" id="824">824</a>
+<a href="#825" id="825">825</a>
+<a href="#826" id="826">826</a>
+<a href="#827" id="827">827</a>
+<a href="#828" id="828">828</a>
+<a href="#829" id="829">829</a>
+<a href="#830" id="830">830</a>
+<a href="#831" id="831">831</a>
+<a href="#832" id="832">832</a>
+<a href="#833" id="833">833</a>
+<a href="#834" id="834">834</a>
+<a href="#835" id="835">835</a>
+<a href="#836" id="836">836</a>
+<a href="#837" id="837">837</a>
+<a href="#838" id="838">838</a>
+<a href="#839" id="839">839</a>
+<a href="#840" id="840">840</a>
+<a href="#841" id="841">841</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>arrow::array::Utf8Array;
 <span class="kw">use </span>arrow::bitmap::MutableBitmap;
-<span class="kw">use </span>polars_arrow::prelude::FromDataUtf8;
+<span class="kw">use </span>arrow::legacy::prelude::FromDataUtf8;
 <span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
 <span class="attr">#[cfg(any(feature = <span class="string">&quot;dtype-datetime&quot;</span>, feature = <span class="string">&quot;dtype-date&quot;</span>))]
 </span><span class="kw">use </span>polars_time::chunkedarray::utf8::Pattern;
 <span class="attr">#[cfg(any(feature = <span class="string">&quot;dtype-datetime&quot;</span>, feature = <span class="string">&quot;dtype-date&quot;</span>))]
-</span><span class="kw">use </span>polars_time::prelude::utf8::infer::{infer_pattern_single, DatetimeInfer, StrpTimeParser};
+</span><span class="kw">use </span>polars_time::prelude::utf8::infer::{
+    infer_pattern_single, DatetimeInfer, StrpTimeParser, TryFromWithUnit,
+};
 
 <span class="kw">use </span><span class="kw">crate</span>::csv::parser::{is_whitespace, skip_whitespace};
 <span class="kw">use </span><span class="kw">crate</span>::csv::read_impl::RunningSize;
@@ -877,6 +904,7 @@
         ignore_errors: bool,
         _needs_escaping: bool,
         _missing_is_null: bool,
+        _time_unit: <span class="prelude-ty">Option</span>&lt;TimeUnit&gt;,
     ) -&gt; PolarsResult&lt;()&gt;;
 }
 
@@ -891,6 +919,7 @@
         ignore_errors: bool,
         needs_escaping: bool,
         _missing_is_null: bool,
+        _time_unit: <span class="prelude-ty">Option</span>&lt;TimeUnit&gt;,
     ) -&gt; PolarsResult&lt;()&gt; {
         <span class="kw">if </span>bytes.is_empty() {
             <span class="self">self</span>.append_null()
@@ -916,6 +945,7 @@
                             ignore_errors,
                             <span class="bool-val">false</span>, <span class="comment">// escaping was already done
                             </span>_missing_is_null,
+                            <span class="prelude-val">None</span>,
                         );
                     }
                     <span class="macro">polars_ensure!</span>(
@@ -923,7 +953,7 @@
                         ComputeError: <span class="string">&quot;remaining bytes non-empty&quot;</span>,
                     );
                     <span class="self">self</span>.append_null()
-                }
+                },
             };
         }
         <span class="prelude-val">Ok</span>(())
@@ -985,6 +1015,7 @@
         ignore_errors: bool,
         needs_escaping: bool,
         missing_is_null: bool,
+        _time_unit: <span class="prelude-ty">Option</span>&lt;TimeUnit&gt;,
     ) -&gt; PolarsResult&lt;()&gt; {
         <span class="kw">if </span>bytes.is_empty() {
             <span class="comment">// append null
@@ -1026,7 +1057,7 @@
                 </span><span class="kw">unsafe </span>{ <span class="self">self</span>.data.set_len(data_len + n_written) }
                 <span class="self">self</span>.offsets.push(<span class="self">self</span>.data.len() <span class="kw">as </span>i64);
                 <span class="self">self</span>.validity.push(<span class="bool-val">true</span>);
-            }
+            },
             <span class="bool-val">false </span>=&gt; {
                 <span class="kw">if </span><span class="macro">matches!</span>(<span class="self">self</span>.encoding, CsvEncoding::LossyUtf8) {
                     <span class="comment">// Safety:
@@ -1053,7 +1084,7 @@
                 } <span class="kw">else </span>{
                     <span class="macro">polars_bail!</span>(ComputeError: <span class="string">&quot;invalid utf-8 sequence&quot;</span>);
                 }
-            }
+            },
         }
 
         <span class="prelude-val">Ok</span>(())
@@ -1093,6 +1124,7 @@
         ignore_errors: bool,
         needs_escaping: bool,
         _missing_is_null: bool,
+        _time_unit: <span class="prelude-ty">Option</span>&lt;TimeUnit&gt;,
     ) -&gt; PolarsResult&lt;()&gt; {
         <span class="kw">if </span>bytes.is_empty() {
             <span class="self">self</span>.builder.append_null();
@@ -1176,6 +1208,7 @@
         ignore_errors: bool,
         needs_escaping: bool,
         _missing_is_null: bool,
+        _time_unit: <span class="prelude-ty">Option</span>&lt;TimeUnit&gt;,
     ) -&gt; PolarsResult&lt;()&gt; {
         <span class="kw">let </span>bytes = <span class="kw">if </span>needs_escaping {
             <span class="kw-2">&amp;</span>bytes[<span class="number">1</span>..bytes.len() - <span class="number">1</span>]
@@ -1200,7 +1233,7 @@
 
 <span class="attr">#[cfg(any(feature = <span class="string">&quot;dtype-datetime&quot;</span>, feature = <span class="string">&quot;dtype-date&quot;</span>))]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>DatetimeField&lt;T: PolarsNumericType&gt; {
-    compiled: <span class="prelude-ty">Option</span>&lt;DatetimeInfer&lt;T::Native&gt;&gt;,
+    compiled: <span class="prelude-ty">Option</span>&lt;DatetimeInfer&lt;T&gt;&gt;,
     builder: PrimitiveChunkedBuilder&lt;T&gt;,
 }
 
@@ -1219,56 +1252,59 @@
 </span><span class="kw">fn </span>slow_datetime_parser&lt;T&gt;(
     buf: <span class="kw-2">&amp;mut </span>DatetimeField&lt;T&gt;,
     bytes: <span class="kw-2">&amp;</span>[u8],
+    time_unit: <span class="prelude-ty">Option</span>&lt;TimeUnit&gt;,
     ignore_errors: bool,
 ) -&gt; PolarsResult&lt;()&gt;
 <span class="kw">where
     </span>T: PolarsNumericType,
-    DatetimeInfer&lt;T::Native&gt;: TryFrom&lt;Pattern&gt;,
+    DatetimeInfer&lt;T&gt;: TryFromWithUnit&lt;Pattern&gt;,
 {
     <span class="kw">let </span>val = <span class="kw">if </span>bytes.is_ascii() {
         <span class="comment">// Safety:
         // we just checked it is ascii
         </span><span class="kw">unsafe </span>{ std::str::from_utf8_unchecked(bytes) }
-    } <span class="kw">else if </span>ignore_errors {
-        buf.builder.append_null();
-        <span class="kw">return </span><span class="prelude-val">Ok</span>(());
-    } <span class="kw">else if </span>!ignore_errors &amp;&amp; std::str::from_utf8(bytes).is_err() {
-        <span class="macro">polars_bail!</span>(ComputeError: <span class="string">&quot;invalid utf-8 sequence&quot;</span>);
     } <span class="kw">else </span>{
-        buf.builder.append_null();
-        <span class="kw">return </span><span class="prelude-val">Ok</span>(());
-    };
-
-    <span class="kw">match </span><span class="kw-2">&amp;</span>buf.compiled {
-        <span class="prelude-val">Some</span>(compiled) =&gt; <span class="kw">match </span>DatetimeInfer::&lt;T::Native&gt;::try_from(compiled.pattern) {
-            <span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>infer) =&gt; {
-                <span class="kw">let </span>parsed = infer.parse(val);
-                buf.compiled = <span class="prelude-val">Some</span>(infer);
-                buf.builder.append_option(parsed);
-                <span class="prelude-val">Ok</span>(())
-            }
+        <span class="kw">match </span>std::str::from_utf8(bytes) {
+            <span class="prelude-val">Ok</span>(val) =&gt; val,
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
-                buf.builder.append_null();
-                <span class="prelude-val">Ok</span>(())
-            }
-        },
-        <span class="prelude-val">None </span>=&gt; <span class="kw">match </span>infer_pattern_single(val) {
-            <span class="prelude-val">None </span>=&gt; {
-                buf.builder.append_null();
-                <span class="prelude-val">Ok</span>(())
-            }
-            <span class="prelude-val">Some</span>(pattern) =&gt; <span class="kw">match </span>DatetimeInfer::&lt;T::Native&gt;::try_from(pattern) {
-                <span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>infer) =&gt; {
-                    <span class="kw">let </span>parsed = infer.parse(val);
-                    buf.compiled = <span class="prelude-val">Some</span>(infer);
-                    buf.builder.append_option(parsed);
-                    <span class="prelude-val">Ok</span>(())
-                }
-                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
+                <span class="kw">if </span>ignore_errors {
                     buf.builder.append_null();
-                    <span class="prelude-val">Ok</span>(())
+                    <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+                } <span class="kw">else </span>{
+                    <span class="macro">polars_bail!</span>(ComputeError: <span class="string">&quot;invalid utf-8 sequence&quot;</span>);
                 }
             },
+        }
+    };
+
+    <span class="kw">let </span>pattern = <span class="kw">match </span><span class="kw-2">&amp;</span>buf.compiled {
+        <span class="prelude-val">Some</span>(compiled) =&gt; compiled.pattern,
+        <span class="prelude-val">None </span>=&gt; <span class="kw">match </span>infer_pattern_single(val) {
+            <span class="prelude-val">Some</span>(pattern) =&gt; pattern,
+            <span class="prelude-val">None </span>=&gt; {
+                <span class="kw">if </span>ignore_errors {
+                    buf.builder.append_null();
+                    <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+                } <span class="kw">else </span>{
+                    <span class="macro">polars_bail!</span>(ComputeError: <span class="string">&quot;could not find a &#39;date/datetime&#39; pattern for {}&quot;</span>, val)
+                }
+            },
+        },
+    };
+    <span class="kw">match </span>DatetimeInfer::try_from_with_unit(pattern, time_unit) {
+        <span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>infer) =&gt; {
+            <span class="kw">let </span>parsed = infer.parse(val);
+            buf.compiled = <span class="prelude-val">Some</span>(infer);
+            buf.builder.append_option(parsed);
+            <span class="prelude-val">Ok</span>(())
+        },
+        <span class="prelude-val">Err</span>(err) =&gt; {
+            <span class="kw">if </span>ignore_errors {
+                buf.builder.append_null();
+                <span class="prelude-val">Ok</span>(())
+            } <span class="kw">else </span>{
+                <span class="prelude-val">Err</span>(err)
+            }
         },
     }
 }
@@ -1277,7 +1313,7 @@
 </span><span class="kw">impl</span>&lt;T&gt; ParsedBuffer <span class="kw">for </span>DatetimeField&lt;T&gt;
 <span class="kw">where
     </span>T: PolarsNumericType,
-    DatetimeInfer&lt;T::Native&gt;: TryFrom&lt;Pattern&gt; + StrpTimeParser&lt;T::Native&gt;,
+    DatetimeInfer&lt;T&gt;: TryFromWithUnit&lt;Pattern&gt; + StrpTimeParser&lt;T::Native&gt;,
 {
     <span class="attr">#[inline]
     </span><span class="kw">fn </span>parse_bytes(
@@ -1286,25 +1322,26 @@
         ignore_errors: bool,
         needs_escaping: bool,
         _missing_is_null: bool,
+        time_unit: <span class="prelude-ty">Option</span>&lt;TimeUnit&gt;,
     ) -&gt; PolarsResult&lt;()&gt; {
         <span class="kw">if </span>needs_escaping &amp;&amp; bytes.len() &gt; <span class="number">2 </span>{
             bytes = <span class="kw-2">&amp;</span>bytes[<span class="number">1</span>..bytes.len() - <span class="number">1</span>]
         }
 
         <span class="kw">match </span><span class="kw-2">&amp;mut </span><span class="self">self</span>.compiled {
-            <span class="prelude-val">None </span>=&gt; slow_datetime_parser(<span class="self">self</span>, bytes, ignore_errors),
+            <span class="prelude-val">None </span>=&gt; slow_datetime_parser(<span class="self">self</span>, bytes, time_unit, ignore_errors),
             <span class="prelude-val">Some</span>(compiled) =&gt; {
-                <span class="kw">match </span>compiled.parse_bytes(bytes) {
+                <span class="kw">match </span>compiled.parse_bytes(bytes, time_unit) {
                     <span class="prelude-val">Some</span>(parsed) =&gt; {
                         <span class="self">self</span>.builder.append_value(parsed);
                         <span class="prelude-val">Ok</span>(())
-                    }
+                    },
                     <span class="comment">// fall back on chrono parser
                     // this is a lot slower, we need to do utf8 checking and use
                     // the slower parser
-                    </span><span class="prelude-val">None </span>=&gt; slow_datetime_parser(<span class="self">self</span>, bytes, ignore_errors),
+                    </span><span class="prelude-val">None </span>=&gt; slow_datetime_parser(<span class="self">self</span>, bytes, time_unit, ignore_errors),
                 }
-            }
+            },
         }
     }
 }
@@ -1350,17 +1387,17 @@
                     ignore_errors,
                 )),
                 <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-datetime&quot;</span>)]
-                </span>DataType::Datetime(tu, offset) =&gt; Buffer::Datetime {
+                </span>DataType::Datetime(time_unit, time_zone) =&gt; Buffer::Datetime {
                     buf: DatetimeField::new(name, capacity),
-                    tu: <span class="kw-2">*</span>tu,
-                    offset: offset.clone(),
+                    time_unit: <span class="kw-2">*</span>time_unit,
+                    time_zone: time_zone.clone(),
                 },
                 <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-date&quot;</span>)]
                 </span><span class="kw-2">&amp;</span>DataType::Date =&gt; Buffer::Date(DatetimeField::new(name, capacity)),
                 <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-categorical&quot;</span>)]
                 </span><span class="kw-2">&amp;</span>DataType::Categorical(<span class="kw">_</span>) =&gt; {
                     Buffer::Categorical(CategoricalField::new(name, capacity, quote_char))
-                }
+                },
                 dt =&gt; <span class="macro">polars_bail!</span>(
                     ComputeError: <span class="string">&quot;unsupported data type when reading CSV: {} when reading CSV&quot;</span>, dt,
                 ),
@@ -1384,8 +1421,8 @@
     <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-datetime&quot;</span>)]
     </span>Datetime {
         buf: DatetimeField&lt;Int64Type&gt;,
-        tu: TimeUnit,
-        offset: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        time_unit: TimeUnit,
+        time_zone: <span class="prelude-ty">Option</span>&lt;TimeZone&gt;,
     },
     <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-date&quot;</span>)]
     </span>Date(DatetimeField&lt;Int32Type&gt;),
@@ -1404,11 +1441,15 @@
             Buffer::Float32(v) =&gt; v.finish().into_series(),
             Buffer::Float64(v) =&gt; v.finish().into_series(),
             <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-datetime&quot;</span>)]
-            </span>Buffer::Datetime { buf, tu, offset } =&gt; buf
+            </span>Buffer::Datetime {
+                buf,
+                time_unit,
+                time_zone,
+            } =&gt; buf
                 .builder
                 .finish()
                 .into_series()
-                .cast(<span class="kw-2">&amp;</span>DataType::Datetime(tu, offset))
+                .cast(<span class="kw-2">&amp;</span>DataType::Datetime(time_unit, time_zone))
                 .unwrap(),
             <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-date&quot;</span>)]
             </span>Buffer::Date(v) =&gt; v
@@ -1417,26 +1458,21 @@
                 .into_series()
                 .cast(<span class="kw-2">&amp;</span>DataType::Date)
                 .unwrap(),
-            <span class="comment">// Safety:
-            // We already checked utf8 validity during parsing
-            </span>Buffer::Utf8(<span class="kw-2">mut </span>v) =&gt; <span class="kw">unsafe </span>{
+
+            Buffer::Utf8(<span class="kw-2">mut </span>v) =&gt; {
                 v.offsets.shrink_to_fit();
                 v.data.shrink_to_fit();
 
                 <span class="kw">let </span><span class="kw-2">mut </span>valid_utf8 = <span class="bool-val">true</span>;
                 <span class="kw">if </span>delay_utf8_validation(v.encoding, v.ignore_errors) {
-                    <span class="comment">// check whole buffer for utf8
-                    // this alone is not enough
-                    // we must also check byte starts
-                    // see: https://github.com/jorgecarleitao/arrow2/pull/823
+                    <span class="comment">// Check if the whole buffer is utf8. This alone is not enough,
+                    // we must also check byte starts, see: https://github.com/jorgecarleitao/arrow2/pull/823
                     </span>simdutf8::basic::from_utf8(<span class="kw-2">&amp;</span>v.data)
                         .map_err(|<span class="kw">_</span>| <span class="macro">polars_err!</span>(ComputeError: <span class="string">&quot;invalid utf-8 sequence in csv&quot;</span>))<span class="question-mark">?</span>;
 
                     <span class="kw">for </span>i <span class="kw">in </span>(<span class="number">0</span>..v.offsets.len() - <span class="number">1</span>).step_by(<span class="number">2</span>) {
-                        <span class="comment">// Safety:
-                        // we iterate over offsets.len()
-                        </span><span class="kw">let </span>start = <span class="kw-2">*</span>v.offsets.get_unchecked(i) <span class="kw">as </span>usize;
-
+                        <span class="comment">// SAFETY: we iterate over offsets.len().
+                        </span><span class="kw">let </span>start = <span class="kw">unsafe </span>{ <span class="kw-2">*</span>v.offsets.get_unchecked(i) <span class="kw">as </span>usize };
                         <span class="kw">let </span>first = v.data.get(start);
 
                         <span class="comment">// A valid code-point iff it does not start with 0b10xxxxxx
@@ -1451,13 +1487,15 @@
                     <span class="macro">polars_ensure!</span>(valid_utf8, ComputeError: <span class="string">&quot;invalid utf-8 sequence in CSV&quot;</span>);
                 }
 
-                <span class="kw">let </span>arr = Utf8Array::&lt;i64&gt;::from_data_unchecked_default(
-                    v.offsets.into(),
-                    v.data.into(),
-                    <span class="prelude-val">Some</span>(v.validity.into()),
-                );
-                <span class="kw">let </span>ca = Utf8Chunked::from_chunks(<span class="kw-2">&amp;</span>v.name, <span class="macro">vec!</span>[Box::new(arr)]);
-                ca.into_series()
+                <span class="comment">// SAFETY: we already checked utf8 validity during parsing, or just now.
+                </span><span class="kw">let </span>arr = <span class="kw">unsafe </span>{
+                    Utf8Array::&lt;i64&gt;::from_data_unchecked_default(
+                        v.offsets.into(),
+                        v.data.into(),
+                        <span class="prelude-val">Some</span>(v.validity.into()),
+                    )
+                };
+                Utf8Chunked::with_chunk(v.name.as_str(), arr).into_series()
             },
             <span class="attr">#[allow(unused_variables)]
             </span>Buffer::Categorical(buf) =&gt; {
@@ -1469,7 +1507,7 @@
                 </span>{
                     <span class="macro">panic!</span>(<span class="string">&quot;activate &#39;dtype-categorical&#39; feature&quot;</span>)
                 }
-            }
+            },
         };
         <span class="prelude-val">Ok</span>(s)
     }
@@ -1486,7 +1524,7 @@
             Buffer::Utf8(v) =&gt; {
                 v.offsets.push(v.data.len() <span class="kw">as </span>i64);
                 v.validity.push(valid);
-            }
+            },
             <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-datetime&quot;</span>)]
             </span>Buffer::Datetime { buf, .. } =&gt; buf.builder.append_null(),
             <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-date&quot;</span>)]
@@ -1501,7 +1539,7 @@
                 </span>{
                     <span class="macro">panic!</span>(<span class="string">&quot;activate &#39;dtype-categorical&#39; feature&quot;</span>)
                 }
-            }
+            },
         };
     }
 
@@ -1516,7 +1554,7 @@
             Buffer::Float64(<span class="kw">_</span>) =&gt; DataType::Float64,
             Buffer::Utf8(<span class="kw">_</span>) =&gt; DataType::Utf8,
             <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-datetime&quot;</span>)]
-            </span>Buffer::Datetime { tu, .. } =&gt; DataType::Datetime(<span class="kw-2">*</span>tu, <span class="prelude-val">None</span>),
+            </span>Buffer::Datetime { time_unit, .. } =&gt; DataType::Datetime(<span class="kw-2">*</span>time_unit, <span class="prelude-val">None</span>),
             <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-date&quot;</span>)]
             </span>Buffer::Date(<span class="kw">_</span>) =&gt; DataType::Date,
             Buffer::Categorical(<span class="kw">_</span>) =&gt; {
@@ -1529,7 +1567,7 @@
                 </span>{
                     <span class="macro">panic!</span>(<span class="string">&quot;activate &#39;dtype-categorical&#39; feature&quot;</span>)
                 }
-            }
+            },
         }
     }
 
@@ -1549,6 +1587,7 @@
                 ignore_errors,
                 needs_escaping,
                 missing_is_null,
+                <span class="prelude-val">None</span>,
             ),
             Int32(buf) =&gt; &lt;PrimitiveChunkedBuilder&lt;Int32Type&gt; <span class="kw">as </span>ParsedBuffer&gt;::parse_bytes(
                 buf,
@@ -1556,6 +1595,7 @@
                 ignore_errors,
                 needs_escaping,
                 missing_is_null,
+                <span class="prelude-val">None</span>,
             ),
             Int64(buf) =&gt; &lt;PrimitiveChunkedBuilder&lt;Int64Type&gt; <span class="kw">as </span>ParsedBuffer&gt;::parse_bytes(
                 buf,
@@ -1563,6 +1603,7 @@
                 ignore_errors,
                 needs_escaping,
                 missing_is_null,
+                <span class="prelude-val">None</span>,
             ),
             UInt64(buf) =&gt; &lt;PrimitiveChunkedBuilder&lt;UInt64Type&gt; <span class="kw">as </span>ParsedBuffer&gt;::parse_bytes(
                 buf,
@@ -1570,6 +1611,7 @@
                 ignore_errors,
                 needs_escaping,
                 missing_is_null,
+                <span class="prelude-val">None</span>,
             ),
             UInt32(buf) =&gt; &lt;PrimitiveChunkedBuilder&lt;UInt32Type&gt; <span class="kw">as </span>ParsedBuffer&gt;::parse_bytes(
                 buf,
@@ -1577,6 +1619,7 @@
                 ignore_errors,
                 needs_escaping,
                 missing_is_null,
+                <span class="prelude-val">None</span>,
             ),
             Float32(buf) =&gt; &lt;PrimitiveChunkedBuilder&lt;Float32Type&gt; <span class="kw">as </span>ParsedBuffer&gt;::parse_bytes(
                 buf,
@@ -1584,6 +1627,7 @@
                 ignore_errors,
                 needs_escaping,
                 missing_is_null,
+                <span class="prelude-val">None</span>,
             ),
             Float64(buf) =&gt; &lt;PrimitiveChunkedBuilder&lt;Float64Type&gt; <span class="kw">as </span>ParsedBuffer&gt;::parse_bytes(
                 buf,
@@ -1591,6 +1635,7 @@
                 ignore_errors,
                 needs_escaping,
                 missing_is_null,
+                <span class="prelude-val">None</span>,
             ),
             Utf8(buf) =&gt; &lt;Utf8Field <span class="kw">as </span>ParsedBuffer&gt;::parse_bytes(
                 buf,
@@ -1598,15 +1643,19 @@
                 ignore_errors,
                 needs_escaping,
                 missing_is_null,
+                <span class="prelude-val">None</span>,
             ),
             <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-datetime&quot;</span>)]
-            </span>Datetime { buf, .. } =&gt; &lt;DatetimeField&lt;Int64Type&gt; <span class="kw">as </span>ParsedBuffer&gt;::parse_bytes(
-                buf,
-                bytes,
-                ignore_errors,
-                needs_escaping,
-                missing_is_null,
-            ),
+            </span>Datetime { buf, time_unit, .. } =&gt; {
+                &lt;DatetimeField&lt;Int64Type&gt; <span class="kw">as </span>ParsedBuffer&gt;::parse_bytes(
+                    buf,
+                    bytes,
+                    ignore_errors,
+                    needs_escaping,
+                    missing_is_null,
+                    <span class="prelude-val">Some</span>(<span class="kw-2">*</span>time_unit),
+                )
+            },
             <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-date&quot;</span>)]
             </span>Date(buf) =&gt; &lt;DatetimeField&lt;Int32Type&gt; <span class="kw">as </span>ParsedBuffer&gt;::parse_bytes(
                 buf,
@@ -1614,19 +1663,20 @@
                 ignore_errors,
                 needs_escaping,
                 missing_is_null,
+                <span class="prelude-val">None</span>,
             ),
             <span class="attr">#[allow(unused_variables)]
             </span>Categorical(buf) =&gt; {
                 <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-categorical&quot;</span>)]
                 </span>{
-                    buf.parse_bytes(bytes, ignore_errors, needs_escaping, missing_is_null)
+                    buf.parse_bytes(bytes, ignore_errors, needs_escaping, missing_is_null, <span class="prelude-val">None</span>)
                 }
 
                 <span class="attr">#[cfg(not(feature = <span class="string">&quot;dtype-categorical&quot;</span>))]
                 </span>{
                     <span class="macro">panic!</span>(<span class="string">&quot;activate &#39;dtype-categorical&#39; feature&quot;</span>)
                 }
-            }
+            },
         }
     }
 }

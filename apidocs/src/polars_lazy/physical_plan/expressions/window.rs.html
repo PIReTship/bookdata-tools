@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-lazy-0.30.0/src/physical_plan/expressions/window.rs`."><title>window.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_lazy" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-lazy-0.34.2/src/physical_plan/expressions/window.rs`."><title>window.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_lazy" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -822,19 +822,26 @@
 <a href="#822" id="822">822</a>
 <a href="#823" id="823">823</a>
 <a href="#824" id="824">824</a>
+<a href="#825" id="825">825</a>
+<a href="#826" id="826">826</a>
+<a href="#827" id="827">827</a>
+<a href="#828" id="828">828</a>
+<a href="#829" id="829">829</a>
+<a href="#830" id="830">830</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt::Write;
 <span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use </span>polars_arrow::export::arrow::array::PrimitiveArray;
+<span class="kw">use </span>arrow::array::PrimitiveArray;
 <span class="kw">use </span>polars_core::export::arrow::bitmap::Bitmap;
-<span class="kw">use </span>polars_core::frame::groupby::{GroupBy, GroupsProxy};
-<span class="kw">use </span>polars_core::frame::hash_join::{
-    default_join_ids, private_left_join_multiple_keys, JoinOptIds,
-};
+<span class="kw">use </span>polars_core::frame::group_by::{GroupBy, GroupsProxy};
 <span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>polars_core::series::IsSorted;
 <span class="kw">use </span>polars_core::utils::_split_offsets;
 <span class="kw">use </span>polars_core::{downcast_as_macro_arg_physical, POOL};
+<span class="kw">use </span>polars_ops::frame::join::{
+    default_join_ids, private_left_join_multiple_keys, ChunkJoinOptIds, JoinValidation,
+};
+<span class="kw">use </span>polars_ops::frame::SeriesJoin;
 <span class="kw">use </span>polars_utils::format_smartstring;
 <span class="kw">use </span>polars_utils::sort::perfect_sort;
 <span class="kw">use </span>polars_utils::sync::SyncPtr;
@@ -853,7 +860,7 @@
     <span class="doccomment">/// A function Expr. i.e. Mean, Median, Max, etc.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) function: Expr,
     <span class="kw">pub</span>(<span class="kw">crate</span>) phys_function: Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) options: WindowOptions,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) mapping: WindowMapping,
     <span class="kw">pub</span>(<span class="kw">crate</span>) expr: Expr,
 }
 
@@ -894,12 +901,12 @@
                     <span class="kw">for </span>g <span class="kw">in </span>groups.all() {
                         idx_mapping.extend(g.iter().copied().zip(<span class="kw-2">&amp;mut </span>iter));
                     }
-                }
+                },
                 GroupsProxy::Slice { groups, .. } =&gt; {
                     <span class="kw">for </span><span class="kw-2">&amp;</span>[first, len] <span class="kw">in </span>groups {
                         idx_mapping.extend((first..first + len).zip(<span class="kw-2">&amp;mut </span>iter));
                     }
-                }
+                },
             }
         }
         <span class="comment">// groups are changed, we use the new group indexes as arguments of the arg_sort
@@ -911,12 +918,12 @@
                     <span class="kw">for </span>g <span class="kw">in </span>groups.all() {
                         original_idx.extend_from_slice(g)
                     }
-                }
+                },
                 GroupsProxy::Slice { groups, .. } =&gt; {
                     <span class="kw">for </span><span class="kw-2">&amp;</span>[first, len] <span class="kw">in </span>groups {
                         original_idx.extend(first..first + len)
                     }
-                }
+                },
             };
 
             <span class="kw">let </span><span class="kw-2">mut </span>original_idx_iter = original_idx.iter().copied();
@@ -926,12 +933,12 @@
                     <span class="kw">for </span>g <span class="kw">in </span>groups.all() {
                         idx_mapping.extend(g.iter().copied().zip(<span class="kw-2">&amp;mut </span>original_idx_iter));
                     }
-                }
+                },
                 GroupsProxy::Slice { groups, .. } =&gt; {
                     <span class="kw">for </span><span class="kw-2">&amp;</span>[first, len] <span class="kw">in </span>groups {
                         idx_mapping.extend((first..first + len).zip(<span class="kw-2">&amp;mut </span>original_idx_iter));
                     }
-                }
+                },
             }
             original_idx.clear();
             take_idx = original_idx;
@@ -944,7 +951,7 @@
 
         <span class="comment">// Safety:
         // groups should always be in bounds.
-        </span><span class="kw">unsafe </span>{ flattened.take_unchecked(<span class="kw-2">&amp;</span>idx) }
+        </span><span class="kw">unsafe </span>{ <span class="prelude-val">Ok</span>(flattened.take_unchecked(<span class="kw-2">&amp;</span>idx)) }
     }
 
     <span class="attr">#[allow(clippy::too_many_arguments)]
@@ -954,7 +961,7 @@
         out_column: Series,
         flattened: Series,
         <span class="kw-2">mut </span>ac: AggregationContext,
-        groupby_columns: <span class="kw-2">&amp;</span>[Series],
+        group_by_columns: <span class="kw-2">&amp;</span>[Series],
         gb: GroupBy,
         state: <span class="kw-2">&amp;</span>ExecutionState,
         cache_key: <span class="kw-2">&amp;</span>str,
@@ -999,7 +1006,7 @@
 
             <span class="kw">if let </span><span class="prelude-val">Some</span>((output, group)) = non_matching_group {
                 <span class="kw">let </span>first = group.first();
-                <span class="kw">let </span>group = groupby_columns
+                <span class="kw">let </span>group = group_by_columns
                     .iter()
                     .map(|s| <span class="macro">format_smartstring!</span>(<span class="string">&quot;{}&quot;</span>, s.get(first <span class="kw">as </span>usize).unwrap()))
                     .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
@@ -1050,8 +1057,8 @@
                     <span class="kw">match </span>e {
                         Expr::Agg(AggExpr::Implode(<span class="kw">_</span>)) =&gt; {
                             finishes_list = <span class="bool-val">true</span>;
-                        }
-                        Expr::Alias(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; {}
+                        },
+                        Expr::Alias(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; {},
                         <span class="kw">_ </span>=&gt; <span class="kw">break</span>,
                     }
                 }
@@ -1073,8 +1080,8 @@
                     <span class="kw">match </span>e {
                         Expr::Column(<span class="kw">_</span>) =&gt; {
                             simple_col = <span class="bool-val">true</span>;
-                        }
-                        Expr::Alias(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; {}
+                        },
+                        Expr::Alias(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; {},
                         <span class="kw">_ </span>=&gt; <span class="kw">break</span>,
                     }
                 }
@@ -1094,8 +1101,8 @@
                     <span class="kw">match </span>e {
                         Expr::Agg(<span class="kw">_</span>) =&gt; {
                             agg_col = <span class="bool-val">true</span>;
-                        }
-                        Expr::Alias(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; {}
+                        },
+                        Expr::Alias(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; {},
                         <span class="kw">_ </span>=&gt; <span class="kw">break</span>,
                     }
                 }
@@ -1118,20 +1125,20 @@
                     <span class="kw">match </span>e {
                         Expr::Ternary { .. } | Expr::BinaryExpr { .. } =&gt; {
                             has_arity = <span class="bool-val">true</span>;
-                        }
-                        Expr::Alias(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; {}
+                        },
+                        Expr::Alias(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; {},
                         Expr::Agg(<span class="kw">_</span>) =&gt; {
                             agg_col = <span class="bool-val">true</span>;
-                        }
+                        },
                         Expr::Function { options, .. }
                         | Expr::AnonymousFunction { options, .. } =&gt; {
-                            <span class="kw">if </span>options.auto_explode
-                                &amp;&amp; <span class="macro">matches!</span>(options.collect_groups, ApplyOptions::ApplyGroups)
+                            <span class="kw">if </span>options.returns_scalar
+                                &amp;&amp; <span class="macro">matches!</span>(options.collect_groups, ApplyOptions::GroupWise)
                             {
                                 agg_col = <span class="bool-val">true</span>;
                             }
-                        }
-                        <span class="kw">_ </span>=&gt; {}
+                        },
+                        <span class="kw">_ </span>=&gt; {},
                     }
                 }
             }
@@ -1145,7 +1152,7 @@
         sorted_keys: bool,
         gb: <span class="kw-2">&amp;</span>GroupBy,
     ) -&gt; PolarsResult&lt;MapStrategy&gt; {
-        <span class="kw">match </span>(<span class="self">self</span>.options.mapping, agg_state) {
+        <span class="kw">match </span>(<span class="self">self</span>.mapping, agg_state) {
             <span class="comment">// Explode
             // `(col(&quot;x&quot;).sum() * col(&quot;y&quot;)).list().over(&quot;groups&quot;).flatten()`
             </span>(WindowMapping::Explode, <span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(MapStrategy::Explode),
@@ -1154,7 +1161,7 @@
             // (false, false, _) =&gt; Ok(MapStrategy::Join),
             // aggregations
             //`sum(&quot;foo&quot;).over(&quot;groups&quot;)`
-            </span>(<span class="kw">_</span>, AggState::AggregatedFlat(<span class="kw">_</span>)) =&gt; <span class="prelude-val">Ok</span>(MapStrategy::Join),
+            </span>(<span class="kw">_</span>, AggState::AggregatedScalar(<span class="kw">_</span>)) =&gt; <span class="prelude-val">Ok</span>(MapStrategy::Join),
             <span class="comment">// no explicit aggregations, map over the groups
             //`(col(&quot;x&quot;).sum() * col(&quot;y&quot;)).over(&quot;groups&quot;)`
             </span>(WindowMapping::Join, AggState::AggregatedList(<span class="kw">_</span>)) =&gt; <span class="prelude-val">Ok</span>(MapStrategy::Join),
@@ -1172,7 +1179,7 @@
                 } <span class="kw">else </span>{
                     <span class="prelude-val">Ok</span>(MapStrategy::Map)
                 }
-            }
+            },
             <span class="comment">// no aggregations, just return column
             // or an aggregation that has been flattened
             // we have to check which one
@@ -1185,7 +1192,7 @@
                 } <span class="kw">else </span>{
                     <span class="prelude-val">Ok</span>(MapStrategy::Map)
                 }
-            }
+            },
             (WindowMapping::Join, AggState::NotAggregated(<span class="kw">_</span>)) =&gt; <span class="prelude-val">Ok</span>(MapStrategy::Join),
             <span class="comment">// literals, do nothing and let broadcast
             </span>(<span class="kw">_</span>, AggState::Literal(<span class="kw">_</span>)) =&gt; <span class="prelude-val">Ok</span>(MapStrategy::Nothing),
@@ -1195,13 +1202,13 @@
 
 <span class="kw">impl </span>PhysicalExpr <span class="kw">for </span>WindowExpr {
     <span class="comment">// Note: this was first implemented with expression evaluation but this performed really bad.
-    // Therefore we choose the groupby -&gt; apply -&gt; self join approach
+    // Therefore we choose the group_by -&gt; apply -&gt; self join approach
 
-    // This first cached the groupby and the join tuples, but rayon under a mutex leads to deadlocks:
+    // This first cached the group_by and the join tuples, but rayon under a mutex leads to deadlocks:
     // https://github.com/rayon-rs/rayon/issues/592
     </span><span class="kw">fn </span>evaluate(<span class="kw-2">&amp;</span><span class="self">self</span>, df: <span class="kw-2">&amp;</span>DataFrame, state: <span class="kw-2">&amp;</span>ExecutionState) -&gt; PolarsResult&lt;Series&gt; {
         <span class="comment">// This method does the following:
-        // 1. determine groupby tuples based on the group_column
+        // 1. determine group_by tuples based on the group_column
         // 2. apply an aggregation function
         // 3. join the results back to the original dataframe
         //    this stores all group values on the original df size
@@ -1231,14 +1238,14 @@
             <span class="kw">return </span><span class="prelude-val">Ok</span>(Series::full_null(field.name(), <span class="number">0</span>, field.data_type()));
         }
 
-        <span class="kw">let </span>groupby_columns = <span class="self">self
+        <span class="kw">let </span>group_by_columns = <span class="self">self
             </span>.group_by
             .iter()
             .map(|e| e.evaluate(df, state))
             .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
 
         <span class="comment">// if the keys are sorted
-        </span><span class="kw">let </span>sorted_keys = groupby_columns.iter().all(|s| {
+        </span><span class="kw">let </span>sorted_keys = group_by_columns.iter().all(|s| {
             <span class="macro">matches!</span>(
                 s.is_sorted_flag(),
                 IsSorted::Ascending | IsSorted::Descending
@@ -1247,7 +1254,7 @@
         <span class="kw">let </span>explicit_list_agg = <span class="self">self</span>.is_explicit_list_agg();
 
         <span class="comment">// if we flatten this column we need to make sure the groups are sorted.
-        </span><span class="kw">let </span><span class="kw-2">mut </span>sort_groups = <span class="macro">matches!</span>(<span class="self">self</span>.options.mapping, WindowMapping::Explode) ||
+        </span><span class="kw">let </span><span class="kw-2">mut </span>sort_groups = <span class="macro">matches!</span>(<span class="self">self</span>.mapping, WindowMapping::Explode) ||
             <span class="comment">// if not
             //      `col().over()`
             // and not
@@ -1265,20 +1272,20 @@
         </span>}
 
         <span class="kw">let </span>create_groups = || {
-            <span class="kw">let </span>gb = df.groupby_with_series(groupby_columns.clone(), <span class="bool-val">true</span>, sort_groups)<span class="question-mark">?</span>;
+            <span class="kw">let </span>gb = df.group_by_with_series(group_by_columns.clone(), <span class="bool-val">true</span>, sort_groups)<span class="question-mark">?</span>;
             <span class="kw">let </span>out: PolarsResult&lt;GroupsProxy&gt; = <span class="prelude-val">Ok</span>(gb.take_groups());
             out
         };
 
         <span class="comment">// Try to get cached grouptuples
         </span><span class="kw">let </span>(<span class="kw-2">mut </span>groups, <span class="kw">_</span>, cache_key) = <span class="kw">if </span>state.cache_window() {
-            <span class="kw">let </span><span class="kw-2">mut </span>cache_key = String::with_capacity(<span class="number">32 </span>* groupby_columns.len());
+            <span class="kw">let </span><span class="kw-2">mut </span>cache_key = String::with_capacity(<span class="number">32 </span>* group_by_columns.len());
             <span class="macro">write!</span>(<span class="kw-2">&amp;mut </span>cache_key, <span class="string">&quot;{}&quot;</span>, state.branch_idx).unwrap();
-            <span class="kw">for </span>s <span class="kw">in </span><span class="kw-2">&amp;</span>groupby_columns {
+            <span class="kw">for </span>s <span class="kw">in </span><span class="kw-2">&amp;</span>group_by_columns {
                 cache_key.push_str(s.name());
             }
 
-            <span class="kw">let </span><span class="kw-2">mut </span>gt_map = state.group_tuples.lock().unwrap();
+            <span class="kw">let </span><span class="kw-2">mut </span>gt_map = state.group_tuples.write().unwrap();
             <span class="comment">// we run sequential and partitioned
             // and every partition run the cache should be empty so we expect a max of 1.
             </span><span class="macro">debug_assert!</span>(gt_map.len() &lt;= <span class="number">1</span>);
@@ -1312,8 +1319,14 @@
         </span><span class="kw">if </span>sort_groups || state.cache_window() {
             groups.sort()
         }
-        <span class="kw">let </span>gb = GroupBy::new(df, groupby_columns.clone(), groups, <span class="prelude-val">Some</span>(apply_columns));
+        <span class="kw">let </span>gb = GroupBy::new(df, group_by_columns.clone(), groups, <span class="prelude-val">Some</span>(apply_columns));
 
+        <span class="comment">// If the aggregation creates categoricals and `MapStrategy` is `Join`,
+        // the string cache was needed. So we hold it for that case.
+        // Worst case is that a categorical is created with indexes from the string
+        // cache which is fine, as the physical representation is undefined.
+        </span><span class="attr">#[cfg(feature = <span class="string">&quot;dtype-categorical&quot;</span>)]
+        </span><span class="kw">let </span>_sc = polars_core::StringCacheHolder::hold();
         <span class="kw">let </span><span class="kw-2">mut </span>ac = <span class="self">self</span>.run_aggregation(df, state, <span class="kw-2">&amp;</span>gb)<span class="question-mark">?</span>;
 
         <span class="kw">use </span>MapStrategy::<span class="kw-2">*</span>;
@@ -1325,7 +1338,7 @@
                     out.rename(name.as_ref());
                 }
                 <span class="prelude-val">Ok</span>(out)
-            }
+            },
             Explode =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>out = ac.aggregated().explode()<span class="question-mark">?</span>;
                 cache_gb(gb, state, <span class="kw-2">&amp;</span>cache_key);
@@ -1333,7 +1346,7 @@
                     out.rename(name.as_ref());
                 }
                 <span class="prelude-val">Ok</span>(out)
-            }
+            },
             Map =&gt; {
                 <span class="comment">// TODO!
                 // investigate if sorted arrays can be return directly
@@ -1349,12 +1362,12 @@
                     out_column,
                     flattened,
                     ac,
-                    <span class="kw-2">&amp;</span>groupby_columns,
+                    <span class="kw-2">&amp;</span>group_by_columns,
                     gb,
                     state,
                     <span class="kw-2">&amp;</span>cache_key,
                 )
-            }
+            },
             Join =&gt; {
                 <span class="kw">let </span>out_column = ac.aggregated();
                 <span class="comment">// we try to flatten/extend the array by repeating the aggregated value n times
@@ -1370,19 +1383,22 @@
                     </span>(UpdateGroups::No, <span class="prelude-val">Some</span>(out)) =&gt; {
                         cache_gb(gb, state, <span class="kw-2">&amp;</span>cache_key);
                         <span class="prelude-val">Ok</span>(out)
-                    }
+                    },
                     (<span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
                         <span class="kw">let </span>keys = gb.keys();
                         cache_gb(gb, state, <span class="kw-2">&amp;</span>cache_key);
 
                         <span class="kw">let </span>get_join_tuples = || {
-                            <span class="kw">if </span>groupby_columns.len() == <span class="number">1 </span>{
+                            <span class="kw">if </span>group_by_columns.len() == <span class="number">1 </span>{
                                 <span class="comment">// group key from right column
                                 </span><span class="kw">let </span>right = <span class="kw-2">&amp;</span>keys[<span class="number">0</span>];
-                                groupby_columns[<span class="number">0</span>].hash_join_left(right).<span class="number">1
+                                group_by_columns[<span class="number">0</span>]
+                                    .hash_join_left(right, JoinValidation::ManyToMany)
+                                    .unwrap()
+                                    .<span class="number">1
                             </span>} <span class="kw">else </span>{
                                 <span class="kw">let </span>df_right = DataFrame::new_no_checks(keys);
-                                <span class="kw">let </span>df_left = DataFrame::new_no_checks(groupby_columns);
+                                <span class="kw">let </span>df_left = DataFrame::new_no_checks(group_by_columns);
                                 private_left_join_multiple_keys(<span class="kw-2">&amp;</span>df_left, <span class="kw-2">&amp;</span>df_right, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>).<span class="number">1
                             </span>}
                         };
@@ -1414,9 +1430,9 @@
                         }
 
                         <span class="prelude-val">Ok</span>(out)
-                    }
+                    },
                 }
-            }
+            },
         }
     }
 
@@ -1443,16 +1459,14 @@
     </span>}
 }
 
-<span class="kw">fn </span>materialize_column(join_opt_ids: <span class="kw-2">&amp;</span>JoinOptIds, out_column: <span class="kw-2">&amp;</span>Series) -&gt; Series {
+<span class="kw">fn </span>materialize_column(join_opt_ids: <span class="kw-2">&amp;</span>ChunkJoinOptIds, out_column: <span class="kw-2">&amp;</span>Series) -&gt; Series {
     <span class="attr">#[cfg(feature = <span class="string">&quot;chunked_ids&quot;</span>)]
     </span>{
-        <span class="kw">use </span>polars_arrow::export::arrow::Either;
+        <span class="kw">use </span>arrow::Either;
 
         <span class="kw">match </span>join_opt_ids {
             Either::Left(ids) =&gt; <span class="kw">unsafe </span>{
-                out_column.take_opt_iter_unchecked(
-                    <span class="kw-2">&amp;mut </span>ids.iter().map(|<span class="kw-2">&amp;</span>opt_i| opt_i.map(|i| i <span class="kw">as </span>usize)),
-                )
+                out_column.take_unchecked(<span class="kw-2">&amp;</span>ids.iter().copied().collect_ca(<span class="string">&quot;&quot;</span>))
             },
             Either::Right(ids) =&gt; <span class="kw">unsafe </span>{ out_column._take_opt_chunked_unchecked(ids) },
         }
@@ -1460,16 +1474,14 @@
 
     <span class="attr">#[cfg(not(feature = <span class="string">&quot;chunked_ids&quot;</span>))]
     </span><span class="kw">unsafe </span>{
-        out_column.take_opt_iter_unchecked(
-            <span class="kw-2">&amp;mut </span>join_opt_ids.iter().map(|<span class="kw-2">&amp;</span>opt_i| opt_i.map(|i| i <span class="kw">as </span>usize)),
-        )
+        out_column.take_unchecked(<span class="kw-2">&amp;</span>join_opt_ids.iter().copied().collect_ca(<span class="string">&quot;&quot;</span>))
     }
 }
 
 <span class="kw">fn </span>cache_gb(gb: GroupBy, state: <span class="kw-2">&amp;</span>ExecutionState, cache_key: <span class="kw-2">&amp;</span>str) {
     <span class="kw">if </span>state.cache_window() {
         <span class="kw">let </span>groups = gb.take_groups();
-        <span class="kw">let </span><span class="kw-2">mut </span>gt_map = state.group_tuples.lock().unwrap();
+        <span class="kw">let </span><span class="kw-2">mut </span>gt_map = state.group_tuples.write().unwrap();
         gt_map.insert(cache_key.to_string(), groups);
     }
 }
@@ -1511,15 +1523,15 @@
             <span class="kw">for </span>g <span class="kw">in </span>groups.all() {
                 idx_mapping.extend((<span class="kw-2">&amp;mut </span>iter).take(g.len()).zip(g.iter().copied()));
             }
-        }
+        },
         GroupsProxy::Slice { groups, .. } =&gt; {
             <span class="kw">for </span><span class="kw-2">&amp;</span>[first, len] <span class="kw">in </span>groups {
                 idx_mapping.extend((<span class="kw-2">&amp;mut </span>iter).take(len <span class="kw">as </span>usize).zip(first..first + len));
             }
-        }
+        },
     }
     <span class="kw">let </span><span class="kw-2">mut </span>values = Vec::with_capacity(len);
-    <span class="kw">let </span>ptr = values.as_mut_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>T::Native;
+    <span class="kw">let </span>ptr: <span class="kw-2">*mut </span>T::Native = values.as_mut_ptr();
     <span class="comment">// safety:
     // we will write from different threads but we will never alias.
     </span><span class="kw">let </span>sync_ptr_values = <span class="kw">unsafe </span>{ SyncPtr::new(ptr) };
@@ -1541,7 +1553,7 @@
                             }
                         })
                 })
-            }
+            },
             GroupsProxy::Slice { groups, .. } =&gt; {
                 <span class="comment">// this should always succeed as we don&#39;t expect any chunks after an aggregation
                 </span><span class="kw">let </span>agg_vals = ca.cont_slice().ok()<span class="question-mark">?</span>;
@@ -1559,7 +1571,7 @@
                             }
                         })
                 });
-            }
+            },
         }
 
         <span class="comment">// safety: we have written all slots
@@ -1593,11 +1605,11 @@
                                 <span class="prelude-val">Some</span>(v) =&gt; {
                                     <span class="kw-2">*</span>values_ptr.add(idx) = v;
                                     <span class="kw-2">*</span>validity_ptr.add(idx) = <span class="bool-val">true</span>;
-                                }
+                                },
                                 <span class="prelude-val">None </span>=&gt; {
                                     <span class="kw-2">*</span>values_ptr.add(idx) = T::Native::default();
                                     <span class="kw-2">*</span>validity_ptr.add(idx) = <span class="bool-val">false</span>;
-                                }
+                                },
                             };
                         }
                     }
@@ -1622,17 +1634,17 @@
                                     <span class="prelude-val">Some</span>(v) =&gt; {
                                         <span class="kw-2">*</span>values_ptr.add(idx) = v;
                                         <span class="kw-2">*</span>validity_ptr.add(idx) = <span class="bool-val">true</span>;
-                                    }
+                                    },
                                     <span class="prelude-val">None </span>=&gt; {
                                         <span class="kw-2">*</span>values_ptr.add(idx) = T::Native::default();
                                         <span class="kw-2">*</span>validity_ptr.add(idx) = <span class="bool-val">false</span>;
-                                    }
+                                    },
                                 };
                             }
                         }
                     }
                 })
-            }
+            },
         }
         <span class="comment">// safety: we have written all slots
         </span><span class="kw">unsafe </span>{ values.set_len(len) }

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["check_depth","limit_stack_depth","set_stack_depth_limit"],"struct":["StackDepthGuard","StackDepthLimitOverrideGuard","StackOverflowError"]};

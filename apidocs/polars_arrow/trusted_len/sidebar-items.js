@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":["FromIteratorReversed","PushUnchecked","TrustedLen"]};
+window.SIDEBAR_ITEMS = {"trait":["TrustedLen"]};

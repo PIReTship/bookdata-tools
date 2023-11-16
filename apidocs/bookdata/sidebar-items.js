@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["__rg_alloc","__rg_alloc_zeroed","__rg_dealloc","__rg_realloc","main"],"macro":["json_from_str"],"mod":["amazon","arrow","cleaning","cli","gender","goodreads","graph","ids","interactions","io","layout","marc","openlib","parsing","prelude","tsv","util"],"static":["GLOBAL"]};
+window.SIDEBAR_ITEMS = {"fn":["main"],"macro":["json_from_str"],"mod":["amazon","arrow","cleaning","cli","gender","goodreads","graph","ids","interactions","io","layout","marc","openlib","parsing","prelude","tsv","util"],"static":["GLOBAL"]};

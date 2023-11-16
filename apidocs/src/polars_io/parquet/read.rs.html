@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-io-0.30.0/src/parquet/read.rs`."><title>read.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="polars_io" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../polars_io/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-io-0.34.2/src/parquet/read.rs`."><title>read.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="polars_io" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../polars_io/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -316,25 +316,100 @@
 <a href="#316" id="316">316</a>
 <a href="#317" id="317">317</a>
 <a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
+<a href="#359" id="359">359</a>
+<a href="#360" id="360">360</a>
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::io::{Read, Seek};
 <span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>arrow::io::parquet::read;
 <span class="kw">use </span>arrow::io::parquet::write::FileMetaData;
-<span class="attr">#[cfg(feature = <span class="string">&quot;cloud&quot;</span>)]
-</span><span class="kw">use </span>polars_core::cloud::CloudOptions;
 <span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>polars_core::utils::accumulate_dataframes_vertical_unchecked;
 <span class="attr">#[cfg(feature = <span class="string">&quot;serde&quot;</span>)]
 </span><span class="kw">use </span>serde::{Deserialize, Serialize};
 
 <span class="kw">use </span><span class="kw">super</span>::read_impl::FetchRowGroupsFromMmapReader;
+<span class="attr">#[cfg(feature = <span class="string">&quot;cloud&quot;</span>)]
+</span><span class="kw">use </span><span class="kw">crate</span>::cloud::CloudOptions;
 <span class="kw">use </span><span class="kw">crate</span>::mmap::MmapBytesReader;
 <span class="attr">#[cfg(feature = <span class="string">&quot;cloud&quot;</span>)]
 </span><span class="kw">use </span><span class="kw">crate</span>::parquet::async_impl::FetchRowGroupsFromObjectStore;
 <span class="attr">#[cfg(feature = <span class="string">&quot;cloud&quot;</span>)]
 </span><span class="kw">use </span><span class="kw">crate</span>::parquet::async_impl::ParquetObjectStore;
-<span class="kw">use </span><span class="kw">crate</span>::parquet::read_impl::read_parquet;
 <span class="kw">pub use </span><span class="kw">crate</span>::parquet::read_impl::BatchedParquetReader;
+<span class="kw">use </span><span class="kw">crate</span>::parquet::read_impl::{materialize_hive_partitions, read_parquet};
 <span class="kw">use </span><span class="kw">crate</span>::predicates::PhysicalIoExpr;
 <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::RowCount;
@@ -363,9 +438,11 @@
     columns: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     projection: <span class="prelude-ty">Option</span>&lt;Vec&lt;usize&gt;&gt;,
     parallel: ParallelStrategy,
+    schema: <span class="prelude-ty">Option</span>&lt;SchemaRef&gt;,
     row_count: <span class="prelude-ty">Option</span>&lt;RowCount&gt;,
     low_memory: bool,
-    metadata: <span class="prelude-ty">Option</span>&lt;FileMetaData&gt;,
+    metadata: <span class="prelude-ty">Option</span>&lt;Arc&lt;FileMetaData&gt;&gt;,
+    hive_partition_columns: <span class="prelude-ty">Option</span>&lt;Vec&lt;Series&gt;&gt;,
     use_statistics: bool,
 }
 
@@ -378,8 +455,8 @@
         projection: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[usize]&gt;,
     ) -&gt; PolarsResult&lt;DataFrame&gt; {
         <span class="comment">// this path takes predicates and parallelism into account
-        </span><span class="kw">let </span>metadata = read::read_metadata(<span class="kw-2">&amp;mut </span><span class="self">self</span>.reader)<span class="question-mark">?</span>;
-        <span class="kw">let </span>schema = read::schema::infer_schema(<span class="kw-2">&amp;</span>metadata)<span class="question-mark">?</span>;
+        </span><span class="kw">let </span>metadata = <span class="self">self</span>.get_metadata()<span class="question-mark">?</span>.clone();
+        <span class="kw">let </span>schema = <span class="self">self</span>.schema()<span class="question-mark">?</span>;
 
         <span class="kw">let </span>rechunk = <span class="self">self</span>.rechunk;
         read_parquet(
@@ -388,14 +465,15 @@
             projection,
             <span class="kw-2">&amp;</span>schema,
             <span class="prelude-val">Some</span>(metadata),
-            predicate,
+            predicate.as_deref(),
             <span class="self">self</span>.parallel,
             <span class="self">self</span>.row_count,
             <span class="self">self</span>.use_statistics,
+            <span class="self">self</span>.hive_partition_columns.as_deref(),
         )
         .map(|<span class="kw-2">mut </span>df| {
             <span class="kw">if </span>rechunk {
-                df.align_chunks();
+                df.as_single_chunk_par();
             };
             df
         })
@@ -440,10 +518,24 @@
         <span class="self">self
     </span>}
 
+    <span class="doccomment">/// Set the [`Schema`] if already known. This must be exactly the same as
+    /// the schema in the file itself.
+    </span><span class="kw">pub fn </span>with_schema(<span class="kw-2">mut </span><span class="self">self</span>, schema: <span class="prelude-ty">Option</span>&lt;SchemaRef&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.schema = schema;
+        <span class="self">self
+    </span>}
+
     <span class="doccomment">/// [`Schema`] of the file.
-    </span><span class="kw">pub fn </span>schema(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; PolarsResult&lt;Schema&gt; {
-        <span class="kw">let </span>metadata = <span class="self">self</span>.get_metadata()<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(Schema::from_iter(<span class="kw-2">&amp;</span>read::infer_schema(metadata)<span class="question-mark">?</span>.fields))
+    </span><span class="kw">pub fn </span>schema(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; PolarsResult&lt;SchemaRef&gt; {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.schema {
+            <span class="prelude-val">Some</span>(schema) =&gt; <span class="prelude-val">Ok</span>(schema.clone()),
+            <span class="prelude-val">None </span>=&gt; {
+                <span class="kw">let </span>metadata = <span class="self">self</span>.get_metadata()<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(Arc::new(Schema::from_iter(
+                    <span class="kw-2">&amp;</span>read::infer_schema(metadata)<span class="question-mark">?</span>.fields,
+                )))
+            },
+        }
     }
 
     <span class="doccomment">/// Use statistics in the parquet to determine if pages
@@ -459,9 +551,14 @@
         <span class="prelude-val">Ok</span>(metadata.num_rows)
     }
 
-    <span class="kw">fn </span>get_metadata(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; PolarsResult&lt;<span class="kw-2">&amp;</span>FileMetaData&gt; {
+    <span class="kw">pub fn </span>with_hive_partition_columns(<span class="kw-2">mut </span><span class="self">self</span>, columns: <span class="prelude-ty">Option</span>&lt;Vec&lt;Series&gt;&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.hive_partition_columns = columns;
+        <span class="self">self
+    </span>}
+
+    <span class="kw">pub fn </span>get_metadata(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; PolarsResult&lt;<span class="kw-2">&amp;</span>FileMetaDataRef&gt; {
         <span class="kw">if </span><span class="self">self</span>.metadata.is_none() {
-            <span class="self">self</span>.metadata = <span class="prelude-val">Some</span>(read::read_metadata(<span class="kw-2">&amp;mut </span><span class="self">self</span>.reader)<span class="question-mark">?</span>);
+            <span class="self">self</span>.metadata = <span class="prelude-val">Some</span>(Arc::new(read::read_metadata(<span class="kw-2">&amp;mut </span><span class="self">self</span>.reader)<span class="question-mark">?</span>));
         }
         <span class="prelude-val">Ok</span>(<span class="self">self</span>.metadata.as_ref().unwrap())
     }
@@ -469,17 +566,21 @@
 
 <span class="kw">impl</span>&lt;R: MmapBytesReader + <span class="lifetime">&#39;static</span>&gt; ParquetReader&lt;R&gt; {
     <span class="kw">pub fn </span>batched(<span class="kw-2">mut </span><span class="self">self</span>, chunk_size: usize) -&gt; PolarsResult&lt;BatchedParquetReader&gt; {
-        <span class="kw">let </span>metadata = read::read_metadata(<span class="kw-2">&amp;mut </span><span class="self">self</span>.reader)<span class="question-mark">?</span>;
+        <span class="kw">let </span>metadata = <span class="self">self</span>.get_metadata()<span class="question-mark">?</span>.clone();
+        <span class="kw">let </span>schema = <span class="self">self</span>.schema()<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>row_group_fetcher = Box::new(FetchRowGroupsFromMmapReader::new(Box::new(<span class="self">self</span>.reader))<span class="question-mark">?</span>);
+        <span class="kw">let </span>row_group_fetcher = FetchRowGroupsFromMmapReader::new(Box::new(<span class="self">self</span>.reader))<span class="question-mark">?</span>.into();
         BatchedParquetReader::new(
             row_group_fetcher,
             metadata,
+            schema,
             <span class="self">self</span>.n_rows.unwrap_or(usize::MAX),
             <span class="self">self</span>.projection,
+            <span class="prelude-val">None</span>,
             <span class="self">self</span>.row_count,
             chunk_size,
             <span class="self">self</span>.use_statistics,
+            <span class="self">self</span>.hive_partition_columns,
         )
     }
 }
@@ -497,7 +598,9 @@
             row_count: <span class="prelude-val">None</span>,
             low_memory: <span class="bool-val">false</span>,
             metadata: <span class="prelude-val">None</span>,
+            schema: <span class="prelude-val">None</span>,
             use_statistics: <span class="bool-val">true</span>,
+            hive_partition_columns: <span class="prelude-val">None</span>,
         }
     }
 
@@ -507,11 +610,11 @@
     </span>}
 
     <span class="kw">fn </span>finish(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; PolarsResult&lt;DataFrame&gt; {
-        <span class="kw">let </span>metadata = read::read_metadata(<span class="kw-2">&amp;mut </span><span class="self">self</span>.reader)<span class="question-mark">?</span>;
-        <span class="kw">let </span>schema = read::schema::infer_schema(<span class="kw-2">&amp;</span>metadata)<span class="question-mark">?</span>;
+        <span class="kw">let </span>schema = <span class="self">self</span>.schema()<span class="question-mark">?</span>;
+        <span class="kw">let </span>metadata = <span class="self">self</span>.get_metadata()<span class="question-mark">?</span>.clone();
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(cols) = <span class="kw-2">&amp;</span><span class="self">self</span>.columns {
-            <span class="self">self</span>.projection = <span class="prelude-val">Some</span>(columns_to_projection(cols, <span class="kw-2">&amp;</span>schema)<span class="question-mark">?</span>);
+            <span class="self">self</span>.projection = <span class="prelude-val">Some</span>(columns_to_projection_pl_schema(cols, schema.as_ref())<span class="question-mark">?</span>);
         }
 
         read_parquet(
@@ -524,6 +627,7 @@
             <span class="self">self</span>.parallel,
             <span class="self">self</span>.row_count,
             <span class="self">self</span>.use_statistics,
+            <span class="self">self</span>.hive_partition_columns.as_deref(),
         )
         .map(|<span class="kw-2">mut </span>df| {
             <span class="kw">if </span><span class="self">self</span>.rechunk {
@@ -539,46 +643,43 @@
 </span><span class="attr">#[cfg(feature = <span class="string">&quot;cloud&quot;</span>)]
 </span><span class="kw">pub struct </span>ParquetAsyncReader {
     reader: ParquetObjectStore,
-    rechunk: bool,
     n_rows: <span class="prelude-ty">Option</span>&lt;usize&gt;,
+    rechunk: bool,
     projection: <span class="prelude-ty">Option</span>&lt;Vec&lt;usize&gt;&gt;,
+    predicate: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>PhysicalIoExpr&gt;&gt;,
     row_count: <span class="prelude-ty">Option</span>&lt;RowCount&gt;,
-    low_memory: bool,
     use_statistics: bool,
+    hive_partition_columns: <span class="prelude-ty">Option</span>&lt;Vec&lt;Series&gt;&gt;,
+    schema: <span class="prelude-ty">Option</span>&lt;SchemaRef&gt;,
 }
 
 <span class="attr">#[cfg(feature = <span class="string">&quot;cloud&quot;</span>)]
 </span><span class="kw">impl </span>ParquetAsyncReader {
-    <span class="kw">pub fn </span>from_uri(
+    <span class="kw">pub async fn </span>from_uri(
         uri: <span class="kw-2">&amp;</span>str,
         cloud_options: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>CloudOptions&gt;,
+        schema: <span class="prelude-ty">Option</span>&lt;SchemaRef&gt;,
+        metadata: <span class="prelude-ty">Option</span>&lt;Arc&lt;FileMetaData&gt;&gt;,
     ) -&gt; PolarsResult&lt;ParquetAsyncReader&gt; {
         <span class="prelude-val">Ok</span>(ParquetAsyncReader {
-            reader: ParquetObjectStore::from_uri(uri, cloud_options)<span class="question-mark">?</span>,
+            reader: ParquetObjectStore::from_uri(uri, cloud_options, metadata).<span class="kw">await</span><span class="question-mark">?</span>,
             rechunk: <span class="bool-val">false</span>,
             n_rows: <span class="prelude-val">None</span>,
             projection: <span class="prelude-val">None</span>,
             row_count: <span class="prelude-val">None</span>,
-            low_memory: <span class="bool-val">false</span>,
+            predicate: <span class="prelude-val">None</span>,
             use_statistics: <span class="bool-val">true</span>,
+            hive_partition_columns: <span class="prelude-val">None</span>,
+            schema,
         })
     }
 
-    <span class="doccomment">/// Fetch the file info in a synchronous way to for the query planning phase.
-    </span><span class="attr">#[tokio::main(flavor = <span class="string">&quot;current_thread&quot;</span>)]
-    </span><span class="kw">pub async fn </span>file_info(
-        uri: <span class="kw-2">&amp;</span>str,
-        options: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>CloudOptions&gt;,
-    ) -&gt; PolarsResult&lt;(Schema, usize)&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>reader = ParquetAsyncReader::from_uri(uri, options)<span class="question-mark">?</span>;
-        <span class="kw">let </span>schema = reader.schema().<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>num_rows = reader.num_rows().<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>((schema, num_rows))
+    <span class="kw">pub async fn </span>schema(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; PolarsResult&lt;SchemaRef&gt; {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.schema {
+            <span class="prelude-val">Some</span>(schema) =&gt; <span class="prelude-val">Ok</span>(schema.clone()),
+            <span class="prelude-val">None </span>=&gt; <span class="self">self</span>.reader.schema().<span class="kw">await</span>.map(Arc::new),
+        }
     }
-
-    <span class="kw">pub async fn </span>schema(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; PolarsResult&lt;Schema&gt; {
-        <span class="self">self</span>.reader.schema().<span class="kw">await
-    </span>}
     <span class="kw">pub async fn </span>num_rows(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; PolarsResult&lt;usize&gt; {
         <span class="self">self</span>.reader.num_rows().<span class="kw">await
     </span>}
@@ -598,13 +699,13 @@
         <span class="self">self
     </span>}
 
-    <span class="kw">pub fn </span>set_low_memory(<span class="kw-2">mut </span><span class="self">self</span>, low_memory: bool) -&gt; <span class="self">Self </span>{
-        <span class="self">self</span>.low_memory = low_memory;
+    <span class="kw">pub fn </span>with_projection(<span class="kw-2">mut </span><span class="self">self</span>, projection: <span class="prelude-ty">Option</span>&lt;Vec&lt;usize&gt;&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.projection = projection;
         <span class="self">self
     </span>}
 
-    <span class="kw">pub fn </span>with_projection(<span class="kw-2">mut </span><span class="self">self</span>, projection: <span class="prelude-ty">Option</span>&lt;Vec&lt;usize&gt;&gt;) -&gt; <span class="self">Self </span>{
-        <span class="self">self</span>.projection = projection;
+    <span class="kw">pub fn </span>with_predicate(<span class="kw-2">mut </span><span class="self">self</span>, predicate: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>PhysicalIoExpr&gt;&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.predicate = predicate;
         <span class="self">self
     </span>}
 
@@ -615,23 +716,70 @@
         <span class="self">self
     </span>}
 
-    <span class="attr">#[tokio::main(flavor = <span class="string">&quot;current_thread&quot;</span>)]
-    </span><span class="kw">pub async fn </span>batched(<span class="kw-2">mut </span><span class="self">self</span>, chunk_size: usize) -&gt; PolarsResult&lt;BatchedParquetReader&gt; {
-        <span class="kw">let </span>metadata = <span class="self">self</span>.reader.get_metadata().<span class="kw">await</span><span class="question-mark">?</span>.to_owned();
-        <span class="kw">let </span>row_group_fetcher = Box::new(FetchRowGroupsFromObjectStore::new(
+    <span class="kw">pub fn </span>with_hive_partition_columns(<span class="kw-2">mut </span><span class="self">self</span>, columns: <span class="prelude-ty">Option</span>&lt;Vec&lt;Series&gt;&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.hive_partition_columns = columns;
+        <span class="self">self
+    </span>}
+
+    <span class="kw">pub async fn </span>batched(<span class="kw-2">mut </span><span class="self">self</span>, chunk_size: usize) -&gt; PolarsResult&lt;BatchedParquetReader&gt; {
+        <span class="kw">let </span>metadata = <span class="self">self</span>.reader.get_metadata().<span class="kw">await</span><span class="question-mark">?</span>.clone();
+        <span class="kw">let </span>schema = <span class="kw">match </span><span class="self">self</span>.schema {
+            <span class="prelude-val">Some</span>(schema) =&gt; schema,
+            <span class="prelude-val">None </span>=&gt; <span class="self">self</span>.schema().<span class="kw">await</span><span class="question-mark">?</span>,
+        };
+        <span class="comment">// row group fetched deals with projection
+        </span><span class="kw">let </span>row_group_fetcher = FetchRowGroupsFromObjectStore::new(
             <span class="self">self</span>.reader,
             <span class="kw-2">&amp;</span>metadata,
-            <span class="kw-2">&amp;</span><span class="self">self</span>.projection,
-        )<span class="question-mark">?</span>);
+            schema.clone(),
+            <span class="self">self</span>.projection.as_deref(),
+            <span class="self">self</span>.predicate.clone(),
+        )<span class="question-mark">?
+        </span>.into();
         BatchedParquetReader::new(
             row_group_fetcher,
             metadata,
+            schema,
             <span class="self">self</span>.n_rows.unwrap_or(usize::MAX),
             <span class="self">self</span>.projection,
+            <span class="self">self</span>.predicate.clone(),
             <span class="self">self</span>.row_count,
             chunk_size,
             <span class="self">self</span>.use_statistics,
+            <span class="self">self</span>.hive_partition_columns,
         )
+    }
+
+    <span class="kw">pub async fn </span>get_metadata(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; PolarsResult&lt;<span class="kw-2">&amp;</span>Arc&lt;FileMetaData&gt;&gt; {
+        <span class="self">self</span>.reader.get_metadata().<span class="kw">await
+    </span>}
+
+    <span class="kw">pub async fn </span>finish(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; PolarsResult&lt;DataFrame&gt; {
+        <span class="kw">let </span>rechunk = <span class="self">self</span>.rechunk;
+        <span class="kw">let </span>metadata = <span class="self">self</span>.get_metadata().<span class="kw">await</span><span class="question-mark">?</span>.clone();
+        <span class="kw">let </span>schema = <span class="self">self</span>.schema().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>hive_partition_columns = <span class="self">self</span>.hive_partition_columns.clone();
+
+        <span class="comment">// batched reader deals with slice pushdown
+        </span><span class="kw">let </span>reader = <span class="self">self</span>.batched(usize::MAX).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>n_batches = metadata.row_groups.len();
+        <span class="kw">let </span><span class="kw-2">mut </span>iter = reader.iter(n_batches);
+
+        <span class="kw">let </span><span class="kw-2">mut </span>chunks = Vec::with_capacity(n_batches);
+        <span class="kw">while let </span><span class="prelude-val">Some</span>(result) = iter.next_().<span class="kw">await </span>{
+            chunks.push(result<span class="question-mark">?</span>)
+        }
+        <span class="kw">if </span>chunks.is_empty() {
+            <span class="kw">let </span><span class="kw-2">mut </span>df = DataFrame::from(schema.as_ref());
+            materialize_hive_partitions(<span class="kw-2">&amp;mut </span>df, hive_partition_columns.as_deref(), <span class="number">0</span>);
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(df);
+        }
+        <span class="kw">let </span><span class="kw-2">mut </span>df = accumulate_dataframes_vertical_unchecked(chunks);
+
+        <span class="kw">if </span>rechunk {
+            df.as_single_chunk_par();
+        }
+        <span class="prelude-val">Ok</span>(df)
     }
 }
 </code></pre></div></section></main></body></html>

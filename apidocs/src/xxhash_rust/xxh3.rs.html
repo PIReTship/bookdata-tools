@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/xxhash-rust-0.8.6/src/xxh3.rs`."><title>xxh3.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="xxhash_rust" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../xxhash_rust/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/xxhash-rust-0.8.7/src/xxh3.rs`."><title>xxh3.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="xxhash_rust" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../xxhash_rust/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -996,17 +996,6 @@
 <a href="#996" id="996">996</a>
 <a href="#997" id="997">997</a>
 <a href="#998" id="998">998</a>
-<a href="#999" id="999">999</a>
-<a href="#1000" id="1000">1000</a>
-<a href="#1001" id="1001">1001</a>
-<a href="#1002" id="1002">1002</a>
-<a href="#1003" id="1003">1003</a>
-<a href="#1004" id="1004">1004</a>
-<a href="#1005" id="1005">1005</a>
-<a href="#1006" id="1006">1006</a>
-<a href="#1007" id="1007">1007</a>
-<a href="#1008" id="1008">1008</a>
-<a href="#1009" id="1009">1009</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//!XXH3 implementation
 //!
 //!Provides `Hasher` only for 64bit as 128bit variant would not be much different due to trait
@@ -1078,19 +1067,19 @@
 
 <span class="attr">#[inline(always)]
 </span><span class="kw">fn </span>read_32le_unaligned(data: <span class="kw-2">*const </span>u8) -&gt; u32 {
-    <span class="kw">let </span><span class="kw-2">mut </span>result = mem::MaybeUninit::&lt;u32&gt;::uninit();
+    <span class="macro">debug_assert!</span>(!data.is_null());
+
     <span class="kw">unsafe </span>{
-        ptr::copy_nonoverlapping(data, result.as_mut_ptr() <span class="kw">as _</span>, mem::size_of::&lt;u32&gt;());
-        result.assume_init().to_le()
+        ptr::read_unaligned(data <span class="kw">as </span><span class="kw-2">*const </span>u32).to_le()
     }
 }
 
 <span class="attr">#[inline(always)]
 </span><span class="kw">fn </span>read_64le_unaligned(data: <span class="kw-2">*const </span>u8) -&gt; u64 {
-    <span class="kw">let </span><span class="kw-2">mut </span>result = mem::MaybeUninit::&lt;u64&gt;::uninit();
+    <span class="macro">debug_assert!</span>(!data.is_null());
+
     <span class="kw">unsafe </span>{
-        ptr::copy_nonoverlapping(data, result.as_mut_ptr() <span class="kw">as _</span>, mem::size_of::&lt;u64&gt;());
-        result.assume_init().to_le()
+        ptr::read_unaligned(data <span class="kw">as </span><span class="kw-2">*const </span>u64).to_le()
     }
 }
 
@@ -1150,11 +1139,10 @@
     }
 }
 
-<span class="comment">//TODO: Should we add AVX?
-//      SSE is safe cuz it is available everywhere, but avx should probably be optional
-</span><span class="kw">fn </span>accumulate_512(acc: <span class="kw-2">&amp;mut </span>Acc, input: <span class="kw-2">*const </span>u8, secret: <span class="kw-2">*const </span>u8) {
-    <span class="attr">#[cfg(all(target_feature = <span class="string">&quot;sse2&quot;</span>, not(target_feature = <span class="string">&quot;avx2&quot;</span>)))]
-    </span><span class="kw">unsafe </span>{
+<span class="attr">#[cfg(all(target_feature = <span class="string">&quot;sse2&quot;</span>, not(target_feature = <span class="string">&quot;avx2&quot;</span>)))]
+#[inline(always)]
+</span><span class="kw">fn </span>accumulate_512_sse2(acc: <span class="kw-2">&amp;mut </span>Acc, input: <span class="kw-2">*const </span>u8, secret: <span class="kw-2">*const </span>u8) {
+    <span class="kw">unsafe </span>{
         <span class="attr">#[cfg(target_arch = <span class="string">&quot;x86&quot;</span>)]
         </span><span class="kw">use </span>core::arch::x86::<span class="kw-2">*</span>;
         <span class="attr">#[cfg(target_arch = <span class="string">&quot;x86_64&quot;</span>)]
@@ -1177,9 +1165,12 @@
             xacc.add(idx).write(_mm_add_epi64(product, sum));
         }
     }
+}
 
-    <span class="attr">#[cfg(target_feature = <span class="string">&quot;avx2&quot;</span>)]
-    </span><span class="kw">unsafe </span>{
+<span class="attr">#[cfg(target_feature = <span class="string">&quot;avx2&quot;</span>)]
+#[inline(always)]
+</span><span class="kw">fn </span>accumulate_512_avx2(acc: <span class="kw-2">&amp;mut </span>Acc, input: <span class="kw-2">*const </span>u8, secret: <span class="kw-2">*const </span>u8) {
+    <span class="kw">unsafe </span>{
         <span class="attr">#[cfg(target_arch = <span class="string">&quot;x86&quot;</span>)]
         </span><span class="kw">use </span>core::arch::x86::<span class="kw-2">*</span>;
         <span class="attr">#[cfg(target_arch = <span class="string">&quot;x86_64&quot;</span>)]
@@ -1202,22 +1193,35 @@
             xacc.add(idx).write(_mm256_add_epi64(product, sum));
         }
     }
+}
 
-    <span class="attr">#[cfg(not(any(target_feature = <span class="string">&quot;avx2&quot;</span>, target_feature = <span class="string">&quot;sse2&quot;</span>)))]
-    </span>{
-        <span class="kw">for </span>idx <span class="kw">in </span><span class="number">0</span>..ACC_NB {
-            <span class="kw">let </span>data_val = read_64le_unaligned(<span class="kw">unsafe  </span>{ input.add(<span class="number">8 </span>* idx) });
-            <span class="kw">let </span>data_key = data_val ^ read_64le_unaligned(<span class="kw">unsafe </span>{ secret.add(<span class="number">8 </span>* idx) });
+<span class="attr">#[cfg(not(any(target_feature = <span class="string">&quot;avx2&quot;</span>, target_feature = <span class="string">&quot;sse2&quot;</span>)))]
+#[inline(always)]
+</span><span class="kw">fn </span>accumulate_512_scalar(acc: <span class="kw-2">&amp;mut </span>Acc, input: <span class="kw-2">*const </span>u8, secret: <span class="kw-2">*const </span>u8) {
+    <span class="kw">for </span>idx <span class="kw">in </span><span class="number">0</span>..ACC_NB {
+        <span class="kw">let </span>data_val = read_64le_unaligned(<span class="kw">unsafe  </span>{ input.add(<span class="number">8 </span>* idx) });
+        <span class="kw">let </span>data_key = data_val ^ read_64le_unaligned(<span class="kw">unsafe </span>{ secret.add(<span class="number">8 </span>* idx) });
 
-            acc.<span class="number">0</span>[idx ^ <span class="number">1</span>] = acc.<span class="number">0</span>[idx ^ <span class="number">1</span>].wrapping_add(data_val);
-            acc.<span class="number">0</span>[idx] = acc.<span class="number">0</span>[idx].wrapping_add(mult32_to64((data_key &amp; <span class="number">0xFFFFFFFF</span>) <span class="kw">as </span>u32, (data_key &gt;&gt; <span class="number">32</span>) <span class="kw">as </span>u32));
-        }
+        acc.<span class="number">0</span>[idx ^ <span class="number">1</span>] = acc.<span class="number">0</span>[idx ^ <span class="number">1</span>].wrapping_add(data_val);
+        acc.<span class="number">0</span>[idx] = acc.<span class="number">0</span>[idx].wrapping_add(mult32_to64((data_key &amp; <span class="number">0xFFFFFFFF</span>) <span class="kw">as </span>u32, (data_key &gt;&gt; <span class="number">32</span>) <span class="kw">as </span>u32));
     }
 }
 
-<span class="kw">fn </span>scramble_acc(acc: <span class="kw-2">&amp;mut </span>Acc, secret: <span class="kw-2">*const </span>u8) {
+<span class="kw">fn </span>accumulate_512(acc: <span class="kw-2">&amp;mut </span>Acc, input: <span class="kw-2">*const </span>u8, secret: <span class="kw-2">*const </span>u8) {
     <span class="attr">#[cfg(all(target_feature = <span class="string">&quot;sse2&quot;</span>, not(target_feature = <span class="string">&quot;avx2&quot;</span>)))]
-    </span><span class="kw">unsafe </span>{
+    </span>accumulate_512_sse2(acc, input, secret);
+
+    <span class="attr">#[cfg(target_feature = <span class="string">&quot;avx2&quot;</span>)]
+    </span>accumulate_512_avx2(acc, input, secret);
+
+    <span class="attr">#[cfg(not(any(target_feature = <span class="string">&quot;avx2&quot;</span>, target_feature = <span class="string">&quot;sse2&quot;</span>)))]
+    </span>accumulate_512_scalar(acc, input, secret);
+}
+
+<span class="attr">#[cfg(all(target_feature = <span class="string">&quot;sse2&quot;</span>, not(target_feature = <span class="string">&quot;avx2&quot;</span>)))]
+#[inline(always)]
+</span><span class="kw">fn </span>scramble_acc_sse2(acc: <span class="kw-2">&amp;mut </span>Acc, secret: <span class="kw-2">*const </span>u8) {
+    <span class="kw">unsafe </span>{
         <span class="attr">#[cfg(target_arch = <span class="string">&quot;x86&quot;</span>)]
         </span><span class="kw">use </span>core::arch::x86::<span class="kw-2">*</span>;
         <span class="attr">#[cfg(target_arch = <span class="string">&quot;x86_64&quot;</span>)]
@@ -1241,9 +1245,12 @@
             xacc.add(idx).write(_mm_add_epi64(prod_lo, _mm_slli_epi64(prod_hi, <span class="number">32</span>)));
         }
     }
+}
 
-    <span class="attr">#[cfg(target_feature = <span class="string">&quot;avx2&quot;</span>)]
-    </span><span class="kw">unsafe </span>{
+<span class="attr">#[cfg(target_feature = <span class="string">&quot;avx2&quot;</span>)]
+#[inline(always)]
+</span><span class="kw">fn </span>scramble_acc_avx2(acc: <span class="kw-2">&amp;mut </span>Acc, secret: <span class="kw-2">*const </span>u8) {
+    <span class="kw">unsafe </span>{
         <span class="attr">#[cfg(target_arch = <span class="string">&quot;x86&quot;</span>)]
         </span><span class="kw">use </span>core::arch::x86::<span class="kw-2">*</span>;
         <span class="attr">#[cfg(target_arch = <span class="string">&quot;x86_64&quot;</span>)]
@@ -1267,16 +1274,28 @@
             xacc.add(idx).write(_mm256_add_epi64(prod_lo, _mm256_slli_epi64(prod_hi, <span class="number">32</span>)));
         }
     }
+}
+
+<span class="attr">#[cfg(not(any(target_feature = <span class="string">&quot;avx2&quot;</span>, target_feature = <span class="string">&quot;sse2&quot;</span>)))]
+#[inline(always)]
+</span><span class="kw">fn </span>scramble_acc_scalar(acc: <span class="kw-2">&amp;mut </span>Acc, secret: <span class="kw-2">*const </span>u8) {
+    <span class="kw">for </span>idx <span class="kw">in </span><span class="number">0</span>..ACC_NB {
+        <span class="kw">let </span>key = read_64le_unaligned(<span class="kw">unsafe </span>{ secret.add(<span class="number">8 </span>* idx) });
+        <span class="kw">let </span><span class="kw-2">mut </span>acc_val = xorshift64(acc.<span class="number">0</span>[idx], <span class="number">47</span>);
+        acc_val ^= key;
+        acc.<span class="number">0</span>[idx] = acc_val.wrapping_mul(xxh32::PRIME_1 <span class="kw">as </span>u64);
+    }
+}
+
+<span class="kw">fn </span>scramble_acc(acc: <span class="kw-2">&amp;mut </span>Acc, secret: <span class="kw-2">*const </span>u8) {
+    <span class="attr">#[cfg(all(target_feature = <span class="string">&quot;sse2&quot;</span>, not(target_feature = <span class="string">&quot;avx2&quot;</span>)))]
+    </span>scramble_acc_sse2(acc, secret);
+
+    <span class="attr">#[cfg(target_feature = <span class="string">&quot;avx2&quot;</span>)]
+    </span>scramble_acc_avx2(acc, secret);
 
     <span class="attr">#[cfg(not(any(target_feature = <span class="string">&quot;avx2&quot;</span>, target_feature = <span class="string">&quot;sse2&quot;</span>)))]
-    </span>{
-        <span class="kw">for </span>idx <span class="kw">in </span><span class="number">0</span>..ACC_NB {
-            <span class="kw">let </span>key = read_64le_unaligned(<span class="kw">unsafe </span>{ secret.add(<span class="number">8 </span>* idx) });
-            <span class="kw">let </span><span class="kw-2">mut </span>acc_val = xorshift64(acc.<span class="number">0</span>[idx], <span class="number">47</span>);
-            acc_val ^= key;
-            acc.<span class="number">0</span>[idx] = acc_val.wrapping_mul(xxh32::PRIME_1 <span class="kw">as </span>u64);
-        }
-    }
+    </span>scramble_acc_scalar(acc, secret)
 }
 
 <span class="attr">#[inline(always)]
@@ -1561,16 +1580,18 @@
 
     <span class="attr">#[inline]
     </span><span class="doccomment">///Hashes provided chunk
-    </span><span class="kw">pub fn </span>update(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>input: <span class="kw-2">&amp;</span>[u8]) {
+    </span><span class="kw">pub fn </span>update(<span class="kw-2">&amp;mut </span><span class="self">self</span>, input: <span class="kw-2">&amp;</span>[u8]) {
         <span class="kw">const </span>INTERNAL_BUFFER_STRIPES: usize = INTERNAL_BUFFER_SIZE / STRIPE_LEN;
 
-        <span class="self">self</span>.total_len = <span class="self">self</span>.total_len.wrapping_add(input.len() <span class="kw">as </span>u64);
+        <span class="kw">let </span><span class="kw-2">mut </span>input_ptr = input.as_ptr();
+        <span class="kw">let </span><span class="kw-2">mut </span>input_len = input.len();
+        <span class="self">self</span>.total_len = <span class="self">self</span>.total_len.wrapping_add(input_len <span class="kw">as </span>u64);
 
-        <span class="kw">if </span>(input.len() + <span class="self">self</span>.buffered_size <span class="kw">as </span>usize) &lt;= INTERNAL_BUFFER_SIZE {
+        <span class="kw">if </span>(input_len + <span class="self">self</span>.buffered_size <span class="kw">as </span>usize) &lt;= INTERNAL_BUFFER_SIZE {
             <span class="kw">unsafe </span>{
-                ptr::copy_nonoverlapping(input.as_ptr(), (<span class="self">self</span>.buffer.<span class="number">0</span>.as_mut_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>u8).offset(<span class="self">self</span>.buffered_size <span class="kw">as </span>isize), input.len())
+                ptr::copy_nonoverlapping(input_ptr, (<span class="self">self</span>.buffer.<span class="number">0</span>.as_mut_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>u8).offset(<span class="self">self</span>.buffered_size <span class="kw">as </span>isize), input_len)
             }
-            <span class="self">self</span>.buffered_size += input.len() <span class="kw">as </span>u16;
+            <span class="self">self</span>.buffered_size += input_len <span class="kw">as </span>u16;
             <span class="kw">return</span>;
         }
 
@@ -1578,70 +1599,41 @@
             <span class="kw">let </span>fill_len = INTERNAL_BUFFER_SIZE - <span class="self">self</span>.buffered_size <span class="kw">as </span>usize;
 
             <span class="kw">unsafe </span>{
-                ptr::copy_nonoverlapping(input.as_ptr(), (<span class="self">self</span>.buffer.<span class="number">0</span>.as_mut_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>u8).offset(<span class="self">self</span>.buffered_size <span class="kw">as </span>isize), fill_len)
+                ptr::copy_nonoverlapping(input_ptr, (<span class="self">self</span>.buffer.<span class="number">0</span>.as_mut_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>u8).offset(<span class="self">self</span>.buffered_size <span class="kw">as </span>isize), fill_len);
+                input_ptr = input_ptr.add(fill_len);
+                input_len -= fill_len;
             }
 
             <span class="self">self</span>.nb_stripes_acc = <span class="self">Self</span>::consume_stripes(<span class="kw-2">&amp;mut </span><span class="self">self</span>.acc, INTERNAL_BUFFER_STRIPES, <span class="self">self</span>.nb_stripes_acc, <span class="self">self</span>.buffer.<span class="number">0</span>.as_ptr(), <span class="kw-2">&amp;</span><span class="self">self</span>.custom_secret.<span class="number">0</span>);
 
-            input = <span class="kw-2">&amp;</span>input[fill_len..];
             <span class="self">self</span>.buffered_size = <span class="number">0</span>;
         }
 
-        <span class="macro">debug_assert_ne!</span>(input.len(), <span class="number">0</span>);
-
-
-        <span class="comment">//big input incoming
-        </span><span class="kw">if </span>input.len() &gt; (STRIPES_PER_BLOCK * STRIPE_LEN) {
-            <span class="kw">let </span><span class="kw-2">mut </span>nb_stripes = (input.len() - <span class="number">1</span>) / STRIPE_LEN;
-
-            <span class="macro">debug_assert!</span>(<span class="self">self</span>.nb_stripes_acc &lt;= STRIPES_PER_BLOCK);
-            {
-                <span class="kw">let </span>stripes_to_end = STRIPES_PER_BLOCK - <span class="self">self</span>.nb_stripes_acc;
-
-                accumulate_loop(<span class="kw-2">&amp;mut </span><span class="self">self</span>.acc, input.as_ptr(), slice_offset_ptr(<span class="kw-2">&amp;</span><span class="self">self</span>.custom_secret.<span class="number">0</span>, <span class="self">self</span>.nb_stripes_acc * SECRET_CONSUME_RATE), stripes_to_end);
-                scramble_acc(<span class="kw-2">&amp;mut </span><span class="self">self</span>.acc, slice_offset_ptr(<span class="kw-2">&amp;</span><span class="self">self</span>.custom_secret.<span class="number">0</span>, DEFAULT_SECRET_SIZE - STRIPE_LEN));
-                <span class="self">self</span>.nb_stripes_acc = <span class="number">0</span>;
-
-                input = <span class="kw-2">&amp;</span>input[stripes_to_end * STRIPE_LEN..];
-                nb_stripes -= stripes_to_end
-            }
-
-            <span class="kw">while </span>nb_stripes &gt;= STRIPES_PER_BLOCK {
-                accumulate_loop(<span class="kw-2">&amp;mut </span><span class="self">self</span>.acc, input.as_ptr(), <span class="self">self</span>.custom_secret.<span class="number">0</span>.as_ptr(), STRIPES_PER_BLOCK);
-                scramble_acc(<span class="kw-2">&amp;mut </span><span class="self">self</span>.acc, slice_offset_ptr(<span class="kw-2">&amp;</span><span class="self">self</span>.custom_secret.<span class="number">0</span>, DEFAULT_SECRET_SIZE - STRIPE_LEN));
-                input = <span class="kw-2">&amp;</span>input[STRIPES_PER_BLOCK * STRIPE_LEN..];
-                nb_stripes -= STRIPES_PER_BLOCK;
-            }
-
-            accumulate_loop(<span class="kw-2">&amp;mut </span><span class="self">self</span>.acc, input.as_ptr(), <span class="self">self</span>.custom_secret.<span class="number">0</span>.as_ptr(), nb_stripes);
-            input = <span class="kw-2">&amp;</span>input[nb_stripes * STRIPE_LEN..];
-            <span class="macro">debug_assert_ne!</span>(input.len(), <span class="number">0</span>);
-            <span class="self">self</span>.nb_stripes_acc = nb_stripes;
-
-            <span class="kw">unsafe </span>{
-                ptr::copy_nonoverlapping(input.as_ptr().offset(-(STRIPE_LEN <span class="kw">as </span>isize)), (<span class="self">self</span>.buffer.<span class="number">0</span>.as_mut_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>u8).add(<span class="self">self</span>.buffer.<span class="number">0</span>.len() - STRIPE_LEN), STRIPE_LEN)
-            }
-        } <span class="kw">else if </span>input.len() &gt; INTERNAL_BUFFER_SIZE {
+        <span class="macro">debug_assert_ne!</span>(input_len, <span class="number">0</span>);
+        <span class="kw">if </span>input_len &gt; INTERNAL_BUFFER_SIZE {
             <span class="kw">loop </span>{
-                <span class="self">self</span>.nb_stripes_acc = <span class="self">Self</span>::consume_stripes(<span class="kw-2">&amp;mut </span><span class="self">self</span>.acc, INTERNAL_BUFFER_STRIPES, <span class="self">self</span>.nb_stripes_acc, input.as_ptr(), <span class="kw-2">&amp;</span><span class="self">self</span>.custom_secret.<span class="number">0</span>);
-                input = <span class="kw-2">&amp;</span>input[INTERNAL_BUFFER_SIZE..];
+                <span class="self">self</span>.nb_stripes_acc = <span class="self">Self</span>::consume_stripes(<span class="kw-2">&amp;mut </span><span class="self">self</span>.acc, INTERNAL_BUFFER_STRIPES, <span class="self">self</span>.nb_stripes_acc, input_ptr, <span class="kw-2">&amp;</span><span class="self">self</span>.custom_secret.<span class="number">0</span>);
+                input_ptr = <span class="kw">unsafe </span>{
+                    input_ptr.add(INTERNAL_BUFFER_SIZE)
+                };
+                input_len = input_len - INTERNAL_BUFFER_SIZE;
 
-                <span class="kw">if </span>input.len() &lt;= INTERNAL_BUFFER_SIZE {
+                <span class="kw">if </span>input_len &lt;= INTERNAL_BUFFER_SIZE {
                     <span class="kw">break</span>;
                 }
             }
 
             <span class="kw">unsafe </span>{
-                ptr::copy_nonoverlapping(input.as_ptr().offset(-(STRIPE_LEN <span class="kw">as </span>isize)), (<span class="self">self</span>.buffer.<span class="number">0</span>.as_mut_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>u8).add(<span class="self">self</span>.buffer.<span class="number">0</span>.len() - STRIPE_LEN), STRIPE_LEN)
+                ptr::copy_nonoverlapping(input_ptr.offset(-(STRIPE_LEN <span class="kw">as </span>isize)), (<span class="self">self</span>.buffer.<span class="number">0</span>.as_mut_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>u8).add(<span class="self">self</span>.buffer.<span class="number">0</span>.len() - STRIPE_LEN), STRIPE_LEN)
             }
         }
 
-        <span class="macro">debug_assert_ne!</span>(input.len(), <span class="number">0</span>);
+        <span class="macro">debug_assert_ne!</span>(input_len, <span class="number">0</span>);
         <span class="macro">debug_assert_eq!</span>(<span class="self">self</span>.buffered_size, <span class="number">0</span>);
         <span class="kw">unsafe </span>{
-            ptr::copy_nonoverlapping(input.as_ptr(), <span class="self">self</span>.buffer.<span class="number">0</span>.as_mut_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>u8, input.len())
+            ptr::copy_nonoverlapping(input_ptr, <span class="self">self</span>.buffer.<span class="number">0</span>.as_mut_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>u8, input_len)
         }
-        <span class="self">self</span>.buffered_size = input.len() <span class="kw">as </span>u16;
+        <span class="self">self</span>.buffered_size = input_len <span class="kw">as </span>u16;
     }
 
     <span class="attr">#[inline]
@@ -1811,23 +1803,9 @@
 
     mul_low = mul_low.wrapping_add((input.len() <span class="kw">as </span>u64 - <span class="number">1</span>) &lt;&lt; <span class="number">54</span>);
     input_hi ^= flip_hi;
-
-    <span class="comment">//Separate code for 32bit and bigger targets
-    //It only makes sense when width is multiple of 2, but if necessary change to simple if
-    //Not to mention I&#39;m not sure you can even compile u128 on something like 16bit?
-    </span><span class="attr">#[cfg(any(target_pointer_width = <span class="string">&quot;32&quot;</span>, target_pointer_width = <span class="string">&quot;16&quot;</span>, target_pointer_width = <span class="string">&quot;8&quot;</span>))]
-    </span>{
-        mul_high = mul_high.wrapping_add(
-            (input_hi &amp; <span class="number">0xFFFFFFFF00000000</span>).wrapping_add(mult32_to64(input_hi <span class="kw">as </span>u32, xxh32::PRIME_2))
-        );
-    }
-
-    <span class="attr">#[cfg(not(any(target_pointer_width = <span class="string">&quot;32&quot;</span>, target_pointer_width = <span class="string">&quot;16&quot;</span>, target_pointer_width = <span class="string">&quot;8&quot;</span>)))]
-    </span>{
-        mul_high = mul_high.wrapping_add(
-            input_hi.wrapping_add(mult32_to64(input_hi <span class="kw">as </span>u32, xxh32::PRIME_2 - <span class="number">1</span>))
-        )
-    }
+    mul_high = mul_high.wrapping_add(
+        input_hi.wrapping_add(mult32_to64(input_hi <span class="kw">as </span>u32, xxh32::PRIME_2 - <span class="number">1</span>))
+    );
 
     mul_low ^= mul_high.swap_bytes();
 

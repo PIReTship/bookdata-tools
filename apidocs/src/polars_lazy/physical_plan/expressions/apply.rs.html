@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-lazy-0.30.0/src/physical_plan/expressions/apply.rs`."><title>apply.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_lazy" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-lazy-0.34.2/src/physical_plan/expressions/apply.rs`."><title>apply.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_lazy" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -523,16 +523,23 @@
 <a href="#523" id="523">523</a>
 <a href="#524" id="524">524</a>
 <a href="#525" id="525">525</a>
+<a href="#526" id="526">526</a>
+<a href="#527" id="527">527</a>
+<a href="#528" id="528">528</a>
+<a href="#529" id="529">529</a>
+<a href="#530" id="530">530</a>
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
+<a href="#533" id="533">533</a>
+<a href="#534" id="534">534</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use </span>polars_core::frame::groupby::GroupsProxy;
+<span class="kw">use </span>polars_core::frame::group_by::GroupsProxy;
 <span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>polars_core::POOL;
 <span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
-</span><span class="kw">use </span>polars_io::parquet::predicates::BatchStats;
-<span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
-</span><span class="kw">use </span>polars_io::predicates::StatsEvaluator;
+</span><span class="kw">use </span>polars_io::predicates::{BatchStats, StatsEvaluator};
 <span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
 </span><span class="kw">use </span>polars_plan::dsl::FunctionExpr;
 <span class="kw">use </span>rayon::prelude::<span class="kw-2">*</span>;
@@ -541,18 +548,48 @@
 <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 
 <span class="kw">pub struct </span>ApplyExpr {
-    <span class="kw">pub </span>inputs: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
-    <span class="kw">pub </span>function: SpecialEq&lt;Arc&lt;<span class="kw">dyn </span>SeriesUdf&gt;&gt;,
-    <span class="kw">pub </span>expr: Expr,
-    <span class="kw">pub </span>collect_groups: ApplyOptions,
-    <span class="kw">pub </span>auto_explode: bool,
-    <span class="kw">pub </span>allow_rename: bool,
-    <span class="kw">pub </span>pass_name_to_apply: bool,
-    <span class="kw">pub </span>input_schema: <span class="prelude-ty">Option</span>&lt;SchemaRef&gt;,
-    <span class="kw">pub </span>allow_threading: bool,
+    inputs: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
+    function: SpecialEq&lt;Arc&lt;<span class="kw">dyn </span>SeriesUdf&gt;&gt;,
+    expr: Expr,
+    collect_groups: ApplyOptions,
+    returns_scalar: bool,
+    allow_rename: bool,
+    pass_name_to_apply: bool,
+    input_schema: <span class="prelude-ty">Option</span>&lt;SchemaRef&gt;,
+    allow_threading: bool,
+    check_lengths: bool,
+    allow_group_aware: bool,
 }
 
 <span class="kw">impl </span>ApplyExpr {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(
+        inputs: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
+        function: SpecialEq&lt;Arc&lt;<span class="kw">dyn </span>SeriesUdf&gt;&gt;,
+        expr: Expr,
+        options: FunctionOptions,
+        allow_threading: bool,
+        input_schema: <span class="prelude-ty">Option</span>&lt;SchemaRef&gt;,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="attr">#[cfg(debug_assertions)]
+        </span><span class="kw">if </span><span class="macro">matches!</span>(options.collect_groups, ApplyOptions::ElementWise) &amp;&amp; options.returns_scalar {
+            <span class="macro">panic!</span>(<span class="string">&quot;expr {} is not implemented correctly. &#39;returns_scalar&#39; and &#39;elementwise&#39; are mutually exclusive&quot;</span>, expr)
+        }
+
+        <span class="self">Self </span>{
+            inputs,
+            function,
+            expr,
+            collect_groups: options.collect_groups,
+            returns_scalar: options.returns_scalar,
+            allow_rename: options.allow_rename,
+            pass_name_to_apply: options.pass_name_to_apply,
+            input_schema,
+            allow_threading,
+            check_lengths: options.check_lengths(),
+            allow_group_aware: options.allow_group_aware,
+        }
+    }
+
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new_minimal(
         inputs: Vec&lt;Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;&gt;,
         function: SpecialEq&lt;Arc&lt;<span class="kw">dyn </span>SeriesUdf&gt;&gt;,
@@ -564,11 +601,13 @@
             function,
             expr,
             collect_groups,
-            auto_explode: <span class="bool-val">false</span>,
+            returns_scalar: <span class="bool-val">false</span>,
             allow_rename: <span class="bool-val">false</span>,
             pass_name_to_apply: <span class="bool-val">false</span>,
             input_schema: <span class="prelude-val">None</span>,
             allow_threading: <span class="bool-val">true</span>,
+            check_lengths: <span class="bool-val">true</span>,
+            allow_group_aware: <span class="bool-val">true</span>,
         }
     }
 
@@ -593,7 +632,7 @@
         ca: ListChunked,
     ) -&gt; PolarsResult&lt;AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
         <span class="kw">let </span>all_unit_len = all_unit_length(<span class="kw-2">&amp;</span>ca);
-        <span class="kw">if </span>all_unit_len &amp;&amp; <span class="self">self</span>.auto_explode {
+        <span class="kw">if </span>all_unit_len &amp;&amp; <span class="self">self</span>.returns_scalar {
             ac.with_series(ca.explode().unwrap().into_series(), <span class="bool-val">true</span>, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.expr))<span class="question-mark">?</span>;
             ac.update_groups = UpdateGroups::No;
         } <span class="kw">else </span>{
@@ -610,14 +649,14 @@
         }
     }
 
-    <span class="doccomment">/// evaluates and flattens `Option&lt;Series&gt;` to `Series`.
+    <span class="doccomment">/// Evaluates and flattens `Option&lt;Series&gt;` to `Series`.
     </span><span class="kw">fn </span>eval_and_flatten(<span class="kw-2">&amp;</span><span class="self">self</span>, inputs: <span class="kw-2">&amp;mut </span>[Series]) -&gt; PolarsResult&lt;Series&gt; {
-        <span class="self">self</span>.function.call_udf(inputs).map(|opt_out| {
-            opt_out.unwrap_or_else(|| {
-                <span class="kw">let </span>field = <span class="self">self</span>.to_field(<span class="self">self</span>.input_schema.as_ref().unwrap()).unwrap();
-                Series::full_null(field.name(), <span class="number">1</span>, field.data_type())
-            })
-        })
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(out) = <span class="self">self</span>.function.call_udf(inputs)<span class="question-mark">? </span>{
+            <span class="prelude-val">Ok</span>(out)
+        } <span class="kw">else </span>{
+            <span class="kw">let </span>field = <span class="self">self</span>.to_field(<span class="self">self</span>.input_schema.as_ref().unwrap()).unwrap();
+            <span class="prelude-val">Ok</span>(Series::full_null(field.name(), <span class="number">1</span>, field.data_type()))
+        }
     }
     <span class="kw">fn </span>apply_single_group_aware&lt;<span class="lifetime">&#39;a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -626,21 +665,18 @@
         <span class="kw">let </span>s = ac.series();
 
         <span class="macro">polars_ensure!</span>(
-            !<span class="macro">matches!</span>(ac.agg_state(), AggState::AggregatedFlat(<span class="kw">_</span>)),
+            !<span class="macro">matches!</span>(ac.agg_state(), AggState::AggregatedScalar(<span class="kw">_</span>)),
             expr = <span class="self">self</span>.expr,
             ComputeError: <span class="string">&quot;cannot aggregate, the column is already aggregated&quot;</span>,
         );
 
         <span class="kw">let </span>name = s.name().to_string();
         <span class="kw">let </span>agg = ac.aggregated();
-        <span class="comment">// collection of empty list leads to a null dtype
-        // see: #3687
+        <span class="comment">// Collection of empty list leads to a null dtype. See: #3687.
         </span><span class="kw">if </span>agg.len() == <span class="number">0 </span>{
-            <span class="comment">// create input for the function to determine the output dtype
-            // see #3946
+            <span class="comment">// Create input for the function to determine the output dtype, see #3946.
             </span><span class="kw">let </span>agg = agg.list().unwrap();
             <span class="kw">let </span>input_dtype = agg.inner_dtype();
-
             <span class="kw">let </span>input = Series::full_null(<span class="string">&quot;&quot;</span>, <span class="number">0</span>, <span class="kw-2">&amp;</span>input_dtype);
 
             <span class="kw">let </span>output = <span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>[input])<span class="question-mark">?</span>;
@@ -654,12 +690,11 @@
                 <span class="kw">if </span><span class="self">self</span>.pass_name_to_apply {
                     s.rename(<span class="kw-2">&amp;</span>name);
                 }
-                <span class="kw">let </span><span class="kw-2">mut </span>container = [s];
-                <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>container)
-            }
+                <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>[s])
+            },
         };
 
-        <span class="kw">let </span><span class="kw-2">mut </span>ca: ListChunked = <span class="kw">if </span><span class="self">self</span>.allow_threading {
+        <span class="kw">let </span>ca: ListChunked = <span class="kw">if </span><span class="self">self</span>.allow_threading {
             POOL.install(|| {
                 agg.list()
                     .unwrap()
@@ -675,11 +710,10 @@
                 .collect::&lt;PolarsResult&lt;<span class="kw">_</span>&gt;&gt;()<span class="question-mark">?
         </span>};
 
-        ca.rename(<span class="kw-2">&amp;</span>name);
-        <span class="self">self</span>.finish_apply_groups(ac, ca)
+        <span class="self">self</span>.finish_apply_groups(ac, ca.with_name(<span class="kw-2">&amp;</span>name))
     }
 
-    <span class="doccomment">/// Apply elementwise e.g. ignore the group/list indices
+    <span class="doccomment">/// Apply elementwise e.g. ignore the group/list indices.
     </span><span class="kw">fn </span>apply_single_elementwise&lt;<span class="lifetime">&#39;a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="kw-2">mut </span>ac: AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt;,
@@ -689,16 +723,16 @@
                 <span class="kw">let </span>ca = s.list().unwrap();
                 <span class="kw">let </span>out = ca.apply_to_inner(<span class="kw-2">&amp;</span>|s| <span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>[s]))<span class="question-mark">?</span>;
                 (out.into_series(), <span class="bool-val">true</span>)
-            }
-            AggState::AggregatedFlat(s) =&gt; (<span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>[s.clone()])<span class="question-mark">?</span>, <span class="bool-val">true</span>),
+            },
+            AggState::AggregatedScalar(s) =&gt; (<span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>[s.clone()])<span class="question-mark">?</span>, <span class="bool-val">true</span>),
             AggState::NotAggregated(s) | AggState::Literal(s) =&gt; {
                 <span class="kw">let </span>(out, aggregated) = (<span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>[s.clone()])<span class="question-mark">?</span>, <span class="bool-val">false</span>);
                 check_map_output_len(s.len(), out.len(), <span class="kw-2">&amp;</span><span class="self">self</span>.expr)<span class="question-mark">?</span>;
                 (out, aggregated)
-            }
+            },
         };
 
-        ac.with_series(s, aggregated, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.expr))<span class="question-mark">?</span>;
+        ac.with_series_and_args(s, aggregated, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.expr), <span class="bool-val">true</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(ac)
     }
     <span class="kw">fn </span>apply_multiple_group_aware&lt;<span class="lifetime">&#39;a</span>&gt;(
@@ -710,27 +744,29 @@
         <span class="kw">let </span>schema = <span class="self">self</span>.get_input_schema(df);
         <span class="kw">let </span>field = <span class="self">self</span>.to_field(<span class="kw-2">&amp;</span>schema)<span class="question-mark">?</span>;
 
-        <span class="comment">// aggregate representation of the aggregation contexts
+        <span class="comment">// Aggregate representation of the aggregation contexts,
         // then unpack the lists and finally create iterators from this list chunked arrays.
         </span><span class="kw">let </span><span class="kw-2">mut </span>iters = acs
             .iter_mut()
-            .map(|ac| ac.iter_groups(<span class="self">self</span>.pass_name_to_apply))
+            .map(|ac|
+                <span class="comment">// SAFETY: unstable series never lives longer than the iterator.
+                </span><span class="kw">unsafe </span>{ ac.iter_groups(<span class="self">self</span>.pass_name_to_apply) })
             .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-        <span class="comment">// length of the items to iterate over
+        <span class="comment">// Length of the items to iterate over.
         </span><span class="kw">let </span>len = iters[<span class="number">0</span>].size_hint().<span class="number">0</span>;
 
         <span class="kw">if </span>len == <span class="number">0 </span>{
             <span class="kw">let </span>out = Series::full_null(field.name(), <span class="number">0</span>, <span class="kw-2">&amp;</span>field.dtype);
-
             drop(iters);
-            <span class="comment">// take the first aggregation context that as that is the input series
+
+            <span class="comment">// Take the first aggregation context that as that is the input series.
             </span><span class="kw">let </span><span class="kw-2">mut </span>ac = acs.swap_remove(<span class="number">0</span>);
             ac.with_series(out, <span class="bool-val">true</span>, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.expr))<span class="question-mark">?</span>;
             <span class="kw">return </span><span class="prelude-val">Ok</span>(ac);
         }
 
-        <span class="kw">let </span><span class="kw-2">mut </span>ca: ListChunked = (<span class="number">0</span>..len)
+        <span class="kw">let </span>ca = (<span class="number">0</span>..len)
             .map(|<span class="kw">_</span>| {
                 container.clear();
                 <span class="kw">for </span>iter <span class="kw">in </span><span class="kw-2">&amp;mut </span>iters {
@@ -741,12 +777,12 @@
                 }
                 <span class="self">self</span>.function.call_udf(<span class="kw-2">&amp;mut </span>container)
             })
-            .collect::&lt;PolarsResult&lt;<span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
+            .collect::&lt;PolarsResult&lt;ListChunked&gt;&gt;()<span class="question-mark">?
+            </span>.with_name(<span class="kw-2">&amp;</span>field.name);
 
-        ca.rename(<span class="kw-2">&amp;</span>field.name);
         drop(iters);
 
-        <span class="comment">// take the first aggregation context that as that is the input series
+        <span class="comment">// Take the first aggregation context that as that is the input series.
         </span><span class="kw">let </span>ac = acs.swap_remove(<span class="number">0</span>);
         <span class="self">self</span>.finish_apply_groups(ac, ca)
     }
@@ -775,7 +811,7 @@
 
     <span class="kw">fn </span>evaluate(<span class="kw-2">&amp;</span><span class="self">self</span>, df: <span class="kw-2">&amp;</span>DataFrame, state: <span class="kw-2">&amp;</span>ExecutionState) -&gt; PolarsResult&lt;Series&gt; {
         <span class="kw">let </span>f = |e: <span class="kw-2">&amp;</span>Arc&lt;<span class="kw">dyn </span>PhysicalExpr&gt;| e.evaluate(df, state);
-        <span class="kw">let </span><span class="kw-2">mut </span>inputs = <span class="kw">if </span><span class="self">self</span>.allow_threading {
+        <span class="kw">let </span><span class="kw-2">mut </span>inputs = <span class="kw">if </span><span class="self">self</span>.allow_threading &amp;&amp; <span class="self">self</span>.inputs.len() &gt; <span class="number">1 </span>{
             POOL.install(|| {
                 <span class="self">self</span>.inputs
                     .par_iter()
@@ -787,15 +823,13 @@
         }<span class="question-mark">?</span>;
 
         <span class="kw">if </span><span class="self">self</span>.allow_rename {
-            <span class="kw">return </span><span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>inputs);
+            <span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>inputs)
+        } <span class="kw">else </span>{
+            <span class="kw">let </span>in_name = inputs[<span class="number">0</span>].name().to_string();
+            <span class="prelude-val">Ok</span>(<span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>inputs)<span class="question-mark">?</span>.with_name(<span class="kw-2">&amp;</span>in_name))
         }
-        <span class="kw">let </span>in_name = inputs[<span class="number">0</span>].name().to_string();
-        <span class="kw">let </span><span class="kw-2">mut </span>out = <span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>inputs)<span class="question-mark">?</span>;
-        <span class="kw">if </span>in_name != out.name() {
-            out.rename(<span class="kw-2">&amp;</span>in_name);
-        }
-        <span class="prelude-val">Ok</span>(out)
     }
+
     <span class="attr">#[allow(clippy::ptr_arg)]
     </span><span class="kw">fn </span>evaluate_on_groups&lt;<span class="lifetime">&#39;a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -803,6 +837,11 @@
         groups: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GroupsProxy,
         state: <span class="kw-2">&amp;</span>ExecutionState,
     ) -&gt; PolarsResult&lt;AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+        <span class="macro">polars_ensure!</span>(
+            <span class="self">self</span>.allow_group_aware,
+            expr = <span class="self">self</span>.expr,
+            ComputeError: <span class="string">&quot;this expression cannot run in the group_by context&quot;</span>,
+        );
         <span class="kw">if </span><span class="self">self</span>.inputs.len() == <span class="number">1 </span>{
             <span class="kw">let </span><span class="kw-2">mut </span>ac = <span class="self">self</span>.inputs[<span class="number">0</span>].evaluate_on_groups(df, groups, state)<span class="question-mark">?</span>;
 
@@ -811,9 +850,9 @@
                     <span class="kw">let </span>s = <span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>[ac.aggregated()])<span class="question-mark">?</span>;
                     ac.with_series(s, <span class="bool-val">true</span>, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.expr))<span class="question-mark">?</span>;
                     <span class="prelude-val">Ok</span>(ac)
-                }
-                ApplyOptions::ApplyGroups =&gt; <span class="self">self</span>.apply_single_group_aware(ac),
-                ApplyOptions::ApplyFlat =&gt; <span class="self">self</span>.apply_single_elementwise(ac),
+                },
+                ApplyOptions::GroupWise =&gt; <span class="self">self</span>.apply_single_group_aware(ac),
+                ApplyOptions::ElementWise =&gt; <span class="self">self</span>.apply_single_elementwise(ac),
             }
         } <span class="kw">else </span>{
             <span class="kw">let </span><span class="kw-2">mut </span>acs = <span class="self">self</span>.prepare_multiple_inputs(df, groups, state)<span class="question-mark">?</span>;
@@ -827,18 +866,23 @@
                     ac.with_update_groups(UpdateGroups::WithGroupsLen);
                     ac.with_series(s, <span class="bool-val">true</span>, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.expr))<span class="question-mark">?</span>;
                     <span class="prelude-val">Ok</span>(ac)
-                }
-                ApplyOptions::ApplyGroups =&gt; <span class="self">self</span>.apply_multiple_group_aware(acs, df),
-                ApplyOptions::ApplyFlat =&gt; {
+                },
+                ApplyOptions::GroupWise =&gt; <span class="self">self</span>.apply_multiple_group_aware(acs, df),
+                ApplyOptions::ElementWise =&gt; {
                     <span class="kw">if </span>acs
                         .iter()
                         .any(|ac| <span class="macro">matches!</span>(ac.agg_state(), AggState::AggregatedList(<span class="kw">_</span>)))
                     {
                         <span class="self">self</span>.apply_multiple_group_aware(acs, df)
                     } <span class="kw">else </span>{
-                        apply_multiple_elementwise(acs, <span class="self">self</span>.function.as_ref(), <span class="kw-2">&amp;</span><span class="self">self</span>.expr)
+                        apply_multiple_elementwise(
+                            acs,
+                            <span class="self">self</span>.function.as_ref(),
+                            <span class="kw-2">&amp;</span><span class="self">self</span>.expr,
+                            <span class="self">self</span>.check_lengths,
+                        )
                     }
-                }
+                },
             }
         }
     }
@@ -846,7 +890,7 @@
         <span class="self">self</span>.expr.to_field(input_schema, Context::Default)
     }
     <span class="kw">fn </span>is_valid_aggregation(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        <span class="macro">matches!</span>(<span class="self">self</span>.collect_groups, ApplyOptions::ApplyGroups)
+        <span class="macro">matches!</span>(<span class="self">self</span>.collect_groups, ApplyOptions::GroupWise)
     }
     <span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
     </span><span class="kw">fn </span>as_stats_evaluator(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>polars_io::predicates::StatsEvaluator&gt; {
@@ -863,7 +907,7 @@
         }
     }
     <span class="kw">fn </span>as_partitioned_aggregator(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>PartitionedAggregation&gt; {
-        <span class="kw">if </span><span class="self">self</span>.inputs.len() == <span class="number">1 </span>&amp;&amp; <span class="macro">matches!</span>(<span class="self">self</span>.collect_groups, ApplyOptions::ApplyFlat) {
+        <span class="kw">if </span><span class="self">self</span>.inputs.len() == <span class="number">1 </span>&amp;&amp; <span class="macro">matches!</span>(<span class="self">self</span>.collect_groups, ApplyOptions::ElementWise) {
             <span class="prelude-val">Some</span>(<span class="self">self</span>)
         } <span class="kw">else </span>{
             <span class="prelude-val">None
@@ -875,10 +919,11 @@
     <span class="kw-2">mut </span>acs: Vec&lt;AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt;&gt;,
     function: <span class="kw-2">&amp;</span><span class="kw">dyn </span>SeriesUdf,
     expr: <span class="kw-2">&amp;</span>Expr,
+    check_lengths: bool,
 ) -&gt; PolarsResult&lt;AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
     <span class="kw">match </span>acs.first().unwrap().agg_state() {
-        <span class="comment">// a fast path that doesn&#39;t drop groups of the first arg
-        // this doesn&#39;t require group re-computation
+        <span class="comment">// A fast path that doesn&#39;t drop groups of the first arg.
+        // This doesn&#39;t require group re-computation.
         </span>AggState::AggregatedList(s) =&gt; {
             <span class="kw">let </span>ca = s.list().unwrap();
 
@@ -888,23 +933,22 @@
                 .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
             <span class="kw">let </span>out = ca.apply_to_inner(<span class="kw-2">&amp;</span>|s| {
-                <span class="kw">let </span><span class="kw-2">mut </span>args = <span class="macro">vec!</span>[s];
+                <span class="kw">let </span><span class="kw-2">mut </span>args = Vec::with_capacity(other.len() + <span class="number">1</span>);
+                args.push(s);
                 args.extend_from_slice(<span class="kw-2">&amp;</span>other);
-                <span class="kw">let </span>out = function.call_udf(<span class="kw-2">&amp;mut </span>args)<span class="question-mark">?</span>.unwrap();
-                <span class="prelude-val">Ok</span>(out)
+                <span class="prelude-val">Ok</span>(function.call_udf(<span class="kw-2">&amp;mut </span>args)<span class="question-mark">?</span>.unwrap())
             })<span class="question-mark">?</span>;
             <span class="kw">let </span><span class="kw-2">mut </span>ac = acs.swap_remove(<span class="number">0</span>);
             ac.with_series(out.into_series(), <span class="bool-val">true</span>, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(ac)
-        }
+        },
         <span class="kw">_ </span>=&gt; {
             <span class="kw">let </span><span class="kw-2">mut </span>s = acs
                 .iter_mut()
                 .enumerate()
                 .map(|(i, ac)| {
-                    <span class="comment">// make sure the groups are updated because we are about to throw away
-                    // the series length information
-                    // only on first iteration
+                    <span class="comment">// Make sure the groups are updated because we are about to throw away
+                    // the series length information, only on the first iteration.
                     </span><span class="kw">if let </span>(<span class="number">0</span>, UpdateGroups::WithSeriesLen) = (i, <span class="kw-2">&amp;</span>ac.update_groups) {
                         ac.groups();
                     }
@@ -913,15 +957,17 @@
                 })
                 .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-            <span class="kw">let </span>input_len = s.iter().map(|s| s.len()).max().unwrap();
+            <span class="kw">let </span>input_len = s[<span class="number">0</span>].len();
             <span class="kw">let </span>s = function.call_udf(<span class="kw-2">&amp;mut </span>s)<span class="question-mark">?</span>.unwrap();
-            check_map_output_len(input_len, s.len(), expr)<span class="question-mark">?</span>;
+            <span class="kw">if </span>check_lengths {
+                check_map_output_len(input_len, s.len(), expr)<span class="question-mark">?</span>;
+            }
 
-            <span class="comment">// take the first aggregation context that as that is the input series
+            <span class="comment">// Take the first aggregation context that as that is the input series.
             </span><span class="kw">let </span><span class="kw-2">mut </span>ac = acs.swap_remove(<span class="number">0</span>);
-            ac.with_series(s, <span class="bool-val">false</span>, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+            ac.with_series_and_args(s, <span class="bool-val">false</span>, <span class="prelude-val">None</span>, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(ac)
-        }
+        },
     }
 }
 
@@ -929,14 +975,13 @@
 </span><span class="kw">impl </span>StatsEvaluator <span class="kw">for </span>ApplyExpr {
     <span class="kw">fn </span>should_read(<span class="kw-2">&amp;</span><span class="self">self</span>, stats: <span class="kw-2">&amp;</span>BatchStats) -&gt; PolarsResult&lt;bool&gt; {
         <span class="kw">let </span>read = <span class="self">self</span>.should_read_impl(stats)<span class="question-mark">?</span>;
-
-        <span class="kw">let </span>state = ExecutionState::new();
-
-        <span class="kw">if </span>state.verbose() &amp;&amp; read {
-            <span class="macro">eprintln!</span>(<span class="string">&quot;parquet file must be read, statistics not sufficient for predicate.&quot;</span>)
-        } <span class="kw">else if </span>state.verbose() &amp;&amp; !read {
-            <span class="macro">eprintln!</span>(<span class="string">&quot;parquet file can be skipped, the statistics were sufficient to apply the predicate.&quot;</span>)
-        };
+        <span class="kw">if </span>ExecutionState::new().verbose() {
+            <span class="kw">if </span>read {
+                <span class="macro">eprintln!</span>(<span class="string">&quot;parquet file must be read, statistics not sufficient for predicate.&quot;</span>)
+            } <span class="kw">else </span>{
+                <span class="macro">eprintln!</span>(<span class="string">&quot;parquet file can be skipped, the statistics were sufficient to apply the predicate.&quot;</span>)
+            }
+        }
 
         <span class="prelude-val">Ok</span>(read)
     }
@@ -951,6 +996,11 @@
             } =&gt; (function, input),
             <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">true</span>),
         };
+        <span class="comment">// Ensure the input of the function is only a `col(..)`.
+        // If it does any arithmetic the code below is flawed.
+        </span><span class="kw">if </span>!<span class="macro">matches!</span>(input[<span class="number">0</span>], Expr::Column(<span class="kw">_</span>)) {
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">true</span>);
+        }
 
         <span class="kw">match </span>function {
             FunctionExpr::Boolean(BooleanFunction::IsNull) =&gt; {
@@ -963,56 +1013,27 @@
                     },
                     <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>),
                 }
-            }
+            },
             <span class="attr">#[cfg(feature = <span class="string">&quot;is_in&quot;</span>)]
             </span>FunctionExpr::Boolean(BooleanFunction::IsIn) =&gt; {
-                <span class="kw">let </span>root = <span class="kw">match </span>expr_to_leaf_column_name(<span class="kw-2">&amp;</span>input[<span class="number">0</span>]) {
-                    <span class="prelude-val">Ok</span>(root) =&gt; root,
-                    <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">true</span>),
+                <span class="kw">let </span>should_read = || -&gt; <span class="prelude-ty">Option</span>&lt;bool&gt; {
+                    <span class="kw">let </span>root = expr_to_leaf_column_name(<span class="kw-2">&amp;</span>input[<span class="number">0</span>]).ok()<span class="question-mark">?</span>;
+                    <span class="kw">let </span>Expr::Literal(LiteralValue::Series(input)) = <span class="kw-2">&amp;</span>input[<span class="number">1</span>] <span class="kw">else </span>{
+                        <span class="kw">return </span><span class="prelude-val">None</span>;
+                    };
+                    <span class="attr">#[allow(clippy::explicit_auto_deref)]
+                    </span><span class="kw">let </span>input: <span class="kw-2">&amp;</span>Series = <span class="kw-2">&amp;**</span>input;
+                    <span class="kw">let </span>st = stats.get_stats(<span class="kw-2">&amp;</span>root).ok()<span class="question-mark">?</span>;
+                    <span class="kw">let </span>min = st.to_min()<span class="question-mark">?</span>;
+                    <span class="kw">let </span>max = st.to_max()<span class="question-mark">?</span>;
+
+                    <span class="kw">let </span>all_smaller = || <span class="prelude-val">Some</span>(ChunkCompare::lt(input, min).ok()<span class="question-mark">?</span>.all());
+                    <span class="kw">let </span>all_bigger = || <span class="prelude-val">Some</span>(ChunkCompare::gt(input, max).ok()<span class="question-mark">?</span>.all());
+                    <span class="prelude-val">Some</span>(!all_smaller()<span class="question-mark">? </span>&amp;&amp; !all_bigger()<span class="question-mark">?</span>)
                 };
 
-                <span class="kw">let </span>input: <span class="kw-2">&amp;</span>Series = <span class="kw">match </span><span class="kw-2">&amp;</span>input[<span class="number">1</span>] {
-                    Expr::Literal(LiteralValue::Series(s)) =&gt; s,
-                    <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">true</span>),
-                };
-
-                <span class="kw">match </span>stats.get_stats(<span class="kw-2">&amp;</span>root).ok() {
-                    <span class="prelude-val">Some</span>(st) =&gt; {
-                        <span class="kw">let </span>min = <span class="kw">match </span>st.to_min() {
-                            <span class="prelude-val">Some</span>(min) =&gt; min,
-                            <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">true</span>),
-                        };
-
-                        <span class="kw">let </span>max = <span class="kw">match </span>st.to_max() {
-                            <span class="prelude-val">Some</span>(max) =&gt; max,
-                            <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">true</span>),
-                        };
-
-                        <span class="comment">// all wanted values are smaller than minimum
-                        // don&#39;t need to read
-                        </span><span class="kw">if </span>ChunkCompare::&lt;<span class="kw-2">&amp;</span>Series&gt;::lt(input, <span class="kw-2">&amp;</span>min)
-                            .ok()
-                            .map(|ca| ca.all())
-                            == <span class="prelude-val">Some</span>(<span class="bool-val">true</span>)
-                        {
-                            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
-                        }
-
-                        <span class="comment">// all wanted values are bigger than maximum
-                        // don&#39;t need to read
-                        </span><span class="kw">if </span>ChunkCompare::&lt;<span class="kw-2">&amp;</span>Series&gt;::gt(input, <span class="kw-2">&amp;</span>max)
-                            .ok()
-                            .map(|ca| ca.all())
-                            == <span class="prelude-val">Some</span>(<span class="bool-val">true</span>)
-                        {
-                            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
-                        }
-
-                        <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
-                    }
-                    <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>),
-                }
-            }
+                <span class="prelude-val">Ok</span>(should_read().unwrap_or(<span class="bool-val">true</span>))
+            },
             <span class="kw">_ </span>=&gt; <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>),
         }
     }
@@ -1029,14 +1050,11 @@
         <span class="kw">let </span>s = a.evaluate_partitioned(df, groups, state)<span class="question-mark">?</span>;
 
         <span class="kw">if </span><span class="self">self</span>.allow_rename {
-            <span class="kw">return </span><span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>[s]);
+            <span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>[s])
+        } <span class="kw">else </span>{
+            <span class="kw">let </span>in_name = s.name().to_string();
+            <span class="prelude-val">Ok</span>(<span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>[s])<span class="question-mark">?</span>.with_name(<span class="kw-2">&amp;</span>in_name))
         }
-        <span class="kw">let </span>in_name = s.name().to_string();
-        <span class="kw">let </span><span class="kw-2">mut </span>out = <span class="self">self</span>.eval_and_flatten(<span class="kw-2">&amp;mut </span>[s])<span class="question-mark">?</span>;
-        <span class="kw">if </span>in_name != out.name() {
-            out.rename(<span class="kw-2">&amp;</span>in_name);
-        }
-        <span class="prelude-val">Ok</span>(out)
     }
 
     <span class="kw">fn </span>finalize(

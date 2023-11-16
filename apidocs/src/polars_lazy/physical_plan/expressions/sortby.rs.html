@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-lazy-0.30.0/src/physical_plan/expressions/sortby.rs`."><title>sortby.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_lazy" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-lazy-0.34.2/src/physical_plan/expressions/sortby.rs`."><title>sortby.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_lazy" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -310,10 +310,18 @@
 <a href="#310" id="310">310</a>
 <a href="#311" id="311">311</a>
 <a href="#312" id="312">312</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::atomic::{AtomicBool, Ordering};
-<span class="kw">use </span>std::sync::Arc;
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use </span>polars_core::frame::groupby::{GroupsIndicator, GroupsProxy};
+<span class="kw">use </span>polars_core::frame::group_by::{GroupsIndicator, GroupsProxy};
 <span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>polars_core::POOL;
 <span class="kw">use </span>rayon::prelude::<span class="kw-2">*</span>;
@@ -346,13 +354,136 @@
 
 <span class="kw">fn </span>prepare_descending(descending: <span class="kw-2">&amp;</span>[bool], by_len: usize) -&gt; Vec&lt;bool&gt; {
     <span class="kw">match </span>(descending.len(), by_len) {
-        <span class="comment">// equal length
+        <span class="comment">// Equal length.
         </span>(n_rdescending, n) <span class="kw">if </span>n_rdescending == n =&gt; descending.to_vec(),
-        <span class="comment">// none given all false
+        <span class="comment">// None given all false.
         </span>(<span class="number">0</span>, n) =&gt; <span class="macro">vec!</span>[<span class="bool-val">false</span>; n],
-        <span class="comment">// broadcast first
+        <span class="comment">// Broadcast first.
         </span>(<span class="kw">_</span>, n) =&gt; <span class="macro">vec!</span>[descending[<span class="number">0</span>]; n],
     }
+}
+
+<span class="kw">static </span>ERR_MSG: <span class="kw-2">&amp;</span>str = <span class="string">&quot;expressions in &#39;sort_by&#39; produced a different number of groups&quot;</span>;
+
+<span class="kw">fn </span>check_groups(a: <span class="kw-2">&amp;</span>GroupsProxy, b: <span class="kw-2">&amp;</span>GroupsProxy) -&gt; PolarsResult&lt;()&gt; {
+    <span class="macro">polars_ensure!</span>(a.iter().zip(b.iter()).all(|(a, b)| {
+        a.len() == b.len()
+    }), ComputeError: ERR_MSG);
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="kw">fn </span>sort_by_groups_single_by(
+    indicator: GroupsIndicator,
+    sort_by_s: <span class="kw-2">&amp;</span>Series,
+    descending: <span class="kw-2">&amp;</span>[bool],
+) -&gt; PolarsResult&lt;(IdxSize, Vec&lt;IdxSize&gt;)&gt; {
+    <span class="kw">let </span>new_idx = <span class="kw">match </span>indicator {
+        GroupsIndicator::Idx((<span class="kw">_</span>, idx)) =&gt; {
+            <span class="comment">// SAFETY: group tuples are always in bounds.
+            </span><span class="kw">let </span>group = <span class="kw">unsafe </span>{ sort_by_s.take_slice_unchecked(idx) };
+
+            <span class="kw">let </span>sorted_idx = group.arg_sort(SortOptions {
+                descending: descending[<span class="number">0</span>],
+                <span class="comment">// We are already in par iter.
+                </span>multithreaded: <span class="bool-val">false</span>,
+                ..Default::default()
+            });
+            map_sorted_indices_to_group_idx(<span class="kw-2">&amp;</span>sorted_idx, idx)
+        },
+        GroupsIndicator::Slice([first, len]) =&gt; {
+            <span class="kw">let </span>group = sort_by_s.slice(first <span class="kw">as </span>i64, len <span class="kw">as </span>usize);
+            <span class="kw">let </span>sorted_idx = group.arg_sort(SortOptions {
+                descending: descending[<span class="number">0</span>],
+                <span class="comment">// We are already in par iter.
+                </span>multithreaded: <span class="bool-val">false</span>,
+                ..Default::default()
+            });
+            map_sorted_indices_to_group_slice(<span class="kw-2">&amp;</span>sorted_idx, first)
+        },
+    };
+    <span class="kw">let </span>first = new_idx
+        .first()
+        .ok_or_else(|| <span class="macro">polars_err!</span>(ComputeError: <span class="string">&quot;{}&quot;</span>, ERR_MSG))<span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>((<span class="kw-2">*</span>first, new_idx))
+}
+
+<span class="kw">fn </span>sort_by_groups_no_match_single&lt;<span class="lifetime">&#39;a</span>&gt;(
+    <span class="kw-2">mut </span>ac_in: AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt;,
+    <span class="kw-2">mut </span>ac_by: AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt;,
+    descending: bool,
+    expr: <span class="kw-2">&amp;</span>Expr,
+) -&gt; PolarsResult&lt;AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+    <span class="kw">let </span>s_in = ac_in.aggregated();
+    <span class="kw">let </span>s_by = ac_by.aggregated();
+    <span class="kw">let </span><span class="kw-2">mut </span>s_in = s_in.list().unwrap().clone();
+    <span class="kw">let </span><span class="kw-2">mut </span>s_by = s_by.list().unwrap().clone();
+
+    <span class="kw">let </span>ca: PolarsResult&lt;ListChunked&gt; = POOL.install(|| {
+        s_in.par_iter_indexed()
+            .zip(s_by.par_iter_indexed())
+            .map(|(opt_s, s_sort_by)| <span class="kw">match </span>(opt_s, s_sort_by) {
+                (<span class="prelude-val">Some</span>(s), <span class="prelude-val">Some</span>(s_sort_by)) =&gt; {
+                    <span class="macro">polars_ensure!</span>(s.len() == s_sort_by.len(), ComputeError: <span class="string">&quot;series lengths don&#39;t match in &#39;sort_by&#39; expression&quot;</span>);
+                    <span class="kw">let </span>idx = s_sort_by.arg_sort(SortOptions {
+                        descending,
+                        <span class="comment">// We are already in par iter.
+                        </span>multithreaded: <span class="bool-val">false</span>,
+                        ..Default::default()
+                    });
+                    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="kw">unsafe </span>{ s.take_unchecked(<span class="kw-2">&amp;</span>idx) }))
+                },
+                <span class="kw">_ </span>=&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+            })
+            .collect()
+    });
+    <span class="kw">let </span>s = ca<span class="question-mark">?</span>.with_name(s_in.name()).into_series();
+    ac_in.with_series(s, <span class="bool-val">true</span>, <span class="prelude-val">Some</span>(expr))<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(ac_in)
+}
+
+<span class="kw">fn </span>sort_by_groups_multiple_by(
+    indicator: GroupsIndicator,
+    sort_by_s: <span class="kw-2">&amp;</span>[Series],
+    descending: <span class="kw-2">&amp;</span>[bool],
+) -&gt; PolarsResult&lt;(IdxSize, Vec&lt;IdxSize&gt;)&gt; {
+    <span class="kw">let </span>new_idx = <span class="kw">match </span>indicator {
+        GroupsIndicator::Idx((_first, idx)) =&gt; {
+            <span class="comment">// SAFETY: group tuples are always in bounds.
+            </span><span class="kw">let </span>groups = sort_by_s
+                .iter()
+                .map(|s| <span class="kw">unsafe </span>{ s.take_slice_unchecked(idx) })
+                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+
+            <span class="kw">let </span>options = SortMultipleOptions {
+                other: groups[<span class="number">1</span>..].to_vec(),
+                descending: descending.to_owned(),
+                multithreaded: <span class="bool-val">false</span>,
+            };
+
+            <span class="kw">let </span>sorted_idx = groups[<span class="number">0</span>].arg_sort_multiple(<span class="kw-2">&amp;</span>options).unwrap();
+            map_sorted_indices_to_group_idx(<span class="kw-2">&amp;</span>sorted_idx, idx)
+        },
+        GroupsIndicator::Slice([first, len]) =&gt; {
+            <span class="kw">let </span>groups = sort_by_s
+                .iter()
+                .map(|s| s.slice(first <span class="kw">as </span>i64, len <span class="kw">as </span>usize))
+                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+
+            <span class="kw">let </span>options = SortMultipleOptions {
+                other: groups[<span class="number">1</span>..].to_vec(),
+                descending: descending.to_owned(),
+                multithreaded: <span class="bool-val">false</span>,
+            };
+            <span class="kw">let </span>sorted_idx = groups[<span class="number">0</span>].arg_sort_multiple(<span class="kw-2">&amp;</span>options).unwrap();
+            map_sorted_indices_to_group_slice(<span class="kw-2">&amp;</span>sorted_idx, first)
+        },
+    };
+    <span class="kw">let </span>first = new_idx
+        .first()
+        .ok_or_else(|| <span class="macro">polars_err!</span>(ComputeError: <span class="string">&quot;{}&quot;</span>, ERR_MSG))<span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>((<span class="kw-2">*</span>first, new_idx))
 }
 
 <span class="kw">impl </span>PhysicalExpr <span class="kw">for </span>SortByExpr {
@@ -403,9 +534,8 @@
             sorted_idx.len(), series.len()
         );
 
-        <span class="comment">// Safety:
-        // sorted index are within bounds
-        </span><span class="kw">unsafe </span>{ series.take_unchecked(<span class="kw-2">&amp;</span>sorted_idx) }
+        <span class="comment">// SAFETY: sorted index are within bounds.
+        </span><span class="kw">unsafe </span>{ <span class="prelude-val">Ok</span>(series.take_unchecked(<span class="kw-2">&amp;</span>sorted_idx)) }
     }
 
     <span class="attr">#[allow(clippy::ptr_arg)]
@@ -416,202 +546,90 @@
         state: <span class="kw-2">&amp;</span>ExecutionState,
     ) -&gt; PolarsResult&lt;AggregationContext&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>ac_in = <span class="self">self</span>.input.evaluate_on_groups(df, groups, state)<span class="question-mark">?</span>;
-        <span class="comment">// if the length of the sort_by argument differs
-        // we raise an error
-        </span><span class="kw">let </span>invalid = AtomicBool::new(<span class="bool-val">false</span>);
+        <span class="kw">let </span>descending = prepare_descending(<span class="kw-2">&amp;</span><span class="self">self</span>.descending, <span class="self">self</span>.by.len());
 
-        <span class="comment">// the groups of the lhs of the expressions do not match the series values
-        // we must take the slower path.
-        </span><span class="kw">if </span>!<span class="macro">matches!</span>(ac_in.update_groups, UpdateGroups::No) {
-            <span class="macro">polars_ensure!</span>(
-                <span class="self">self</span>.by.len() &lt;= <span class="number">1</span>, expr = <span class="self">self</span>.expr, ComputeError:
-                <span class="string">&quot;this expression is not supported for more than two sort columns&quot;
-            </span>);
-            <span class="kw">let </span><span class="kw-2">mut </span>ac_sort_by = <span class="self">self</span>.by[<span class="number">0</span>].evaluate_on_groups(df, groups, state)<span class="question-mark">?</span>;
-            <span class="kw">let </span>sort_by = ac_sort_by.aggregated();
-            <span class="kw">let </span><span class="kw-2">mut </span>sort_by = sort_by.list().unwrap().clone();
-            <span class="kw">let </span>s = ac_in.aggregated();
-            <span class="kw">let </span><span class="kw-2">mut </span>s = s.list().unwrap().clone();
-
-            <span class="kw">let </span>descending = <span class="self">self</span>.descending[<span class="number">0</span>];
-            <span class="kw">let </span><span class="kw-2">mut </span>ca: ListChunked = POOL.install(|| {
-                s.par_iter_indexed()
-                    .zip(sort_by.par_iter_indexed())
-                    .map(|(opt_s, s_sort_by)| <span class="kw">match </span>(opt_s, s_sort_by) {
-                        (<span class="prelude-val">Some</span>(s), <span class="prelude-val">Some</span>(s_sort_by)) =&gt; {
-                            <span class="kw">if </span>s.len() != s_sort_by.len() {
-                                invalid.store(<span class="bool-val">true</span>, Ordering::Relaxed);
-                                <span class="prelude-val">None
-                            </span>} <span class="kw">else </span>{
-                                <span class="kw">let </span>idx = s_sort_by.arg_sort(SortOptions {
-                                    descending,
-                                    <span class="comment">// we are already in par iter.
-                                    </span>multithreaded: <span class="bool-val">false</span>,
-                                    ..Default::default()
-                                });
-                                <span class="prelude-val">Some</span>(<span class="kw">unsafe </span>{ s.take_unchecked(<span class="kw-2">&amp;</span>idx).unwrap() })
-                            }
-                        }
-                        <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-                    })
-                    .collect()
-            });
-            ca.rename(s.name());
-            <span class="kw">let </span>s = ca.into_series();
-            ac_in.with_series(s, <span class="bool-val">true</span>, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.expr))<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(ac_in)
-        } <span class="kw">else </span>{
-            <span class="kw">let </span>descending = prepare_descending(<span class="kw-2">&amp;</span><span class="self">self</span>.descending, <span class="self">self</span>.by.len());
-
-            <span class="kw">let </span>(groups, ordered_by_group_operation) = <span class="kw">if </span><span class="self">self</span>.by.len() == <span class="number">1 </span>{
-                <span class="kw">let </span><span class="kw-2">mut </span>ac_sort_by = <span class="self">self</span>.by[<span class="number">0</span>].evaluate_on_groups(df, groups, state)<span class="question-mark">?</span>;
-                <span class="kw">let </span>sort_by_s = ac_sort_by.flat_naive().into_owned();
-                <span class="macro">polars_ensure!</span>(
-                    sort_by_s.len() == ac_in.flat_naive().len(), expr = <span class="self">self</span>.expr, ComputeError:
-                    <span class="string">&quot;the expression in `sort_by` argument must result in the same length&quot;
-                </span>);
-                <span class="kw">let </span>ordered_by_group_operation = <span class="macro">matches!</span>(
-                    ac_sort_by.update_groups,
-                    UpdateGroups::WithSeriesLen | UpdateGroups::WithGroupsLen
-                );
-                <span class="kw">let </span>groups = ac_sort_by.groups();
-
-                <span class="kw">let </span>groups = POOL.install(|| {
-                    groups
-                        .par_iter()
-                        .map(|indicator| {
-                            <span class="kw">let </span>new_idx = <span class="kw">match </span>indicator {
-                                GroupsIndicator::Idx((<span class="kw">_</span>, idx)) =&gt; {
-                                    <span class="comment">// Safety:
-                                    // Group tuples are always in bounds
-                                    </span><span class="kw">let </span>group = <span class="kw">unsafe </span>{
-                                        sort_by_s.take_iter_unchecked(
-                                            <span class="kw-2">&amp;mut </span>idx.iter().map(|i| <span class="kw-2">*</span>i <span class="kw">as </span>usize),
-                                        )
-                                    };
-
-                                    <span class="kw">let </span>sorted_idx = group.arg_sort(SortOptions {
-                                        descending: descending[<span class="number">0</span>],
-                                        <span class="comment">// we are already in par iter.
-                                        </span>multithreaded: <span class="bool-val">false</span>,
-                                        ..Default::default()
-                                    });
-                                    map_sorted_indices_to_group_idx(<span class="kw-2">&amp;</span>sorted_idx, idx)
-                                }
-                                GroupsIndicator::Slice([first, len]) =&gt; {
-                                    <span class="kw">let </span>group = sort_by_s.slice(first <span class="kw">as </span>i64, len <span class="kw">as </span>usize);
-                                    <span class="kw">let </span>sorted_idx = group.arg_sort(SortOptions {
-                                        descending: descending[<span class="number">0</span>],
-                                        <span class="comment">// we are already in par iter.
-                                        </span>multithreaded: <span class="bool-val">false</span>,
-                                        ..Default::default()
-                                    });
-                                    map_sorted_indices_to_group_slice(<span class="kw-2">&amp;</span>sorted_idx, first)
-                                }
-                            };
-
-                            (new_idx[<span class="number">0</span>], new_idx)
-                        })
-                        .collect()
-                });
-
-                (GroupsProxy::Idx(groups), ordered_by_group_operation)
-            } <span class="kw">else </span>{
-                <span class="kw">let </span><span class="kw-2">mut </span>ac_sort_by = <span class="self">self
-                    </span>.by
-                    .iter()
-                    .map(|e| e.evaluate_on_groups(df, groups, state))
-                    .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
-                <span class="kw">let </span>sort_by_s = ac_sort_by
-                    .iter()
-                    .map(|s| {
-                        <span class="kw">let </span>s = s.flat_naive();
-                        <span class="kw">match </span>s.dtype() {
-                            <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-categorical&quot;</span>)]
-                            </span>DataType::Categorical(<span class="kw">_</span>) =&gt; s.into_owned(),
-                            <span class="kw">_ </span>=&gt; s.to_physical_repr().into_owned(),
-                        }
-                    })
-                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-
-                <span class="kw">for </span>sort_by_s <span class="kw">in </span><span class="kw-2">&amp;</span>sort_by_s {
-                    <span class="macro">polars_ensure!</span>(
-                        sort_by_s.len() == ac_in.flat_naive().len(), expr = <span class="self">self</span>.expr, ComputeError:
-                        <span class="string">&quot;the expression in `sort_by` argument must result in the same length&quot;
-                    </span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>ac_sort_by = <span class="self">self
+            </span>.by
+            .iter()
+            .map(|e| e.evaluate_on_groups(df, groups, state))
+            .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>sort_by_s = ac_sort_by
+            .iter()
+            .map(|s| {
+                <span class="kw">let </span>s = s.flat_naive();
+                <span class="kw">match </span>s.dtype() {
+                    <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-categorical&quot;</span>)]
+                    </span>DataType::Categorical(<span class="kw">_</span>) =&gt; s.into_owned(),
+                    <span class="kw">_ </span>=&gt; s.to_physical_repr().into_owned(),
                 }
+            })
+            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-                <span class="kw">let </span>ordered_by_group_operation = <span class="macro">matches!</span>(
-                    ac_sort_by[<span class="number">0</span>].update_groups,
-                    UpdateGroups::WithSeriesLen | UpdateGroups::WithGroupsLen
-                );
-                <span class="kw">let </span>groups = ac_sort_by[<span class="number">0</span>].groups();
-
-                <span class="kw">let </span>groups = POOL.install(|| {
-                    groups
-                        .par_iter()
-                        .map(|indicator| {
-                            <span class="kw">let </span>new_idx = <span class="kw">match </span>indicator {
-                                GroupsIndicator::Idx((_first, idx)) =&gt; {
-                                    <span class="comment">// Safety:
-                                    // Group tuples are always in bounds
-                                    </span><span class="kw">let </span>groups = sort_by_s
-                                        .iter()
-                                        .map(|s| <span class="kw">unsafe </span>{
-                                            s.take_iter_unchecked(
-                                                <span class="kw-2">&amp;mut </span>idx.iter().map(|i| <span class="kw-2">*</span>i <span class="kw">as </span>usize),
-                                            )
-                                        })
-                                        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-
-                                    <span class="kw">let </span>options = SortMultipleOptions {
-                                        other: groups[<span class="number">1</span>..].to_vec(),
-                                        descending: descending.clone(),
-                                        multithreaded: <span class="bool-val">false</span>,
-                                    };
-
-                                    <span class="kw">let </span>sorted_idx = groups[<span class="number">0</span>].arg_sort_multiple(<span class="kw-2">&amp;</span>options).unwrap();
-                                    map_sorted_indices_to_group_idx(<span class="kw-2">&amp;</span>sorted_idx, idx)
-                                }
-                                GroupsIndicator::Slice([first, len]) =&gt; {
-                                    <span class="kw">let </span>groups = sort_by_s
-                                        .iter()
-                                        .map(|s| s.slice(first <span class="kw">as </span>i64, len <span class="kw">as </span>usize))
-                                        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-
-                                    <span class="kw">let </span>options = SortMultipleOptions {
-                                        other: groups[<span class="number">1</span>..].to_vec(),
-                                        descending: descending.clone(),
-                                        multithreaded: <span class="bool-val">false</span>,
-                                    };
-                                    <span class="kw">let </span>sorted_idx = groups[<span class="number">0</span>].arg_sort_multiple(<span class="kw-2">&amp;</span>options).unwrap();
-                                    map_sorted_indices_to_group_slice(<span class="kw-2">&amp;</span>sorted_idx, first)
-                                }
-                            };
-
-                            (new_idx[<span class="number">0</span>], new_idx)
-                        })
-                        .collect()
-                });
-
-                (GroupsProxy::Idx(groups), ordered_by_group_operation)
-            };
+        <span class="comment">// A check up front to ensure the input expressions have the same number of total elements.
+        </span><span class="kw">for </span>sort_by_s <span class="kw">in </span><span class="kw-2">&amp;</span>sort_by_s {
             <span class="macro">polars_ensure!</span>(
-                !invalid.load(Ordering::Relaxed), expr = <span class="self">self</span>.expr, ComputeError:
+                sort_by_s.len() == ac_in.flat_naive().len(), expr = <span class="self">self</span>.expr, ComputeError:
                 <span class="string">&quot;the expression in `sort_by` argument must result in the same length&quot;
             </span>);
-
-            <span class="comment">// if the rhs is already aggregated once,
-            // it is reordered by the groupby operation
-            // we must ensure that we are as well.
-            </span><span class="kw">if </span>ordered_by_group_operation {
-                <span class="kw">let </span>s = ac_in.aggregated();
-                ac_in.with_series(s.explode().unwrap(), <span class="bool-val">false</span>, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
-            }
-
-            ac_in.with_groups(groups);
-            <span class="prelude-val">Ok</span>(ac_in)
         }
+
+        <span class="kw">let </span>ordered_by_group_operation = <span class="macro">matches!</span>(
+            ac_sort_by[<span class="number">0</span>].update_groups,
+            UpdateGroups::WithSeriesLen | UpdateGroups::WithGroupsLen
+        );
+
+        <span class="kw">let </span>groups = <span class="kw">if </span><span class="self">self</span>.by.len() == <span class="number">1 </span>{
+            <span class="kw">let </span><span class="kw-2">mut </span>ac_sort_by = ac_sort_by.pop().unwrap();
+
+            <span class="comment">// The groups of the lhs of the expressions do not match the series values,
+            // we must take the slower path.
+            </span><span class="kw">if </span>!<span class="macro">matches!</span>(ac_in.update_groups, UpdateGroups::No) {
+                <span class="kw">return </span>sort_by_groups_no_match_single(
+                    ac_in,
+                    ac_sort_by,
+                    <span class="self">self</span>.descending[<span class="number">0</span>],
+                    <span class="kw-2">&amp;</span><span class="self">self</span>.expr,
+                );
+            };
+
+            <span class="kw">let </span>sort_by_s = sort_by_s.pop().unwrap();
+            <span class="kw">let </span>groups = ac_sort_by.groups();
+
+            <span class="kw">let </span>(check, groups) = POOL.join(
+                || check_groups(groups, ac_in.groups()),
+                || {
+                    groups
+                        .par_iter()
+                        .map(|indicator| {
+                            sort_by_groups_single_by(indicator, <span class="kw-2">&amp;</span>sort_by_s, <span class="kw-2">&amp;</span>descending)
+                        })
+                        .collect::&lt;PolarsResult&lt;<span class="kw">_</span>&gt;&gt;()
+                },
+            );
+            check<span class="question-mark">?</span>;
+
+            GroupsProxy::Idx(groups<span class="question-mark">?</span>)
+        } <span class="kw">else </span>{
+            <span class="kw">let </span>groups = ac_sort_by[<span class="number">0</span>].groups();
+
+            <span class="kw">let </span>groups = POOL.install(|| {
+                groups
+                    .par_iter()
+                    .map(|indicator| sort_by_groups_multiple_by(indicator, <span class="kw-2">&amp;</span>sort_by_s, <span class="kw-2">&amp;</span>descending))
+                    .collect::&lt;PolarsResult&lt;<span class="kw">_</span>&gt;&gt;()
+            });
+            GroupsProxy::Idx(groups<span class="question-mark">?</span>)
+        };
+
+        <span class="comment">// If the rhs is already aggregated once, it is reordered by the
+        // group_by operation - we must ensure that we are as well.
+        </span><span class="kw">if </span>ordered_by_group_operation {
+            <span class="kw">let </span>s = ac_in.aggregated();
+            ac_in.with_series(s.explode().unwrap(), <span class="bool-val">false</span>, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+        }
+
+        ac_in.with_groups(groups);
+        <span class="prelude-val">Ok</span>(ac_in)
     }
 
     <span class="kw">fn </span>to_field(<span class="kw-2">&amp;</span><span class="self">self</span>, input_schema: <span class="kw-2">&amp;</span>Schema) -&gt; PolarsResult&lt;Field&gt; {

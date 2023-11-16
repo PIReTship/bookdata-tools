@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":["Extrema","GetSaferUnchecked","SortedSlice"]};
+window.SIDEBAR_ITEMS = {"trait":["Extrema","GetSaferUnchecked","Slice2Uninit","SortedSlice"]};

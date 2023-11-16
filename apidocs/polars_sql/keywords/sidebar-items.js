@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["all_functions","all_keywords"]};

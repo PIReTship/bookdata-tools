@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-core-0.30.0/src/hashing/vector_hasher.rs`."><title>vector_hasher.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="polars_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../polars_core/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-core-0.34.2/src/hashing/vector_hasher.rs`."><title>vector_hasher.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="polars_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../polars_core/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -471,29 +471,9 @@
 <a href="#471" id="471">471</a>
 <a href="#472" id="472">472</a>
 <a href="#473" id="473">473</a>
-<a href="#474" id="474">474</a>
-<a href="#475" id="475">475</a>
-<a href="#476" id="476">476</a>
-<a href="#477" id="477">477</a>
-<a href="#478" id="478">478</a>
-<a href="#479" id="479">479</a>
-<a href="#480" id="480">480</a>
-<a href="#481" id="481">481</a>
-<a href="#482" id="482">482</a>
-<a href="#483" id="483">483</a>
-<a href="#484" id="484">484</a>
-<a href="#485" id="485">485</a>
-<a href="#486" id="486">486</a>
-<a href="#487" id="487">487</a>
-<a href="#488" id="488">488</a>
-<a href="#489" id="489">489</a>
-<a href="#490" id="490">490</a>
-<a href="#491" id="491">491</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>arrow::bitmap::utils::get_bit_unchecked;
-<span class="kw">use </span>hashbrown::hash_map::RawEntryMut;
-<span class="kw">use </span>hashbrown::HashMap;
-<span class="kw">use </span>polars_arrow::utils::CustomIterTools;
-<span class="kw">use </span>polars_utils::HashSingle;
+<span class="attr">#[cfg(feature = <span class="string">&quot;group_by_list&quot;</span>)]
+</span><span class="kw">use </span>arrow::legacy::kernels::list_bytes_iter::numeric_list_bytes_iter;
 <span class="kw">use </span>rayon::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>xxhash_rust::xxh3::xxh3_64_with_seed;
 
@@ -514,12 +494,16 @@
     <span class="doccomment">/// Compute the hash for all values in the array.
     ///
     /// This currently only works with the AHash RandomState hasher builder.
-    </span><span class="kw">fn </span>vec_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, _random_state: RandomState, _buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) {
-        <span class="macro">unimplemented!</span>()
+    </span><span class="kw">fn </span>vec_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, _random_state: RandomState, _buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) -&gt; PolarsResult&lt;()&gt; {
+        <span class="macro">polars_bail!</span>(un_impl = vec_hash);
     }
 
-    <span class="kw">fn </span>vec_hash_combine(<span class="kw-2">&amp;</span><span class="self">self</span>, _random_state: RandomState, _hashes: <span class="kw-2">&amp;mut </span>[u64]) {
-        <span class="macro">unimplemented!</span>()
+    <span class="kw">fn </span>vec_hash_combine(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        _random_state: RandomState,
+        _hashes: <span class="kw-2">&amp;mut </span>[u64],
+    ) -&gt; PolarsResult&lt;()&gt; {
+        <span class="macro">polars_bail!</span>(un_impl = vec_hash_combine);
     }
 }
 
@@ -531,12 +515,8 @@
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>get_null_hash_value(random_state: RandomState) -&gt; u64 {
     <span class="comment">// we just start with a large prime number and hash that twice
     // to get a constant hash value for null/None
-    </span><span class="kw">let </span><span class="kw-2">mut </span>hasher = random_state.build_hasher();
-    <span class="number">3188347919usize</span>.hash(<span class="kw-2">&amp;mut </span>hasher);
-    <span class="kw">let </span>first = hasher.finish();
-    <span class="kw">let </span><span class="kw-2">mut </span>hasher = random_state.build_hasher();
-    first.hash(<span class="kw-2">&amp;mut </span>hasher);
-    hasher.finish()
+    </span><span class="kw">let </span>first = random_state.hash_one(<span class="number">3188347919usize</span>);
+    random_state.hash_one(first)
 }
 
 <span class="kw">fn </span>insert_null_hash(chunks: <span class="kw-2">&amp;</span>[ArrayRef], random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) {
@@ -559,6 +539,11 @@
     });
 }
 
+<span class="attr">#[inline(always)]
+</span><span class="kw">pub fn </span>integer_hash&lt;T: AsU64&gt;(v: T) -&gt; u64 {
+    folded_multiply(v.as_u64(), MULTIPLE)
+}
+
 <span class="kw">fn </span>integer_vec_hash&lt;T&gt;(ca: <span class="kw-2">&amp;</span>ChunkedArray&lt;T&gt;, random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;)
 <span class="kw">where
     </span>T: PolarsIntegerType,
@@ -578,7 +563,7 @@
     </span>ca.downcast_iter().for_each(|arr| {
         buf.extend(arr.values().as_slice().iter().copied().map(|v| {
             <span class="comment">// we save an xor because we don&#39;t have initial state
-            </span>folded_multiply(v.as_u64(), MULTIPLE)
+            </span>integer_hash(v)
         }));
     });
     insert_null_hash(<span class="kw-2">&amp;</span>ca.chunks, random_state, buf)
@@ -616,7 +601,7 @@
                         <span class="comment">// inlined from ahash. This ensures we combine with the previous state
                         </span><span class="kw-2">*</span>h = folded_multiply(to_hash ^ <span class="kw-2">*</span>h, MULTIPLE);
                     });
-            }
+            },
         }
         offset += arr.len();
     });
@@ -625,12 +610,18 @@
 <span class="macro">macro_rules! </span>vec_hash_int {
     (<span class="macro-nonterminal">$ca</span>:ident) =&gt; {
         <span class="kw">impl </span>VecHash <span class="kw">for </span><span class="macro-nonterminal">$ca </span>{
-            <span class="kw">fn </span>vec_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) {
-                integer_vec_hash(<span class="self">self</span>, random_state, buf)
+            <span class="kw">fn </span>vec_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) -&gt; PolarsResult&lt;()&gt; {
+                integer_vec_hash(<span class="self">self</span>, random_state, buf);
+                <span class="prelude-val">Ok</span>(())
             }
 
-            <span class="kw">fn </span>vec_hash_combine(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, hashes: <span class="kw-2">&amp;mut </span>[u64]) {
-                integer_vec_hash_combine(<span class="self">self</span>, random_state, hashes)
+            <span class="kw">fn </span>vec_hash_combine(
+                <span class="kw-2">&amp;</span><span class="self">self</span>,
+                random_state: RandomState,
+                hashes: <span class="kw-2">&amp;mut </span>[u64],
+            ) -&gt; PolarsResult&lt;()&gt; {
+                integer_vec_hash_combine(<span class="self">self</span>, random_state, hashes);
+                <span class="prelude-val">Ok</span>(())
             }
         }
     };
@@ -646,35 +637,41 @@
 <span class="macro">vec_hash_int!</span>(UInt8Chunked);
 
 <span class="kw">impl </span>VecHash <span class="kw">for </span>Utf8Chunked {
-    <span class="kw">fn </span>vec_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) {
-        <span class="self">self</span>.as_binary().vec_hash(random_state, buf)
+    <span class="kw">fn </span>vec_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) -&gt; PolarsResult&lt;()&gt; {
+        <span class="self">self</span>.as_binary().vec_hash(random_state, buf)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn </span>vec_hash_combine(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, hashes: <span class="kw-2">&amp;mut </span>[u64]) {
-        <span class="self">self</span>.as_binary().vec_hash_combine(random_state, hashes)
+    <span class="kw">fn </span>vec_hash_combine(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, hashes: <span class="kw-2">&amp;mut </span>[u64]) -&gt; PolarsResult&lt;()&gt; {
+        <span class="self">self</span>.as_binary().vec_hash_combine(random_state, hashes)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
+    }
+}
+
+<span class="comment">// used in polars-pipe
+</span><span class="kw">pub fn </span>_hash_binary_array(arr: <span class="kw-2">&amp;</span>BinaryArray&lt;i64&gt;, random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) {
+    <span class="kw">let </span>null_h = get_null_hash_value(random_state);
+    <span class="kw">if </span>arr.null_count() == <span class="number">0 </span>{
+        <span class="comment">// use the null_hash as seed to get a hash determined by `random_state` that is passed
+        </span>buf.extend(arr.values_iter().map(|v| xxh3_64_with_seed(v, null_h)))
+    } <span class="kw">else </span>{
+        buf.extend(arr.into_iter().map(|opt_v| <span class="kw">match </span>opt_v {
+            <span class="prelude-val">Some</span>(v) =&gt; xxh3_64_with_seed(v, null_h),
+            <span class="prelude-val">None </span>=&gt; null_h,
+        }))
     }
 }
 
 <span class="kw">impl </span>VecHash <span class="kw">for </span>BinaryChunked {
-    <span class="kw">fn </span>vec_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) {
+    <span class="kw">fn </span>vec_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) -&gt; PolarsResult&lt;()&gt; {
         buf.clear();
         buf.reserve(<span class="self">self</span>.len());
-        <span class="kw">let </span>null_h = get_null_hash_value(random_state);
-
-        <span class="self">self</span>.downcast_iter().for_each(|arr| {
-            <span class="kw">if </span>arr.null_count() == <span class="number">0 </span>{
-                <span class="comment">// simply use the null_hash as seed to get a hash determined by `random_state` that is passed
-                </span>buf.extend(arr.values_iter().map(|v| xxh3_64_with_seed(v, null_h)))
-            } <span class="kw">else </span>{
-                buf.extend(arr.into_iter().map(|opt_v| <span class="kw">match </span>opt_v {
-                    <span class="prelude-val">Some</span>(v) =&gt; xxh3_64_with_seed(v, null_h),
-                    <span class="prelude-val">None </span>=&gt; null_h,
-                }))
-            }
-        });
+        <span class="self">self</span>.downcast_iter()
+            .for_each(|arr| _hash_binary_array(arr, random_state.clone(), buf));
+        <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn </span>vec_hash_combine(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, hashes: <span class="kw-2">&amp;mut </span>[u64]) {
+    <span class="kw">fn </span>vec_hash_combine(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, hashes: <span class="kw-2">&amp;mut </span>[u64]) -&gt; PolarsResult&lt;()&gt; {
         <span class="kw">let </span>null_h = get_null_hash_value(random_state);
 
         <span class="kw">let </span><span class="kw-2">mut </span>offset = <span class="number">0</span>;
@@ -702,19 +699,20 @@
                             };
                             <span class="kw-2">*</span>h = _boost_hash_combine(l, <span class="kw-2">*</span>h)
                         });
-                }
+                },
             }
             offset += arr.len();
         });
+        <span class="prelude-val">Ok</span>(())
     }
 }
 
 <span class="kw">impl </span>VecHash <span class="kw">for </span>BooleanChunked {
-    <span class="kw">fn </span>vec_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) {
+    <span class="kw">fn </span>vec_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) -&gt; PolarsResult&lt;()&gt; {
         buf.clear();
         buf.reserve(<span class="self">self</span>.len());
-        <span class="kw">let </span>true_h = random_state.hash_single(<span class="bool-val">true</span>);
-        <span class="kw">let </span>false_h = random_state.hash_single(<span class="bool-val">false</span>);
+        <span class="kw">let </span>true_h = random_state.hash_one(<span class="bool-val">true</span>);
+        <span class="kw">let </span>false_h = random_state.hash_one(<span class="bool-val">false</span>);
         <span class="kw">let </span>null_h = get_null_hash_value(random_state);
         <span class="self">self</span>.downcast_iter().for_each(|arr| {
             <span class="kw">if </span>arr.null_count() == <span class="number">0 </span>{
@@ -727,11 +725,12 @@
                 }))
             }
         });
+        <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn </span>vec_hash_combine(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, hashes: <span class="kw-2">&amp;mut </span>[u64]) {
-        <span class="kw">let </span>true_h = random_state.hash_single(<span class="bool-val">true</span>);
-        <span class="kw">let </span>false_h = random_state.hash_single(<span class="bool-val">false</span>);
+    <span class="kw">fn </span>vec_hash_combine(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, hashes: <span class="kw-2">&amp;mut </span>[u64]) -&gt; PolarsResult&lt;()&gt; {
+        <span class="kw">let </span>true_h = random_state.hash_one(<span class="bool-val">true</span>);
+        <span class="kw">let </span>false_h = random_state.hash_one(<span class="bool-val">false</span>);
         <span class="kw">let </span>null_h = get_null_hash_value(random_state);
 
         <span class="kw">let </span><span class="kw-2">mut </span>offset = <span class="number">0</span>;
@@ -763,28 +762,87 @@
                             };
                             <span class="kw-2">*</span>h = _boost_hash_combine(l, <span class="kw-2">*</span>h)
                         });
-                }
+                },
             }
             offset += arr.len();
         });
+        <span class="prelude-val">Ok</span>(())
     }
 }
 
 <span class="kw">impl </span>VecHash <span class="kw">for </span>Float32Chunked {
-    <span class="kw">fn </span>vec_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) {
-        <span class="self">self</span>.bit_repr_small().vec_hash(random_state, buf)
+    <span class="kw">fn </span>vec_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) -&gt; PolarsResult&lt;()&gt; {
+        <span class="self">self</span>.bit_repr_small().vec_hash(random_state, buf)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn </span>vec_hash_combine(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, hashes: <span class="kw-2">&amp;mut </span>[u64]) {
-        <span class="self">self</span>.bit_repr_small().vec_hash_combine(random_state, hashes)
+    <span class="kw">fn </span>vec_hash_combine(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, hashes: <span class="kw-2">&amp;mut </span>[u64]) -&gt; PolarsResult&lt;()&gt; {
+        <span class="self">self</span>.bit_repr_small()
+            .vec_hash_combine(random_state, hashes)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
     }
 }
 <span class="kw">impl </span>VecHash <span class="kw">for </span>Float64Chunked {
-    <span class="kw">fn </span>vec_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) {
-        <span class="self">self</span>.bit_repr_large().vec_hash(random_state, buf)
+    <span class="kw">fn </span>vec_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) -&gt; PolarsResult&lt;()&gt; {
+        <span class="self">self</span>.bit_repr_large().vec_hash(random_state, buf)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
     }
-    <span class="kw">fn </span>vec_hash_combine(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, hashes: <span class="kw-2">&amp;mut </span>[u64]) {
-        <span class="self">self</span>.bit_repr_large().vec_hash_combine(random_state, hashes)
+    <span class="kw">fn </span>vec_hash_combine(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, hashes: <span class="kw-2">&amp;mut </span>[u64]) -&gt; PolarsResult&lt;()&gt; {
+        <span class="self">self</span>.bit_repr_large()
+            .vec_hash_combine(random_state, hashes)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
+    }
+}
+
+<span class="attr">#[cfg(feature = <span class="string">&quot;group_by_list&quot;</span>)]
+</span><span class="kw">impl </span>VecHash <span class="kw">for </span>ListChunked {
+    <span class="kw">fn </span>vec_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, _random_state: RandomState, _buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) -&gt; PolarsResult&lt;()&gt; {
+        <span class="macro">polars_ensure!</span>(
+        <span class="self">self</span>.inner_dtype().to_physical().is_numeric(),
+        ComputeError: <span class="string">&quot;grouping on list type is only allowed if the inner type is numeric&quot;
+        </span>);
+        _buf.clear();
+        _buf.reserve(<span class="self">self</span>.len());
+        <span class="kw">let </span>null_h = get_null_hash_value(_random_state.clone());
+
+        <span class="kw">for </span>arr <span class="kw">in </span><span class="self">self</span>.downcast_iter() {
+            _buf.extend(
+                numeric_list_bytes_iter(arr)<span class="question-mark">?</span>.map(|opt_bytes| <span class="kw">match </span>opt_bytes {
+                    <span class="prelude-val">Some</span>(s) =&gt; xxh3_64_with_seed(s, null_h),
+                    <span class="prelude-val">None </span>=&gt; null_h,
+                }),
+            )
+        }
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="kw">fn </span>vec_hash_combine(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        _random_state: RandomState,
+        _hashes: <span class="kw-2">&amp;mut </span>[u64],
+    ) -&gt; PolarsResult&lt;()&gt; {
+        <span class="macro">polars_ensure!</span>(
+        <span class="self">self</span>.inner_dtype().to_physical().is_numeric(),
+        ComputeError: <span class="string">&quot;grouping on list type is only allowed if the inner type is numeric&quot;
+        </span>);
+
+        <span class="kw">let </span>null_h = get_null_hash_value(_random_state);
+
+        <span class="kw">let </span><span class="kw-2">mut </span>offset = <span class="number">0</span>;
+        <span class="self">self</span>.downcast_iter().try_for_each(|arr| {
+            numeric_list_bytes_iter(arr)<span class="question-mark">?
+                </span>.zip(<span class="kw-2">&amp;mut </span>_hashes[offset..])
+                .for_each(|(opt_bytes, h)| {
+                    <span class="kw">let </span>l = <span class="kw">match </span>opt_bytes {
+                        <span class="prelude-val">Some</span>(s) =&gt; xxh3_64_with_seed(s, null_h),
+                        <span class="prelude-val">None </span>=&gt; null_h,
+                    };
+                    <span class="kw-2">*</span>h = _boost_hash_combine(l, <span class="kw-2">*</span>h)
+                });
+            offset += arr.len();
+            PolarsResult::Ok(())
+        })<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
     }
 }
 
@@ -793,7 +851,7 @@
 <span class="kw">where
     </span>T: PolarsObject,
 {
-    <span class="kw">fn </span>vec_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) {
+    <span class="kw">fn </span>vec_hash(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) -&gt; PolarsResult&lt;()&gt; {
         <span class="comment">// Note that we don&#39;t use the no null branch! This can break in unexpected ways.
         // for instance with threading we split an array in n_threads, this may lead to
         // splits that have no nulls and splits that have nulls. Then one array is hashed with
@@ -803,24 +861,21 @@
         </span>buf.clear();
         buf.reserve(<span class="self">self</span>.len());
 
-        <span class="self">self</span>.downcast_iter().for_each(|arr| {
-            buf.extend(arr.into_iter().map(|opt_v| {
-                <span class="kw">let </span><span class="kw-2">mut </span>hasher = random_state.build_hasher();
-                opt_v.hash(<span class="kw-2">&amp;mut </span>hasher);
-                hasher.finish()
-            }))
-        });
+        <span class="self">self</span>.downcast_iter()
+            .for_each(|arr| buf.extend(arr.into_iter().map(|opt_v| random_state.hash_one(opt_v))));
+
+        <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn </span>vec_hash_combine(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, hashes: <span class="kw-2">&amp;mut </span>[u64]) {
+    <span class="kw">fn </span>vec_hash_combine(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, hashes: <span class="kw-2">&amp;mut </span>[u64]) -&gt; PolarsResult&lt;()&gt; {
         <span class="self">self</span>.apply_to_slice(
             |opt_v, h| {
-                <span class="kw">let </span><span class="kw-2">mut </span>hasher = random_state.build_hasher();
-                opt_v.hash(<span class="kw-2">&amp;mut </span>hasher);
-                _boost_hash_combine(hasher.finish(), <span class="kw-2">*</span>h)
+                <span class="kw">let </span>hashed = random_state.hash_one(opt_v);
+                _boost_hash_combine(hashed, <span class="kw-2">*</span>h)
             },
             hashes,
-        )
+        );
+        <span class="prelude-val">Ok</span>(())
     }
 }
 
@@ -828,7 +883,7 @@
 /// During rehashes, we will rehash the hash instead of the string, that makes rehashing
 /// cheap and allows cache coherent small hash tables.
 </span><span class="attr">#[derive(Eq, Copy, Clone, Debug)]
-</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>BytesHash&lt;<span class="lifetime">&#39;a</span>&gt; {
+</span><span class="kw">pub struct </span>BytesHash&lt;<span class="lifetime">&#39;a</span>&gt; {
     payload: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]&gt;,
     <span class="kw">pub</span>(<span class="kw">super</span>) hash: u64,
 }
@@ -841,7 +896,7 @@
 
 <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; BytesHash&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="attr">#[inline]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(s: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]&gt;, hash: u64) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>new(s: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]&gt;, hash: u64) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{ payload: s, hash }
     }
 }
@@ -853,98 +908,7 @@
     }
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>prepare_hashed_relation_threaded&lt;T, I&gt;(
-    iters: Vec&lt;I&gt;,
-) -&gt; Vec&lt;HashMap&lt;T, (bool, Vec&lt;IdxSize&gt;), RandomState&gt;&gt;
-<span class="kw">where
-    </span>I: Iterator&lt;Item = T&gt; + Send + TrustedLen,
-    T: Send + Hash + Eq + Sync + Copy,
-{
-    <span class="kw">let </span>n_partitions = iters.len();
-    <span class="macro">assert!</span>(n_partitions.is_power_of_two());
-
-    <span class="kw">let </span>(hashes_and_keys, build_hasher) = create_hash_and_keys_threaded_vectorized(iters, <span class="prelude-val">None</span>);
-
-    <span class="comment">// We will create a hashtable in every thread.
-    // We use the hash to partition the keys to the matching hashtable.
-    // Every thread traverses all keys/hashes and ignores the ones that doesn&#39;t fall in that partition.
-    </span>POOL.install(|| {
-        (<span class="number">0</span>..n_partitions)
-            .into_par_iter()
-            .map(|partition_no| {
-                <span class="kw">let </span>build_hasher = build_hasher.clone();
-                <span class="kw">let </span>hashes_and_keys = <span class="kw-2">&amp;</span>hashes_and_keys;
-                <span class="kw">let </span>partition_no = partition_no <span class="kw">as </span>u64;
-                <span class="kw">let </span><span class="kw-2">mut </span>hash_tbl: HashMap&lt;T, (bool, Vec&lt;IdxSize&gt;), RandomState&gt; =
-                    HashMap::with_hasher(build_hasher);
-
-                <span class="kw">let </span>n_threads = n_partitions <span class="kw">as </span>u64;
-                <span class="kw">let </span><span class="kw-2">mut </span>offset = <span class="number">0</span>;
-                <span class="kw">for </span>hashes_and_keys <span class="kw">in </span>hashes_and_keys {
-                    <span class="kw">let </span>len = hashes_and_keys.len();
-                    hashes_and_keys
-                        .iter()
-                        .enumerate()
-                        .for_each(|(idx, (h, k))| {
-                            <span class="kw">let </span>idx = idx <span class="kw">as </span>IdxSize;
-                            <span class="comment">// partition hashes by thread no.
-                            // So only a part of the hashes go to this hashmap
-                            </span><span class="kw">if </span>this_partition(<span class="kw-2">*</span>h, partition_no, n_threads) {
-                                <span class="kw">let </span>idx = idx + offset;
-                                <span class="kw">let </span>entry = hash_tbl
-                                    .raw_entry_mut()
-                                    <span class="comment">// uses the key to check equality to find and entry
-                                    </span>.from_key_hashed_nocheck(<span class="kw-2">*</span>h, k);
-
-                                <span class="kw">match </span>entry {
-                                    RawEntryMut::Vacant(entry) =&gt; {
-                                        entry.insert_hashed_nocheck(<span class="kw-2">*</span>h, <span class="kw-2">*</span>k, (<span class="bool-val">false</span>, <span class="macro">vec!</span>[idx]));
-                                    }
-                                    RawEntryMut::Occupied(<span class="kw-2">mut </span>entry) =&gt; {
-                                        <span class="kw">let </span>(_k, v) = entry.get_key_value_mut();
-                                        v.<span class="number">1</span>.push(idx);
-                                    }
-                                }
-                            }
-                        });
-
-                    offset += len <span class="kw">as </span>IdxSize;
-                }
-                hash_tbl
-            })
-            .collect()
-    })
-}
-
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>create_hash_and_keys_threaded_vectorized&lt;I, T&gt;(
-    iters: Vec&lt;I&gt;,
-    build_hasher: <span class="prelude-ty">Option</span>&lt;RandomState&gt;,
-) -&gt; (Vec&lt;Vec&lt;(u64, T)&gt;&gt;, RandomState)
-<span class="kw">where
-    </span>I: IntoIterator&lt;Item = T&gt; + Send,
-    I::IntoIter: TrustedLen,
-    T: Send + Hash + Eq,
-{
-    <span class="kw">let </span>build_hasher = build_hasher.unwrap_or_default();
-    <span class="kw">let </span>hashes = POOL.install(|| {
-        iters
-            .into_par_iter()
-            .map(|iter| {
-                <span class="comment">// create hashes and keys
-                </span>iter.into_iter()
-                    .map(|val| {
-                        <span class="kw">let </span><span class="kw-2">mut </span>hasher = build_hasher.build_hasher();
-                        val.hash(<span class="kw-2">&amp;mut </span>hasher);
-                        (hasher.finish(), val)
-                    })
-                    .collect_trusted::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
-            })
-            .collect()
-    });
-    (hashes, build_hasher)
-}
-
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>df_rows_to_hashes_threaded_vertical(
+<span class="kw">pub fn </span>_df_rows_to_hashes_threaded_vertical(
     keys: <span class="kw-2">&amp;</span>[DataFrame],
     hasher_builder: <span class="prelude-ty">Option</span>&lt;RandomState&gt;,
 ) -&gt; PolarsResult&lt;(Vec&lt;UInt64Chunked&gt;, RandomState)&gt; {

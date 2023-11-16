@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"static":["DEFAULT_VALUE"],"struct":["Kcore"]};
+window.SIDEBAR_ITEMS = {"struct":["Kcore"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["list"],"trait":["AsBinary","AsUtf8","BinaryNameSpaceImpl","ChunkedSet","Utf8NameSpaceImpl"]};
+window.SIDEBAR_ITEMS = {"mod":["gather_skip_nulls","list"],"trait":["AsBinary","AsUtf8","BinaryNameSpaceImpl","ChunkedSet"]};

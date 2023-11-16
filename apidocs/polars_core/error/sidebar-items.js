@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ArrowError","PolarsError"],"fn":["to_compute_err"],"macro":["polars_bail","polars_ensure","polars_err"],"struct":["ErrString"],"type":["PolarsResult"]};
+window.SIDEBAR_ITEMS = {"enum":["PolarsError"],"fn":["get_warning_function","map_err","set_warning_function","to_compute_err"],"macro":["feature_gated","polars_bail","polars_ensure","polars_err","polars_warn"],"mod":["constants"],"struct":["ErrString"],"type":["PolarsResult"]};

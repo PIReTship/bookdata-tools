@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-lazy-0.30.0/src/physical_plan/planner/lp.rs`."><title>lp.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_lazy" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-lazy-0.34.2/src/physical_plan/planner/lp.rs`."><title>lp.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_lazy" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_lazy/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -559,21 +559,9 @@
 <a href="#559" id="559">559</a>
 <a href="#560" id="560">560</a>
 <a href="#561" id="561">561</a>
-<a href="#562" id="562">562</a>
-<a href="#563" id="563">563</a>
-<a href="#564" id="564">564</a>
-<a href="#565" id="565">565</a>
-<a href="#566" id="566">566</a>
-<a href="#567" id="567">567</a>
-<a href="#568" id="568">568</a>
-<a href="#569" id="569">569</a>
-<a href="#570" id="570">570</a>
-<a href="#571" id="571">571</a>
-<a href="#572" id="572">572</a>
-<a href="#573" id="573">573</a>
-<a href="#574" id="574">574</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>polars_core::POOL;
+<span class="kw">use </span>polars_plan::global::_set_n_rows_for_scan;
 
 <span class="kw">use </span><span class="kw">super</span>::<span class="kw">super</span>::executors::{<span class="self">self</span>, Executor};
 <span class="kw">use super</span>::<span class="kw-2">*</span>;
@@ -586,17 +574,17 @@
     expr_arena: <span class="kw-2">&amp;</span>Arena&lt;AExpr&gt;,
     apply: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>DataFrameUdf&gt;&gt;,
 ) -&gt; bool {
-    <span class="comment">// We first check if we can partition the groupby on the latest moment.
+    <span class="comment">// We first check if we can partition the group_by on the latest moment.
     </span><span class="kw">let </span><span class="kw-2">mut </span>partitionable = <span class="bool-val">true</span>;
 
     <span class="comment">// checks:
-    //      1. complex expressions in the groupby itself are also not partitionable
+    //      1. complex expressions in the group_by itself are also not partitionable
     //          in this case anything more than col(&quot;foo&quot;)
     //      2. a custom function cannot be partitioned
     //      3. we don&#39;t bother with more than 2 keys, as the cardinality likely explodes
     //         by the combinations
     </span><span class="kw">if </span>!keys.is_empty() &amp;&amp; keys.len() &lt; <span class="number">3 </span>&amp;&amp; apply.is_none() {
-        <span class="comment">// complex expressions in the groupby itself are also not partitionable
+        <span class="comment">// complex expressions in the group_by itself are also not partitionable
         // in this case anything more than col(&quot;foo&quot;)
         </span><span class="kw">for </span>key <span class="kw">in </span>keys {
             <span class="kw">if </span>(expr_arena).iter(<span class="kw-2">*</span>key).count() &gt; <span class="number">1 </span>{
@@ -628,11 +616,11 @@
                     // count().alias() is allowed: count of 2
                     </span><span class="kw">if </span>depth &lt;= <span class="number">2 </span>{
                         <span class="kw">match </span>expr_arena.get(<span class="kw-2">*</span>input) {
-                            AExpr::Count =&gt; {}
+                            AExpr::Count =&gt; {},
                             <span class="kw">_ </span>=&gt; {
                                 partitionable = <span class="bool-val">false</span>;
                                 <span class="kw">break</span>;
-                            }
+                            },
                         }
                     }
                 }
@@ -667,7 +655,7 @@
                                         )
                         },
                         Function {input, options, ..} =&gt; {
-                            <span class="macro">matches!</span>(options.collect_groups, ApplyOptions::ApplyFlat) &amp;&amp; input.len() == <span class="number">1 </span>&amp;&amp;
+                            <span class="macro">matches!</span>(options.collect_groups, ApplyOptions::ElementWise) &amp;&amp; input.len() == <span class="number">1 </span>&amp;&amp;
                                 !has_aggregation(input[<span class="number">0</span>])
                         }
                         BinaryExpr {left, right, ..} =&gt; {
@@ -724,39 +712,58 @@
     <span class="kw">match </span>logical_plan {
         <span class="attr">#[cfg(feature = <span class="string">&quot;python&quot;</span>)]
         </span>PythonScan { options, .. } =&gt; <span class="prelude-val">Ok</span>(Box::new(executors::PythonScanExec { options })),
-        FileSink { .. } =&gt; <span class="macro">panic!</span>(
-            <span class="string">&quot;sink_parquet not yet supported in standard engine. Use &#39;collect().write_parquet()&#39;&quot;
-        </span>),
+        Sink { payload, .. } =&gt; <span class="kw">match </span>payload {
+            SinkType::Memory =&gt; {
+                <span class="macro">polars_bail!</span>(InvalidOperation: <span class="string">&quot;memory sink not supported in the standard engine&quot;</span>)
+            },
+            SinkType::File { file_type, .. } =&gt; {
+                <span class="macro">polars_bail!</span>(InvalidOperation:
+                    <span class="string">&quot;sink_{file_type:?} not yet supported in standard engine. Use &#39;collect().write_parquet()&#39;&quot;
+                </span>)
+            },
+            <span class="attr">#[cfg(feature = <span class="string">&quot;cloud&quot;</span>)]
+            </span>SinkType::Cloud { .. } =&gt; {
+                <span class="macro">polars_bail!</span>(InvalidOperation: <span class="string">&quot;cloud sink not supported in standard engine.&quot;</span>)
+            },
+        },
         Union { inputs, options } =&gt; {
             <span class="kw">let </span>inputs = inputs
                 .into_iter()
                 .map(|node| create_physical_plan(node, lp_arena, expr_arena))
                 .collect::&lt;PolarsResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Box::new(executors::UnionExec { inputs, options }))
-        }
+        },
         Slice { input, offset, len } =&gt; {
             <span class="kw">let </span>input = create_physical_plan(input, lp_arena, expr_arena)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Box::new(executors::SliceExec { input, offset, len }))
-        }
+        },
         Selection { input, predicate } =&gt; {
+            <span class="kw">let </span>input_schema = lp_arena.get(input).schema(lp_arena).into_owned();
             <span class="kw">let </span>input = create_physical_plan(input, lp_arena, expr_arena)<span class="question-mark">?</span>;
             <span class="kw">let </span><span class="kw-2">mut </span>state = ExpressionConversionState::default();
-            <span class="kw">let </span>predicate =
-                create_physical_expr(predicate, Context::Default, expr_arena, <span class="prelude-val">None</span>, <span class="kw-2">&amp;mut </span>state)<span class="question-mark">?</span>;
+            <span class="kw">let </span>predicate = create_physical_expr(
+                predicate,
+                Context::Default,
+                expr_arena,
+                <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>input_schema),
+                <span class="kw-2">&amp;mut </span>state,
+            )<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Box::new(executors::FilterExec::new(
                 predicate,
                 input,
                 state.has_windows,
             )))
-        }
-        <span class="attr">#[cfg(feature = <span class="string">&quot;csv&quot;</span>)]
-        </span>CsvScan {
-            path,
+        },
+        Scan {
+            paths,
             file_info,
             output_schema,
-            options,
+            scan_type,
             predicate,
+            <span class="kw-2">mut </span>file_options,
         } =&gt; {
+            file_options.n_rows = _set_n_rows_for_scan(file_options.n_rows);
+            <span class="kw">let </span><span class="kw-2">mut </span>state = ExpressionConversionState::default();
             <span class="kw">let </span>predicate = predicate
                 .map(|pred| {
                     create_physical_expr(
@@ -764,84 +771,83 @@
                         Context::Default,
                         expr_arena,
                         output_schema.as_ref(),
-                        <span class="kw-2">&amp;mut </span>Default::default(),
-                    )
-                })
-                .map_or(<span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>), |v| v.map(<span class="prelude-val">Some</span>))<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(Box::new(executors::CsvExec {
-                path,
-                schema: file_info.schema,
-                options,
-                predicate,
-            }))
-        }
-        <span class="attr">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
-        </span>IpcScan {
-            path,
-            file_info,
-            output_schema,
-            predicate,
-            options,
-        } =&gt; {
-            <span class="kw">let </span>predicate = predicate
-                .map(|pred| {
-                    create_physical_expr(
-                        pred,
-                        Context::Default,
-                        expr_arena,
-                        output_schema.as_ref(),
-                        <span class="kw-2">&amp;mut </span>Default::default(),
+                        <span class="kw-2">&amp;mut </span>state,
                     )
                 })
                 .map_or(<span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>), |v| v.map(<span class="prelude-val">Some</span>))<span class="question-mark">?</span>;
 
-            <span class="prelude-val">Ok</span>(Box::new(executors::IpcExec {
-                path,
-                schema: file_info.schema,
-                predicate,
-                options,
-            }))
-        }
-        <span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
-        </span>ParquetScan {
-            path,
-            file_info,
-            output_schema,
-            predicate,
-            options,
-            cloud_options,
-        } =&gt; {
-            <span class="kw">let </span>predicate = predicate
-                .map(|pred| {
-                    create_physical_expr(
-                        pred,
-                        Context::Default,
-                        expr_arena,
-                        output_schema.as_ref(),
-                        <span class="kw-2">&amp;mut </span>Default::default(),
-                    )
-                })
-                .map_or(<span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>), |v| v.map(<span class="prelude-val">Some</span>))<span class="question-mark">?</span>;
-
-            <span class="prelude-val">Ok</span>(Box::new(executors::ParquetExec::new(
-                path,
-                file_info.schema,
-                predicate,
-                options,
-                cloud_options,
-            )))
-        }
+            <span class="kw">match </span>scan_type {
+                <span class="attr">#[cfg(feature = <span class="string">&quot;csv&quot;</span>)]
+                </span>FileScan::Csv {
+                    options: csv_options,
+                } =&gt; {
+                    <span class="macro">assert_eq!</span>(paths.len(), <span class="number">1</span>);
+                    <span class="kw">let </span>path = paths[<span class="number">0</span>].clone();
+                    <span class="prelude-val">Ok</span>(Box::new(executors::CsvExec {
+                        path,
+                        schema: file_info.schema,
+                        options: csv_options,
+                        predicate,
+                        file_options,
+                    }))
+                },
+                <span class="attr">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
+                </span>FileScan::Ipc { options } =&gt; {
+                    <span class="macro">assert_eq!</span>(paths.len(), <span class="number">1</span>);
+                    <span class="kw">let </span>path = paths[<span class="number">0</span>].clone();
+                    <span class="prelude-val">Ok</span>(Box::new(executors::IpcExec {
+                        path,
+                        schema: file_info.schema,
+                        predicate,
+                        options,
+                        file_options,
+                    }))
+                },
+                <span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
+                </span>FileScan::Parquet {
+                    options,
+                    cloud_options,
+                    metadata,
+                } =&gt; <span class="prelude-val">Ok</span>(Box::new(executors::ParquetExec::new(
+                    paths,
+                    file_info,
+                    predicate,
+                    options,
+                    cloud_options,
+                    file_options,
+                    metadata,
+                ))),
+                FileScan::Anonymous { function, .. } =&gt; {
+                    <span class="prelude-val">Ok</span>(Box::new(executors::AnonymousScanExec {
+                        function,
+                        predicate,
+                        file_options,
+                        file_info,
+                        output_schema,
+                        predicate_has_windows: state.has_windows,
+                    }))
+                },
+            }
+        },
         Projection {
             expr,
             input,
             schema: _schema,
+            options,
             ..
         } =&gt; {
             <span class="kw">let </span>input_schema = lp_arena.get(input).schema(lp_arena).into_owned();
             <span class="kw">let </span>input = create_physical_plan(input, lp_arena, expr_arena)<span class="question-mark">?</span>;
             <span class="kw">let </span><span class="kw-2">mut </span>state = ExpressionConversionState::new(POOL.current_num_threads() &gt; expr.len());
             <span class="kw">let </span>phys_expr = create_physical_expressions(
-                <span class="kw-2">&amp;</span>expr,
+                expr.default_exprs(),
+                Context::Default,
+                expr_arena,
+                <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>input_schema),
+                <span class="kw-2">&amp;mut </span>state,
+            )<span class="question-mark">?</span>;
+            <span class="kw">let </span>cse_expr = create_physical_expressions(
+                expr.cse_exprs(),
                 Context::Default,
                 expr_arena,
                 <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>input_schema),
@@ -849,39 +855,15 @@
             )<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Box::new(executors::ProjectionExec {
                 input,
+                cse_exprs: cse_expr,
                 expr: phys_expr,
                 has_windows: state.has_windows,
                 input_schema,
                 <span class="attr">#[cfg(test)]
                 </span>schema: _schema,
+                options,
             }))
-        }
-        LocalProjection {
-            expr,
-            input,
-            schema: _schema,
-            ..
-        } =&gt; {
-            <span class="kw">let </span>input_schema = lp_arena.get(input).schema(lp_arena).into_owned();
-
-            <span class="kw">let </span>input = create_physical_plan(input, lp_arena, expr_arena)<span class="question-mark">?</span>;
-            <span class="kw">let </span><span class="kw-2">mut </span>state = ExpressionConversionState::new(POOL.current_num_threads() &gt; expr.len());
-            <span class="kw">let </span>phys_expr = create_physical_expressions(
-                <span class="kw-2">&amp;</span>expr,
-                Context::Default,
-                expr_arena,
-                <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>input_schema),
-                <span class="kw-2">&amp;mut </span>state,
-            )<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(Box::new(executors::ProjectionExec {
-                input,
-                expr: phys_expr,
-                has_windows: state.has_windows,
-                input_schema,
-                <span class="attr">#[cfg(test)]
-                </span>schema: _schema,
-            }))
-        }
+        },
         DataFrameScan {
             df,
             projection,
@@ -907,31 +889,7 @@
                 selection,
                 predicate_has_windows: state.has_windows,
             }))
-        }
-        AnonymousScan {
-            function,
-            predicate,
-            options,
-            output_schema,
-            ..
-        } =&gt; {
-            <span class="kw">let </span>predicate = predicate
-                .map(|pred| {
-                    create_physical_expr(
-                        pred,
-                        Context::Default,
-                        expr_arena,
-                        output_schema.as_ref(),
-                        <span class="kw-2">&amp;mut </span>Default::default(),
-                    )
-                })
-                .map_or(<span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>), |v| v.map(<span class="prelude-val">Some</span>))<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(Box::new(executors::AnonymousScanExec {
-                function,
-                predicate,
-                options,
-            }))
-        }
+        },
         Sort {
             input,
             by_column,
@@ -951,15 +909,15 @@
                 by_column,
                 args,
             }))
-        }
+        },
         Cache { input, id, count } =&gt; {
             <span class="kw">let </span>input = create_physical_plan(input, lp_arena, expr_arena)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Box::new(executors::CacheExec { id, input, count }))
-        }
+        },
         Distinct { input, options } =&gt; {
             <span class="kw">let </span>input = create_physical_plan(input, lp_arena, expr_arena)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Box::new(executors::UniqueExec { input, options }))
-        }
+        },
         Aggregate {
             input,
             keys,
@@ -970,6 +928,7 @@
             options,
         } =&gt; {
             <span class="kw">let </span>input_schema = lp_arena.get(input).schema(lp_arena).into_owned();
+            <span class="kw">let </span>options = Arc::try_unwrap(options).unwrap_or_else(|options| (<span class="kw-2">*</span>options).clone());
             <span class="kw">let </span>phys_keys = create_physical_expressions(
                 <span class="kw-2">&amp;</span>keys,
                 Context::Default,
@@ -986,7 +945,7 @@
             )<span class="question-mark">?</span>;
 
             <span class="kw">let </span>_slice = options.slice;
-            <span class="attr">#[cfg(feature = <span class="string">&quot;dynamic_groupby&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">&quot;dynamic_group_by&quot;</span>)]
             </span><span class="kw">if let </span><span class="prelude-val">Some</span>(options) = options.dynamic {
                 <span class="kw">let </span>input = create_physical_plan(input, lp_arena, expr_arena)<span class="question-mark">?</span>;
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(Box::new(executors::GroupByDynamicExec {
@@ -1000,7 +959,7 @@
                 }));
             }
 
-            <span class="attr">#[cfg(feature = <span class="string">&quot;dynamic_groupby&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">&quot;dynamic_group_by&quot;</span>)]
             </span><span class="kw">if let </span><span class="prelude-val">Some</span>(options) = options.rolling {
                 <span class="kw">let </span>input = create_physical_plan(input, lp_arena, expr_arena)<span class="question-mark">?</span>;
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(Box::new(executors::GroupByRollingExec {
@@ -1014,7 +973,7 @@
                 }));
             }
 
-            <span class="comment">// We first check if we can partition the groupby on the latest moment.
+            <span class="comment">// We first check if we can partition the group_by on the latest moment.
             </span><span class="kw">let </span>partitionable = partitionable_gb(<span class="kw-2">&amp;</span>keys, <span class="kw-2">&amp;</span>aggs, <span class="kw-2">&amp;</span>input_schema, expr_arena, <span class="kw-2">&amp;</span>apply);
             <span class="kw">if </span>partitionable {
                 <span class="kw">let </span>from_partitioned_ds = (<span class="kw-2">&amp;*</span>lp_arena).iter(input).any(|(<span class="kw">_</span>, lp)| {
@@ -1057,7 +1016,7 @@
                     options.slice,
                 )))
             }
-        }
+        },
         Join {
             input_left,
             input_right,
@@ -1097,25 +1056,38 @@
                 <span class="prelude-val">None</span>,
                 <span class="kw-2">&amp;mut </span>Default::default(),
             )<span class="question-mark">?</span>;
+            <span class="kw">let </span>options = Arc::try_unwrap(options).unwrap_or_else(|options| (<span class="kw-2">*</span>options).clone());
             <span class="prelude-val">Ok</span>(Box::new(executors::JoinExec::new(
                 input_left,
                 input_right,
-                options.how,
                 left_on,
                 right_on,
                 parallel,
-                options.suffix,
-                options.slice,
+                options.args,
             )))
-        }
-        HStack { input, exprs, .. } =&gt; {
+        },
+        HStack {
+            input,
+            exprs,
+            schema: _schema,
+            options,
+        } =&gt; {
             <span class="kw">let </span>input_schema = lp_arena.get(input).schema(lp_arena).into_owned();
             <span class="kw">let </span>input = create_physical_plan(input, lp_arena, expr_arena)<span class="question-mark">?</span>;
 
             <span class="kw">let </span><span class="kw-2">mut </span>state =
                 ExpressionConversionState::new(POOL.current_num_threads() &gt; exprs.len());
-            <span class="kw">let </span>phys_expr = create_physical_expressions(
-                <span class="kw-2">&amp;</span>exprs,
+
+            <span class="kw">let </span>cse_exprs = create_physical_expressions(
+                exprs.cse_exprs(),
+                Context::Default,
+                expr_arena,
+                <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>input_schema),
+                <span class="kw-2">&amp;mut </span>state,
+            )<span class="question-mark">?</span>;
+
+            <span class="kw">let </span>phys_exprs = create_physical_expressions(
+                exprs.default_exprs(),
                 Context::Default,
                 expr_arena,
                 <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>input_schema),
@@ -1124,16 +1096,18 @@
             <span class="prelude-val">Ok</span>(Box::new(executors::StackExec {
                 input,
                 has_windows: state.has_windows,
-                expr: phys_expr,
+                cse_exprs,
+                exprs: phys_exprs,
                 input_schema,
+                options,
             }))
-        }
+        },
         MapFunction {
             input, function, ..
         } =&gt; {
             <span class="kw">let </span>input = create_physical_plan(input, lp_arena, expr_arena)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Box::new(executors::UdfExec { input, function }))
-        }
+        },
         ExtContext {
             input, contexts, ..
         } =&gt; {
@@ -1143,7 +1117,7 @@
                 .map(|node| create_physical_plan(node, lp_arena, expr_arena))
                 .collect::&lt;PolarsResult&lt;<span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(Box::new(executors::ExternalContext { input, contexts }))
-        }
+        },
     }
 }
 </code></pre></div></section></main></body></html>

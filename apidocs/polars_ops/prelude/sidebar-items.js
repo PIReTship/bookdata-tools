@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["SearchSortedSide"],"fn":["floor_div_series","search_sorted"],"trait":["ArgAgg","DataFrameJoinOps","DataFrameOps","LogSeries","SeriesMethods","SeriesSealed"]};
+window.SIDEBAR_ITEMS = {"fn":["all_horizontal","any_horizontal","clip","clip_max","clip_min","max_horizontal","min_horizontal","sum_horizontal"],"trait":["ArgAgg","SeriesMethods","SeriesSealed"]};

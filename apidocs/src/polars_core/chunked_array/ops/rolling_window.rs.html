@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-core-0.30.0/src/chunked_array/ops/rolling_window.rs`."><title>rolling_window.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-core-0.34.2/src/chunked_array/ops/rolling_window.rs`."><title>rolling_window.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -253,7 +253,9 @@
 <a href="#253" id="253">253</a>
 <a href="#254" id="254">254</a>
 <a href="#255" id="255">255</a>
-</pre></div><pre class="rust"><code><span class="attr">#[derive(Clone)]
+</pre></div><pre class="rust"><code><span class="kw">use </span>arrow::legacy::prelude::DynArgs;
+
+<span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>RollingOptionsFixedWindow {
     <span class="doccomment">/// The length of the window.
     </span><span class="kw">pub </span>window_size: usize,
@@ -264,6 +266,7 @@
     </span><span class="kw">pub </span>weights: <span class="prelude-ty">Option</span>&lt;Vec&lt;f64&gt;&gt;,
     <span class="doccomment">/// Set the labels at the center of the window.
     </span><span class="kw">pub </span>center: bool,
+    <span class="kw">pub </span>fn_params: DynArgs,
 }
 
 <span class="kw">impl </span>Default <span class="kw">for </span>RollingOptionsFixedWindow {
@@ -273,6 +276,7 @@
             min_periods: <span class="number">1</span>,
             weights: <span class="prelude-val">None</span>,
             center: <span class="bool-val">false</span>,
+            fn_params: <span class="prelude-val">None</span>,
         }
     }
 }
@@ -283,11 +287,11 @@
 
     <span class="kw">use </span>arrow::array::{Array, PrimitiveArray};
     <span class="kw">use </span>arrow::bitmap::MutableBitmap;
+    <span class="kw">use </span>arrow::legacy::bit_util::unset_bit_raw;
+    <span class="kw">use </span>arrow::legacy::data_types::IsFloat;
+    <span class="kw">use </span>arrow::legacy::trusted_len::TrustedLenPush;
     <span class="kw">use </span>num_traits::pow::Pow;
     <span class="kw">use </span>num_traits::{Float, Zero};
-    <span class="kw">use </span>polars_arrow::bit_util::unset_bit_raw;
-    <span class="kw">use </span>polars_arrow::data_types::IsFloat;
-    <span class="kw">use </span>polars_arrow::trusted_len::PushUnchecked;
 
     <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 
@@ -322,10 +326,10 @@
         <span class="self">Self</span>: IntoSeries,
     {
         <span class="doccomment">/// Apply a rolling custom function. This is pretty slow because of dynamic dispatch.
-        </span><span class="kw">fn </span>rolling_apply(
+        </span><span class="kw">fn </span>rolling_map(
             <span class="kw-2">&amp;</span><span class="self">self</span>,
             f: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>Series) -&gt; Series,
-            options: RollingOptionsFixedWindow,
+            <span class="kw-2">mut </span>options: RollingOptionsFixedWindow,
         ) -&gt; PolarsResult&lt;Series&gt; {
             check_input(options.window_size, options.min_periods)<span class="question-mark">?</span>;
 
@@ -334,20 +338,17 @@
                 &amp;&amp; !<span class="macro">matches!</span>(<span class="self">self</span>.dtype(), DataType::Float64 | DataType::Float32)
             {
                 <span class="kw">let </span>s = <span class="self">self</span>.cast(<span class="kw-2">&amp;</span>DataType::Float64)<span class="question-mark">?</span>;
-                <span class="kw">return </span>s.rolling_apply(f, options);
+                <span class="kw">return </span>s.rolling_map(f, options);
             }
 
-            <span class="kw">if </span>options.window_size &gt;= <span class="self">self</span>.len() {
-                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="self">Self</span>::full_null(<span class="self">self</span>.name(), <span class="self">self</span>.len()).into_series());
-            }
+            options.window_size = std::cmp::min(<span class="self">self</span>.len(), options.window_size);
 
             <span class="kw">let </span>len = <span class="self">self</span>.len();
             <span class="kw">let </span>arr = ca.downcast_iter().next().unwrap();
-            <span class="kw">let </span><span class="kw-2">mut </span>series_container =
-                ChunkedArray::&lt;T&gt;::from_slice(<span class="string">&quot;&quot;</span>, <span class="kw-2">&amp;</span>[T::Native::zero()]).into_series();
-            <span class="kw">let </span>array_ptr = series_container.array_ref(<span class="number">0</span>);
-            <span class="kw">let </span>ptr = array_ptr.as_ref() <span class="kw">as </span><span class="kw-2">*const </span><span class="kw">dyn </span>Array <span class="kw">as </span><span class="kw-2">*mut </span><span class="kw">dyn </span>Array
-                <span class="kw">as </span><span class="kw-2">*mut </span>PrimitiveArray&lt;T::Native&gt;;
+            <span class="kw">let </span><span class="kw-2">mut </span>ca = ChunkedArray::&lt;T&gt;::from_slice(<span class="string">&quot;&quot;</span>, <span class="kw-2">&amp;</span>[T::Native::zero()]);
+            <span class="kw">let </span>ptr = ca.chunks[<span class="number">0</span>].as_mut() <span class="kw">as </span><span class="kw-2">*mut </span><span class="kw">dyn </span>Array <span class="kw">as </span><span class="kw-2">*mut </span>PrimitiveArray&lt;T::Native&gt;;
+            <span class="kw">let </span><span class="kw-2">mut </span>series_container = ca.into_series();
+
             <span class="kw">let </span><span class="kw-2">mut </span>builder = PrimitiveChunkedBuilder::&lt;T&gt;::new(<span class="self">self</span>.name(), <span class="self">self</span>.len());
 
             <span class="kw">if let </span><span class="prelude-val">Some</span>(weights) = options.weights {
@@ -372,9 +373,10 @@
                         </span><span class="kw">unsafe </span>{
                             <span class="kw-2">*</span>ptr = arr_window;
                         }
+                        <span class="comment">// reset flags as we reuse this container
+                        </span>series_container.clear_settings();
                         <span class="comment">// ensure the length is correct
                         </span>series_container._get_inner_mut().compute_len();
-
                         <span class="kw">let </span>s = <span class="kw">if </span>size == options.window_size {
                             f(<span class="kw-2">&amp;</span>series_container.multiply(<span class="kw-2">&amp;</span>weights_series).unwrap())
                         } <span class="kw">else </span>{
@@ -419,9 +421,10 @@
                         </span><span class="kw">unsafe </span>{
                             <span class="kw-2">*</span>ptr = arr_window;
                         }
+                        <span class="comment">// reset flags as we reuse this container
+                        </span>series_container.clear_settings();
                         <span class="comment">// ensure the length is correct
                         </span>series_container._get_inner_mut().compute_len();
-
                         <span class="kw">let </span>s = f(<span class="kw-2">&amp;</span>series_container);
                         <span class="kw">let </span>out = <span class="self">self</span>.unpack_series_matching_type(<span class="kw-2">&amp;</span>s)<span class="question-mark">?</span>;
                         builder.append_option(out.get(<span class="number">0</span>));
@@ -440,7 +443,7 @@
         T::Native: Float + IsFloat + SubAssign + Pow&lt;T::Native, Output = T::Native&gt;,
     {
         <span class="doccomment">/// Apply a rolling custom function. This is pretty slow because of dynamic dispatch.
-        </span><span class="kw">pub fn </span>rolling_apply_float&lt;F&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, window_size: usize, <span class="kw-2">mut </span>f: F) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt;
+        </span><span class="kw">pub fn </span>rolling_map_float&lt;F&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, window_size: usize, <span class="kw-2">mut </span>f: F) -&gt; PolarsResult&lt;<span class="self">Self</span>&gt;
         <span class="kw">where
             </span>F: FnMut(<span class="kw-2">&amp;mut </span>ChunkedArray&lt;T&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;T::Native&gt;,
         {
@@ -450,12 +453,11 @@
             <span class="kw">let </span>ca = <span class="self">self</span>.rechunk();
             <span class="kw">let </span>arr = ca.downcast_iter().next().unwrap();
 
-            <span class="comment">// we create a temporary dummy ChunkedArray
-            // this will be a container where we swap the window contents every iteration
-            // doing so will save a lot of heap allocations.
+            <span class="comment">// We create a temporary dummy ChunkedArray. This will be a
+            // container where we swap the window contents every iteration doing
+            // so will save a lot of heap allocations.
             </span><span class="kw">let </span><span class="kw-2">mut </span>heap_container = ChunkedArray::&lt;T&gt;::from_slice(<span class="string">&quot;&quot;</span>, <span class="kw-2">&amp;</span>[T::Native::zero()]);
-            <span class="kw">let </span>array_ptr = <span class="kw-2">&amp;</span>heap_container.chunks()[<span class="number">0</span>];
-            <span class="kw">let </span>ptr = array_ptr.as_ref() <span class="kw">as </span><span class="kw-2">*const </span><span class="kw">dyn </span>Array <span class="kw">as </span><span class="kw-2">*mut </span><span class="kw">dyn </span>Array
+            <span class="kw">let </span>ptr = heap_container.chunks[<span class="number">0</span>].as_mut() <span class="kw">as </span><span class="kw-2">*mut </span><span class="kw">dyn </span>Array
                 <span class="kw">as </span><span class="kw-2">*mut </span>PrimitiveArray&lt;T::Native&gt;;
 
             <span class="kw">let </span><span class="kw-2">mut </span>validity = MutableBitmap::with_capacity(ca.len());
@@ -469,13 +471,11 @@
             <span class="kw">for </span>offset <span class="kw">in </span><span class="number">0</span>..<span class="self">self</span>.len() + <span class="number">1 </span>- window_size {
                 <span class="macro">debug_assert!</span>(offset + window_size &lt;= arr.len());
                 <span class="kw">let </span>arr_window = <span class="kw">unsafe </span>{ arr.slice_typed_unchecked(offset, window_size) };
-                <span class="comment">// the lengths are cached, so we must update them
+                <span class="comment">// The lengths are cached, so we must update them.
                 </span>heap_container.length = arr_window.len() <span class="kw">as </span>IdxSize;
 
-                <span class="comment">// Safety.
-                // ptr is not dropped as we are in scope
-                // We are also the only owner of the contents of the Arc
-                // we do this to reduce heap allocs.
+                <span class="comment">// SAFETY: ptr is not dropped as we are in scope. We are also the only
+                // owner of the contents of the Arc (we do this to reduce heap allocs).
                 </span><span class="kw">unsafe </span>{
                     <span class="kw-2">*</span>ptr = arr_window;
                 }
@@ -483,17 +483,17 @@
                 <span class="kw">let </span>out = f(<span class="kw-2">&amp;mut </span>heap_container);
                 <span class="kw">match </span>out {
                     <span class="prelude-val">Some</span>(v) =&gt; {
-                        <span class="comment">// Safety: we have pre-allocated
+                        <span class="comment">// SAFETY: we have pre-allocated.
                         </span><span class="kw">unsafe </span>{ values.push_unchecked(v) }
-                    }
+                    },
                     <span class="prelude-val">None </span>=&gt; {
-                        <span class="comment">// safety: we allocated enough for both the `values` vec
-                        // and the `validity_ptr`
+                        <span class="comment">// SAFETY: we allocated enough for both the `values` vec
+                        // and the `validity_ptr`.
                         </span><span class="kw">unsafe </span>{
                             values.push_unchecked(T::Native::default());
                             unset_bit_raw(validity_ptr, offset + window_size - <span class="number">1</span>);
                         }
-                    }
+                    },
                 }
             }
             <span class="kw">let </span>arr = PrimitiveArray::new(
@@ -501,7 +501,7 @@
                 values.into(),
                 <span class="prelude-val">Some</span>(validity.into()),
             );
-            <span class="kw">unsafe </span>{ <span class="prelude-val">Ok</span>(<span class="self">Self</span>::from_chunks(<span class="self">self</span>.name(), <span class="macro">vec!</span>[Box::new(arr)])) }
+            <span class="prelude-val">Ok</span>(<span class="self">Self</span>::with_chunk(<span class="self">self</span>.name(), arr))
         }
     }
 }

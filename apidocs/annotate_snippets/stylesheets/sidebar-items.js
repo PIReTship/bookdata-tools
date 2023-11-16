@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["color","no_color"]};

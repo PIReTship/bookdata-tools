@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["allocate_rows_buf","convert_columns","encoded_size"]};
+window.SIDEBAR_ITEMS = {"fn":["allocate_rows_buf","convert_columns","convert_columns_amortized","convert_columns_amortized_no_order","convert_columns_no_order","encoded_size"]};

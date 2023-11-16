@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":["Executor"]};
+window.SIDEBAR_ITEMS = {"struct":["Dummy"],"trait":["Executor"]};
