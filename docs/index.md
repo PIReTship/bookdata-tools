@@ -24,7 +24,7 @@ If you use these scripts in any published research, cite [our paper][paper] ([PD
 We also ask that you contact Michael Ekstrand to let us know about your use of the data, so we can
 include your paper in our list of relying publications.
 
-:::{note}
+::: {.callout-warning}
 The limitations section of the paper contains important information about
 the limitations of the data these scripts compile.  **Do not use the gender information
 in this data data or tools without understanding those limitations**.  In particular,
