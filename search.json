@@ -1,45 +1,143 @@
 [
   {
-    "objectID": "papers.html",
-    "href": "papers.html",
-    "title": "Papers Using BookData",
+    "objectID": "implementation/dataset.html",
+    "href": "implementation/dataset.html",
+    "title": "Design for Datasets",
     "section": "",
-    "text": "Papers Using BookData\nThese are papers we know to be using this book data integration. If you use this data in published research, please cite our paper"
+    "text": "The general import philosophy is that we scan raw data from underlying data sets into a tabular form, and then integrate it with further code; import and processing stages are written in Rust, using the Polars library for data frames. We use Parquet for storing all outputs, both intermediate stages and final products; when an output is particularly small, and a CSV version would be convenient, we sometimes also produce compressed CSV.\n\n\nIn general, to add new data, you need to do a few things:\n\nAdd the source files under data, and commit them to DVC.\nImplement code to extract the source files into tabular Parquet that keeps identifiers, etc. from the original source, but is easier to process for subsequent stages. This typically includes a new Rust command to process the data, and a DVC stage to run it.\nIf the data source provides additional ISBNs, add them to book-links/all-isbns.toml so that they are included in ISBN indexing.\nImplement code to process the extracted source files into cluster-aggregated files, if needed (typically used for rating data).\nUpdate the analytics and statistics to include the new data.\n\nAll of the CLI tools live in {rust:mod}bookdata::cli, with support code elsewhere in the source tree."
   },
   {
-    "objectID": "data/cluster.html",
-    "href": "data/cluster.html",
-    "title": "Book Clusters",
+    "objectID": "implementation/dataset.html#adding-a-data-set",
+    "href": "implementation/dataset.html#adding-a-data-set",
+    "title": "Design for Datasets",
     "section": "",
-    "text": "For recommendation and analysis, we often want to look at works instead of individual books or editions of those books. The same material by the same author(s) may be reprinted in many different editions, with different ISBNs, and sometimes separate ratings from the same user.\nThere are a variety of ways to deal with this. GoodReads and OpenLibrary both have the concept of a ‘work’ to group together related editions (the Library of Congress also has such a concept internally in its BIBFRAME schema, but that data is not currently available for integration).\nOther services, such as ThingISBN and OCLC’s xISBN both link together ISBNs: given a query ISBN, they will return a list of ISBNs believed to be for the same book.\nUsing the book data sources here, we have implemented comparable functionality in a manner that anyone can reproduce from public data. We call the resulting equivalence sets ‘book clusters’.\n\n\nOur clustering algorithm begins by forming an undirected graph of record identifiers. We extract records from the following:\n\nLibrary of Congress book records, with edges from records to ISBNs recorded for that record.\nOpenLibrary editions, with edges from editions to ISBNs recorded for that edition.\nOpenLibrary works, with edges from works to editions.\nGoodReads books, with edges from books to ISBNs recorded for that book.\nGoodReads works, with edges from works to books.\n\nWe then compute the connected components on this graph, and treat each connected component as a single ‘book’ (what we call a book cluster).\nThe idea is that if two ISBNs appear together on a book record, that is evidence they are for the same book; likewise, if two book records have the same ISBN, it is evidence they record the same book. Pooling this evidence across all data sources maximizes the ability to detect book clusters.\nThe isbn_cluster table maps each ISBN to its associated cluster. Individual data sources may also have an isbn_cluster table (e.g. gr.isbn_cluster); that is the result of clustering ISBNs using only the book records from that data source. However, all clustered results such as rating tables are based on the all-source book clusters.\n\n\n\nThere are a few known problems with the ISBN clustering:\n\nPublishers occasionally reuse ISBNs. They aren’t supposed to do this, but they do. This results in unrelated books having the same ISBN. This will cause a problem for any ISBN-based linking between books and ratings, not just the book clustering. We don’t yet have a good way to identify these ISBNs.\nSome book sets have ISBNs, which cause them link together books that should not be clustered. The Library of Congress identifies many of these ISBNs as set ISBNs, and we are examining the prospect of using this to exclude them from informing clustering decisions.\n\nIf you only need e.g. the GoodReads data, we recommend that you not cluster it for the purpose of ratings, and only use clusters to link to out-of-GR book or author data. We are open to adding additional tables that facilitate linking GoodReads works directly to other tables.\n\n\n\n\nbook-links/isbn-clusters.parquet\n\nThis file maps ISBN IDs to book clusters, enabling the various other book identifiers from other data sources to be mapped to clusters, since everything resolves to ISBN IDs.\n\n\n\n\nWe also export the book identifier graph used for clustering to support further analysis.\n\nbook-links/cluster-graph-nodes.parquet\n\nThe table of nodes (with attributes) from the graph used for book clustering.\n\nbook-links/cluster-graph-edges.parquet\n\nThe table of edges rom the book clustering graph.\n\nbook-links/book-graph.mp.zst\n\nThis is a serialization of the actual graph itself, using rmp-serde to serialize the Petgraph structure with MsgPack and compressing ith with ZStandard. This is unlikely to be usable outside of the Rust codebase, whereas the node and edge tables could be loaded into something like igraph for further analysis.\n\n\n\n\n\n\nWith the clusters, we then extract additional information from other tables.\n\nbook-links/cluster-first-authors.parquet\n\nAll available first-author records for each cluster, to support linking with VIAF.\n\nbook-links/cluster-hashes.parquet\n\nThe MD5 checksums of the sorted sequence of ISBNs for each cluster, along with a dcode that is the least-significant bit of the checksum.\n\nbook-links/cluster-stats.parquet\n\nStatistics for each cluster, useful for auditing and debugging."
+    "text": "In general, to add new data, you need to do a few things:\n\nAdd the source files under data, and commit them to DVC.\nImplement code to extract the source files into tabular Parquet that keeps identifiers, etc. from the original source, but is easier to process for subsequent stages. This typically includes a new Rust command to process the data, and a DVC stage to run it.\nIf the data source provides additional ISBNs, add them to book-links/all-isbns.toml so that they are included in ISBN indexing.\nImplement code to process the extracted source files into cluster-aggregated files, if needed (typically used for rating data).\nUpdate the analytics and statistics to include the new data.\n\nAll of the CLI tools live in {rust:mod}bookdata::cli, with support code elsewhere in the source tree."
   },
   {
-    "objectID": "data/cluster.html#clustering-algorithm",
-    "href": "data/cluster.html#clustering-algorithm",
-    "title": "Book Clusters",
+    "objectID": "implementation/index.html",
+    "href": "implementation/index.html",
+    "title": "Implementation",
     "section": "",
-    "text": "Our clustering algorithm begins by forming an undirected graph of record identifiers. We extract records from the following:\n\nLibrary of Congress book records, with edges from records to ISBNs recorded for that record.\nOpenLibrary editions, with edges from editions to ISBNs recorded for that edition.\nOpenLibrary works, with edges from works to editions.\nGoodReads books, with edges from books to ISBNs recorded for that book.\nGoodReads works, with edges from works to books.\n\nWe then compute the connected components on this graph, and treat each connected component as a single ‘book’ (what we call a book cluster).\nThe idea is that if two ISBNs appear together on a book record, that is evidence they are for the same book; likewise, if two book records have the same ISBN, it is evidence they record the same book. Pooling this evidence across all data sources maximizes the ability to detect book clusters.\nThe isbn_cluster table maps each ISBN to its associated cluster. Individual data sources may also have an isbn_cluster table (e.g. gr.isbn_cluster); that is the result of clustering ISBNs using only the book records from that data source. However, all clustered results such as rating tables are based on the all-source book clusters."
+    "text": "These data and integration tools are designed to support several goals:\n\nComplete end-to-end reproducibility with a single command (dvc repro)\nSelf-documenting import stage dependencies\nAutomatically re-run downstream steps when a data file or integration logic changes\nSupport updates (e.g. new OpenLibrary dumps) by replacing the file and re-running\nEfficient import and integration\n\n\n\nThese goals are realized through a few technology and design decisions:\n\nScript all import steps with a tool that can track stage dependencies and check whether a stage is up-to-date (DVC).\nMake individual import stages self-contained and limited.\nExtract data from raw sources into tabular form, then integrate as a separate step.\nWhen feasible and performant, implement integration and processing steps with straightforward data join operations.\n\n\n\n\n\nAdd the new data file(s), if necessary, to data, and update the documentation to describe how to download them.\nImplement a scan stage to process the raw imported data into tabular form. The code can be written in either Rust or Python, depending on performance needs.\nIf necessary, add the inputs to the ISBN collection (under book-links) and clustering to connect it with the rest of the code.\nImplement stages to integrate the data with the rest of the tools. Again, this code can be in Rust or Python. We usually use Polars (either the Rust or the Python API) to efficiently process large data files.\n\nSee the Pipeline DSL for information about how to update the pipeline."
   },
   {
-    "objectID": "data/cluster.html#known-problems",
-    "href": "data/cluster.html#known-problems",
-    "title": "Book Clusters",
+    "objectID": "implementation/index.html#implementation-principles",
+    "href": "implementation/index.html#implementation-principles",
+    "title": "Implementation",
     "section": "",
-    "text": "There are a few known problems with the ISBN clustering:\n\nPublishers occasionally reuse ISBNs. They aren’t supposed to do this, but they do. This results in unrelated books having the same ISBN. This will cause a problem for any ISBN-based linking between books and ratings, not just the book clustering. We don’t yet have a good way to identify these ISBNs.\nSome book sets have ISBNs, which cause them link together books that should not be clustered. The Library of Congress identifies many of these ISBNs as set ISBNs, and we are examining the prospect of using this to exclude them from informing clustering decisions.\n\nIf you only need e.g. the GoodReads data, we recommend that you not cluster it for the purpose of ratings, and only use clusters to link to out-of-GR book or author data. We are open to adding additional tables that facilitate linking GoodReads works directly to other tables."
+    "text": "These goals are realized through a few technology and design decisions:\n\nScript all import steps with a tool that can track stage dependencies and check whether a stage is up-to-date (DVC).\nMake individual import stages self-contained and limited.\nExtract data from raw sources into tabular form, then integrate as a separate step.\nWhen feasible and performant, implement integration and processing steps with straightforward data join operations."
   },
   {
-    "objectID": "data/cluster.html#cluster-link-tables",
-    "href": "data/cluster.html#cluster-link-tables",
-    "title": "Book Clusters",
+    "objectID": "implementation/index.html#adding-or-modifying-data",
+    "href": "implementation/index.html#adding-or-modifying-data",
+    "title": "Implementation",
     "section": "",
-    "text": "book-links/isbn-clusters.parquet\n\nThis file maps ISBN IDs to book clusters, enabling the various other book identifiers from other data sources to be mapped to clusters, since everything resolves to ISBN IDs.\n\n\n\n\nWe also export the book identifier graph used for clustering to support further analysis.\n\nbook-links/cluster-graph-nodes.parquet\n\nThe table of nodes (with attributes) from the graph used for book clustering.\n\nbook-links/cluster-graph-edges.parquet\n\nThe table of edges rom the book clustering graph.\n\nbook-links/book-graph.mp.zst\n\nThis is a serialization of the actual graph itself, using rmp-serde to serialize the Petgraph structure with MsgPack and compressing ith with ZStandard. This is unlikely to be usable outside of the Rust codebase, whereas the node and edge tables could be loaded into something like igraph for further analysis."
+    "text": "Add the new data file(s), if necessary, to data, and update the documentation to describe how to download them.\nImplement a scan stage to process the raw imported data into tabular form. The code can be written in either Rust or Python, depending on performance needs.\nIf necessary, add the inputs to the ISBN collection (under book-links) and clustering to connect it with the rest of the code.\nImplement stages to integrate the data with the rest of the tools. Again, this code can be in Rust or Python. We usually use Polars (either the Rust or the Python API) to efficiently process large data files.\n\nSee the Pipeline DSL for information about how to update the pipeline."
   },
   {
-    "objectID": "data/cluster.html#cluster-information-tables",
-    "href": "data/cluster.html#cluster-information-tables",
-    "title": "Book Clusters",
+    "objectID": "data/goodreads.html",
+    "href": "data/goodreads.html",
+    "title": "GoodReads",
     "section": "",
-    "text": "With the clusters, we then extract additional information from other tables.\n\nbook-links/cluster-first-authors.parquet\n\nAll available first-author records for each cluster, to support linking with VIAF.\n\nbook-links/cluster-hashes.parquet\n\nThe MD5 checksums of the sorted sequence of ISBNs for each cluster, along with a dcode that is the least-significant bit of the checksum.\n\nbook-links/cluster-stats.parquet\n\nStatistics for each cluster, useful for auditing and debugging."
+    "text": "We import GoodReads data from the UCSD Book Graph for additional book and user interaction information. The source files are not automatically downloaded; you will need the following:\n\nBooks\nBook works\nAuthors\nBook genres\nBook series\nInteraction data (the CSV summary file, along with its book and user ID files, is used by default; the full JSON file is also supported)\n\nWe do not yet support reviews.\nIf you use this data, cite the paper(s) documented on the data set web site.\nImported data lives in the goodreads directory.\n\n\nThe config.yaml file defines what source of GoodReads interaction data is used:\ngoodreads:\n    interactions: simple\nThe default, simple, uses the CSV summary data that you can download directly from the web site in 3 files:\n\ngoodreads_interactions.csv\nuser_id_map.csv\nbook_id_map.csv\n\nDownload and save these 3 files in data/goodreads, along with the other metadata files.\nThe tools also support the detailed version (change interactions to full), delivered in JSON format. If you want this version, you need to contact Mengtin Wan as noted on the web site.\n\n\n\nThe import is controlled by several DVC steps:\n\nscan-*\n\nThe various scan-* steps each scan a JSON file into corresponding Parquet files. They have a specific order, as scanning interactions needs book information.\n\nbook-isbn-ids\n\nMatch GoodReads ISBNs with ISBN IDs.\n\nbook-links\n\nCreates goodreads/gr-book-link.parquet, which links each GoodReads book with its work (if applicable) and is cluster ID.\n\ncluster-actions\n\nExtracts cluster-level implicit feedback data. Each (user, cluster) pair has one record, with the number of actions (the number of times the user added a book from that cluster to a shelf) and timestamp data.\n\ncluster-ratings\n\nExtracts cluster-level explicit feedback data. This is the ratings each user assigned to books in each cluster.\n\nwork-actions, work-ratings\n\nThe same thing as the cluster-* stages, except it groups by GoodReads work instead of by integrated cluster. If you are only working with the GoodReads data, and not trying to connect across data sets, this data is better to work with.\n\nwork-gender\n\nThe author gender for each GoodReads work, as near as we can tell.\n\n\n\n\n\n\ngoodreads/gr-book-ids.parquet\n\nIdentifiers extracted from each GoodReads book record.\n\ngoodreads/gr-book-info.parquet\n\nMetadata extracted from GoodReads book records.\n\ngoodreads/gr-book-genres.parquet\n\nGoodReads book-genre associations.\n\ngoodreads/gr-book-series.parquet\n\nGoodReads book series associations.\n\ngoodreads/gr-genres.parquet\n\nThe genre labels to go with goodreads/gr-book-genres.parquet.\n\ngoodreads/gr-book-link.parquet\n\nLinking identifiers (work and cluster) for GoodReads books.\n\ngoodreads/gr-work-info.parquet\n\nMetadata extracted from GoodReads work records.\n\ngoodreads/simple/gr-interactions.parquet\n\nGoodReads interaction records (from CSV).\n\ngoodreads/full/gr-interactions.parquet\n\nGoodReads interaction records (from JSON).\n\ngoodreads/gr-author-info.parquet\n\nGoodReads author information.\n\n\n\n\n\n\ngoodreads/full/gr-cluster-actions.parquet\n\nCluster-level implicit-feedback records, suitable for use in LensKit. The item column contains cluster IDs. This version of the table is processed from the JSON version of the full interaction log, which is only available by request.\n\ngoodreads/full/gr-cluster-ratings.parquet\n\nCluster-level explicit-feedback records, suitable for use in LensKit. The item column contains cluster IDs. This version of the table is processed from the JSON version of the full interaction log, which is only available by request.\n\ngoodreads/simple/gr-cluster-actions.parquet\n\nCluster-level implicit-feedback records, suitable for use in LensKit. The item column contains cluster IDs. This version of the table is processed from the CSV data.\n\ngoodreads/simple/gr-cluster-ratings.parquet\n\nCluster-level explicit-feedback records, suitable for use in LensKit. The item column contains cluster IDs. This version of the table is processed from the CSV data.\n\n\n\n\n\n\ngoodreads/full/gr-work-actions.parquet\n\nWork-level implicit-feedback records, suitable for use in LensKit. The item column contains work IDs.\n\ngoodreads/full/gr-work-ratings.parquet\n\nWork-level explicit-feedback records, suitable for use in LensKit. The item column contains work IDs.\n\ngoodreads/simple/gr-work-actions.parquet\n\nWork-level implicit-feedback records, suitable for use in LensKit. The item column contains work IDs.\n\ngoodreads/simple/gr-work-ratings.parquet\n\nWork-level explicit-feedback records, suitable for use in LensKit. The item column contains work IDs.\n\ngoodreads/gr-work-gender.parquet\n\nAuthor gender for GoodReads works. This is computed by connecting works to clusters and obtaining the cluster gender information from book-links/cluster-genders.parquet."
+  },
+  {
+    "objectID": "data/goodreads.html#configuration",
+    "href": "data/goodreads.html#configuration",
+    "title": "GoodReads",
+    "section": "",
+    "text": "The config.yaml file defines what source of GoodReads interaction data is used:\ngoodreads:\n    interactions: simple\nThe default, simple, uses the CSV summary data that you can download directly from the web site in 3 files:\n\ngoodreads_interactions.csv\nuser_id_map.csv\nbook_id_map.csv\n\nDownload and save these 3 files in data/goodreads, along with the other metadata files.\nThe tools also support the detailed version (change interactions to full), delivered in JSON format. If you want this version, you need to contact Mengtin Wan as noted on the web site."
+  },
+  {
+    "objectID": "data/goodreads.html#import-steps",
+    "href": "data/goodreads.html#import-steps",
+    "title": "GoodReads",
+    "section": "",
+    "text": "The import is controlled by several DVC steps:\n\nscan-*\n\nThe various scan-* steps each scan a JSON file into corresponding Parquet files. They have a specific order, as scanning interactions needs book information.\n\nbook-isbn-ids\n\nMatch GoodReads ISBNs with ISBN IDs.\n\nbook-links\n\nCreates goodreads/gr-book-link.parquet, which links each GoodReads book with its work (if applicable) and is cluster ID.\n\ncluster-actions\n\nExtracts cluster-level implicit feedback data. Each (user, cluster) pair has one record, with the number of actions (the number of times the user added a book from that cluster to a shelf) and timestamp data.\n\ncluster-ratings\n\nExtracts cluster-level explicit feedback data. This is the ratings each user assigned to books in each cluster.\n\nwork-actions, work-ratings\n\nThe same thing as the cluster-* stages, except it groups by GoodReads work instead of by integrated cluster. If you are only working with the GoodReads data, and not trying to connect across data sets, this data is better to work with.\n\nwork-gender\n\nThe author gender for each GoodReads work, as near as we can tell."
+  },
+  {
+    "objectID": "data/goodreads.html#scanned-and-linking-data",
+    "href": "data/goodreads.html#scanned-and-linking-data",
+    "title": "GoodReads",
+    "section": "",
+    "text": "goodreads/gr-book-ids.parquet\n\nIdentifiers extracted from each GoodReads book record.\n\ngoodreads/gr-book-info.parquet\n\nMetadata extracted from GoodReads book records.\n\ngoodreads/gr-book-genres.parquet\n\nGoodReads book-genre associations.\n\ngoodreads/gr-book-series.parquet\n\nGoodReads book series associations.\n\ngoodreads/gr-genres.parquet\n\nThe genre labels to go with goodreads/gr-book-genres.parquet.\n\ngoodreads/gr-book-link.parquet\n\nLinking identifiers (work and cluster) for GoodReads books.\n\ngoodreads/gr-work-info.parquet\n\nMetadata extracted from GoodReads work records.\n\ngoodreads/simple/gr-interactions.parquet\n\nGoodReads interaction records (from CSV).\n\ngoodreads/full/gr-interactions.parquet\n\nGoodReads interaction records (from JSON).\n\ngoodreads/gr-author-info.parquet\n\nGoodReads author information."
+  },
+  {
+    "objectID": "data/goodreads.html#cluster-level-tables",
+    "href": "data/goodreads.html#cluster-level-tables",
+    "title": "GoodReads",
+    "section": "",
+    "text": "goodreads/full/gr-cluster-actions.parquet\n\nCluster-level implicit-feedback records, suitable for use in LensKit. The item column contains cluster IDs. This version of the table is processed from the JSON version of the full interaction log, which is only available by request.\n\ngoodreads/full/gr-cluster-ratings.parquet\n\nCluster-level explicit-feedback records, suitable for use in LensKit. The item column contains cluster IDs. This version of the table is processed from the JSON version of the full interaction log, which is only available by request.\n\ngoodreads/simple/gr-cluster-actions.parquet\n\nCluster-level implicit-feedback records, suitable for use in LensKit. The item column contains cluster IDs. This version of the table is processed from the CSV data.\n\ngoodreads/simple/gr-cluster-ratings.parquet\n\nCluster-level explicit-feedback records, suitable for use in LensKit. The item column contains cluster IDs. This version of the table is processed from the CSV data."
+  },
+  {
+    "objectID": "data/goodreads.html#work-level-tables",
+    "href": "data/goodreads.html#work-level-tables",
+    "title": "GoodReads",
+    "section": "",
+    "text": "goodreads/full/gr-work-actions.parquet\n\nWork-level implicit-feedback records, suitable for use in LensKit. The item column contains work IDs.\n\ngoodreads/full/gr-work-ratings.parquet\n\nWork-level explicit-feedback records, suitable for use in LensKit. The item column contains work IDs.\n\ngoodreads/simple/gr-work-actions.parquet\n\nWork-level implicit-feedback records, suitable for use in LensKit. The item column contains work IDs.\n\ngoodreads/simple/gr-work-ratings.parquet\n\nWork-level explicit-feedback records, suitable for use in LensKit. The item column contains work IDs.\n\ngoodreads/gr-work-gender.parquet\n\nAuthor gender for GoodReads works. This is computed by connecting works to clusters and obtaining the cluster gender information from book-links/cluster-genders.parquet."
+  },
+  {
+    "objectID": "data/viaf.html",
+    "href": "data/viaf.html",
+    "title": "VIAF",
+    "section": "",
+    "text": "We source author data from the Virtual Internet Authority File, as downloaded from their data dumps. This file is slow to download, as the VIAF server is rather slow.\n\n\n\n\n\n\nNote\n\n\n\nVIAF also does not keep old copies of the dump file. You may need to edit data/params.yaml to update the VIAF URL to fetch in order to import this data.\n\n\nImported data lives under the viaf directory.\n\n\nThe import is controlled by the following DVC steps:\n\nscan-authors\n\nImport the VIAF MARC data into viaf/viaf.parquet.\n\nauthor-genders\n\nExtract author genders from the VIAF MARC data, producing author-genders.parquet.\n\nindex-names\n\nNormalize and expand author names and map to VIAF record IDs, producing author-name-index.parquet.\n\n\n\n\n\nThe VIAF data is in MARC 21 Authority Record format. The initial scan stage extracts this into a table using the MARC schema.\n\nviaf/viaf.parquet\n\nThe table storing raw MARC fields from VIAF.\n\n\n\n\n\nWe process the MARC records to produce several derived tables.\n\nviaf/author-name-index.parquet\n\nThe author-name index file maps record IDs to author names, as defined in field 700a. For each record, it stores each of the names extracted by {rust:mod}bookdata::cleaning::names. This file is also available in csv.gz format.\n\nviaf/author-genders.parquet\n\nThis file contains the extracted gender information for each author record (field 375a). If a record has multiple gender fields, they are all recorded. Merging gender records happens later in the integration.\n\n\n\n\n\nThe MARC gender field is defined as the author’s gender identity. It allows identities from an open vocabulary, along with start and end dates for the validity of each identity.\nThe Program for Cooperative Cataloging Task Group on Gender in Name Authority Records produced a report with recommendations for how to record this field. Many libraries contributing to the Library of Congress file, from which many VIAF records are sourced, follow these recommendations, but it is not safe to assume they are universally followed by all VIAF contributors.\nFurther, as near as we can tell, the VIAF removes all non-binary gender identities or converts them to ‘unknown’.\nThis data should only be used with great care. We discuss these limitations in the extended paper."
+  },
+  {
+    "objectID": "data/viaf.html#import-steps",
+    "href": "data/viaf.html#import-steps",
+    "title": "VIAF",
+    "section": "",
+    "text": "The import is controlled by the following DVC steps:\n\nscan-authors\n\nImport the VIAF MARC data into viaf/viaf.parquet.\n\nauthor-genders\n\nExtract author genders from the VIAF MARC data, producing author-genders.parquet.\n\nindex-names\n\nNormalize and expand author names and map to VIAF record IDs, producing author-name-index.parquet."
+  },
+  {
+    "objectID": "data/viaf.html#raw-data",
+    "href": "data/viaf.html#raw-data",
+    "title": "VIAF",
+    "section": "",
+    "text": "The VIAF data is in MARC 21 Authority Record format. The initial scan stage extracts this into a table using the MARC schema.\n\nviaf/viaf.parquet\n\nThe table storing raw MARC fields from VIAF."
+  },
+  {
+    "objectID": "data/viaf.html#extracted-author-tables",
+    "href": "data/viaf.html#extracted-author-tables",
+    "title": "VIAF",
+    "section": "",
+    "text": "We process the MARC records to produce several derived tables.\n\nviaf/author-name-index.parquet\n\nThe author-name index file maps record IDs to author names, as defined in field 700a. For each record, it stores each of the names extracted by {rust:mod}bookdata::cleaning::names. This file is also available in csv.gz format.\n\nviaf/author-genders.parquet\n\nThis file contains the extracted gender information for each author record (field 375a). If a record has multiple gender fields, they are all recorded. Merging gender records happens later in the integration."
+  },
+  {
+    "objectID": "data/viaf.html#viaf-gender-vocabulary",
+    "href": "data/viaf.html#viaf-gender-vocabulary",
+    "title": "VIAF",
+    "section": "",
+    "text": "The MARC gender field is defined as the author’s gender identity. It allows identities from an open vocabulary, along with start and end dates for the validity of each identity.\nThe Program for Cooperative Cataloging Task Group on Gender in Name Authority Records produced a report with recommendations for how to record this field. Many libraries contributing to the Library of Congress file, from which many VIAF records are sourced, follow these recommendations, but it is not safe to assume they are universally followed by all VIAF contributors.\nFurther, as near as we can tell, the VIAF removes all non-binary gender identities or converts them to ‘unknown’.\nThis data should only be used with great care. We discuss these limitations in the extended paper."
+  },
+  {
+    "objectID": "data/gender.html",
+    "href": "data/gender.html",
+    "title": "Book Author Gender",
+    "section": "",
+    "text": "We compute the author gender for book clusters using the integrated data set.\n\n\n\n\n\n\nWarning\n\n\n\nSee the paper for important limitations and ethical considerations.\n\n\n\n\n\ncluster-genders (in book-links/)\n\nMatch book genders with clusters. Produces cluster-genders.parquest.\n\n\n\n\n\nFor each book cluster, the integration does the following:\n\nAccumulate all names for the first author from OpenLibrary\nAccumulate all names for the first/primary author from the Library of Congress\nObtain gender identities from all VIAF records matching an author name in this pool\nConsolidate gender into a cluster author gender identity\n\nThe results of this are stored in book-links/cluster-genders.parquet.\n\nbook-links/cluster-genders.parquet\n\nThe author gender identified for each book cluster.\n\nbook-links/gender-stats.csv\n\nThis file records the number of books with each gender resolution in each data set, for auditing and analysis purposes.\n\n\n\n\n\nSee the paper for a fuller discussion. Some known limitations include:\n\nVIAF does not record non-binary gender identities.\nRecent versions of the OpenLibrary data contain VIAF identifiers for book authors, but we do not yet make use of this information. When available, they should improve the reliability of book-author linking.\nGoodReads includes author names, but we do not yet use these for linking to gender records."
+  },
+  {
+    "objectID": "data/gender.html#import-steps",
+    "href": "data/gender.html#import-steps",
+    "title": "Book Author Gender",
+    "section": "",
+    "text": "cluster-genders (in book-links/)\n\nMatch book genders with clusters. Produces cluster-genders.parquest."
+  },
+  {
+    "objectID": "data/gender.html#gender-integration",
+    "href": "data/gender.html#gender-integration",
+    "title": "Book Author Gender",
+    "section": "",
+    "text": "For each book cluster, the integration does the following:\n\nAccumulate all names for the first author from OpenLibrary\nAccumulate all names for the first/primary author from the Library of Congress\nObtain gender identities from all VIAF records matching an author name in this pool\nConsolidate gender into a cluster author gender identity\n\nThe results of this are stored in book-links/cluster-genders.parquet.\n\nbook-links/cluster-genders.parquet\n\nThe author gender identified for each book cluster.\n\nbook-links/gender-stats.csv\n\nThis file records the number of books with each gender resolution in each data set, for auditing and analysis purposes."
+  },
+  {
+    "objectID": "data/gender.html#limitations",
+    "href": "data/gender.html#limitations",
+    "title": "Book Author Gender",
+    "section": "",
+    "text": "See the paper for a fuller discussion. Some known limitations include:\n\nVIAF does not record non-binary gender identities.\nRecent versions of the OpenLibrary data contain VIAF identifiers for book authors, but we do not yet make use of this information. When available, they should improve the reliability of book-author linking.\nGoodReads includes author names, but we do not yet use these for linking to gender records."
   },
   {
     "objectID": "data/bx.html",
@@ -70,172 +168,18 @@
     "text": "bx/bx-cluster-ratings.parquet\n\nThe explicit-feedback ratings (\\(r_{ui} &gt; 0\\) from bx/cleaned-ratings.csv), with book clusters as the items.\n\nbx/bx-cluster-actions.parquet\n\nAll user-item interactions from bx/cleaned-ratings.csv, with book clusters as the items."
   },
   {
-    "objectID": "data/openlib.html",
-    "href": "data/openlib.html",
-    "title": "OpenLibrary",
+    "objectID": "data/index.html",
+    "href": "data/index.html",
+    "title": "Data Organization",
     "section": "",
-    "text": "We also source book data from OpenLibrary, as downloaded from their developer dumps.\nThe DVC control files automatically download the appropriate version. The version can be updated by modifying the data/ol_dump_*.txt.gz.dvc files.\nImported data lives under the openlibrary directory.\n\n\n\n\nerDiagram\n    editions ||--o{ edition-isbn-ids : \"\"\n    edition-isbn-ids }o--|| all-isbns : \"\"\n    editions {\n        Int32 id PK\n        Utf8 key\n        Utf8 title\n    }\n    editions }o--o{ works : \"edition-works\"\n    editions |o--o{ edition-subjects : \"\"\n    edition-subjects {\n        Int32 id\n        Utf8 subject\n    }\n    works {\n        Int32 id PK\n        Utf8 key\n        Utf8 title\n    }\n    works |o--o{ work-subjects : \"\"\n    work-subjects {\n        Int32 id\n        Utf8 subject\n    }\n    authors {\n        Int32 id PK\n        Utf8 key\n        Utf8 name\n    }\n    authors ||--o{ author-names : \"\"\n    editions }o--o{ authors : \"edition-authors\"\n    works }o--o{ authors : \"work-authors\"\n\n\n\n\n\n\n\nThe import is controlled by the following DVC steps:\n\nscan-*\n\nThe various scan-* stages (e.g. scan-authors) scan an OpenLibrary JSON file into the resulting Parquet files. There are dependencies, to resolve OpenLibrary keys to numeric identifiers for cross-referencing. These scan stages do not currently extract all available data from the OpenLibrary JSON; they only extract the fields we currently use, and need to be extended to extract and save additional fields.\n\nedition-isbn-ids\n\nConvert edition ISBNs into ISBN IDs, producing openlib/edition-isbn-ids.parquet.\n\n\n\n\n\nThe raw data lives in the data/openlib directory, as compressed JSON files. Right now we do not extract very many fields from OpenLibrary; additional fields can be extracted by extending the import scripts.\n\n\n\nWe extract the following tables from OpenLibrary editions:\n\nopenlibrary/editions.parquet\n\nThis file contains a primary record for each edition, with the numeric edition ID, OpenLibrary key, and edition data.\n\nopenlibrary/edition-authors.parquet\n\nThis file contains mappings between editions and their authors.\n\nopenlibrary/edition-works.parquet\n\nThis maps editions to their works.\n\nopenlibrary/edition-isbns.parquet\n\nThis contains the ISBN fields extracted from each OpenLibrary edition. This is primarily for internal purposes and most people won’t need to use it. ISBNs are cleaned (with {rust:fn}~bookdata::cleaning::isbns::clean_isbn_chars or {rust:fn}~bookdata::cleaning::isbns::clean_asin_chars) prior to being stored in this file.\n\nopenlibrary/edition-subjects.parquet\n\nThis table contains the subjects for OpenLibrary editions. Each row contains an edition ID and one subject. Its schema is in {rust:struct}~bookdata::openlib::edition::EditionSubjectRec.\n\nopenlibrary/edition-isbn-ids.parquet\n\nThis file maps editions to numeric ISBN identifiers. It is derived from openlibrary/edition-isbns.parquet.\n\n\n\n\n\nWe extract the following tables from OpenLibrary works:\n\nopenlibrary/works.parquet\n\nThis file contains the primary record for each work, mapping a numeric ID to its OpenLibrary key and containing other per-work fields.\n\nopenlibrary/work-authors.parquet\n\nThis file links work records to the work’s author list (works may have separate author lists from their editions).\n\nopenlibrary/work-subjects.parquet\n\nThis table contains the subjects for OpenLibrary editions. Each row contains an edition ID and one subject. Its schema is in {rust:struct}~bookdata::openlib::work::WorkSubjectRec.\n\n\n\n\n\n\nopenlibrary/authors.parquet\n\nThis file contains basic information about OpenLibrary authors.\n\nopenlibrary/author-names.parquet\n\nThis file contains the names associated with each author in openlibrary/authors.parquet.\n\n\n\n\n\n\nopenlibrary/work-clusters.parquet\n\nThis file is a helper table to make it easier to connect OpenLibrary data to clusters by mapping OpenLibrary work IDs to book data cluster IDs."
+    "text": "Data Organization\nThis section describes the layout of the imported data, and the logic behind its integration.\nWe organize the data and pipelines in directories as follows:\n\ndata\n\nContains the raw import data as downloaded from its original source. Manually-downloaded files and files that can be natively downloaded by DVC are tracked with a .dvc file; the dvc.yaml pipeline contains stages to automatically download additional files. The only processing in this directory is downloading.\nData sets consisting of multiple files generally get a subdirectory under this directory.\n\nloc-mds\n\nContains the results of processing data from the Library of Congress MDSConnect Open MARC service. See LOC for details.\n\nopenlibrary\n\nContains the results of processing the OpenLibrary data.\n\nviaf\n\nContains Virtual Internet Authority File processing.\n\nbx\n\nContains the results of integrating BookCrossing.\n\naz2014\n\nContains the results of integrating the Amazon 2014 ratings data set.\n\ngoodreads\n\nContains the GoodReads processing and integration\n\nbook-links\n\nContains linking book identifiers for integrating the whole set, including the clustering and the integrated author genders.\n\n\nEach directory has a DVC pipeline for managing that directory’s outputs. Post-clustering integrations are stored in the data source directory; e.g. the goodreads directory contains both the direct tabular GoodReads data, and the conversion of ratings into ratings for book clusters based on book-links (so the flow from directory to directory is not one-directional)."
   },
   {
-    "objectID": "data/openlib.html#import-steps",
-    "href": "data/openlib.html#import-steps",
-    "title": "OpenLibrary",
+    "objectID": "papers.html",
+    "href": "papers.html",
+    "title": "Papers Using BookData",
     "section": "",
-    "text": "The import is controlled by the following DVC steps:\n\nscan-*\n\nThe various scan-* stages (e.g. scan-authors) scan an OpenLibrary JSON file into the resulting Parquet files. There are dependencies, to resolve OpenLibrary keys to numeric identifiers for cross-referencing. These scan stages do not currently extract all available data from the OpenLibrary JSON; they only extract the fields we currently use, and need to be extended to extract and save additional fields.\n\nedition-isbn-ids\n\nConvert edition ISBNs into ISBN IDs, producing openlib/edition-isbn-ids.parquet."
-  },
-  {
-    "objectID": "data/openlib.html#raw-data",
-    "href": "data/openlib.html#raw-data",
-    "title": "OpenLibrary",
-    "section": "",
-    "text": "The raw data lives in the data/openlib directory, as compressed JSON files. Right now we do not extract very many fields from OpenLibrary; additional fields can be extracted by extending the import scripts."
-  },
-  {
-    "objectID": "data/openlib.html#extracted-edition-tables",
-    "href": "data/openlib.html#extracted-edition-tables",
-    "title": "OpenLibrary",
-    "section": "",
-    "text": "We extract the following tables from OpenLibrary editions:\n\nopenlibrary/editions.parquet\n\nThis file contains a primary record for each edition, with the numeric edition ID, OpenLibrary key, and edition data.\n\nopenlibrary/edition-authors.parquet\n\nThis file contains mappings between editions and their authors.\n\nopenlibrary/edition-works.parquet\n\nThis maps editions to their works.\n\nopenlibrary/edition-isbns.parquet\n\nThis contains the ISBN fields extracted from each OpenLibrary edition. This is primarily for internal purposes and most people won’t need to use it. ISBNs are cleaned (with {rust:fn}~bookdata::cleaning::isbns::clean_isbn_chars or {rust:fn}~bookdata::cleaning::isbns::clean_asin_chars) prior to being stored in this file.\n\nopenlibrary/edition-subjects.parquet\n\nThis table contains the subjects for OpenLibrary editions. Each row contains an edition ID and one subject. Its schema is in {rust:struct}~bookdata::openlib::edition::EditionSubjectRec.\n\nopenlibrary/edition-isbn-ids.parquet\n\nThis file maps editions to numeric ISBN identifiers. It is derived from openlibrary/edition-isbns.parquet."
-  },
-  {
-    "objectID": "data/openlib.html#extracted-work-tables",
-    "href": "data/openlib.html#extracted-work-tables",
-    "title": "OpenLibrary",
-    "section": "",
-    "text": "We extract the following tables from OpenLibrary works:\n\nopenlibrary/works.parquet\n\nThis file contains the primary record for each work, mapping a numeric ID to its OpenLibrary key and containing other per-work fields.\n\nopenlibrary/work-authors.parquet\n\nThis file links work records to the work’s author list (works may have separate author lists from their editions).\n\nopenlibrary/work-subjects.parquet\n\nThis table contains the subjects for OpenLibrary editions. Each row contains an edition ID and one subject. Its schema is in {rust:struct}~bookdata::openlib::work::WorkSubjectRec."
-  },
-  {
-    "objectID": "data/openlib.html#extracted-author-tables",
-    "href": "data/openlib.html#extracted-author-tables",
-    "title": "OpenLibrary",
-    "section": "",
-    "text": "openlibrary/authors.parquet\n\nThis file contains basic information about OpenLibrary authors.\n\nopenlibrary/author-names.parquet\n\nThis file contains the names associated with each author in openlibrary/authors.parquet."
-  },
-  {
-    "objectID": "data/openlib.html#utility-tables",
-    "href": "data/openlib.html#utility-tables",
-    "title": "OpenLibrary",
-    "section": "",
-    "text": "openlibrary/work-clusters.parquet\n\nThis file is a helper table to make it easier to connect OpenLibrary data to clusters by mapping OpenLibrary work IDs to book data cluster IDs."
-  },
-  {
-    "objectID": "data/amazon.html",
-    "href": "data/amazon.html",
-    "title": "Amazon Ratings",
-    "section": "",
-    "text": "This processes two data sets from Julian McAuley’s group at UCSD:\n\nThe 2014 Amazon reviews data set\nThe 2018 Amazon reviews data set\n\nEach consists of user-provided reviews and ratings for a variety of products.\nCurrently we import the ratings-only data from the Books segment of the 2014 and 2018 data sets. Future versions of the data tools will support reviews.\nIf you use this data, cite the paper(s) documented on the data set web site. For 2014 data:\n\nR. He and J. McAuley. 2016. Ups and downs: Modeling the visual evolution of fashion trends with one-class collaborative filtering. In Proc. WWW 2016. DOI:10.1145/2872427.2883037.\n\n\nJ. McAuley, C. Targett, J. Shi, and A. van den Hengel. Image-based recommendations on styles and substitutes. In Proc. SIGIR 2016. DOI:10.1145/2766462.2767755.\n\nFor 2018 data:\n\nJ. Ni, J. Li, and J. McAuley. Justifying recommendations using distantly-labeled reviews and fined-grained aspects. In Empirical Methods in Natural Language Processing (EMNLP), 2019.\n\nImported data lives in the az2014 and az2018 directories. The source files are not automatically downloaded — you will need to download the ratings-only data for the Books category from each data site and save them in the data/az2014 and data/az2018 directories.\n\n\nThe import is controlled by the following DVC steps:\n\nscan-ratings\n\nScan the rating CSV file into a Parquet file, converting user strings into numeric IDs. Produces az2014/ratings.parquet.\n\ncluster-ratings\n\nLink ratings with book clusters and aggregate by cluster, to produce user ratings for book clsuters. Produces az2014/az-cluster-ratings.parquet.\n\n\n\n\n\n\naz2014/ratings.parquet\n\nThe raw rating data, with user strings converted to numeric IDs, is in this file.\n\naz2018/ratings.parquet\n\nThe raw rating data, with user strings converted to numeric IDs, is in this file.\n\n\n\n\n\n\naz2014/az-cluster-ratings.parquet\n\nThis file contains the integrated Amazon ratings, with cluster IDs in the item column.\n\naz2018/az-cluster-ratings.parquet\n\nThis file contains the integrated Amazon ratings, with cluster IDs in the item column."
-  },
-  {
-    "objectID": "data/amazon.html#import-steps",
-    "href": "data/amazon.html#import-steps",
-    "title": "Amazon Ratings",
-    "section": "",
-    "text": "The import is controlled by the following DVC steps:\n\nscan-ratings\n\nScan the rating CSV file into a Parquet file, converting user strings into numeric IDs. Produces az2014/ratings.parquet.\n\ncluster-ratings\n\nLink ratings with book clusters and aggregate by cluster, to produce user ratings for book clsuters. Produces az2014/az-cluster-ratings.parquet."
-  },
-  {
-    "objectID": "data/amazon.html#raw-data",
-    "href": "data/amazon.html#raw-data",
-    "title": "Amazon Ratings",
-    "section": "",
-    "text": "az2014/ratings.parquet\n\nThe raw rating data, with user strings converted to numeric IDs, is in this file.\n\naz2018/ratings.parquet\n\nThe raw rating data, with user strings converted to numeric IDs, is in this file."
-  },
-  {
-    "objectID": "data/amazon.html#extracted-rating-tables",
-    "href": "data/amazon.html#extracted-rating-tables",
-    "title": "Amazon Ratings",
-    "section": "",
-    "text": "az2014/az-cluster-ratings.parquet\n\nThis file contains the integrated Amazon ratings, with cluster IDs in the item column.\n\naz2018/az-cluster-ratings.parquet\n\nThis file contains the integrated Amazon ratings, with cluster IDs in the item column."
-  },
-  {
-    "objectID": "data/loc.html",
-    "href": "data/loc.html",
-    "title": "Library of Congress",
-    "section": "",
-    "text": "One of our sources of book data is the Library of Congress MDSConnect Books bibliography records.\nWe download and import the XML versions of these files.\nImported data lives under the loc-mds directory.\n\n\n\n\nerDiagram\n    book-ids |o--|{ book-fields : contains\n    book-ids ||--o{ book-isbns : \"\"\n    book-ids ||--o{ book-isbn-ids : \"\"\n    book-ids ||--o{ book-authors : \"\"\n\n\n\n\n\n\n\nThe import is controlled by the following DVC steps:\n\nscan-books\n\nScan the book MARC data from data/loc-books into Parquet files (described in book data).\n\nbook-isbn-ids\n\nResolve ISBNs from LOC books into ISBN IDs, producing loc-mds/book-isbn-ids.parquet.\n\nbook-authors\n\nExtract (and clean up) author names for LOC books.\n\n\n\n\n\nWhen importing MARC data, we create a “fields” file that contains the data exactly as recorded in MARC. We then process this data to produce additional files. One of these MARC field files contains the following columns (defined by {rust:struct}bookdata::marc::flat_fields::FieldRecord):\n\nrec_id\n\nThe record identifier (generated at import)\n\nfld_no\n\nThe field number. This corresponds to a single MARC field entry; rows in this table containing data from MARC subfields will share a fld_no with their containing field.\n\ntag\n\nThe MARC tag; either a three-digit number, or -1 for the MARC leader.\n\nind1, ind2\n\nMARC indicators. Their meanings are defined in the MARC specification.\n\nsf_code\n\nMARC subfield code.\n\ncontents\n\nThe raw textual content of the MARC field or subfield.\n\n\n\n\n\nWe extract a number of tables from the LOC MDS book data. These tables only contain information about actual “books” in the collection, as opposed to other types of materials. We consider a book to be anything that has MARC record type ‘a’ or ‘t’ (language material), and is not also classified as a government record in MARC field 008.\n\nloc-mds/book-fields.parquet\n\nThe book-fields table contains the raw data imported from the MARC files, as ]MARC fields. The LOC book data follows the MARC 21 Bibliographic Data format; the various tags, field codes, and indicators are defined there. This table is not terribly useful on its own, but it is the source from which the other tables are derived.\n\nloc-mds/book-ids.parquet\n\nThis table includes code information for each book record.\n\n\n\nRecord ID\nMARC Control Number\nLibrary of Congress Control Number (LCCN)\nRecord status\nRecord type\nBibliographic level\n\nMore information about the last three is in the leader specification. This file’s schema is defined by {rust:struct}bookdata::marc::book_fields::BookIds.\n\nloc-mds/book-isbns.parquet\n\nTextual ISBNs as extracted from LOC records. The actual ISBN strings (tag 020 subfield ‘a’) are quite messy; the parser in {rust:mod}bookdata::cleaning::isbns parses out ISBNs, along with additional tags or descriptors, from the ISBN strings using a number of best-effort heuristics. This table contains the results of that process. It is defined by {rust:struct}bookdata::marc::book_fields::ISBNrec.\n\nloc-mds/book-isbn-ids.parquet\n\nMap book records (LOC book rec_id values) to ISBN IDs. It is produced by converting the ISBNs in loc-mds/book-isbns.parquet into ISBN IDs.\n\nloc-mds/book-authors.parquet\n\nAuthor names for book records. This only extracts the primary author name (MARC field 100 subfield ‘a’)."
-  },
-  {
-    "objectID": "data/loc.html#import-steps",
-    "href": "data/loc.html#import-steps",
-    "title": "Library of Congress",
-    "section": "",
-    "text": "The import is controlled by the following DVC steps:\n\nscan-books\n\nScan the book MARC data from data/loc-books into Parquet files (described in book data).\n\nbook-isbn-ids\n\nResolve ISBNs from LOC books into ISBN IDs, producing loc-mds/book-isbn-ids.parquet.\n\nbook-authors\n\nExtract (and clean up) author names for LOC books."
-  },
-  {
-    "objectID": "data/loc.html#sec-marc-format",
-    "href": "data/loc.html#sec-marc-format",
-    "title": "Library of Congress",
-    "section": "",
-    "text": "When importing MARC data, we create a “fields” file that contains the data exactly as recorded in MARC. We then process this data to produce additional files. One of these MARC field files contains the following columns (defined by {rust:struct}bookdata::marc::flat_fields::FieldRecord):\n\nrec_id\n\nThe record identifier (generated at import)\n\nfld_no\n\nThe field number. This corresponds to a single MARC field entry; rows in this table containing data from MARC subfields will share a fld_no with their containing field.\n\ntag\n\nThe MARC tag; either a three-digit number, or -1 for the MARC leader.\n\nind1, ind2\n\nMARC indicators. Their meanings are defined in the MARC specification.\n\nsf_code\n\nMARC subfield code.\n\ncontents\n\nThe raw textual content of the MARC field or subfield."
-  },
-  {
-    "objectID": "data/loc.html#extracted-book-tables",
-    "href": "data/loc.html#extracted-book-tables",
-    "title": "Library of Congress",
-    "section": "",
-    "text": "We extract a number of tables from the LOC MDS book data. These tables only contain information about actual “books” in the collection, as opposed to other types of materials. We consider a book to be anything that has MARC record type ‘a’ or ‘t’ (language material), and is not also classified as a government record in MARC field 008.\n\nloc-mds/book-fields.parquet\n\nThe book-fields table contains the raw data imported from the MARC files, as ]MARC fields. The LOC book data follows the MARC 21 Bibliographic Data format; the various tags, field codes, and indicators are defined there. This table is not terribly useful on its own, but it is the source from which the other tables are derived.\n\nloc-mds/book-ids.parquet\n\nThis table includes code information for each book record.\n\n\n\nRecord ID\nMARC Control Number\nLibrary of Congress Control Number (LCCN)\nRecord status\nRecord type\nBibliographic level\n\nMore information about the last three is in the leader specification. This file’s schema is defined by {rust:struct}bookdata::marc::book_fields::BookIds.\n\nloc-mds/book-isbns.parquet\n\nTextual ISBNs as extracted from LOC records. The actual ISBN strings (tag 020 subfield ‘a’) are quite messy; the parser in {rust:mod}bookdata::cleaning::isbns parses out ISBNs, along with additional tags or descriptors, from the ISBN strings using a number of best-effort heuristics. This table contains the results of that process. It is defined by {rust:struct}bookdata::marc::book_fields::ISBNrec.\n\nloc-mds/book-isbn-ids.parquet\n\nMap book records (LOC book rec_id values) to ISBN IDs. It is produced by converting the ISBNs in loc-mds/book-isbns.parquet into ISBN IDs.\n\nloc-mds/book-authors.parquet\n\nAuthor names for book records. This only extracts the primary author name (MARC field 100 subfield ‘a’)."
-  },
-  {
-    "objectID": "implementation/layout.html",
-    "href": "implementation/layout.html",
-    "title": "Code Layout",
-    "section": "",
-    "text": "The import code consists of Python and Rust, wired together with DVC, with data in several directories to facilitate ease of discovery.\n\n\nPython scripts live in the various directories in which they operate. They should not be launched directly, but rather via run.py, which will make sure the environment is set up properly for them:\npython run.py my-script-file.py\nThe bookdata package contains a little Python utility code. The run.py script ensures it is available in the Python import path.\n\n\n\nThe Rust code all lives under src, with the various command-line programs in src/cli. The Rust tools are implemented as a monolithic executable with subcommands for various operations, to save disk space and compile time. To see the help:\ncargo run help\nOr through Python:\npython run.py --rust help\nThe run.py script with the --rust option sets up some environment variables to ensure that the Rust code builds correctly inside a Conda environment, and also defaults to using a release build (cargo run uses debug builds by default). All DVC pipeline stages use run.py to run the Rust tools.\nFor writing new commands, there is a lot of utility code under src. Consult the {rust:mod}Rust API documentation &lt;bookdata&gt; for further details.\nThe Rust code makes extensive use of the polars, arrow2, and parquet2 crates for data analysis and IO. arrow2_convert is used to automate converstion for Parquet serialization."
-  },
-  {
-    "objectID": "implementation/layout.html#python-scripts",
-    "href": "implementation/layout.html#python-scripts",
-    "title": "Code Layout",
-    "section": "",
-    "text": "Python scripts live in the various directories in which they operate. They should not be launched directly, but rather via run.py, which will make sure the environment is set up properly for them:\npython run.py my-script-file.py\nThe bookdata package contains a little Python utility code. The run.py script ensures it is available in the Python import path."
-  },
-  {
-    "objectID": "implementation/layout.html#rust",
-    "href": "implementation/layout.html#rust",
-    "title": "Code Layout",
-    "section": "",
-    "text": "The Rust code all lives under src, with the various command-line programs in src/cli. The Rust tools are implemented as a monolithic executable with subcommands for various operations, to save disk space and compile time. To see the help:\ncargo run help\nOr through Python:\npython run.py --rust help\nThe run.py script with the --rust option sets up some environment variables to ensure that the Rust code builds correctly inside a Conda environment, and also defaults to using a release build (cargo run uses debug builds by default). All DVC pipeline stages use run.py to run the Rust tools.\nFor writing new commands, there is a lot of utility code under src. Consult the {rust:mod}Rust API documentation &lt;bookdata&gt; for further details.\nThe Rust code makes extensive use of the polars, arrow2, and parquet2 crates for data analysis and IO. arrow2_convert is used to automate converstion for Parquet serialization."
-  },
-  {
-    "objectID": "implementation/pipeline.html",
-    "href": "implementation/pipeline.html",
-    "title": "Pipeline Specification",
-    "section": "",
-    "text": "Pipeline Specification\nData Version Control is a great tool, but its pipelines are static YAML files with limited configurability, and substantial redundancy. That redundancy makes updates error-prone, and also limits our ability to do things such as enable and disable data sets, and reconfigure which version of the GoodReads interaction files we want to use.\nHowever, these YAML files are relatively easy to generate, so it’s feasible to generate them with scripts or templates. We use jsonnet, a programming language for generating JSON and similar configuration structures that allows us to generate the pipeline with loops, conditionals, etc. The pipeline primary sources are in the dvc.jsonnet files, which we render to produce dvc.yaml.\nThe pipelines are updated through the Rust jrsonnet implementation of the jsonnet language, so it is integrated into our main executable. You can run this with:\ncargo run --release pipeline render\nThere are two exceptions to our use of jsonnet for pipelines:\n\ndata/dvc.yaml — this is maintained directly in the YAML file, because DVC’s frozen stages don’t work very well with rendering pipelines.\nThe .dvc files — these just record files that are added (possibly downloaded), we don’t generate them.\n\nThe lib.jsonnet file provides helper routines for generating pipelines:\n\npipeline produces a DVC pipeline given a record of stages.\ncmd takes a book data command (that would be passed to the book data executable) and adds the relevant bits to run it through Cargo (so the import software is automatically recompiled if necessary)."
-  },
-  {
-    "objectID": "using/running.html",
-    "href": "using/running.html",
-    "title": "Running the Tools",
-    "section": "",
-    "text": "Running the Tools\nThe data import and integration process is scripted by DVC. The top-level dvc.yaml pipeline depends on all required steps for the the core data, so to import the data, just run:\ndvc repro\nThe import process will take approximately 2–3 hours on a reasonably fast computer.\nThere are some additional useful outputs that the main pipeline does not invoke; you can generate these with:\ndvc repro --all-pipelines\nIf you have configured a remote to store your data files, you can then run dvc push to push the files to the remote to share with others on your team, copy to another computer, or import into another project."
-  },
-  {
-    "objectID": "using/setup.html",
-    "href": "using/setup.html",
-    "title": "Environment Setup",
-    "section": "",
-    "text": "These tools require an Anaconda installation. It is possible to use them without Anaconda, but we have provided the environment definitions to automate use with Anaconda.\nThis project uses Git submodules, so you should clone it with:\ngit clone --recursive https://github.com/PIReTship/bookdata-tools.git\n\n\nYou will need:\n\nA Unix-like environment (macOS or Linux)\nAnaconda or Miniconda\n250GB of disk space\nAt least 24 GB of memory (lower may be possible)\n\n\n\n\nThe import tools are written in Python and Rust. The provided Conda lockfiles, along with environment.yml, provide the data to define an Anaconda environment that contains all required runtimes and libraries:\nconda-lock install -n bookdata\nconda activate bookdata\nIf you don’t want to use Anaconda, see the following for more details on dependencies. If you don’t yet have conda-lock installed in your base environment, run:\nconda install -c conda-forge -n base conda-lock=2\n\n\nThis needs the following Python dependencies:\n\nPython 3.8 or later\nnumpy\npandas\nseaborn\njupyter\njupytext\ndvc (3 or later)\n\nThe Python dependencies are defined in environment.yml.\n\n\n\nThe Rust tools need Rust version 1.59 or later. The easiest way to install this — besides Anaconda — is with rustup.\nThe cargo build tool will automatically download all Rust libraries required. The Rust code does not depend on any specific system libraries.\n\n\n\nIf you update dependencies, you can re-generate the Conda lockfiles with conda-lock:\nconda-lock lock --mamba -f pyproject.toml"
-  },
-  {
-    "objectID": "using/setup.html#system-requirements",
-    "href": "using/setup.html#system-requirements",
-    "title": "Environment Setup",
-    "section": "",
-    "text": "You will need:\n\nA Unix-like environment (macOS or Linux)\nAnaconda or Miniconda\n250GB of disk space\nAt least 24 GB of memory (lower may be possible)"
-  },
-  {
-    "objectID": "using/setup.html#import-tool-dependencies",
-    "href": "using/setup.html#import-tool-dependencies",
-    "title": "Environment Setup",
-    "section": "",
-    "text": "The import tools are written in Python and Rust. The provided Conda lockfiles, along with environment.yml, provide the data to define an Anaconda environment that contains all required runtimes and libraries:\nconda-lock install -n bookdata\nconda activate bookdata\nIf you don’t want to use Anaconda, see the following for more details on dependencies. If you don’t yet have conda-lock installed in your base environment, run:\nconda install -c conda-forge -n base conda-lock=2\n\n\nThis needs the following Python dependencies:\n\nPython 3.8 or later\nnumpy\npandas\nseaborn\njupyter\njupytext\ndvc (3 or later)\n\nThe Python dependencies are defined in environment.yml.\n\n\n\nThe Rust tools need Rust version 1.59 or later. The easiest way to install this — besides Anaconda — is with rustup.\nThe cargo build tool will automatically download all Rust libraries required. The Rust code does not depend on any specific system libraries.\n\n\n\nIf you update dependencies, you can re-generate the Conda lockfiles with conda-lock:\nconda-lock lock --mamba -f pyproject.toml"
-  },
-  {
-    "objectID": "using/storage.html",
-    "href": "using/storage.html",
-    "title": "Data Storage",
-    "section": "",
-    "text": "Data Storage\nOnce you have set up the software environment, the one remaining piece is to set up your data storage if you want to share the book data with collaborators or between machines. Since this project uses DVC, you will need to configure a DVC remote to store your data. This will require around 200GB of space for all of the relevant data files, in addition to the files in your local repository.\n\n\n\n\n\n\nNote\n\n\n\nIt is possible to work without a remote if you only need one copy of the data, but as soon as you want to move the data between multiple machines or use DVC’s import facilities to load it into an experiment project, you will need a remote.\n\n\nDue to data redistribution restrictions we can’t share access to the remote we use within our research group.\nWhat you need to do:\n\nAdd your remote (with dvc remote add or by editing .dvc/config). You can use any remote type supported by DVC.\nConfigure your remote as the default (with dvc remote default).\n\n\n\n\n\n\n\nTip\n\n\n\nIf you don’t want to pay for cloud storage for hte data, there are several good options for local hosting if you have a server with sufficient storage space:\n\nGarage and Minio provide S3-compatible storage APIs. Both store the data in an internal format (allowing checksums and deduplication), not in raw files on your file system, so you can only access the data through the S3 api.\nCaddy with the webdav plugin is the easiest way I have found to run a webdav server. I’ve started moving towards webdav instead of S3 for in-house remotes so that the data can be accessed directly on the server filesystem. Apache HTTPD also has good webdav support, but it is somewhat more cumbersome to configure.\n\n\n\n\n\n\n\n\n\nNote\n\n\n\nIf you are a member of our research group, or a direct collaborator, using these tools, contact Michael for access to our remote."
+    "text": "Papers Using BookData\nThese are papers we know to be using this book data integration. If you use this data in published research, please cite our paper"
   },
   {
     "objectID": "reports/audit-gender-changes.html",
@@ -301,6 +245,111 @@
     "text": "Release 2.1 to Current\nWe updated OpenLibrary and VIAF, and made some technical changes.\n\nct = gender_crosstab('2022-11-2.1', 'current')\nct.style.apply(style_row, 'columns')\n\n\n\n\n\n\ncurrent\nambiguous\nfemale\nmale\nunknown\nno-author-rec\nno-book-author\nno-book\nabsent\n\n\n2022-11-2.1\n \n \n \n \n \n \n \n \n\n\n\n\nambiguous\n0.879477\n0.006926\n0.018943\n0.001573\n0.000239\n0.074744\n0.000009\n0.018090\n\n\nfemale\n0.004885\n0.975547\n0.000307\n0.004275\n0.000396\n0.000482\n0.000002\n0.014106\n\n\nmale\n0.002250\n0.000044\n0.986204\n0.001428\n0.000497\n0.001463\n0.000005\n0.008110\n\n\nunknown\n0.000267\n0.019107\n0.032235\n0.945157\n0.001086\n0.000425\n0.000000\n0.001722\n\n\nno-author-rec\n0.000277\n0.002895\n0.007173\n0.009780\n0.975844\n0.000360\n0.000004\n0.003667\n\n\nno-book-author\n0.000408\n0.006233\n0.011057\n0.004072\n0.006725\n0.967639\n0.000001\n0.003864\n\n\nno-book\n0.000361\n0.005644\n0.011795\n0.007435\n0.024740\n0.003809\n0.940827\n0.005390\n\n\nabsent\n0.003096\n0.021000\n0.056276\n0.026941\n0.127455\n0.748984\n0.000001\n0.016246"
   },
   {
+    "objectID": "reports/LinkageStats.html",
+    "href": "reports/LinkageStats.html",
+    "title": "Book Data Linkage Statistics",
+    "section": "",
+    "text": "This notebook presents statistics of the book data integration."
+  },
+  {
+    "objectID": "reports/LinkageStats.html#setup",
+    "href": "reports/LinkageStats.html#setup",
+    "title": "Book Data Linkage Statistics",
+    "section": "Setup",
+    "text": "Setup\n\nimport pandas as pd\nimport matplotlib as mpl\nimport matplotlib.pyplot as plt\nimport numpy as np"
+  },
+  {
+    "objectID": "reports/LinkageStats.html#load-link-stats",
+    "href": "reports/LinkageStats.html#load-link-stats",
+    "title": "Book Data Linkage Statistics",
+    "section": "Load Link Stats",
+    "text": "Load Link Stats\nWe compute dataset linking statistics as gender-stats.csv as part of the integration. Let’s load those:\n\nlink_stats = pd.read_csv('book-links/gender-stats.csv')\nlink_stats.head()\n\n\n\n\n\n\n\n\ndataset\ngender\nn_books\nn_actions\n\n\n\n\n0\nLOC-MDS\nno-book-author\n600216\nNaN\n\n\n1\nLOC-MDS\nunknown\n1084460\nNaN\n\n\n2\nLOC-MDS\nambiguous\n73989\nNaN\n\n\n3\nLOC-MDS\nmale\n2424008\nNaN\n\n\n4\nLOC-MDS\nfemale\n743105\nNaN\n\n\n\n\n\n\n\nNow let’s define variables for our variou codes. We are first going to define our gender codes. We’ll start with the resolved codes:\n\nlink_codes = ['female', 'male', 'ambiguous', 'unknown']\n\nWe want the unlink codes in order, so the last is the first link failure:\n\nunlink_codes = ['no-author-rec', 'no-book-author', 'no-book']\n\n\nall_codes = link_codes + unlink_codes"
+  },
+  {
+    "objectID": "reports/LinkageStats.html#processing-statistics",
+    "href": "reports/LinkageStats.html#processing-statistics",
+    "title": "Book Data Linkage Statistics",
+    "section": "Processing Statistics",
+    "text": "Processing Statistics\nNow we’ll pivot each of our count columns into a table for easier reference.\n\nbook_counts = link_stats.pivot('dataset', 'gender', 'n_books')\nbook_counts = book_counts.reindex(columns=all_codes)\nbook_counts.assign(total=book_counts.sum(axis=1))\n\n/var/folders/rp/hd85d1b94pd2cfs8q8h9fjx52t1n0n/T/ipykernel_15237/233082166.py:1: FutureWarning: In a future version of pandas all arguments of DataFrame.pivot will be keyword-only.\n  book_counts = link_stats.pivot('dataset', 'gender', 'n_books')\n\n\n\n\n\n\n\n\ngender\nfemale\nmale\nambiguous\nunknown\nno-author-rec\nno-book-author\nno-book\ntotal\n\n\ndataset\n\n\n\n\n\n\n\n\n\n\n\n\nAZ14\n248863.0\n550877.0\n24064.0\n239915.0\n155511.0\n167948.0\n870268.0\n2257446.0\n\n\nAZ18\n318004.0\n670899.0\n27977.0\n300300.0\n239917.0\n152438.0\n1144899.0\n2854434.0\n\n\nBX-E\n40256.0\n58484.0\n5596.0\n15281.0\n5692.0\n5428.0\n17481.0\n148218.0\n\n\nBX-I\n71441.0\n102756.0\n9528.0\n31440.0\n11562.0\n10861.0\n35009.0\n272597.0\n\n\nGR-E\n225840.0\n334136.0\n18516.0\n106501.0\n60515.0\n738282.0\nNaN\n1483790.0\n\n\nGR-I\n228142.0\n338411.0\n18709.0\n108333.0\n61601.0\n750118.0\nNaN\n1505314.0\n\n\nLOC-MDS\n743105.0\n2424008.0\n73989.0\n1084460.0\n306291.0\n600216.0\nNaN\n5232069.0\n\n\n\n\n\n\n\n\nact_counts = link_stats.pivot('dataset', 'gender', 'n_actions')\nact_counts = act_counts.reindex(columns=all_codes)\nact_counts.drop(index='LOC-MDS', inplace=True)\nact_counts\n\n/var/folders/rp/hd85d1b94pd2cfs8q8h9fjx52t1n0n/T/ipykernel_15237/71450322.py:1: FutureWarning: In a future version of pandas all arguments of DataFrame.pivot will be keyword-only.\n  act_counts = link_stats.pivot('dataset', 'gender', 'n_actions')\n\n\n\n\n\n\n\n\ngender\nfemale\nmale\nambiguous\nunknown\nno-author-rec\nno-book-author\nno-book\n\n\ndataset\n\n\n\n\n\n\n\n\n\n\n\nAZ14\n4977284.0\n7105363.0\n849025.0\n2157265.0\n1100127.0\n2359170.0\n3879190.0\n\n\nAZ18\n12377052.0\n15603235.0\n1844630.0\n4692726.0\n3312340.0\n2820794.0\n10008921.0\n\n\nBX-E\n142252.0\n183945.0\n41768.0\n24554.0\n7130.0\n7234.0\n19920.0\n\n\nBX-I\n401483.0\n468156.0\n104008.0\n69361.0\n18597.0\n18882.0\n47275.0\n\n\nGR-E\n36335167.0\n33249747.0\n13230835.0\n3570086.0\n1039410.0\n11168052.0\nNaN\n\n\nGR-I\n82889862.0\n69977512.0\n22091068.0\n10242726.0\n3545964.0\n29784689.0\nNaN\n\n\n\n\n\n\n\nWe’re going to want to compute versions of this table as fractions, e.g. the fraction of books that are written by women. We will use the following helper function:\n\ndef fractionalize(data, columns, unlinked=None):\n    fracs = data[columns]\n    fracs.columns = fracs.columns.astype('str')\n    if unlinked:\n        fracs = fracs.assign(unlinked=data[unlinked].sum(axis=1))\n    totals = fracs.sum(axis=1)\n    return fracs.divide(totals, axis=0)\n\nAnd a helper function for plotting bar charts:\n\ndef plot_bars(fracs, ax=None, cmap=mpl.cm.Dark2):\n    if ax is None:\n        ax = plt.gca()\n    size = 0.5\n    ind = np.arange(len(fracs))\n    start = pd.Series(0, index=fracs.index)\n    for i, col in enumerate(fracs.columns):\n        vals = fracs.iloc[:, i]\n        rects = ax.barh(ind, vals, size, left=start, label=col, color=cmap(i))\n        for j, rec in enumerate(rects):\n            if vals.iloc[j] &lt; 0.1 or np.isnan(vals.iloc[j]): continue\n            y = rec.get_y() + rec.get_height() / 2\n            x = start.iloc[j] + vals.iloc[j] / 2\n            ax.annotate('{:.1f}%'.format(vals.iloc[j] * 100),\n                        xy=(x,y), ha='center', va='center', color='white',\n                        fontweight='bold')\n        start += vals.fillna(0)\n    ax.set_xlabel('Fraction of Books')\n    ax.set_ylabel('Data Set')\n    ax.set_yticks(ind)\n    ax.set_yticklabels(fracs.index)\n    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))"
+  },
+  {
+    "objectID": "reports/LinkageStats.html#resolution-of-books",
+    "href": "reports/LinkageStats.html#resolution-of-books",
+    "title": "Book Data Linkage Statistics",
+    "section": "Resolution of Books",
+    "text": "Resolution of Books\nWhat fraction of unique books are resolved from each source?\n\nfractionalize(book_counts, link_codes + unlink_codes)\n\n\n\n\n\n\n\ngender\nfemale\nmale\nambiguous\nunknown\nno-author-rec\nno-book-author\nno-book\n\n\ndataset\n\n\n\n\n\n\n\n\n\n\n\nAZ14\n0.110241\n0.244027\n0.010660\n0.106277\n0.068888\n0.074397\n0.385510\n\n\nAZ18\n0.111407\n0.235037\n0.009801\n0.105205\n0.084051\n0.053404\n0.401095\n\n\nBX-E\n0.271600\n0.394581\n0.037755\n0.103098\n0.038403\n0.036622\n0.117941\n\n\nBX-I\n0.262076\n0.376952\n0.034953\n0.115335\n0.042414\n0.039843\n0.128428\n\n\nGR-E\n0.152205\n0.225191\n0.012479\n0.071776\n0.040784\n0.497565\nNaN\n\n\nGR-I\n0.151558\n0.224811\n0.012429\n0.071967\n0.040922\n0.498313\nNaN\n\n\nLOC-MDS\n0.142029\n0.463298\n0.014141\n0.207272\n0.058541\n0.114719\nNaN\n\n\n\n\n\n\n\n\nplot_bars(fractionalize(book_counts, link_codes + unlink_codes))\n\n\n\n\n\nfractionalize(book_counts, link_codes, unlink_codes)\n\n\n\n\n\n\n\ngender\nfemale\nmale\nambiguous\nunknown\nunlinked\n\n\ndataset\n\n\n\n\n\n\n\n\n\nAZ14\n0.110241\n0.244027\n0.010660\n0.106277\n0.528795\n\n\nAZ18\n0.111407\n0.235037\n0.009801\n0.105205\n0.538549\n\n\nBX-E\n0.271600\n0.394581\n0.037755\n0.103098\n0.192966\n\n\nBX-I\n0.262076\n0.376952\n0.034953\n0.115335\n0.210685\n\n\nGR-E\n0.152205\n0.225191\n0.012479\n0.071776\n0.538349\n\n\nGR-I\n0.151558\n0.224811\n0.012429\n0.071967\n0.539236\n\n\nLOC-MDS\n0.142029\n0.463298\n0.014141\n0.207272\n0.173260\n\n\n\n\n\n\n\n\nplot_bars(fractionalize(book_counts, link_codes, unlink_codes))\n\n\n\n\n\nplot_bars(fractionalize(book_counts, ['female', 'male']))"
+  },
+  {
+    "objectID": "reports/LinkageStats.html#resolution-of-ratings",
+    "href": "reports/LinkageStats.html#resolution-of-ratings",
+    "title": "Book Data Linkage Statistics",
+    "section": "Resolution of Ratings",
+    "text": "Resolution of Ratings\nWhat fraction of rating actions have each resolution result?\n\nfractionalize(act_counts, link_codes + unlink_codes)\n\n\n\n\n\n\n\ngender\nfemale\nmale\nambiguous\nunknown\nno-author-rec\nno-book-author\nno-book\n\n\ndataset\n\n\n\n\n\n\n\n\n\n\n\nAZ14\n0.221928\n0.316816\n0.037857\n0.096189\n0.049053\n0.105191\n0.172966\n\n\nAZ18\n0.244318\n0.308001\n0.036412\n0.092632\n0.065384\n0.055681\n0.197572\n\n\nBX-E\n0.333297\n0.430983\n0.097862\n0.057530\n0.016706\n0.016949\n0.046673\n\n\nBX-I\n0.356000\n0.415120\n0.092225\n0.061503\n0.016490\n0.016743\n0.041919\n\n\nGR-E\n0.368536\n0.337241\n0.134196\n0.036210\n0.010542\n0.113274\nNaN\n\n\nGR-I\n0.379303\n0.320217\n0.101089\n0.046871\n0.016226\n0.136295\nNaN\n\n\n\n\n\n\n\n\nplot_bars(fractionalize(act_counts, link_codes + unlink_codes))\n\n\n\n\n\nfractionalize(act_counts, link_codes, unlink_codes)\n\n\n\n\n\n\n\ngender\nfemale\nmale\nambiguous\nunknown\nunlinked\n\n\ndataset\n\n\n\n\n\n\n\n\n\nAZ14\n0.221928\n0.316816\n0.037857\n0.096189\n0.327210\n\n\nAZ18\n0.244318\n0.308001\n0.036412\n0.092632\n0.318637\n\n\nBX-E\n0.333297\n0.430983\n0.097862\n0.057530\n0.080327\n\n\nBX-I\n0.356000\n0.415120\n0.092225\n0.061503\n0.075152\n\n\nGR-E\n0.368536\n0.337241\n0.134196\n0.036210\n0.123816\n\n\nGR-I\n0.379303\n0.320217\n0.101089\n0.046871\n0.152521\n\n\n\n\n\n\n\n\nplot_bars(fractionalize(act_counts, link_codes, unlink_codes))\n\n\n\n\n\nplot_bars(fractionalize(act_counts, ['female', 'male']))"
+  },
+  {
+    "objectID": "reports/LinkageStats.html#metrics",
+    "href": "reports/LinkageStats.html#metrics",
+    "title": "Book Data Linkage Statistics",
+    "section": "Metrics",
+    "text": "Metrics\nFinally, we’re going to write coverage metrics.\n\nbook_tots = book_counts.sum(axis=1)\nbook_link = book_counts['male'] + book_counts['female'] + book_counts['ambiguous']\nbook_cover = book_link / book_tots\nbook_cover\n\ndataset\nAZ14       0.364927\nAZ18       0.356246\nBX-E       0.703936\nBX-I       0.673980\nGR-E       0.389875\nGR-I       0.388797\nLOC-MDS    0.619469\ndtype: float64\n\n\n\nbook_cover.to_json('book-coverage.json')"
+  },
+  {
+    "objectID": "using/running.html",
+    "href": "using/running.html",
+    "title": "Running the Tools",
+    "section": "",
+    "text": "Running the Tools\nThe data import and integration process is scripted by DVC. The top-level dvc.yaml pipeline depends on all required steps for the the core data, so to import the data, just run:\ndvc repro\nThe import process will take approximately 2–3 hours on a reasonably fast computer.\nThere are some additional useful outputs that the main pipeline does not invoke; you can generate these with:\ndvc repro --all-pipelines\nIf you have configured a remote to store your data files, you can then run dvc push to push the files to the remote to share with others on your team, copy to another computer, or import into another project."
+  },
+  {
+    "objectID": "using/sources.html",
+    "href": "using/sources.html",
+    "title": "Source Data",
+    "section": "",
+    "text": "These import tools will integrate several data sets. Some of them are auto-downloaded, but others you will need to download yourself and save in the data directory. The data sources are:\n\nLibrary of Congress MDSConnect Open MARC Records (auto-downloaded).\nLoC MDSConnect Name Authorities (auto-downloaded).\nVirtual Internet Authority File MARC 21 XML data (auto-downloaded, but usually needs configuration to access current data file; see the documentation for details).\nOpenLibrary Dump (auto-downloaded).\nAmazon Ratings (2014) ‘ratings only’ data for Books (not auto-downloaded — save CSV file in data/az2014). If you use this data, cite the paper on that site.\nAmazon Ratings (2018) ‘ratings only’ data for Books (not auto-downloaded — save CSV file in data/az2014). If you use this data, cite the paper on that site.\nBookCrossing (auto-downloaded). If you use this data, cite the paper on that site.\nGoodReads data from UCSD Book Graph — the GoodReads books, works, authors, series, and interaction files (not auto-downloaded - save GZip’d JSON files in data/goodreads). If you use this data, cite the paper on that site. More information on options are in the docs.\n\nIf all files are properly downloaded, dvc status -R data will show that all files are up to date (it may also display warnings about locked files).\nSee Data Model for details on how each data source appears in the final data.\n\n\nThe pipeline is reconfigurable to use subsets of this data. To change the pipeline options:\n\nEdit config.yaml to specify the options you want, such as using full GoodReads interaction files.\nRe-render the pipeline with cargo run --release pipeline render\nCommit the updated pipeline to git (optional, but recommended prior to running)\n\nA dvc repro will now use the reconfigured pipeline."
+  },
+  {
+    "objectID": "using/sources.html#configuration",
+    "href": "using/sources.html#configuration",
+    "title": "Source Data",
+    "section": "",
+    "text": "The pipeline is reconfigurable to use subsets of this data. To change the pipeline options:\n\nEdit config.yaml to specify the options you want, such as using full GoodReads interaction files.\nRe-render the pipeline with cargo run --release pipeline render\nCommit the updated pipeline to git (optional, but recommended prior to running)\n\nA dvc repro will now use the reconfigured pipeline."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Overview",
+    "section": "",
+    "text": "The PIReT Book Data Tools are a set of tools for ingesting, integrating, and indexing a variety of sources of book data, created by the People and Information Research Team at Boise State University. The result of running these tools is a set of Parquet files with raw data in a more usable form, various useful extracted features, and integrated identifiers across the various data sources for cross-linking. These tools are updated from the version used to support our original paper; we have dropped PostgreSQL in favor of a pipeline using DVC to script extraction and integration tools implemented in Rust that is more efficient (integration times have dropped from 8 hours to less than 3) and requires significantly less disk space.1\nIf you use these scripts in any published research, cite our paper (PDF):\n\nMichael D. Ekstrand and Daniel Kluver. 2021. Exploring Author Gender in Book Rating and Recommendation. User Modeling and User-Adapted Interaction (February 2021) DOI:10.1007/s11257-020-09284-2.\n\nWe also ask that you contact Michael Ekstrand to let us know about your use of the data, so we can include your paper in our list of relying publications.\n\n\n\n\n\n\nWarning\n\n\n\nThe limitations section of the paper contains important information about the limitations of the data these scripts compile. Do not use the gender information in this data data or tools without understanding those limitations. In particular, VIAF’s gender information is incomplete and, in a number of cases, incorrect.\n\n\nIn addition, several of the data sets integrated by this project come from other sources with their own publications. If you use any of the rating or interaction data, cite the appropriate original source paper. For each data set below, we have provided a link to the page that describes the data and its appropriate citation.\nSee the Setup page to get started and for system requirements.\n\n\nI recorded a video walking through the integration as an example for my Data Science class. This discusses the PostgreSQL version of the integration, but the concepts have remained the same in terms of linking logic.\n\n\n\n\n\nThese tools are under the MIT license:\n\nCopyright 2019-2021 Boise State University\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\nTHE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n\n\n\n\nThis material is based upon work supported by the National Science Foundation under Grant No. IIS 17-51278. Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation. This page has not been approved by Boise State University and does not reflect official university positions."
+  },
+  {
+    "objectID": "index.html#video",
+    "href": "index.html#video",
+    "title": "Overview",
+    "section": "",
+    "text": "I recorded a video walking through the integration as an example for my Data Science class. This discusses the PostgreSQL version of the integration, but the concepts have remained the same in terms of linking logic."
+  },
+  {
+    "objectID": "index.html#license",
+    "href": "index.html#license",
+    "title": "Overview",
+    "section": "",
+    "text": "These tools are under the MIT license:\n\nCopyright 2019-2021 Boise State University\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\nTHE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."
+  },
+  {
+    "objectID": "index.html#acknowledgments",
+    "href": "index.html#acknowledgments",
+    "title": "Overview",
+    "section": "",
+    "text": "This material is based upon work supported by the National Science Foundation under Grant No. IIS 17-51278. Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation. This page has not been approved by Boise State University and does not reflect official university positions."
+  },
+  {
+    "objectID": "index.html#footnotes",
+    "href": "index.html#footnotes",
+    "title": "Overview",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nThe original tools are available on the before-fusion tag in the Git repository.↩︎"
+  },
+  {
     "objectID": "history.html",
     "href": "history.html",
     "title": "History",
@@ -334,6 +383,62 @@
     "title": "History",
     "section": "",
     "text": "The original release that used PostgreSQL. There were a couple of versions of this for the RecSys and UMUAI papers; the tagged 1.0 release corresponds to the data used for the UMUAI paper."
+  },
+  {
+    "objectID": "using/storage.html",
+    "href": "using/storage.html",
+    "title": "Data Storage",
+    "section": "",
+    "text": "Data Storage\nOnce you have set up the software environment, the one remaining piece is to set up your data storage if you want to share the book data with collaborators or between machines. Since this project uses DVC, you will need to configure a DVC remote to store your data. This will require around 200GB of space for all of the relevant data files, in addition to the files in your local repository.\n\n\n\n\n\n\nNote\n\n\n\nIt is possible to work without a remote if you only need one copy of the data, but as soon as you want to move the data between multiple machines or use DVC’s import facilities to load it into an experiment project, you will need a remote.\n\n\nDue to data redistribution restrictions we can’t share access to the remote we use within our research group.\nWhat you need to do:\n\nAdd your remote (with dvc remote add or by editing .dvc/config). You can use any remote type supported by DVC.\nConfigure your remote as the default (with dvc remote default).\n\n\n\n\n\n\n\nTip\n\n\n\nIf you don’t want to pay for cloud storage for hte data, there are several good options for local hosting if you have a server with sufficient storage space:\n\nGarage and Minio provide S3-compatible storage APIs. Both store the data in an internal format (allowing checksums and deduplication), not in raw files on your file system, so you can only access the data through the S3 api.\nCaddy with the webdav plugin is the easiest way I have found to run a webdav server. I’ve started moving towards webdav instead of S3 for in-house remotes so that the data can be accessed directly on the server filesystem. Apache HTTPD also has good webdav support, but it is somewhat more cumbersome to configure.\n\n\n\n\n\n\n\n\n\nNote\n\n\n\nIf you are a member of our research group, or a direct collaborator, using these tools, contact Michael for access to our remote."
+  },
+  {
+    "objectID": "using/index.html",
+    "href": "using/index.html",
+    "title": "Importing",
+    "section": "",
+    "text": "Using the Tools\nThis section of the documentation describes how to set up and use the book data integration tools."
+  },
+  {
+    "objectID": "using/setup.html",
+    "href": "using/setup.html",
+    "title": "Environment Setup",
+    "section": "",
+    "text": "These tools require an Anaconda installation. It is possible to use them without Anaconda, but we have provided the environment definitions to automate use with Anaconda.\nThis project uses Git submodules, so you should clone it with:\ngit clone --recursive https://github.com/PIReTship/bookdata-tools.git\n\n\nYou will need:\n\nA Unix-like environment (macOS or Linux)\nAnaconda or Miniconda\n250GB of disk space\nAt least 24 GB of memory (lower may be possible)\n\n\n\n\nThe import tools are written in Python and Rust. The provided Conda lockfiles, along with environment.yml, provide the data to define an Anaconda environment that contains all required runtimes and libraries:\nconda-lock install -n bookdata\nconda activate bookdata\nIf you don’t want to use Anaconda, see the following for more details on dependencies. If you don’t yet have conda-lock installed in your base environment, run:\nconda install -c conda-forge -n base conda-lock=2\n\n\nThis needs the following Python dependencies:\n\nPython 3.8 or later\nnumpy\npandas\nseaborn\njupyter\njupytext\ndvc (3 or later)\n\nThe Python dependencies are defined in environment.yml.\n\n\n\nThe Rust tools need Rust version 1.59 or later. The easiest way to install this — besides Anaconda — is with rustup.\nThe cargo build tool will automatically download all Rust libraries required. The Rust code does not depend on any specific system libraries.\n\n\n\nIf you update dependencies, you can re-generate the Conda lockfiles with conda-lock:\nconda-lock lock --mamba -f pyproject.toml"
+  },
+  {
+    "objectID": "using/setup.html#system-requirements",
+    "href": "using/setup.html#system-requirements",
+    "title": "Environment Setup",
+    "section": "",
+    "text": "You will need:\n\nA Unix-like environment (macOS or Linux)\nAnaconda or Miniconda\n250GB of disk space\nAt least 24 GB of memory (lower may be possible)"
+  },
+  {
+    "objectID": "using/setup.html#import-tool-dependencies",
+    "href": "using/setup.html#import-tool-dependencies",
+    "title": "Environment Setup",
+    "section": "",
+    "text": "The import tools are written in Python and Rust. The provided Conda lockfiles, along with environment.yml, provide the data to define an Anaconda environment that contains all required runtimes and libraries:\nconda-lock install -n bookdata\nconda activate bookdata\nIf you don’t want to use Anaconda, see the following for more details on dependencies. If you don’t yet have conda-lock installed in your base environment, run:\nconda install -c conda-forge -n base conda-lock=2\n\n\nThis needs the following Python dependencies:\n\nPython 3.8 or later\nnumpy\npandas\nseaborn\njupyter\njupytext\ndvc (3 or later)\n\nThe Python dependencies are defined in environment.yml.\n\n\n\nThe Rust tools need Rust version 1.59 or later. The easiest way to install this — besides Anaconda — is with rustup.\nThe cargo build tool will automatically download all Rust libraries required. The Rust code does not depend on any specific system libraries.\n\n\n\nIf you update dependencies, you can re-generate the Conda lockfiles with conda-lock:\nconda-lock lock --mamba -f pyproject.toml"
+  },
+  {
+    "objectID": "reports/index.html",
+    "href": "reports/index.html",
+    "title": "Reports and Audits",
+    "section": "",
+    "text": "We provide several notebooks that describe aspects of the data set and its evolution.\n\n\nThese notebooks report the current status of the data.\n\n\n\nThese notebooks describe how the data has changed from version to version, to detect regressions."
+  },
+  {
+    "objectID": "reports/index.html#current-status",
+    "href": "reports/index.html#current-status",
+    "title": "Reports and Audits",
+    "section": "",
+    "text": "These notebooks report the current status of the data."
+  },
+  {
+    "objectID": "reports/index.html#change-audits",
+    "href": "reports/index.html#change-audits",
+    "title": "Reports and Audits",
+    "section": "",
+    "text": "These notebooks describe how the data has changed from version to version, to detect regressions."
   },
   {
     "objectID": "reports/audit-clusters.html",
@@ -378,151 +483,60 @@
     "text": "Final Saved Metrics\nNow we’re going to save this metric file to a CSV.\n\nmetrics.index.name = 'version'\nmetrics\n\n\n\n\n\n\n\n\nn_isbns\nn_clusters\nmax_size\nnew_isbns\ndropped_isbns\nchanged_isbns\n\n\nversion\n\n\n\n\n\n\n\n\n\n\npgsql\n24482342\n13213677\n7818\nNaN\nNaN\nNaN\n\n\n2022-03-2.0\n24503563\n13201869\n7976\n88086.0\n66865.0\n45950.0\n\n\n2022-07\n32715079\n17078096\n13988\n8220673.0\n9157.0\n228969.0\n\n\n2022-10\n32715078\n16882949\n14378\n0.0\n1.0\n195258.0\n\n\n2022-11-2.1\n33505211\n17673075\n14378\n790244.0\n111.0\n7.0\n\n\ncurrent\n42979427\n23191293\n47857\n9489505.0\n15289.0\n218442.0\n\n\n\n\n\n\n\n\nmetrics.to_csv('audit-metrics.csv')"
   },
   {
-    "objectID": "reports/index.html",
-    "href": "reports/index.html",
-    "title": "Reports and Audits",
+    "objectID": "data/loc.html",
+    "href": "data/loc.html",
+    "title": "Library of Congress",
     "section": "",
-    "text": "We provide several notebooks that describe aspects of the data set and its evolution.\n\n\nThese notebooks report the current status of the data.\n\n\n\nThese notebooks describe how the data has changed from version to version, to detect regressions."
+    "text": "One of our sources of book data is the Library of Congress MDSConnect Books bibliography records.\nWe download and import the XML versions of these files.\nImported data lives under the loc-mds directory.\n\n\n\n\nerDiagram\n    book-ids |o--|{ book-fields : contains\n    book-ids ||--o{ book-isbns : \"\"\n    book-ids ||--o{ book-isbn-ids : \"\"\n    book-ids ||--o{ book-authors : \"\"\n\n\n\n\n\n\n\nThe import is controlled by the following DVC steps:\n\nscan-books\n\nScan the book MARC data from data/loc-books into Parquet files (described in book data).\n\nbook-isbn-ids\n\nResolve ISBNs from LOC books into ISBN IDs, producing loc-mds/book-isbn-ids.parquet.\n\nbook-authors\n\nExtract (and clean up) author names for LOC books.\n\n\n\n\n\nWhen importing MARC data, we create a “fields” file that contains the data exactly as recorded in MARC. We then process this data to produce additional files. One of these MARC field files contains the following columns (defined by {rust:struct}bookdata::marc::flat_fields::FieldRecord):\n\nrec_id\n\nThe record identifier (generated at import)\n\nfld_no\n\nThe field number. This corresponds to a single MARC field entry; rows in this table containing data from MARC subfields will share a fld_no with their containing field.\n\ntag\n\nThe MARC tag; either a three-digit number, or -1 for the MARC leader.\n\nind1, ind2\n\nMARC indicators. Their meanings are defined in the MARC specification.\n\nsf_code\n\nMARC subfield code.\n\ncontents\n\nThe raw textual content of the MARC field or subfield.\n\n\n\n\n\nWe extract a number of tables from the LOC MDS book data. These tables only contain information about actual “books” in the collection, as opposed to other types of materials. We consider a book to be anything that has MARC record type ‘a’ or ‘t’ (language material), and is not also classified as a government record in MARC field 008.\n\nloc-mds/book-fields.parquet\n\nThe book-fields table contains the raw data imported from the MARC files, as ]MARC fields. The LOC book data follows the MARC 21 Bibliographic Data format; the various tags, field codes, and indicators are defined there. This table is not terribly useful on its own, but it is the source from which the other tables are derived.\n\nloc-mds/book-ids.parquet\n\nThis table includes code information for each book record.\n\n\n\nRecord ID\nMARC Control Number\nLibrary of Congress Control Number (LCCN)\nRecord status\nRecord type\nBibliographic level\n\nMore information about the last three is in the leader specification. This file’s schema is defined by {rust:struct}bookdata::marc::book_fields::BookIds.\n\nloc-mds/book-isbns.parquet\n\nTextual ISBNs as extracted from LOC records. The actual ISBN strings (tag 020 subfield ‘a’) are quite messy; the parser in {rust:mod}bookdata::cleaning::isbns parses out ISBNs, along with additional tags or descriptors, from the ISBN strings using a number of best-effort heuristics. This table contains the results of that process. It is defined by {rust:struct}bookdata::marc::book_fields::ISBNrec.\n\nloc-mds/book-isbn-ids.parquet\n\nMap book records (LOC book rec_id values) to ISBN IDs. It is produced by converting the ISBNs in loc-mds/book-isbns.parquet into ISBN IDs.\n\nloc-mds/book-authors.parquet\n\nAuthor names for book records. This only extracts the primary author name (MARC field 100 subfield ‘a’)."
   },
   {
-    "objectID": "reports/index.html#current-status",
-    "href": "reports/index.html#current-status",
-    "title": "Reports and Audits",
+    "objectID": "data/loc.html#import-steps",
+    "href": "data/loc.html#import-steps",
+    "title": "Library of Congress",
     "section": "",
-    "text": "These notebooks report the current status of the data."
+    "text": "The import is controlled by the following DVC steps:\n\nscan-books\n\nScan the book MARC data from data/loc-books into Parquet files (described in book data).\n\nbook-isbn-ids\n\nResolve ISBNs from LOC books into ISBN IDs, producing loc-mds/book-isbn-ids.parquet.\n\nbook-authors\n\nExtract (and clean up) author names for LOC books."
   },
   {
-    "objectID": "reports/index.html#change-audits",
-    "href": "reports/index.html#change-audits",
-    "title": "Reports and Audits",
+    "objectID": "data/loc.html#sec-marc-format",
+    "href": "data/loc.html#sec-marc-format",
+    "title": "Library of Congress",
     "section": "",
-    "text": "These notebooks describe how the data has changed from version to version, to detect regressions."
+    "text": "When importing MARC data, we create a “fields” file that contains the data exactly as recorded in MARC. We then process this data to produce additional files. One of these MARC field files contains the following columns (defined by {rust:struct}bookdata::marc::flat_fields::FieldRecord):\n\nrec_id\n\nThe record identifier (generated at import)\n\nfld_no\n\nThe field number. This corresponds to a single MARC field entry; rows in this table containing data from MARC subfields will share a fld_no with their containing field.\n\ntag\n\nThe MARC tag; either a three-digit number, or -1 for the MARC leader.\n\nind1, ind2\n\nMARC indicators. Their meanings are defined in the MARC specification.\n\nsf_code\n\nMARC subfield code.\n\ncontents\n\nThe raw textual content of the MARC field or subfield."
   },
   {
-    "objectID": "using/sources.html",
-    "href": "using/sources.html",
-    "title": "Source Data",
+    "objectID": "data/loc.html#extracted-book-tables",
+    "href": "data/loc.html#extracted-book-tables",
+    "title": "Library of Congress",
     "section": "",
-    "text": "These import tools will integrate several data sets. Some of them are auto-downloaded, but others you will need to download yourself and save in the data directory. The data sources are:\n\nLibrary of Congress MDSConnect Open MARC Records (auto-downloaded).\nLoC MDSConnect Name Authorities (auto-downloaded).\nVirtual Internet Authority File MARC 21 XML data (auto-downloaded, but usually needs configuration to access current data file; see the documentation for details).\nOpenLibrary Dump (auto-downloaded).\nAmazon Ratings (2014) ‘ratings only’ data for Books (not auto-downloaded — save CSV file in data/az2014). If you use this data, cite the paper on that site.\nAmazon Ratings (2018) ‘ratings only’ data for Books (not auto-downloaded — save CSV file in data/az2014). If you use this data, cite the paper on that site.\nBookCrossing (auto-downloaded). If you use this data, cite the paper on that site.\nGoodReads data from UCSD Book Graph — the GoodReads books, works, authors, series, and interaction files (not auto-downloaded - save GZip’d JSON files in data/goodreads). If you use this data, cite the paper on that site. More information on options are in the docs.\n\nIf all files are properly downloaded, dvc status -R data will show that all files are up to date (it may also display warnings about locked files).\nSee Data Model for details on how each data source appears in the final data.\n\n\nThe pipeline is reconfigurable to use subsets of this data. To change the pipeline options:\n\nEdit config.yaml to specify the options you want, such as using full GoodReads interaction files.\nRe-render the pipeline with cargo run --release pipeline render\nCommit the updated pipeline to git (optional, but recommended prior to running)\n\nA dvc repro will now use the reconfigured pipeline."
+    "text": "We extract a number of tables from the LOC MDS book data. These tables only contain information about actual “books” in the collection, as opposed to other types of materials. We consider a book to be anything that has MARC record type ‘a’ or ‘t’ (language material), and is not also classified as a government record in MARC field 008.\n\nloc-mds/book-fields.parquet\n\nThe book-fields table contains the raw data imported from the MARC files, as ]MARC fields. The LOC book data follows the MARC 21 Bibliographic Data format; the various tags, field codes, and indicators are defined there. This table is not terribly useful on its own, but it is the source from which the other tables are derived.\n\nloc-mds/book-ids.parquet\n\nThis table includes code information for each book record.\n\n\n\nRecord ID\nMARC Control Number\nLibrary of Congress Control Number (LCCN)\nRecord status\nRecord type\nBibliographic level\n\nMore information about the last three is in the leader specification. This file’s schema is defined by {rust:struct}bookdata::marc::book_fields::BookIds.\n\nloc-mds/book-isbns.parquet\n\nTextual ISBNs as extracted from LOC records. The actual ISBN strings (tag 020 subfield ‘a’) are quite messy; the parser in {rust:mod}bookdata::cleaning::isbns parses out ISBNs, along with additional tags or descriptors, from the ISBN strings using a number of best-effort heuristics. This table contains the results of that process. It is defined by {rust:struct}bookdata::marc::book_fields::ISBNrec.\n\nloc-mds/book-isbn-ids.parquet\n\nMap book records (LOC book rec_id values) to ISBN IDs. It is produced by converting the ISBNs in loc-mds/book-isbns.parquet into ISBN IDs.\n\nloc-mds/book-authors.parquet\n\nAuthor names for book records. This only extracts the primary author name (MARC field 100 subfield ‘a’)."
   },
   {
-    "objectID": "using/sources.html#configuration",
-    "href": "using/sources.html#configuration",
-    "title": "Source Data",
+    "objectID": "data/amazon.html",
+    "href": "data/amazon.html",
+    "title": "Amazon Ratings",
     "section": "",
-    "text": "The pipeline is reconfigurable to use subsets of this data. To change the pipeline options:\n\nEdit config.yaml to specify the options you want, such as using full GoodReads interaction files.\nRe-render the pipeline with cargo run --release pipeline render\nCommit the updated pipeline to git (optional, but recommended prior to running)\n\nA dvc repro will now use the reconfigured pipeline."
+    "text": "This processes two data sets from Julian McAuley’s group at UCSD:\n\nThe 2014 Amazon reviews data set\nThe 2018 Amazon reviews data set\n\nEach consists of user-provided reviews and ratings for a variety of products.\nCurrently we import the ratings-only data from the Books segment of the 2014 and 2018 data sets. Future versions of the data tools will support reviews.\nIf you use this data, cite the paper(s) documented on the data set web site. For 2014 data:\n\nR. He and J. McAuley. 2016. Ups and downs: Modeling the visual evolution of fashion trends with one-class collaborative filtering. In Proc. WWW 2016. DOI:10.1145/2872427.2883037.\n\n\nJ. McAuley, C. Targett, J. Shi, and A. van den Hengel. Image-based recommendations on styles and substitutes. In Proc. SIGIR 2016. DOI:10.1145/2766462.2767755.\n\nFor 2018 data:\n\nJ. Ni, J. Li, and J. McAuley. Justifying recommendations using distantly-labeled reviews and fined-grained aspects. In Empirical Methods in Natural Language Processing (EMNLP), 2019.\n\nImported data lives in the az2014 and az2018 directories. The source files are not automatically downloaded — you will need to download the ratings-only data for the Books category from each data site and save them in the data/az2014 and data/az2018 directories.\n\n\nThe import is controlled by the following DVC steps:\n\nscan-ratings\n\nScan the rating CSV file into a Parquet file, converting user strings into numeric IDs. Produces az2014/ratings.parquet.\n\ncluster-ratings\n\nLink ratings with book clusters and aggregate by cluster, to produce user ratings for book clsuters. Produces az2014/az-cluster-ratings.parquet.\n\n\n\n\n\n\naz2014/ratings.parquet\n\nThe raw rating data, with user strings converted to numeric IDs, is in this file.\n\naz2018/ratings.parquet\n\nThe raw rating data, with user strings converted to numeric IDs, is in this file.\n\n\n\n\n\n\naz2014/az-cluster-ratings.parquet\n\nThis file contains the integrated Amazon ratings, with cluster IDs in the item column.\n\naz2018/az-cluster-ratings.parquet\n\nThis file contains the integrated Amazon ratings, with cluster IDs in the item column."
   },
   {
-    "objectID": "using/index.html",
-    "href": "using/index.html",
-    "title": "Importing",
+    "objectID": "data/amazon.html#import-steps",
+    "href": "data/amazon.html#import-steps",
+    "title": "Amazon Ratings",
     "section": "",
-    "text": "Using the Tools\nThis section of the documentation describes how to set up and use the book data integration tools."
+    "text": "The import is controlled by the following DVC steps:\n\nscan-ratings\n\nScan the rating CSV file into a Parquet file, converting user strings into numeric IDs. Produces az2014/ratings.parquet.\n\ncluster-ratings\n\nLink ratings with book clusters and aggregate by cluster, to produce user ratings for book clsuters. Produces az2014/az-cluster-ratings.parquet."
   },
   {
-    "objectID": "implementation/dataset.html",
-    "href": "implementation/dataset.html",
-    "title": "Design for Datasets",
+    "objectID": "data/amazon.html#raw-data",
+    "href": "data/amazon.html#raw-data",
+    "title": "Amazon Ratings",
     "section": "",
-    "text": "The general import philosophy is that we scan raw data from underlying data sets into a tabular form, and then integrate it with further code; import and processing stages are written in Rust, using the Polars library for data frames. We use Parquet for storing all outputs, both intermediate stages and final products; when an output is particularly small, and a CSV version would be convenient, we sometimes also produce compressed CSV.\n\n\nIn general, to add new data, you need to do a few things:\n\nAdd the source files under data, and commit them to DVC.\nImplement code to extract the source files into tabular Parquet that keeps identifiers, etc. from the original source, but is easier to process for subsequent stages. This typically includes a new Rust command to process the data, and a DVC stage to run it.\nIf the data source provides additional ISBNs, add them to book-links/all-isbns.toml so that they are included in ISBN indexing.\nImplement code to process the extracted source files into cluster-aggregated files, if needed (typically used for rating data).\nUpdate the analytics and statistics to include the new data.\n\nAll of the CLI tools live in {rust:mod}bookdata::cli, with support code elsewhere in the source tree."
+    "text": "az2014/ratings.parquet\n\nThe raw rating data, with user strings converted to numeric IDs, is in this file.\n\naz2018/ratings.parquet\n\nThe raw rating data, with user strings converted to numeric IDs, is in this file."
   },
   {
-    "objectID": "implementation/dataset.html#adding-a-data-set",
-    "href": "implementation/dataset.html#adding-a-data-set",
-    "title": "Design for Datasets",
+    "objectID": "data/amazon.html#extracted-rating-tables",
+    "href": "data/amazon.html#extracted-rating-tables",
+    "title": "Amazon Ratings",
     "section": "",
-    "text": "In general, to add new data, you need to do a few things:\n\nAdd the source files under data, and commit them to DVC.\nImplement code to extract the source files into tabular Parquet that keeps identifiers, etc. from the original source, but is easier to process for subsequent stages. This typically includes a new Rust command to process the data, and a DVC stage to run it.\nIf the data source provides additional ISBNs, add them to book-links/all-isbns.toml so that they are included in ISBN indexing.\nImplement code to process the extracted source files into cluster-aggregated files, if needed (typically used for rating data).\nUpdate the analytics and statistics to include the new data.\n\nAll of the CLI tools live in {rust:mod}bookdata::cli, with support code elsewhere in the source tree."
-  },
-  {
-    "objectID": "implementation/index.html",
-    "href": "implementation/index.html",
-    "title": "Implementation",
-    "section": "",
-    "text": "These data and integration tools are designed to support several goals:\n\nComplete end-to-end reproducibility with a single command (dvc repro)\nSelf-documenting import stage dependencies\nAutomatically re-run downstream steps when a data file or integration logic changes\nSupport updates (e.g. new OpenLibrary dumps) by replacing the file and re-running\nEfficient import and integration\n\n\n\nThese goals are realized through a few technology and design decisions:\n\nScript all import steps with a tool that can track stage dependencies and check whether a stage is up-to-date (DVC).\nMake individual import stages self-contained and limited.\nExtract data from raw sources into tabular form, then integrate as a separate step.\nWhen feasible and performant, implement integration and processing steps with straightforward data join operations.\n\n\n\n\n\nAdd the new data file(s), if necessary, to data, and update the documentation to describe how to download them.\nImplement a scan stage to process the raw imported data into tabular form. The code can be written in either Rust or Python, depending on performance needs.\nIf necessary, add the inputs to the ISBN collection (under book-links) and clustering to connect it with the rest of the code.\nImplement stages to integrate the data with the rest of the tools. Again, this code can be in Rust or Python. We usually use Polars (either the Rust or the Python API) to efficiently process large data files.\n\nSee the Pipeline DSL for information about how to update the pipeline."
-  },
-  {
-    "objectID": "implementation/index.html#implementation-principles",
-    "href": "implementation/index.html#implementation-principles",
-    "title": "Implementation",
-    "section": "",
-    "text": "These goals are realized through a few technology and design decisions:\n\nScript all import steps with a tool that can track stage dependencies and check whether a stage is up-to-date (DVC).\nMake individual import stages self-contained and limited.\nExtract data from raw sources into tabular form, then integrate as a separate step.\nWhen feasible and performant, implement integration and processing steps with straightforward data join operations."
-  },
-  {
-    "objectID": "implementation/index.html#adding-or-modifying-data",
-    "href": "implementation/index.html#adding-or-modifying-data",
-    "title": "Implementation",
-    "section": "",
-    "text": "Add the new data file(s), if necessary, to data, and update the documentation to describe how to download them.\nImplement a scan stage to process the raw imported data into tabular form. The code can be written in either Rust or Python, depending on performance needs.\nIf necessary, add the inputs to the ISBN collection (under book-links) and clustering to connect it with the rest of the code.\nImplement stages to integrate the data with the rest of the tools. Again, this code can be in Rust or Python. We usually use Polars (either the Rust or the Python API) to efficiently process large data files.\n\nSee the Pipeline DSL for information about how to update the pipeline."
-  },
-  {
-    "objectID": "data/gender.html",
-    "href": "data/gender.html",
-    "title": "Book Author Gender",
-    "section": "",
-    "text": "We compute the author gender for book clusters using the integrated data set.\n\n\n\n\n\n\nWarning\n\n\n\nSee the paper for important limitations and ethical considerations.\n\n\n\n\n\ncluster-genders (in book-links/)\n\nMatch book genders with clusters. Produces cluster-genders.parquest.\n\n\n\n\n\nFor each book cluster, the integration does the following:\n\nAccumulate all names for the first author from OpenLibrary\nAccumulate all names for the first/primary author from the Library of Congress\nObtain gender identities from all VIAF records matching an author name in this pool\nConsolidate gender into a cluster author gender identity\n\nThe results of this are stored in book-links/cluster-genders.parquet.\n\nbook-links/cluster-genders.parquet\n\nThe author gender identified for each book cluster.\n\nbook-links/gender-stats.csv\n\nThis file records the number of books with each gender resolution in each data set, for auditing and analysis purposes.\n\n\n\n\n\nSee the paper for a fuller discussion. Some known limitations include:\n\nVIAF does not record non-binary gender identities.\nRecent versions of the OpenLibrary data contain VIAF identifiers for book authors, but we do not yet make use of this information. When available, they should improve the reliability of book-author linking.\nGoodReads includes author names, but we do not yet use these for linking to gender records."
-  },
-  {
-    "objectID": "data/gender.html#import-steps",
-    "href": "data/gender.html#import-steps",
-    "title": "Book Author Gender",
-    "section": "",
-    "text": "cluster-genders (in book-links/)\n\nMatch book genders with clusters. Produces cluster-genders.parquest."
-  },
-  {
-    "objectID": "data/gender.html#gender-integration",
-    "href": "data/gender.html#gender-integration",
-    "title": "Book Author Gender",
-    "section": "",
-    "text": "For each book cluster, the integration does the following:\n\nAccumulate all names for the first author from OpenLibrary\nAccumulate all names for the first/primary author from the Library of Congress\nObtain gender identities from all VIAF records matching an author name in this pool\nConsolidate gender into a cluster author gender identity\n\nThe results of this are stored in book-links/cluster-genders.parquet.\n\nbook-links/cluster-genders.parquet\n\nThe author gender identified for each book cluster.\n\nbook-links/gender-stats.csv\n\nThis file records the number of books with each gender resolution in each data set, for auditing and analysis purposes."
-  },
-  {
-    "objectID": "data/gender.html#limitations",
-    "href": "data/gender.html#limitations",
-    "title": "Book Author Gender",
-    "section": "",
-    "text": "See the paper for a fuller discussion. Some known limitations include:\n\nVIAF does not record non-binary gender identities.\nRecent versions of the OpenLibrary data contain VIAF identifiers for book authors, but we do not yet make use of this information. When available, they should improve the reliability of book-author linking.\nGoodReads includes author names, but we do not yet use these for linking to gender records."
-  },
-  {
-    "objectID": "data/index.html",
-    "href": "data/index.html",
-    "title": "Data Organization",
-    "section": "",
-    "text": "Data Organization\nThis section describes the layout of the imported data, and the logic behind its integration.\nWe organize the data and pipelines in directories as follows:\n\ndata\n\nContains the raw import data as downloaded from its original source. Manually-downloaded files and files that can be natively downloaded by DVC are tracked with a .dvc file; the dvc.yaml pipeline contains stages to automatically download additional files. The only processing in this directory is downloading.\nData sets consisting of multiple files generally get a subdirectory under this directory.\n\nloc-mds\n\nContains the results of processing data from the Library of Congress MDSConnect Open MARC service. See LOC for details.\n\nopenlibrary\n\nContains the results of processing the OpenLibrary data.\n\nviaf\n\nContains Virtual Internet Authority File processing.\n\nbx\n\nContains the results of integrating BookCrossing.\n\naz2014\n\nContains the results of integrating the Amazon 2014 ratings data set.\n\ngoodreads\n\nContains the GoodReads processing and integration\n\nbook-links\n\nContains linking book identifiers for integrating the whole set, including the clustering and the integrated author genders.\n\n\nEach directory has a DVC pipeline for managing that directory’s outputs. Post-clustering integrations are stored in the data source directory; e.g. the goodreads directory contains both the direct tabular GoodReads data, and the conversion of ratings into ratings for book clusters based on book-links (so the flow from directory to directory is not one-directional)."
-  },
-  {
-    "objectID": "data/viaf.html",
-    "href": "data/viaf.html",
-    "title": "VIAF",
-    "section": "",
-    "text": "We source author data from the Virtual Internet Authority File, as downloaded from their data dumps. This file is slow to download, as the VIAF server is rather slow.\n\n\n\n\n\n\nNote\n\n\n\nVIAF also does not keep old copies of the dump file. You may need to edit data/params.yaml to update the VIAF URL to fetch in order to import this data.\n\n\nImported data lives under the viaf directory.\n\n\nThe import is controlled by the following DVC steps:\n\nscan-authors\n\nImport the VIAF MARC data into viaf/viaf.parquet.\n\nauthor-genders\n\nExtract author genders from the VIAF MARC data, producing author-genders.parquet.\n\nindex-names\n\nNormalize and expand author names and map to VIAF record IDs, producing author-name-index.parquet.\n\n\n\n\n\nThe VIAF data is in MARC 21 Authority Record format. The initial scan stage extracts this into a table using the MARC schema.\n\nviaf/viaf.parquet\n\nThe table storing raw MARC fields from VIAF.\n\n\n\n\n\nWe process the MARC records to produce several derived tables.\n\nviaf/author-name-index.parquet\n\nThe author-name index file maps record IDs to author names, as defined in field 700a. For each record, it stores each of the names extracted by {rust:mod}bookdata::cleaning::names. This file is also available in csv.gz format.\n\nviaf/author-genders.parquet\n\nThis file contains the extracted gender information for each author record (field 375a). If a record has multiple gender fields, they are all recorded. Merging gender records happens later in the integration.\n\n\n\n\n\nThe MARC gender field is defined as the author’s gender identity. It allows identities from an open vocabulary, along with start and end dates for the validity of each identity.\nThe Program for Cooperative Cataloging Task Group on Gender in Name Authority Records produced a report with recommendations for how to record this field. Many libraries contributing to the Library of Congress file, from which many VIAF records are sourced, follow these recommendations, but it is not safe to assume they are universally followed by all VIAF contributors.\nFurther, as near as we can tell, the VIAF removes all non-binary gender identities or converts them to ‘unknown’.\nThis data should only be used with great care. We discuss these limitations in the extended paper."
-  },
-  {
-    "objectID": "data/viaf.html#import-steps",
-    "href": "data/viaf.html#import-steps",
-    "title": "VIAF",
-    "section": "",
-    "text": "The import is controlled by the following DVC steps:\n\nscan-authors\n\nImport the VIAF MARC data into viaf/viaf.parquet.\n\nauthor-genders\n\nExtract author genders from the VIAF MARC data, producing author-genders.parquet.\n\nindex-names\n\nNormalize and expand author names and map to VIAF record IDs, producing author-name-index.parquet."
-  },
-  {
-    "objectID": "data/viaf.html#raw-data",
-    "href": "data/viaf.html#raw-data",
-    "title": "VIAF",
-    "section": "",
-    "text": "The VIAF data is in MARC 21 Authority Record format. The initial scan stage extracts this into a table using the MARC schema.\n\nviaf/viaf.parquet\n\nThe table storing raw MARC fields from VIAF."
-  },
-  {
-    "objectID": "data/viaf.html#extracted-author-tables",
-    "href": "data/viaf.html#extracted-author-tables",
-    "title": "VIAF",
-    "section": "",
-    "text": "We process the MARC records to produce several derived tables.\n\nviaf/author-name-index.parquet\n\nThe author-name index file maps record IDs to author names, as defined in field 700a. For each record, it stores each of the names extracted by {rust:mod}bookdata::cleaning::names. This file is also available in csv.gz format.\n\nviaf/author-genders.parquet\n\nThis file contains the extracted gender information for each author record (field 375a). If a record has multiple gender fields, they are all recorded. Merging gender records happens later in the integration."
-  },
-  {
-    "objectID": "data/viaf.html#viaf-gender-vocabulary",
-    "href": "data/viaf.html#viaf-gender-vocabulary",
-    "title": "VIAF",
-    "section": "",
-    "text": "The MARC gender field is defined as the author’s gender identity. It allows identities from an open vocabulary, along with start and end dates for the validity of each identity.\nThe Program for Cooperative Cataloging Task Group on Gender in Name Authority Records produced a report with recommendations for how to record this field. Many libraries contributing to the Library of Congress file, from which many VIAF records are sourced, follow these recommendations, but it is not safe to assume they are universally followed by all VIAF contributors.\nFurther, as near as we can tell, the VIAF removes all non-binary gender identities or converts them to ‘unknown’.\nThis data should only be used with great care. We discuss these limitations in the extended paper."
+    "text": "az2014/az-cluster-ratings.parquet\n\nThis file contains the integrated Amazon ratings, with cluster IDs in the item column.\n\naz2018/az-cluster-ratings.parquet\n\nThis file contains the integrated Amazon ratings, with cluster IDs in the item column."
   },
   {
     "objectID": "data/ids.html",
@@ -546,80 +560,115 @@
     "text": "We also use book codes, common identifiers for integrated ‘books’ across data sets. These are derived from identifiers in the various data sets. Each book code source is assigned to a different 100M number band (a ‘numspace’) so we can, if needed, derive the source from a book code.\n\n\n\nSource\nNamespace Object\nNumspace\n\n\n\n\nOL Work\nNS_WORK\n100M\n\n\nOL Edition\nNS_EDITION\n200M\n\n\nLOC Record\nNS_LOC_REC\n300M\n\n\nGR Work\nNS_GR_WORK\n400M\n\n\nGR Book\nNS_GR_BOOK\n500M\n\n\nLOC Work\nNS_LOC_WORK\n600M\n\n\nLOC Instance\nNS_LOC_INSTANCE\n700M\n\n\nISBN\nNS_ISBN\n900M\n\n\n\nThe {rust:mod}bookdata::ids::codes module contains the Rust API for working with these codes (including each of the namespace objects) and converting identifiers into and out of them.\nThe LOC Work and Instance sources are not currently used; they are intended for future use when we are able to import BIBFRAME data from the Library of Congress."
   },
   {
-    "objectID": "data/goodreads.html",
-    "href": "data/goodreads.html",
-    "title": "GoodReads",
+    "objectID": "data/cluster.html",
+    "href": "data/cluster.html",
+    "title": "Book Clusters",
     "section": "",
-    "text": "We import GoodReads data from the UCSD Book Graph for additional book and user interaction information. The source files are not automatically downloaded; you will need the following:\n\nBooks\nBook works\nAuthors\nBook genres\nBook series\nInteraction data (the CSV summary file, along with its book and user ID files, is used by default; the full JSON file is also supported)\n\nWe do not yet support reviews.\nIf you use this data, cite the paper(s) documented on the data set web site.\nImported data lives in the goodreads directory.\n\n\nThe config.yaml file defines what source of GoodReads interaction data is used:\ngoodreads:\n    interactions: simple\nThe default, simple, uses the CSV summary data that you can download directly from the web site in 3 files:\n\ngoodreads_interactions.csv\nuser_id_map.csv\nbook_id_map.csv\n\nDownload and save these 3 files in data/goodreads, along with the other metadata files.\nThe tools also support the detailed version (change interactions to full), delivered in JSON format. If you want this version, you need to contact Mengtin Wan as noted on the web site.\n\n\n\nThe import is controlled by several DVC steps:\n\nscan-*\n\nThe various scan-* steps each scan a JSON file into corresponding Parquet files. They have a specific order, as scanning interactions needs book information.\n\nbook-isbn-ids\n\nMatch GoodReads ISBNs with ISBN IDs.\n\nbook-links\n\nCreates goodreads/gr-book-link.parquet, which links each GoodReads book with its work (if applicable) and is cluster ID.\n\ncluster-actions\n\nExtracts cluster-level implicit feedback data. Each (user, cluster) pair has one record, with the number of actions (the number of times the user added a book from that cluster to a shelf) and timestamp data.\n\ncluster-ratings\n\nExtracts cluster-level explicit feedback data. This is the ratings each user assigned to books in each cluster.\n\nwork-actions, work-ratings\n\nThe same thing as the cluster-* stages, except it groups by GoodReads work instead of by integrated cluster. If you are only working with the GoodReads data, and not trying to connect across data sets, this data is better to work with.\n\nwork-gender\n\nThe author gender for each GoodReads work, as near as we can tell.\n\n\n\n\n\n\ngoodreads/gr-book-ids.parquet\n\nIdentifiers extracted from each GoodReads book record.\n\ngoodreads/gr-book-info.parquet\n\nMetadata extracted from GoodReads book records.\n\ngoodreads/gr-book-genres.parquet\n\nGoodReads book-genre associations.\n\ngoodreads/gr-book-series.parquet\n\nGoodReads book series associations.\n\ngoodreads/gr-genres.parquet\n\nThe genre labels to go with goodreads/gr-book-genres.parquet.\n\ngoodreads/gr-book-link.parquet\n\nLinking identifiers (work and cluster) for GoodReads books.\n\ngoodreads/gr-work-info.parquet\n\nMetadata extracted from GoodReads work records.\n\ngoodreads/simple/gr-interactions.parquet\n\nGoodReads interaction records (from CSV).\n\ngoodreads/full/gr-interactions.parquet\n\nGoodReads interaction records (from JSON).\n\ngoodreads/gr-author-info.parquet\n\nGoodReads author information.\n\n\n\n\n\n\ngoodreads/full/gr-cluster-actions.parquet\n\nCluster-level implicit-feedback records, suitable for use in LensKit. The item column contains cluster IDs. This version of the table is processed from the JSON version of the full interaction log, which is only available by request.\n\ngoodreads/full/gr-cluster-ratings.parquet\n\nCluster-level explicit-feedback records, suitable for use in LensKit. The item column contains cluster IDs. This version of the table is processed from the JSON version of the full interaction log, which is only available by request.\n\ngoodreads/simple/gr-cluster-actions.parquet\n\nCluster-level implicit-feedback records, suitable for use in LensKit. The item column contains cluster IDs. This version of the table is processed from the CSV data.\n\ngoodreads/simple/gr-cluster-ratings.parquet\n\nCluster-level explicit-feedback records, suitable for use in LensKit. The item column contains cluster IDs. This version of the table is processed from the CSV data.\n\n\n\n\n\n\ngoodreads/full/gr-work-actions.parquet\n\nWork-level implicit-feedback records, suitable for use in LensKit. The item column contains work IDs.\n\ngoodreads/full/gr-work-ratings.parquet\n\nWork-level explicit-feedback records, suitable for use in LensKit. The item column contains work IDs.\n\ngoodreads/simple/gr-work-actions.parquet\n\nWork-level implicit-feedback records, suitable for use in LensKit. The item column contains work IDs.\n\ngoodreads/simple/gr-work-ratings.parquet\n\nWork-level explicit-feedback records, suitable for use in LensKit. The item column contains work IDs.\n\ngoodreads/gr-work-gender.parquet\n\nAuthor gender for GoodReads works. This is computed by connecting works to clusters and obtaining the cluster gender information from book-links/cluster-genders.parquet."
+    "text": "For recommendation and analysis, we often want to look at works instead of individual books or editions of those books. The same material by the same author(s) may be reprinted in many different editions, with different ISBNs, and sometimes separate ratings from the same user.\nThere are a variety of ways to deal with this. GoodReads and OpenLibrary both have the concept of a ‘work’ to group together related editions (the Library of Congress also has such a concept internally in its BIBFRAME schema, but that data is not currently available for integration).\nOther services, such as ThingISBN and OCLC’s xISBN both link together ISBNs: given a query ISBN, they will return a list of ISBNs believed to be for the same book.\nUsing the book data sources here, we have implemented comparable functionality in a manner that anyone can reproduce from public data. We call the resulting equivalence sets ‘book clusters’.\n\n\nOur clustering algorithm begins by forming an undirected graph of record identifiers. We extract records from the following:\n\nLibrary of Congress book records, with edges from records to ISBNs recorded for that record.\nOpenLibrary editions, with edges from editions to ISBNs recorded for that edition.\nOpenLibrary works, with edges from works to editions.\nGoodReads books, with edges from books to ISBNs recorded for that book.\nGoodReads works, with edges from works to books.\n\nWe then compute the connected components on this graph, and treat each connected component as a single ‘book’ (what we call a book cluster).\nThe idea is that if two ISBNs appear together on a book record, that is evidence they are for the same book; likewise, if two book records have the same ISBN, it is evidence they record the same book. Pooling this evidence across all data sources maximizes the ability to detect book clusters.\nThe isbn_cluster table maps each ISBN to its associated cluster. Individual data sources may also have an isbn_cluster table (e.g. gr.isbn_cluster); that is the result of clustering ISBNs using only the book records from that data source. However, all clustered results such as rating tables are based on the all-source book clusters.\n\n\n\nThere are a few known problems with the ISBN clustering:\n\nPublishers occasionally reuse ISBNs. They aren’t supposed to do this, but they do. This results in unrelated books having the same ISBN. This will cause a problem for any ISBN-based linking between books and ratings, not just the book clustering. We don’t yet have a good way to identify these ISBNs.\nSome book sets have ISBNs, which cause them link together books that should not be clustered. The Library of Congress identifies many of these ISBNs as set ISBNs, and we are examining the prospect of using this to exclude them from informing clustering decisions.\n\nIf you only need e.g. the GoodReads data, we recommend that you not cluster it for the purpose of ratings, and only use clusters to link to out-of-GR book or author data. We are open to adding additional tables that facilitate linking GoodReads works directly to other tables.\n\n\n\n\nbook-links/isbn-clusters.parquet\n\nThis file maps ISBN IDs to book clusters, enabling the various other book identifiers from other data sources to be mapped to clusters, since everything resolves to ISBN IDs.\n\n\n\n\nWe also export the book identifier graph used for clustering to support further analysis.\n\nbook-links/cluster-graph-nodes.parquet\n\nThe table of nodes (with attributes) from the graph used for book clustering.\n\nbook-links/cluster-graph-edges.parquet\n\nThe table of edges rom the book clustering graph.\n\nbook-links/book-graph.mp.zst\n\nThis is a serialization of the actual graph itself, using rmp-serde to serialize the Petgraph structure with MsgPack and compressing ith with ZStandard. This is unlikely to be usable outside of the Rust codebase, whereas the node and edge tables could be loaded into something like igraph for further analysis.\n\n\n\n\n\n\nWith the clusters, we then extract additional information from other tables.\n\nbook-links/cluster-first-authors.parquet\n\nAll available first-author records for each cluster, to support linking with VIAF.\n\nbook-links/cluster-hashes.parquet\n\nThe MD5 checksums of the sorted sequence of ISBNs for each cluster, along with a dcode that is the least-significant bit of the checksum.\n\nbook-links/cluster-stats.parquet\n\nStatistics for each cluster, useful for auditing and debugging."
   },
   {
-    "objectID": "data/goodreads.html#configuration",
-    "href": "data/goodreads.html#configuration",
-    "title": "GoodReads",
+    "objectID": "data/cluster.html#clustering-algorithm",
+    "href": "data/cluster.html#clustering-algorithm",
+    "title": "Book Clusters",
     "section": "",
-    "text": "The config.yaml file defines what source of GoodReads interaction data is used:\ngoodreads:\n    interactions: simple\nThe default, simple, uses the CSV summary data that you can download directly from the web site in 3 files:\n\ngoodreads_interactions.csv\nuser_id_map.csv\nbook_id_map.csv\n\nDownload and save these 3 files in data/goodreads, along with the other metadata files.\nThe tools also support the detailed version (change interactions to full), delivered in JSON format. If you want this version, you need to contact Mengtin Wan as noted on the web site."
+    "text": "Our clustering algorithm begins by forming an undirected graph of record identifiers. We extract records from the following:\n\nLibrary of Congress book records, with edges from records to ISBNs recorded for that record.\nOpenLibrary editions, with edges from editions to ISBNs recorded for that edition.\nOpenLibrary works, with edges from works to editions.\nGoodReads books, with edges from books to ISBNs recorded for that book.\nGoodReads works, with edges from works to books.\n\nWe then compute the connected components on this graph, and treat each connected component as a single ‘book’ (what we call a book cluster).\nThe idea is that if two ISBNs appear together on a book record, that is evidence they are for the same book; likewise, if two book records have the same ISBN, it is evidence they record the same book. Pooling this evidence across all data sources maximizes the ability to detect book clusters.\nThe isbn_cluster table maps each ISBN to its associated cluster. Individual data sources may also have an isbn_cluster table (e.g. gr.isbn_cluster); that is the result of clustering ISBNs using only the book records from that data source. However, all clustered results such as rating tables are based on the all-source book clusters."
   },
   {
-    "objectID": "data/goodreads.html#import-steps",
-    "href": "data/goodreads.html#import-steps",
-    "title": "GoodReads",
+    "objectID": "data/cluster.html#known-problems",
+    "href": "data/cluster.html#known-problems",
+    "title": "Book Clusters",
     "section": "",
-    "text": "The import is controlled by several DVC steps:\n\nscan-*\n\nThe various scan-* steps each scan a JSON file into corresponding Parquet files. They have a specific order, as scanning interactions needs book information.\n\nbook-isbn-ids\n\nMatch GoodReads ISBNs with ISBN IDs.\n\nbook-links\n\nCreates goodreads/gr-book-link.parquet, which links each GoodReads book with its work (if applicable) and is cluster ID.\n\ncluster-actions\n\nExtracts cluster-level implicit feedback data. Each (user, cluster) pair has one record, with the number of actions (the number of times the user added a book from that cluster to a shelf) and timestamp data.\n\ncluster-ratings\n\nExtracts cluster-level explicit feedback data. This is the ratings each user assigned to books in each cluster.\n\nwork-actions, work-ratings\n\nThe same thing as the cluster-* stages, except it groups by GoodReads work instead of by integrated cluster. If you are only working with the GoodReads data, and not trying to connect across data sets, this data is better to work with.\n\nwork-gender\n\nThe author gender for each GoodReads work, as near as we can tell."
+    "text": "There are a few known problems with the ISBN clustering:\n\nPublishers occasionally reuse ISBNs. They aren’t supposed to do this, but they do. This results in unrelated books having the same ISBN. This will cause a problem for any ISBN-based linking between books and ratings, not just the book clustering. We don’t yet have a good way to identify these ISBNs.\nSome book sets have ISBNs, which cause them link together books that should not be clustered. The Library of Congress identifies many of these ISBNs as set ISBNs, and we are examining the prospect of using this to exclude them from informing clustering decisions.\n\nIf you only need e.g. the GoodReads data, we recommend that you not cluster it for the purpose of ratings, and only use clusters to link to out-of-GR book or author data. We are open to adding additional tables that facilitate linking GoodReads works directly to other tables."
   },
   {
-    "objectID": "data/goodreads.html#scanned-and-linking-data",
-    "href": "data/goodreads.html#scanned-and-linking-data",
-    "title": "GoodReads",
+    "objectID": "data/cluster.html#cluster-link-tables",
+    "href": "data/cluster.html#cluster-link-tables",
+    "title": "Book Clusters",
     "section": "",
-    "text": "goodreads/gr-book-ids.parquet\n\nIdentifiers extracted from each GoodReads book record.\n\ngoodreads/gr-book-info.parquet\n\nMetadata extracted from GoodReads book records.\n\ngoodreads/gr-book-genres.parquet\n\nGoodReads book-genre associations.\n\ngoodreads/gr-book-series.parquet\n\nGoodReads book series associations.\n\ngoodreads/gr-genres.parquet\n\nThe genre labels to go with goodreads/gr-book-genres.parquet.\n\ngoodreads/gr-book-link.parquet\n\nLinking identifiers (work and cluster) for GoodReads books.\n\ngoodreads/gr-work-info.parquet\n\nMetadata extracted from GoodReads work records.\n\ngoodreads/simple/gr-interactions.parquet\n\nGoodReads interaction records (from CSV).\n\ngoodreads/full/gr-interactions.parquet\n\nGoodReads interaction records (from JSON).\n\ngoodreads/gr-author-info.parquet\n\nGoodReads author information."
+    "text": "book-links/isbn-clusters.parquet\n\nThis file maps ISBN IDs to book clusters, enabling the various other book identifiers from other data sources to be mapped to clusters, since everything resolves to ISBN IDs.\n\n\n\n\nWe also export the book identifier graph used for clustering to support further analysis.\n\nbook-links/cluster-graph-nodes.parquet\n\nThe table of nodes (with attributes) from the graph used for book clustering.\n\nbook-links/cluster-graph-edges.parquet\n\nThe table of edges rom the book clustering graph.\n\nbook-links/book-graph.mp.zst\n\nThis is a serialization of the actual graph itself, using rmp-serde to serialize the Petgraph structure with MsgPack and compressing ith with ZStandard. This is unlikely to be usable outside of the Rust codebase, whereas the node and edge tables could be loaded into something like igraph for further analysis."
   },
   {
-    "objectID": "data/goodreads.html#cluster-level-tables",
-    "href": "data/goodreads.html#cluster-level-tables",
-    "title": "GoodReads",
+    "objectID": "data/cluster.html#cluster-information-tables",
+    "href": "data/cluster.html#cluster-information-tables",
+    "title": "Book Clusters",
     "section": "",
-    "text": "goodreads/full/gr-cluster-actions.parquet\n\nCluster-level implicit-feedback records, suitable for use in LensKit. The item column contains cluster IDs. This version of the table is processed from the JSON version of the full interaction log, which is only available by request.\n\ngoodreads/full/gr-cluster-ratings.parquet\n\nCluster-level explicit-feedback records, suitable for use in LensKit. The item column contains cluster IDs. This version of the table is processed from the JSON version of the full interaction log, which is only available by request.\n\ngoodreads/simple/gr-cluster-actions.parquet\n\nCluster-level implicit-feedback records, suitable for use in LensKit. The item column contains cluster IDs. This version of the table is processed from the CSV data.\n\ngoodreads/simple/gr-cluster-ratings.parquet\n\nCluster-level explicit-feedback records, suitable for use in LensKit. The item column contains cluster IDs. This version of the table is processed from the CSV data."
+    "text": "With the clusters, we then extract additional information from other tables.\n\nbook-links/cluster-first-authors.parquet\n\nAll available first-author records for each cluster, to support linking with VIAF.\n\nbook-links/cluster-hashes.parquet\n\nThe MD5 checksums of the sorted sequence of ISBNs for each cluster, along with a dcode that is the least-significant bit of the checksum.\n\nbook-links/cluster-stats.parquet\n\nStatistics for each cluster, useful for auditing and debugging."
   },
   {
-    "objectID": "data/goodreads.html#work-level-tables",
-    "href": "data/goodreads.html#work-level-tables",
-    "title": "GoodReads",
+    "objectID": "data/openlib.html",
+    "href": "data/openlib.html",
+    "title": "OpenLibrary",
     "section": "",
-    "text": "goodreads/full/gr-work-actions.parquet\n\nWork-level implicit-feedback records, suitable for use in LensKit. The item column contains work IDs.\n\ngoodreads/full/gr-work-ratings.parquet\n\nWork-level explicit-feedback records, suitable for use in LensKit. The item column contains work IDs.\n\ngoodreads/simple/gr-work-actions.parquet\n\nWork-level implicit-feedback records, suitable for use in LensKit. The item column contains work IDs.\n\ngoodreads/simple/gr-work-ratings.parquet\n\nWork-level explicit-feedback records, suitable for use in LensKit. The item column contains work IDs.\n\ngoodreads/gr-work-gender.parquet\n\nAuthor gender for GoodReads works. This is computed by connecting works to clusters and obtaining the cluster gender information from book-links/cluster-genders.parquet."
+    "text": "We also source book data from OpenLibrary, as downloaded from their developer dumps.\nThe DVC control files automatically download the appropriate version. The version can be updated by modifying the data/ol_dump_*.txt.gz.dvc files.\nImported data lives under the openlibrary directory.\n\n\n\n\nerDiagram\n    editions ||--o{ edition-isbn-ids : \"\"\n    edition-isbn-ids }o--|| all-isbns : \"\"\n    editions {\n        Int32 id PK\n        Utf8 key\n        Utf8 title\n    }\n    editions }o--o{ works : \"edition-works\"\n    editions |o--o{ edition-subjects : \"\"\n    edition-subjects {\n        Int32 id\n        Utf8 subject\n    }\n    works {\n        Int32 id PK\n        Utf8 key\n        Utf8 title\n    }\n    works |o--o{ work-subjects : \"\"\n    work-subjects {\n        Int32 id\n        Utf8 subject\n    }\n    authors {\n        Int32 id PK\n        Utf8 key\n        Utf8 name\n    }\n    authors ||--o{ author-names : \"\"\n    editions }o--o{ authors : \"edition-authors\"\n    works }o--o{ authors : \"work-authors\"\n\n\n\n\n\n\n\nThe import is controlled by the following DVC steps:\n\nscan-*\n\nThe various scan-* stages (e.g. scan-authors) scan an OpenLibrary JSON file into the resulting Parquet files. There are dependencies, to resolve OpenLibrary keys to numeric identifiers for cross-referencing. These scan stages do not currently extract all available data from the OpenLibrary JSON; they only extract the fields we currently use, and need to be extended to extract and save additional fields.\n\nedition-isbn-ids\n\nConvert edition ISBNs into ISBN IDs, producing openlib/edition-isbn-ids.parquet.\n\n\n\n\n\nThe raw data lives in the data/openlib directory, as compressed JSON files. Right now we do not extract very many fields from OpenLibrary; additional fields can be extracted by extending the import scripts.\n\n\n\nWe extract the following tables from OpenLibrary editions:\n\nopenlibrary/editions.parquet\n\nThis file contains a primary record for each edition, with the numeric edition ID, OpenLibrary key, and edition data.\n\nopenlibrary/edition-authors.parquet\n\nThis file contains mappings between editions and their authors.\n\nopenlibrary/edition-works.parquet\n\nThis maps editions to their works.\n\nopenlibrary/edition-isbns.parquet\n\nThis contains the ISBN fields extracted from each OpenLibrary edition. This is primarily for internal purposes and most people won’t need to use it. ISBNs are cleaned (with {rust:fn}~bookdata::cleaning::isbns::clean_isbn_chars or {rust:fn}~bookdata::cleaning::isbns::clean_asin_chars) prior to being stored in this file.\n\nopenlibrary/edition-subjects.parquet\n\nThis table contains the subjects for OpenLibrary editions. Each row contains an edition ID and one subject. Its schema is in {rust:struct}~bookdata::openlib::edition::EditionSubjectRec.\n\nopenlibrary/edition-isbn-ids.parquet\n\nThis file maps editions to numeric ISBN identifiers. It is derived from openlibrary/edition-isbns.parquet.\n\n\n\n\n\nWe extract the following tables from OpenLibrary works:\n\nopenlibrary/works.parquet\n\nThis file contains the primary record for each work, mapping a numeric ID to its OpenLibrary key and containing other per-work fields.\n\nopenlibrary/work-authors.parquet\n\nThis file links work records to the work’s author list (works may have separate author lists from their editions).\n\nopenlibrary/work-subjects.parquet\n\nThis table contains the subjects for OpenLibrary editions. Each row contains an edition ID and one subject. Its schema is in {rust:struct}~bookdata::openlib::work::WorkSubjectRec.\n\n\n\n\n\n\nopenlibrary/authors.parquet\n\nThis file contains basic information about OpenLibrary authors.\n\nopenlibrary/author-names.parquet\n\nThis file contains the names associated with each author in openlibrary/authors.parquet.\n\n\n\n\n\n\nopenlibrary/work-clusters.parquet\n\nThis file is a helper table to make it easier to connect OpenLibrary data to clusters by mapping OpenLibrary work IDs to book data cluster IDs."
   },
   {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Overview",
+    "objectID": "data/openlib.html#import-steps",
+    "href": "data/openlib.html#import-steps",
+    "title": "OpenLibrary",
     "section": "",
-    "text": "The PIReT Book Data Tools are a set of tools for ingesting, integrating, and indexing a variety of sources of book data, created by the People and Information Research Team at Boise State University. The result of running these tools is a set of Parquet files with raw data in a more usable form, various useful extracted features, and integrated identifiers across the various data sources for cross-linking. These tools are updated from the version used to support our original paper; we have dropped PostgreSQL in favor of a pipeline using DVC to script extraction and integration tools implemented in Rust that is more efficient (integration times have dropped from 8 hours to less than 3) and requires significantly less disk space.1\nIf you use these scripts in any published research, cite our paper (PDF):\n\nMichael D. Ekstrand and Daniel Kluver. 2021. Exploring Author Gender in Book Rating and Recommendation. User Modeling and User-Adapted Interaction (February 2021) DOI:10.1007/s11257-020-09284-2.\n\nWe also ask that you contact Michael Ekstrand to let us know about your use of the data, so we can include your paper in our list of relying publications.\n\n\n\n\n\n\nWarning\n\n\n\nThe limitations section of the paper contains important information about the limitations of the data these scripts compile. Do not use the gender information in this data data or tools without understanding those limitations. In particular, VIAF’s gender information is incomplete and, in a number of cases, incorrect.\n\n\nIn addition, several of the data sets integrated by this project come from other sources with their own publications. If you use any of the rating or interaction data, cite the appropriate original source paper. For each data set below, we have provided a link to the page that describes the data and its appropriate citation.\nSee the Setup page to get started and for system requirements.\n\n\nI recorded a video walking through the integration as an example for my Data Science class. This discusses the PostgreSQL version of the integration, but the concepts have remained the same in terms of linking logic.\n\n\n\n\n\nThese tools are under the MIT license:\n\nCopyright 2019-2021 Boise State University\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\nTHE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n\n\n\n\nThis material is based upon work supported by the National Science Foundation under Grant No. IIS 17-51278. Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation. This page has not been approved by Boise State University and does not reflect official university positions."
+    "text": "The import is controlled by the following DVC steps:\n\nscan-*\n\nThe various scan-* stages (e.g. scan-authors) scan an OpenLibrary JSON file into the resulting Parquet files. There are dependencies, to resolve OpenLibrary keys to numeric identifiers for cross-referencing. These scan stages do not currently extract all available data from the OpenLibrary JSON; they only extract the fields we currently use, and need to be extended to extract and save additional fields.\n\nedition-isbn-ids\n\nConvert edition ISBNs into ISBN IDs, producing openlib/edition-isbn-ids.parquet."
   },
   {
-    "objectID": "index.html#video",
-    "href": "index.html#video",
-    "title": "Overview",
+    "objectID": "data/openlib.html#raw-data",
+    "href": "data/openlib.html#raw-data",
+    "title": "OpenLibrary",
     "section": "",
-    "text": "I recorded a video walking through the integration as an example for my Data Science class. This discusses the PostgreSQL version of the integration, but the concepts have remained the same in terms of linking logic."
+    "text": "The raw data lives in the data/openlib directory, as compressed JSON files. Right now we do not extract very many fields from OpenLibrary; additional fields can be extracted by extending the import scripts."
   },
   {
-    "objectID": "index.html#license",
-    "href": "index.html#license",
-    "title": "Overview",
+    "objectID": "data/openlib.html#extracted-edition-tables",
+    "href": "data/openlib.html#extracted-edition-tables",
+    "title": "OpenLibrary",
     "section": "",
-    "text": "These tools are under the MIT license:\n\nCopyright 2019-2021 Boise State University\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\nTHE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."
+    "text": "We extract the following tables from OpenLibrary editions:\n\nopenlibrary/editions.parquet\n\nThis file contains a primary record for each edition, with the numeric edition ID, OpenLibrary key, and edition data.\n\nopenlibrary/edition-authors.parquet\n\nThis file contains mappings between editions and their authors.\n\nopenlibrary/edition-works.parquet\n\nThis maps editions to their works.\n\nopenlibrary/edition-isbns.parquet\n\nThis contains the ISBN fields extracted from each OpenLibrary edition. This is primarily for internal purposes and most people won’t need to use it. ISBNs are cleaned (with {rust:fn}~bookdata::cleaning::isbns::clean_isbn_chars or {rust:fn}~bookdata::cleaning::isbns::clean_asin_chars) prior to being stored in this file.\n\nopenlibrary/edition-subjects.parquet\n\nThis table contains the subjects for OpenLibrary editions. Each row contains an edition ID and one subject. Its schema is in {rust:struct}~bookdata::openlib::edition::EditionSubjectRec.\n\nopenlibrary/edition-isbn-ids.parquet\n\nThis file maps editions to numeric ISBN identifiers. It is derived from openlibrary/edition-isbns.parquet."
   },
   {
-    "objectID": "index.html#acknowledgments",
-    "href": "index.html#acknowledgments",
-    "title": "Overview",
+    "objectID": "data/openlib.html#extracted-work-tables",
+    "href": "data/openlib.html#extracted-work-tables",
+    "title": "OpenLibrary",
     "section": "",
-    "text": "This material is based upon work supported by the National Science Foundation under Grant No. IIS 17-51278. Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation. This page has not been approved by Boise State University and does not reflect official university positions."
+    "text": "We extract the following tables from OpenLibrary works:\n\nopenlibrary/works.parquet\n\nThis file contains the primary record for each work, mapping a numeric ID to its OpenLibrary key and containing other per-work fields.\n\nopenlibrary/work-authors.parquet\n\nThis file links work records to the work’s author list (works may have separate author lists from their editions).\n\nopenlibrary/work-subjects.parquet\n\nThis table contains the subjects for OpenLibrary editions. Each row contains an edition ID and one subject. Its schema is in {rust:struct}~bookdata::openlib::work::WorkSubjectRec."
   },
   {
-    "objectID": "index.html#footnotes",
-    "href": "index.html#footnotes",
-    "title": "Overview",
-    "section": "Footnotes",
-    "text": "Footnotes\n\n\nThe original tools are available on the before-fusion tag in the Git repository.↩︎"
+    "objectID": "data/openlib.html#extracted-author-tables",
+    "href": "data/openlib.html#extracted-author-tables",
+    "title": "OpenLibrary",
+    "section": "",
+    "text": "openlibrary/authors.parquet\n\nThis file contains basic information about OpenLibrary authors.\n\nopenlibrary/author-names.parquet\n\nThis file contains the names associated with each author in openlibrary/authors.parquet."
+  },
+  {
+    "objectID": "data/openlib.html#utility-tables",
+    "href": "data/openlib.html#utility-tables",
+    "title": "OpenLibrary",
+    "section": "",
+    "text": "openlibrary/work-clusters.parquet\n\nThis file is a helper table to make it easier to connect OpenLibrary data to clusters by mapping OpenLibrary work IDs to book data cluster IDs."
+  },
+  {
+    "objectID": "implementation/layout.html",
+    "href": "implementation/layout.html",
+    "title": "Code Layout",
+    "section": "",
+    "text": "The import code consists of Python and Rust, wired together with DVC, with data in several directories to facilitate ease of discovery.\n\n\nPython scripts live in the various directories in which they operate. They should not be launched directly, but rather via run.py, which will make sure the environment is set up properly for them:\npython run.py my-script-file.py\nThe bookdata package contains a little Python utility code. The run.py script ensures it is available in the Python import path.\n\n\n\nThe Rust code all lives under src, with the various command-line programs in src/cli. The Rust tools are implemented as a monolithic executable with subcommands for various operations, to save disk space and compile time. To see the help:\ncargo run help\nOr through Python:\npython run.py --rust help\nThe run.py script with the --rust option sets up some environment variables to ensure that the Rust code builds correctly inside a Conda environment, and also defaults to using a release build (cargo run uses debug builds by default). All DVC pipeline stages use run.py to run the Rust tools.\nFor writing new commands, there is a lot of utility code under src. Consult the {rust:mod}Rust API documentation &lt;bookdata&gt; for further details.\nThe Rust code makes extensive use of the polars, arrow2, and parquet2 crates for data analysis and IO. arrow2_convert is used to automate converstion for Parquet serialization."
+  },
+  {
+    "objectID": "implementation/layout.html#python-scripts",
+    "href": "implementation/layout.html#python-scripts",
+    "title": "Code Layout",
+    "section": "",
+    "text": "Python scripts live in the various directories in which they operate. They should not be launched directly, but rather via run.py, which will make sure the environment is set up properly for them:\npython run.py my-script-file.py\nThe bookdata package contains a little Python utility code. The run.py script ensures it is available in the Python import path."
+  },
+  {
+    "objectID": "implementation/layout.html#rust",
+    "href": "implementation/layout.html#rust",
+    "title": "Code Layout",
+    "section": "",
+    "text": "The Rust code all lives under src, with the various command-line programs in src/cli. The Rust tools are implemented as a monolithic executable with subcommands for various operations, to save disk space and compile time. To see the help:\ncargo run help\nOr through Python:\npython run.py --rust help\nThe run.py script with the --rust option sets up some environment variables to ensure that the Rust code builds correctly inside a Conda environment, and also defaults to using a release build (cargo run uses debug builds by default). All DVC pipeline stages use run.py to run the Rust tools.\nFor writing new commands, there is a lot of utility code under src. Consult the {rust:mod}Rust API documentation &lt;bookdata&gt; for further details.\nThe Rust code makes extensive use of the polars, arrow2, and parquet2 crates for data analysis and IO. arrow2_convert is used to automate converstion for Parquet serialization."
+  },
+  {
+    "objectID": "implementation/pipeline.html",
+    "href": "implementation/pipeline.html",
+    "title": "Pipeline Specification",
+    "section": "",
+    "text": "Pipeline Specification\nData Version Control is a great tool, but its pipelines are static YAML files with limited configurability, and substantial redundancy. That redundancy makes updates error-prone, and also limits our ability to do things such as enable and disable data sets, and reconfigure which version of the GoodReads interaction files we want to use.\nHowever, these YAML files are relatively easy to generate, so it’s feasible to generate them with scripts or templates. We use jsonnet, a programming language for generating JSON and similar configuration structures that allows us to generate the pipeline with loops, conditionals, etc. The pipeline primary sources are in the dvc.jsonnet files, which we render to produce dvc.yaml.\nThe pipelines are updated through the Rust jrsonnet implementation of the jsonnet language, so it is integrated into our main executable. You can run this with:\ncargo run --release pipeline render\nThere are two exceptions to our use of jsonnet for pipelines:\n\ndata/dvc.yaml — this is maintained directly in the YAML file, because DVC’s frozen stages don’t work very well with rendering pipelines.\nThe .dvc files — these just record files that are added (possibly downloaded), we don’t generate them.\n\nThe lib.jsonnet file provides helper routines for generating pipelines:\n\npipeline produces a DVC pipeline given a record of stages.\ncmd takes a book data command (that would be passed to the book data executable) and adds the relevant bits to run it through Cargo (so the import software is automatically recompiled if necessary)."
   }
 ]
