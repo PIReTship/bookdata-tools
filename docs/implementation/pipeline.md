@@ -1,8 +1,3 @@
----
-title: Pipeline Specification
----
-
-
 # Pipeline Specification
 
 [dvc]: https://dvc.org
@@ -26,8 +21,8 @@ The pipelines are updated through the Rust `jrsonnet` implementation of the
 jsonnet language, so it is integrated into our main executable.  You can
 run this with:
 
-```shell-transcript
-$ cargo run --release pipeline render
+```sh
+cargo run --release pipeline render
 ```
 
 There are two exceptions to our use of jsonnet for pipelines:

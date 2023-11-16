@@ -1,8 +1,4 @@
----
-title: Implementation
----
-
-# Design and Implementation
+# Implementation
 
 These data and integration tools are designed to support several goals:
 
@@ -11,12 +7,6 @@ These data and integration tools are designed to support several goals:
 - Automatically re-run downstream steps when a data file or integration logic changes
 - Support updates (e.g. new OpenLibrary dumps) by replacing the file and re-running
 - Efficient import and integration
-
-```{toctree}
-pipeline
-layout
-dataset
-```
 
 ## Implementation Principles
 
@@ -40,4 +30,4 @@ These goals are realized through a few technology and design decisions:
    code can be in Rust or Python.  We usually use Polars (either the Rust or the Python
    API) to efficiently process large data files.
 
-See the [Pipeline DSL](pipeline) for information about how to update the pipeline.
+See the [Pipeline DSL](pipeline.md) for information about how to update the pipeline.

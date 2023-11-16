@@ -1,7 +1,3 @@
----
-title: Code Layout
----
-
 # Code Layout
 
 The import code consists of Python and Rust, wired together with DVC, with data

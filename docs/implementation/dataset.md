@@ -1,7 +1,3 @@
----
-title: Dataset Design
----
-
 # Design for Datasets
 
 [Polars]: https://pola-rs.github.io/polars-book/
