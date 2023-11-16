@@ -17,6 +17,6 @@ these with:
 dvc repro --all-pipelines
 ```
 
-If you have [configured a remote](./remote.md) to store your data files, you can
+If you have [configured a remote](storage.md) to store your data files, you can
 then run `dvc push` to push the files to the remote to share with others on your
 team, copy to another computer, or import into another project.

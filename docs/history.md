@@ -18,7 +18,7 @@ following:
 -   Extract GoodReads author information into `goodreads/gr-author-info.parquet`{.file}.
 -   Extract 5-cores of interaction files.
 -   🪲 GoodReads cluster & work rating timestamps were on incorrect scale
--   Use [lightweight DSL](implementation/pipeline) to generate DVC pipelines in a configurable manner
+-   Use [jsonnet](implementation/pipeline.md) to generate DVC pipelines in a configurable manner
 
 ## Book Data 2.1
 
@@ -29,7 +29,7 @@ normalization flow.
 
 The tools now support the GoodReads interaction CSV file, which is available
 without registration, and uses this by default.  See the [GoodReads data
-docs](data/goodreads.md) for the details.  This means that, in their default
+docs](data/goodreads.qmd) for the details.  This means that, in their default
 configuration, the book data integration uses only data that is publicly
 available without special request.
 

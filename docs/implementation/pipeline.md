@@ -8,7 +8,7 @@
 files with limited configurability, and substantial redundancy.  That redundancy
 makes updates error-prone, and also limits our ability to do things such as
 enable and disable data sets, and reconfigure which version of the [GoodReads
-interaction files](/data/goodreads.md) we want to use.
+interaction files](/data/goodreads.qmd) we want to use.
 
 However, these YAML files are relatively easy to generate, so it's feasible to
 generate them with scripts or templates.  We use [jsonnet][], a programming
