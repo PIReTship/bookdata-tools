@@ -28,10 +28,11 @@ Imported data lives in the `goodreads` directory.
 
 ## Configuration
 
-The `config.tcl` file defines what source of GoodReads interaction data is used:
+The `config.yaml` file defines what source of GoodReads interaction data is used:
 
-```tcl
-set gr_interactions simple
+```yaml
+goodreads:
+    interactions: simple
 ```
 
 The default, `simple`, uses the CSV summary data that you can download directly
