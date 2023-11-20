@@ -11,7 +11,7 @@ following:
 2.  Cite the papers corresponding to the individual ratings, review, or
     consumption data sets you are using.
 3.  Clearly state the version of the data tools you are using in your paper.
-4.  [Let us know](papers.rst) about your use so we can add you to the list.
+4.  [Let us know](papers.md) about your use so we can add you to the list.
 
 ## Book Data 2.2 (in progress)
 
