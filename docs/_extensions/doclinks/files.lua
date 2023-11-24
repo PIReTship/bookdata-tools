@@ -16,7 +16,7 @@ end
 
 return {
     ['file'] = function(args, kwargs, meta)
-        local path, fn, name, link, pos, pat, sub, m, ms
+        local path, fn, name, link, pat, sub, m, ms
         load_overrides()
         path = pandoc.utils.stringify(args[1])
         quarto.log.output('finding link for', path)
