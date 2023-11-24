@@ -15,7 +15,7 @@ following:
 
 ## Book Data 2.2 (in progress)
 
--   Extract GoodReads author information into `goodreads/gr-author-info.parquet`{.file}.
+-   Extract GoodReads author information into {{< file goodreads/gr-author-info.parquet >}}.
 -   Extract 5-cores of interaction files.
 -   🪲 GoodReads cluster & work rating timestamps were on incorrect scale
 -   Use [jsonnet](implementation/pipeline.md) to generate DVC pipelines in a configurable manner
@@ -40,7 +40,7 @@ available without special request.
 -   Added 2018 version of the Amazon ratings
 -   Added code to extract edition and work subjects
 -   Updated docs for current extraction layout
--   Added `openlibrary/work-clusters.parquet`{.file} to simplify OpenLibrary integration
+-   Added {{< file openlibrary/work-clusters.parquet >}} to simplify OpenLibrary integration
 
 ### Logic Updates
 
