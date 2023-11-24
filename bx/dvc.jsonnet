@@ -33,4 +33,4 @@ bd.pipeline({
       'bx-cluster-actions.parquet',
     ],
   },
-})
+}, bd.config.bx.enabled)

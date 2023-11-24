@@ -94,4 +94,4 @@ bd.pipeline({
       'gr-work-gender.parquet',
     ],
   },
-} + variants[bd.config.goodreads.interactions])
+} + variants[bd.config.goodreads.interactions], bd.config.goodreads.enabled)

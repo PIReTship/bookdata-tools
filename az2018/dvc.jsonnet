@@ -30,4 +30,4 @@ bd.pipeline({
     ],
     outs: ['az-cluster-ratings-5core.parquet'],
   },
-})
+}, bd.config.az2018.enabled)
