@@ -2,17 +2,16 @@ local bd = import '../lib.jsonnet';
 
 bd.pipeline({
   'collect-isbns': {
-    cmd: bd.cmd('collect-isbns -o all-isbns.parquet all-isbns.toml'),
-    deps: [
+    cmd: bd.cmd('collect-isbns -o all-isbns.parquet'),
+    deps: std.prune([
       '../src/cli/collect_isbns.rs',
-      'all-isbns.toml',
       '../loc-mds/book-isbns.parquet',
       '../openlibrary/edition-isbns.parquet',
-      '../goodreads/gr-book-ids.parquet',
-      '../bx/cleaned-ratings.csv',
-      '../az2014/ratings.parquet',
-      '../az2018/ratings.parquet',
-    ],
+      bd.maybe(bd.config.goodreads.enabled, '../goodreads/gr-book-ids.parquet'),
+      bd.maybe(bd.config.bx.enabled, '../bx/cleaned-ratings.csv'),
+      bd.maybe(bd.config.az2014.enabled, '../az2014/ratings.parquet'),
+      bd.maybe(bd.config.az2018.enabled, '../az2018/ratings.parquet'),
+    ]),
     outs: [
       'all-isbns.parquet',
     ],
