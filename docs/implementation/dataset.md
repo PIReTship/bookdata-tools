@@ -24,5 +24,5 @@ In general, to add new data, you need to do a few things:
     files, if needed (typically used for rating data).
 5.  Update the analytics and statistics to include the new data.
 
-All of the CLI tools live in {rust:mod}`bookdata::cli`, with support code
+All of the CLI tools live in {{< rust-mod bookdata::cli >}}, with support code
 elsewhere in the source tree.

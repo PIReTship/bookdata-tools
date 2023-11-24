@@ -52,8 +52,8 @@ available without special request.
     Rust and Python).  The code is now in 2 languages: Rust integration and Python notebooks to report
     on integration statistics.
 -   Improved name parsing
-    -   Replaced `nom`-based name parser for {rust:fn}`~bookdata::cleaning::names::name_variants`
-        with a new one written in [`peg`], that is both easier to read/maintain and more efficient.
+    -   Replaced `nom`-based name parser for {{< rust-fn ~bookdata::cleaning::names::name_variants >}}
+        with a new one written in [`peg`][peg], that is both easier to read/maintain and more efficient.
     -   Corrected errors in name parser that emitted empty-string names for some authors.
     -   Added `clean_name` function, used across all name formatting, to normalize whitespace and
         punctuation in name records from any source.
