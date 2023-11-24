@@ -31,9 +31,10 @@ bd.pipeline({
       'openlibrary/edition-isbn-ids.parquet',
       'openlibrary/all-works.parquet',
       'openlibrary/edition-works.parquet',
+    ] + if bd.config.goodreads.enabled then [
       'goodreads/gr-book-ids.parquet',
       'goodreads/book-isbn-ids.parquet',
-    ],
+    ] else [],
     outs: [
       'book-links/book-graph.mp.zst',
       'book-links/isbn-clusters.parquet',
@@ -110,18 +111,18 @@ bd.pipeline({
   'gender-stats': {
     wdir: '..',
     cmd: bd.cmd('integration-stats'),
-    deps: [
+    deps: std.prune([
       'src/cli/stats.rs',
       'book-links/cluster-genders.parquet',
       'book-links/isbn-clusters.parquet',
       'loc-mds/book-isbn-ids.parquet',
-      'bx/bx-cluster-actions.parquet',
-      'bx/bx-cluster-ratings.parquet',
-      'az2014/az-cluster-ratings.parquet',
-      'az2018/az-cluster-ratings.parquet',
-      'goodreads/gr-cluster-actions.parquet',
-      'goodreads/gr-cluster-ratings.parquet',
-    ],
+      bd.maybe(bd.config.bx.enabled, 'bx/bx-cluster-actions.parquet'),
+      bd.maybe(bd.config.bx.enabled, 'bx/bx-cluster-ratings.parquet'),
+      bd.maybe(bd.config.az2014.enabled, 'az2014/az-cluster-ratings.parquet'),
+      bd.maybe(bd.config.az2018.enabled, 'az2018/az-cluster-ratings.parquet'),
+      bd.maybe(bd.config.goodreads.enabled, 'goodreads/gr-cluster-actions.parquet'),
+      bd.maybe(bd.config.goodreads.enabled, 'goodreads/gr-cluster-ratings.parquet'),
+    ]),
     outs: [
       'book-links/gender-stats.csv',
     ],

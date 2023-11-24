@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use anyhow::{anyhow, Result};
 use log::*;
 
+use crate::layout::Config;
+
 use super::sources::*;
 use super::{BookID, IdGraph, IdNode};
 use polars::prelude::*;
@@ -84,7 +86,7 @@ impl GraphBuilder {
     }
 }
 
-pub fn construct_graph() -> Result<IdGraph> {
+pub fn construct_graph(cfg: &Config) -> Result<IdGraph> {
     let graph = IdGraph::new_undirected();
     let nodes = NodeMap::new();
     let mut gb = GraphBuilder { graph, nodes };
@@ -94,15 +96,19 @@ pub fn construct_graph() -> Result<IdGraph> {
     gb.add_vertices(LOC)?;
     gb.add_vertices(OLEditions)?;
     gb.add_vertices(OLWorks)?;
-    gb.add_vertices(GRBooks)?;
-    gb.add_vertices(GRWorks)?;
+    if cfg.goodreads.enabled {
+        gb.add_vertices(GRBooks)?;
+        gb.add_vertices(GRWorks)?;
+    }
 
     info!("loading edges");
     gb.add_edges(LOC)?;
     gb.add_edges(OLEditions)?;
     gb.add_edges(OLWorks)?;
-    gb.add_edges(GRBooks)?;
-    gb.add_edges(GRWorks)?;
+    if cfg.goodreads.enabled {
+        gb.add_edges(GRBooks)?;
+        gb.add_edges(GRWorks)?;
+    }
 
     let graph = gb.graph;
     info!(

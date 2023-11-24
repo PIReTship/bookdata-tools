@@ -34,6 +34,25 @@ pub struct Config {
     pub goodreads: GRConfig,
 }
 
+impl Config {
+    pub fn ds_enabled(&self, name: &str) -> bool {
+        let (name, _qual) = if let Some((n, q)) = name.split_once("-") {
+            (n, Some(q))
+        } else {
+            (name, None)
+        };
+        match name {
+            "loc" | "LOC" => true,
+            "openlib" | "openlibrary" | "OL" => true,
+            "goodreads" | "GR" => self.goodreads.enabled,
+            "az2014" | "AZ14" => self.az2014.enabled,
+            "az2018" | "AZ18" => self.az2018.enabled,
+            "bx" | "BX" => self.bx.enabled,
+            _ => panic!("unsupported data set {}", name),
+        }
+    }
+}
+
 /// Check the TOML manifest to see if we're bookdata.
 fn check_project_manifest(path: &Path) -> Result<bool> {
     let mut path = path.to_path_buf();

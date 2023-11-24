@@ -84,7 +84,8 @@ impl ClusterStat {
 
 impl Command for ClusterBooks {
     fn exec(&self) -> Result<()> {
-        let mut graph = construct_graph()?;
+        let cfg = load_config()?;
+        let mut graph = construct_graph(&cfg)?;
 
         info!("computing connected components");
         let clusters = kosaraju_scc(&graph);

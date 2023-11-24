@@ -27,6 +27,7 @@ pub struct IntegrationStats {}
 impl Command for IntegrationStats {
     fn exec(&self) -> Result<()> {
         require_working_root()?;
+        let cfg = load_config()?;
 
         let genders = scan_genders()?;
 
@@ -34,7 +35,9 @@ impl Command for IntegrationStats {
         agg_frames.push(scan_loc(genders.clone())?);
 
         for (name, file) in ACTION_FILES {
-            agg_frames.push(scan_actions(&file, genders.clone(), *name)?);
+            if cfg.ds_enabled(name) {
+                agg_frames.push(scan_actions(&file, genders.clone(), *name)?);
+            }
         }
 
         let results = concat(agg_frames, default())?;
@@ -83,7 +86,12 @@ fn scan_actions(file: &str, genders: LazyFrame, name: &str) -> Result<LazyFrame>
     info!("scanning data {} from {}", name, file);
     let df = LazyFrame::scan_parquet(file, default())?;
 
-    let df = df.join(genders, &[col("item")], &[col("cluster")], JoinType::Inner.into());
+    let df = df.join(
+        genders,
+        &[col("item")],
+        &[col("cluster")],
+        JoinType::Inner.into(),
+    );
     let df = df
         .group_by([col("gender")])
         .agg(&[
