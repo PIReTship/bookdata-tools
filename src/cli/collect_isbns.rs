@@ -163,7 +163,7 @@ impl Command for CollectISBNs {
 
         let df = df.ok_or_else(|| anyhow!("no sources loaded"))?;
         let df = df.with_row_count("isbn_id", Some(1));
-        let mut cast = vec![col("isbn_id").cast(DataType::Int32)];
+        let mut cast = vec![col("isbn_id").cast(DataType::Int32), col("isbn")];
         for src in &active {
             cast.push(col(src.name).fill_null(0));
         }
