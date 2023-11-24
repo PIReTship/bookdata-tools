@@ -4,6 +4,7 @@ bd.pipeline({
   'collect-isbns': {
     cmd: bd.cmd('collect-isbns -o all-isbns.parquet'),
     deps: std.prune([
+      '../config.yaml',
       '../src/cli/collect_isbns.rs',
       '../loc-mds/book-isbns.parquet',
       '../openlibrary/edition-isbns.parquet',
