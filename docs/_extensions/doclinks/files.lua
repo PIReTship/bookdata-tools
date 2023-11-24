@@ -1,15 +1,54 @@
+function load_overrides()
+    local path, f, text
+    if overrides == nil then
+        path = pandoc.path.join({quarto.project.directory, "_data-overrides.json"})
+        f = io.open(path)
+        if f == nil then
+            quarto.log.warning("could not open data overrides")
+            overrides = {}
+            return
+        end
+        text = f:read("a")
+        overrides = quarto.json.decode(text)
+        quarto.log.output(overrides)
+    end
+end
+
 return {
     ['file'] = function(args, kwargs, meta)
-        local path, dir, name, link, pos
+        local path, fn, name, link, pos, pat, sub, m, ms
+        load_overrides()
         path = pandoc.utils.stringify(args[1])
-        pos = string.find(path, "/", 1, true)
-        if pos ~= nil then
-            dir = string.sub(path, 1, pos)
-            name = string.sub(path, pos + 1)
-            link = "/data/" .. string.sub(dir, 1, -2) .. ".qmd#file:" .. name
-        else
-            link = "#file:" .. path
+        quarto.log.output('finding link for', path)
+
+        for pat, sub in pairs(overrides) do
+            quarto.log.output('trying pattern', pat)
+            m = string.match(path, pat)
+            if m ~= nil and (ms == nil or string.len(m) > string.len(ms)) then
+                quarto.log.output('match')
+                ms = m
+                if string.find(sub, "%", 1, true) ~= nil then
+                    quarto.log.output('substition', sub)
+                    link = string.gsub(path, pat, sub)
+                else
+                    fn = sub
+                    name = string.gsub(path, "[^/]+/", "")
+                end
+            end
         end
+
+        if link == nil then
+            if fn == nil then
+                fn, name = string.match(path, "^([^/].*)/(.*)")
+            end
+            if fn == nil then
+                link = "#" .. path
+            else
+                link = fn .. "#" .. name
+            end
+        end
+        link = string.gsub(link, "(.+)#(.*)", "/data/%1.qmd#file:%2")
+
         return pandoc.Link(pandoc.Code(path), link)
     end,
 }
