@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::marker::PhantomData;
@@ -72,7 +73,7 @@ pub fn open_polars_writer<P: AsRef<Path>>(
 /// them out to a Parquet file.
 pub struct TableWriter<R: ArrowSerialize + Send + Sync + 'static> {
     _phantom: PhantomData<R>,
-    writer: ThreadObjectWriter<Vec<R>>,
+    writer: Option<ThreadObjectWriter<Vec<R>>>,
     out_path: Option<PathBuf>,
     batch: Vec<R>,
     batch_size: usize,
@@ -104,7 +105,7 @@ where
         let out_path = Some(path.to_path_buf());
         Ok(TableWriter {
             _phantom: PhantomData,
-            writer,
+            writer: Some(writer),
             out_path,
             batch: Vec::with_capacity(BATCH_SIZE),
             batch_size: BATCH_SIZE,
@@ -118,9 +119,27 @@ where
         }
 
         let batch = replace(&mut self.batch, Vec::with_capacity(self.batch_size));
-        self.writer.write_object(batch)?;
+        if let Some(writer) = &mut self.writer {
+            writer.write_object(batch)?;
+        } else {
+            error!("{}: writer closed", self.display_path());
+            return Err(anyhow!("tried to write to closed writer"));
+        }
 
         Ok(())
+    }
+}
+
+impl<R> TableWriter<R>
+where
+    R: ArrowSerialize + Send + Sync + 'static,
+{
+    fn display_path(&self) -> Cow<'static, str> {
+        if let Some(p) = &self.out_path {
+            format!("{}", p.display()).into()
+        } else {
+            "<unknown>".into()
+        }
     }
 }
 
@@ -155,24 +174,27 @@ where
         if !self.batch.is_empty() {
             self.write_batch()?;
         }
-        self.writer.finish()?;
-        // if let Some(writer) = self.writer.take() {
-        //   info!("closing Parquet writer");
-        //   writer.finish()?;
-        // } else {
-        //   warn!("writer already closed");
-        // }
+        if let Some(writer) = self.writer.take() {
+            info!("closing Parquet writer for {}", self.display_path());
+            writer.finish()?;
+        } else {
+            warn!("{}: writer already closed", self.display_path());
+        }
         Ok(self.row_count)
     }
 }
 
-// impl <W> Drop for TableWriter<W> where W: RecordWriter<W> {
-//   fn drop(&mut self) {
-//     if self.writer.is_some() {
-//       error!("Parquet table writer not closed");
-//     }
-//   }
-// }
+impl<R> Drop for TableWriter<R>
+where
+    R: ArrowSerialize + Send + Sync + 'static,
+{
+    fn drop(&mut self) {
+        // make sure we closed the writer
+        if self.writer.is_some() {
+            error!("{}: Parquet table writer not closed", self.display_path());
+        }
+    }
+}
 
 /// Convert a vector of records to a chunk.
 pub fn vec_to_chunk<R>(vec: Vec<R>) -> Result<Chunk<Box<dyn Array>>>
