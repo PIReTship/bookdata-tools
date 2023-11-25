@@ -47,7 +47,7 @@ impl Command for IntegrationStats {
 
         info!("saving {} records to {}", results.height(), STAT_FILE);
         let writer = File::create(STAT_FILE)?;
-        let mut writer = CsvWriter::new(writer).has_header(true);
+        let mut writer = CsvWriter::new(writer).include_header(true);
         writer.finish(&mut results)?;
 
         Ok(())

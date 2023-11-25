@@ -14,7 +14,7 @@ use log::*;
 use polars::prelude::ArrowSchema;
 use polars_arrow::array::Array as PArray;
 use polars_arrow::chunk::Chunk as PChunk;
-use polars_arrow::io::parquet::write as plw;
+use polars_parquet::write as plw;
 
 use crate::io::object::{ObjectWriter, ThreadObjectWriter};
 use crate::io::DataSink;
@@ -50,7 +50,7 @@ pub fn open_polars_writer<P: AsRef<Path>>(
     let compression = plw::CompressionOptions::Zstd(None);
     let options = plw::WriteOptions {
         write_statistics: true,
-        version: Version::V2,
+        version: plw::Version::V2,
         compression,
         data_pagesize_limit: None,
     };
@@ -233,7 +233,7 @@ where
         let encodings: Vec<_> = schema
             .fields
             .iter()
-            .map(|f| plw::transverse(&f.data_type, |_| Encoding::Plain))
+            .map(|f| plw::transverse(&f.data_type, |_| plw::Encoding::Plain))
             .collect();
         let options = self.options();
         let chunks = vec![Ok(chunk)];
