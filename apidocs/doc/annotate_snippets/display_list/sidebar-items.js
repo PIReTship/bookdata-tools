@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["DisplayAnnotationPart","DisplayAnnotationType","DisplayHeaderType","DisplayLine","DisplayMarkType","DisplayRawLine","DisplaySourceLine","DisplayTextStyle"],"struct":["Annotation","DisplayList","DisplayMark","DisplayTextFragment","FormatOptions","Margin"]};

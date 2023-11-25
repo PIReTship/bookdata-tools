@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["FieldOutput","FieldRecord","FieldRecordArray","FieldRecordArrayIterator","MutableFieldRecordArray"]};

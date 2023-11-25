@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"macro":["with_match_arrow_primitive_type"],"mod":["decode","encode"],"struct":["RowsEncoded","SortField"],"type":["ArrayRef"]};

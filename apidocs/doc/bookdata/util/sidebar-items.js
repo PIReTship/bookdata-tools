@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["default"],"mod":["accum","iteration","logging","process","serde_string","timing","unicode"]};

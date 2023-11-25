@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["destruct","evaluate_dest"]};

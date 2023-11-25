@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["all_horizontal","any_horizontal","clip","clip_max","clip_min","max_horizontal","min_horizontal","sum_horizontal"],"trait":["ArgAgg","SeriesMethods","SeriesSealed"]};

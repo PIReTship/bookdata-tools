@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["Color","Styles"],"mod":["control"],"struct":["ColoredString","Style"],"trait":["Colorize"]};

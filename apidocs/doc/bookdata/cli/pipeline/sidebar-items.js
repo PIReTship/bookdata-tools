@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["run_pipe"],"struct":["RenderPipeline"]};

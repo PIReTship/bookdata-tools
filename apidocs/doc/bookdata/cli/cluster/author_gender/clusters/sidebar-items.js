@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["all_clusters","read_resolve"],"struct":["ClusterAuthor","ClusterAuthorArray","ClusterAuthorArrayIterator","ClusterStats","MutableClusterAuthorArray"],"type":["ClusterTable"]};

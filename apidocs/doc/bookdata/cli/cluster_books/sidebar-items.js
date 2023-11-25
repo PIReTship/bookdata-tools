@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["ClusterBooks","ClusterCode","ClusterStat","ClusteringStatistics","GraphEdge","ISBNClusterRec","MutableClusterCodeArray","MutableClusterStatArray","MutableGraphEdgeArray","MutableISBNClusterRecArray"]};

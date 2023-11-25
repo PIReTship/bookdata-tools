@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["chunk_owned"],"struct":["ChunkIter"]};

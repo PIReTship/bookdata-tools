@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["Source"],"fn":["scan_loc","scan_openlib"],"struct":["ClusterAuthors"]};

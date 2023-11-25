@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["tables"],"static":["NONSPACING_MARK"],"struct":["TableSet"]};

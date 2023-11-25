@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["BrotliCompressFragmentTwoPass","BrotliStoreMetaBlockHeader","BrotliWriteBits","memcpy"]};

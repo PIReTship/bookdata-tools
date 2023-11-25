@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["unary_mut"],"mod":["mutable"]};

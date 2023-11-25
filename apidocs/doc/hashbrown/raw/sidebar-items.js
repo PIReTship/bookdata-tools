@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["rayon"],"struct":["Bucket","InsertSlot","RawDrain","RawIntoIter","RawIter","RawIterHash","RawTable"]};

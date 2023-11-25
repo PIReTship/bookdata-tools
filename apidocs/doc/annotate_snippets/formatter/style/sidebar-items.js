@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["StyleClass"],"trait":["Style","Stylesheet"]};

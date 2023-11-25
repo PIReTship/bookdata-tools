@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"attr":["builtin"],"enum":["FuncVal"],"mod":["arglike","builtin","native","parse"],"struct":["CallLocation","FuncDesc"]};

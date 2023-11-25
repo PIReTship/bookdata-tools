@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["chunk_to_struct","primitive_to_vec"]};

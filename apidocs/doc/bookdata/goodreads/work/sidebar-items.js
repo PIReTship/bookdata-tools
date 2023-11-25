@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["OUT_FILE"],"struct":["MutableWorkRecordArray","RawWork","WorkRecord","WorkRecordArray","WorkRecordArrayIterator","WorkWriter"]};

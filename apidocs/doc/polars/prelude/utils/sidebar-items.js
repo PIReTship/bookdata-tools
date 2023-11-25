@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["infer_file_schema","infer_file_schema_inner","is_compressed"]};

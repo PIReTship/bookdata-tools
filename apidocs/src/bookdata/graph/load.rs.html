@@ -112,10 +112,18 @@
 <a href="#112" id="112">112</a>
 <a href="#113" id="113">113</a>
 <a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 
 <span class="kw">use </span>anyhow::{anyhow, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>log::<span class="kw-2">*</span>;
+
+<span class="kw">use </span><span class="kw">crate</span>::layout::Config;
 
 <span class="kw">use </span><span class="kw">super</span>::sources::<span class="kw-2">*</span>;
 <span class="kw">use super</span>::{BookID, IdGraph, IdNode};
@@ -198,7 +206,7 @@
     }
 }
 
-<span class="kw">pub fn </span>construct_graph() -&gt; <span class="prelude-ty">Result</span>&lt;IdGraph&gt; {
+<span class="kw">pub fn </span>construct_graph(cfg: <span class="kw-2">&amp;</span>Config) -&gt; <span class="prelude-ty">Result</span>&lt;IdGraph&gt; {
     <span class="kw">let </span>graph = IdGraph::new_undirected();
     <span class="kw">let </span>nodes = NodeMap::new();
     <span class="kw">let </span><span class="kw-2">mut </span>gb = GraphBuilder { graph, nodes };
@@ -208,15 +216,19 @@
     gb.add_vertices(LOC)<span class="question-mark">?</span>;
     gb.add_vertices(OLEditions)<span class="question-mark">?</span>;
     gb.add_vertices(OLWorks)<span class="question-mark">?</span>;
-    gb.add_vertices(GRBooks)<span class="question-mark">?</span>;
-    gb.add_vertices(GRWorks)<span class="question-mark">?</span>;
+    <span class="kw">if </span>cfg.goodreads.enabled {
+        gb.add_vertices(GRBooks)<span class="question-mark">?</span>;
+        gb.add_vertices(GRWorks)<span class="question-mark">?</span>;
+    }
 
     <span class="macro">info!</span>(<span class="string">&quot;loading edges&quot;</span>);
     gb.add_edges(LOC)<span class="question-mark">?</span>;
     gb.add_edges(OLEditions)<span class="question-mark">?</span>;
     gb.add_edges(OLWorks)<span class="question-mark">?</span>;
-    gb.add_edges(GRBooks)<span class="question-mark">?</span>;
-    gb.add_edges(GRWorks)<span class="question-mark">?</span>;
+    <span class="kw">if </span>cfg.goodreads.enabled {
+        gb.add_edges(GRBooks)<span class="question-mark">?</span>;
+        gb.add_edges(GRWorks)<span class="question-mark">?</span>;
+    }
 
     <span class="kw">let </span>graph = gb.graph;
     <span class="macro">info!</span>(

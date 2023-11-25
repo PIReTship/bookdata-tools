@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["BATCH_SIZE"],"fn":["open_parquet_writer","open_polars_writer","vec_to_chunk"],"struct":["TableWriter"]};

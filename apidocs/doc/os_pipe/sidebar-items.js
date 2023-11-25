@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["dup_stderr","dup_stdin","dup_stdout","pipe"],"struct":["PipeReader","PipeWriter"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["aggregate","arity","arity_assign"]};

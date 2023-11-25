@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["QuantileInterpolOptions"],"fn":["rolling_max","rolling_mean","rolling_min","rolling_quantile","rolling_sum","rolling_var"],"struct":["MaxWindow","MeanWindow","MinWindow","QuantileWindow","SumWindow","VarWindow"],"trait":["RollingAggWindowNoNulls"]};

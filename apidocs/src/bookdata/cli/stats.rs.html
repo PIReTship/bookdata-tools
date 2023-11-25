@@ -100,6 +100,14 @@
 <a href="#100" id="100">100</a>
 <a href="#101" id="101">101</a>
 <a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Compute integration statistics.
 </span><span class="kw">use </span>clap::Args;
 <span class="kw">use </span>std::fs::File;
@@ -129,24 +137,25 @@
 <span class="kw">impl </span>Command <span class="kw">for </span>IntegrationStats {
     <span class="kw">fn </span>exec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         require_working_root()<span class="question-mark">?</span>;
+        <span class="kw">let </span>cfg = load_config()<span class="question-mark">?</span>;
 
         <span class="kw">let </span>genders = scan_genders()<span class="question-mark">?</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>agg_frames = Vec::with_capacity(ACTION_FILES.len() + <span class="number">1</span>);
-        agg_frames.push(scan_loc(genders.clone())<span class="question-mark">?</span>);
+        <span class="kw">let </span>loc_frame = scan_loc(genders.clone())<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>agg_frames = Vec::with_capacity(ACTION_FILES.len());
 
         <span class="kw">for </span>(name, file) <span class="kw">in </span>ACTION_FILES {
-            agg_frames.push(scan_actions(<span class="kw-2">&amp;</span>file, genders.clone(), <span class="kw-2">*</span>name)<span class="question-mark">?</span>);
+            <span class="kw">if </span>cfg.ds_enabled(name) {
+                agg_frames.push(scan_actions(<span class="kw-2">&amp;</span>file, genders.clone(), <span class="kw-2">*</span>name)<span class="question-mark">?</span>);
+            }
         }
 
-        <span class="kw">let </span>results = concat(agg_frames, default())<span class="question-mark">?</span>;
-        <span class="macro">info!</span>(<span class="string">&quot;collecting results&quot;</span>);
-        <span class="macro">debug!</span>(<span class="string">&quot;plan:\n{}&quot;</span>, results.describe_optimized_plan()<span class="question-mark">?</span>);
-        <span class="kw">let </span><span class="kw-2">mut </span>results = results.collect()<span class="question-mark">?</span>;
-        <span class="comment">// debug!(&quot;rechunking for writing&quot;);
-        // results.as_single_chunk_par();
+        <span class="macro">info!</span>(<span class="string">&quot;combining results&quot;</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>results = agg_frames.into_iter().fold(<span class="prelude-val">Ok</span>(loc_frame), |dfr, df2| {
+            dfr.and_then(|df1| df1.vstack(<span class="kw-2">&amp;</span>df2))
+        })<span class="question-mark">?</span>;
 
-        </span><span class="macro">info!</span>(<span class="string">&quot;saving {} records to {}&quot;</span>, results.height(), STAT_FILE);
+        <span class="macro">info!</span>(<span class="string">&quot;saving {} records to {}&quot;</span>, results.height(), STAT_FILE);
         <span class="kw">let </span>writer = File::create(STAT_FILE)<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>writer = CsvWriter::new(writer).has_header(<span class="bool-val">true</span>);
         writer.finish(<span class="kw-2">&amp;mut </span>results)<span class="question-mark">?</span>;
@@ -160,7 +169,7 @@
     <span class="prelude-val">Ok</span>(df)
 }
 
-<span class="kw">fn </span>scan_loc(genders: LazyFrame) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
+<span class="kw">fn </span>scan_loc(genders: LazyFrame) -&gt; <span class="prelude-ty">Result</span>&lt;DataFrame&gt; {
     <span class="macro">info!</span>(<span class="string">&quot;scanning LOC books&quot;</span>);
 
     <span class="kw">let </span>books = LazyFrame::scan_parquet(LOC_BOOK_FILE, default())<span class="question-mark">?</span>;
@@ -178,14 +187,20 @@
             lit(NULL).cast(DataType::UInt32).alias(<span class="string">&quot;n_actions&quot;</span>),
         ]);
 
-    <span class="prelude-val">Ok</span>(bg)
+    <span class="kw">let </span>df = bg.collect()<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(df)
 }
 
-<span class="kw">fn </span>scan_actions(file: <span class="kw-2">&amp;</span>str, genders: LazyFrame, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;LazyFrame&gt; {
+<span class="kw">fn </span>scan_actions(file: <span class="kw-2">&amp;</span>str, genders: LazyFrame, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;DataFrame&gt; {
     <span class="macro">info!</span>(<span class="string">&quot;scanning data {} from {}&quot;</span>, name, file);
     <span class="kw">let </span>df = LazyFrame::scan_parquet(file, default())<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>df = df.join(genders, <span class="kw-2">&amp;</span>[col(<span class="string">&quot;item&quot;</span>)], <span class="kw-2">&amp;</span>[col(<span class="string">&quot;cluster&quot;</span>)], JoinType::Inner.into());
+    <span class="kw">let </span>df = df.join(
+        genders,
+        <span class="kw-2">&amp;</span>[col(<span class="string">&quot;item&quot;</span>)],
+        <span class="kw-2">&amp;</span>[col(<span class="string">&quot;cluster&quot;</span>)],
+        JoinType::Inner.into(),
+    );
     <span class="kw">let </span>df = df
         .group_by([col(<span class="string">&quot;gender&quot;</span>)])
         .agg(<span class="kw-2">&amp;</span>[
@@ -200,6 +215,7 @@
         ]);
     <span class="macro">debug!</span>(<span class="string">&quot;{} schema: {:?}&quot;</span>, name, df.schema());
 
+    <span class="kw">let </span>df = df.collect()<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(df)
 }
 </code></pre></div></section></main></body></html>

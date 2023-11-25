@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["file_size","log_file_info","open_progress","path_list"],"mod":["background","compress","ext","lines","object"],"trait":["DataSink"]};

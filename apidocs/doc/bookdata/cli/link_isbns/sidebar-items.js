@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"static":["ALL_ISBNS_FILE"],"struct":["LinkISBNIds"]};

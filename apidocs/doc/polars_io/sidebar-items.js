@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["is_cloud_url"],"mod":["cloud","csv","export","mmap","parquet","predicates","prelude","utils"],"struct":["RowCount"],"trait":["ArrowReader","SerReader","SerWriter","WriterFactory"]};

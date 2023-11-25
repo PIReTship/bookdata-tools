@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"macro":["map","map_as_slice","map_owned","wrap"],"mod":["constants","dot","dsl","frame","global","logical_plan","prelude","utils"]};
