@@ -5,14 +5,12 @@ use std::mem;
 use std::path::{Path, PathBuf};
 use std::thread::{spawn, JoinHandle};
 
-use arrow2::array::{MutableArray, MutablePrimitiveArray, MutableUtf8Array};
-use arrow2::chunk::Chunk;
-use arrow2::datatypes::{DataType, Field, Schema};
-use arrow2::io::parquet::write::{CompressionOptions, FileWriter, Version, WriteOptions};
 use crossbeam::channel::{bounded, Receiver, Sender};
 use friendly::scalar;
+use polars::io::parquet::BatchedWriter;
+use polars::prelude::*;
 
-use crate::arrow::*;
+use crate::arrow::scan_parquet_file;
 use crate::marc::flat_fields::FieldRecord;
 use crate::prelude::*;
 use crate::util::logging::item_progress;
@@ -133,36 +131,24 @@ fn scan_records(
 /// Write field records to an output file.
 fn write_records(out: &OutputSpec, recv: Receiver<FieldRecord>) -> Result<usize> {
     info!("writing output to {:?}", out.file);
-    let schema = Schema {
-        fields: vec![
-            Field {
-                name: "rec_id".into(),
-                data_type: DataType::UInt32,
-                is_nullable: false,
-                metadata: Default::default(),
-            },
-            Field {
-                name: out
-                    .content_name
-                    .as_ref()
-                    .map(|s| s.clone())
-                    .unwrap_or("content".into()),
-                data_type: DataType::Utf8,
-                is_nullable: false,
-                metadata: Default::default(),
-            },
-        ],
-        metadata: Default::default(),
-    };
+    let out_name = out
+        .content_name
+        .as_ref()
+        .map(|s| s.clone())
+        .unwrap_or("content".into());
+    let mut schema = Schema::new();
+    schema.with_column("rec_id".into(), DataType::UInt32);
+    schema.with_column(out_name.as_str().into(), DataType::Utf8);
 
-    let writer = File::create(&out.file)?;
-    let options = WriteOptions {
-        compression: CompressionOptions::Zstd(None),
-        version: Version::V2,
-        write_statistics: false,
-        data_pagesize_limit: None,
-    };
-    let mut writer = FileWriter::try_new(writer, schema, options)?;
+    let writer = File::options()
+        .create(true)
+        .truncate(true)
+        .write(true)
+        .open(&out.file)?;
+    let mut writer = ParquetWriter::new(writer)
+        .with_compression(ParquetCompression::Zstd(None))
+        .with_statistics(true)
+        .batched(&schema)?;
 
     let mut rec_ids = Vec::with_capacity(BATCH_SIZE);
     let mut values = Vec::with_capacity(BATCH_SIZE);
@@ -172,11 +158,11 @@ fn write_records(out: &OutputSpec, recv: Receiver<FieldRecord>) -> Result<usize>
         rec_ids.push(rec.rec_id);
         values.push(rec.contents);
         if rec_ids.len() >= BATCH_SIZE {
-            n += write_cols(&mut writer, &mut rec_ids, &mut values)?;
+            n += write_cols(&mut writer, &mut rec_ids, &mut values, &out_name)?;
         }
     }
 
-    n += write_cols(&mut writer, &mut rec_ids, &mut values)?;
+    n += write_cols(&mut writer, &mut rec_ids, &mut values, &out_name)?;
 
     writer.finish()?;
 
@@ -184,9 +170,10 @@ fn write_records(out: &OutputSpec, recv: Receiver<FieldRecord>) -> Result<usize>
 }
 
 fn write_cols<W: Write>(
-    writer: &mut FileWriter<W>,
+    writer: &mut BatchedWriter<W>,
     rec_ids: &mut Vec<u32>,
     values: &mut Vec<String>,
+    val_name: &str,
 ) -> Result<usize> {
     let size = rec_ids.len();
     assert_eq!(values.len(), size);
@@ -194,20 +181,16 @@ fn write_cols<W: Write>(
     // turn record ids into a column - take ownership and swap out with new blank vector
     let mut rid_owned = Vec::with_capacity(BATCH_SIZE);
     mem::swap(&mut rid_owned, rec_ids);
-    let mut rec_col = MutablePrimitiveArray::from_vec(rid_owned);
+    let id_col = Series::new("rec_id", &rid_owned);
 
     // create a value column
-    let mut val_col = MutableUtf8Array::<i32>::with_capacity(values.len());
-    val_col.extend_values(values.iter());
-    values.clear();
+    let val_col = Series::new(val_name, &values);
 
-    // make a chunk
-    let rec_col = rec_col.as_box();
-    let val_col = val_col.as_box();
-    let chunk = Chunk::new(vec![rec_col, val_col]);
+    // make a batch
+    let batch = DataFrame::new(vec![id_col, val_col])?;
 
     // and write
-    writer.write_object(chunk)?;
+    writer.write_batch(&batch)?;
 
     Ok(size)
 }
