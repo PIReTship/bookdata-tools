@@ -164,6 +164,7 @@ impl ObjectWriter<MARCRecord> for BookOutput {
         self.fields.finish()?;
         self.ids.finish()?;
         self.isbns.finish()?;
+        self.authors.finish()?;
         Ok(self.n_books as usize)
     }
 }
