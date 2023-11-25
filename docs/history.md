@@ -13,12 +13,14 @@ following:
 3.  Clearly state the version of the data tools you are using in your paper.
 4.  [Let us know](papers.md) about your use so we can add you to the list.
 
-## Book Data 2.2 (in progress)
+## Book Data 3.0 (in progress)
 
+-   Make the pipeline configurable so individual rating datasets can be disabled.
+-   Use [jsonnet](implementation/pipeline.md) to generate DVC pipelines, taking
+    configuration settings into account.
 -   Extract GoodReads author information into {{< file goodreads/gr-author-info.parquet >}}.
 -   Extract 5-cores of interaction files.
 -   🪲 GoodReads cluster & work rating timestamps were on incorrect scale
--   Use [jsonnet](implementation/pipeline.md) to generate DVC pipelines in a configurable manner
 
 ## Book Data 2.1
 
