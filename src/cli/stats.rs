@@ -31,8 +31,8 @@ impl Command for IntegrationStats {
 
         let genders = scan_genders()?;
 
-        let mut agg_frames = Vec::with_capacity(ACTION_FILES.len() + 1);
-        agg_frames.push(scan_loc(genders.clone())?);
+        let loc_frame = scan_loc(genders.clone())?;
+        let mut agg_frames = Vec::with_capacity(ACTION_FILES.len());
 
         for (name, file) in ACTION_FILES {
             if cfg.ds_enabled(name) {
@@ -40,12 +40,10 @@ impl Command for IntegrationStats {
             }
         }
 
-        let results = concat(agg_frames, default())?;
-        info!("collecting results");
-        debug!("plan:\n{}", results.describe_optimized_plan()?);
-        let mut results = results.collect()?;
-        // debug!("rechunking for writing");
-        // results.as_single_chunk_par();
+        info!("combining results");
+        let mut results = agg_frames.into_iter().fold(Ok(loc_frame), |dfr, df2| {
+            dfr.and_then(|df1| df1.vstack(&df2))
+        })?;
 
         info!("saving {} records to {}", results.height(), STAT_FILE);
         let writer = File::create(STAT_FILE)?;
@@ -61,7 +59,7 @@ fn scan_genders() -> Result<LazyFrame> {
     Ok(df)
 }
 
-fn scan_loc(genders: LazyFrame) -> Result<LazyFrame> {
+fn scan_loc(genders: LazyFrame) -> Result<DataFrame> {
     info!("scanning LOC books");
 
     let books = LazyFrame::scan_parquet(LOC_BOOK_FILE, default())?;
@@ -79,10 +77,11 @@ fn scan_loc(genders: LazyFrame) -> Result<LazyFrame> {
             lit(NULL).cast(DataType::UInt32).alias("n_actions"),
         ]);
 
-    Ok(bg)
+    let df = bg.collect()?;
+    Ok(df)
 }
 
-fn scan_actions(file: &str, genders: LazyFrame, name: &str) -> Result<LazyFrame> {
+fn scan_actions(file: &str, genders: LazyFrame, name: &str) -> Result<DataFrame> {
     info!("scanning data {} from {}", name, file);
     let df = LazyFrame::scan_parquet(file, default())?;
 
@@ -106,5 +105,6 @@ fn scan_actions(file: &str, genders: LazyFrame, name: &str) -> Result<LazyFrame>
         ]);
     debug!("{} schema: {:?}", name, df.schema());
 
+    let df = df.collect()?;
     Ok(df)
 }
