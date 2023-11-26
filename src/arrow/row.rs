@@ -1,12 +1,13 @@
 //! Table row interface.
 use std::borrow::Cow;
 
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use polars::{
     chunked_array::builder::{BinaryChunkedBuilderCow, Utf8ChunkedBuilderCow},
     prelude::*,
 };
 
-pub trait TableRow {
+pub trait TableRow: Sized {
     /// The frame builder type for this row type.
     type Builder: FrameBuilder<Self>;
 
@@ -17,23 +18,22 @@ pub trait TableRow {
 /// Interface for data frame builders.
 pub trait FrameBuilder<R>
 where
-    R: TableRow + ?Sized,
+    R: TableRow + Sized,
 {
     /// Instantiate a frame builder with a specified capacity.
     fn with_capacity(cap: usize) -> Self;
     /// Add a row to the frame builder.
-    fn append_row(&mut self, row: &R);
+    fn append_row(&mut self, row: R);
     /// Finish the builder and create a data frame.
     fn build(self) -> PolarsResult<DataFrame>;
 
     /// Add an iterable of items to the frame.
-    fn extend<I, E>(&mut self, iter: I)
+    fn extend<I>(&mut self, iter: I)
     where
-        I: IntoIterator<Item = E>,
-        E: AsRef<R>,
+        I: IntoIterator<Item = R>,
     {
         for row in iter {
-            self.append_row(row.as_ref());
+            self.append_row(row);
         }
     }
 }
@@ -107,3 +107,39 @@ col_type!(
     BinaryChunkedBuilderCow
 );
 col_type!(&[u8], BinaryType, BinaryChunked, BinaryChunkedBuilderCow);
+
+// It would be nice to shrink this, but Polars doesn't expose the expected types
+// — its date handling only supports operating on chunks, not individual values.
+// We use the same logic to convert a date to Parquet's standard “days since the
+// epoch” format.
+fn convert_naive_date(date: NaiveDate) -> i32 {
+    let dt = NaiveDateTime::new(date, NaiveTime::default());
+    (dt.timestamp() / (24 * 60 * 60)) as i32
+}
+impl ColType for NaiveDate {
+    type PolarsType = NaiveDate;
+    type Array = Int32Chunked;
+    type Builder = PrimitiveChunkedBuilder<Int32Type>;
+
+    fn column_builder(name: &str, cap: usize) -> Self::Builder {
+        Self::Builder::new(name, cap)
+    }
+
+    fn append_to_column(self, b: &mut Self::Builder) {
+        b.append_value(convert_naive_date(self));
+    }
+}
+// just manually derive the option, bounds are being a pain
+impl ColType for Option<NaiveDate> {
+    type PolarsType = NaiveDate;
+    type Array = Int32Chunked;
+    type Builder = PrimitiveChunkedBuilder<Int32Type>;
+
+    fn column_builder(name: &str, cap: usize) -> Self::Builder {
+        Self::Builder::new(name, cap)
+    }
+
+    fn append_to_column(self, b: &mut Self::Builder) {
+        b.append_option(self.map(convert_naive_date));
+    }
+}
