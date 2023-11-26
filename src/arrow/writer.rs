@@ -6,9 +6,8 @@ use std::mem::replace;
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Result};
-use arrow2::array::{Array, MutableArray, StructArray, TryExtend};
+use arrow2::array::Array;
 use arrow2::chunk::Chunk;
-use arrow2::datatypes::*;
 use arrow2::io::parquet::write::*;
 use log::*;
 use polars::io::parquet::BatchedWriter;
@@ -19,32 +18,11 @@ use polars_arrow::array::Array as PArray;
 use polars_arrow::chunk::Chunk as PChunk;
 use polars_parquet::write as plw;
 
-use super::row::{vec_to_df, FrameBuilder, TableRow};
+use super::row::{vec_to_df, TableRow};
 use crate::io::object::{ObjectWriter, ThreadObjectWriter};
 use crate::io::DataSink;
 
 const BATCH_SIZE: usize = 32 * 1024 * 1024;
-
-/// Open a Parquet writer using BookData defaults.
-pub fn legacy_parquet_writer<P: AsRef<Path>>(path: P, schema: Schema) -> Result<FileWriter<File>> {
-    let compression = CompressionOptions::Zstd(None);
-    let options = WriteOptions {
-        write_statistics: true,
-        version: Version::V2,
-        compression,
-        data_pagesize_limit: None,
-    };
-
-    info!("creating Parquet file {:?}", path.as_ref());
-    let file = OpenOptions::new()
-        .create(true)
-        .truncate(true)
-        .write(true)
-        .open(path)?;
-    let writer = FileWriter::try_new(file, schema, options)?;
-
-    Ok(writer)
-}
 
 /// Open a Parquet writer using BookData defaults.
 pub fn open_parquet_writer<P: AsRef<Path>>(
