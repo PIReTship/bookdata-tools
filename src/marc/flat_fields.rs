@@ -1,12 +1,14 @@
 use anyhow::Result;
 use std::path::Path;
 
+use arrow2_convert::*;
+
 use super::record::*;
 use crate::arrow::*;
 use crate::io::*;
 
 /// Flat MARC field record.
-#[derive(TableRow, Debug, Default)]
+#[derive(ArrowField, ArrowSerialize, ArrowDeserialize, Debug, Default)]
 pub struct FieldRecord {
     pub rec_id: u32,
     pub fld_no: u32,
