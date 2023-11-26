@@ -8,6 +8,7 @@ pub fn derive_table_row(ast: &syn::DeriveInput) -> TokenStream {
     if !ast.generics.params.is_empty() {
         panic!("generic structs not supported");
     }
+    let ff = format_ident!("{}Frame", name);
     let fb = format_ident!("{}FrameBuilder", name);
     let fields = match &ast.data {
         Data::Struct(ds) => match &ds.fields {
@@ -36,15 +37,21 @@ pub fn derive_table_row(ast: &syn::DeriveInput) -> TokenStream {
         .iter()
         .map(|t| quote!(#t as crate::arrow::row::ColType))
         .collect();
-    // field array builer types
+    // field array types
+    let f_atypes: Vec<_> = f_cts.iter().map(|ai| quote!(<#ai>::Array)).collect();
+    // field array builder types
     let f_btypes: Vec<_> = f_cts.iter().map(|ai| quote!(<#ai>::Builder)).collect();
 
     let gen = quote! {
-      pub struct #fb {
-        #(#f_names: #f_btypes),*
-      }
+        pub struct #ff<'a> {
+            #(#f_names: &'a #f_atypes),*
+        }
+        pub struct #fb {
+            #(#f_names: #f_btypes),*
+        }
 
       impl crate::arrow::TableRow for #name {
+        type Frame<'a> = #ff<'a>;
         type Builder = #fb;
 
         fn schema() -> ::polars::prelude::Schema {
@@ -54,7 +61,22 @@ pub fn derive_table_row(ast: &syn::DeriveInput) -> TokenStream {
         }
       }
 
-      impl crate::arrow::FrameBuilder<#name> for #fb {
+      impl<'a> crate::arrow::row::FrameStruct<'a, #name> for #ff<'a> {
+        fn new(df: &'a ::polars::prelude::DataFrame) -> ::polars::prelude::PolarsResult<Self> {
+            use crate::arrow::row::ColType;
+            Ok(#ff {
+                #(#f_names: <#f_types as ColType>::cast_series(df.column(#f_ns)?)?),*
+            })
+        }
+        fn read_row(&mut self, idx: usize) -> ::polars::prelude::PolarsResult<#name> {
+            use crate::arrow::row::ColType;
+            Ok(#name {
+                #(#f_names: <#f_types as ColType>::read_from_column(&self.#f_names, idx)?),*
+            })
+        }
+      }
+
+      impl crate::arrow::row::FrameBuilder<#name> for #fb {
         fn with_capacity(cap: usize) -> Self {
             #fb {
                 #(#f_names: <#f_btypes>::new(#f_ns, cap)),*
