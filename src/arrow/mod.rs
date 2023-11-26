@@ -1,6 +1,7 @@
 pub mod dfext;
 pub mod polars;
 pub mod reader;
+pub mod row;
 pub mod writer;
 
 pub use arrow2_convert::serialize::ArrowSerialize;
