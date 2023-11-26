@@ -23,7 +23,7 @@ use crate::io::DataSink;
 const BATCH_SIZE: usize = 32 * 1024 * 1024;
 
 /// Open a Parquet writer using BookData defaults.
-pub fn open_parquet_writer<P: AsRef<Path>>(path: P, schema: Schema) -> Result<FileWriter<File>> {
+pub fn legacy_parquet_writer<P: AsRef<Path>>(path: P, schema: Schema) -> Result<FileWriter<File>> {
     let compression = CompressionOptions::Zstd(None);
     let options = WriteOptions {
         write_statistics: true,
@@ -44,7 +44,7 @@ pub fn open_parquet_writer<P: AsRef<Path>>(path: P, schema: Schema) -> Result<Fi
 }
 
 /// Open a Parquet writer using BookData defaults.
-pub fn open_polars_writer<P: AsRef<Path>>(
+pub fn open_parquet_writer<P: AsRef<Path>>(
     path: P,
     schema: ArrowSchema,
 ) -> Result<plw::FileWriter<File>> {
@@ -113,7 +113,7 @@ where
             d => panic!("invalid data type {:?}", d),
         };
 
-        let writer = open_parquet_writer(path, schema)?;
+        let writer = legacy_parquet_writer(path, schema)?;
         let writer = ThreadObjectWriter::with_capacity(writer, 32);
         let writer = writer.with_transform(vec_to_chunk);
         let writer = ThreadObjectWriter::with_capacity(writer, 32);

@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use parse_display::{Display, FromStr};
 
 use crate::arrow::dfext::*;
-use crate::arrow::writer::open_polars_writer;
+use crate::arrow::writer::open_parquet_writer;
 use crate::io::object::ThreadObjectWriter;
 use crate::prelude::*;
 use crate::util::logging::data_progress;
@@ -157,7 +157,7 @@ impl Command for ClusterAuthors {
         let schema = nonnull_schema(&authors);
         debug!("schema: {:?}", schema);
 
-        let writer = open_polars_writer(&self.output, schema)?;
+        let writer = open_parquet_writer(&self.output, schema)?;
         let mut writer = ThreadObjectWriter::new(writer);
         let pb = data_progress(authors.n_chunks());
         for chunk in authors.iter_chunks() {
