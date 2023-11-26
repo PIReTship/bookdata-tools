@@ -12,7 +12,9 @@ use arrow2::datatypes::*;
 use arrow2::io::parquet::write::*;
 use arrow2_convert::serialize::ArrowSerialize;
 use log::*;
-use polars::prelude::{ArrowSchema, DataFrame, ParquetCompression, ParquetWriter};
+use polars::prelude::{
+    ArrowSchema, DataFrame, ParquetCompression, ParquetWriter, ZstdLevel as PLZ,
+};
 use polars_arrow::array::Array as PArray;
 use polars_arrow::chunk::Chunk as PChunk;
 use polars_parquet::write as plw;
@@ -67,15 +69,28 @@ pub fn open_parquet_writer<P: AsRef<Path>>(
     Ok(writer)
 }
 
+/// Open a Polars data frame Parquet writer using BookData defaults.
+pub fn open_polars_writer<P: AsRef<Path>>(path: P) -> Result<ParquetWriter<File>> {
+    info!("creating Parquet file {:?}", path.as_ref());
+    let file = OpenOptions::new()
+        .create(true)
+        .truncate(true)
+        .write(true)
+        .open(path)?;
+    let writer =
+        ParquetWriter::new(file).with_compression(ParquetCompression::Zstd(Some(PLZ::try_new(9)?)));
+
+    Ok(writer)
+}
+
 /// Save a data frame to a Parquet file.
 pub fn save_df_parquet<P: AsRef<Path>>(df: DataFrame, path: P) -> Result<()> {
     let path = path.as_ref();
     debug!("writing file {}", path.display());
     debug!("{}: schema {:?}", path.display(), df.schema());
     let mut df = df;
-    let file = File::create(path)?;
-    let size = ParquetWriter::new(file)
-        .with_compression(ParquetCompression::Zstd(None))
+    let writer = open_polars_writer(path)?;
+    let size = writer
         .with_row_group_size(Some(BATCH_SIZE))
         .finish(&mut df)?;
     debug!("{}: wrote {}", path.display(), friendly::bytes(size));
