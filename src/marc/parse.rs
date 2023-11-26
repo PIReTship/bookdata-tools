@@ -110,7 +110,7 @@ pub fn read_records<B: BufRead>(reader: B) -> Records<B> {
 pub fn read_records_delim<B: BufRead + Send + 'static>(reader: B) -> Records<B> {
     let lines = reader.lines();
     // chunk lines (to decrease threading overhead)
-    let chunks = chunk_owned(lines, 5000);
+    let chunks = chunk_owned(lines, 1000);
 
     // receivers & senders for chunks of lines
     let (chunk_tx, chunk_rx) = bounded(100);
