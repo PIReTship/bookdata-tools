@@ -24,10 +24,16 @@ mod prelude;
 mod tsv;
 mod util;
 
-use mimalloc::MiMalloc;
+// use mimalloc::MiMalloc;
 
+// #[global_allocator]
+// static GLOBAL: MiMalloc = MiMalloc;
+
+#[cfg(not(target_env = "msvc"))]
+use tikv_jemallocator::Jemalloc;
+#[cfg(not(target_env = "msvc"))]
 #[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
+static GLOBAL: Jemalloc = Jemalloc;
 
 use anyhow::Result;
 use clap::Parser;

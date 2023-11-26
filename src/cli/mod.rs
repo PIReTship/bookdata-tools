@@ -34,10 +34,6 @@ use rayon::ThreadPoolBuilder;
 use crate::util::process;
 use crate::util::Timer;
 
-extern "C" {
-    fn mi_stats_print(out: *const std::ffi::c_void);
-}
-
 /// Macro to generate wrappers for subcommand enums.
 ///
 /// This is for subcommands that only exist to contain further subcommands,
@@ -165,13 +161,6 @@ impl CLI {
             Ok(pt) => info!("used {} CPU time", friendly::duration(pt.as_duration())),
             Err(e) => error!("error fetching CPU time: {}", e),
         };
-
-        if log_enabled!(Level::Debug) {
-            debug!("mimalloc stats follow");
-            unsafe {
-                mi_stats_print(std::ptr::null());
-            }
-        }
 
         #[cfg(unix)]
         process::log_process_stats();
