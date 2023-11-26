@@ -1,6 +1,4 @@
 //! Data structure for mapping string keys to numeric identifiers.
-#[cfg(test)]
-use arrow2::io::parquet::read::read_metadata;
 use hashbrown::hash_map::{HashMap, Keys};
 use std::borrow::Borrow;
 use std::fs::File;
@@ -281,11 +279,6 @@ fn test_index_save() -> Result<()> {
     let dir = tempdir()?;
     let pq = dir.path().join("index.parquet");
     index.save_standard(&pq).expect("save error");
-
-    let mut pqf = File::open(&pq).expect("open error");
-    let meta = read_metadata(&mut pqf).expect("meta error");
-    println!("file metadata: {:?}", meta);
-    std::mem::drop(pqf);
 
     let i2 = IdIndex::load_standard(&pq).expect("load error");
     assert_eq!(i2.len(), index.len());

@@ -6,17 +6,14 @@ use std::mem::replace;
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Result};
-use arrow2::array::Array;
-use arrow2::chunk::Chunk;
-use arrow2::io::parquet::write::*;
 use log::*;
 use polars::io::parquet::BatchedWriter;
-use polars::prelude::{
-    ArrowSchema, DataFrame, ParquetCompression, ParquetWriter, ZstdLevel as PLZ,
-};
+use polars::prelude::{ArrowSchema, DataFrame, ParquetCompression, ParquetWriter, ZstdLevel};
 use polars_arrow::array::Array as PArray;
 use polars_arrow::chunk::Chunk as PChunk;
-use polars_parquet::write as plw;
+use polars_parquet::write::{
+    transverse, CompressionOptions, Encoding, FileWriter, RowGroupIterator, Version, WriteOptions,
+};
 
 use super::row::{vec_to_df, TableRow};
 use crate::io::object::{ObjectWriter, ThreadObjectWriter};
@@ -28,11 +25,11 @@ const BATCH_SIZE: usize = 32 * 1024 * 1024;
 pub fn open_parquet_writer<P: AsRef<Path>>(
     path: P,
     schema: ArrowSchema,
-) -> Result<plw::FileWriter<File>> {
-    let compression = plw::CompressionOptions::Zstd(None);
-    let options = plw::WriteOptions {
+) -> Result<FileWriter<File>> {
+    let compression = CompressionOptions::Zstd(None);
+    let options = WriteOptions {
         write_statistics: true,
-        version: plw::Version::V2,
+        version: Version::V2,
         compression,
         data_pagesize_limit: None,
     };
@@ -43,7 +40,7 @@ pub fn open_parquet_writer<P: AsRef<Path>>(
         .truncate(true)
         .write(true)
         .open(path)?;
-    let writer = plw::FileWriter::try_new(file, schema, options)?;
+    let writer = FileWriter::try_new(file, schema, options)?;
 
     Ok(writer)
 }
@@ -56,8 +53,8 @@ pub fn open_polars_writer<P: AsRef<Path>>(path: P) -> Result<ParquetWriter<File>
         .truncate(true)
         .write(true)
         .open(path)?;
-    let writer =
-        ParquetWriter::new(file).with_compression(ParquetCompression::Zstd(Some(PLZ::try_new(9)?)));
+    let writer = ParquetWriter::new(file)
+        .with_compression(ParquetCompression::Zstd(Some(ZstdLevel::try_new(9)?)));
 
     Ok(writer)
 }
@@ -197,12 +194,12 @@ where
     }
 }
 
-/// Implementation of object writer for Arrow2 writers
-impl<W> ObjectWriter<Chunk<Box<dyn Array + 'static>>> for FileWriter<W>
+/// Implementation of object writer for Polars Arrow writers
+impl<W> ObjectWriter<PChunk<Box<dyn PArray + 'static>>> for FileWriter<W>
 where
     W: Write,
 {
-    fn write_object(&mut self, chunk: Chunk<Box<dyn Array + 'static>>) -> Result<()> {
+    fn write_object(&mut self, chunk: PChunk<Box<dyn PArray + 'static>>) -> Result<()> {
         let schema = self.schema();
         let encodings: Vec<_> = schema
             .fields
@@ -212,34 +209,6 @@ where
         let options = self.options();
         let chunks = vec![Ok(chunk)];
         let groups = RowGroupIterator::try_new(chunks.into_iter(), &schema, options, encodings)?;
-        for group in groups {
-            self.write(group?)?;
-        }
-        Ok(())
-    }
-
-    fn finish(mut self) -> Result<usize> {
-        self.end(None)?;
-        Ok(0)
-    }
-}
-
-/// Implementation of object writer for Polars Arrow writers
-impl<W> ObjectWriter<PChunk<Box<dyn PArray + 'static>>> for plw::FileWriter<W>
-where
-    W: Write,
-{
-    fn write_object(&mut self, chunk: PChunk<Box<dyn PArray + 'static>>) -> Result<()> {
-        let schema = self.schema();
-        let encodings: Vec<_> = schema
-            .fields
-            .iter()
-            .map(|f| plw::transverse(&f.data_type, |_| plw::Encoding::Plain))
-            .collect();
-        let options = self.options();
-        let chunks = vec![Ok(chunk)];
-        let groups =
-            plw::RowGroupIterator::try_new(chunks.into_iter(), &schema, options, encodings)?;
         for group in groups {
             self.write(group?)?;
         }
