@@ -48,8 +48,9 @@ pub fn derive_table_row(ast: &syn::DeriveInput) -> TokenStream {
         type Builder = #fb;
 
         fn schema() -> ::polars::prelude::Schema {
-            let schema = ::polars::prelude::Schema::with_capacity(#n_fields);
-            #(schema.with_column(#f_ns.into(), <#f_cts>::PolarsType::get_dtype());)*
+            let mut schema = ::polars::prelude::Schema::with_capacity(#n_fields);
+            #(schema.with_column(#f_ns.into(), <<#f_cts>::PolarsType as ::polars::datatypes::PolarsDataType>::get_dtype());)*
+            schema
         }
       }
 
@@ -60,15 +61,17 @@ pub fn derive_table_row(ast: &syn::DeriveInput) -> TokenStream {
             }
         }
 
-        fn append_row(&mut self, row: &#name) {
-            #(row.append_to_column(&mut self.#f_names);)*
+        fn append_row(&mut self, row: #name) {
+            use crate::arrow::row::ColType;
+            #(row.#f_names.append_to_column(&mut self.#f_names);)*
         }
 
         fn build(self) -> ::polars::prelude::PolarsResult<::polars::prelude::DataFrame> {
+            use ::polars::prelude::{ChunkedBuilder, IntoSeries, DataFrame};
             let cols = vec![
-                #(self.#f_names.build().into_series()),*
+                #(self.#f_names.finish().into_series()),*
             ];
-            Ok(::polars::prelude::DataFrame::new(cols))
+            DataFrame::new(cols)
         }
       }
     };
