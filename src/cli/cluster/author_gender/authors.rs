@@ -1,7 +1,7 @@
 //! Support for loading author info.
 use std::collections::{HashMap, HashSet};
 
-use crate::arrow::scan_parquet_file;
+use crate::arrow::*;
 use crate::gender::*;
 use crate::prelude::*;
 use crate::util::logging::item_progress;
@@ -14,13 +14,13 @@ pub struct AuthorInfo {
 
 pub type AuthorTable = HashMap<String, AuthorInfo>;
 
-#[derive(ArrowField, ArrowSerialize, ArrowDeserialize, Debug)]
+#[derive(TableRow, Debug)]
 struct NameRow {
     rec_id: u32,
     name: String,
 }
 
-#[derive(ArrowField, ArrowSerialize, ArrowDeserialize, Debug)]
+#[derive(TableRow, Debug)]
 struct GenderRow {
     rec_id: u32,
     gender: String,

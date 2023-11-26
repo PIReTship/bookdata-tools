@@ -148,7 +148,6 @@ impl Command for ClusterAuthors {
 
         info!("collecting results");
         let mut authors = authors.collect()?;
-        authors.as_single_chunk_par();
         info!("found {} cluster-author links", authors.height());
 
         info!("saving to {:?}", &self.output);

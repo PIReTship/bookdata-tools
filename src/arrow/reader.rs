@@ -4,15 +4,13 @@ use std::path::Path;
 use std::thread::spawn;
 
 use anyhow::Result;
-use arrow2::chunk::Chunk;
 use crossbeam::channel::{bounded, Receiver};
 use log::*;
-use polars::prelude::*;
+use polars::{io::pl_async::get_runtime, prelude::*};
 
-use arrow2::array::{Array, StructArray};
-use arrow2::io::parquet::read::{infer_schema, read_metadata, FileReader};
+use crate::arrow::row::iter_df_rows;
 
-use arrow2_convert::deserialize::*;
+use super::TableRow;
 
 /// Scan a Parquet file into a data frame.
 pub fn scan_df_parquet<P: AsRef<Path>>(file: P) -> Result<LazyFrame> {
@@ -26,8 +24,7 @@ pub fn scan_df_parquet<P: AsRef<Path>>(file: P) -> Result<LazyFrame> {
 /// Iterator over deserialized records from a Parquet file.
 pub struct RecordIter<R>
 where
-    R: ArrowDeserialize + Send + Sync + 'static,
-    for<'a> &'a R::ArrayType: IntoIterator,
+    R: TableRow + Send + Sync + 'static,
 {
     remaining: usize,
     channel: Receiver<Result<Vec<R>>>,
@@ -36,75 +33,72 @@ where
 
 impl<R> RecordIter<R>
 where
-    R: ArrowDeserialize + Send + Sync + 'static,
-    for<'a> &'a R::ArrayType: IntoIterator,
+    R: TableRow + Send + Sync + 'static,
 {
     pub fn remaining(&self) -> usize {
         self.remaining
     }
 }
 
-fn decode_chunk<R, E>(chunk: Result<Chunk<Box<dyn Array>>, E>) -> Result<Vec<R>>
+fn decode_chunk<R>(chunk: DataFrame) -> Result<Vec<R>>
 where
-    R: ArrowDeserialize<Type = R> + Send + Sync + 'static,
-    for<'a> &'a R::ArrayType: IntoIterator<Item = Option<R>>,
-    E: std::error::Error + Send + Sync + 'static,
+    R: TableRow + Send + Sync + 'static,
 {
-    let chunk = chunk?;
-    let chunk_size = chunk.len();
-    let sa = StructArray::try_new(R::data_type(), chunk.into_arrays(), None).map_err(|e| {
-        error!("error decoding struct array: {:?}", e);
-        e
-    })?;
-    let sa: Box<dyn Array> = Box::new(sa);
-    let sadt = sa.data_type().clone();
-    let recs: Vec<R> = sa.try_into_collection().map_err(|e| {
-        error!("error deserializing batch: {:?}", e);
-        info!("chunk schema: {:?}", sadt);
-        info!("target schema: {:?}", R::data_type());
-        e
-    })?;
-    assert_eq!(recs.len(), chunk_size);
-    Ok(recs)
+    let iter = iter_df_rows(&chunk)?;
+    let mut records = Vec::with_capacity(chunk.height());
+    for row in iter {
+        records.push(row?);
+    }
+    Ok(records)
 }
 
 /// Scan a Parquet file in a background thread and deserialize records.
 pub fn scan_parquet_file<R, P>(path: P) -> Result<RecordIter<R>>
 where
     P: AsRef<Path>,
-    R: ArrowDeserialize<Type = R> + Send + Sync + 'static,
-    for<'a> &'a R::ArrayType: IntoIterator<Item = Option<R>>,
+    R: TableRow + Send + Sync + 'static,
 {
     let path = path.as_ref();
-    let mut reader = File::open(path)?;
+    let reader = File::open(path)?;
+    let mut reader = ParquetReader::new(reader);
+    let row_count = reader.num_rows()?;
 
-    let meta = read_metadata(&mut reader)?;
-    let schema = infer_schema(&meta)?;
-    let row_count = meta.num_rows;
-    let row_groups = meta.row_groups;
-
-    let reader = FileReader::new(reader, row_groups, schema, None, None, None);
     info!("scanning {:?} with {} rows", path, row_count);
-    debug!("file schema: {:?}", meta.schema_descr);
+    debug!("file schema: {:?}", reader.get_metadata()?.schema());
+
+    let reader = reader.batched(1024 * 1024)?;
 
     // use a small bound since we're sending whole batches
     let (send, receive) = bounded(5);
 
     spawn(move || {
         let send = send;
-        let reader = reader;
+        let mut reader = reader;
 
-        for chunk in reader {
-            let recs = decode_chunk(chunk);
-            let recs = match recs {
-                Ok(v) => v,
+        while !reader.is_finished() {
+            let batches = reader.next_batches(1);
+            let batches = get_runtime().block_on_potential_spawn(batches);
+            let batches = match batches {
+                Ok(bs) => bs,
                 Err(e) => {
                     debug!("routing backend error {:?}", e);
-                    send.send(Err(e)).expect("channel send error");
+                    send.send(Err(e.into())).expect("channel send error");
                     return;
                 }
             };
-            send.send(Ok(recs)).expect("channel send error");
+
+            for df in batches.into_iter().flatten() {
+                match decode_chunk(df) {
+                    Ok(batch) => {
+                        send.send(Ok(batch)).expect("channel send error");
+                    }
+                    Err(e) => {
+                        debug!("routing backend error {:?}", e);
+                        send.send(Err(e.into())).expect("channel send error");
+                        return;
+                    }
+                }
+            }
         }
     });
 
@@ -117,8 +111,7 @@ where
 
 impl<R> Iterator for RecordIter<R>
 where
-    R: ArrowDeserialize + Send + Sync + 'static,
-    for<'a> &'a R::ArrayType: IntoIterator,
+    R: TableRow + Send + Sync + 'static,
 {
     type Item = Result<R>;
 

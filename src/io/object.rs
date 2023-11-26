@@ -92,7 +92,10 @@ impl<T: Send + Sync + 'static> ThreadObjectWriter<T> {
         Self::with_capacity(writer, 4096)
     }
 
-    pub fn with_capacity<W: ObjectWriter<T> + Send + 'static>(writer: W, cap: usize) -> ThreadObjectWriter<T> {
+    pub fn with_capacity<W: ObjectWriter<T> + Send + 'static>(
+        writer: W,
+        cap: usize,
+    ) -> ThreadObjectWriter<T> {
         let (sender, receiver) = bounded(cap);
 
         let handle = spawn(|| {

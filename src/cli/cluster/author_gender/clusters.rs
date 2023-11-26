@@ -9,7 +9,6 @@ use crate::gender::*;
 use crate::prelude::*;
 use crate::util::logging::item_progress;
 use anyhow::Result;
-use arrow2_convert::field::LargeString;
 use polars::prelude::*;
 
 /// Record for storing a cluster's gender statistics while aggregating.
@@ -22,10 +21,9 @@ pub struct ClusterStats {
 }
 
 /// Row struct for reading cluster author names.
-#[derive(Debug, ArrowField, ArrowSerialize, ArrowDeserialize)]
+#[derive(Debug, TableRow)]
 struct ClusterAuthor {
     cluster: i32,
-    #[arrow_field(type = "LargeString")]
     author_name: String,
 }
 

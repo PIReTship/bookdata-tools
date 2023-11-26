@@ -37,7 +37,7 @@ pub struct AuthorGender {
 }
 
 /// Record format for saving gender information.
-#[derive(Serialize, Deserialize, Clone, ArrowField, ArrowSerialize, ArrowDeserialize)]
+#[derive(Serialize, Deserialize, Clone, TableRow)]
 struct ClusterGenderInfo {
     cluster: i32,
     gender: String,

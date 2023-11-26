@@ -4,7 +4,6 @@ use std::mem::take;
 use std::path::Path;
 
 use anyhow::{anyhow, Result};
-use arrow2::array::TryExtend;
 use log::*;
 
 use super::{Dedup, Interaction, Key};
@@ -14,7 +13,7 @@ use crate::util::logging::item_progress;
 use crate::util::Timer;
 
 /// Record for a single output rating.
-#[derive(ArrowField, Debug)]
+#[derive(TableRow, Debug)]
 pub struct TimestampRatingRecord {
     pub user: i32,
     pub item: i32,
@@ -26,7 +25,7 @@ pub struct TimestampRatingRecord {
 }
 
 /// Record for a single output rating without time.
-#[derive(ArrowField, Debug)]
+#[derive(TableRow, Debug)]
 pub struct TimelessRatingRecord {
     pub user: i32,
     pub item: i32,
@@ -128,8 +127,7 @@ where
 
 impl<I: Interaction, R> Dedup<I> for RatingDedup<R>
 where
-    R: FromRatingSet + ArrowSerialize + Send + Sync + 'static,
-    R::MutableArrayType: TryExtend<Option<R>>,
+    R: FromRatingSet + TableRow + Send + Sync + 'static,
 {
     fn add_interaction(&mut self, act: I) -> Result<()> {
         let rating = act
@@ -146,8 +144,7 @@ where
 
 impl<R> Default for RatingDedup<R>
 where
-    R: FromRatingSet + ArrowSerialize + Send + Sync + 'static,
-    R::MutableArrayType: TryExtend<Option<R>>,
+    R: FromRatingSet + TableRow + Send + Sync + 'static,
 {
     fn default() -> RatingDedup<R> {
         RatingDedup {
@@ -159,8 +156,7 @@ where
 
 impl<R> RatingDedup<R>
 where
-    R: FromRatingSet + ArrowSerialize + Send + Sync + 'static,
-    R::MutableArrayType: TryExtend<Option<R>>,
+    R: FromRatingSet + TableRow + Send + Sync + 'static,
 {
     /// Add a rating to the deduplicator.
     pub fn record(&mut self, user: i32, item: i32, rating: f32, timestamp: i64) {

@@ -10,8 +10,8 @@ use arrow2::array::{Array, MutableArray, StructArray, TryExtend};
 use arrow2::chunk::Chunk;
 use arrow2::datatypes::*;
 use arrow2::io::parquet::write::*;
-use arrow2_convert::serialize::ArrowSerialize;
 use log::*;
+use polars::io::parquet::BatchedWriter;
 use polars::prelude::{
     ArrowSchema, DataFrame, ParquetCompression, ParquetWriter, ZstdLevel as PLZ,
 };
@@ -19,6 +19,7 @@ use polars_arrow::array::Array as PArray;
 use polars_arrow::chunk::Chunk as PChunk;
 use polars_parquet::write as plw;
 
+use super::row::{vec_to_df, FrameBuilder, TableRow};
 use crate::io::object::{ObjectWriter, ThreadObjectWriter};
 use crate::io::DataSink;
 
@@ -99,9 +100,9 @@ pub fn save_df_parquet<P: AsRef<Path>>(df: DataFrame, path: P) -> Result<()> {
 
 /// Parquet table writer.
 ///
-/// A table writer is an [ObjectWriter] for structs implementing [ArrowSerialize], that writes
+/// A table writer is an [ObjectWriter] for structs implementing [TableRow], that writes
 /// them out to a Parquet file.
-pub struct TableWriter<R: ArrowSerialize + Send + Sync + 'static> {
+pub struct TableWriter<R: TableRow + Send + Sync + 'static> {
     _phantom: PhantomData<R>,
     writer: Option<ThreadObjectWriter<Vec<R>>>,
     out_path: Option<PathBuf>,
@@ -112,25 +113,18 @@ pub struct TableWriter<R: ArrowSerialize + Send + Sync + 'static> {
 
 impl<R> TableWriter<R>
 where
-    R: ArrowSerialize + Send + Sync + 'static,
-    R::MutableArrayType: TryExtend<Option<R>>,
+    R: TableRow + Send + Sync + 'static,
 {
     /// Open a table writer for a path.
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
         let path = path.as_ref();
 
         // extract struct schema
-        let schema = match R::data_type() {
-            DataType::Struct(fields) => Schema {
-                fields,
-                metadata: Default::default(),
-            },
-            d => panic!("invalid data type {:?}", d),
-        };
+        let schema = R::schema();
 
-        let writer = legacy_parquet_writer(path, schema)?;
-        let writer = ThreadObjectWriter::with_capacity(writer, 32);
-        let writer = writer.with_transform(vec_to_chunk);
+        let writer = open_polars_writer(path)?;
+        let writer = writer.batched(&schema)?;
+        let writer = writer.with_transform(vec_to_df);
         let writer = ThreadObjectWriter::with_capacity(writer, 32);
         let out_path = Some(path.to_path_buf());
         Ok(TableWriter {
@@ -162,7 +156,7 @@ where
 
 impl<R> TableWriter<R>
 where
-    R: ArrowSerialize + Send + Sync + 'static,
+    R: TableRow + Send + Sync + 'static,
 {
     fn display_path(&self) -> Cow<'static, str> {
         if let Some(p) = &self.out_path {
@@ -175,7 +169,7 @@ where
 
 impl<R> DataSink for TableWriter<R>
 where
-    R: ArrowSerialize + Send + Sync + 'static,
+    R: TableRow + Send + Sync + 'static,
 {
     fn output_files(&self) -> Vec<PathBuf> {
         match &self.out_path {
@@ -187,8 +181,7 @@ where
 
 impl<R> ObjectWriter<R> for TableWriter<R>
 where
-    R: ArrowSerialize + Send + Sync + 'static,
-    R::MutableArrayType: TryExtend<Option<R>>,
+    R: TableRow + Send + Sync + 'static,
 {
     fn write_object(&mut self, row: R) -> Result<()> {
         self.batch.push(row);
@@ -216,7 +209,7 @@ where
 
 impl<R> Drop for TableWriter<R>
 where
-    R: ArrowSerialize + Send + Sync + 'static,
+    R: TableRow + Send + Sync + 'static,
 {
     fn drop(&mut self) {
         // make sure we closed the writer
@@ -224,28 +217,6 @@ where
             error!("{}: Parquet table writer not closed", self.display_path());
         }
     }
-}
-
-/// Convert a vector of records to a chunk.
-pub fn vec_to_chunk<R>(vec: Vec<R>) -> Result<Chunk<Box<dyn Array>>>
-where
-    R: ArrowSerialize,
-    R::MutableArrayType: TryExtend<Option<R>>,
-{
-    let mut array = R::new_array();
-    array.reserve(vec.len());
-    array.try_extend(vec.into_iter().map(Some))?;
-
-    // get the struct array to chunkify
-    let array = array.as_box();
-    let sa = array.as_any().downcast_ref::<StructArray>();
-    let sa = sa.ok_or_else(|| anyhow!("invalid array type (not a structure)"))?;
-    let (_fields, cols, validity) = sa.to_owned().into_data();
-    if validity.is_some() {
-        return Err(anyhow!("structure arrays with validity not supported"));
-    }
-    let chunk = Chunk::new(cols);
-    Ok(chunk)
 }
 
 /// Implementation of object writer for Arrow2 writers
@@ -300,5 +271,21 @@ where
     fn finish(mut self) -> Result<usize> {
         self.end(None)?;
         Ok(0)
+    }
+}
+
+/// Implementation of object writer for Polars Parquet batched writer
+impl<W> ObjectWriter<DataFrame> for BatchedWriter<W>
+where
+    W: Write,
+{
+    fn write_object(&mut self, df: DataFrame) -> Result<()> {
+        self.write_batch(&df)?;
+        Ok(())
+    }
+
+    fn finish(mut self) -> Result<usize> {
+        let size = BatchedWriter::finish(&mut self)?;
+        Ok(size as usize)
     }
 }

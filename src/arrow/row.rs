@@ -1,11 +1,31 @@
 //! Table row interface.
-use std::borrow::Cow;
-
+use anyhow::Result;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
-use polars::{
-    chunked_array::builder::{BinaryChunkedBuilderCow, Utf8ChunkedBuilderCow},
-    prelude::*,
-};
+use polars::{chunked_array::builder::Utf8ChunkedBuilderCow, prelude::*};
+
+/// Convert a vector of records to a chunk.
+pub fn vec_to_df<R>(vec: Vec<R>) -> Result<DataFrame>
+where
+    R: TableRow,
+{
+    let mut batch = R::Builder::with_capacity(vec.len());
+    batch.extend(vec.into_iter());
+    let df = batch.build()?;
+    Ok(df)
+}
+
+/// Convert a data frame into a vector.
+pub fn iter_df_rows<'a, R>(df: &'a DataFrame) -> Result<FrameRecordIter<'a, R>>
+where
+    R: TableRow,
+{
+    let frame = R::Frame::new(df)?;
+    Ok(FrameRecordIter {
+        frame,
+        size: df.height(),
+        pos: 0,
+    })
+}
 
 pub trait TableRow: Sized {
     /// The frame struct for this row type.
@@ -49,6 +69,31 @@ where
     {
         for row in iter {
             self.append_row(row);
+        }
+    }
+}
+
+/// Iterator implementation for the rows in a data frame.
+pub struct FrameRecordIter<'a, R>
+where
+    R: TableRow,
+{
+    frame: R::Frame<'a>,
+    size: usize,
+    pos: usize,
+}
+
+impl<'a, R> Iterator for FrameRecordIter<'a, R>
+where
+    R: TableRow,
+{
+    type Item = PolarsResult<R>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.pos < self.size {
+            Some(self.frame.read_row(self.pos))
+        } else {
+            None
         }
     }
 }
@@ -159,7 +204,7 @@ fn convert_to_naive_date(ts: i32) -> PolarsResult<NaiveDate> {
 }
 
 impl ColType for NaiveDate {
-    type PolarsType = NaiveDate;
+    type PolarsType = DateType;
     type Array = DateChunked;
     type Builder = PrimitiveChunkedBuilder<Int32Type>;
 
@@ -183,7 +228,7 @@ impl ColType for NaiveDate {
 
 // just manually derive the option, bounds are being a pain
 impl ColType for Option<NaiveDate> {
-    type PolarsType = NaiveDate;
+    type PolarsType = DateType;
     type Array = DateChunked;
     type Builder = PrimitiveChunkedBuilder<Int32Type>;
 
