@@ -18,7 +18,7 @@ mod table_row;
 /// ```
 ///
 /// **Note:** this macro does not support generics, including lifetimes.
-#[proc_macro_derive(TableRow, attributes(parquet))]
+#[proc_macro_derive(TableRow)]
 pub fn table_row_macro_derive(input: TokenStream) -> TokenStream {
     let ast = parse(input).unwrap();
     table_row::derive_table_row(&ast)
