@@ -1,8 +1,7 @@
 //! Extract author information for book clusters.
 use std::path::PathBuf;
 
-use crate::arrow::polars::nonnull_schema;
-use crate::arrow::writer::open_polars_writer;
+use crate::arrow::{nonnull_schema, open_polars_writer};
 use crate::ids::codes::*;
 use crate::prelude::*;
 use polars::prelude::*;

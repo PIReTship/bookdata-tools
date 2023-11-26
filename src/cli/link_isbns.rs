@@ -1,9 +1,6 @@
 use clap::Args;
 
-use crate::{
-    arrow::{polars::nonnull_schema, writer::open_polars_writer},
-    prelude::*,
-};
+use crate::{arrow::*, prelude::*};
 use polars::prelude::*;
 
 static ALL_ISBNS_FILE: &str = "book-links/all-isbns.parquet";

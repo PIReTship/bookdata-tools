@@ -3,16 +3,25 @@ use std::fs::File;
 use std::path::Path;
 use std::thread::spawn;
 
-use crossbeam::channel::{bounded, Receiver};
-
 use anyhow::Result;
 use arrow2::chunk::Chunk;
+use crossbeam::channel::{bounded, Receiver};
 use log::*;
+use polars::prelude::*;
 
 use arrow2::array::{Array, StructArray};
 use arrow2::io::parquet::read::{infer_schema, read_metadata, FileReader};
 
 use arrow2_convert::deserialize::*;
+
+/// Scan a Parquet file into a data frame.
+pub fn scan_df_parquet<P: AsRef<Path>>(file: P) -> Result<LazyFrame> {
+    let file = file.as_ref();
+    debug!("scanning file {}", file.display());
+    let df = LazyFrame::scan_parquet(file, ScanArgsParquet::default())?;
+    debug!("{}: schema {:?}", file.display(), df.schema()?);
+    Ok(df)
+}
 
 /// Iterator over deserialized records from a Parquet file.
 pub struct RecordIter<R>

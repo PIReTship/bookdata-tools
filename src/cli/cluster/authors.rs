@@ -4,7 +4,6 @@ use std::path::PathBuf;
 use parse_display::{Display, FromStr};
 
 use crate::arrow::dfext::*;
-use crate::arrow::polars::nonnull_schema;
 use crate::arrow::writer::open_polars_writer;
 use crate::io::object::ThreadObjectWriter;
 use crate::prelude::*;

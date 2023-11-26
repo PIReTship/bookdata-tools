@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use clap::Args;
 
-use crate::arrow::polars::*;
+use crate::arrow::*;
 use crate::ids::codes::{NS_GR_BOOK, NS_GR_WORK};
 use crate::prelude::*;
 

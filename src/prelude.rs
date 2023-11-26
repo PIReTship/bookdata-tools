@@ -1,4 +1,5 @@
-pub use crate::arrow::polars::{save_df_parquet, scan_df_parquet};
+pub use crate::arrow::reader::scan_df_parquet;
+pub use crate::arrow::writer::save_df_parquet;
 pub use crate::cli::Command;
 pub use crate::io::ext::LengthRead;
 pub use crate::io::file_size;
