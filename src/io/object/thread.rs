@@ -74,14 +74,33 @@ impl<'scope, T: Send + Sync + 'static> ThreadObjectWriter<'scope, T> {
     }
 
     /// Create a satellite writer that writes to the same backend as this
-    /// writer. Satellites can be used to enable multiple data-generating
-    /// threads to write to the same thread writer, turning it into a
-    /// multi-producer, single-consumer writing pipeline.  Satellite writers
-    /// should be finished, and closing them does not finish the original thread
-    /// writer (it still needs to have [ObjectWriter::finish] called, typically
-    /// after all satellites are done, but it calling [ObjectWriter::finish]
-    /// while satellites are still active will wait until the satellites have
-    /// finished and closed their connections to the consumer thread).
+    /// writer.
+    ///
+    /// Satellites can be used to enable multiple data-generating threads to
+    /// write to the same thread writer, turning it into a multi-producer,
+    /// single-consumer writing pipeline.  Satellite writers should be finished,
+    /// and closing them does not finish the original thread writer (it still
+    /// needs to have [ObjectWriter::finish] called, typically after all
+    /// satellites are done, but it calling [ObjectWriter::finish] while
+    /// satellites are still active will wait until the satellites have finished
+    /// and closed their connections to the consumer thread).
+    ///
+    /// Satellites hold a reference to the original thread writer, to discourage
+    /// keeping them alive after the thread writer has been finished.  They
+    /// work best with [std::thread::scope]:
+    ///
+    /// ```rust,ignore
+    /// let writer = ThreadWriter::new(writer);
+    /// scope(|s| {
+    ///     for i in 0..NTHREADS {
+    ///         let out = writer.satellite();
+    ///         s.spawn(move || {
+    ///             // process and write to out
+    ///             out.finish().expect("closing writer failed");
+    ///         })
+    ///     }
+    /// })
+    /// ```
     pub fn satellite<'a>(&'a self) -> ThreadWriterSatellite<'a, 'scope, T>
     where
         'scope: 'a,
