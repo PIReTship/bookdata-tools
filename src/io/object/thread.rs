@@ -39,7 +39,7 @@ impl<T: Send + Sync + 'static> ThreadObjectWriter<'static, T> {
     }
 
     pub fn with_capacity<W: ObjectWriter<T> + Send + 'static>(
-        mut writer: W,
+        writer: W,
         cap: usize,
     ) -> ThreadObjectWriter<'static, T> {
         let (sender, receiver) = bounded(cap);
@@ -138,7 +138,7 @@ where
     T: Send + Sync + 'static,
     'scope: 'a,
 {
-    delegate: &'a ThreadObjectWriter<'scope, T>,
+    _delegate: &'a ThreadObjectWriter<'scope, T>,
     sender: Sender<T>,
 }
 
@@ -150,7 +150,7 @@ where
     /// Create a new thread child writer.
     fn create(delegate: &'a ThreadObjectWriter<'scope, T>) -> ThreadWriterSatellite<'a, 'scope, T> {
         ThreadWriterSatellite {
-            delegate,
+            _delegate: delegate,
             sender: delegate.sender.clone(),
         }
     }
