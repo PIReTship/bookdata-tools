@@ -1,8 +1,9 @@
+use std::array;
 use std::convert::TryInto;
 use std::io::BufRead;
 use std::mem::replace;
 use std::str;
-use std::thread::{spawn, JoinHandle};
+use std::thread::{scope, spawn, JoinHandle, ScopedJoinHandle};
 
 use crossbeam::channel::bounded;
 use log::*;
@@ -12,6 +13,7 @@ use quick_xml::events::attributes::Attributes;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 
+use crate::io::object::{ChunkWriter, ThreadObjectWriter, UnchunkWriter};
 use crate::io::ObjectWriter;
 use crate::tsv::split_first;
 use crate::util::StringAccumulator;
@@ -19,6 +21,7 @@ use crate::util::StringAccumulator;
 use super::record::*;
 
 const CHUNK_LINES: usize = 1000;
+const CHUNK_BUFFER_SIZE: usize = 20;
 
 #[derive(Debug, Default)]
 struct Codes {
@@ -73,66 +76,76 @@ where
 pub fn scan_records_delim<R, W>(reader: R, output: &mut W) -> Result<usize>
 where
     R: BufRead + Send + 'static,
-    W: ObjectWriter<MARCRecord>,
+    W: ObjectWriter<MARCRecord> + Sync + Send,
 {
     let lines = reader.lines();
 
-    // receivers & senders for chunks of lines
-    let (chunk_tx, chunk_rx) = bounded(100);
+    let mut output = ChunkWriter::new(output);
 
-    // receivers and senders for chunks of parsed records
-    let (parsed_tx, parsed_rx) = bounded(100);
+    let nrecs: Result<usize> = scope(|outer| {
+        // scoped thread writer to support parallel writing
+        let output = ThreadObjectWriter::with_scope(&mut output, outer, CHUNK_BUFFER_SIZE);
+        // receivers & senders for chunks of lines
+        let (chunk_tx, chunk_rx) = bounded(CHUNK_BUFFER_SIZE);
 
-    // background thread getting lines
-    info!("spawning reader thread");
-    let bg_read: JoinHandle<Result<usize>> = spawn(move || {
-        let mut accum = Vec::with_capacity(CHUNK_LINES);
-        let mut nlines = 0usize;
-        for line in lines {
-            let line = line?;
-            let (_id, payload) = split_first(&line).ok_or_else(|| anyhow!("invalid line"))?;
-            nlines += 1;
-            accum.push(payload.to_owned());
-            if accum.len() >= CHUNK_LINES {
-                let chunk = replace(&mut accum, Vec::with_capacity(CHUNK_LINES));
-                chunk_tx.send(chunk).expect("channel send failure");
-            }
-        }
-        if accum.len() > 0 {
-            chunk_tx.send(accum).expect("channel send failure");
-        }
-        Ok(nlines)
-    });
-
-    for i in 0..4 {
-        info!("spawning parser thread {}", i + 1);
-        let rx = chunk_rx.clone();
-        let tx = parsed_tx.clone();
-        spawn(move || {
-            for chunk in rx {
-                let mut records = Vec::with_capacity(chunk.len());
-                for line in chunk {
-                    let res = parse_record(&line);
-                    records.push(res);
+        // background thread getting lines
+        info!("spawning reader thread");
+        let bg_read: JoinHandle<Result<usize>> = spawn(move || {
+            let mut accum = Vec::with_capacity(CHUNK_LINES);
+            let mut nlines = 0usize;
+            for line in lines {
+                let line = line?;
+                let (_id, payload) = split_first(&line).ok_or_else(|| anyhow!("invalid line"))?;
+                nlines += 1;
+                accum.push(payload.to_owned());
+                if accum.len() >= CHUNK_LINES {
+                    let chunk = replace(&mut accum, Vec::with_capacity(CHUNK_LINES));
+                    chunk_tx.send(chunk).expect("channel send failure");
                 }
-                tx.send(records).expect("background send failed");
             }
+            if accum.len() > 0 {
+                chunk_tx.send(accum).expect("channel send failure");
+            }
+            Ok(nlines)
         });
-    }
 
-    let mut nrecs = 0;
-    loop {
-        match parsed_rx.recv() {
-            Ok(records) => {
-                for rec in records {
-                    let rec = rec?;
-                    output.write_object(rec)?;
-                    nrecs += 1;
-                }
+        let nrecs: Result<usize> = scope(|inner| {
+            let workers: [ScopedJoinHandle<'_, Result<usize>>; 4] = array::from_fn(|i| {
+                info!("spawning parser thread {}", i + 1);
+                let rx = chunk_rx.clone();
+                let out = output.child();
+                let out = UnchunkWriter::with_size(out, CHUNK_LINES);
+                inner.spawn(move || {
+                    let mut out = out;
+                    let mut nrecs = 0;
+                    for chunk in rx {
+                        for line in chunk {
+                            let res = parse_record(&line)?;
+                            out.write_object(res)?;
+                            nrecs += 1;
+                        }
+                    }
+                    out.finish()?;
+                    Ok(nrecs)
+                })
+            });
+
+            let mut nrecs = 0;
+            for h in workers {
+                nrecs += h.join().map_err(std::panic::resume_unwind)??;
             }
-            Err(_) => return Ok(nrecs),
-        }
-    }
+            Ok(nrecs)
+        });
+        let nrecs = nrecs?;
+
+        bg_read.join().map_err(std::panic::resume_unwind)??;
+        output.finish()?;
+        Ok(nrecs)
+    });
+    let nrecs = nrecs?;
+
+    info!("processed {} records", nrecs);
+    Ok(nrecs)
 }
 
 /// Parse a single MARC record from an XML string.

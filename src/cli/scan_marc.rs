@@ -89,7 +89,7 @@ impl ScanMARC {
         }
     }
 
-    fn process_records<W: ObjectWriter<MARCRecord> + DataSink + Send + 'static>(
+    fn process_records<W: ObjectWriter<MARCRecord> + DataSink + Send + Sync + 'static>(
         &self,
         mut output: W,
     ) -> Result<()> {

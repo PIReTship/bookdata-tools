@@ -78,7 +78,7 @@ pub fn save_df_parquet<P: AsRef<Path>>(df: DataFrame, path: P) -> Result<()> {
 /// them out to a Parquet file.
 pub struct TableWriter<R: TableRow + Send + Sync + 'static> {
     _phantom: PhantomData<R>,
-    writer: Option<UnchunkWriter<R, ThreadObjectWriter<Vec<R>>>>,
+    writer: Option<UnchunkWriter<R, ThreadObjectWriter<'static, Vec<R>>>>,
     out_path: Option<PathBuf>,
     row_count: usize,
 }

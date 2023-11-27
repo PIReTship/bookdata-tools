@@ -58,6 +58,23 @@ pub trait ObjectWriter<T>: Sized {
     }
 }
 
+/// References can be used as object writers; however, [ObjectWriter::finish] must
+/// be called on the owned writer, not a reference.  Closing the reference is a
+/// no-op.
+impl<T, W> ObjectWriter<T> for &mut W
+where
+    W: ObjectWriter<T>,
+{
+    fn write_object(&mut self, object: T) -> Result<()> {
+        (**self).write_object(object)
+    }
+
+    fn finish(self) -> Result<usize> {
+        // closing a reference does *not* close the write
+        Ok(0)
+    }
+}
+
 impl<T: Serialize, W: Write> ObjectWriter<T> for csv::Writer<W> {
     fn write_object(&mut self, object: T) -> Result<()> {
         self.serialize(object)?;

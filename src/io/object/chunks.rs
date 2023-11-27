@@ -53,6 +53,7 @@ impl<T, W> UnchunkWriter<T, W>
 where
     W: ObjectWriter<Vec<T>>,
 {
+    #[allow(dead_code)]
     pub fn new(delegate: W) -> UnchunkWriter<T, W> {
         UnchunkWriter::with_size(delegate, 1000)
     }
