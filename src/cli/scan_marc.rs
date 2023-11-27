@@ -123,6 +123,7 @@ impl ScanMARC {
                 inf.display(),
                 file_start.elapsed().as_secs_f32()
             );
+            records.close()?;
             all_recs += nrecs;
         }
 

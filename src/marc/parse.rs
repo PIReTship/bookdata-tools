@@ -1,7 +1,8 @@
 use std::convert::TryInto;
 use std::io::{BufRead, Lines};
+use std::mem::replace;
 use std::str;
-use std::thread::spawn;
+use std::thread::{spawn, JoinHandle};
 
 use crossbeam::channel::bounded;
 use log::*;
@@ -13,10 +14,11 @@ use quick_xml::events::Event;
 use quick_xml::Reader;
 
 use crate::tsv::split_first;
-use crate::util::iteration::chunk_owned;
 use crate::util::StringAccumulator;
 
 use super::record::*;
+
+const CHUNK_LINES: usize = 1000;
 
 #[derive(Debug, Default)]
 struct Codes {
@@ -51,6 +53,27 @@ enum Src<B: BufRead> {
 pub struct Records<B: BufRead> {
     buffer: Vec<u8>,
     source: Src<B>,
+    thread: Option<JoinHandle<Result<usize>>>,
+}
+
+impl<B: BufRead> Records<B> {
+    pub fn close(self) -> Result<()> {
+        if let Some(h) = self.thread {
+            let res = h.join().map_err(std::panic::resume_unwind)?;
+            match res {
+                Ok(rows) => {
+                    info!("read {} rows from input stream", rows);
+                    Ok(())
+                }
+                Err(e) => {
+                    error!("input read failed");
+                    Err(e.into())
+                }
+            }
+        } else {
+            Ok(())
+        }
+    }
 }
 
 impl<B: BufRead> FallibleIterator for Records<B> {
@@ -100,6 +123,7 @@ pub fn read_records<B: BufRead>(reader: B) -> Records<B> {
     Records {
         buffer: Vec::with_capacity(1024),
         source: Src::QXR(reader),
+        thread: None,
     }
 }
 
@@ -109,8 +133,6 @@ pub fn read_records<B: BufRead>(reader: B) -> Records<B> {
 /// the bottleneck for MARC scanning.
 pub fn read_records_delim<B: BufRead + Send + 'static>(reader: B) -> Records<B> {
     let lines = reader.lines();
-    // chunk lines (to decrease threading overhead)
-    let chunks = chunk_owned(lines, 1000);
 
     // receivers & senders for chunks of lines
     let (chunk_tx, chunk_rx) = bounded(100);
@@ -120,10 +142,22 @@ pub fn read_records_delim<B: BufRead + Send + 'static>(reader: B) -> Records<B> 
 
     // background thread getting lines
     info!("spawning reader thread");
-    let _bg_read = spawn(move || {
-        for chunk in chunks {
-            chunk_tx.send(chunk).expect("background send failed");
+    let bg_read: JoinHandle<Result<usize>> = spawn(move || {
+        let mut accum = Vec::with_capacity(CHUNK_LINES);
+        let mut nlines = 0usize;
+        for line in lines {
+            let line = line?;
+            nlines += 1;
+            accum.push(line);
+            if accum.len() >= CHUNK_LINES {
+                let chunk = replace(&mut accum, Vec::with_capacity(CHUNK_LINES));
+                chunk_tx.send(chunk).expect("channel send failure");
+            }
         }
+        if accum.len() > 0 {
+            chunk_tx.send(accum).expect("channel send failure");
+        }
+        Ok(nlines)
     });
 
     for i in 0..4 {
@@ -132,14 +166,12 @@ pub fn read_records_delim<B: BufRead + Send + 'static>(reader: B) -> Records<B> 
         let tx = parsed_tx.clone();
         spawn(move || {
             for chunk in rx {
-                let res: Vec<_> = chunk
-                    .into_iter()
-                    .map(|lres| match lres {
-                        Ok(line) => parse_record(&line),
-                        Err(e) => Err(e.into()),
-                    })
-                    .collect();
-                tx.send(res).expect("background send failed");
+                let mut records = Vec::with_capacity(chunk.len());
+                for line in chunk {
+                    let res = parse_record(&line);
+                    records.push(res);
+                }
+                tx.send(records).expect("background send failed");
             }
         });
     }
@@ -149,6 +181,7 @@ pub fn read_records_delim<B: BufRead + Send + 'static>(reader: B) -> Records<B> 
     Records {
         buffer: Vec::new(),
         source: Src::PRI(Box::new(flat)),
+        thread: Some(bg_read),
     }
 }
 
@@ -199,15 +232,15 @@ fn read_record<B: BufRead>(rdr: &mut Reader<B>) -> Result<MARCRecord> {
                 let name = e.local_name();
                 match name.into_inner() {
                     b"leader" => {
-                        record.leader = content.finish();
+                        record.leader = content.finish().to_owned();
                     }
                     b"controlfield" => record.control.push(ControlField {
                         tag: tag.try_into()?,
-                        content: content.finish(),
+                        content: content.finish().to_owned(),
                     }),
                     b"subfield" => field.subfields.push(Subfield {
                         code: sf_code,
-                        content: content.finish(),
+                        content: content.finish().to_owned(),
                     }),
                     b"datafield" => {
                         record.fields.push(field);
