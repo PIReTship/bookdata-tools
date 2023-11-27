@@ -129,7 +129,7 @@ pub fn read_records<B: BufRead>(reader: B) -> Records<B> {
 
 /// Read MARC records from delimited XML.
 ///
-/// This reader uses Rayon to parse the XML in parallel, since XML parsing is typically
+/// This reader parses the XML in parallel, since XML parsing is typically
 /// the bottleneck for MARC scanning.
 pub fn read_records_delim<B: BufRead + Send + 'static>(reader: B) -> Records<B> {
     let lines = reader.lines();
