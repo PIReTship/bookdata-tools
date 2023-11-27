@@ -113,7 +113,7 @@ where
             let workers: [ScopedJoinHandle<'_, Result<usize>>; 4] = array::from_fn(|i| {
                 info!("spawning parser thread {}", i + 1);
                 let rx = chunk_rx.clone();
-                let out = output.child();
+                let out = output.satellite();
                 let out = UnchunkWriter::with_size(out, CHUNK_LINES);
                 inner.spawn(move || {
                     let mut out = out;

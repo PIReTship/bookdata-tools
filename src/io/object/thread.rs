@@ -73,11 +73,20 @@ impl<'scope, T: Send + Sync + 'static> ThreadObjectWriter<'scope, T> {
         }
     }
 
-    pub fn child<'a>(&'a self) -> ThreadChildWriter<'a, 'scope, T>
+    /// Create a satellite writer that writes to the same backend as this
+    /// writer. Satellites can be used to enable multiple data-generating
+    /// threads to write to the same thread writer, turning it into a
+    /// multi-producer, single-consumer writing pipeline.  Satellite writers
+    /// should be finished, and closing them does not finish the original thread
+    /// writer (it still needs to have [ObjectWriter::finish] called, typically
+    /// after all satellites are done, but it calling [ObjectWriter::finish]
+    /// while satellites are still active will wait until the satellites have
+    /// finished and closed their connections to the consumer thread).
+    pub fn satellite<'a>(&'a self) -> ThreadWriterSatellite<'a, 'scope, T>
     where
         'scope: 'a,
     {
-        ThreadChildWriter::create(self)
+        ThreadWriterSatellite::create(self)
     }
 }
 
@@ -88,7 +97,9 @@ impl<'scope, T: Send + Sync + 'static> ObjectWriter<T> for ThreadObjectWriter<'s
     }
 
     fn finish(self) -> Result<usize> {
+        // dropping the sender will cause the consumer to hang up.
         drop(self.sender);
+        // wait for the consumer to finish before we consider the writer closed.
         let res = match self.handle {
             WorkHandle::Static(h) => h.join().map_err(std::panic::resume_unwind)?,
             WorkHandle::Scoped(h) => h.join().map_err(std::panic::resume_unwind)?,
@@ -103,7 +114,7 @@ impl<'scope, T: Send + Sync + 'static> ObjectWriter<T> for ThreadObjectWriter<'s
 /// original writer still needs to be closed, and this design ensures that the
 /// original cannot be closed until all the children are finished.
 #[derive(Clone)]
-pub struct ThreadChildWriter<'a, 'scope, T>
+pub struct ThreadWriterSatellite<'a, 'scope, T>
 where
     T: Send + Sync + 'static,
     'scope: 'a,
@@ -112,21 +123,21 @@ where
     sender: Sender<T>,
 }
 
-impl<'a, 'scope, T> ThreadChildWriter<'a, 'scope, T>
+impl<'a, 'scope, T> ThreadWriterSatellite<'a, 'scope, T>
 where
     T: Send + Sync + 'static,
     'scope: 'a,
 {
     /// Create a new thread child writer.
-    fn create(delegate: &'a ThreadObjectWriter<'scope, T>) -> ThreadChildWriter<'a, 'scope, T> {
-        ThreadChildWriter {
+    fn create(delegate: &'a ThreadObjectWriter<'scope, T>) -> ThreadWriterSatellite<'a, 'scope, T> {
+        ThreadWriterSatellite {
             delegate,
             sender: delegate.sender.clone(),
         }
     }
 }
 
-impl<'a, 'scope, T> ObjectWriter<T> for ThreadChildWriter<'a, 'scope, T>
+impl<'a, 'scope, T> ObjectWriter<T> for ThreadWriterSatellite<'a, 'scope, T>
 where
     T: Send + Sync + 'static,
     'scope: 'a,
