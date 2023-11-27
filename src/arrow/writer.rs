@@ -19,6 +19,7 @@ use crate::io::object::{ObjectWriter, ThreadObjectWriter, UnchunkWriter};
 use crate::io::DataSink;
 
 const BATCH_SIZE: usize = 32 * 1024 * 1024;
+const ZSTD_LEVEL: i32 = 3;
 
 /// Open a Parquet writer using BookData defaults.
 pub fn open_parquet_writer<P: AsRef<Path>>(
@@ -52,8 +53,9 @@ pub fn open_polars_writer<P: AsRef<Path>>(path: P) -> Result<ParquetWriter<File>
         .truncate(true)
         .write(true)
         .open(path)?;
-    let writer = ParquetWriter::new(file)
-        .with_compression(ParquetCompression::Zstd(Some(ZstdLevel::try_new(6)?)));
+    let writer = ParquetWriter::new(file).with_compression(ParquetCompression::Zstd(Some(
+        ZstdLevel::try_new(ZSTD_LEVEL)?,
+    )));
 
     Ok(writer)
 }
