@@ -19,7 +19,7 @@ use super::row::{vec_to_df, TableRow};
 use crate::io::object::{ObjectWriter, ThreadObjectWriter};
 use crate::io::DataSink;
 
-const BATCH_SIZE: usize = 128 * 1024 * 1024;
+const BATCH_SIZE: usize = 32 * 1024 * 1024;
 
 /// Open a Parquet writer using BookData defaults.
 pub fn open_parquet_writer<P: AsRef<Path>>(
@@ -100,7 +100,7 @@ where
         let writer = open_polars_writer(path)?;
         let writer = writer.batched(&schema)?;
         let writer = writer.with_transform(vec_to_df);
-        let writer = ThreadObjectWriter::with_capacity(writer, 32);
+        let writer = ThreadObjectWriter::with_capacity(writer, 4);
         let out_path = Some(path.to_path_buf());
         Ok(TableWriter {
             _phantom: PhantomData,
