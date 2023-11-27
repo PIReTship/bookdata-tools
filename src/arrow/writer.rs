@@ -2,7 +2,6 @@ use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::marker::PhantomData;
-use std::mem::replace;
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Result};
@@ -16,7 +15,7 @@ use polars_parquet::write::{
 };
 
 use super::row::{vec_to_df, TableRow};
-use crate::io::object::{ObjectWriter, ThreadObjectWriter};
+use crate::io::object::{ObjectWriter, ThreadObjectWriter, UnchunkWriter};
 use crate::io::DataSink;
 
 const BATCH_SIZE: usize = 32 * 1024 * 1024;
@@ -79,10 +78,8 @@ pub fn save_df_parquet<P: AsRef<Path>>(df: DataFrame, path: P) -> Result<()> {
 /// them out to a Parquet file.
 pub struct TableWriter<R: TableRow + Send + Sync + 'static> {
     _phantom: PhantomData<R>,
-    writer: Option<ThreadObjectWriter<Vec<R>>>,
+    writer: Option<UnchunkWriter<R, ThreadObjectWriter<Vec<R>>>>,
     out_path: Option<PathBuf>,
-    batch: Vec<R>,
-    batch_size: usize,
     row_count: usize,
 }
 
@@ -101,31 +98,14 @@ where
         let writer = writer.batched(&schema)?;
         let writer = writer.with_transform(vec_to_df);
         let writer = ThreadObjectWriter::with_capacity(writer, 4);
+        let writer = UnchunkWriter::with_size(writer, BATCH_SIZE);
         let out_path = Some(path.to_path_buf());
         Ok(TableWriter {
             _phantom: PhantomData,
             writer: Some(writer),
             out_path,
-            batch: Vec::with_capacity(BATCH_SIZE),
-            batch_size: BATCH_SIZE,
             row_count: 0,
         })
-    }
-
-    fn write_batch(&mut self) -> Result<()> {
-        if self.batch.is_empty() {
-            return Ok(());
-        }
-
-        let batch = replace(&mut self.batch, Vec::with_capacity(self.batch_size));
-        if let Some(writer) = &mut self.writer {
-            writer.write_object(batch)?;
-        } else {
-            error!("{}: writer closed", self.display_path());
-            return Err(anyhow!("tried to write to closed writer"));
-        }
-
-        Ok(())
     }
 }
 
@@ -159,19 +139,17 @@ where
     R: TableRow + Send + Sync + 'static,
 {
     fn write_object(&mut self, row: R) -> Result<()> {
-        self.batch.push(row);
-        if self.batch.len() >= self.batch_size {
-            self.write_batch()?;
-        }
-        self.row_count += 1;
+        let w = self
+            .writer
+            .as_mut()
+            .ok_or_else(|| anyhow!("writer is closed"))?;
 
+        w.write_object(row)?;
+        self.row_count += 1;
         Ok(())
     }
 
     fn finish(mut self) -> Result<usize> {
-        if !self.batch.is_empty() {
-            self.write_batch()?;
-        }
         if let Some(writer) = self.writer.take() {
             info!("closing Parquet writer for {}", self.display_path());
             writer.finish()?;

@@ -6,9 +6,11 @@ use anyhow::Result;
 use csv;
 use serde::Serialize;
 
+mod chunks;
 mod thread;
 mod transform;
 
+pub use chunks::{ChunkWriter, UnchunkWriter};
 pub use thread::ThreadObjectWriter;
 pub use transform::MapWriter;
 
