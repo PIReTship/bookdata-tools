@@ -1,9 +1,28 @@
-use libc;
+use std::env::var;
 use std::mem::MaybeUninit;
+use std::process::exit;
+use std::thread::{sleep, spawn};
 
+use anyhow::Result;
 use chrono::Duration;
 use friendly::{bytes, duration};
+use libc;
 use log::*;
+
+/// Register an early-exit handler for debugging.
+pub fn maybe_exit_early() -> Result<()> {
+    if let Ok(v) = var("BOOKDATA_EXIT_EARLY") {
+        let seconds: u64 = v.parse()?;
+        info!("scheduling shutdown after {} seconds", seconds);
+        spawn(move || {
+            let time = std::time::Duration::from_secs(seconds);
+            sleep(time);
+            info!("timeout reached, exiting");
+            exit(17);
+        });
+    }
+    Ok(())
+}
 
 fn timeval_duration(tv: &libc::timeval) -> Duration {
     let ds = Duration::seconds(tv.tv_sec);

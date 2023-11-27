@@ -144,6 +144,9 @@ impl CLI {
     pub fn exec(self) -> Result<()> {
         self.logging.init()?;
 
+        #[cfg(unix)]
+        process::maybe_exit_early()?;
+
         let npar = std::cmp::min(num_cpus::get(), num_cpus::get_physical());
         debug!("setting up Rayon pool with {} threads", npar);
         ThreadPoolBuilder::new().num_threads(npar).build_global()?;
