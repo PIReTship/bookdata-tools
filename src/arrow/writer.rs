@@ -53,7 +53,7 @@ pub fn open_polars_writer<P: AsRef<Path>>(path: P) -> Result<ParquetWriter<File>
         .write(true)
         .open(path)?;
     let writer = ParquetWriter::new(file)
-        .with_compression(ParquetCompression::Zstd(Some(ZstdLevel::try_new(9)?)));
+        .with_compression(ParquetCompression::Zstd(Some(ZstdLevel::try_new(6)?)));
 
     Ok(writer)
 }
