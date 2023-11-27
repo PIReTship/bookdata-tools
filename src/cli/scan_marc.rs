@@ -5,7 +5,6 @@ use std::time::Instant;
 use log::*;
 
 use clap::Args;
-use fallible_iterator::FallibleIterator;
 use glob::glob;
 
 use crate::io::{log_file_info, open_gzin_progress};
@@ -13,7 +12,7 @@ use crate::prelude::*;
 
 use crate::marc::book_fields::BookOutput;
 use crate::marc::flat_fields::FieldOutput;
-use crate::marc::parse::{read_records, read_records_delim};
+use crate::marc::parse::{scan_records, scan_records_delim};
 use crate::marc::MARCRecord;
 use crate::util::logging::data_progress;
 
@@ -105,17 +104,11 @@ impl ScanMARC {
             info!("reading from compressed file {}", inf.display());
             let pb = data_progress(0);
             let read = open_gzin_progress(inf, pb.clone())?;
-            let mut records = if self.line_mode {
-                read_records_delim(read)
+            let nrecs = if self.line_mode {
+                scan_records_delim(read, &mut output)?
             } else {
-                read_records(read)
+                scan_records(read, &mut output)?
             };
-
-            let mut nrecs = 0;
-            while let Some(rec) = records.next()? {
-                output.write_object(rec)?;
-                nrecs += 1;
-            }
 
             info!(
                 "processed {} records from {} in {:.2}s",
@@ -123,7 +116,6 @@ impl ScanMARC {
                 inf.display(),
                 file_start.elapsed().as_secs_f32()
             );
-            records.close()?;
             all_recs += nrecs;
         }
 
