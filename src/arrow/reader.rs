@@ -78,14 +78,14 @@ where
         path.display(),
         friendly::scalar(row_count)
     );
-    debug!("file schema: {:?}", schema);
-    let pb = item_progress(row_count, &format!("{}:", path.display()));
+    let pb = item_progress(row_count, &format!("{}", path.display()));
 
     // use a small bound since we're sending whole batches
     let (send, receive) = bounded(5);
     let p2 = path.to_path_buf();
 
     spawn(move || {
+        let send = send;
         if let Err(e) = scan_backend(reader, &send, schema, &p2, pb) {
             send.send(Err(e)).expect("failed to send error message");
         }
@@ -156,6 +156,7 @@ fn scan_backend<R: Read + Seek, E: TableRow + Send + Sync + 'static>(
             .collect()?;
         let df = DataFrame::new(columns)?;
         let batch = decode_chunk(df)?;
+        trace!("{}: decoded chunk, sending to consumer", path.display());
         measure_and_send(&send, Ok(batch), &meter)?;
     }
     Ok(())

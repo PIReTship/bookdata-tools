@@ -18,7 +18,7 @@ use super::row::{vec_to_df, TableRow};
 use crate::io::object::{ObjectWriter, ThreadObjectWriter, UnchunkWriter};
 use crate::io::DataSink;
 
-const BATCH_SIZE: usize = 32 * 1024 * 1024;
+const BATCH_SIZE: usize = 1024 * 1024;
 const ZSTD_LEVEL: i32 = 3;
 
 /// Open a Parquet writer using BookData defaults.
