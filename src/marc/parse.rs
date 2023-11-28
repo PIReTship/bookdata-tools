@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use std::io::BufRead;
 use std::mem::replace;
 use std::str;
-use std::thread::{scope, spawn, JoinHandle, ScopedJoinHandle};
+use std::thread::{available_parallelism, scope, spawn, JoinHandle, ScopedJoinHandle};
 
 use crossbeam::channel::bounded;
 use log::*;
@@ -17,7 +17,6 @@ use crate::io::object::{ChunkWriter, ThreadObjectWriter, UnchunkWriter};
 use crate::io::ObjectWriter;
 use crate::tsv::split_first;
 use crate::util::logging::{measure_and_recv, measure_and_send, meter_bar};
-use crate::util::process::cpu_count;
 use crate::util::StringAccumulator;
 
 use super::record::*;
@@ -125,9 +124,9 @@ where
             // 4. write Parquet file
             //
             // That leaves the remaining proessors to be used for parsing XML.
-            let nthreads = max(cpu_count() - 4, 1);
+            let nthreads = max(available_parallelism()?.get() as i32 - 4, 1);
             let mut workers: Vec<ScopedJoinHandle<'_, Result<usize>>> =
-                Vec::with_capacity(nthreads);
+                Vec::with_capacity(nthreads as usize);
             info!("spawning {} parser threads", nthreads);
             for i in 0..nthreads {
                 debug!("spawning parser thread {}", i + 1);

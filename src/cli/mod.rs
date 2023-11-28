@@ -31,7 +31,6 @@ use paste::paste;
 use rayon::ThreadPoolBuilder;
 
 use crate::util::process;
-use crate::util::process::cpu_count;
 use crate::util::Timer;
 
 /// Macro to generate wrappers for subcommand enums.
@@ -145,10 +144,6 @@ impl CLI {
         self.logging.init()?;
 
         process::maybe_exit_early()?;
-
-        let npar = cpu_count();
-        debug!("setting up Rayon pool with {} threads", npar);
-        ThreadPoolBuilder::new().num_threads(npar).build_global()?;
 
         let timer = Timer::new();
 

@@ -10,11 +10,6 @@ use friendly::{bytes, duration};
 use libc;
 use log::*;
 
-/// Query the number of CPUs we have.
-pub fn cpu_count() -> usize {
-    std::cmp::min(num_cpus::get(), num_cpus::get_physical())
-}
-
 /// Register an early-exit handler for debugging.
 pub fn maybe_exit_early() -> Result<()> {
     if let Ok(v) = var("BOOKDATA_EXIT_EARLY") {
