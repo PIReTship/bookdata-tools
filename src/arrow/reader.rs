@@ -8,7 +8,10 @@ use crossbeam::channel::{bounded, Receiver};
 use log::*;
 use polars::{io::pl_async::get_runtime, prelude::*};
 
-use crate::arrow::row::iter_df_rows;
+use crate::{
+    arrow::row::iter_df_rows,
+    util::logging::{item_progress, measure_and_send, meter_bar},
+};
 
 use super::TableRow;
 
@@ -59,23 +62,34 @@ where
     R: TableRow + Send + Sync + 'static,
 {
     let path = path.as_ref();
-    let reader = File::open(path)?;
-    let mut reader = ParquetReader::new(reader);
+    let reader = File::open(&path)?;
+    let mut reader = ParquetReader::new(reader)
+        .set_low_memory(true)
+        .read_parallel(ParallelStrategy::None);
     let row_count = reader.num_rows()?;
 
-    info!("scanning {:?} with {} rows", path, row_count);
+    info!(
+        "scanning {} with {} rows",
+        path.display(),
+        friendly::scalar(row_count)
+    );
     debug!("file schema: {:?}", reader.get_metadata()?.schema());
+    let pb = item_progress(row_count, &format!("{}:", path.display()));
 
     let reader = reader.batched(1024 * 1024)?;
 
     // use a small bound since we're sending whole batches
     let (send, receive) = bounded(5);
+    let fill = meter_bar(5, &format!("{} scan buffer", path.display()));
+    let p2 = path.to_path_buf();
 
     spawn(move || {
         let send = send;
         let mut reader = reader;
 
+        debug!("{}: beginning batched read", p2.display());
         while !reader.is_finished() {
+            trace!("{}: fetching batch", p2.display());
             let batches = reader.next_batches(1);
             let batches = get_runtime().block_on_potential_spawn(batches);
             let batches = match batches {
@@ -88,9 +102,11 @@ where
             };
 
             for df in batches.into_iter().flatten() {
+                trace!("{}: received batch of {} rows", p2.display(), df.height());
+                pb.inc(df.height() as u64);
                 match decode_chunk(df) {
                     Ok(batch) => {
-                        send.send(Ok(batch)).expect("channel send error");
+                        measure_and_send(&send, Ok(batch), &fill).expect("channel send error");
                     }
                     Err(e) => {
                         debug!("routing backend error {:?}", e);
@@ -102,6 +118,10 @@ where
         }
     });
 
+    debug!(
+        "{}: background thread spawned, returning iter",
+        path.display()
+    );
     Ok(RecordIter {
         remaining: row_count,
         channel: receive,
