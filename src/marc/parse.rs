@@ -1,9 +1,8 @@
-use std::cmp::max;
 use std::convert::TryInto;
 use std::io::BufRead;
 use std::mem::replace;
 use std::str;
-use std::thread::{available_parallelism, scope, spawn, JoinHandle, ScopedJoinHandle};
+use std::thread::{scope, spawn, JoinHandle, ScopedJoinHandle};
 
 use crossbeam::channel::bounded;
 use log::*;

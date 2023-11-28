@@ -28,7 +28,6 @@ use enum_dispatch::enum_dispatch;
 use happylog::clap::LogOpts;
 use log::*;
 use paste::paste;
-use rayon::ThreadPoolBuilder;
 
 use crate::util::process;
 use crate::util::Timer;
