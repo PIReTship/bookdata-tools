@@ -157,7 +157,9 @@ impl Command for ClusterAuthors {
         debug!("schema: {:?}", schema);
 
         let writer = open_parquet_writer(&self.output, schema)?;
-        let mut writer = ThreadObjectWriter::new(writer);
+        let mut writer = ThreadObjectWriter::wrap(writer)
+            .with_name("author parquet buffer")
+            .spawn();
         let pb = data_progress(authors.n_chunks());
         for chunk in authors.iter_chunks() {
             writer.write_object(chunk)?;

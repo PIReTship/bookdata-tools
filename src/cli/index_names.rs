@@ -97,7 +97,9 @@ fn write_index(index: NameIndex, path: &Path) -> Result<()> {
     let out = ThreadWrite::new(out)?;
     // let out = Encoder::new(out, 2)?.auto_finish();
     let csvw = csv::Writer::from_writer(out);
-    let mut csvout = ThreadObjectWriter::new(csvw);
+    let mut csvout = ThreadObjectWriter::<IndexEntry>::wrap(csvw)
+        .with_name("csv output buffer")
+        .spawn();
 
     let pb = item_progress(names.len(), "names");
 

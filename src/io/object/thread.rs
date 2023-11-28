@@ -47,32 +47,13 @@ where
     meter: ProgressBar,
 }
 
-impl<T: Send + Sync + 'static> ThreadObjectWriter<'static, T> {
-    #[deprecated = "use wrap() instead"]
-    #[allow(deprecated)]
-    pub fn new<W: ObjectWriter<T> + Send + Sync + 'static>(
-        writer: W,
-    ) -> ThreadObjectWriter<'static, T> {
-        Self::with_capacity(writer, 4096)
-    }
-
-    #[deprecated = "use wrap() instead"]
-    pub fn with_capacity<W: ObjectWriter<T> + Send + Sync + 'static>(
-        writer: W,
-        cap: usize,
-    ) -> ThreadObjectWriter<'static, T> {
-        ThreadObjectWriter::wrap(writer).with_capacity(cap).spawn()
-    }
-}
-
 impl<'scope, T> ThreadObjectWriter<'scope, T>
 where
     T: Send + Sync + 'scope,
 {
-    pub fn wrap<'env, W>(writer: W) -> ThreadObjectWriterBuilder<W>
+    pub fn wrap<W>(writer: W) -> ThreadObjectWriterBuilder<W>
     where
         W: ObjectWriter<T> + Send + Sync + 'scope,
-        'env: 'scope,
     {
         ThreadObjectWriterBuilder {
             writer,
