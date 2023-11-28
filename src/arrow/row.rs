@@ -1,7 +1,19 @@
 //! Table row interface.
+
 use anyhow::Result;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use polars::{chunked_array::builder::Utf8ChunkedBuilderCow, prelude::*};
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum RowError {
+    #[error("required field was null")]
+    NullField,
+    #[error("conversion error: {0}")]
+    ConvertError(&'static str),
+    #[error("polars error: {0}")]
+    Polars(#[from] PolarsError),
+}
 
 /// Convert a vector of records to a chunk.
 pub fn vec_to_df<R>(vec: Vec<R>) -> Result<DataFrame>
@@ -47,7 +59,7 @@ where
     Self: Sized,
 {
     fn new(df: &'a DataFrame) -> PolarsResult<Self>;
-    fn read_row(&mut self, idx: usize) -> PolarsResult<R>;
+    fn read_row(&mut self, idx: usize) -> Result<R, RowError>;
 }
 
 /// Interface for data frame builders.
@@ -87,7 +99,7 @@ impl<'a, R> Iterator for FrameRecordIter<'a, R>
 where
     R: TableRow,
 {
-    type Item = PolarsResult<R>;
+    type Item = Result<R, RowError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.size {
@@ -114,7 +126,7 @@ pub trait ColType: Sized {
     fn cast_series<'a>(s: &'a Series) -> PolarsResult<&'a Self::Array>;
 
     /// Read a value from an array.
-    fn read_from_column(a: &Self::Array, pos: usize) -> PolarsResult<Self>;
+    fn read_from_column(a: &Self::Array, pos: usize) -> Result<Self, RowError>;
 }
 
 macro_rules! col_type {
@@ -142,10 +154,8 @@ macro_rules! col_type {
                 s.$cast()
             }
 
-            fn read_from_column(a: &Self::Array, pos: usize) -> PolarsResult<Self> {
-                a.get(pos)
-                    .ok_or_else(|| PolarsError::NoData("required column value is null".into()))
-                    .map(|x| x.into())
+            fn read_from_column(a: &Self::Array, pos: usize) -> Result<Self, RowError> {
+                a.get(pos).ok_or(RowError::NullField).map(|x| x.into())
             }
         }
         // just manually derive the option, bounds are being a pain
@@ -166,7 +176,7 @@ macro_rules! col_type {
                 s.$cast()
             }
 
-            fn read_from_column(a: &Self::Array, pos: usize) -> PolarsResult<Self> {
+            fn read_from_column(a: &Self::Array, pos: usize) -> Result<Self, RowError> {
                 Ok(a.get(pos).map(|x| x.into()))
             }
         }
@@ -196,10 +206,10 @@ fn convert_naive_date(date: NaiveDate) -> i32 {
     (dt.timestamp() / (24 * 60 * 60)) as i32
 }
 
-fn convert_to_naive_date(ts: i32) -> PolarsResult<NaiveDate> {
+fn convert_to_naive_date(ts: i32) -> Result<NaiveDate, RowError> {
     let ts = (ts as i64) * 24 * 60 * 60;
     let dt = NaiveDateTime::from_timestamp_millis(ts * 1000);
-    dt.ok_or_else(|| PolarsError::NoData("invalid date".into()))
+    dt.ok_or(RowError::ConvertError("invalid date"))
         .map(|dt| dt.date())
 }
 
@@ -220,9 +230,9 @@ impl ColType for NaiveDate {
         s.date()
     }
 
-    fn read_from_column(a: &Self::Array, pos: usize) -> PolarsResult<Self> {
+    fn read_from_column(a: &Self::Array, pos: usize) -> Result<Self, RowError> {
         let res = a.get(pos).map(convert_to_naive_date).transpose()?;
-        res.ok_or_else(|| PolarsError::NoData("required column value is null".into()))
+        res.ok_or(RowError::NullField)
     }
 }
 
@@ -244,7 +254,7 @@ impl ColType for Option<NaiveDate> {
         s.date()
     }
 
-    fn read_from_column(a: &Self::Array, pos: usize) -> PolarsResult<Self> {
+    fn read_from_column(a: &Self::Array, pos: usize) -> Result<Self, RowError> {
         a.get(pos).map(convert_to_naive_date).transpose()
     }
 }

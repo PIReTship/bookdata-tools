@@ -68,7 +68,7 @@ pub fn derive_table_row(ast: &syn::DeriveInput) -> TokenStream {
                 #(#f_names: <#f_types as ColType>::cast_series(df.column(#f_ns)?)?),*
             })
         }
-        fn read_row(&mut self, idx: usize) -> ::polars::prelude::PolarsResult<#name> {
+        fn read_row(&mut self, idx: usize) -> ::std::result::Result<#name, crate::arrow::row::RowError> {
             use crate::arrow::row::ColType;
             Ok(#name {
                 #(#f_names: <#f_types as ColType>::read_from_column(&self.#f_names, idx)?),*
