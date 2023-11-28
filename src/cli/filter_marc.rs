@@ -13,7 +13,6 @@ use polars::prelude::*;
 use crate::arrow::scan_parquet_file;
 use crate::marc::flat_fields::FieldRecord;
 use crate::prelude::*;
-use crate::util::logging::item_progress;
 
 const BATCH_SIZE: usize = 1024 * 1024;
 
@@ -158,6 +157,8 @@ fn write_records(out: &OutputSpec, recv: Receiver<FieldRecord>) -> Result<usize>
         values.push(rec.contents);
         if rec_ids.len() >= BATCH_SIZE {
             n += write_cols(&mut writer, &mut rec_ids, &mut values, &out_name)?;
+            rec_ids.clear();
+            values.clear();
         }
     }
 
