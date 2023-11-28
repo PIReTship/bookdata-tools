@@ -1,23 +1,20 @@
----
 stages:
   collect-isbns:
-    cmd: |-
-      cargo run --release -- collect-isbns -o all-isbns.parquet all-isbns.toml
+    cmd: cargo run --release -- collect-isbns -o all-isbns.parquet
     deps:
-      - ../src/cli/collect_isbns.rs
-      - all-isbns.toml
-      - ../loc-mds/book-isbns.parquet
-      - ../openlibrary/edition-isbns.parquet
-      - ../goodreads/gr-book-ids.parquet
-      - ../bx/cleaned-ratings.csv
-      - ../az2014/ratings.parquet
-      - ../az2018/ratings.parquet
+      - "../config.yaml"
+      - "../src/cli/collect_isbns.rs"
+      - "../loc-mds/book-isbns.parquet"
+      - "../openlibrary/edition-isbns.parquet"
+      - "../goodreads/gr-book-ids.parquet"
+      - "../bx/cleaned-ratings.csv"
+      - "../az2014/ratings.parquet"
+      - "../az2018/ratings.parquet"
     outs:
       - all-isbns.parquet
   cluster:
-    wdir: ..
-    cmd: |-
-      cargo run --release -- cluster-books --save-graph book-links/book-graph.mp.zst
+    wdir: ".."
+    cmd: cargo run --release -- cluster-books --save-graph book-links/book-graph.mp.zst
     deps:
       - src/cli/cluster_books.rs
       - src/graph/
@@ -39,9 +36,8 @@ stages:
     metrics:
       - book-links/cluster-metrics.json
   cluster-ol-first-authors:
-    wdir: ..
-    cmd: |-
-      cargo run --release -- cluster extract-authors -o book-links/cluster-ol-first-authors.parquet --first-author -s openlib
+    wdir: ".."
+    cmd: cargo run --release -- cluster extract-authors -o book-links/cluster-ol-first-authors.parquet --first-author -s openlib
     deps:
       - src/cli/cluster
       - book-links/isbn-clusters.parquet
@@ -51,9 +47,8 @@ stages:
     outs:
       - book-links/cluster-ol-first-authors.parquet
   cluster-loc-first-authors:
-    wdir: ..
-    cmd: |-
-      cargo run --release -- cluster extract-authors -o book-links/cluster-loc-first-authors.parquet --first-author -s loc
+    wdir: ".."
+    cmd: cargo run --release -- cluster extract-authors -o book-links/cluster-loc-first-authors.parquet --first-author -s loc
     deps:
       - src/cli/cluster
       - book-links/isbn-clusters.parquet
@@ -62,9 +57,8 @@ stages:
     outs:
       - book-links/cluster-loc-first-authors.parquet
   cluster-first-authors:
-    wdir: ..
-    cmd: |-
-      cargo run --release -- cluster extract-authors -o book-links/cluster-first-authors.parquet --first-author -s openlib -s loc
+    wdir: ".."
+    cmd: cargo run --release -- cluster extract-authors -o book-links/cluster-first-authors.parquet --first-author -s openlib -s loc
     deps:
       - src/cli/cluster
       - book-links/isbn-clusters.parquet
@@ -76,9 +70,8 @@ stages:
     outs:
       - book-links/cluster-first-authors.parquet
   cluster-genders:
-    wdir: ..
-    cmd: |-
-      cargo run --release -- cluster extract-author-gender -o book-links/cluster-genders.parquet -A book-links/cluster-first-authors.parquet
+    wdir: ".."
+    cmd: cargo run --release -- cluster extract-author-gender -o book-links/cluster-genders.parquet -A book-links/cluster-first-authors.parquet
     deps:
       - src/cli/cluster
       - book-links/cluster-stats.parquet
@@ -88,9 +81,8 @@ stages:
     outs:
       - book-links/cluster-genders.parquet
   gender-stats:
-    wdir: ..
-    cmd: |-
-      cargo run --release -- integration-stats
+    wdir: ".."
+    cmd: cargo run --release -- integration-stats
     deps:
       - src/cli/stats.rs
       - book-links/cluster-genders.parquet
@@ -105,11 +97,9 @@ stages:
     outs:
       - book-links/gender-stats.csv
   cluster-hashes:
-    cmd: |-
-      cargo run --release -- cluster hash -o cluster-hashes.parquet isbn-clusters.parquet
+    cmd: cargo run --release -- cluster hash -o cluster-hashes.parquet isbn-clusters.parquet
     deps:
-      - ../src/cli/cluster/hash.rs
+      - "../src/cli/cluster/hash.rs"
       - isbn-clusters.parquet
     outs:
       - cluster-hashes.parquet
-

@@ -1,8 +1,6 @@
 //! Various utility modules.
 mod accum;
-pub mod iteration;
 pub mod logging;
-#[cfg(unix)]
 pub mod process;
 pub mod serde_string;
 pub mod timing;

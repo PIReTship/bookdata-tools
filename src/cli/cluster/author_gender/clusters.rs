@@ -9,8 +9,6 @@ use crate::gender::*;
 use crate::prelude::*;
 use crate::util::logging::item_progress;
 use anyhow::Result;
-#[allow(unused_imports)]
-use arrow2_convert::field::LargeString;
 use polars::prelude::*;
 
 /// Record for storing a cluster's gender statistics while aggregating.
@@ -23,10 +21,9 @@ pub struct ClusterStats {
 }
 
 /// Row struct for reading cluster author names.
-#[derive(Debug, ArrowField, ArrowSerialize, ArrowDeserialize)]
+#[derive(Debug, TableRow)]
 struct ClusterAuthor {
     cluster: i32,
-    #[arrow_field(type = "LargeString")]
     author_name: String,
 }
 
@@ -44,7 +41,7 @@ pub fn read_resolve(path: &Path, authors: &AuthorTable) -> Result<ClusterTable> 
 
     for row in pb.wrap_iter(iter) {
         let row: ClusterAuthor = row?;
-        let mut rec = table.entry(row.cluster).or_default();
+        let rec = table.entry(row.cluster).or_default();
         rec.n_book_authors += 1;
         if let Some(info) = authors.get(row.author_name.as_str()) {
             rec.n_author_recs += info.n_author_recs;

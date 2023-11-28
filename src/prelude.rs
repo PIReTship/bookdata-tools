@@ -1,4 +1,6 @@
-pub use crate::arrow::polars::save_df_parquet;
+pub use crate::arrow::reader::scan_df_parquet;
+pub use crate::arrow::writer::save_df_parquet;
+pub use crate::arrow::TableRow;
 pub use crate::cli::Command;
 pub use crate::io::ext::LengthRead;
 pub use crate::io::file_size;
@@ -11,7 +13,6 @@ pub use crate::layout::*;
 pub use crate::util::default;
 pub use crate::util::Timer;
 pub use anyhow::{anyhow, Error, Result};
-pub use arrow2_convert::{ArrowDeserialize, ArrowField, ArrowSerialize};
 pub use clap::Args;
 pub use fallible_iterator::FallibleIterator;
 pub use log::*;

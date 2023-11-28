@@ -1,8 +1,4 @@
----
-title: Source Data
----
-
-# Downloading Source Data
+# Source Data
 
 These import tools will integrate several data sets. Some of them are auto-downloaded, but others you will
 need to download yourself and save in the `data` directory.  The data sources are:
@@ -24,8 +20,8 @@ See [Data Model](../data/) for details on how each data source appears in the fi
 
 The pipeline is reconfigurable to use subsets of this data.  To change the pipeline options:
 
-1.  Edit `config.tcl` to specify the options you want, such as using full GoodReads interaction files.
-2.  Re-render the pipeline with `tclsh plumber/render.tcl`
+1.  Edit `config.yaml` to specify the options you want, such as using full GoodReads interaction files.
+2.  Re-render the pipeline with `cargo run --release pipeline render`
 3.  Commit the updated pipeline to `git` (optional, but recommended prior to running)
 
 A `dvc repro` will now use the reconfigured pipeline.

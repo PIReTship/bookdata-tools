@@ -1,8 +1,7 @@
 //! Extract author information for book clusters.
 use std::path::PathBuf;
 
-use crate::arrow::polars::nonnull_schema;
-use crate::arrow::writer::open_parquet_writer;
+use crate::arrow::{nonnull_schema, open_parquet_writer};
 use crate::ids::codes::*;
 use crate::prelude::*;
 use polars::prelude::*;
@@ -70,7 +69,7 @@ impl Command for ExtractBooks {
                 join,
                 &[col(&self.field_name)],
                 &[col(&self.field_name)],
-                JoinType::Left,
+                JoinType::Left.into(),
             );
             if let Some(fld) = &self.join_field {
                 join.select(&[col(&self.field_name), col(fld), col("cluster")])

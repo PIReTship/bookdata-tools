@@ -1,12 +1,10 @@
 //! Extract author information for book clusters.
-use std::fs::File;
 use std::path::PathBuf;
 
-use arrow2::io::parquet::write::{FileWriter, WriteOptions};
-use parquet2::write::Version;
 use parse_display::{Display, FromStr};
 
 use crate::arrow::dfext::*;
+use crate::arrow::writer::open_parquet_writer;
 use crate::io::object::ThreadObjectWriter;
 use crate::prelude::*;
 use crate::util::logging::data_progress;
@@ -41,22 +39,32 @@ pub struct ClusterAuthors {
 fn scan_openlib(first_only: bool) -> Result<LazyFrame> {
     info!("scanning OpenLibrary author data");
     info!("reading ISBN clusters");
-    let icl = LazyFrame::scan_parquet("book-links/isbn-clusters.parquet", default())?;
+    let icl = scan_df_parquet("book-links/isbn-clusters.parquet")?;
     let icl = icl.select(&[col("isbn_id"), col("cluster")]);
-    info!("reading edition IDs");
-    let edl = LazyFrame::scan_parquet("openlibrary/edition-isbn-ids.parquet", default())?;
+    info!("reading OL edition IDs");
+    let edl = scan_df_parquet("openlibrary/edition-isbn-ids.parquet")?;
     let edl = edl.filter(col("isbn_id").is_not_null());
-    info!("reading edition authors");
-    let mut eau = LazyFrame::scan_parquet("openlibrary/edition-authors.parquet", default())?;
+    info!("reading OL edition authors");
+    let mut eau = scan_df_parquet("openlibrary/edition-authors.parquet")?;
     if first_only {
         eau = eau.filter(col("pos").eq(0i16));
     }
 
-    info!("reading author names");
-    let auth = LazyFrame::scan_parquet("openlibrary/author-names.parquet", default())?;
-    let linked = icl.join(edl, [col("isbn_id")], [col("isbn_id")], JoinType::Inner);
-    let linked = linked.join(eau, [col("edition")], [col("edition")], JoinType::Inner);
-    let linked = linked.join(auth, [col("author")], [col("id")], JoinType::Inner);
+    info!("reading OL author names");
+    let auth = scan_df_parquet("openlibrary/author-names.parquet")?;
+    let linked = icl.join(
+        edl,
+        [col("isbn_id")],
+        [col("isbn_id")],
+        JoinType::Inner.into(),
+    );
+    let linked = linked.join(
+        eau,
+        [col("edition")],
+        [col("edition")],
+        JoinType::Inner.into(),
+    );
+    let linked = linked.join(auth, [col("author")], [col("id")], JoinType::Inner.into());
     let authors = linked.select(vec![
         col("cluster"),
         col("name")
@@ -75,18 +83,28 @@ fn scan_loc(first_only: bool) -> Result<LazyFrame> {
     }
 
     info!("reading ISBN clusters");
-    let icl = LazyFrame::scan_parquet("book-links/isbn-clusters.parquet", default())?;
+    let icl = scan_df_parquet("book-links/isbn-clusters.parquet")?;
     let icl = icl.select([col("isbn_id"), col("cluster")]);
 
-    info!("reading book records");
-    let books = LazyFrame::scan_parquet("loc-mds/book-isbn-ids.parquet", default())?;
+    info!("reading LOC book records");
+    let books = scan_df_parquet("loc-mds/book-isbn-ids.parquet")?;
 
-    info!("reading book authors");
-    let authors = LazyFrame::scan_parquet("loc-mds/book-authors.parquet", default())?;
+    info!("reading LOC book authors");
+    let authors = scan_df_parquet("loc-mds/book-authors.parquet")?;
     let authors = authors.filter(col("author_name").is_not_null());
 
-    let linked = icl.join(books, [col("isbn_id")], [col("isbn_id")], JoinType::Inner);
-    let linked = linked.join(authors, [col("rec_id")], [col("rec_id")], JoinType::Inner);
+    let linked = icl.join(
+        books,
+        [col("isbn_id")],
+        [col("isbn_id")],
+        JoinType::Inner.into(),
+    );
+    let linked = linked.join(
+        authors,
+        [col("rec_id")],
+        [col("rec_id")],
+        JoinType::Inner.into(),
+    );
     let authors = linked.select(vec![
         col("cluster"),
         col("author_name").map(udf_clean_name, GetOutput::from_type(DataType::Utf8)),
@@ -105,7 +123,14 @@ impl Command for ClusterAuthors {
             };
             debug!("author source {} has schema {:?}", source, astr.schema());
             if let Some(adf) = authors {
-                authors = Some(concat([adf, astr], false, true)?);
+                authors = Some(concat(
+                    [adf, astr],
+                    UnionArgs {
+                        parallel: true,
+                        rechunk: false,
+                        to_supertypes: false,
+                    },
+                )?);
             } else {
                 authors = Some(astr);
             }
@@ -122,30 +147,19 @@ impl Command for ClusterAuthors {
         debug!("plan: {}", authors.describe_plan());
 
         info!("collecting results");
-        let mut authors = authors.collect()?;
-        authors.as_single_chunk_par();
+        let authors = authors.collect()?;
         info!("found {} cluster-author links", authors.height());
 
         info!("saving to {:?}", &self.output);
         // clean up nullability
         // we do the writing ourself because we have no nulls, but polars doesn't deal with that
-        let mut schema = authors.schema().to_arrow();
-        schema.fields[0].is_nullable = false;
-        schema.fields[1].is_nullable = false;
+        let schema = nonnull_schema(&authors);
         debug!("schema: {:?}", schema);
 
-        let writer = File::create(&self.output)?;
-        let writer = FileWriter::try_new(
-            writer,
-            schema,
-            WriteOptions {
-                compression: parquet2::compression::CompressionOptions::Zstd(None),
-                version: Version::V2,
-                write_statistics: false,
-                data_pagesize_limit: None,
-            },
-        )?;
-        let mut writer = ThreadObjectWriter::new(writer);
+        let writer = open_parquet_writer(&self.output, schema)?;
+        let mut writer = ThreadObjectWriter::wrap(writer)
+            .with_name("author parquet")
+            .spawn();
         let pb = data_progress(authors.n_chunks());
         for chunk in authors.iter_chunks() {
             writer.write_object(chunk)?;

@@ -1,24 +1,38 @@
 //! Support for streaming objects from a Parquet file.
-use std::fs::File;
+use std::io::Seek;
+use std::iter::zip;
 use std::path::Path;
 use std::thread::spawn;
-
-use crossbeam::channel::{bounded, Receiver};
+use std::{fs::File, io::Read};
 
 use anyhow::Result;
-use arrow2::chunk::Chunk;
+use crossbeam::channel::{bounded, Receiver, Sender};
+use fallible_iterator::{FallibleIterator, IteratorExt};
+use indicatif::ProgressBar;
 use log::*;
+use polars::prelude::*;
+use polars_parquet::read::{infer_schema, read_metadata, FileReader};
 
-use arrow2::array::{Array, StructArray};
-use arrow2::io::parquet::read::{infer_schema, read_metadata, FileReader};
+use crate::{
+    arrow::row::iter_df_rows,
+    util::logging::{item_progress, measure_and_send, meter_bar},
+};
 
-use arrow2_convert::deserialize::*;
+use super::TableRow;
+
+/// Scan a Parquet file into a data frame.
+pub fn scan_df_parquet<P: AsRef<Path>>(file: P) -> Result<LazyFrame> {
+    let file = file.as_ref();
+    debug!("scanning file {}", file.display());
+    let df = LazyFrame::scan_parquet(file, ScanArgsParquet::default())?;
+    debug!("{}: schema {:?}", file.display(), df.schema()?);
+    Ok(df)
+}
 
 /// Iterator over deserialized records from a Parquet file.
 pub struct RecordIter<R>
 where
-    R: ArrowDeserialize + Send + Sync + 'static,
-    for<'a> &'a R::ArrayType: IntoIterator,
+    R: TableRow + Send + Sync + 'static,
 {
     remaining: usize,
     channel: Receiver<Result<Vec<R>>>,
@@ -27,78 +41,60 @@ where
 
 impl<R> RecordIter<R>
 where
-    R: ArrowDeserialize + Send + Sync + 'static,
-    for<'a> &'a R::ArrayType: IntoIterator,
+    R: TableRow + Send + Sync + 'static,
 {
     pub fn remaining(&self) -> usize {
         self.remaining
     }
 }
 
-fn decode_chunk<R, E>(chunk: Result<Chunk<Box<dyn Array>>, E>) -> Result<Vec<R>>
+fn decode_chunk<R>(chunk: DataFrame) -> Result<Vec<R>>
 where
-    R: ArrowDeserialize<Type = R> + Send + Sync + 'static,
-    for<'a> &'a R::ArrayType: IntoIterator<Item = Option<R>>,
-    E: std::error::Error + Send + Sync + 'static,
+    R: TableRow + Send + Sync + 'static,
 {
-    let chunk = chunk?;
-    let chunk_size = chunk.len();
-    let sa = StructArray::try_new(R::data_type(), chunk.into_arrays(), None).map_err(|e| {
-        error!("error decoding struct array: {:?}", e);
-        e
-    })?;
-    let sa: Box<dyn Array> = Box::new(sa);
-    let sadt = sa.data_type().clone();
-    let recs: Vec<R> = sa.try_into_collection().map_err(|e| {
-        error!("error deserializing batch: {:?}", e);
-        info!("chunk schema: {:?}", sadt);
-        info!("target schema: {:?}", R::data_type());
-        e
-    })?;
-    assert_eq!(recs.len(), chunk_size);
-    Ok(recs)
+    let iter = iter_df_rows(&chunk)?;
+    let mut records = Vec::with_capacity(chunk.height());
+    for row in iter {
+        records.push(row?);
+    }
+    Ok(records)
 }
 
 /// Scan a Parquet file in a background thread and deserialize records.
 pub fn scan_parquet_file<R, P>(path: P) -> Result<RecordIter<R>>
 where
     P: AsRef<Path>,
-    R: ArrowDeserialize<Type = R> + Send + Sync + 'static,
-    for<'a> &'a R::ArrayType: IntoIterator<Item = Option<R>>,
+    R: TableRow + Send + Sync + 'static,
 {
     let path = path.as_ref();
-    let mut reader = File::open(path)?;
-
+    let mut reader = File::open(&path)?;
     let meta = read_metadata(&mut reader)?;
-    let schema = infer_schema(&meta)?;
     let row_count = meta.num_rows;
-    let row_groups = meta.row_groups;
+    let schema = infer_schema(&meta)?;
+    let reader = FileReader::new(reader, meta.row_groups, schema.clone(), None, None, None);
 
-    let reader = FileReader::new(reader, row_groups, schema, None, None, None);
-    info!("scanning {:?} with {} rows", path, row_count);
-    debug!("file schema: {:?}", meta.schema_descr);
+    info!(
+        "scanning {} with {} rows",
+        path.display(),
+        friendly::scalar(row_count)
+    );
+    let pb = item_progress(row_count, &format!("{}", path.display()));
 
     // use a small bound since we're sending whole batches
     let (send, receive) = bounded(5);
+    let p2 = path.to_path_buf();
 
     spawn(move || {
         let send = send;
-        let reader = reader;
-
-        for chunk in reader {
-            let recs = decode_chunk(chunk);
-            let recs = match recs {
-                Ok(v) => v,
-                Err(e) => {
-                    debug!("routing backend error {:?}", e);
-                    send.send(Err(e)).expect("channel send error");
-                    return;
-                }
-            };
-            send.send(Ok(recs)).expect("channel send error");
+        if let Err(e) = scan_backend(reader, &send, schema, &p2, pb) {
+            send.send(Err(e)).expect("failed to send error message");
         }
     });
 
+    debug!(
+        "{}: background thread spawned, returning iter",
+        path.display()
+    );
     Ok(RecordIter {
         remaining: row_count,
         channel: receive,
@@ -108,8 +104,7 @@ where
 
 impl<R> Iterator for RecordIter<R>
 where
-    R: ArrowDeserialize + Send + Sync + 'static,
-    for<'a> &'a R::ArrayType: IntoIterator,
+    R: TableRow + Send + Sync + 'static,
 {
     type Item = Result<R>;
 
@@ -139,4 +134,30 @@ where
             }
         }
     }
+}
+
+fn scan_backend<R: Read + Seek, E: TableRow + Send + Sync + 'static>(
+    reader: FileReader<R>,
+    send: &Sender<Result<Vec<E>>>,
+    schema: ArrowSchema,
+    path: &Path,
+    pb: ProgressBar,
+) -> Result<()> {
+    debug!("{}: beginning batched read", path.display());
+    let meter = meter_bar(5, &format!("{} read buffer", path.display()));
+    for chunk in reader {
+        let chunk = chunk?;
+
+        trace!("{}: received batch of {} rows", path.display(), chunk.len());
+        pb.inc(chunk.len() as u64);
+        let columns: Vec<_> = zip(&schema.fields, chunk.into_arrays())
+            .map(|(f, c)| Series::from_arrow(&f.name, c))
+            .transpose_into_fallible()
+            .collect()?;
+        let df = DataFrame::new(columns)?;
+        let batch = decode_chunk(df)?;
+        trace!("{}: decoded chunk, sending to consumer", path.display());
+        measure_and_send(&send, Ok(batch), &meter)?;
+    }
+    Ok(())
 }

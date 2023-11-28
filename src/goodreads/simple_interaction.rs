@@ -32,7 +32,7 @@ pub struct RawBookMap {
 /// actual interaction data. Timestamps are UNIX timestamps recorded as 64-bit
 /// integers; they do not use a Parquet timestamp time, due to out-of-range
 /// values causing problems when loaded into Python.
-#[derive(ArrowField, ArrowSerialize, ArrowDeserialize)]
+#[derive(TableRow)]
 pub struct IntRecord {
     pub rec_id: u32,
     pub user_id: i32,

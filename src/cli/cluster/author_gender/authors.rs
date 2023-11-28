@@ -1,7 +1,7 @@
 //! Support for loading author info.
 use std::collections::{HashMap, HashSet};
 
-use crate::arrow::scan_parquet_file;
+use crate::arrow::*;
 use crate::gender::*;
 use crate::prelude::*;
 use crate::util::logging::item_progress;
@@ -14,13 +14,13 @@ pub struct AuthorInfo {
 
 pub type AuthorTable = HashMap<String, AuthorInfo>;
 
-#[derive(ArrowField, ArrowSerialize, ArrowDeserialize, Debug)]
+#[derive(TableRow, Debug)]
 struct NameRow {
     rec_id: u32,
     name: String,
 }
 
-#[derive(ArrowField, ArrowSerialize, ArrowDeserialize, Debug)]
+#[derive(TableRow, Debug)]
 struct GenderRow {
     rec_id: u32,
     gender: String,
@@ -91,7 +91,7 @@ pub fn viaf_author_table() -> Result<AuthorTable> {
     for (rec_id, names) in pb.wrap_iter(rec_names.into_iter()) {
         let genders = rec_genders.get(&rec_id).unwrap_or(&empty);
         for name in names {
-            let mut rec = table.entry(name).or_default();
+            let rec = table.entry(name).or_default();
             rec.n_author_recs += 1;
             for g in genders {
                 rec.genders.insert(g.clone());

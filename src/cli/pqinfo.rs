@@ -4,12 +4,12 @@ use std::fs::File;
 use std::io::{stdout, Read, Seek, Write};
 use std::mem::drop;
 
-use arrow2::datatypes::Field;
+use polars_arrow::datatypes::Field;
 use serde::Serialize;
 
-use arrow2::io::parquet::read::schema::parquet_to_arrow_schema;
-use arrow2::io::parquet::read::*;
 use friendly::{bytes, scalar};
+use polars_parquet::read::schema::parquet_to_arrow_schema;
+use polars_parquet::read::*;
 
 use crate::prelude::*;
 

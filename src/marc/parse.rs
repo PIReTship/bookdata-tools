@@ -1,22 +1,27 @@
 use std::convert::TryInto;
-use std::io::{BufRead, Lines};
+use std::io::BufRead;
+use std::mem::replace;
 use std::str;
-use std::thread::spawn;
+use std::thread::{scope, spawn, JoinHandle, ScopedJoinHandle};
 
 use crossbeam::channel::bounded;
 use log::*;
 
-use anyhow::{anyhow, Error, Result};
-use fallible_iterator::FallibleIterator;
+use anyhow::{anyhow, Result};
 use quick_xml::events::attributes::Attributes;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 
+use crate::io::object::{ChunkWriter, ThreadObjectWriter, UnchunkWriter};
+use crate::io::ObjectWriter;
 use crate::tsv::split_first;
-use crate::util::iteration::chunk_owned;
+use crate::util::logging::{measure_and_recv, measure_and_send, meter_bar};
 use crate::util::StringAccumulator;
 
 use super::record::*;
+
+const CHUNK_LINES: usize = 5000;
+const CHUNK_BUFFER_SIZE: usize = 20;
 
 #[derive(Debug, Default)]
 struct Codes {
@@ -36,120 +41,129 @@ impl From<Codes> for Field {
     }
 }
 
-/// Sources of MARC data.
-enum Src<B: BufRead> {
-    /// QuickXML Reader
-    QXR(Reader<B>),
-    /// Delimited lines
-    #[allow(dead_code)]
-    DL(Lines<B>),
-    /// Iterable of parsed records
-    PRI(Box<dyn Iterator<Item = Result<MARCRecord, Error>>>),
-}
-
-/// Iterator of MARC records.
-pub struct Records<B: BufRead> {
-    buffer: Vec<u8>,
-    source: Src<B>,
-}
-
-impl<B: BufRead> FallibleIterator for Records<B> {
-    type Error = anyhow::Error;
-    type Item = MARCRecord;
-
-    fn next(&mut self) -> Result<Option<MARCRecord>> {
-        match &mut self.source {
-            Src::QXR(reader) => next_qxr(reader, &mut self.buffer),
-            Src::DL(lines) => next_line(lines),
-            Src::PRI(iter) => iter.next().transpose(),
-        }
-    }
-}
-
-fn next_qxr<B: BufRead>(reader: &mut Reader<B>, buf: &mut Vec<u8>) -> Result<Option<MARCRecord>> {
+/// Read MARC records from XML.
+pub fn scan_records<R, W>(reader: R, output: &mut W) -> Result<usize>
+where
+    R: BufRead,
+    W: ObjectWriter<MARCRecord>,
+{
+    let mut reader = Reader::from_reader(reader);
+    let mut nrecs = 0;
+    let mut buffer = Vec::with_capacity(4096);
     loop {
-        match reader.read_event_into(buf)? {
+        match reader.read_event_into(&mut buffer)? {
             Event::Start(ref e) => {
                 let name = e.local_name();
                 match name.into_inner() {
-                    b"record" => return Ok(Some(read_record(reader)?)),
+                    b"record" => {
+                        let rec = read_record(&mut reader)?;
+                        output.write_object(rec)?;
+                        nrecs += 1;
+                    }
                     _ => (),
                 }
             }
-            Event::Eof => return Ok(None),
+            Event::Eof => return Ok(nrecs),
             _ => (),
         }
     }
 }
 
-fn next_line<B: BufRead>(lines: &mut Lines<B>) -> Result<Option<MARCRecord>> {
-    match lines.next() {
-        None => Ok(None),
-        Some(line) => {
-            let lstr = line?;
-            let (_id, xml) = split_first(&lstr).ok_or(anyhow!("invalid line"))?;
-            let rec = parse_record(&xml)?;
-            Ok(Some(rec))
-        }
-    }
-}
-
-/// Read MARC records from XML.
-pub fn read_records<B: BufRead>(reader: B) -> Records<B> {
-    let reader = Reader::from_reader(reader);
-    Records {
-        buffer: Vec::with_capacity(1024),
-        source: Src::QXR(reader),
-    }
-}
-
 /// Read MARC records from delimited XML.
 ///
-/// This reader uses Rayon to parse the XML in parallel, since XML parsing is typically
+/// This reader parses the XML in parallel, since XML parsing is typically
 /// the bottleneck for MARC scanning.
-pub fn read_records_delim<B: BufRead + Send + 'static>(reader: B) -> Records<B> {
+pub fn scan_records_delim<R, W>(reader: R, output: &mut W) -> Result<usize>
+where
+    R: BufRead + Send + 'static,
+    W: ObjectWriter<MARCRecord> + Sync + Send,
+{
     let lines = reader.lines();
-    // chunk lines (to decrease threading overhead)
-    let chunks = chunk_owned(lines, 5000);
 
-    // receivers & senders for chunks of lines
-    let (chunk_tx, chunk_rx) = bounded(100);
+    let output = ChunkWriter::new(output);
+    let fill = meter_bar(CHUNK_BUFFER_SIZE, "input chunks");
 
-    // receivers and senders for chunks of parsed records
-    let (parsed_tx, parsed_rx) = bounded(100);
+    let nrecs: Result<usize> = scope(|outer| {
+        // scoped thread writer to support parallel writing
+        let output = ThreadObjectWriter::wrap(output)
+            .with_name("marc records")
+            .with_capacity(CHUNK_BUFFER_SIZE)
+            .spawn_scoped(outer);
+        // receivers & senders for chunks of lines
+        let (chunk_tx, chunk_rx) = bounded(CHUNK_BUFFER_SIZE);
 
-    // background thread getting lines
-    info!("spawning reader thread");
-    let _bg_read = spawn(move || {
-        for chunk in chunks {
-            chunk_tx.send(chunk).expect("background send failed");
-        }
-    });
-
-    for i in 0..4 {
-        info!("spawning parser thread {}", i + 1);
-        let rx = chunk_rx.clone();
-        let tx = parsed_tx.clone();
-        spawn(move || {
-            for chunk in rx {
-                let res: Vec<_> = chunk
-                    .into_iter()
-                    .map(|lres| match lres {
-                        Ok(line) => parse_record(&line),
-                        Err(e) => Err(e.into()),
-                    })
-                    .collect();
-                tx.send(res).expect("background send failed");
+        // background thread getting lines
+        info!("spawning reader thread");
+        let fpb = fill.clone();
+        let bg_read: JoinHandle<Result<usize>> = spawn(move || {
+            let mut accum = Vec::with_capacity(CHUNK_LINES);
+            let mut nlines = 0usize;
+            for line in lines {
+                let line = line?;
+                let (_id, payload) = split_first(&line).ok_or_else(|| anyhow!("invalid line"))?;
+                nlines += 1;
+                accum.push(payload.to_owned());
+                if accum.len() >= CHUNK_LINES {
+                    let chunk = replace(&mut accum, Vec::with_capacity(CHUNK_LINES));
+                    measure_and_send(&chunk_tx, chunk, &fpb).expect("channel send failure");
+                }
             }
+            if accum.len() > 0 {
+                chunk_tx.send(accum).expect("channel send failure");
+            }
+            Ok(nlines)
         });
-    }
 
-    let flat = parsed_rx.into_iter().flatten();
+        let nrecs: Result<usize> = scope(|inner| {
+            // how many workers to use? let's count the active threads
+            //
+            // 1. decompression
+            // 2. parse lines
+            // 3. serialize MARC records
+            // 4. write Parquet file
+            //
+            // That leaves the remaining proessors to be used for parsing XML.
+            let nthreads = 4;
+            let mut workers: Vec<ScopedJoinHandle<'_, Result<usize>>> =
+                Vec::with_capacity(nthreads as usize);
+            info!("spawning {} parser threads", nthreads);
+            for i in 0..nthreads {
+                debug!("spawning parser thread {}", i + 1);
+                let rx = chunk_rx.clone();
+                let out = output.satellite();
+                let out = UnchunkWriter::with_size(out, CHUNK_LINES);
+                let fill = fill.clone();
+                workers.push(inner.spawn(move || {
+                    let mut out = out;
+                    let mut nrecs = 0;
+                    while let Some(chunk) = measure_and_recv(&rx, &fill) {
+                        for line in chunk {
+                            let res = parse_record(&line)?;
+                            out.write_object(res)?;
+                            nrecs += 1;
+                        }
+                    }
+                    out.finish()?;
+                    Ok(nrecs)
+                }));
+            }
 
-    Records {
-        buffer: Vec::new(),
-        source: Src::PRI(Box::new(flat)),
-    }
+            let mut nrecs = 0;
+            for h in workers {
+                nrecs += h.join().map_err(std::panic::resume_unwind)??;
+            }
+            Ok(nrecs)
+        });
+        let nrecs = nrecs?;
+
+        bg_read.join().map_err(std::panic::resume_unwind)??;
+        output.finish()?;
+        Ok(nrecs)
+    });
+    let nrecs = nrecs?;
+
+    info!("processed {} records", nrecs);
+    Ok(nrecs)
 }
 
 /// Parse a single MARC record from an XML string.
@@ -199,15 +213,15 @@ fn read_record<B: BufRead>(rdr: &mut Reader<B>) -> Result<MARCRecord> {
                 let name = e.local_name();
                 match name.into_inner() {
                     b"leader" => {
-                        record.leader = content.finish();
+                        record.leader = content.finish().to_owned();
                     }
                     b"controlfield" => record.control.push(ControlField {
                         tag: tag.try_into()?,
-                        content: content.finish(),
+                        content: content.finish().to_owned(),
                     }),
                     b"subfield" => field.subfields.push(Subfield {
                         code: sf_code,
-                        content: content.finish(),
+                        content: content.finish().to_owned(),
                     }),
                     b"datafield" => {
                         record.fields.push(field);

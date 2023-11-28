@@ -4,7 +4,6 @@ use std::mem::take;
 use std::path::Path;
 
 use anyhow::Result;
-use arrow2::array::TryExtend;
 use log::*;
 
 use super::{Dedup, Interaction, Key};
@@ -14,7 +13,7 @@ use crate::util::logging::item_progress;
 use crate::util::Timer;
 
 /// Record for a single output action.
-#[derive(ArrowField, Debug)]
+#[derive(TableRow, Debug)]
 pub struct TimestampActionRecord {
     pub user: i32,
     pub item: i32,
@@ -25,7 +24,7 @@ pub struct TimestampActionRecord {
 }
 
 /// Record for a single output action without time.
-#[derive(ArrowField, Debug)]
+#[derive(TableRow, Debug)]
 pub struct TimelessActionRecord {
     pub user: i32,
     pub item: i32,
@@ -93,7 +92,7 @@ impl FromActionSet for TimelessActionRecord {
 /// Action deduplicator.
 pub struct ActionDedup<R>
 where
-    R: FromActionSet + ArrowSerialize,
+    R: FromActionSet + TableRow,
 {
     _phantom: PhantomData<R>,
     table: HashMap<Key, Vec<ActionInstance>>,
@@ -101,7 +100,7 @@ where
 
 impl<R> Default for ActionDedup<R>
 where
-    R: FromActionSet + ArrowSerialize + 'static,
+    R: FromActionSet + TableRow + 'static,
 {
     fn default() -> ActionDedup<R> {
         ActionDedup {
@@ -113,8 +112,7 @@ where
 
 impl<I: Interaction, R> Dedup<I> for ActionDedup<R>
 where
-    R: FromActionSet + ArrowSerialize + Send + Sync + 'static,
-    R::MutableArrayType: TryExtend<Option<R>>,
+    R: FromActionSet + TableRow + Send + Sync + 'static,
 {
     fn add_interaction(&mut self, act: I) -> Result<()> {
         self.record(
@@ -133,8 +131,7 @@ where
 
 impl<R> ActionDedup<R>
 where
-    R: FromActionSet + ArrowSerialize + Send + Sync + 'static,
-    R::MutableArrayType: TryExtend<Option<R>>,
+    R: FromActionSet + TableRow + Send + Sync + 'static,
 {
     /// Add an action to the deduplicator.
     pub fn record(&mut self, user: i32, item: i32, timestamp: i64, rating: Option<f32>) {

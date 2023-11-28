@@ -16,6 +16,7 @@ pub mod index_names;
 pub mod kcore;
 pub mod link_isbns;
 pub mod openlib;
+pub mod pipeline;
 pub mod pqinfo;
 pub mod scan_marc;
 pub mod stats;
@@ -27,15 +28,9 @@ use enum_dispatch::enum_dispatch;
 use happylog::clap::LogOpts;
 use log::*;
 use paste::paste;
-use rayon::ThreadPoolBuilder;
 
-#[cfg(unix)]
 use crate::util::process;
 use crate::util::Timer;
-
-extern "C" {
-    fn mi_stats_print(out: *const std::ffi::c_void);
-}
 
 /// Macro to generate wrappers for subcommand enums.
 ///
@@ -70,6 +65,7 @@ pub trait Command {
 #[enum_dispatch(Command)]
 #[derive(Subcommand, Debug)]
 pub enum RootCommand {
+    Pipeline(PipelineCommandWrapper),
     ScanMARC(scan_marc::ScanMARC),
     FilterMARC(filter_marc::FilterMARC),
     ClusterBooks(cluster_books::ClusterBooks),
@@ -92,9 +88,17 @@ pub enum RootCommand {
     IntegrationStats(stats::IntegrationStats),
 }
 
+wrap_subcommands!(PipelineCommand);
 wrap_subcommands!(AmazonCommand);
 wrap_subcommands!(BXCommand);
 wrap_subcommands!(ClusterCommand);
+
+#[enum_dispatch(Command)]
+#[derive(Subcommand, Debug)]
+enum PipelineCommand {
+    /// Re-render the pipeline from jsonnet specifications.
+    Render(pipeline::RenderPipeline),
+}
 
 #[enum_dispatch(Command)]
 #[derive(Subcommand, Debug)]
@@ -138,9 +142,7 @@ impl CLI {
     pub fn exec(self) -> Result<()> {
         self.logging.init()?;
 
-        let npar = std::cmp::min(num_cpus::get(), num_cpus::get_physical());
-        debug!("setting up Rayon pool with {} threads", npar);
-        ThreadPoolBuilder::new().num_threads(npar).build_global()?;
+        process::maybe_exit_early()?;
 
         let timer = Timer::new();
 
@@ -156,14 +158,6 @@ impl CLI {
             Err(e) => error!("error fetching CPU time: {}", e),
         };
 
-        if log_enabled!(Level::Debug) {
-            debug!("mimalloc stats follow");
-            unsafe {
-                mi_stats_print(std::ptr::null());
-            }
-        }
-
-        #[cfg(unix)]
         process::log_process_stats();
         res
     }

@@ -2,11 +2,10 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use arrow2_convert::ArrowField;
 use hex;
 use md5::{Digest, Md5};
 
-use crate::arrow::TableWriter;
+use crate::arrow::*;
 use crate::prelude::*;
 use polars::prelude::*;
 
@@ -25,7 +24,7 @@ pub struct HashCmd {
     cluster_file: PathBuf,
 }
 
-#[derive(ArrowField, ArrowSerialize)]
+#[derive(TableRow)]
 struct ClusterHash {
     cluster: i32,
     isbn_hash: String,

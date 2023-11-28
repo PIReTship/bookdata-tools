@@ -6,6 +6,52 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Result};
 use log::*;
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub enum GRInteractionMode {
+    Simple,
+    Full,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct DSConfig {
+    pub enabled: bool,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct GRConfig {
+    pub enabled: bool,
+    pub interactions: GRInteractionMode,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Config {
+    pub bx: DSConfig,
+    pub az2014: DSConfig,
+    pub az2018: DSConfig,
+    pub goodreads: GRConfig,
+}
+
+impl Config {
+    pub fn ds_enabled(&self, name: &str) -> bool {
+        let (name, _qual) = if let Some((n, q)) = name.split_once("-") {
+            (n, Some(q))
+        } else {
+            (name, None)
+        };
+        match name {
+            "loc" | "LOC" => true,
+            "openlib" | "openlibrary" | "OL" => true,
+            "goodreads" | "GR" => self.goodreads.enabled,
+            "az2014" | "AZ14" => self.az2014.enabled,
+            "az2018" | "AZ18" => self.az2018.enabled,
+            "bx" | "BX" => self.bx.enabled,
+            _ => panic!("unsupported data set {}", name),
+        }
+    }
+}
 
 /// Check the TOML manifest to see if we're bookdata.
 fn check_project_manifest(path: &Path) -> Result<bool> {
@@ -58,7 +104,6 @@ fn is_bookdata_root(path: &Path) -> Result<bool> {
 }
 
 /// Find the root path for the repository.
-#[allow(dead_code)]
 pub fn find_path_root() -> Result<PathBuf> {
     let mut path = current_dir()?;
     debug!("working directory: {}", path.display());
@@ -98,4 +143,14 @@ pub fn require_working_dir<P: AsRef<Path>>(path: P) -> Result<()> {
     } else {
         Ok(())
     }
+}
+
+/// Load the configuration for this project.
+pub fn load_config() -> Result<Config> {
+    let mut root = find_path_root()?;
+    root.push("config.yaml");
+    debug!("reading configuration {}", root.display());
+    let f = read_to_string(&root)?;
+    let cfg: Config = serde_yaml::from_str(&f)?;
+    Ok(cfg)
 }

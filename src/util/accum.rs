@@ -1,31 +1,37 @@
 /// Activatable data acumulator.
 pub struct StringAccumulator {
-    acc: Option<String>,
+    acc: String,
+    active: bool,
 }
 
 impl StringAccumulator {
     /// Create a new data accumulator.
     pub fn new() -> StringAccumulator {
-        StringAccumulator { acc: None }
+        StringAccumulator {
+            acc: String::with_capacity(1024),
+            active: false,
+        }
     }
 
     /// Start accumulating data
     pub fn activate(&mut self) {
-        self.acc = Some(String::with_capacity(1024));
+        self.active = true;
+        self.acc.clear();
     }
 
     /// Add a slice of data to the accumulator.
     pub fn add_slice<S: AsRef<str>>(&mut self, other: S) {
-        if let Some(string) = self.acc.as_mut() {
-            string.push_str(other.as_ref());
+        if self.active {
+            self.acc.push_str(other.as_ref());
         }
     }
 
-    pub fn finish(&mut self) -> String {
-        if let Some(string) = self.acc.take() {
-            string
+    pub fn finish(&mut self) -> &str {
+        if self.active {
+            self.active = false;
+            &self.acc
         } else {
-            String::new()
+            ""
         }
     }
 }

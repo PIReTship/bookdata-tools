@@ -1,9 +1,6 @@
 use clap::Args;
 
-use crate::{
-    arrow::{polars::nonnull_schema, writer::open_parquet_writer},
-    prelude::*,
-};
+use crate::{arrow::*, prelude::*};
 use polars::prelude::*;
 
 static ALL_ISBNS_FILE: &str = "book-links/all-isbns.parquet";
@@ -44,8 +41,8 @@ impl Command for LinkISBNIds {
         info!("record field: {}", &self.rec_field);
         info!("ISBN fields: {:?}", &self.isbn_fields);
 
-        let isbns = LazyFrame::scan_parquet(ALL_ISBNS_FILE, default())?;
-        let records = LazyFrame::scan_parquet(&self.infile, default())?;
+        let isbns = scan_df_parquet(ALL_ISBNS_FILE)?;
+        let records = scan_df_parquet(&self.infile)?;
 
         let merged = if self.isbn_fields.len() == 1 {
             // one column, join on it
@@ -53,7 +50,7 @@ impl Command for LinkISBNIds {
                 isbns,
                 &[col(self.isbn_fields[0].as_str())],
                 &[col("isbn")],
-                JoinType::Inner,
+                JoinType::Inner.into(),
             )
         } else {
             let mut melt = MeltArgs::default();
@@ -64,7 +61,12 @@ impl Command for LinkISBNIds {
             melt.value_name = Some("isbn".into());
             melt.variable_name = Some("field".into());
             let rm = records.melt(melt);
-            rm.join(isbns, &[col("isbn")], &[col("isbn")], JoinType::Inner)
+            rm.join(
+                isbns,
+                &[col("isbn")],
+                &[col("isbn")],
+                JoinType::Inner.into(),
+            )
         };
         let filtered = merged
             .filter(col("isbn").is_not_null())
