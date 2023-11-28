@@ -113,9 +113,8 @@ fn scan_records(
 
     Ok(spawn(move || {
         let scanner = scanner;
-        let pb = item_progress(scanner.remaining(), "outer");
         let mut n = 0;
-        for rec in pb.wrap_iter(scanner) {
+        for rec in scanner {
             n += 1;
             let mut rec: FieldRecord = rec?;
             if filter.matches(&rec) {
