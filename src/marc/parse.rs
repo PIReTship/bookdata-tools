@@ -124,7 +124,7 @@ where
             // 4. write Parquet file
             //
             // That leaves the remaining proessors to be used for parsing XML.
-            let nthreads = max(available_parallelism()?.get() as i32 - 4, 1);
+            let nthreads = 4;
             let mut workers: Vec<ScopedJoinHandle<'_, Result<usize>>> =
                 Vec::with_capacity(nthreads as usize);
             info!("spawning {} parser threads", nthreads);
