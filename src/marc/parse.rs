@@ -22,7 +22,7 @@ use crate::util::StringAccumulator;
 
 use super::record::*;
 
-const CHUNK_LINES: usize = 1000;
+const CHUNK_LINES: usize = 5000;
 const CHUNK_BUFFER_SIZE: usize = 20;
 
 #[derive(Debug, Default)]
