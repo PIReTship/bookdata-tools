@@ -99,7 +99,10 @@ where
         let writer = open_polars_writer(path)?;
         let writer = writer.batched(&schema)?;
         let writer = writer.with_transform(vec_to_df);
-        let writer = ThreadObjectWriter::with_capacity(writer, 4);
+        let writer = ThreadObjectWriter::wrap(writer)
+            .with_name(format!("write:{}", path.display()))
+            .with_capacity(4)
+            .spawn();
         let writer = UnchunkWriter::with_size(writer, BATCH_SIZE);
         let out_path = Some(path.to_path_buf());
         Ok(TableWriter {

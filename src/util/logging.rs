@@ -7,6 +7,7 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
+use crossbeam::channel::Receiver;
 use friendly::scalar;
 use happylog::new_progress;
 use indicatif::style::ProgressTracker;
@@ -108,7 +109,7 @@ where
 }
 
 /// Create a meter for monitoring pipelines.
-pub fn meter<S>(len: S, name: &str) -> ProgressBar
+pub fn meter_bar<S>(len: S, name: &str) -> ProgressBar
 where
     S: TryInto<u64>,
     S::Error: Debug,
@@ -121,4 +122,10 @@ where
     new_progress(len.unwrap_or(0))
         .with_style(style)
         .with_prefix(name.to_string())
+}
+
+/// Fetch from a receiver while updating the length.
+pub fn measure_and_recv<T>(chan: &Receiver<T>, pb: &ProgressBar) -> Option<T> {
+    pb.set_position(chan.len() as u64);
+    chan.recv().ok()
 }

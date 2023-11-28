@@ -1,4 +1,4 @@
-use std::array;
+use std::cmp::max;
 use std::convert::TryInto;
 use std::io::BufRead;
 use std::mem::replace;
@@ -16,6 +16,8 @@ use quick_xml::Reader;
 use crate::io::object::{ChunkWriter, ThreadObjectWriter, UnchunkWriter};
 use crate::io::ObjectWriter;
 use crate::tsv::split_first;
+use crate::util::logging::{measure_and_recv, meter_bar};
+use crate::util::process::cpu_count;
 use crate::util::StringAccumulator;
 
 use super::record::*;
@@ -80,11 +82,15 @@ where
 {
     let lines = reader.lines();
 
-    let mut output = ChunkWriter::new(output);
+    let output = ChunkWriter::new(output);
+    let fill = meter_bar(CHUNK_BUFFER_SIZE, "input chunks");
 
     let nrecs: Result<usize> = scope(|outer| {
         // scoped thread writer to support parallel writing
-        let output = ThreadObjectWriter::with_scope(&mut output, outer, CHUNK_BUFFER_SIZE);
+        let output = ThreadObjectWriter::wrap(output)
+            .with_name("marc records")
+            .with_capacity(CHUNK_BUFFER_SIZE)
+            .spawn_scoped(outer);
         // receivers & senders for chunks of lines
         let (chunk_tx, chunk_rx) = bounded(CHUNK_BUFFER_SIZE);
 
@@ -110,15 +116,28 @@ where
         });
 
         let nrecs: Result<usize> = scope(|inner| {
-            let workers: [ScopedJoinHandle<'_, Result<usize>>; 4] = array::from_fn(|i| {
-                info!("spawning parser thread {}", i + 1);
+            // how many workers to use? let's count the active threads
+            //
+            // 1. decompression
+            // 2. parse lines
+            // 3. serialize MARC records
+            // 4. write Parquet file
+            //
+            // That leaves the remaining proessors to be used for parsing XML.
+            let nthreads = max(cpu_count() - 4, 1);
+            let mut workers: Vec<ScopedJoinHandle<'_, Result<usize>>> =
+                Vec::with_capacity(nthreads);
+            info!("spawning {} parser threads", nthreads);
+            for i in 0..nthreads {
+                debug!("spawning parser thread {}", i + 1);
                 let rx = chunk_rx.clone();
                 let out = output.satellite();
                 let out = UnchunkWriter::with_size(out, CHUNK_LINES);
-                inner.spawn(move || {
+                let fill = fill.clone();
+                workers.push(inner.spawn(move || {
                     let mut out = out;
                     let mut nrecs = 0;
-                    for chunk in rx {
+                    while let Some(chunk) = measure_and_recv(&rx, &fill) {
                         for line in chunk {
                             let res = parse_record(&line)?;
                             out.write_object(res)?;
@@ -127,8 +146,8 @@ where
                     }
                     out.finish()?;
                     Ok(nrecs)
-                })
-            });
+                }));
+            }
 
             let mut nrecs = 0;
             for h in workers {

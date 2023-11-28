@@ -5,6 +5,9 @@ use std::{
 
 use anyhow::Result;
 use crossbeam::channel::{bounded, Receiver, Sender};
+use indicatif::ProgressBar;
+
+use crate::util::logging::{measure_and_recv, meter_bar};
 
 use super::ObjectWriter;
 
@@ -13,17 +16,18 @@ enum WorkHandle<'scope> {
     Scoped(ScopedJoinHandle<'scope, Result<usize>>),
 }
 
-fn ferry<T, W>(recv: Receiver<T>, writer: W) -> Result<usize>
+fn ferry<T, W>(recv: Receiver<T>, writer: W, pb: ProgressBar) -> Result<usize>
 where
     T: Send + Sync + 'static,
     W: ObjectWriter<T>,
 {
     let mut writer = writer; // move writer into thread
 
-    for obj in recv.iter() {
+    while let Some(obj) = measure_and_recv(&recv, &pb) {
         writer.write_object(obj)?;
     }
 
+    pb.finish_and_clear();
     writer.finish()
 }
 
@@ -105,8 +109,9 @@ impl<W> ThreadObjectWriterBuilder<W> {
         T: Send + Sync + 'scope,
     {
         let (sender, receiver) = bounded(self.capacity);
+        let pb = meter_bar(self.capacity, &self.name);
 
-        let h = scope.spawn(move || ferry(receiver, self.writer));
+        let h = scope.spawn(move || ferry(receiver, self.writer, pb));
 
         ThreadObjectWriter {
             sender,
@@ -123,8 +128,9 @@ impl<W> ThreadObjectWriterBuilder<W> {
         T: Send + Sync + 'static,
     {
         let (sender, receiver) = bounded(self.capacity);
+        let pb = meter_bar(self.capacity, &self.name);
 
-        let h = spawn(move || ferry(receiver, self.writer));
+        let h = spawn(move || ferry(receiver, self.writer, pb));
 
         ThreadObjectWriter {
             sender,
@@ -134,6 +140,7 @@ impl<W> ThreadObjectWriterBuilder<W> {
 }
 
 impl<'scope, T: Send + Sync + 'static> ThreadObjectWriter<'scope, T> {
+    #[deprecated = "use wrap() instead"]
     pub fn with_scope<'env, W>(
         writer: W,
         scope: &'scope Scope<'scope, 'env>,
@@ -143,14 +150,9 @@ impl<'scope, T: Send + Sync + 'static> ThreadObjectWriter<'scope, T> {
         W: ObjectWriter<T> + Send + Sync + 'scope,
         'env: 'scope,
     {
-        let (sender, receiver) = bounded(cap);
-
-        let handle = scope.spawn(move || ferry(receiver, writer));
-
-        ThreadObjectWriter {
-            sender,
-            handle: WorkHandle::Scoped(handle),
-        }
+        ThreadObjectWriter::wrap(writer)
+            .with_capacity(cap)
+            .spawn_scoped(scope)
     }
 
     /// Create a satellite writer that writes to the same backend as this

@@ -6,8 +6,14 @@ use std::thread::{sleep, spawn};
 use anyhow::Result;
 use chrono::Duration;
 use friendly::{bytes, duration};
+#[cfg(unix)]
 use libc;
 use log::*;
+
+/// Query the number of CPUs we have.
+pub fn cpu_count() -> usize {
+    std::cmp::min(num_cpus::get(), num_cpus::get_physical())
+}
 
 /// Register an early-exit handler for debugging.
 pub fn maybe_exit_early() -> Result<()> {
@@ -30,8 +36,8 @@ fn timeval_duration(tv: &libc::timeval) -> Duration {
     ds + dus
 }
 
-/// Print closing process statistics.
-pub fn log_process_stats() {
+#[cfg(unix)]
+fn log_rusage() {
     let mut usage = MaybeUninit::uninit();
     let rc = unsafe { libc::getrusage(libc::RUSAGE_SELF, usage.as_mut_ptr()) };
     if rc != 0 {
@@ -50,4 +56,10 @@ pub fn log_process_stats() {
 
     let mem = usage.ru_maxrss;
     info!("max RSS (memory use): {}", bytes(mem));
+}
+
+/// Print closing process statistics.
+pub fn log_process_stats() {
+    #[cfg(unix)]
+    log_rusage();
 }

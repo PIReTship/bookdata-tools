@@ -30,8 +30,8 @@ use log::*;
 use paste::paste;
 use rayon::ThreadPoolBuilder;
 
-#[cfg(unix)]
 use crate::util::process;
+use crate::util::process::cpu_count;
 use crate::util::Timer;
 
 /// Macro to generate wrappers for subcommand enums.
@@ -144,10 +144,9 @@ impl CLI {
     pub fn exec(self) -> Result<()> {
         self.logging.init()?;
 
-        #[cfg(unix)]
         process::maybe_exit_early()?;
 
-        let npar = std::cmp::min(num_cpus::get(), num_cpus::get_physical());
+        let npar = cpu_count();
         debug!("setting up Rayon pool with {} threads", npar);
         ThreadPoolBuilder::new().num_threads(npar).build_global()?;
 
@@ -165,7 +164,6 @@ impl CLI {
             Err(e) => error!("error fetching CPU time: {}", e),
         };
 
-        #[cfg(unix)]
         process::log_process_stats();
         res
     }
