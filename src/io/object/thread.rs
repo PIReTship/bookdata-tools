@@ -144,22 +144,7 @@ impl<W> ThreadObjectWriterBuilder<W> {
     }
 }
 
-impl<'scope, T: Send + Sync + 'static> ThreadObjectWriter<'scope, T> {
-    #[deprecated = "use wrap() instead"]
-    pub fn with_scope<'env, W>(
-        writer: W,
-        scope: &'scope Scope<'scope, 'env>,
-        cap: usize,
-    ) -> ThreadObjectWriter<'scope, T>
-    where
-        W: ObjectWriter<T> + Send + Sync + 'scope,
-        'env: 'scope,
-    {
-        ThreadObjectWriter::wrap(writer)
-            .with_capacity(cap)
-            .spawn_scoped(scope)
-    }
-
+impl<'scope, T: Send + Sync + 'scope> ThreadObjectWriter<'scope, T> {
     /// Create a satellite writer that writes to the same backend as this
     /// writer.
     ///
