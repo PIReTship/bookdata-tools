@@ -103,7 +103,9 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.pos < self.size {
-            Some(self.frame.read_row(self.pos))
+            let val = Some(self.frame.read_row(self.pos));
+            self.pos += 1;
+            val
         } else {
             None
         }
