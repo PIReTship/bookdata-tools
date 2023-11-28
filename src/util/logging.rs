@@ -127,7 +127,9 @@ where
 /// Fetch from a receiver while updating the length.
 pub fn measure_and_recv<T>(chan: &Receiver<T>, pb: &ProgressBar) -> Option<T> {
     pb.set_position(chan.len() as u64);
-    chan.recv().ok()
+    let res = chan.recv();
+    pb.set_position(chan.len() as u64);
+    res.ok()
 }
 
 /// Send to a channel while updating the length.
@@ -137,5 +139,7 @@ pub fn measure_and_send<T>(
     pb: &ProgressBar,
 ) -> Result<(), crossbeam::channel::SendError<T>> {
     pb.set_position(chan.len() as u64);
-    chan.send(obj)
+    let res = chan.send(obj);
+    pb.set_position(chan.len() as u64);
+    res
 }
