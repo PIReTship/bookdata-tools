@@ -15,6 +15,7 @@ use indicatif::{ProgressBar, ProgressState, ProgressStyle};
 const DATA_PROGRESS_TMPL: &str =
     "{prefix}: {wide_bar} {bytes}/{total_bytes} ({bytes_per_sec}, {elapsed} elapsed, ETA {eta})";
 const ITEM_PROGRESS_TMPL: &str = "{prefix}: {wide_bar} {friendly_pos}/{friendly_len} ({friendly_rate}/s, {elapsed} elapsed, ETA {eta}) {msg}";
+const METER_TMPL: &str = "{prefix}: {wide_bar} {pos}/{len} {msg}";
 
 trait FieldExtract: Default + Send + Sync {
     fn extract(state: &ProgressState) -> f64;
@@ -101,6 +102,22 @@ where
         .template(ITEM_PROGRESS_TMPL)
         .expect("template error");
 
+    new_progress(len.unwrap_or(0))
+        .with_style(style)
+        .with_prefix(name.to_string())
+}
+
+/// Create a meter for monitoring pipelines.
+pub fn meter<S>(len: S, name: &str) -> ProgressBar
+where
+    S: TryInto<u64>,
+    S::Error: Debug,
+{
+    let len: u64 = len.try_into().expect("invalid length");
+    let len = Some(len).filter(|l| *l > 0);
+    let style = ProgressStyle::default_bar()
+        .template(METER_TMPL)
+        .expect("template error");
     new_progress(len.unwrap_or(0))
         .with_style(style)
         .with_prefix(name.to_string())
