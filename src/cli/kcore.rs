@@ -87,7 +87,7 @@ impl Command for Kcore {
         loop {
             let nstart = actions.height();
             info!("pass {}: checking items of {} actions", iters + 1, nstart);
-            let ics = actions.column("item")?.value_counts(true, false)?;
+            let ics = actions.column("item")?.value_counts(true, true)?;
             let ic_min: u32 = ics
                 .column("counts")?
                 .min()
