@@ -82,73 +82,77 @@ impl Command for Kcore {
             actions = actions.filter(&mask)?;
         }
 
+        let n_initial = actions.height();
+        let mut n_last = 0;
         let mut iters = 0;
         // we proceed iteratively, alternating filtering users and items
-        loop {
-            let nstart = actions.height();
-            info!("pass {}: checking items of {} actions", iters + 1, nstart);
-            let ics = actions.column("item")?.value_counts(true, true)?;
-            let ic_min: u32 = ics
-                .column("counts")?
-                .min()
-                .ok_or_else(|| anyhow!("data frame is empty"))?;
-            if ic_min < ik {
-                info!("filtering items (smallest count: {})", ic_min);
-                let ifilt = ics
-                    .lazy()
-                    .filter(col("counts").gt_eq(lit(ik)))
-                    .select(&[col("item")]);
-                let afilt = actions.lazy().inner_join(ifilt, "item", "item");
-                actions = afilt.collect()?;
-                info!(
-                    "now have {} actions (removed {})",
-                    actions.height(),
-                    nstart - actions.height()
-                );
-            }
+        // stop when a pass has left it unchanged
+        while actions.height() != n_last {
+            n_last = actions.height();
+            info!(
+                "pass {}: checking items of {} actions",
+                iters + 1,
+                friendly::scalar(actions.height())
+            );
+            actions = filter_counts(actions, "item", ik)?;
 
-            let nustart = actions.height();
-            info!("pass {}: checking users of {} actions", iters + 1, nustart);
-            let ucs = actions.column("user")?.value_counts(true, false)?;
-            let uc_min: u32 = ucs
-                .column("counts")?
-                .min()
-                .ok_or_else(|| anyhow!("data frame is empty"))?;
-            if uc_min < uk {
-                info!("filtering users (smallest count: {})", uc_min);
-                let ufilt = ucs
-                    .lazy()
-                    .filter(col("counts").gt_eq(lit(uk)))
-                    .select(&[col("user")]);
-                let afilt = actions.lazy().inner_join(ufilt, "user", "user");
-                actions = afilt.collect()?;
-                info!(
-                    "now have {} actions (removed {})",
-                    actions.height(),
-                    nustart - actions.height()
-                );
-            } else {
-                info!(
-                    "finished computing {}-core with {} actions (imin: {}, umin: {})",
-                    self.k,
-                    nustart,
-                    // re-compute this in case it changed
-                    actions
-                        .column("item")?
-                        .value_counts(true, false)?
-                        .column("counts")?
-                        .min::<u32>()
-                        .unwrap(),
-                    uc_min
-                );
-                break;
-            }
+            info!(
+                "pass {}: checking users of {} actions",
+                iters + 1,
+                friendly::scalar(actions.height())
+            );
+            actions = filter_counts(actions, "user", ik)?;
 
             iters += 1;
         }
+        info!(
+            "finished computing {}-core with {} of {} actions (imin: {}, umin: {})",
+            self.k,
+            friendly::scalar(actions.height()),
+            friendly::scalar(n_initial),
+            // re-compute this in case it changed
+            actions
+                .column("item")?
+                .value_counts(true, true)?
+                .column("counts")?
+                .min::<u32>()
+                .unwrap(),
+            actions
+                .column("user")?
+                .value_counts(true, true)?
+                .column("counts")?
+                .min::<u32>()
+                .unwrap(),
+        );
 
         save_df_parquet(actions, &self.output)?;
 
         Ok(())
+    }
+}
+
+fn filter_counts(actions: DataFrame, column: &'static str, k: u32) -> Result<DataFrame> {
+    let nstart = actions.height();
+    let counts = actions.column(column)?.value_counts(true, true)?;
+    let min_count: u32 = counts
+        .column("counts")?
+        .min()
+        .ok_or_else(|| anyhow!("data frame is empty"))?;
+    if min_count < k {
+        info!("filtering {}s (smallest count: {})", column, min_count);
+        let ifilt = counts
+            .lazy()
+            .filter(col("counts").gt_eq(lit(k)))
+            .select(&[col(column)]);
+        let afilt = actions.lazy().inner_join(ifilt, column, column);
+        let actions = afilt.collect()?;
+        info!(
+            "now have {} actions (removed {})",
+            friendly::scalar(actions.height()),
+            nstart - actions.height()
+        );
+        Ok(actions)
+    } else {
+        Ok(actions)
     }
 }
