@@ -42,7 +42,7 @@ pub struct InterInput {
 
 fn scan_gr<R, W>(path: &Path, proc: W) -> Result<()>
 where
-    W: ObjectWriter<R> + DataSink + Send + 'static,
+    W: ObjectWriter<R> + DataSink + Send + Sync + 'static,
     R: DeserializeOwned + Send + Sync + 'static,
 {
     let outs: Vec<_> = proc

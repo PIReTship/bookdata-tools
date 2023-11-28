@@ -1,4 +1,7 @@
-use std::thread::{spawn, JoinHandle, Scope, ScopedJoinHandle};
+use std::{
+    borrow::Cow,
+    thread::{spawn, JoinHandle, Scope, ScopedJoinHandle},
+};
 
 use anyhow::Result;
 use crossbeam::channel::{bounded, Receiver, Sender};
@@ -24,6 +27,12 @@ where
     writer.finish()
 }
 
+pub struct ThreadObjectWriterBuilder<W> {
+    writer: W,
+    name: String,
+    capacity: usize,
+}
+
 /// Write objects in a background thread.
 pub struct ThreadObjectWriter<'scope, T>
 where
@@ -34,33 +43,104 @@ where
 }
 
 impl<T: Send + Sync + 'static> ThreadObjectWriter<'static, T> {
-    pub fn new<W: ObjectWriter<T> + Send + 'static>(writer: W) -> ThreadObjectWriter<'static, T> {
+    #[deprecated = "use wrap() instead"]
+    #[allow(deprecated)]
+    pub fn new<W: ObjectWriter<T> + Send + Sync + 'static>(
+        writer: W,
+    ) -> ThreadObjectWriter<'static, T> {
         Self::with_capacity(writer, 4096)
     }
 
-    pub fn with_capacity<W: ObjectWriter<T> + Send + 'static>(
+    #[deprecated = "use wrap() instead"]
+    pub fn with_capacity<W: ObjectWriter<T> + Send + Sync + 'static>(
         writer: W,
         cap: usize,
     ) -> ThreadObjectWriter<'static, T> {
-        let (sender, receiver) = bounded(cap);
+        ThreadObjectWriter::wrap(writer).with_capacity(cap).spawn()
+    }
+}
 
-        let handle = spawn(|| ferry(receiver, writer));
+impl<'scope, T> ThreadObjectWriter<'scope, T>
+where
+    T: Send + Sync + 'scope,
+{
+    pub fn wrap<'env, W>(writer: W) -> ThreadObjectWriterBuilder<W>
+    where
+        W: ObjectWriter<T> + Send + Sync + 'scope,
+        'env: 'scope,
+    {
+        ThreadObjectWriterBuilder {
+            writer,
+            name: "unnamed".into(),
+            capacity: 100,
+        }
+    }
+}
+
+impl<W> ThreadObjectWriterBuilder<W> {
+    /// Set the channel capacity for this thread writer.  Defaults to 100.
+    pub fn with_capacity(self, cap: usize) -> Self {
+        ThreadObjectWriterBuilder {
+            capacity: cap,
+            ..self
+        }
+    }
+
+    /// Set a name for this thread writer for debugging.
+    pub fn with_name<S: Into<Cow<'static, str>>>(self, name: S) -> Self {
+        let name: Cow<'static, str> = name.into();
+        ThreadObjectWriterBuilder {
+            name: name.to_string(),
+            ..self
+        }
+    }
+
+    /// Spawn the thread writer.
+    pub fn spawn_scoped<'scope, 'env, T>(
+        self,
+        scope: &'scope Scope<'scope, 'env>,
+    ) -> ThreadObjectWriter<'scope, T>
+    where
+        W: ObjectWriter<T> + Send + Sync + 'scope,
+        T: Send + Sync + 'scope,
+    {
+        let (sender, receiver) = bounded(self.capacity);
+
+        let h = scope.spawn(move || ferry(receiver, self.writer));
 
         ThreadObjectWriter {
             sender,
-            handle: WorkHandle::Static(handle),
+            handle: WorkHandle::Scoped(h),
+        }
+    }
+}
+
+impl<W> ThreadObjectWriterBuilder<W> {
+    /// Spawn the thread writer.
+    pub fn spawn<T>(self) -> ThreadObjectWriter<'static, T>
+    where
+        W: ObjectWriter<T> + Send + Sync + 'static,
+        T: Send + Sync + 'static,
+    {
+        let (sender, receiver) = bounded(self.capacity);
+
+        let h = spawn(move || ferry(receiver, self.writer));
+
+        ThreadObjectWriter {
+            sender,
+            handle: WorkHandle::Static(h),
         }
     }
 }
 
 impl<'scope, T: Send + Sync + 'static> ThreadObjectWriter<'scope, T> {
     pub fn with_scope<'env, W>(
-        writer: &'env mut W,
+        writer: W,
         scope: &'scope Scope<'scope, 'env>,
         cap: usize,
     ) -> ThreadObjectWriter<'scope, T>
     where
-        W: ObjectWriter<T> + Send + Sync,
+        W: ObjectWriter<T> + Send + Sync + 'scope,
         'env: 'scope,
     {
         let (sender, receiver) = bounded(cap);
