@@ -7,7 +7,7 @@ use anyhow::Result;
 use crossbeam::channel::{bounded, Receiver, Sender};
 use indicatif::ProgressBar;
 
-use crate::util::logging::{measure_and_recv, meter_bar};
+use crate::util::logging::{measure_and_recv, measure_and_send, meter_bar};
 
 use super::ObjectWriter;
 
@@ -44,6 +44,7 @@ where
 {
     sender: Sender<T>,
     handle: WorkHandle<'scope>,
+    meter: ProgressBar,
 }
 
 impl<T: Send + Sync + 'static> ThreadObjectWriter<'static, T> {
@@ -111,9 +112,11 @@ impl<W> ThreadObjectWriterBuilder<W> {
         let (sender, receiver) = bounded(self.capacity);
         let pb = meter_bar(self.capacity, &self.name);
 
-        let h = scope.spawn(move || ferry(receiver, self.writer, pb));
+        let rpb = pb.clone();
+        let h = scope.spawn(move || ferry(receiver, self.writer, rpb));
 
         ThreadObjectWriter {
+            meter: pb,
             sender,
             handle: WorkHandle::Scoped(h),
         }
@@ -130,9 +133,11 @@ impl<W> ThreadObjectWriterBuilder<W> {
         let (sender, receiver) = bounded(self.capacity);
         let pb = meter_bar(self.capacity, &self.name);
 
-        let h = spawn(move || ferry(receiver, self.writer, pb));
+        let rpb = pb.clone();
+        let h = spawn(move || ferry(receiver, self.writer, rpb));
 
         ThreadObjectWriter {
+            meter: pb,
             sender,
             handle: WorkHandle::Static(h),
         }
@@ -193,7 +198,7 @@ impl<'scope, T: Send + Sync + 'static> ThreadObjectWriter<'scope, T> {
 
 impl<'scope, T: Send + Sync + 'static> ObjectWriter<T> for ThreadObjectWriter<'scope, T> {
     fn write_object(&mut self, object: T) -> Result<()> {
-        self.sender.send(object)?;
+        measure_and_send(&self.sender, object, &self.meter)?;
         Ok(())
     }
 
@@ -220,7 +225,7 @@ where
     T: Send + Sync + 'static,
     'scope: 'a,
 {
-    _delegate: &'a ThreadObjectWriter<'scope, T>,
+    delegate: &'a ThreadObjectWriter<'scope, T>,
     sender: Sender<T>,
 }
 
@@ -232,7 +237,7 @@ where
     /// Create a new thread child writer.
     fn create(delegate: &'a ThreadObjectWriter<'scope, T>) -> ThreadWriterSatellite<'a, 'scope, T> {
         ThreadWriterSatellite {
-            _delegate: delegate,
+            delegate,
             sender: delegate.sender.clone(),
         }
     }
@@ -244,7 +249,7 @@ where
     'scope: 'a,
 {
     fn write_object(&mut self, object: T) -> Result<()> {
-        self.sender.send(object)?;
+        measure_and_send(&self.sender, object, &self.delegate.meter)?;
         Ok(())
     }
 

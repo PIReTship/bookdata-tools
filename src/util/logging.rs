@@ -7,7 +7,7 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use crossbeam::channel::Receiver;
+use crossbeam::channel::{Receiver, Sender};
 use friendly::scalar;
 use happylog::new_progress;
 use indicatif::style::ProgressTracker;
@@ -128,4 +128,14 @@ where
 pub fn measure_and_recv<T>(chan: &Receiver<T>, pb: &ProgressBar) -> Option<T> {
     pb.set_position(chan.len() as u64);
     chan.recv().ok()
+}
+
+/// Send to a channel while updating the length.
+pub fn measure_and_send<T>(
+    chan: &Sender<T>,
+    obj: T,
+    pb: &ProgressBar,
+) -> Result<(), crossbeam::channel::SendError<T>> {
+    pb.set_position(chan.len() as u64);
+    chan.send(obj)
 }

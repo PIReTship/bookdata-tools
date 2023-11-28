@@ -16,7 +16,7 @@ use quick_xml::Reader;
 use crate::io::object::{ChunkWriter, ThreadObjectWriter, UnchunkWriter};
 use crate::io::ObjectWriter;
 use crate::tsv::split_first;
-use crate::util::logging::{measure_and_recv, meter_bar};
+use crate::util::logging::{measure_and_recv, measure_and_send, meter_bar};
 use crate::util::process::cpu_count;
 use crate::util::StringAccumulator;
 
@@ -96,6 +96,7 @@ where
 
         // background thread getting lines
         info!("spawning reader thread");
+        let fpb = fill.clone();
         let bg_read: JoinHandle<Result<usize>> = spawn(move || {
             let mut accum = Vec::with_capacity(CHUNK_LINES);
             let mut nlines = 0usize;
@@ -106,7 +107,7 @@ where
                 accum.push(payload.to_owned());
                 if accum.len() >= CHUNK_LINES {
                     let chunk = replace(&mut accum, Vec::with_capacity(CHUNK_LINES));
-                    chunk_tx.send(chunk).expect("channel send failure");
+                    measure_and_send(&chunk_tx, chunk, &fpb).expect("channel send failure");
                 }
             }
             if accum.len() > 0 {
