@@ -91,7 +91,7 @@ impl<W> ThreadObjectWriterBuilder<W> {
         T: Send + Sync + 'scope,
     {
         let (sender, receiver) = bounded(self.capacity);
-        let pb = meter_bar(self.capacity, &self.name);
+        let pb = meter_bar(self.capacity, &format!("{} buffer", self.name));
 
         let rpb = pb.clone();
         let h = scope.spawn(move || ferry(receiver, self.writer, rpb));
@@ -112,7 +112,7 @@ impl<W> ThreadObjectWriterBuilder<W> {
         T: Send + Sync + 'static,
     {
         let (sender, receiver) = bounded(self.capacity);
-        let pb = meter_bar(self.capacity, &self.name);
+        let pb = meter_bar(self.capacity, &format!("{} buffer", self.name));
 
         let rpb = pb.clone();
         let h = spawn(move || ferry(receiver, self.writer, rpb));

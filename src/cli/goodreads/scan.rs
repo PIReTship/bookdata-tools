@@ -54,9 +54,7 @@ where
     info!("reading data from {}", path.display());
     let pb = data_progress(0);
     let read = LineProcessor::open_gzip(path, pb.clone())?;
-    let mut writer = ThreadObjectWriter::wrap(proc)
-        .with_name("output buffer")
-        .spawn();
+    let mut writer = ThreadObjectWriter::wrap(proc).with_name("output").spawn();
     read.process_json(&mut writer)?;
     pb.finish_and_clear();
 
