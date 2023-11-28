@@ -1,12 +1,17 @@
 //! Support for streaming objects from a Parquet file.
-use std::fs::File;
+use std::io::Seek;
+use std::iter::zip;
 use std::path::Path;
 use std::thread::spawn;
+use std::{fs::File, io::Read};
 
 use anyhow::Result;
-use crossbeam::channel::{bounded, Receiver};
+use crossbeam::channel::{bounded, Receiver, Sender};
+use fallible_iterator::{FallibleIterator, IteratorExt};
+use indicatif::ProgressBar;
 use log::*;
-use polars::{io::pl_async::get_runtime, prelude::*};
+use polars::prelude::*;
+use polars_parquet::read::{infer_schema, read_metadata, FileReader};
 
 use crate::{
     arrow::row::iter_df_rows,
@@ -62,59 +67,27 @@ where
     R: TableRow + Send + Sync + 'static,
 {
     let path = path.as_ref();
-    let reader = File::open(&path)?;
-    let mut reader = ParquetReader::new(reader)
-        .set_low_memory(true)
-        .read_parallel(ParallelStrategy::None);
-    let row_count = reader.num_rows()?;
+    let mut reader = File::open(&path)?;
+    let meta = read_metadata(&mut reader)?;
+    let row_count = meta.num_rows;
+    let schema = infer_schema(&meta)?;
+    let reader = FileReader::new(reader, meta.row_groups, schema.clone(), None, None, None);
 
     info!(
         "scanning {} with {} rows",
         path.display(),
         friendly::scalar(row_count)
     );
-    debug!("file schema: {:?}", reader.get_metadata()?.schema());
+    debug!("file schema: {:?}", schema);
     let pb = item_progress(row_count, &format!("{}:", path.display()));
-
-    let reader = reader.batched(1024 * 1024)?;
 
     // use a small bound since we're sending whole batches
     let (send, receive) = bounded(5);
-    let fill = meter_bar(5, &format!("{} scan buffer", path.display()));
     let p2 = path.to_path_buf();
 
     spawn(move || {
-        let send = send;
-        let mut reader = reader;
-
-        debug!("{}: beginning batched read", p2.display());
-        while !reader.is_finished() {
-            trace!("{}: fetching batch", p2.display());
-            let batches = reader.next_batches(1);
-            let batches = get_runtime().block_on_potential_spawn(batches);
-            let batches = match batches {
-                Ok(bs) => bs,
-                Err(e) => {
-                    debug!("routing backend error {:?}", e);
-                    send.send(Err(e.into())).expect("channel send error");
-                    return;
-                }
-            };
-
-            for df in batches.into_iter().flatten() {
-                trace!("{}: received batch of {} rows", p2.display(), df.height());
-                pb.inc(df.height() as u64);
-                match decode_chunk(df) {
-                    Ok(batch) => {
-                        measure_and_send(&send, Ok(batch), &fill).expect("channel send error");
-                    }
-                    Err(e) => {
-                        debug!("routing backend error {:?}", e);
-                        send.send(Err(e.into())).expect("channel send error");
-                        return;
-                    }
-                }
-            }
+        if let Err(e) = scan_backend(reader, &send, schema, &p2, pb) {
+            send.send(Err(e)).expect("failed to send error message");
         }
     });
 
@@ -161,4 +134,29 @@ where
             }
         }
     }
+}
+
+fn scan_backend<R: Read + Seek, E: TableRow + Send + Sync + 'static>(
+    reader: FileReader<R>,
+    send: &Sender<Result<Vec<E>>>,
+    schema: ArrowSchema,
+    path: &Path,
+    pb: ProgressBar,
+) -> Result<()> {
+    debug!("{}: beginning batched read", path.display());
+    let meter = meter_bar(5, &format!("{} read buffer", path.display()));
+    for chunk in reader {
+        let chunk = chunk?;
+
+        trace!("{}: received batch of {} rows", path.display(), chunk.len());
+        pb.inc(chunk.len() as u64);
+        let columns: Vec<_> = zip(&schema.fields, chunk.into_arrays())
+            .map(|(f, c)| Series::from_arrow(&f.name, c))
+            .transpose_into_fallible()
+            .collect()?;
+        let df = DataFrame::new(columns)?;
+        let batch = decode_chunk(df)?;
+        measure_and_send(&send, Ok(batch), &meter)?;
+    }
+    Ok(())
 }
