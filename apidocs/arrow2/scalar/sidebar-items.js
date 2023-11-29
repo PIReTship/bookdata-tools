@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["new_scalar"],"struct":["BinaryScalar","BooleanScalar","DictionaryScalar","FixedSizeBinaryScalar","FixedSizeListScalar","ListScalar","MapScalar","NullScalar","PrimitiveScalar","StructScalar","UnionScalar","Utf8Scalar"],"trait":["Scalar"]};

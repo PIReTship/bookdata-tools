@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-plan-0.34.2/src/logical_plan/optimizer/predicate_pushdown/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="polars_plan" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-plan-0.35.4/src/logical_plan/optimizer/predicate_pushdown/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="polars_plan" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0 (79e9716c9 2023-11-13)" data-channel="1.74.0" data-search-js="search-8be46b629f5f14a8.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../../polars_plan/index.html"><img class="rust-logo" src="../../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -533,6 +533,51 @@
 <a href="#533" id="533">533</a>
 <a href="#534" id="534">534</a>
 <a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
+<a href="#537" id="537">537</a>
+<a href="#538" id="538">538</a>
+<a href="#539" id="539">539</a>
+<a href="#540" id="540">540</a>
+<a href="#541" id="541">541</a>
+<a href="#542" id="542">542</a>
+<a href="#543" id="543">543</a>
+<a href="#544" id="544">544</a>
+<a href="#545" id="545">545</a>
+<a href="#546" id="546">546</a>
+<a href="#547" id="547">547</a>
+<a href="#548" id="548">548</a>
+<a href="#549" id="549">549</a>
+<a href="#550" id="550">550</a>
+<a href="#551" id="551">551</a>
+<a href="#552" id="552">552</a>
+<a href="#553" id="553">553</a>
+<a href="#554" id="554">554</a>
+<a href="#555" id="555">555</a>
+<a href="#556" id="556">556</a>
+<a href="#557" id="557">557</a>
+<a href="#558" id="558">558</a>
+<a href="#559" id="559">559</a>
+<a href="#560" id="560">560</a>
+<a href="#561" id="561">561</a>
+<a href="#562" id="562">562</a>
+<a href="#563" id="563">563</a>
+<a href="#564" id="564">564</a>
+<a href="#565" id="565">565</a>
+<a href="#566" id="566">566</a>
+<a href="#567" id="567">567</a>
+<a href="#568" id="568">568</a>
+<a href="#569" id="569">569</a>
+<a href="#570" id="570">570</a>
+<a href="#571" id="571">571</a>
+<a href="#572" id="572">572</a>
+<a href="#573" id="573">573</a>
+<a href="#574" id="574">574</a>
+<a href="#575" id="575">575</a>
+<a href="#576" id="576">576</a>
+<a href="#577" id="577">577</a>
+<a href="#578" id="578">578</a>
+<a href="#579" id="579">579</a>
+<a href="#580" id="580">580</a>
 </pre></div><pre class="rust"><code><span class="kw">mod </span>group_by;
 <span class="kw">mod </span>join;
 <span class="kw">mod </span>keys;
@@ -610,10 +655,10 @@
         <span class="kw">let </span>exprs = lp.get_exprs();
 
         <span class="kw">if </span>has_projections {
-            <span class="comment">// we should not pass these projections
+            <span class="comment">// This checks the exprs in the projections at this level.
             </span><span class="kw">if </span>exprs
                 .iter()
-                .any(|e_n| projection_is_definite_pushdown_boundary(<span class="kw-2">*</span>e_n, expr_arena))
+                .any(|e_n| aexpr_blocks_predicate_pushdown(<span class="kw-2">*</span>e_n, expr_arena))
             {
                 <span class="kw">return </span><span class="self">self</span>.no_pushdown_restart_opt(lp, acc_predicates, lp_arena, expr_arena);
             }
@@ -726,12 +771,41 @@
 
         <span class="kw">match </span>lp {
             Selection { predicate, input } =&gt; {
-
-                <span class="comment">// If a predicates result would be influenced by earlier applied filter
-                // we remove it and apply it locally
-                </span><span class="kw">let </span>local_predicates = transfer_to_local_by_node(<span class="kw-2">&amp;mut </span>acc_predicates, |node| predicate_is_pushdown_boundary(node, expr_arena));
-
                 insert_and_combine_predicate(<span class="kw-2">&amp;mut </span>acc_predicates, predicate, expr_arena);
+
+                <span class="comment">// If the result of any predicate depends on the predicates that
+                // occur before it, then we must stop pushdown of all accumulated
+                // predicates at this level. Otherwise, if they are pushed past
+                // the boundary predicate, then the value of the boundary
+                // predicate itself will change and become incorrect.
+                // For example:
+                // (unoptimized)
+                // filter(y &gt; 1) --&gt; filter(x == min(x)) --&gt; filter(y &gt; 2)
+                //
+                // (incorrectly optimized)
+                // filter(y &gt; 1) &amp; filter(y &gt; 2) --&gt; filter(x == min(x))
+                // incorrect as min(x) in the subset where y &gt; 2 may not be equal
+                // to min(x) in the subset where y &gt; 1
+                //
+                // (correctly optimized)
+                // filter(y &gt; 1) --&gt; filter(x == min(x)) &amp; filter(y &gt; 2)
+                // pushdown of filter(y &gt; 2) is correctly stopped at the boundary
+                //
+                // Assuming all predicates originate from the `Selection` node
+                // at the beginning of optimization, applying this step here
+                // guarantees that boundary predicates will not appear in other
+                // contexts. Note boundary projections are handled elsewhere.
+                </span><span class="kw">let </span>local_predicates = <span class="kw">if </span>acc_predicates
+                    .values()
+                    .any(|node| aexpr_blocks_predicate_pushdown(<span class="kw-2">*</span>node, expr_arena))
+                {
+                    <span class="kw">let </span>local_predicates = acc_predicates.values().copied().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                    acc_predicates.clear();
+                    local_predicates
+                } <span class="kw">else </span>{
+                    <span class="macro">vec!</span>[]
+                };
+
                 <span class="kw">let </span>alp = lp_arena.take(input);
                 <span class="kw">let </span>new_input = <span class="self">self</span>.push_down(alp, acc_predicates, lp_arena, expr_arena)<span class="question-mark">?</span>;
 
@@ -767,7 +841,29 @@
                 file_options: options,
                 output_schema
             } =&gt; {
-                <span class="kw">let </span>local_predicates = partition_by_full_context(<span class="kw-2">&amp;mut </span>acc_predicates, expr_arena);
+                <span class="kw">for </span>node <span class="kw">in </span>acc_predicates.values() {
+                    debug_assert_aexpr_allows_predicate_pushdown(<span class="kw-2">*</span>node, expr_arena);
+                }
+
+                <span class="kw">let </span>local_predicates = <span class="kw">match </span><span class="kw-2">&amp;</span>scan_type {
+                    <span class="attr">#[cfg(feature = <span class="string">&quot;parquet&quot;</span>)]
+                    </span>FileScan::Parquet { .. } =&gt; <span class="macro">vec!</span>[],
+                    <span class="attr">#[cfg(feature = <span class="string">&quot;ipc&quot;</span>)]
+                    </span>FileScan::Ipc { .. } =&gt; <span class="macro">vec!</span>[],
+                    <span class="kw">_ </span>=&gt; {
+                        <span class="comment">// Disallow row-count pushdown of other scans as they may
+                        // not update the row counts properly before applying the
+                        // predicate (e.g. FileScan::Csv doesn&#39;t).
+                        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>row_count) = options.row_count {
+                            <span class="kw">let </span>row_count_predicates = transfer_to_local_by_name(expr_arena, <span class="kw-2">&amp;mut </span>acc_predicates, |name| {
+                                name.as_ref() == row_count.name
+                            });
+                            row_count_predicates
+                        } <span class="kw">else </span>{
+                            <span class="macro">vec!</span>[]
+                        }
+                    }
+                };
                 <span class="kw">let </span>predicate = predicate_at_scan(acc_predicates, predicate, expr_arena);
 
                 <span class="kw">if let </span>(<span class="bool-val">true</span>, <span class="prelude-val">Some</span>(predicate)) = (file_info.hive_parts.is_some(), predicate) {
@@ -777,7 +873,7 @@
 
 
                             <span class="kw">for </span>path <span class="kw">in </span>paths.as_ref().iter() {
-                                file_info.update_hive_partitions(path);
+                                file_info.update_hive_partitions(path)<span class="question-mark">?</span>;
                                 <span class="kw">let </span>hive_part_stats = file_info.hive_parts.as_deref().ok_or_else(|| <span class="macro">polars_err!</span>(ComputeError: <span class="string">&quot;cannot combine hive partitioned directories with non-hive partitioned ones&quot;</span>))<span class="question-mark">?</span>;
 
                                 <span class="kw">if </span>stats_evaluator.should_read(hive_part_stats.get_statistics())<span class="question-mark">? </span>{
@@ -813,7 +909,8 @@
                     <span class="attr">#[cfg(feature = <span class="string">&quot;csv&quot;</span>)]
                     </span>FileScan::Csv {..} =&gt; options.n_rows.is_none(),
                     FileScan::Anonymous {function, ..} =&gt; function.allows_predicate_pushdown(),
-                    <span class="kw">_ </span>=&gt; <span class="bool-val">true
+                    <span class="attr">#[allow(unreachable_patterns)]
+                    </span><span class="kw">_ </span>=&gt; <span class="bool-val">true
                 </span>};
                 do_optimization &amp;= predicate.is_some();
 
@@ -871,9 +968,8 @@
                             <span class="bool-val">true
                         </span>}
                     };
-                    <span class="kw">let </span><span class="kw-2">mut </span>local_predicates =
+                    <span class="kw">let </span>local_predicates =
                         transfer_to_local_by_name(expr_arena, <span class="kw-2">&amp;mut </span>acc_predicates, condition);
-                    local_predicates.extend_from_slice(<span class="kw-2">&amp;</span>transfer_to_local_by_node(<span class="kw-2">&amp;mut </span>acc_predicates, |node| predicate_is_pushdown_boundary(node, expr_arena)));
 
                     <span class="self">self</span>.pushdown_and_assign(input, acc_predicates, lp_arena, expr_arena)<span class="question-mark">?</span>;
                     <span class="kw">let </span>lp = Distinct {
@@ -930,14 +1026,8 @@
                             <span class="kw">let </span>condition = |name: Arc&lt;str&gt;| columns.iter().any(|s| s.as_ref() == <span class="kw-2">&amp;*</span>name);
 
                             <span class="comment">// first columns that refer to the exploded columns should be done here
-                            </span><span class="kw">let </span><span class="kw-2">mut </span>local_predicates =
+                            </span><span class="kw">let </span>local_predicates =
                                 transfer_to_local_by_name(expr_arena, <span class="kw-2">&amp;mut </span>acc_predicates, condition);
-
-                            <span class="comment">// if any predicate is a pushdown boundary, thus influenced by order of predicates e.g.: sum(), over(), sort
-                            // we do all here. #5950
-                            </span><span class="kw">if </span>acc_predicates.values().chain(local_predicates.iter()).any(|node| predicate_is_pushdown_boundary(<span class="kw-2">*</span>node, expr_arena)) {
-                                local_predicates.extend(acc_predicates.drain().map(|(_name, node)| node))
-                            }
 
                             <span class="kw">let </span>lp = <span class="self">self</span>.pushdown_and_continue(lp, acc_predicates, lp_arena, expr_arena, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
                             <span class="prelude-val">Ok</span>(<span class="self">self</span>.optional_apply_predicate(lp, local_predicates, lp_arena, expr_arena))

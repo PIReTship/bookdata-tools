@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["concurrent_download_limit","verbose"]};
+window.SIDEBAR_ITEMS = {"fn":["get_file_prefetch_size","get_rg_prefetch_size","verbose"]};

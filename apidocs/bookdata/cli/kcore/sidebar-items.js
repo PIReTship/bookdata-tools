@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Kcore"]};
+window.SIDEBAR_ITEMS = {"fn":["filter_counts"],"struct":["Kcore"]};

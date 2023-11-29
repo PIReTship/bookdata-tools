@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["copy_to_dst","ltrim_char_count","rtrim_char_count","rtrim_char_slice"]};

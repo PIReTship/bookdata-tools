@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["arrow_serialize_to_mutable_array"],"trait":["ArrowSerialize","FlattenChunk","TryIntoArrow"]};

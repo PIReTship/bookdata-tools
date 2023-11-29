@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["atan2","concatenate","ewm","float","list","list_bytes_iter","pow","rolling","set","sort_partition","take_agg"]};
+window.SIDEBAR_ITEMS = {"enum":["Ambiguous"],"mod":["atan2","concatenate","ewm","float","list","list_bytes_iter","pow","rolling","set","sort_partition","take_agg"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"type":["PlHashMap","PlHashSet"]};
+window.SIDEBAR_ITEMS = {"trait":["InitHashMaps"],"type":["PlHashMap","PlHashSet","PlIndexMap","PlIndexSet"]};

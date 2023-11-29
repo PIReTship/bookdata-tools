@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["as_cast"],"trait":["AsCast","AsPrimitive","Float","Integer","Number","Primitive","SignedInteger","UnsignedInteger"]};

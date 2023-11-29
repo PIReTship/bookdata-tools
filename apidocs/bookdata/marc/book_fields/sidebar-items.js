@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["AuthRec","AuthRecArray","AuthRecArrayIterator","BookIds","BookIdsArray","BookIdsArrayIterator","BookOutput","ISBNrec","ISBNrecArray","ISBNrecArrayIterator","MutableAuthRecArray","MutableBookIdsArray","MutableISBNrecArray"]};
+window.SIDEBAR_ITEMS = {"struct":["AuthRec","AuthRecFrame","AuthRecFrameBuilder","BookIds","BookIdsFrame","BookIdsFrameBuilder","BookOutput","ISBNrec","ISBNrecFrame","ISBNrecFrameBuilder"]};

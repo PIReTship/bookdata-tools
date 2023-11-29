@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["max_step","min_step","u64_step"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["scan_isbns"],"struct":["ClusterHash","HashCmd","MutableClusterHashArray"]};
+window.SIDEBAR_ITEMS = {"fn":["scan_isbns"],"struct":["ClusterHash","ClusterHashFrame","ClusterHashFrameBuilder","HashCmd"]};

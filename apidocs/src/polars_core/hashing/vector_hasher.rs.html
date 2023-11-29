@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-core-0.34.2/src/hashing/vector_hasher.rs`."><title>vector_hasher.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="polars_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../polars_core/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-core-0.35.4/src/hashing/vector_hasher.rs`."><title>vector_hasher.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="polars_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0 (79e9716c9 2023-11-13)" data-channel="1.74.0" data-search-js="search-8be46b629f5f14a8.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../polars_core/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -440,37 +440,6 @@
 <a href="#440" id="440">440</a>
 <a href="#441" id="441">441</a>
 <a href="#442" id="442">442</a>
-<a href="#443" id="443">443</a>
-<a href="#444" id="444">444</a>
-<a href="#445" id="445">445</a>
-<a href="#446" id="446">446</a>
-<a href="#447" id="447">447</a>
-<a href="#448" id="448">448</a>
-<a href="#449" id="449">449</a>
-<a href="#450" id="450">450</a>
-<a href="#451" id="451">451</a>
-<a href="#452" id="452">452</a>
-<a href="#453" id="453">453</a>
-<a href="#454" id="454">454</a>
-<a href="#455" id="455">455</a>
-<a href="#456" id="456">456</a>
-<a href="#457" id="457">457</a>
-<a href="#458" id="458">458</a>
-<a href="#459" id="459">459</a>
-<a href="#460" id="460">460</a>
-<a href="#461" id="461">461</a>
-<a href="#462" id="462">462</a>
-<a href="#463" id="463">463</a>
-<a href="#464" id="464">464</a>
-<a href="#465" id="465">465</a>
-<a href="#466" id="466">466</a>
-<a href="#467" id="467">467</a>
-<a href="#468" id="468">468</a>
-<a href="#469" id="469">469</a>
-<a href="#470" id="470">470</a>
-<a href="#471" id="471">471</a>
-<a href="#472" id="472">472</a>
-<a href="#473" id="473">473</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>arrow::bitmap::utils::get_bit_unchecked;
 <span class="attr">#[cfg(feature = <span class="string">&quot;group_by_list&quot;</span>)]
 </span><span class="kw">use </span>arrow::legacy::kernels::list_bytes_iter::numeric_list_bytes_iter;
@@ -512,7 +481,7 @@
     ((result &amp; <span class="number">0xffff_ffff_ffff_ffff</span>) <span class="kw">as </span>u64) ^ ((result &gt;&gt; <span class="number">64</span>) <span class="kw">as </span>u64)
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>get_null_hash_value(random_state: RandomState) -&gt; u64 {
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>get_null_hash_value(random_state: <span class="kw-2">&amp;</span>RandomState) -&gt; u64 {
     <span class="comment">// we just start with a large prime number and hash that twice
     // to get a constant hash value for null/None
     </span><span class="kw">let </span>first = random_state.hash_one(<span class="number">3188347919usize</span>);
@@ -520,7 +489,7 @@
 }
 
 <span class="kw">fn </span>insert_null_hash(chunks: <span class="kw-2">&amp;</span>[ArrayRef], random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) {
-    <span class="kw">let </span>null_h = get_null_hash_value(random_state);
+    <span class="kw">let </span>null_h = get_null_hash_value(<span class="kw-2">&amp;</span>random_state);
     <span class="kw">let </span>hashes = buf.as_mut_slice();
 
     <span class="kw">let </span><span class="kw-2">mut </span>offset = <span class="number">0</span>;
@@ -539,15 +508,10 @@
     });
 }
 
-<span class="attr">#[inline(always)]
-</span><span class="kw">pub fn </span>integer_hash&lt;T: AsU64&gt;(v: T) -&gt; u64 {
-    folded_multiply(v.as_u64(), MULTIPLE)
-}
-
 <span class="kw">fn </span>integer_vec_hash&lt;T&gt;(ca: <span class="kw-2">&amp;</span>ChunkedArray&lt;T&gt;, random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;)
 <span class="kw">where
     </span>T: PolarsIntegerType,
-    T::Native: Hash + AsU64,
+    T::Native: Hash,
 {
     <span class="comment">// Note that we don&#39;t use the no null branch! This can break in unexpected ways.
     // for instance with threading we split an array in n_threads, this may lead to
@@ -561,10 +525,13 @@
     <span class="attr">#[allow(unused_unsafe)]
     #[allow(clippy::useless_transmute)]
     </span>ca.downcast_iter().for_each(|arr| {
-        buf.extend(arr.values().as_slice().iter().copied().map(|v| {
-            <span class="comment">// we save an xor because we don&#39;t have initial state
-            </span>integer_hash(v)
-        }));
+        buf.extend(
+            arr.values()
+                .as_slice()
+                .iter()
+                .copied()
+                .map(|v| random_state.hash_one(v)),
+        );
     });
     insert_null_hash(<span class="kw-2">&amp;</span>ca.chunks, random_state, buf)
 }
@@ -572,9 +539,9 @@
 <span class="kw">fn </span>integer_vec_hash_combine&lt;T&gt;(ca: <span class="kw-2">&amp;</span>ChunkedArray&lt;T&gt;, random_state: RandomState, hashes: <span class="kw-2">&amp;mut </span>[u64])
 <span class="kw">where
     </span>T: PolarsIntegerType,
-    T::Native: Hash + AsU64,
+    T::Native: Hash,
 {
-    <span class="kw">let </span>null_h = get_null_hash_value(random_state);
+    <span class="kw">let </span>null_h = get_null_hash_value(<span class="kw-2">&amp;</span>random_state);
 
     <span class="kw">let </span><span class="kw-2">mut </span>offset = <span class="number">0</span>;
     ca.downcast_iter().for_each(|arr| {
@@ -585,8 +552,7 @@
                 .iter()
                 .zip(<span class="kw-2">&amp;mut </span>hashes[offset..])
                 .for_each(|(v, h)| {
-                    <span class="comment">// inlined from ahash. This ensures we combine with the previous state
-                    </span><span class="kw-2">*</span>h = folded_multiply(v.as_u64() ^ <span class="kw-2">*</span>h, MULTIPLE);
+                    <span class="kw-2">*</span>h = folded_multiply(random_state.hash_one(v) ^ <span class="kw-2">*</span>h, MULTIPLE);
                 }),
             <span class="kw">_ </span>=&gt; {
                 <span class="kw">let </span>validity = arr.validity().unwrap();
@@ -596,7 +562,8 @@
                     .zip(<span class="kw-2">&amp;mut </span>hashes[offset..])
                     .zip(arr.values().as_slice())
                     .for_each(|((valid, h), l)| {
-                        <span class="kw">let </span>to_hash = [null_h, l.as_u64()][valid <span class="kw">as </span>usize];
+                        <span class="kw">let </span>lh = random_state.hash_one(l);
+                        <span class="kw">let </span>to_hash = [null_h, lh][valid <span class="kw">as </span>usize];
 
                         <span class="comment">// inlined from ahash. This ensures we combine with the previous state
                         </span><span class="kw-2">*</span>h = folded_multiply(to_hash ^ <span class="kw-2">*</span>h, MULTIPLE);
@@ -650,7 +617,7 @@
 
 <span class="comment">// used in polars-pipe
 </span><span class="kw">pub fn </span>_hash_binary_array(arr: <span class="kw-2">&amp;</span>BinaryArray&lt;i64&gt;, random_state: RandomState, buf: <span class="kw-2">&amp;mut </span>Vec&lt;u64&gt;) {
-    <span class="kw">let </span>null_h = get_null_hash_value(random_state);
+    <span class="kw">let </span>null_h = get_null_hash_value(<span class="kw-2">&amp;</span>random_state);
     <span class="kw">if </span>arr.null_count() == <span class="number">0 </span>{
         <span class="comment">// use the null_hash as seed to get a hash determined by `random_state` that is passed
         </span>buf.extend(arr.values_iter().map(|v| xxh3_64_with_seed(v, null_h)))
@@ -672,7 +639,7 @@
     }
 
     <span class="kw">fn </span>vec_hash_combine(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, hashes: <span class="kw-2">&amp;mut </span>[u64]) -&gt; PolarsResult&lt;()&gt; {
-        <span class="kw">let </span>null_h = get_null_hash_value(random_state);
+        <span class="kw">let </span>null_h = get_null_hash_value(<span class="kw-2">&amp;</span>random_state);
 
         <span class="kw">let </span><span class="kw-2">mut </span>offset = <span class="number">0</span>;
         <span class="self">self</span>.downcast_iter().for_each(|arr| {
@@ -713,7 +680,7 @@
         buf.reserve(<span class="self">self</span>.len());
         <span class="kw">let </span>true_h = random_state.hash_one(<span class="bool-val">true</span>);
         <span class="kw">let </span>false_h = random_state.hash_one(<span class="bool-val">false</span>);
-        <span class="kw">let </span>null_h = get_null_hash_value(random_state);
+        <span class="kw">let </span>null_h = get_null_hash_value(<span class="kw-2">&amp;</span>random_state);
         <span class="self">self</span>.downcast_iter().for_each(|arr| {
             <span class="kw">if </span>arr.null_count() == <span class="number">0 </span>{
                 buf.extend(arr.values_iter().map(|v| <span class="kw">if </span>v { true_h } <span class="kw">else </span>{ false_h }))
@@ -731,7 +698,7 @@
     <span class="kw">fn </span>vec_hash_combine(<span class="kw-2">&amp;</span><span class="self">self</span>, random_state: RandomState, hashes: <span class="kw-2">&amp;mut </span>[u64]) -&gt; PolarsResult&lt;()&gt; {
         <span class="kw">let </span>true_h = random_state.hash_one(<span class="bool-val">true</span>);
         <span class="kw">let </span>false_h = random_state.hash_one(<span class="bool-val">false</span>);
-        <span class="kw">let </span>null_h = get_null_hash_value(random_state);
+        <span class="kw">let </span>null_h = get_null_hash_value(<span class="kw-2">&amp;</span>random_state);
 
         <span class="kw">let </span><span class="kw-2">mut </span>offset = <span class="number">0</span>;
         <span class="self">self</span>.downcast_iter().for_each(|arr| {
@@ -803,7 +770,7 @@
         </span>);
         _buf.clear();
         _buf.reserve(<span class="self">self</span>.len());
-        <span class="kw">let </span>null_h = get_null_hash_value(_random_state.clone());
+        <span class="kw">let </span>null_h = get_null_hash_value(<span class="kw-2">&amp;</span>_random_state);
 
         <span class="kw">for </span>arr <span class="kw">in </span><span class="self">self</span>.downcast_iter() {
             _buf.extend(
@@ -826,7 +793,7 @@
         ComputeError: <span class="string">&quot;grouping on list type is only allowed if the inner type is numeric&quot;
         </span>);
 
-        <span class="kw">let </span>null_h = get_null_hash_value(_random_state);
+        <span class="kw">let </span>null_h = get_null_hash_value(<span class="kw-2">&amp;</span>_random_state);
 
         <span class="kw">let </span><span class="kw-2">mut </span>offset = <span class="number">0</span>;
         <span class="self">self</span>.downcast_iter().try_for_each(|arr| {
@@ -876,35 +843,6 @@
             hashes,
         );
         <span class="prelude-val">Ok</span>(())
-    }
-}
-
-<span class="doccomment">/// Contains a ptr to the string slice an the precomputed hash of that string.
-/// During rehashes, we will rehash the hash instead of the string, that makes rehashing
-/// cheap and allows cache coherent small hash tables.
-</span><span class="attr">#[derive(Eq, Copy, Clone, Debug)]
-</span><span class="kw">pub struct </span>BytesHash&lt;<span class="lifetime">&#39;a</span>&gt; {
-    payload: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]&gt;,
-    <span class="kw">pub</span>(<span class="kw">super</span>) hash: u64,
-}
-
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Hash <span class="kw">for </span>BytesHash&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">fn </span>hash&lt;H: Hasher&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, state: <span class="kw-2">&amp;mut </span>H) {
-        state.write_u64(<span class="self">self</span>.hash)
-    }
-}
-
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; BytesHash&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="attr">#[inline]
-    </span><span class="kw">pub fn </span>new(s: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]&gt;, hash: u64) -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{ payload: s, hash }
-    }
-}
-
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; PartialEq <span class="kw">for </span>BytesHash&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="attr">#[inline]
-    </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
-        (<span class="self">self</span>.hash == other.hash) &amp;&amp; (<span class="self">self</span>.payload == other.payload)
     }
 }
 

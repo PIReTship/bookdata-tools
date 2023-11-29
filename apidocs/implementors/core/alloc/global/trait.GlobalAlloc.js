@@ -1,3 +1,4 @@
 (function() {var implementors = {
-"mimalloc":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.73.0/core/alloc/global/trait.GlobalAlloc.html\" title=\"trait core::alloc::global::GlobalAlloc\">GlobalAlloc</a> for <a class=\"struct\" href=\"mimalloc/struct.MiMalloc.html\" title=\"struct mimalloc::MiMalloc\">MiMalloc</a>"]]
+"snmalloc_rs":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.74.0/core/alloc/global/trait.GlobalAlloc.html\" title=\"trait core::alloc::global::GlobalAlloc\">GlobalAlloc</a> for <a class=\"struct\" href=\"snmalloc_rs/struct.SnMalloc.html\" title=\"struct snmalloc_rs::SnMalloc\">SnMalloc</a>"]],
+"tikv_jemallocator":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.74.0/core/alloc/global/trait.GlobalAlloc.html\" title=\"trait core::alloc::global::GlobalAlloc\">GlobalAlloc</a> for <a class=\"struct\" href=\"tikv_jemallocator/struct.Jemalloc.html\" title=\"struct tikv_jemallocator::Jemalloc\">Jemalloc</a>"]]
 };if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

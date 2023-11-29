@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["log_process_stats","timeval_duration"]};
+window.SIDEBAR_ITEMS = {"fn":["log_process_stats","log_rusage","maybe_exit_early","timeval_duration"]};

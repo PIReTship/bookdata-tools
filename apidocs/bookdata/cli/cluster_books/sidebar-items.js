@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["ClusterBooks","ClusterCode","ClusterStat","ClusteringStatistics","GraphEdge","ISBNClusterRec","MutableClusterCodeArray","MutableClusterStatArray","MutableGraphEdgeArray","MutableISBNClusterRecArray"]};
+window.SIDEBAR_ITEMS = {"struct":["ClusterBooks","ClusterCode","ClusterCodeFrame","ClusterCodeFrameBuilder","ClusterStat","ClusterStatFrame","ClusterStatFrameBuilder","ClusteringStatistics","GraphEdge","GraphEdgeFrame","GraphEdgeFrameBuilder","ISBNClusterRec","ISBNClusterRecFrame","ISBNClusterRecFrameBuilder"]};

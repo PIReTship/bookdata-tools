@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-core-0.34.2/src/frame/group_by/hashing.rs`."><title>hashing.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-core-0.35.4/src/frame/group_by/hashing.rs`."><title>hashing.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0 (79e9716c9 2023-11-13)" data-channel="1.74.0" data-search-js="search-8be46b629f5f14a8.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -518,13 +518,13 @@
 <a href="#518" id="518">518</a>
 <a href="#519" id="519">519</a>
 <a href="#520" id="520">520</a>
-<a href="#521" id="521">521</a>
-<a href="#522" id="522">522</a>
-<a href="#523" id="523">523</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::hash::{BuildHasher, Hash};
 
 <span class="kw">use </span>hashbrown::hash_map::{Entry, RawEntryMut};
 <span class="kw">use </span>hashbrown::HashMap;
+<span class="kw">use </span>polars_utils::hashing::{hash_to_partition, DirtyHash};
+<span class="kw">use </span>polars_utils::idx_vec::IdxVec;
+<span class="kw">use </span>polars_utils::idxvec;
 <span class="kw">use </span>polars_utils::iter::EnumerateIdxTrait;
 <span class="kw">use </span>polars_utils::sync::SyncPtr;
 <span class="kw">use </span>rayon::prelude::<span class="kw-2">*</span>;
@@ -533,8 +533,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::datatypes::PlHashMap;
 <span class="kw">use </span><span class="kw">crate</span>::frame::group_by::{GroupsIdx, IdxItem};
 <span class="kw">use </span><span class="kw">crate</span>::hashing::{
-    _df_rows_to_hashes_threaded_vertical, series_to_hashes, this_partition, AsU64, IdBuildHasher,
-    IdxHash, <span class="kw-2">*</span>,
+    _df_rows_to_hashes_threaded_vertical, series_to_hashes, IdBuildHasher, IdxHash, <span class="kw-2">*</span>,
 };
 <span class="kw">use </span><span class="kw">crate</span>::prelude::compare_inner::PartialEqInner;
 <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
@@ -572,7 +571,7 @@
                         </span>g.sort_unstable_by_key(|g| g.<span class="number">0</span>);
 
                         <span class="kw">unsafe </span>{
-                            <span class="kw">let </span><span class="kw-2">mut </span>items_ptr: <span class="kw-2">*mut </span>(IdxSize, Vec&lt;IdxSize&gt;) = items_ptr.get();
+                            <span class="kw">let </span><span class="kw-2">mut </span>items_ptr: <span class="kw-2">*mut </span>(IdxSize, IdxVec) = items_ptr.get();
                             items_ptr = items_ptr.add(offset);
 
                             <span class="kw">for </span>(i, g) <span class="kw">in </span>g.into_iter().enumerate() {
@@ -605,7 +604,7 @@
 // the group_by multiple keys variants suffice
 // this requirements as they use an [`IdxMap`] strategy
 </span><span class="kw">fn </span>finish_group_order_vecs(
-    <span class="kw-2">mut </span>vecs: Vec&lt;(Vec&lt;IdxSize&gt;, Vec&lt;Vec&lt;IdxSize&gt;&gt;)&gt;,
+    <span class="kw-2">mut </span>vecs: Vec&lt;(Vec&lt;IdxSize&gt;, Vec&lt;IdxVec&gt;)&gt;,
     sorted: bool,
 ) -&gt; GroupsProxy {
     <span class="kw">if </span>sorted {
@@ -636,7 +635,7 @@
                     // this is due to using an index hashmap
 
                     </span><span class="kw">unsafe </span>{
-                        <span class="kw">let </span><span class="kw-2">mut </span>items_ptr: <span class="kw-2">*mut </span>(IdxSize, Vec&lt;IdxSize&gt;) = items_ptr.get();
+                        <span class="kw">let </span><span class="kw-2">mut </span>items_ptr: <span class="kw-2">*mut </span>(IdxSize, IdxVec) = items_ptr.get();
                         items_ptr = items_ptr.add(offset);
 
                         <span class="comment">// give the compiler some info
@@ -668,7 +667,7 @@
     </span>T: Hash + Eq,
 {
     <span class="kw">let </span>init_size = get_init_size();
-    <span class="kw">let </span><span class="kw-2">mut </span>hash_tbl: PlHashMap&lt;T, (IdxSize, Vec&lt;IdxSize&gt;)&gt; = PlHashMap::with_capacity(init_size);
+    <span class="kw">let </span><span class="kw-2">mut </span>hash_tbl: PlHashMap&lt;T, (IdxSize, IdxVec)&gt; = PlHashMap::with_capacity(init_size);
     <span class="kw">let </span><span class="kw-2">mut </span>cnt = <span class="number">0</span>;
     a.for_each(|k| {
         <span class="kw">let </span>idx = cnt;
@@ -677,7 +676,8 @@
 
         <span class="kw">match </span>entry {
             Entry::Vacant(entry) =&gt; {
-                entry.insert((idx, <span class="macro">vec!</span>[idx]));
+                <span class="kw">let </span>tuples = <span class="macro">idxvec!</span>[idx];
+                entry.insert((idx, tuples));
             },
             Entry::Occupied(<span class="kw-2">mut </span>entry) =&gt; {
                 <span class="kw">let </span>v = entry.get_mut();
@@ -704,14 +704,13 @@
 // have the code duplication
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>group_by_threaded_slice&lt;T, IntoSlice&gt;(
     keys: Vec&lt;IntoSlice&gt;,
-    n_partitions: u64,
+    n_partitions: usize,
     sorted: bool,
 ) -&gt; GroupsProxy
 <span class="kw">where
-    </span>T: Send + Hash + Eq + Sync + Copy + AsU64,
+    </span>T: Send + Hash + Eq + Sync + Copy + DirtyHash,
     IntoSlice: AsRef&lt;[T]&gt; + Send + Sync,
 {
-    <span class="macro">assert!</span>(n_partitions.is_power_of_two());
     <span class="kw">let </span>init_size = get_init_size();
 
     <span class="comment">// We will create a hashtable in every thread.
@@ -721,7 +720,7 @@
         (<span class="number">0</span>..n_partitions)
             .into_par_iter()
             .map(|thread_no| {
-                <span class="kw">let </span><span class="kw-2">mut </span>hash_tbl: PlHashMap&lt;T, (IdxSize, Vec&lt;IdxSize&gt;)&gt; =
+                <span class="kw">let </span><span class="kw-2">mut </span>hash_tbl: PlHashMap&lt;T, (IdxSize, IdxVec)&gt; =
                     PlHashMap::with_capacity(init_size);
 
                 <span class="kw">let </span><span class="kw-2">mut </span>offset = <span class="number">0</span>;
@@ -735,13 +734,13 @@
                         <span class="kw">let </span>idx = cnt + offset;
                         cnt += <span class="number">1</span>;
 
-                        <span class="kw">if </span>this_partition(k.as_u64(), thread_no, n_partitions) {
+                        <span class="kw">if </span>thread_no == hash_to_partition(k.dirty_hash(), n_partitions) {
                             <span class="kw">let </span>hash = hasher.hash_one(k);
                             <span class="kw">let </span>entry = hash_tbl.raw_entry_mut().from_key_hashed_nocheck(hash, k);
 
                             <span class="kw">match </span>entry {
                                 RawEntryMut::Vacant(entry) =&gt; {
-                                    <span class="kw">let </span>tuples = <span class="macro">vec!</span>[idx];
+                                    <span class="kw">let </span>tuples = <span class="macro">idxvec!</span>[idx];
                                     entry.insert_with_hasher(hash, <span class="kw-2">*</span>k, (idx, tuples), |k| {
                                         hasher.hash_one(k)
                                     });
@@ -767,15 +766,14 @@
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>group_by_threaded_iter&lt;T, I&gt;(
     keys: <span class="kw-2">&amp;</span>[I],
-    n_partitions: u64,
+    n_partitions: usize,
     sorted: bool,
 ) -&gt; GroupsProxy
 <span class="kw">where
-    </span>I: IntoIterator&lt;Item = T&gt; + Send + Sync + Copy,
+    </span>I: IntoIterator&lt;Item = T&gt; + Send + Sync + Clone,
     I::IntoIter: ExactSizeIterator,
-    T: Send + Hash + Eq + Sync + Copy + AsU64,
+    T: Send + Hash + Eq + Sync + Copy + DirtyHash,
 {
-    <span class="macro">assert!</span>(n_partitions.is_power_of_two());
     <span class="kw">let </span>init_size = get_init_size();
 
     <span class="comment">// We will create a hashtable in every thread.
@@ -785,12 +783,12 @@
         (<span class="number">0</span>..n_partitions)
             .into_par_iter()
             .map(|thread_no| {
-                <span class="kw">let </span><span class="kw-2">mut </span>hash_tbl: PlHashMap&lt;T, (IdxSize, Vec&lt;IdxSize&gt;)&gt; =
+                <span class="kw">let </span><span class="kw-2">mut </span>hash_tbl: PlHashMap&lt;T, (IdxSize, IdxVec)&gt; =
                     PlHashMap::with_capacity(init_size);
 
                 <span class="kw">let </span><span class="kw-2">mut </span>offset = <span class="number">0</span>;
                 <span class="kw">for </span>keys <span class="kw">in </span>keys {
-                    <span class="kw">let </span>keys = keys.into_iter();
+                    <span class="kw">let </span>keys = keys.clone().into_iter();
                     <span class="kw">let </span>len = keys.len() <span class="kw">as </span>IdxSize;
                     <span class="kw">let </span>hasher = hash_tbl.hasher().clone();
 
@@ -799,13 +797,13 @@
                         <span class="kw">let </span>idx = cnt + offset;
                         cnt += <span class="number">1</span>;
 
-                        <span class="kw">if </span>this_partition(k.as_u64(), thread_no, n_partitions) {
+                        <span class="kw">if </span>thread_no == hash_to_partition(k.dirty_hash(), n_partitions) {
                             <span class="kw">let </span>hash = hasher.hash_one(k);
                             <span class="kw">let </span>entry = hash_tbl.raw_entry_mut().from_key_hashed_nocheck(hash, <span class="kw-2">&amp;</span>k);
 
                             <span class="kw">match </span>entry {
                                 RawEntryMut::Vacant(entry) =&gt; {
-                                    <span class="kw">let </span>tuples = <span class="macro">vec!</span>[idx];
+                                    <span class="kw">let </span>tuples = <span class="macro">idxvec!</span>[idx];
                                     entry.insert_with_hasher(hash, k, (idx, tuples), |k| {
                                         hasher.hash_one(k)
                                     });
@@ -907,7 +905,6 @@
 ) -&gt; PolarsResult&lt;GroupsProxy&gt; {
     <span class="kw">let </span>dfs = split_df(<span class="kw-2">&amp;mut </span>keys, n_partitions).unwrap();
     <span class="kw">let </span>(hashes, _random_state) = _df_rows_to_hashes_threaded_vertical(<span class="kw-2">&amp;</span>dfs, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
-    <span class="kw">let </span>n_partitions = n_partitions <span class="kw">as </span>u64;
 
     <span class="kw">let </span>init_size = get_init_size();
 
@@ -937,8 +934,7 @@
                 // 2 mutable borrows (this is safe as we don&#39;t alias)
                 // even if the vecs reallocate, we have a pointer to the stack vec, and thus always
                 // access the proper data.
-                </span><span class="kw">let </span>all_buf_ptr =
-                    <span class="kw-2">&amp;mut </span>all_vals <span class="kw">as </span><span class="kw-2">*mut </span>Vec&lt;Vec&lt;IdxSize&gt;&gt; <span class="kw">as </span><span class="kw-2">*const </span>Vec&lt;Vec&lt;IdxSize&gt;&gt;;
+                </span><span class="kw">let </span>all_buf_ptr = <span class="kw-2">&amp;mut </span>all_vals <span class="kw">as </span><span class="kw-2">*mut </span>Vec&lt;IdxVec&gt; <span class="kw">as </span><span class="kw-2">*const </span>Vec&lt;IdxVec&gt;;
                 <span class="kw">let </span>first_buf_ptr = <span class="kw-2">&amp;mut </span>first_vals <span class="kw">as </span><span class="kw-2">*mut </span>Vec&lt;IdxSize&gt; <span class="kw">as </span><span class="kw-2">*const </span>Vec&lt;IdxSize&gt;;
 
                 <span class="kw">let </span><span class="kw-2">mut </span>offset = <span class="number">0</span>;
@@ -950,7 +946,7 @@
                         <span class="kw">for </span><span class="kw-2">&amp;</span>h <span class="kw">in </span>hashes_chunk {
                             <span class="comment">// partition hashes by thread no.
                             // So only a part of the hashes go to this hashmap
-                            </span><span class="kw">if </span>this_partition(h, thread_no, n_partitions) {
+                            </span><span class="kw">if </span>thread_no == hash_to_partition(h, n_partitions) {
                                 <span class="kw">let </span>row_idx = idx + offset;
                                 populate_multiple_key_hashmap2(
                                     <span class="kw-2">&amp;mut </span>hash_tbl,
@@ -959,18 +955,16 @@
                                     <span class="kw-2">&amp;</span>keys_cmp,
                                     || <span class="kw">unsafe </span>{
                                         <span class="kw">let </span>first_vals = <span class="kw-2">&amp;mut *</span>(first_buf_ptr <span class="kw">as </span><span class="kw-2">*mut </span>Vec&lt;IdxSize&gt;);
-                                        <span class="kw">let </span>all_vals =
-                                            <span class="kw-2">&amp;mut *</span>(all_buf_ptr <span class="kw">as </span><span class="kw-2">*mut </span>Vec&lt;Vec&lt;IdxSize&gt;&gt;);
+                                        <span class="kw">let </span>all_vals = <span class="kw-2">&amp;mut *</span>(all_buf_ptr <span class="kw">as </span><span class="kw-2">*mut </span>Vec&lt;IdxVec&gt;);
                                         <span class="kw">let </span>offset_idx = first_vals.len() <span class="kw">as </span>IdxSize;
 
-                                        <span class="kw">let </span>tuples = <span class="macro">vec!</span>[row_idx];
+                                        <span class="kw">let </span>tuples = <span class="macro">idxvec!</span>[row_idx];
                                         all_vals.push(tuples);
                                         first_vals.push(row_idx);
                                         offset_idx
                                     },
                                     |v| <span class="kw">unsafe </span>{
-                                        <span class="kw">let </span>all_vals =
-                                            <span class="kw-2">&amp;mut *</span>(all_buf_ptr <span class="kw">as </span><span class="kw-2">*mut </span>Vec&lt;Vec&lt;IdxSize&gt;&gt;);
+                                        <span class="kw">let </span>all_vals = <span class="kw-2">&amp;mut *</span>(all_buf_ptr <span class="kw">as </span><span class="kw-2">*mut </span>Vec&lt;IdxVec&gt;);
                                         <span class="kw">let </span>offset_idx = <span class="kw-2">*</span>v;
                                         <span class="kw">let </span>buf = all_vals.get_unchecked_mut(offset_idx <span class="kw">as </span>usize);
                                         buf.push(row_idx)
@@ -1013,7 +1007,7 @@
     // 2 mutable borrows (this is safe as we don&#39;t alias)
     // even if the vecs reallocate, we have a pointer to the stack vec, and thus always
     // access the proper data.
-    </span><span class="kw">let </span>all_buf_ptr = <span class="kw-2">&amp;mut </span>all_vals <span class="kw">as </span><span class="kw-2">*mut </span>Vec&lt;Vec&lt;IdxSize&gt;&gt; <span class="kw">as </span><span class="kw-2">*const </span>Vec&lt;Vec&lt;IdxSize&gt;&gt;;
+    </span><span class="kw">let </span>all_buf_ptr = <span class="kw-2">&amp;mut </span>all_vals <span class="kw">as </span><span class="kw-2">*mut </span>Vec&lt;IdxVec&gt; <span class="kw">as </span><span class="kw-2">*const </span>Vec&lt;IdxVec&gt;;
     <span class="kw">let </span>first_buf_ptr = <span class="kw-2">&amp;mut </span>first_vals <span class="kw">as </span><span class="kw-2">*mut </span>Vec&lt;IdxSize&gt; <span class="kw">as </span><span class="kw-2">*const </span>Vec&lt;IdxSize&gt;;
 
     <span class="kw">for </span>(row_idx, h) <span class="kw">in </span>hashes.into_iter().enumerate_idx() {
@@ -1024,16 +1018,16 @@
             <span class="kw-2">&amp;</span>keys_cmp,
             || <span class="kw">unsafe </span>{
                 <span class="kw">let </span>first_vals = <span class="kw-2">&amp;mut *</span>(first_buf_ptr <span class="kw">as </span><span class="kw-2">*mut </span>Vec&lt;IdxSize&gt;);
-                <span class="kw">let </span>all_vals = <span class="kw-2">&amp;mut *</span>(all_buf_ptr <span class="kw">as </span><span class="kw-2">*mut </span>Vec&lt;Vec&lt;IdxSize&gt;&gt;);
+                <span class="kw">let </span>all_vals = <span class="kw-2">&amp;mut *</span>(all_buf_ptr <span class="kw">as </span><span class="kw-2">*mut </span>Vec&lt;IdxVec&gt;);
                 <span class="kw">let </span>offset_idx = first_vals.len() <span class="kw">as </span>IdxSize;
 
-                <span class="kw">let </span>tuples = <span class="macro">vec!</span>[row_idx];
+                <span class="kw">let </span>tuples = <span class="macro">idxvec!</span>[row_idx];
                 all_vals.push(tuples);
                 first_vals.push(row_idx);
                 offset_idx
             },
             |v| <span class="kw">unsafe </span>{
-                <span class="kw">let </span>all_vals = <span class="kw-2">&amp;mut *</span>(all_buf_ptr <span class="kw">as </span><span class="kw-2">*mut </span>Vec&lt;Vec&lt;IdxSize&gt;&gt;);
+                <span class="kw">let </span>all_vals = <span class="kw-2">&amp;mut *</span>(all_buf_ptr <span class="kw">as </span><span class="kw-2">*mut </span>Vec&lt;IdxVec&gt;);
                 <span class="kw">let </span>offset_idx = <span class="kw-2">*</span>v;
                 <span class="kw">let </span>buf = all_vals.get_unchecked_mut(offset_idx <span class="kw">as </span>usize);
                 buf.push(row_idx)

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["MapWriter","ThreadObjectWriter"],"trait":["ObjectWriter"]};
+window.SIDEBAR_ITEMS = {"mod":["chunks","thread","transform"],"trait":["ObjectWriter"]};

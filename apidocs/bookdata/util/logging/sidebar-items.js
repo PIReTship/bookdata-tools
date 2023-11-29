@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["DATA_PROGRESS_TMPL","ITEM_PROGRESS_TMPL"],"fn":["data_progress","item_progress"],"struct":["Friendly","Len","Pos","Rate"],"trait":["FieldExtract"]};
+window.SIDEBAR_ITEMS = {"constant":["DATA_PROGRESS_TMPL","ITEM_PROGRESS_TMPL","METER_TMPL"],"fn":["data_progress","item_progress","measure_and_recv","measure_and_send","meter_bar"],"struct":["Friendly","Len","Pos","Rate"],"trait":["FieldExtract"]};

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-io-0.34.2/src/parquet/read_impl.rs`."><title>read_impl.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="polars_io" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../polars_io/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-io-0.35.4/src/parquet/read_impl.rs`."><title>read_impl.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="polars_io" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0 (79e9716c9 2023-11-13)" data-channel="1.74.0" data-search-js="search-8be46b629f5f14a8.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../polars_io/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -682,6 +682,51 @@
 <a href="#682" id="682">682</a>
 <a href="#683" id="683">683</a>
 <a href="#684" id="684">684</a>
+<a href="#685" id="685">685</a>
+<a href="#686" id="686">686</a>
+<a href="#687" id="687">687</a>
+<a href="#688" id="688">688</a>
+<a href="#689" id="689">689</a>
+<a href="#690" id="690">690</a>
+<a href="#691" id="691">691</a>
+<a href="#692" id="692">692</a>
+<a href="#693" id="693">693</a>
+<a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
+<a href="#697" id="697">697</a>
+<a href="#698" id="698">698</a>
+<a href="#699" id="699">699</a>
+<a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
+<a href="#705" id="705">705</a>
+<a href="#706" id="706">706</a>
+<a href="#707" id="707">707</a>
+<a href="#708" id="708">708</a>
+<a href="#709" id="709">709</a>
+<a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::collections::VecDeque;
 <span class="kw">use </span>std::convert::TryFrom;
@@ -689,11 +734,12 @@
 <span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>arrow::array::new_empty_array;
-<span class="kw">use </span>arrow::io::parquet::read;
-<span class="kw">use </span>arrow::io::parquet::read::{ArrayIter, FileMetaData, RowGroupMetaData};
+<span class="kw">use </span>arrow::datatypes::ArrowSchemaRef;
 <span class="kw">use </span>polars_core::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>polars_core::utils::{accumulate_dataframes_vertical, split_df};
 <span class="kw">use </span>polars_core::POOL;
+<span class="kw">use </span>polars_parquet::read;
+<span class="kw">use </span>polars_parquet::read::{ArrayIter, FileMetaData, RowGroupMetaData};
 <span class="kw">use </span>rayon::prelude::<span class="kw-2">*</span>;
 
 <span class="kw">use </span><span class="kw">super</span>::mmap::ColumnStore;
@@ -704,7 +750,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::parquet::predicates::read_this_row_group;
 <span class="kw">use </span><span class="kw">crate</span>::parquet::{mmap, FileMetaDataRef, ParallelStrategy};
 <span class="kw">use </span><span class="kw">crate</span>::predicates::{apply_predicate, PhysicalIoExpr};
-<span class="kw">use </span><span class="kw">crate</span>::utils::{apply_projection_pl_schema, get_reader_bytes};
+<span class="kw">use </span><span class="kw">crate</span>::utils::{apply_projection, get_reader_bytes};
 <span class="kw">use </span><span class="kw">crate</span>::RowCount;
 
 <span class="kw">fn </span>enlarge_data_type(<span class="kw-2">mut </span>data_type: ArrowDataType) -&gt; ArrowDataType {
@@ -728,13 +774,11 @@
     column_i: usize,
     md: <span class="kw-2">&amp;</span>RowGroupMetaData,
     remaining_rows: usize,
-    schema: <span class="kw-2">&amp;</span>Schema,
+    file_schema: <span class="kw-2">&amp;</span>ArrowSchema,
     store: <span class="kw-2">&amp;</span>mmap::ColumnStore,
     chunk_size: usize,
 ) -&gt; PolarsResult&lt;Series&gt; {
-    <span class="kw">let </span>(name, dt) = schema.get_at_index(column_i).unwrap();
-    <span class="kw">let </span><span class="kw-2">mut </span>field = ArrowField::new(name.as_str(), dt.to_arrow(), <span class="bool-val">true</span>);
-
+    <span class="kw">let </span><span class="kw-2">mut </span>field = file_schema.fields[column_i].clone();
     field.data_type = enlarge_data_type(field.data_type);
 
     <span class="kw">let </span>columns = mmap_columns(store, md.columns(), <span class="kw-2">&amp;</span>field.name);
@@ -803,7 +847,7 @@
     row_group_end: usize,
     remaining_rows: <span class="kw-2">&amp;mut </span>usize,
     file_metadata: <span class="kw-2">&amp;</span>FileMetaData,
-    schema: <span class="kw-2">&amp;</span>SchemaRef,
+    schema: <span class="kw-2">&amp;</span>ArrowSchemaRef,
     predicate: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>PhysicalIoExpr&gt;,
     row_count: <span class="prelude-ty">Option</span>&lt;RowCount&gt;,
     parallel: ParallelStrategy,
@@ -854,7 +898,7 @@
     row_group_end: usize,
     remaining_rows: <span class="kw-2">&amp;mut </span>usize,
     file_metadata: <span class="kw-2">&amp;</span>FileMetaData,
-    schema: <span class="kw-2">&amp;</span>SchemaRef,
+    schema: <span class="kw-2">&amp;</span>ArrowSchemaRef,
     predicate: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>PhysicalIoExpr&gt;,
     row_count: <span class="prelude-ty">Option</span>&lt;RowCount&gt;,
     parallel: ParallelStrategy,
@@ -943,7 +987,7 @@
     previous_row_count: <span class="kw-2">&amp;mut </span>IdxSize,
     remaining_rows: <span class="kw-2">&amp;mut </span>usize,
     file_metadata: <span class="kw-2">&amp;</span>FileMetaData,
-    schema: <span class="kw-2">&amp;</span>SchemaRef,
+    schema: <span class="kw-2">&amp;</span>ArrowSchemaRef,
     predicate: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>PhysicalIoExpr&gt;,
     row_count: <span class="prelude-ty">Option</span>&lt;RowCount&gt;,
     projection: <span class="kw-2">&amp;</span>[usize],
@@ -1013,18 +1057,26 @@
     <span class="prelude-val">Ok</span>(dfs.into_iter().flatten().collect())
 }
 
-<span class="kw">fn </span>materialize_empty_df(
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>materialize_empty_df(
     projection: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[usize]&gt;,
-    reader_schema: <span class="kw-2">&amp;</span>Schema,
+    reader_schema: <span class="kw-2">&amp;</span>ArrowSchema,
     hive_partition_columns: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[Series]&gt;,
+    row_count: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>RowCount&gt;,
 ) -&gt; DataFrame {
     <span class="kw">let </span>schema = <span class="kw">if let </span><span class="prelude-val">Some</span>(projection) = projection {
-        Cow::Owned(apply_projection_pl_schema(reader_schema, projection))
+        Cow::Owned(apply_projection(reader_schema, projection))
     } <span class="kw">else </span>{
         Cow::Borrowed(reader_schema)
     };
     <span class="kw">let </span><span class="kw-2">mut </span>df = DataFrame::from(schema.as_ref());
+
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(row_count) = row_count {
+        df.insert_column(<span class="number">0</span>, Series::new_empty(<span class="kw-2">&amp;</span>row_count.name, <span class="kw-2">&amp;</span>IDX_DTYPE))
+            .unwrap();
+    }
+
     materialize_hive_partitions(<span class="kw-2">&amp;mut </span>df, hive_partition_columns, <span class="number">0</span>);
+
     df
 }
 
@@ -1033,7 +1085,7 @@
     <span class="kw-2">mut </span>reader: R,
     <span class="kw-2">mut </span>limit: usize,
     projection: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[usize]&gt;,
-    reader_schema: <span class="kw-2">&amp;</span>SchemaRef,
+    reader_schema: <span class="kw-2">&amp;</span>ArrowSchemaRef,
     metadata: <span class="prelude-ty">Option</span>&lt;FileMetaDataRef&gt;,
     predicate: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>PhysicalIoExpr&gt;,
     <span class="kw-2">mut </span>parallel: ParallelStrategy,
@@ -1047,6 +1099,7 @@
             projection,
             reader_schema,
             hive_partition_columns,
+            row_count.as_ref(),
         ));
     }
 
@@ -1101,7 +1154,7 @@
         <span class="kw-2">&amp;</span>file_metadata,
         reader_schema,
         predicate,
-        row_count,
+        row_count.clone(),
         parallel,
         <span class="kw-2">&amp;</span>materialized_projection,
         use_statistics,
@@ -1113,6 +1166,7 @@
             projection,
             reader_schema,
             hive_partition_columns,
+            row_count.as_ref(),
         ))
     } <span class="kw">else </span>{
         accumulate_dataframes_vertical(dfs)
@@ -1134,7 +1188,7 @@
         <span class="kw">let </span>reader_bytes = get_reader_bytes(reader_ptr)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(FetchRowGroupsFromMmapReader(reader_bytes))
     }
-    <span class="kw">async fn </span>fetch_row_groups(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _row_groups: Range&lt;usize&gt;) -&gt; PolarsResult&lt;ColumnStore&gt; {
+    <span class="kw">fn </span>fetch_row_groups(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _row_groups: Range&lt;usize&gt;) -&gt; PolarsResult&lt;ColumnStore&gt; {
         <span class="prelude-val">Ok</span>(mmap::ColumnStore::Local(<span class="self">self</span>.<span class="number">0</span>.deref()))
     }
 }
@@ -1163,11 +1217,31 @@
 <span class="kw">impl </span>RowGroupFetcher {
     <span class="kw">async fn </span>fetch_row_groups(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _row_groups: Range&lt;usize&gt;) -&gt; PolarsResult&lt;ColumnStore&gt; {
         <span class="kw">match </span><span class="self">self </span>{
-            RowGroupFetcher::Local(f) =&gt; f.fetch_row_groups(_row_groups).<span class="kw">await</span>,
+            RowGroupFetcher::Local(f) =&gt; f.fetch_row_groups(_row_groups),
             <span class="attr">#[cfg(feature = <span class="string">&quot;cloud&quot;</span>)]
             </span>RowGroupFetcher::ObjectStore(f) =&gt; f.fetch_row_groups(_row_groups).<span class="kw">await</span>,
         }
     }
+}
+
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>compute_row_group_range(
+    row_group_start: usize,
+    row_group_end: usize,
+    limit: usize,
+    row_groups: <span class="kw-2">&amp;</span>[RowGroupMetaData],
+) -&gt; usize {
+    <span class="kw">let </span><span class="kw-2">mut </span>row_group_end_truncated = row_group_start;
+    <span class="kw">let </span><span class="kw-2">mut </span>acc_row_count = <span class="number">0</span>;
+
+    <span class="attr">#[allow(clippy::needless_range_loop)]
+    </span><span class="kw">for </span>rg_i <span class="kw">in </span>row_group_start..(std::cmp::min(row_group_end, row_groups.len())) {
+        <span class="kw">if </span>acc_row_count &gt;= limit {
+            <span class="kw">break</span>;
+        }
+        row_group_end_truncated = rg_i + <span class="number">1</span>;
+        acc_row_count += row_groups[rg_i].num_rows();
+    }
+    row_group_end_truncated
 }
 
 <span class="kw">pub struct </span>BatchedParquetReader {
@@ -1176,7 +1250,7 @@
     </span>row_group_fetcher: RowGroupFetcher,
     limit: usize,
     projection: Vec&lt;usize&gt;,
-    schema: SchemaRef,
+    schema: ArrowSchemaRef,
     metadata: FileMetaDataRef,
     predicate: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>PhysicalIoExpr&gt;&gt;,
     row_count: <span class="prelude-ty">Option</span>&lt;RowCount&gt;,
@@ -1197,7 +1271,7 @@
     </span><span class="kw">pub fn </span>new(
         row_group_fetcher: RowGroupFetcher,
         metadata: FileMetaDataRef,
-        schema: SchemaRef,
+        schema: ArrowSchemaRef,
         limit: usize,
         projection: <span class="prelude-ty">Option</span>&lt;Vec&lt;usize&gt;&gt;,
         predicate: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>PhysicalIoExpr&gt;&gt;,
@@ -1240,8 +1314,16 @@
         <span class="self">self</span>.limit == <span class="number">0
     </span>}
 
-    <span class="kw">pub fn </span>schema(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>SchemaRef {
+    <span class="kw">pub fn </span>schema(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ArrowSchemaRef {
         <span class="kw-2">&amp;</span><span class="self">self</span>.schema
+    }
+
+    <span class="kw">pub fn </span>is_finished(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.row_group_offset &gt;= <span class="self">self</span>.n_row_groups
+    }
+
+    <span class="kw">pub fn </span>finishes_this_batch(<span class="kw-2">&amp;</span><span class="self">self</span>, n: usize) -&gt; bool {
+        <span class="self">self</span>.row_group_offset + n &gt; <span class="self">self</span>.n_row_groups
     }
 
     <span class="kw">pub async fn </span>next_batches(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: usize) -&gt; PolarsResult&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;DataFrame&gt;&gt;&gt; {
@@ -1249,21 +1331,17 @@
             <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
         }
 
+        <span class="kw">let </span><span class="kw-2">mut </span>skipped_all_rgs = <span class="bool-val">false</span>;
         <span class="comment">// fill up fifo stack
-        </span><span class="kw">if </span><span class="self">self</span>.row_group_offset &lt;= <span class="self">self</span>.n_row_groups &amp;&amp; <span class="self">self</span>.chunks_fifo.len() &lt; n {
+        </span><span class="kw">if </span><span class="self">self</span>.row_group_offset &lt; <span class="self">self</span>.n_row_groups &amp;&amp; <span class="self">self</span>.chunks_fifo.len() &lt; n {
             <span class="comment">// Ensure we apply the limit on the metadata, before we download the row-groups.
             </span><span class="kw">let </span>row_group_start = <span class="self">self</span>.row_group_offset;
-            <span class="kw">let </span><span class="kw-2">mut </span>row_group_end = row_group_start;
-            <span class="kw">let </span><span class="kw-2">mut </span>acc_row_count = <span class="number">0</span>;
-            <span class="kw">for </span>rg_i <span class="kw">in
-                </span>row_group_start..(std::cmp::min(<span class="self">self</span>.row_group_offset + n, <span class="self">self</span>.n_row_groups))
-            {
-                <span class="kw">if </span>acc_row_count &gt;= <span class="self">self</span>.limit {
-                    <span class="kw">break</span>;
-                }
-                row_group_end = rg_i + <span class="number">1</span>;
-                acc_row_count += <span class="self">self</span>.metadata.row_groups[rg_i].num_rows();
-            }
+            <span class="kw">let </span>row_group_end = compute_row_group_range(
+                row_group_start,
+                row_group_start + n,
+                <span class="self">self</span>.limit,
+                <span class="kw-2">&amp;</span><span class="self">self</span>.metadata.row_groups,
+            );
 
             <span class="kw">let </span>store = <span class="self">self
                 </span>.row_group_fetcher
@@ -1287,6 +1365,7 @@
             )<span class="question-mark">?</span>;
 
             <span class="self">self</span>.row_group_offset += n;
+
             <span class="comment">// case where there is no data in the file
             // the streaming engine needs at least a single chunk
             </span><span class="kw">if </span><span class="self">self</span>.rows_read == <span class="number">0 </span>&amp;&amp; dfs.is_empty() {
@@ -1294,13 +1373,15 @@
                     <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.projection),
                     <span class="self">self</span>.schema.as_ref(),
                     <span class="self">self</span>.hive_partition_columns.as_deref(),
+                    <span class="self">self</span>.row_count.as_ref(),
                 )]));
             }
 
             <span class="comment">// TODO! this is slower than it needs to be
             // we also need to parallelize over row groups here.
 
-            </span><span class="kw">for </span><span class="kw-2">mut </span>df <span class="kw">in </span>dfs {
+            </span>skipped_all_rgs |= dfs.is_empty();
+            <span class="kw">for </span><span class="kw-2">mut </span>df <span class="kw">in </span>dfs {
                 <span class="comment">// make sure that the chunks are not too large
                 </span><span class="kw">let </span>n = df.shape().<span class="number">0 </span>/ <span class="self">self</span>.chunk_size;
                 <span class="kw">if </span>n &gt; <span class="number">1 </span>{
@@ -1314,7 +1395,16 @@
         };
 
         <span class="kw">if </span><span class="self">self</span>.chunks_fifo.is_empty() {
-            <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
+            <span class="kw">if </span>skipped_all_rgs {
+                <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="macro">vec!</span>[materialize_empty_df(
+                    <span class="prelude-val">Some</span>(<span class="self">self</span>.projection.as_slice()),
+                    <span class="self">self</span>.schema(),
+                    <span class="self">self</span>.hive_partition_columns.as_deref(),
+                    <span class="self">self</span>.row_count.as_ref(),
+                )]))
+            } <span class="kw">else </span>{
+                <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
+            }
         } <span class="kw">else </span>{
             <span class="kw">let </span><span class="kw-2">mut </span>chunks = Vec::with_capacity(n);
             <span class="kw">let </span><span class="kw-2">mut </span>i = <span class="number">0</span>;

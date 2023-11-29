@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["OUT_FILE","UHASH_COL","UID_COL","USER_FILE"],"struct":["IntRecord","IntRecordArray","IntRecordArrayIterator","IntWriter","MutableIntRecordArray","RawInteraction"]};
+window.SIDEBAR_ITEMS = {"constant":["OUT_FILE","UHASH_COL","UID_COL","USER_FILE"],"struct":["IntRecord","IntRecordFrame","IntRecordFrameBuilder","IntWriter","RawInteraction"]};

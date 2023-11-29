@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ParallelStrategy","ParquetCompression"],"mod":["predicates"],"struct":["BatchedParquetReader","BatchedWriter","BrotliLevel","GzipLevel","ParquetReader","ParquetWriter","ZstdLevel"],"type":["FileMetaDataRef"]};
+window.SIDEBAR_ITEMS = {"enum":["ParallelStrategy","ParquetCompression"],"mod":["predicates"],"struct":["BatchedParquetReader","BatchedWriter","BrotliLevel","FileMetaData","GzipLevel","ParquetReader","ParquetWriter","ZstdLevel"],"type":["FileMetaDataRef"]};

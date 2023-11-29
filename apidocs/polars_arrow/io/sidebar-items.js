@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["ipc","iterator","parquet"]};
+window.SIDEBAR_ITEMS = {"mod":["ipc","iterator"]};

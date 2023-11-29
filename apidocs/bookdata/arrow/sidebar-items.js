@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"derive":["ArrowField"],"mod":["dfext","polars","reader","writer"],"trait":["ArrowSerialize"]};
+window.SIDEBAR_ITEMS = {"derive":["TableRow"],"mod":["dfext","reader","row","writer"]};

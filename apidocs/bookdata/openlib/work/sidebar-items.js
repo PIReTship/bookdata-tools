@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["MutableWorkAuthorRecArray","MutableWorkRecArray","MutableWorkSubjectRecArray","WorkAuthorRec","WorkAuthorRecArray","WorkAuthorRecArrayIterator","WorkProcessor","WorkRec","WorkRecArray","WorkRecArrayIterator","WorkSubjectRec","WorkSubjectRecArray","WorkSubjectRecArrayIterator"]};
+window.SIDEBAR_ITEMS = {"struct":["WorkAuthorRec","WorkAuthorRecFrame","WorkAuthorRecFrameBuilder","WorkProcessor","WorkRec","WorkRecFrame","WorkRecFrameBuilder","WorkSubjectRec","WorkSubjectRecFrame","WorkSubjectRecFrameBuilder"]};

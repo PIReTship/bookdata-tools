@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-core-0.34.2/src/chunked_array/ops/explode_and_offsets.rs`."><title>explode_and_offsets.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/polars-core-0.35.4/src/chunked_array/ops/explode_and_offsets.rs`."><title>explode_and_offsets.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="polars_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0 (79e9716c9 2023-11-13)" data-channel="1.74.0" data-search-js="search-8be46b629f5f14a8.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../polars_core/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -213,20 +213,39 @@
 <a href="#213" id="213">213</a>
 <a href="#214" id="214">214</a>
 <a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>arrow::bitmap::MutableBitmap;
 
 <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
 <span class="kw">impl </span>ChunkExplode <span class="kw">for </span>ListChunked {
+    <span class="kw">fn </span>offsets(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PolarsResult&lt;OffsetsBuffer&lt;i64&gt;&gt; {
+        <span class="kw">let </span>ca = <span class="self">self</span>.rechunk();
+        <span class="kw">let </span>listarr: <span class="kw-2">&amp;</span>LargeListArray = ca.downcast_iter().next().unwrap();
+        <span class="kw">let </span>offsets = listarr.offsets().clone();
+
+        <span class="prelude-val">Ok</span>(offsets)
+    }
+
     <span class="kw">fn </span>explode_and_offsets(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PolarsResult&lt;(Series, OffsetsBuffer&lt;i64&gt;)&gt; {
         <span class="comment">// A list array&#39;s memory layout is actually already &#39;exploded&#39;, so we can just take the values array
         // of the list. And we also return a slice of the offsets. This slice can be used to find the old
         // list layout or indexes to expand the DataFrame in the same manner as the &#39;explode&#39; operation
         </span><span class="kw">let </span>ca = <span class="self">self</span>.rechunk();
-        <span class="kw">let </span>listarr: <span class="kw-2">&amp;</span>LargeListArray = ca
-            .downcast_iter()
-            .next()
-            .ok_or_else(|| <span class="macro">polars_err!</span>(NoData: <span class="string">&quot;cannot explode empty list&quot;</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span>listarr: <span class="kw-2">&amp;</span>LargeListArray = ca.downcast_iter().next().unwrap();
         <span class="kw">let </span>offsets_buf = listarr.offsets().clone();
         <span class="kw">let </span>offsets = listarr.offsets().as_slice();
         <span class="kw">let </span><span class="kw-2">mut </span>values = listarr.values().clone();
@@ -291,15 +310,20 @@
 }
 
 <span class="kw">impl </span>ChunkExplode <span class="kw">for </span>Utf8Chunked {
+    <span class="kw">fn </span>offsets(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PolarsResult&lt;OffsetsBuffer&lt;i64&gt;&gt; {
+        <span class="kw">let </span>ca = <span class="self">self</span>.rechunk();
+        <span class="kw">let </span>array: <span class="kw-2">&amp;</span>Utf8Array&lt;i64&gt; = ca.downcast_iter().next().unwrap();
+        <span class="kw">let </span>offsets = array.offsets().clone();
+
+        <span class="prelude-val">Ok</span>(offsets)
+    }
+
     <span class="kw">fn </span>explode_and_offsets(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PolarsResult&lt;(Series, OffsetsBuffer&lt;i64&gt;)&gt; {
         <span class="comment">// A list array&#39;s memory layout is actually already &#39;exploded&#39;, so we can just take the values array
         // of the list. And we also return a slice of the offsets. This slice can be used to find the old
         // list layout or indexes to expand the DataFrame in the same manner as the &#39;explode&#39; operation
         </span><span class="kw">let </span>ca = <span class="self">self</span>.rechunk();
-        <span class="kw">let </span>array: <span class="kw-2">&amp;</span>Utf8Array&lt;i64&gt; = ca
-            .downcast_iter()
-            .next()
-            .ok_or_else(|| <span class="macro">polars_err!</span>(NoData: <span class="string">&quot;cannot explode empty str&quot;</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span>array: <span class="kw-2">&amp;</span>Utf8Array&lt;i64&gt; = ca.downcast_iter().next().unwrap();
 
         <span class="kw">let </span>values = array.values();
         <span class="kw">let </span>old_offsets = array.offsets().clone();
@@ -406,15 +430,7 @@
 
 <span class="attr">#[cfg(feature = <span class="string">&quot;dtype-array&quot;</span>)]
 </span><span class="kw">impl </span>ChunkExplode <span class="kw">for </span>ArrayChunked {
-    <span class="kw">fn </span>explode(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PolarsResult&lt;Series&gt; {
-        <span class="kw">let </span>ca = <span class="self">self</span>.rechunk();
-        <span class="kw">let </span>arr = ca.downcast_iter().next().unwrap();
-        <span class="prelude-val">Ok</span>(Series::try_from((<span class="self">self</span>.name(), arr.values().clone())).unwrap())
-    }
-
-    <span class="kw">fn </span>explode_and_offsets(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PolarsResult&lt;(Series, OffsetsBuffer&lt;i64&gt;)&gt; {
-        <span class="kw">let </span>s = <span class="self">self</span>.explode().unwrap();
-
+    <span class="kw">fn </span>offsets(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PolarsResult&lt;OffsetsBuffer&lt;i64&gt;&gt; {
         <span class="kw">let </span>width = <span class="self">self</span>.width() <span class="kw">as </span>i64;
         <span class="kw">let </span>offsets = (<span class="number">0</span>..<span class="self">self</span>.len() + <span class="number">1</span>)
             .map(|i| {
@@ -425,7 +441,19 @@
         <span class="comment">// safety: monotonically increasing
         </span><span class="kw">let </span>offsets = <span class="kw">unsafe </span>{ OffsetsBuffer::new_unchecked(offsets.into()) };
 
-        <span class="prelude-val">Ok</span>((s, offsets))
+        <span class="prelude-val">Ok</span>(offsets)
+    }
+
+    <span class="kw">fn </span>explode(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PolarsResult&lt;Series&gt; {
+        <span class="kw">let </span>ca = <span class="self">self</span>.rechunk();
+        <span class="kw">let </span>arr = ca.downcast_iter().next().unwrap();
+        <span class="prelude-val">Ok</span>(Series::try_from((<span class="self">self</span>.name(), arr.values().clone())).unwrap())
+    }
+
+    <span class="kw">fn </span>explode_and_offsets(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PolarsResult&lt;(Series, OffsetsBuffer&lt;i64&gt;)&gt; {
+        <span class="kw">let </span>s = <span class="self">self</span>.explode().unwrap();
+
+        <span class="prelude-val">Ok</span>((s, <span class="self">self</span>.offsets()<span class="question-mark">?</span>))
     }
 }
 </code></pre></div></section></main></body></html>

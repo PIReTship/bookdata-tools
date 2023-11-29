@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["fast_u128_divrem","moderate_u128_divrem","pow2_u128_divrem","slow_u128_divrem","u128_divrem"]};

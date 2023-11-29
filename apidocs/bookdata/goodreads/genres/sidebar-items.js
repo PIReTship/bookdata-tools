@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["GENRE_FILE","OUT_FILE"],"struct":["BookGenreRecord","BookGenreWriter","MutableBookGenreRecordArray","RawBookGenre"]};
+window.SIDEBAR_ITEMS = {"constant":["GENRE_FILE","OUT_FILE"],"struct":["BookGenreRecord","BookGenreRecordFrame","BookGenreRecordFrameBuilder","BookGenreWriter","RawBookGenre"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["COUNT"]};
+window.SIDEBAR_ITEMS = {"constant":["COUNT","LITERAL_NAME"]};

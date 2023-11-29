@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["MutableRatingRowArray","RatingRow","SourceRating"]};
+window.SIDEBAR_ITEMS = {"struct":["RatingRow","RatingRowFrame","RatingRowFrameBuilder","SourceRating"]};
