@@ -4,12 +4,12 @@ local enabled = cfg.enabled && (cfg.enabled == 'all' || cfg.interactions == 'sim
 
 bd.pipeline({
   'scan-interactions': {
-    cmd: bd.cmd('goodreads scan interactions --csv --book-map ../../data/goodreads/book_id_map.csv ../../data/goodreads/goodreads_interactions.csv'),
+    cmd: bd.cmd('goodreads scan interactions --csv --book-map ../../data/goodreads/book_id_map.csv ../../data/goodreads/goodreads_interactions.csv.gz'),
     deps: [
       '../../src/cli/goodreads',
       '../../src/goodreads',
       '../../data/goodreads/book_id_map.csv',
-      '../../data/goodreads/goodreads_interactions.csv',
+      '../../data/goodreads/goodreads_interactions.csv.gz',
     ],
     outs: [
       'gr-interactions.parquet',

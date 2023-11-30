@@ -3,7 +3,7 @@ use hashbrown::HashMap;
 use serde::Deserialize;
 
 use crate::arrow::*;
-use crate::io::open_progress;
+use crate::io::open_gzin_progress;
 use crate::prelude::*;
 use crate::util::logging::data_progress;
 
@@ -58,10 +58,10 @@ fn read_book_map(books: &Path) -> Result<HashMap<i32, i32>> {
 pub fn scan_interaction_csv(books: &Path, records: &Path) -> Result<()> {
     let books = read_book_map(books)?;
 
-    info!("scanning interactions from {:?}", records);
+    info!("scanning interactions from {}", records.display());
     let mut rec_id = 0;
     let pb = data_progress(0);
-    let read = open_progress(records, pb.clone())?;
+    let read = open_gzin_progress(records, pb.clone())?;
     let mut read = csv::Reader::from_reader(read);
     let mut write = TableWriter::open(OUT_FILE)?;
     for rec in read.deserialize() {
