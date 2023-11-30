@@ -33,7 +33,7 @@ pub struct CICommand {
 }
 
 #[derive(Debug, PartialEq, Eq, Display)]
-#[display("kebab-case")]
+#[display(style = "kebab-case")]
 enum SrcType {
     Simple,
     Full,

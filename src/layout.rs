@@ -11,7 +11,7 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone, Display)]
 #[serde(rename_all = "kebab-case")]
-#[display("kebab-case")]
+#[display(style = "kebab-case")]
 pub enum GRInteractionMode {
     Simple,
     Full,
