@@ -28,11 +28,9 @@ mod util;
 // #[global_allocator]
 // static GLOBAL: MiMalloc = MiMalloc;
 
-#[cfg(not(target_env = "msvc"))]
-use tikv_jemallocator::Jemalloc;
-#[cfg(not(target_env = "msvc"))]
+use snmalloc_rs::SnMalloc;
 #[global_allocator]
-static GLOBAL: Jemalloc = Jemalloc;
+static GLOBAL: SnMalloc = SnMalloc;
 
 use anyhow::Result;
 use clap::Parser;
