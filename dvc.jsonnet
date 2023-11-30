@@ -22,20 +22,19 @@ local parquets = [
 
 bd.pipeline({
   ClusterStats: {
-    cmd: 'quarto render ClusterStats.qmd',
+    cmd: 'quarto render ClusterStats.qmd --to html',
     deps: [
       'ClusterStats.qmd',
       'book-links/cluster-stats.parquet',
     ],
     outs: [
-      { 'ClusterStats.ipynb': { cache: false } },
       'ClusterStats.html',
       'ClusterStats_files',
     ],
   },
 
   LinkageStats: {
-    cmd: 'quarto render LinkageStats.qmd',
+    cmd: 'quarto render LinkageStats.qmd --to html',
     deps: [
       'LinkageStats.qmd',
       'book-links/gender-stats.csv',
@@ -48,6 +47,23 @@ bd.pipeline({
     metrics: [
       'book-coverage.json',
     ],
+  },
+
+  pdf: {
+    foreach: [
+      'ClusterStats',
+      'LinkageStats',
+    ],
+    do: {
+      cmd: 'weasyprint ${item}.html ${item}.pdf',
+      deps: [
+        '${item}.html',
+        '${item}_files',
+      ],
+      outs: [
+        { '${item}.pdf': { cache: false } },
+      ],
+    },
   },
 
   schema: {
