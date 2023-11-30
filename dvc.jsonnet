@@ -20,51 +20,24 @@ local parquets = [
   if std.endsWith(out, '.parquet')
 ];
 
+local notebook = function(name, deps=[]) {
+  cmd: std.format('quarto render %s.qmd --to html', name),
+  deps: [
+    name + '.qmd',
+  ] + deps,
+  outs: [
+    { [name + '.ipynb']: { cache: false } },
+    name + '.html',
+    name + '_files',
+  ],
+};
+
 bd.pipeline({
-  ClusterStats: {
-    cmd: 'quarto render ClusterStats.qmd --to html',
-    deps: [
-      'ClusterStats.qmd',
-      'book-links/cluster-stats.parquet',
-    ],
-    outs: [
-      'ClusterStats.html',
-      'ClusterStats_files',
-    ],
-  },
+  ClusterStats: notebook('ClusterStats', ['book-links/cluster-stats.parquet']),
 
-  LinkageStats: {
-    cmd: 'quarto render LinkageStats.qmd --to html',
-    deps: [
-      'LinkageStats.qmd',
-      'book-links/gender-stats.csv',
-    ],
-    outs: [
-      { 'LinkageStats.ipynb': { cache: false } },
-      'LinkageStats.html',
-      'LinkageStats_files',
-    ],
-    metrics: [
-      'book-coverage.json',
-    ],
-  },
-
-  pdf: {
-    foreach: [
-      'ClusterStats',
-      'LinkageStats',
-    ],
-    do: {
-      cmd: 'weasyprint ${item}.html ${item}.pdf',
-      deps: [
-        '${item}.html',
-        '${item}_files',
-      ],
-      outs: [
-        { '${item}.pdf': { cache: false } },
-      ],
-    },
-  },
+  LinkageStats: notebook('LinkageStats', [
+    'book-links/gender-stats.csv',
+  ]),
 
   schema: {
     foreach: parquets,
