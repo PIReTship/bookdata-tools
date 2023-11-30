@@ -1,10 +1,5 @@
 local bd = import '../lib.jsonnet';
 
-local variants = {
-  full: import 'full-interactions.jsonnet',
-  simple: import 'simple-interactions.jsonnet',
-};
-
 bd.pipeline({
   'scan-book-info': {
     cmd: bd.cmd('goodreads scan books ../data/goodreads/goodreads_books.json.gz'),
@@ -94,4 +89,4 @@ bd.pipeline({
       'gr-work-gender.parquet',
     ],
   },
-} + variants[bd.config.goodreads.interactions], bd.config.goodreads.enabled)
+}, bd.config.goodreads.enabled)

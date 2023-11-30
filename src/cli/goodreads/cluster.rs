@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use clap::Args;
+use parse_display::Display;
 
 use crate::arrow::*;
 use crate::ids::codes::{NS_GR_BOOK, NS_GR_WORK};
@@ -31,7 +32,8 @@ pub struct CICommand {
     output: PathBuf,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Display)]
+#[display("kebab-case")]
 enum SrcType {
     Simple,
     Full,
@@ -140,7 +142,7 @@ impl ClusterOp {
 
     /// Load the input.
     fn load_input(&self) -> PolarsResult<LazyFrame> {
-        let path = "goodreads/gr-interactions.parquet";
+        let path = format!("goodreads/{}/gr-interactions.parquet", self.data);
         let data = LazyFrame::scan_parquet(path, Default::default())?;
 
         let links = LazyFrame::scan_parquet("goodreads/gr-book-link.parquet", Default::default())?;

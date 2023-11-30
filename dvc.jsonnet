@@ -9,6 +9,8 @@ local subpipes = {
   az2018: import 'az2018/dvc.jsonnet',
   bx: import 'bx/dvc.jsonnet',
   goodreads: import 'goodreads/dvc.jsonnet',
+  goodreads_simple: import 'goodreads/simple/dvc.jsonnet',
+  goodreads_full: import 'goodreads/full/dvc.jsonnet',
 
   'book-links': import 'book-links/dvc.jsonnet',
 };

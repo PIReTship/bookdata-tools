@@ -120,8 +120,8 @@ bd.pipeline({
       bd.maybe(bd.config.bx.enabled, 'bx/bx-cluster-ratings.parquet'),
       bd.maybe(bd.config.az2014.enabled, 'az2014/az-cluster-ratings.parquet'),
       bd.maybe(bd.config.az2018.enabled, 'az2018/az-cluster-ratings.parquet'),
-      bd.maybe(bd.config.goodreads.enabled, 'goodreads/gr-cluster-actions.parquet'),
-      bd.maybe(bd.config.goodreads.enabled, 'goodreads/gr-cluster-ratings.parquet'),
+      bd.maybe(bd.config.goodreads.enabled, std.format('goodreads/%s/gr-cluster-actions.parquet', bd.config.goodreads.interactions)),
+      bd.maybe(bd.config.goodreads.enabled, std.format('goodreads/%s/gr-cluster-ratings.parquet', bd.config.goodreads.interactions)),
     ]),
     outs: [
       'book-links/gender-stats.csv',

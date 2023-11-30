@@ -1,13 +1,15 @@
-local bd = import '../lib.jsonnet';
+local bd = import '../../lib.jsonnet';
+local cfg = bd.config.goodreads;
+local enabled = cfg.enabled && (cfg.enabled == 'all' || cfg.interactions == 'simple');
 
-{
+bd.pipeline({
   'scan-interactions': {
-    cmd: bd.cmd('goodreads scan interactions --csv --book-map ../data/goodreads/book_id_map.csv ../data/goodreads/goodreads_interactions.csv'),
+    cmd: bd.cmd('goodreads scan interactions --csv --book-map ../../data/goodreads/book_id_map.csv ../../data/goodreads/goodreads_interactions.csv'),
     deps: [
-      '../src/cli/goodreads',
-      '../src/goodreads',
-      '../data/goodreads/book_id_map.csv',
-      '../data/goodreads/goodreads_interactions.csv',
+      '../../src/cli/goodreads',
+      '../../src/goodreads',
+      '../../data/goodreads/book_id_map.csv',
+      '../../data/goodreads/goodreads_interactions.csv',
     ],
     outs: [
       'gr-interactions.parquet',
@@ -15,36 +17,36 @@ local bd = import '../lib.jsonnet';
   },
 
   'cluster-actions': {
-    wdir: '..',
-    cmd: bd.cmd('goodreads cluster-interactions --add-actions --simple -o goodreads/gr-cluster-actions.parquet'),
+    wdir: '../..',
+    cmd: bd.cmd('goodreads cluster-interactions --add-actions --simple -o goodreads/simple/gr-cluster-actions.parquet'),
     deps: [
       'src/cli/goodreads/cluster.rs',
-      'goodreads/gr-interactions.parquet',
       'goodreads/gr-book-link.parquet',
+      'goodreads/simple/gr-interactions.parquet',
     ],
     outs: [
-      'goodreads/gr-cluster-actions.parquet',
+      'goodreads/simple/gr-cluster-actions.parquet',
     ],
   },
 
   'cluster-ratings': {
-    wdir: '..',
-    cmd: bd.cmd('goodreads cluster-interactions --ratings --simple -o goodreads/gr-cluster-ratings.parquet'),
+    wdir: '../..',
+    cmd: bd.cmd('goodreads cluster-interactions --ratings --simple -o goodreads/simple/gr-cluster-ratings.parquet'),
     deps: [
       'src/cli/goodreads/cluster.rs',
-      'goodreads/gr-interactions.parquet',
       'goodreads/gr-book-link.parquet',
+      'goodreads/simple/gr-interactions.parquet',
     ],
     outs: [
-      'goodreads/gr-cluster-ratings.parquet',
+      'goodreads/simple/gr-cluster-ratings.parquet',
     ],
   },
 
   'cluster-ratings-5core': {
     cmd: bd.cmd('kcore -o gr-cluster-ratings-5core.parquet gr-cluster-ratings.parquet'),
     deps: [
+      '../../src/cli/kcore.rs',
       'gr-cluster-ratings.parquet',
-      '../src/cli/kcore.rs',
     ],
     outs: [
       'gr-cluster-ratings-5core.parquet',
@@ -54,8 +56,8 @@ local bd = import '../lib.jsonnet';
   'cluster-actions-5core': {
     cmd: bd.cmd('kcore -o gr-cluster-actions-5core.parquet gr-cluster-actions.parquet'),
     deps: [
+      '../../src/cli/kcore.rs',
       'gr-cluster-actions.parquet',
-      '../src/cli/kcore.rs',
     ],
     outs: [
       'gr-cluster-actions-5core.parquet',
@@ -63,35 +65,35 @@ local bd = import '../lib.jsonnet';
   },
 
   'work-actions': {
-    wdir: '..',
-    cmd: bd.cmd('goodreads cluster-interactions --add-actions --simple --native-works -o goodreads/gr-work-actions.parquet'),
+    wdir: '../..',
+    cmd: bd.cmd('goodreads cluster-interactions --add-actions --simple --native-works -o goodreads/simple/gr-work-actions.parquet'),
     deps: [
       'src/cli/goodreads/cluster.rs',
-      'goodreads/gr-interactions.parquet',
+      'goodreads/simple/gr-interactions.parquet',
       'goodreads/gr-book-link.parquet',
     ],
     outs: [
-      'goodreads/gr-work-actions.parquet',
+      'goodreads/simple/gr-work-actions.parquet',
     ],
   },
   'work-ratings': {
     wdir: '..',
-    cmd: bd.cmd('goodreads cluster-interactions --ratings --simple --native-works -o goodreads/gr-work-ratings.parquet'),
+    cmd: bd.cmd('goodreads cluster-interactions --ratings --simple --native-works -o goodreads/simple/gr-work-ratings.parquet'),
     deps: [
       'src/cli/goodreads/cluster.rs',
-      'goodreads/gr-interactions.parquet',
+      'goodreads/simple/gr-interactions.parquet',
       'goodreads/gr-book-link.parquet',
     ],
     outs: [
-      'goodreads/gr-work-ratings.parquet',
+      'goodreads/simple/gr-work-ratings.parquet',
     ],
   },
 
   'work-ratings-5core': {
     cmd: bd.cmd('kcore -o gr-work-ratings-5core.parquet gr-work-ratings.parquet'),
     deps: [
-      'gr-work-ratings.parquet',
       '../src/cli/kcore.rs',
+      'gr-work-ratings.parquet',
     ],
     outs: [
       'gr-work-ratings-5core.parquet',
@@ -101,11 +103,11 @@ local bd = import '../lib.jsonnet';
   'work-actions-5core': {
     cmd: bd.cmd('kcore -o gr-work-actions-5core.parquet gr-work-actions.parquet'),
     deps: [
-      'gr-work-actions.parquet',
       '../src/cli/kcore.rs',
+      'gr-work-actions.parquet',
     ],
     outs: [
       'gr-work-actions-5core.parquet',
     ],
   },
-}
+}, enabled)
