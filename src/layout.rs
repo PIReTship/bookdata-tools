@@ -6,10 +6,12 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Result};
 use log::*;
+use parse_display::Display;
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Display)]
 #[serde(rename_all = "kebab-case")]
+#[display("kebab-case")]
 pub enum GRInteractionMode {
     Simple,
     Full,
