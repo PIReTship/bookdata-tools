@@ -77,7 +77,7 @@ bd.pipeline({
     ],
   },
   'work-ratings': {
-    wdir: '..',
+    wdir: '../..',
     cmd: bd.cmd('goodreads cluster-interactions --ratings --simple --native-works -o goodreads/simple/gr-work-ratings.parquet'),
     deps: [
       'src/cli/goodreads/cluster.rs',
@@ -92,7 +92,7 @@ bd.pipeline({
   'work-ratings-5core': {
     cmd: bd.cmd('kcore -o gr-work-ratings-5core.parquet gr-work-ratings.parquet'),
     deps: [
-      '../src/cli/kcore.rs',
+      '../../src/cli/kcore.rs',
       'gr-work-ratings.parquet',
     ],
     outs: [
@@ -103,7 +103,7 @@ bd.pipeline({
   'work-actions-5core': {
     cmd: bd.cmd('kcore -o gr-work-actions-5core.parquet gr-work-actions.parquet'),
     deps: [
-      '../src/cli/kcore.rs',
+      '../../src/cli/kcore.rs',
       'gr-work-actions.parquet',
     ],
     outs: [
