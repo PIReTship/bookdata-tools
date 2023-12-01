@@ -1,6 +1,6 @@
 local bd = import '../../lib.jsonnet';
 local cfg = bd.config.goodreads;
-local enabled = cfg.enabled && (cfg.enabled == 'all' || cfg.interactions == 'full');
+local enabled = cfg.enabled && (cfg.build_all || cfg.interactions == 'full');
 
 bd.pipeline({
   'scan-interactions': {
