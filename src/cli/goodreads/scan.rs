@@ -12,6 +12,8 @@ pub enum GRScan {
     Books(ScanInput),
     /// Scan GoodReads genres.
     Genres(ScanInput),
+    /// Scan GoodReads authors.
+    Authors(ScanInput),
     /// Scan GoodReads interactions.
     Interactions(InterInput),
     /// Scan GoodReads reviews.
@@ -86,6 +88,10 @@ impl GRScan {
             GRScan::Genres(opts) => {
                 info!("scanning GoodReads book genres");
                 scan_gr(&opts.infile, genres::BookGenreWriter::open()?)?;
+            }
+            GRScan::Authors(opts) => {
+                info!("scanning GoodReads book genres");
+                scan_gr(&opts.infile, author::AuthorWriter::open()?)?;
             }
             GRScan::Interactions(opts) => {
                 if opts.csv_mode {
