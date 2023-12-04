@@ -2,7 +2,7 @@ local bd = import '../../lib.jsonnet';
 local cfg = bd.config.goodreads;
 local enabled = cfg.enabled && (cfg.build_all || cfg.interactions == 'full');
 
-bd.pipeline({
+local scan_stages = {
   'scan-interactions': {
     cmd: bd.cmd('goodreads scan interactions ../../data/goodreads/goodreads_interactions.json.gz'),
     deps: [
@@ -15,6 +15,9 @@ bd.pipeline({
       'gr-users.parquet',
     ],
   },
+};
+
+local review_stages = if bd.config.goodreads.reviews then {
   'scan-reviews': {
     cmd: bd.cmd('goodreads scan reviews ../../data/goodreads/goodreads_reviews_dedup.json.gz'),
     deps: [
@@ -26,7 +29,9 @@ bd.pipeline({
       'gr-reviews.parquet',
     ],
   },
+} else {};
 
+local cluster_stages = {
   'cluster-actions': {
     wdir: '../..',
     cmd: bd.cmd('goodreads cluster-interactions --add-actions -o goodreads/full/gr-cluster-actions.parquet'),
@@ -74,7 +79,9 @@ bd.pipeline({
       'gr-cluster-actions-5core.parquet',
     ],
   },
+};
 
+local work_stages = {
   'work-actions': {
     wdir: '../..',
     cmd: bd.cmd('goodreads cluster-interactions --add-actions --native-works -o goodreads/full/gr-work-actions.parquet'),
@@ -144,4 +151,6 @@ bd.pipeline({
       'gr-work-actions-2015-100-10core.parquet',
     ],
   },
-}, enabled)
+};
+
+bd.pipeline(scan_stages + review_stages + cluster_stages + work_stages, enabled)
