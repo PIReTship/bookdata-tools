@@ -1,0 +1,208 @@
+schema: '2.0'
+stages:
+  scan-interactions:
+    cmd: cargo run --release -- goodreads scan interactions ../../data/goodreads/goodreads_interactions.json.gz
+    deps:
+    - path: ../../data/goodreads/goodreads_interactions.json.gz
+      hash: md5
+      md5: f2d054a85f33d405a9bff6933005ba89
+      size: 9388113365
+    - path: ../../src/cli/goodreads
+      hash: md5
+      md5: 6325935a8eb344606761bd5a24811988.dir
+      size: 12216
+      nfiles: 4
+    - path: ../../src/goodreads
+      hash: md5
+      md5: fa9aa92722a150f970aea65216aaca13.dir
+      size: 16838
+      nfiles: 7
+    outs:
+    - path: gr-interactions.parquet
+      hash: md5
+      md5: b30430653770266a99921696af2d4044
+      size: 4587488091
+    - path: gr-users.parquet
+      hash: md5
+      md5: ceb6314193b9a242df2a4db02e39f639
+      size: 18637038
+  cluster-actions:
+    cmd: cargo run --release -- goodreads cluster-interactions --add-actions -o goodreads/full/gr-cluster-actions.parquet
+    deps:
+    - path: goodreads/full/gr-interactions.parquet
+      hash: md5
+      md5: b30430653770266a99921696af2d4044
+      size: 4587488091
+    - path: goodreads/gr-book-link.parquet
+      hash: md5
+      md5: 1d862079ac09bb011c4a4ffe0bc5d7d4
+      size: 19974181
+    - path: src/cli/goodreads/cluster.rs
+      hash: md5
+      md5: a53135e18945ae6ac7a960c36e19d888
+      size: 7435
+    outs:
+    - path: goodreads/full/gr-cluster-actions.parquet
+      hash: md5
+      md5: bec11e8c6ce7432ae3903d7334e393a3
+      size: 2708920383
+  cluster-actions-5core:
+    cmd: cargo run --release -- kcore -o gr-cluster-actions-5core.parquet gr-cluster-actions.parquet
+    deps:
+    - path: ../../src/cli/kcore.rs
+      hash: md5
+      md5: 9a64f2beb19d2053d9c2386609beafe9
+      size: 4874
+    - path: gr-cluster-actions.parquet
+      hash: md5
+      md5: bec11e8c6ce7432ae3903d7334e393a3
+      size: 2708920383
+    outs:
+    - path: gr-cluster-actions-5core.parquet
+      hash: md5
+      md5: 3d19da64d6037b50b9c1bccb708879cf
+      size: 2694278606
+  cluster-ratings:
+    cmd: cargo run --release -- goodreads cluster-interactions --ratings -o goodreads/full/gr-cluster-ratings.parquet
+    deps:
+    - path: goodreads/full/gr-interactions.parquet
+      hash: md5
+      md5: b30430653770266a99921696af2d4044
+      size: 4587488091
+    - path: goodreads/gr-book-link.parquet
+      hash: md5
+      md5: 1d862079ac09bb011c4a4ffe0bc5d7d4
+      size: 19974181
+    - path: src/cli/goodreads/cluster.rs
+      hash: md5
+      md5: a53135e18945ae6ac7a960c36e19d888
+      size: 7435
+    outs:
+    - path: goodreads/full/gr-cluster-ratings.parquet
+      hash: md5
+      md5: 10407a19fe5e60e0fa683cff937152d8
+      size: 1369082587
+  cluster-ratings-5core:
+    cmd: cargo run --release -- kcore -o gr-cluster-ratings-5core.parquet gr-cluster-ratings.parquet
+    deps:
+    - path: ../../src/cli/kcore.rs
+      hash: md5
+      md5: 9a64f2beb19d2053d9c2386609beafe9
+      size: 4874
+    - path: gr-cluster-ratings.parquet
+      hash: md5
+      md5: 10407a19fe5e60e0fa683cff937152d8
+      size: 1369082587
+    outs:
+    - path: gr-cluster-ratings-5core.parquet
+      hash: md5
+      md5: e3119ae31f137ef07212d074960e1509
+      size: 1346936195
+  work-actions:
+    cmd: cargo run --release -- goodreads cluster-interactions --add-actions --native-works
+      -o goodreads/full/gr-work-actions.parquet
+    deps:
+    - path: goodreads/full/gr-interactions.parquet
+      hash: md5
+      md5: b30430653770266a99921696af2d4044
+      size: 4587488091
+    - path: goodreads/gr-book-link.parquet
+      hash: md5
+      md5: 1d862079ac09bb011c4a4ffe0bc5d7d4
+      size: 19974181
+    - path: src/cli/goodreads/cluster.rs
+      hash: md5
+      md5: a53135e18945ae6ac7a960c36e19d888
+      size: 7435
+    outs:
+    - path: goodreads/full/gr-work-actions.parquet
+      hash: md5
+      md5: 858f93e649a96c6f492679e99cd37954
+      size: 2808288986
+  work-actions-2015-100-10core:
+    cmd: cargo run --release -- kcore --user-k 10 --item-k 100 --year 2015 -o gr-work-actions-2015-100-10core.parquet
+      gr-work-actions.parquet
+    deps:
+    - path: ../../src/cli/kcore.rs
+      hash: md5
+      md5: 9a64f2beb19d2053d9c2386609beafe9
+      size: 4874
+    - path: gr-work-actions.parquet
+      hash: md5
+      md5: 858f93e649a96c6f492679e99cd37954
+      size: 2808288986
+    outs:
+    - path: gr-work-actions-2015-100-10core.parquet
+      hash: md5
+      md5: 10344390d39edcb489229d4106ea86b1
+      size: 177341200
+  work-actions-5core:
+    cmd: cargo run --release -- kcore -o gr-work-actions-5core.parquet gr-work-actions.parquet
+    deps:
+    - path: ../../src/cli/kcore.rs
+      hash: md5
+      md5: 9a64f2beb19d2053d9c2386609beafe9
+      size: 4874
+    - path: gr-work-actions.parquet
+      hash: md5
+      md5: 858f93e649a96c6f492679e99cd37954
+      size: 2808288986
+    outs:
+    - path: gr-work-actions-5core.parquet
+      hash: md5
+      md5: 24f7f17d1923a7b6458982a7205bca6a
+      size: 2793672492
+  work-ratings:
+    cmd: cargo run --release -- goodreads cluster-interactions --ratings --native-works
+      -o goodreads/full/gr-work-ratings.parquet
+    deps:
+    - path: goodreads/full/gr-interactions.parquet
+      hash: md5
+      md5: b30430653770266a99921696af2d4044
+      size: 4587488091
+    - path: goodreads/gr-book-link.parquet
+      hash: md5
+      md5: 1d862079ac09bb011c4a4ffe0bc5d7d4
+      size: 19974181
+    - path: src/cli/goodreads/cluster.rs
+      hash: md5
+      md5: a53135e18945ae6ac7a960c36e19d888
+      size: 7435
+    outs:
+    - path: goodreads/full/gr-work-ratings.parquet
+      hash: md5
+      md5: 4eff8a855fcb28f478f1c35aa884b63f
+      size: 1434229067
+  work-ratings-2015-100-10core:
+    cmd: cargo run --release -- kcore --user-k 10 --item-k 100 --year 2015 -o gr-work-ratings-2015-100-10core.parquet
+      gr-work-ratings.parquet
+    deps:
+    - path: ../../src/cli/kcore.rs
+      hash: md5
+      md5: 9a64f2beb19d2053d9c2386609beafe9
+      size: 4874
+    - path: gr-work-ratings.parquet
+      hash: md5
+      md5: 4eff8a855fcb28f478f1c35aa884b63f
+      size: 1434229067
+    outs:
+    - path: gr-work-ratings-2015-100-10core.parquet
+      hash: md5
+      md5: 8e727b416a2164b32e37b40aa625e1ed
+      size: 5153692
+  work-ratings-5core:
+    cmd: cargo run --release -- kcore -o gr-work-ratings-5core.parquet gr-work-ratings.parquet
+    deps:
+    - path: ../../src/cli/kcore.rs
+      hash: md5
+      md5: 9a64f2beb19d2053d9c2386609beafe9
+      size: 4874
+    - path: gr-work-ratings.parquet
+      hash: md5
+      md5: 4eff8a855fcb28f478f1c35aa884b63f
+      size: 1434229067
+    outs:
+    - path: gr-work-ratings-5core.parquet
+      hash: md5
+      md5: 3b5e34a230fae9887acd13f4a6b80a73
+      size: 1412342169
