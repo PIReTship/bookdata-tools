@@ -30,7 +30,7 @@ bd.pipeline({
   },
 
   'cluster-ratings': {
-    wdir: '..',
+    wdir: '../..',
     cmd: bd.cmd('goodreads cluster-interactions --ratings -o goodreads/full/gr-cluster-ratings.parquet'),
     deps: [
       'src/cli/goodreads/cluster.rs',
