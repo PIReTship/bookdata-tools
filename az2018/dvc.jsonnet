@@ -1,30 +1,33 @@
 local bd = import '../lib.jsonnet';
-local review_stage = {
-  'scan-reviews': {
-    cmd: bd.cmd('amazon scan-reviews --rating-output ratings.parquet --review-output reviews.parquet ../data/az2018/Books.json.gz'),
-    deps: [
-      '../src/amazon.rs',
-      '../src/cli/amazon/',
-      '../data/az2018/Books.json.gz',
-    ],
-    outs: [
-      'ratings.parquet',
-      'reviews.parquet',
-    ],
+local source_stages = {
+  ratings: {
+    'scan-ratings': {
+      cmd: bd.cmd('amazon scan-ratings -o ratings.parquet --swap-id-columns ../data/az2018/Books.csv'),
+      deps: [
+        '../src/amazon.rs',
+        '../src/cli/amazon/',
+        '../data/az2018/Books.csv',
+      ],
+      outs: ['ratings.parquet'],
+    },
+  },
+  reviews: {
+    'scan-reviews': {
+      cmd: bd.cmd('amazon scan-reviews --rating-output ratings.parquet --review-output reviews.parquet ../data/az2018/Books.json.gz'),
+      deps: [
+        '../src/amazon.rs',
+        '../src/cli/amazon/',
+        '../data/az2018/Books.json.gz',
+      ],
+      outs: [
+        'ratings.parquet',
+        'reviews.parquet',
+      ],
+    },
   },
 };
 
-bd.pipeline({
-  'scan-ratings': {
-    cmd: bd.cmd('amazon scan-ratings -o ratings.parquet --swap-id-columns ../data/az2018/Books.csv'),
-    deps: [
-      '../src/amazon.rs',
-      '../src/cli/amazon/',
-      '../data/az2018/Books.csv',
-    ],
-    outs: ['ratings.parquet'],
-  },
-
+bd.pipeline(source_stages[bd.config.az2018.from] {
   'cluster-ratings': {
     wdir: '..',
     cmd: bd.cmd('amazon cluster-ratings -o az2018/az-cluster-ratings.parquet az2018/ratings.parquet'),
