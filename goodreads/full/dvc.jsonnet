@@ -2,7 +2,7 @@ local bd = import '../../lib.jsonnet';
 local cfg = bd.config.goodreads;
 local enabled = cfg.enabled && (cfg.build_all || cfg.interactions == 'full');
 
-local scan_stages = {
+local action_stages = {
   'scan-interactions': {
     cmd: bd.cmd('goodreads scan interactions ../../data/goodreads/goodreads_interactions.json.gz'),
     deps: [
@@ -15,23 +15,7 @@ local scan_stages = {
       'gr-users.parquet',
     ],
   },
-};
 
-local review_stages = if bd.config.goodreads.reviews then {
-  'scan-reviews': {
-    cmd: bd.cmd('goodreads scan reviews ../../data/goodreads/goodreads_reviews_dedup.json.gz'),
-    deps: [
-      '../../src/cli/goodreads',
-      '../../src/goodreads',
-      '../../data/goodreads/goodreads_reviews_dedup.json.gz',
-    ],
-    outs: [
-      'gr-reviews.parquet',
-    ],
-  },
-} else {};
-
-local cluster_stages = {
   'cluster-actions': {
     wdir: '../..',
     cmd: bd.cmd('goodreads cluster-interactions --add-actions -o goodreads/full/gr-cluster-actions.parquet'),
@@ -57,7 +41,36 @@ local cluster_stages = {
       'goodreads/full/gr-cluster-ratings.parquet',
     ],
   },
+};
 
+local review_stages = if bd.config.goodreads.reviews then {
+  'scan-reviews': {
+    cmd: bd.cmd('goodreads scan reviews ../../data/goodreads/goodreads_reviews_dedup.json.gz'),
+    deps: [
+      '../../src/cli/goodreads',
+      '../../src/goodreads',
+      '../../data/goodreads/goodreads_reviews_dedup.json.gz',
+    ],
+    outs: [
+      'gr-reviews.parquet',
+    ],
+  },
+
+  'cluster-reviews': {
+    wdir: '../..',
+    cmd: bd.cmd('goodreads cluster-interactions --reviews -o goodreads/full/gr-cluster-reviews.parquet'),
+    deps: [
+      'src/cli/goodreads/cluster.rs',
+      'goodreads/gr-book-link.parquet',
+      'goodreads/full/gr-reviews.parquet',
+    ],
+    outs: [
+      'goodreads/full/gr-cluster-reviews.parquet',
+    ],
+  },
+} else {};
+
+local core_stages = {
   'cluster-ratings-5core': {
     cmd: bd.cmd('kcore -o gr-cluster-ratings-5core.parquet gr-cluster-ratings.parquet'),
     deps: [
@@ -153,4 +166,4 @@ local work_stages = {
   },
 };
 
-bd.pipeline(scan_stages + review_stages + cluster_stages + work_stages, enabled)
+bd.pipeline(action_stages + review_stages + core_stages + work_stages, enabled)
