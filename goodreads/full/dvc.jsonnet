@@ -65,7 +65,7 @@ bd.pipeline({
   },
 
   'work-actions': {
-    wdir: '..',
+    wdir: '../..',
     cmd: bd.cmd('goodreads cluster-interactions --add-actions --native-works -o goodreads/full/gr-work-actions.parquet'),
     deps: [
       'src/cli/goodreads/cluster.rs',
@@ -78,7 +78,7 @@ bd.pipeline({
   },
 
   'work-ratings': {
-    wdir: '..',
+    wdir: '../..',
     cmd: bd.cmd('goodreads cluster-interactions --ratings --native-works -o goodreads/full/gr-work-ratings.parquet'),
     deps: [
       'src/cli/goodreads/cluster.rs',
