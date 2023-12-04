@@ -136,7 +136,10 @@ impl ClusterOp {
 
     /// Run the clustering operation.
     pub fn cluster(self) -> Result<()> {
-        let interactions = self.load_interactions()?;
+        let interactions = match self.actions {
+            ActionType::Reviews => self.load_reviews()?,
+            ActionType::AddActions | ActionType::Ratings => self.load_interactions()?,
+        };
         let interactions = self.filter(interactions);
         let interactions = self.project_and_sort(interactions);
         let actions = interactions
