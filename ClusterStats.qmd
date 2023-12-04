@@ -1,0 +1,168 @@
+---
+title: Book Clustering Statistics
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .qmd
+      format_name: quarto
+      format_version: '1.0'
+      jupytext_version: 1.14.7
+  kernelspec:
+    display_name: R (IRkernel)
+    language: R
+    name: ir
+---
+
+
+This notebook provides statistics on the results of our book clustering.
+
+
+## Setup
+
+```{r}
+library(tidyverse, warn.conflicts=FALSE)
+library(arrow, warn.conflicts=FALSE)
+```
+
+I want to use `theme_minimal()` by default:
+
+```{r}
+theme_set(theme_minimal())
+```
+
+And default image sizes aren't great:
+
+```{r}
+options(repr.plot.width  = 7,
+        repr.plot.height = 4)
+```
+
+## Load Data
+
+Let's start by getting our clusters and their statistics:
+
+```{r}
+clusters = read_parquet("book-links/cluster-stats.parquet", as_data_frame=FALSE)
+glimpse(clusters)
+```
+
+Describe the count columns for basic descriptive stats:
+
+```{r}
+clusters %>%
+  select(-cluster) %>%
+  collect() %>%
+  summary()
+```
+
+75% of clusters only contain 2 ISBNs (probably -10 and -13) and one book. OpenLibrary also contributes to the largest number of clusters.
+
+## Clusters per Source
+
+How many clusters are connected to each source?
+
+```{r}
+src_counts = clusters %>%
+  summarize(across(-cluster, ~ sum(.x > 0))) %>%
+  collect() %>%
+  pivot_longer(everything(), names_to="source", values_to="count")
+src_counts
+```
+
+```{r}
+ggplot(src_counts, aes(y=source, x=count)) +
+  geom_bar(stat='identity')
+```
+
+## Distributions
+
+Let's look at the distributions of cluster sizes.  Let's first compute histograms
+of the number of records per cluster for each cluster type.
+
+```{r}
+size_dists = collect(clusters) %>%
+  gather(rec_type, nrecs, -cluster, factor_key=TRUE) %>%
+  summarize(count=n(), .by=c("rec_type", "nrecs"))
+head(size_dists)
+```
+
+```{r}
+ggplot(size_dists) +
+  aes(x=nrecs, y=count, color=rec_type) +
+  geom_point() +
+  scale_x_log10() +
+  scale_y_log10() +
+  scale_color_brewer(type="qual", palette="Dark2") +
+  xlab("# of Records") +
+  xlab("# of Clusters") +
+  ggtitle("Distribution of cluster counts")
+```
+
+Looks mostly fine - we expect a lot of power laws - but the number of clusters with merged GoodReads works is concerning.
+
+## GoodReads Work Merging
+
+What's going on with these clusters? Let's take a peek at them.
+
+```{r}
+gr_big = clusters %>%
+  filter(n_gr_works > 1) %>%
+  arrange(desc(n_gr_works))
+gr_big %>% glimpse()
+```
+
+We have a lot of these clusters. What fraction of the GoodReads-affected clusters is this?
+
+```{r}
+nrow(gr_big) / sum(!is.na(clusters$n_gr_books))
+```
+
+Less than 1%. Not bad, but let's look at these largest clusters.
+
+```{r}
+gr_big %>% head() %>% collect()
+```
+
+## Large Cluster Debugging
+
+We have some pretty big clusters:
+
+```{r}
+big = clusters %>% slice_max(n_nodes, n=5, with_ties=FALSE) %>%
+  collect()
+big
+```
+
+What is up with this? We should figure out what went wrong, if we can.  What are its ISBNs?
+
+```{r}
+isbns = read_parquet('book-links/all-isbns.parquet', as_data_frame=FALSE)
+glimpse(isbns)
+```
+
+```{r}
+links = read_parquet("book-links/isbn-clusters.parquet", as_data_frame=FALSE) %>%
+  select(isbn_id, cluster)
+glimpse(links)
+```
+
+Now let's look up data for the largest cluster.
+
+```{r}
+big_id = big$cluster[1]
+big_id
+```
+
+```{r}
+bl = links %>% filter(cluster == big_id)
+bl = semi_join(isbns, bl) %>% arrange(isbn)
+bl %>% glimpse()
+```
+
+What are the things with the highest record count?
+
+```{r}
+bl %>% collect() %>% rowwise() %>% mutate(
+  btot = sum(c_across(!starts_with("isbn")))
+) %>% slice_max(btot, n=20)
+```

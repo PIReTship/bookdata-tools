@@ -1,61 +1,81 @@
 schema: '2.0'
 stages:
-  scan-reviews:
-    cmd: python ../run.py --rust amazon scan-reviews --rating-output ratings.parquet
-      --review-output reviews.parquet ../data/az2018/Books.json.gz
+  scan-ratings:
+    cmd: cargo run --release -- amazon scan-ratings -o ratings.parquet --swap-id-columns
+      ../data/az2018/Books.csv
     deps:
-    - path: ../data/az2018/Books.json.gz
-      md5: 38bd00a67dd98902741eebfaf64f08dc
-      size: 11813848069
+    - path: ../data/az2018/Books.csv
+      md5: bcdcbbf336eb0d410e7a7894efa904ab
+      size: 2140933459
     - path: ../src/amazon.rs
-      md5: 420f64daa5bef2353140c3edabb9e326
-      size: 1291
+      hash: md5
+      md5: f8a3c6dfc3dc65b2f5d79eaa2ee65ddb
+      size: 578
     - path: ../src/cli/amazon/
-      md5: 369736708f82ee18792f301592a98858.dir
-      size: 5371
-      nfiles: 4
+      hash: md5
+      md5: 9a9a7cdb323e16fe79ba34ab67a99ff6.dir
+      size: 3533
+      nfiles: 3
     outs:
     - path: ratings.parquet
-      md5: ea664babdc393f2ee15df23616903990
-      size: 315697300
-    - path: reviews.parquet
-      md5: 1e2c4aabd3a2edbd347e83a9b2e39d5e
-      size: 9295942786
-  cluster-ratings:
-    cmd: python run.py --rust amazon cluster-ratings -o az2018/az-cluster-ratings.parquet
-      az2018/ratings.parquet
-    deps:
-    - path: az2018/ratings.parquet
-      md5: ea664babdc393f2ee15df23616903990
-      size: 315697300
-    - path: book-links/isbn-clusters.parquet
-      md5: 0d131195d46e52b7744f19fc96ccdebf
-      size: 335303074
-    - path: src/cli/amazon
-      md5: 369736708f82ee18792f301592a98858.dir
-      size: 5371
-      nfiles: 4
-    outs:
-    - path: az2018/az-cluster-ratings.parquet
-      md5: fa8655604726e2abf3423b5b85346bf1
-      size: 666545309
-  schema@az-cluster-ratings:
-    cmd: python ../run.py --rust pq-info -o az-cluster-ratings.json az-cluster-ratings.parquet
-    deps:
-    - path: az-cluster-ratings.parquet
-      md5: fa8655604726e2abf3423b5b85346bf1
-      size: 666545309
-    outs:
-    - path: az-cluster-ratings.json
-      md5: 3a15aa1565f953da2ce0934fadaefa3b
-      size: 702
+      hash: md5
+      md5: fdc3832ac453570056ca27500f9d4033
+      size: 342486205
   schema@ratings:
     cmd: python ../run.py --rust pq-info -o ratings.json ratings.parquet
     deps:
     - path: ratings.parquet
-      md5: ea664babdc393f2ee15df23616903990
-      size: 315697300
+      md5: 060809287f39a08c63724a1e8ae0fd8d
+      size: 316701214
     outs:
     - path: ratings.json
-      md5: 3595559cba3de8f4a8c1cc55eea00782
+      md5: e122a398de9e64654720f792598b7e1e
       size: 427
+  cluster-ratings:
+    cmd: cargo run --release -- amazon cluster-ratings -o az2018/az-cluster-ratings.parquet
+      az2018/ratings.parquet
+    deps:
+    - path: az2018/ratings.parquet
+      hash: md5
+      md5: fdc3832ac453570056ca27500f9d4033
+      size: 342486205
+    - path: book-links/isbn-clusters.parquet
+      hash: md5
+      md5: 66aa313725c5fc8dee8fe0a22b97192a
+      size: 485810244
+    - path: src/cli/amazon
+      hash: md5
+      md5: 9a9a7cdb323e16fe79ba34ab67a99ff6.dir
+      size: 3533
+      nfiles: 3
+    outs:
+    - path: az2018/az-cluster-ratings.parquet
+      hash: md5
+      md5: 32977cb224c3dee83cb43e504045906e
+      size: 452326061
+  schema@az-cluster-ratings:
+    cmd: python ../run.py --rust pq-info -o az-cluster-ratings.json az-cluster-ratings.parquet
+    deps:
+    - path: az-cluster-ratings.parquet
+      md5: c9ecf365a84cfb2ff36b87ec9c393c35
+      size: 661901612
+    outs:
+    - path: az-cluster-ratings.json
+      md5: da713f0303e3384dfb8624edf8924005
+      size: 702
+  cluster-ratings-5core:
+    cmd: cargo run --release -- kcore -o az-cluster-ratings-5core.parquet az-cluster-ratings.parquet
+    deps:
+    - path: ../src/cli/kcore.rs
+      hash: md5
+      md5: 9a64f2beb19d2053d9c2386609beafe9
+      size: 4874
+    - path: az-cluster-ratings.parquet
+      hash: md5
+      md5: 32977cb224c3dee83cb43e504045906e
+      size: 452326061
+    outs:
+    - path: az-cluster-ratings-5core.parquet
+      hash: md5
+      md5: 913de40169ea33fd7fecebe7e163b5e2
+      size: 241135993

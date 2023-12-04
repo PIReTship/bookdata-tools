@@ -11,12 +11,12 @@
 
 /// The "number space" structure for identifier spaces.
 pub struct NS<'a> {
-  /// The name of this numberspace.
-  pub name: &'a str,
-  /// The name usable as a part of an identifier name (snake_case).
-  pub fn_name: &'a str,
-  /// The number space numeric code.
-  pub code: i32
+    /// The name of this numberspace.
+    pub name: &'a str,
+    /// The name usable as a part of an identifier name (snake_case).
+    pub fn_name: &'a str,
+    /// The number space numeric code.
+    pub code: i32,
 }
 
 /// The multiplier base for distinguishing numbers in a number space.
@@ -41,88 +41,90 @@ pub const NS_LOC_INSTANCE: NS<'static> = NS::new("LOC-I", "loc_instance", 7);
 pub const NS_ISBN: NS<'static> = NS::new("ISBN", "isbn", 9);
 
 const NAMESPACES: &'static [&'static NS<'static>] = &[
-  &NS_WORK,
-  &NS_EDITION,
-  &NS_LOC_REC,
-  &NS_GR_WORK,
-  &NS_GR_BOOK,
-  &NS_LOC_WORK,
-  &NS_LOC_INSTANCE,
-  &NS_ISBN
+    &NS_WORK,
+    &NS_EDITION,
+    &NS_LOC_REC,
+    &NS_GR_WORK,
+    &NS_GR_BOOK,
+    &NS_LOC_WORK,
+    &NS_LOC_INSTANCE,
+    &NS_ISBN,
 ];
 
 #[cfg(test)]
 use quickcheck::quickcheck;
 
-impl <'a> NS<'a> {
-  /// Create a new number space. Internal only.
-  const fn new(name: &'a str, fn_name: &'a str, code: i32) -> NS<'a> {
-    NS {
-      name, fn_name, code
+impl<'a> NS<'a> {
+    /// Create a new number space. Internal only.
+    const fn new(name: &'a str, fn_name: &'a str, code: i32) -> NS<'a> {
+        NS {
+            name,
+            fn_name,
+            code,
+        }
     }
-  }
 
-  /// Get the name of the number space.
-  #[allow(dead_code)]
-  pub fn name(&'a self) -> &'a str {
-    self.name
-  }
-
-  /// Get the numeric code of the number space.
-  pub fn code(&'a self) -> i32 {
-    self.code
-  }
-
-  /// Get the base of the number space. Identifiers are translated into this space
-  /// by adding the base.
-  pub fn base(&'a self) -> i32 {
-    self.code() * NS_MULT_BASE
-  }
-
-  /// Convert a numeric identifier to a book code in this number space.
-  #[allow(dead_code)]
-  pub fn to_code(&'a self, n: i32) -> i32 {
-    assert!(n >= 0);
-    assert!(n <= NS_MULT_BASE);
-    n + self.base()
-  }
-
-  /// Extract a numeric identifier from a book code in this number space.
-  pub fn from_code(&'a self, n: i32) -> Option<i32> {
-    let lo = self.base();
-    let hi = lo + NS_MULT_BASE;
-    if n >= lo && n < hi {
-      Some(n - lo)
-    } else {
-      None
+    /// Get the name of the number space.
+    #[allow(dead_code)]
+    pub fn name(&'a self) -> &'a str {
+        self.name
     }
-  }
+
+    /// Get the numeric code of the number space.
+    pub fn code(&'a self) -> i32 {
+        self.code
+    }
+
+    /// Get the base of the number space. Identifiers are translated into this space
+    /// by adding the base.
+    pub fn base(&'a self) -> i32 {
+        self.code() * NS_MULT_BASE
+    }
+
+    /// Convert a numeric identifier to a book code in this number space.
+    #[allow(dead_code)]
+    pub fn to_code(&'a self, n: i32) -> i32 {
+        assert!(n >= 0);
+        assert!(n <= NS_MULT_BASE);
+        n + self.base()
+    }
+
+    /// Extract a numeric identifier from a book code in this number space.
+    pub fn from_code(&'a self, n: i32) -> Option<i32> {
+        let lo = self.base();
+        let hi = lo + NS_MULT_BASE;
+        if n >= lo && n < hi {
+            Some(n - lo)
+        } else {
+            None
+        }
+    }
 }
 
 impl NS<'static> {
-  pub fn by_name(name: &str) -> Option<&'static NS<'static>> {
-    for ns in NAMESPACES {
-      if ns.name() == name {
-        return Some(ns);
-      }
-    }
+    pub fn by_name(name: &str) -> Option<&'static NS<'static>> {
+        for ns in NAMESPACES {
+            if ns.name() == name {
+                return Some(ns);
+            }
+        }
 
-    None
-  }
+        None
+    }
 }
 
 /// Get the namespace for a book code.
 pub fn ns_of_book_code(code: i32) -> Option<&'static NS<'static>> {
-  let pfx = code / NS_MULT_BASE;
-  if pfx >= 1 {
-    for ns in NAMESPACES {
-      if ns.code() == pfx {
-        return Some(ns)
-      }
+    let pfx = code / NS_MULT_BASE;
+    if pfx >= 1 {
+        for ns in NAMESPACES {
+            if ns.code() == pfx {
+                return Some(ns);
+            }
+        }
     }
-  }
 
-  None
+    None
 }
 
 #[cfg(test)]
@@ -141,17 +143,16 @@ quickcheck! {
 
 #[test]
 fn test_to_code() {
-  let n = 42;
-  let code = NS_LOC_REC.to_code(n);
-  assert_eq!(code / NS_MULT_BASE, NS_LOC_REC.code());
+    let n = 42;
+    let code = NS_LOC_REC.to_code(n);
+    assert_eq!(code / NS_MULT_BASE, NS_LOC_REC.code());
 }
-
 
 #[test]
 fn test_from_code() {
-  let n = 42;
-  let code = NS_LOC_REC.to_code(n);
-  assert_eq!(NS_LOC_REC.from_code(code), Some(n));
-  assert_eq!(NS_EDITION.from_code(code), None);
-  assert_eq!(NS_ISBN.from_code(code), None);
+    let n = 42;
+    let code = NS_LOC_REC.to_code(n);
+    assert_eq!(NS_LOC_REC.from_code(code), Some(n));
+    assert_eq!(NS_EDITION.from_code(code), None);
+    assert_eq!(NS_ISBN.from_code(code), None);
 }

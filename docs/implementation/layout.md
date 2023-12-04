@@ -1,7 +1,3 @@
----
-title: Code Layout
----
-
 # Code Layout
 
 The import code consists of Python and Rust, wired together with DVC, with data
@@ -35,7 +31,7 @@ build (`cargo run` uses debug builds by default).  All DVC pipeline stages use `
 the Rust tools.
 
 For writing new commands, there is a lot of utility code under `src`.  Consult the
-{rust:mod}`Rust API documentation <bookdata>` for further details.
+{{< rust-mod Rust API documentation <bookdata> >}} for further details.
 
 The Rust code makes extensive use of the [polars][], [arrow2][], and
 [parquet2][] crates for data analysis and IO.  [arrow2_convert][] is used to

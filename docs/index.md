@@ -1,8 +1,4 @@
----
-title: Overview
----
-
-# Book Data Tools
+# Overview {.unnumbered}
 
 The PIReT Book Data Tools are a set of tools for ingesting, integrating, and
 indexing a variety of sources of book data, created by the [People and
@@ -28,7 +24,7 @@ If you use these scripts in any published research, cite [our paper][paper] ([PD
 We also ask that you contact Michael Ekstrand to let us know about your use of the data, so we can
 include your paper in our list of relying publications.
 
-:::{note}
+::: {.callout-warning}
 The limitations section of the paper contains important information about
 the limitations of the data these scripts compile.  **Do not use the gender information
 in this data data or tools without understanding those limitations**.  In particular,
@@ -42,22 +38,10 @@ page that describes the data and its appropriate citation.
 
 See the [Setup page](using/setup.md) to get started and for system requirements.
 
-```{toctree}
-:maxdepth: 1
-
-using/index
-data/index
-implementation/index
-papers
-history
-genindex
-Rust API <https://bookdata.piret.info/apidocs/bookdata/index.html>
-GitHub repository <https://github.com/BoiseState/bookdata-tools>
-```
-
 ## Video
 
 I recorded a video walking through the integration as an example for my [Data Science class](https://cs533.ekstrandom.net).
+This discusses the PostgreSQL version of the integration, but the concepts have remained the same in terms of linking logic.
 
 <iframe src="https://boisestate.hosted.panopto.com/Panopto/Pages/Embed.aspx?id=3ddd5f50-f4bf-4c27-94fb-ac4a0042ab0b&autoplay=false&offerviewer=true&showtitle=true&showbrand=false&start=0&interactivity=all" height="405" width="720" style="border: 1px solid #464646;" allowfullscreen allow="autoplay"></iframe>
 

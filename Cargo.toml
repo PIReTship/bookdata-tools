@@ -1,83 +1,113 @@
 [package]
 name = "bookdata"
-version = "2.1.0"
+version = "3.0.0-dev"
 authors = ["Michael Ekstrand <michaelekstrand@boisestate.edu>"]
 edition = "2021"
 license = "MIT"
 rust-version = "1.59"
 default-run = "bookdata"
 
+[workspace]
+members = [
+    "bd-macros",
+]
+
 [profile.release]
 opt-level = 3
 debug = 1
-lto = false
+lto = "thin"
 
 [dependencies]
 paste = "^1.0"
+bd-macros = { path = "bd-macros" }
 
 enum_dispatch = "^0.3.7"
-clap = { version="^4", features=["derive"] }
+clap = { version = "^4", features = ["derive"] }
 log = { version = "^0.4.8", features = ["std"] }
 indicatif = "^0.17.0"
-happylog = { version="^0.3.0-b3", features=["clap"] }
+happylog = { version = "^0.3.0-b3", features = ["clap"] }
 
 lazy_static = "^1"
 
-toml = "0.5"
+toml = "0.7"
 csv = "^1.0"
-quick-xml = "^0.26.0"
-serde = { version="^1.0", features=["derive"] }
-serde_json = { version="^1.0" }
+quick-xml = "^0.31.0"
+serde = { version = "^1.0", features = ["derive"] }
+serde_json = { version = "^1.0" }
+serde_yaml = { version = "^0.9" }
 rmp-serde = "^1.0"
 text-template = "^0.1"
 
 os_pipe = "^1.0"
-fallible-iterator = "^0.2.0"
+fallible-iterator = "^0.3.0"
 anyhow = "^1.0.26"
 thiserror = "^1.0"
-num_cpus = "^1"
 rayon = "^1.5"
 crossbeam = "^0.8"
-hashbrown = "^0.12"
+hashbrown = "^0.14"
 
 md-5 = "^0.10"
-zstd = "^0.11"
-flate2 = { version="^1.0.6" }
-zip = { version="^0.6.0", default-features=false, features=["deflate"] }
+zstd = "^0.13"
+flate2 = { version = "^1.0.6", features = ["zlib-ng"] }
+zip = { version = "^0.6.0", default-features = false, features = ["deflate"] }
 
 unicode-normalization = "0.1"
-parse-display = "^0.6"
+parse-display = "^0.8"
 hex = "^0.4.3"
 chrono = "^0.4"
 glob = "^0.3"
 peg = "^0.8"
 regex = "^1.5.0"
-friendly = { version="^0.1.0", features=["chrono"] }
+friendly = { version = "^0.1.0", features = ["chrono"] }
 cpu-time = "^1.0"
 
-petgraph = { version="^0.6", features=["serde-1"] }
+petgraph = { version = "^0.6", features = ["serde-1"] }
 # graphalgs = { version="^0.0.6", optional=true }
 
-polars = { version="^0.25", default-features=false, features=[
-    "parquet", "csv-file", "lazy",
-    "dtype-slim", "dtype-i8", "dtype-u8", "dtype-i16",
+# heavy use of the Polars data processing engine
+polars = { version = "~0.35", default-features = false, features = [
+    "parquet",
+    "csv",
+    "lazy",
+    "dtype-slim",
+    "dtype-i8",
+    "dtype-u8",
+    "dtype-i16",
+    "dtype-u16",
+    "fmt",
     # "dtype-full",
 ] }
-arrow2 = { version="^0.14", features=["io_parquet"] }
-arrow2_convert = "^0.3.2"
-parquet2 = "^0.16"
+# we need direct access to the Polars arrow & Parquet backends
+# they have vendored & taken over maintenance of arrow2/parquet2
+polars-arrow = "~0.35"
+polars-parquet = "~0.35"
 
-mimalloc = { version="^0.1", default-features=false }
+# configuration support — requires 0.5 pre-release
+jrsonnet-evaluator = { version = "^0.5.0-pre95", features = [
+    "exp-preserve-order",
+] }
+jrsonnet-stdlib = { version = "^0.5.0-pre95", features = [
+    "exp-preserve-order",
+] }
 
+# we use snmalloc, since allocate and free across threads is common
+snmalloc-rs = { version = "^0.3.4", features = ["native-cpu"] }
+
+# we don't have a lot of tests, but we do have a few
 [dev-dependencies]
 tempfile = "^3.2"
-quickcheck = {version="^1.0", default-features=false}
-env_logger = "^0.9"
+quickcheck = { version = "^1.0", default-features = false }
+env_logger = "^0.10"
 test-log = "^0.2"
 
 [features]
 default = ["log/release_max_level_debug"]
 # adv-graph = ["graphalgs", "rayon"]
 
+# use a better allocator when we can
+[target.'cfg(not(target_env="msvc"))'.dependencies]
+tikv-jemallocator = { version = "^0.5", features = ["stats", "profiling"] }
+
+# on Unix, we can report process resource usage
 [target.'cfg(unix)'.dependencies]
 libc = "^0.2"

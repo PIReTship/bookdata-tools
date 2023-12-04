@@ -1,41 +1,25 @@
 stages:
-  # scan-ratings:
-  #   cmd: python ../run.py --rust amazon scan-ratings -o ratings.parquet --swap-id-columns ../data/az2018/Books.csv
-  #   deps:
-  #   - ../src/amazon.rs
-  #   - ../src/cli/amazon/
-  #   - ../data/az2018/Books.csv
-  #   outs:
-  #   - ratings.parquet
-
-  scan-reviews:
-    cmd: python ../run.py --rust amazon scan-reviews --rating-output ratings.parquet --review-output reviews.parquet ../data/az2018/Books.json.gz
+  scan-ratings:
+    cmd: cargo run --release -- amazon scan-ratings -o ratings.parquet --swap-id-columns ../data/az2018/Books.csv
     deps:
-    - ../src/amazon.rs
-    - ../src/cli/amazon/
-    - ../data/az2018/Books.json.gz
+      - "../src/amazon.rs"
+      - "../src/cli/amazon/"
+      - "../data/az2018/Books.csv"
     outs:
-    - ratings.parquet
-    - reviews.parquet
-
+      - ratings.parquet
   cluster-ratings:
-    cmd: python run.py --rust amazon cluster-ratings -o az2018/az-cluster-ratings.parquet az2018/ratings.parquet
-    wdir: ..
+    wdir: ".."
+    cmd: cargo run --release -- amazon cluster-ratings -o az2018/az-cluster-ratings.parquet az2018/ratings.parquet
     deps:
-    - src/cli/amazon
-    - az2018/ratings.parquet
-    - book-links/isbn-clusters.parquet
+      - src/cli/amazon
+      - az2018/ratings.parquet
+      - book-links/isbn-clusters.parquet
     outs:
-    - az2018/az-cluster-ratings.parquet
-
-  schema:
-    foreach:
-    - ratings
-    - az-cluster-ratings
-    do:
-      cmd: python ../run.py --rust pq-info -o ${item}.json ${item}.parquet
-      deps:
-      - ${item}.parquet
-      outs:
-      - ${item}.json:
-          cache: false
+      - az2018/az-cluster-ratings.parquet
+  cluster-ratings-5core:
+    cmd: cargo run --release -- kcore -o az-cluster-ratings-5core.parquet az-cluster-ratings.parquet
+    deps:
+      - az-cluster-ratings.parquet
+      - "../src/cli/kcore.rs"
+    outs:
+      - az-cluster-ratings-5core.parquet

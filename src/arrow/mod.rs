@@ -1,9 +1,10 @@
-pub mod reader;
-pub mod writer;
 pub mod dfext;
-pub mod polars;
+pub mod reader;
+pub mod row;
+pub mod writer;
 
-pub use reader::scan_parquet_file;
-pub use arrow2_convert::ArrowField;
-pub use arrow2_convert::serialize::ArrowSerialize;
-pub use writer::TableWriter;
+pub use bd_macros::TableRow;
+pub use dfext::nonnull_schema;
+pub use reader::{scan_df_parquet, scan_parquet_file};
+pub use row::{FrameBuilder, TableRow};
+pub use writer::{open_parquet_writer, save_df_parquet, TableWriter};

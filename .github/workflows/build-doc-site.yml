@@ -1,7 +1,7 @@
 name: Build Docs
 on:
   push:
-    branches: [master]
+    branches: [main]
 
 defaults:
   run:
@@ -16,16 +16,6 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v2
 
-      - name: Cache conda
-        uses: actions/cache@v2
-        env:
-          # Increase this value to reset cache if etc/example-environment.yml has not changed
-          CACHE_NUMBER: 0
-        with:
-          path: ~/conda_pkgs_dir
-          key:
-            conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('conda-linux-64.lock') }}
-
       - name: Cache Rust dependency builds
         uses: actions/cache@v2
         with:
@@ -35,15 +25,14 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
 
       - name: Initialize Conda
-        uses: conda-incubator/setup-miniconda@v2
+        uses: mamba-org/setup-micromamba@v1
         with:
-          activate-environment: bookdata
-          environment-file: conda-linux-64.lock
-          use-only-tar-bz2: true
+          environment-file: conda-lock.yml
+          environment-name: bookdata
 
       - name: Build site 🕸
         run: |
-          sphinx-build docs target/site
+          cd docs && quarto render --output-dir ../target/site
 
       - name: Build Rust API docs 📚
         run: |

@@ -8,8 +8,19 @@ following:
 
 1.  Cite the [UMUAI paper](https://md.ekstrandom.net/pubs/bag-extended),
     regardless of which version of the data set you use.
-2.  Clearly state the version of the data tools you are using in your paper.
-3.  [Let us know](papers.rst) about your use so we can add you to the list.
+2.  Cite the papers corresponding to the individual ratings, review, or
+    consumption data sets you are using.
+3.  Clearly state the version of the data tools you are using in your paper.
+4.  [Let us know](papers.md) about your use so we can add you to the list.
+
+## Book Data 3.0 (in progress)
+
+-   Make the pipeline configurable so individual rating datasets can be disabled.
+-   Use [jsonnet](implementation/pipeline.md) to generate DVC pipelines, taking
+    configuration settings into account.
+-   Extract GoodReads author information into {{< file goodreads/gr-author-info.parquet >}}.
+-   Extract 5-cores of interaction files.
+-   🪲 GoodReads cluster & work rating timestamps were on incorrect scale
 
 ## Book Data 2.1
 
@@ -20,7 +31,7 @@ normalization flow.
 
 The tools now support the GoodReads interaction CSV file, which is available
 without registration, and uses this by default.  See the [GoodReads data
-docs](data/goodreads.md) for the details.  This means that, in their default
+docs](data/goodreads.qmd) for the details.  This means that, in their default
 configuration, the book data integration uses only data that is publicly
 available without special request.
 
@@ -31,7 +42,7 @@ available without special request.
 -   Added 2018 version of the Amazon ratings
 -   Added code to extract edition and work subjects
 -   Updated docs for current extraction layout
--   Added {file}`openlibrary/work-clusters.parquet` to simplify OpenLibrary integration
+-   Added {{< file openlibrary/work-clusters.parquet >}} to simplify OpenLibrary integration
 
 ### Logic Updates
 
@@ -43,8 +54,8 @@ available without special request.
     Rust and Python).  The code is now in 2 languages: Rust integration and Python notebooks to report
     on integration statistics.
 -   Improved name parsing
-    -   Replaced `nom`-based name parser for {rust:fn}`~bookdata::cleaning::names::name_variants`
-        with a new one written in [`peg`], that is both easier to read/maintain and more efficient.
+    -   Replaced `nom`-based name parser for {{< rust-fn ~bookdata::cleaning::names::name_variants >}}
+        with a new one written in [`peg`][peg], that is both easier to read/maintain and more efficient.
     -   Corrected errors in name parser that emitted empty-string names for some authors.
     -   Added `clean_name` function, used across all name formatting, to normalize whitespace and
         punctuation in name records from any source.
