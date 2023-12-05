@@ -55,19 +55,6 @@ local review_stages = if bd.config.goodreads.reviews then {
       'gr-reviews.parquet',
     ],
   },
-
-  'cluster-reviews': {
-    wdir: '../..',
-    cmd: bd.cmd('goodreads cluster-interactions --reviews -o goodreads/full/gr-cluster-reviews.parquet'),
-    deps: [
-      'src/cli/goodreads/cluster.rs',
-      'goodreads/gr-book-link.parquet',
-      'goodreads/full/gr-reviews.parquet',
-    ],
-    outs: [
-      'goodreads/full/gr-cluster-reviews.parquet',
-    ],
-  },
 } else {};
 
 local core_stages = {

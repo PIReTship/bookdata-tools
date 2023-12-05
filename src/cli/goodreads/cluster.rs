@@ -11,17 +11,13 @@ use polars::prelude::*;
 
 #[derive(Args, Debug)]
 pub struct CICommand {
-    /// Cluster ratings
+    /// Cluster ratings.
     #[arg(long = "ratings")]
     ratings: bool,
 
-    /// Cluster add-to-shelf actions
+    /// Cluster add-to-shelf actions.
     #[arg(long = "add-actions")]
     add_actions: bool,
-
-    /// Cluster reviews actions
-    #[arg(long = "reviews")]
-    reviews: bool,
 
     /// Cluster using simple data instead of full data.
     #[arg(long = "simple")]
@@ -31,7 +27,7 @@ pub struct CICommand {
     #[arg(long = "native-works")]
     native_works: bool,
 
-    /// Write output to FILE
+    /// Write output to FILE.
     #[arg(short = 'o', long = "output", name = "FILE")]
     output: PathBuf,
 }
@@ -47,7 +43,6 @@ enum SrcType {
 enum ActionType {
     Ratings,
     AddActions,
-    Reviews,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -70,8 +65,6 @@ impl CICommand {
             ClusterOp::add_actions(&self.output)
         } else if self.ratings {
             ClusterOp::ratings(&self.output)
-        } else if self.reviews {
-            ClusterOp::reviews(&self.output)
         } else {
             error!("must specify one of --add-actions, --ratings, or --reviews");
             return Err(anyhow!("no operating mode specified"));
@@ -108,16 +101,6 @@ impl ClusterOp {
         }
     }
 
-    /// Start a new review-clustering operation.
-    pub fn reviews<P: AsRef<Path>>(path: P) -> ClusterOp {
-        ClusterOp {
-            actions: ActionType::Reviews,
-            data: SrcType::Full,
-            clusters: AggType::Clusters,
-            output: path.as_ref().to_path_buf(),
-        }
-    }
-
     /// Set operation to cluster simple records instead of full records.
     pub fn simple(self) -> ClusterOp {
         ClusterOp {
@@ -136,10 +119,7 @@ impl ClusterOp {
 
     /// Run the clustering operation.
     pub fn cluster(self) -> Result<()> {
-        let interactions = match self.actions {
-            ActionType::Reviews => self.load_reviews()?,
-            ActionType::AddActions | ActionType::Ratings => self.load_interactions()?,
-        };
+        let interactions = self.load_interactions()?;
         let interactions = self.filter(interactions);
         let interactions = self.project_and_sort(interactions);
         let actions = interactions
@@ -167,29 +147,6 @@ impl ClusterOp {
             SrcType::Simple => "simple",
         };
         let path = format!("goodreads/{}/gr-interactions.parquet", dir);
-        let data = LazyFrame::scan_parquet(path, Default::default())?;
-
-        let links = LazyFrame::scan_parquet("goodreads/gr-book-link.parquet", Default::default())?;
-
-        let data = data.join(
-            links,
-            &[col("book_id")],
-            &[col("book_id")],
-            JoinType::Inner.into(),
-        );
-        Ok(data)
-    }
-
-    /// Load the review file.
-    fn load_reviews(&self) -> Result<LazyFrame> {
-        let dir = match self.data {
-            SrcType::Full => "full",
-            SrcType::Simple => {
-                error!("only full data has reviews");
-                return Err(anyhow!("invalid combination of options"));
-            }
-        };
-        let path = format!("goodreads/{}/gr-reviews.parquet", dir);
         let data = LazyFrame::scan_parquet(path, Default::default())?;
 
         let links = LazyFrame::scan_parquet("goodreads/gr-book-link.parquet", Default::default())?;
@@ -272,7 +229,6 @@ impl ClusterOp {
                     col("item").count().alias("nactions"),
                 ]
             }
-            (ActionType::Reviews, _) => unreachable!(),
         }
     }
 
