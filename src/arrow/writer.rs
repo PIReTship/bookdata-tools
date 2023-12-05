@@ -95,6 +95,7 @@ where
 
         // extract struct schema
         let schema = R::schema();
+        debug!("{}: opening for schema {:?}", path.display(), schema);
 
         let writer = open_polars_writer(path)?;
         let writer = writer.batched(&schema)?;
