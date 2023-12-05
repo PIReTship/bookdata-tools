@@ -9,4 +9,5 @@ pub mod ids;
 pub mod interaction;
 pub mod review;
 pub mod simple_interaction;
+pub mod users;
 pub mod work;

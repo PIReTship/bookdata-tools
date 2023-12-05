@@ -3,15 +3,13 @@ use hashbrown::HashSet;
 use serde::Deserialize;
 
 use crate::arrow::*;
+use crate::goodreads::users::save_user_index;
 use crate::ids::index::IdIndex;
 use crate::parsing::dates::*;
 use crate::parsing::*;
 use crate::prelude::*;
 
 pub const OUT_FILE: &'static str = "gr-interactions.parquet";
-pub const USER_FILE: &'static str = "gr-users.parquet";
-pub const UID_COL: &'static str = "user";
-pub const UHASH_COL: &'static str = "user_hash";
 
 /// Interaction records we read from JSON.
 #[derive(Deserialize)]
@@ -127,8 +125,7 @@ impl ObjectWriter<RawInteraction> for IntWriter {
             self.users.len()
         );
         let res = self.writer.finish()?;
-        info!("saving {} users", self.users.len());
-        self.users.save(USER_FILE, UID_COL, UHASH_COL)?;
+        save_user_index(&self.users)?;
         Ok(res)
     }
 }
