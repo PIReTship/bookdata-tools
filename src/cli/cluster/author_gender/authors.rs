@@ -1,5 +1,5 @@
 //! Support for loading author info.
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use crate::arrow::*;
 use crate::gender::*;
@@ -9,7 +9,7 @@ use crate::util::logging::item_progress;
 #[derive(Debug, Default)]
 pub struct AuthorInfo {
     pub n_author_recs: u32,
-    pub genders: HashSet<Gender>,
+    pub genders: GenderBag,
 }
 
 pub type AuthorTable = HashMap<String, AuthorInfo>;
@@ -52,8 +52,8 @@ fn viaf_load_names() -> Result<HashMap<u32, Vec<String>>> {
 }
 
 /// Load VIAF author genders
-fn viaf_load_genders() -> Result<HashMap<u32, HashSet<Gender>>> {
-    let mut map: HashMap<u32, HashSet<Gender>> = HashMap::new();
+fn viaf_load_genders() -> Result<HashMap<u32, GenderBag>> {
+    let mut map: HashMap<u32, GenderBag> = HashMap::new();
     let timer = Timer::new();
 
     info!("loading VIAF author genders");
@@ -65,7 +65,7 @@ fn viaf_load_genders() -> Result<HashMap<u32, HashSet<Gender>>> {
     for row in iter {
         let row: GenderRow = row?;
         let gender: Gender = row.gender.into();
-        map.entry(row.rec_id).or_default().insert(gender);
+        map.entry(row.rec_id).or_default().add(gender);
     }
 
     info!(
@@ -83,18 +83,17 @@ pub fn viaf_author_table() -> Result<AuthorTable> {
 
     let rec_names = viaf_load_names()?;
     let rec_genders = viaf_load_genders()?;
-    let empty = HashSet::new();
 
     info!("merging gender records");
     let pb = item_progress(rec_names.len() as u64, "clusters");
     let timer = Timer::new();
     for (rec_id, names) in pb.wrap_iter(rec_names.into_iter()) {
-        let genders = rec_genders.get(&rec_id).unwrap_or(&empty);
+        let genders = rec_genders.get(&rec_id);
         for name in names {
             let rec = table.entry(name).or_default();
             rec.n_author_recs += 1;
-            for g in genders {
-                rec.genders.insert(g.clone());
+            if let Some(bag) = genders {
+                rec.genders.merge_from(bag);
             }
         }
     }

@@ -21,6 +21,20 @@ pub enum Gender {
     Open(String),
 }
 
+/// A collection of genders.
+#[derive(Default, Debug)]
+pub struct GenderBag {
+    size: usize,
+    mask: u32,
+    resolved: Gender,
+}
+
+impl Default for Gender {
+    fn default() -> Self {
+        Gender::Unknown
+    }
+}
+
 impl FromStr for Gender {
     type Err = GenderError;
 
@@ -80,53 +94,93 @@ impl Gender {
             _ => Gender::Ambiguous,
         }
     }
-}
 
-pub fn resolve_gender<I, G>(genders: I) -> Gender
-where
-    I: IntoIterator<Item = G>,
-    G: Into<Gender>,
-{
-    let mut gender = Gender::Unknown;
-    for g in genders {
-        let g: Gender = g.into();
-        gender = gender.merge(&g);
+    /// Get an integer usable as a mask for this gender.
+    fn mask_val(&self) -> u32 {
+        match self {
+            Gender::Unknown => 1,
+            Gender::Ambiguous => 2,
+            Gender::Female => 4,
+            Gender::Male => 8,
+            Gender::Open(_) => 0x8000_0000,
+        }
     }
-    gender.to_owned()
+}
+
+impl GenderBag {
+    /// Add a gender to this bag.
+    pub fn add(&mut self, gender: Gender) {
+        self.size += 1;
+        self.mask |= gender.mask_val();
+        self.resolved = self.resolved.merge(&gender);
+    }
+
+    /// Merge another gender bag into this one.
+    pub fn merge_from(&mut self, bag: &GenderBag) {
+        self.size += bag.size;
+        self.mask |= bag.mask;
+        self.resolved = self.resolved.merge(&bag.resolved);
+    }
+
+    /// Get the number of gender entries recorded to make this gender record.
+    #[allow(dead_code)]
+    pub fn len(&self) -> usize {
+        self.size
+    }
+
+    /// Check whether the gender bag is empty.
+    pub fn is_empty(&self) -> bool {
+        self.size == 0
+    }
+
+    /// Get the gender, returning [None] if no genders are seen.
+    #[allow(dead_code)]
+    pub fn maybe_gender(&self) -> Option<&Gender> {
+        if self.is_empty() {
+            None
+        } else {
+            Some(&self.resolved)
+        }
+    }
+
+    /// Get the gender, returning [Gender::Unknown] if no genders are seen.
+    pub fn to_gender(&self) -> &Gender {
+        &self.resolved
+    }
 }
 
 #[test]
-pub fn test_resolve_empty() {
-    let g = resolve_gender(Vec::<String>::new());
-    assert_eq!(g, Gender::Unknown);
+pub fn test_bag_empty() {
+    let bag = GenderBag::default();
+    assert_eq!(bag.to_gender(), &Gender::Unknown);
 }
 
 #[test]
-pub fn test_resolve_female() {
-    let g = resolve_gender(vec!["female"]);
-    assert_eq!(g, Gender::Female);
+pub fn test_bag_female() {
+    let mut bag = GenderBag::default();
+    bag.add("female".into());
+    assert_eq!(bag.to_gender(), &Gender::Female);
 }
 
 #[test]
-pub fn test_resolve_male() {
-    let g = resolve_gender(vec!["male"]);
-    assert_eq!(g, Gender::Male);
+pub fn test_bag_male() {
+    let mut bag = GenderBag::default();
+    bag.add("male".into());
+    assert_eq!(bag.to_gender(), &Gender::Male);
 }
 
 #[test]
-pub fn test_resolve_mf() {
-    let g = resolve_gender(vec!["male", "female"]);
-    assert_eq!(g, Gender::Ambiguous);
+pub fn test_bag_mf() {
+    let mut bag = GenderBag::default();
+    bag.add("male".into());
+    bag.add("female".into());
+    assert_eq!(bag.to_gender(), &Gender::Ambiguous);
 }
 
 #[test]
-pub fn test_resolve_f_unknown() {
-    let g = resolve_gender(vec!["female", "unknown"]);
-    assert_eq!(g, Gender::Female);
-}
-
-#[test]
-pub fn test_resolve_u_f() {
-    let g = resolve_gender(vec!["unknown", "female"]);
-    assert_eq!(g, Gender::Female);
+pub fn test_bag_ff() {
+    let mut bag = GenderBag::default();
+    bag.add("female".into());
+    bag.add("female".into());
+    assert_eq!(bag.to_gender(), &Gender::Female);
 }

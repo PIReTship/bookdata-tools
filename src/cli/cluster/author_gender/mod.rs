@@ -10,7 +10,6 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 use crate::arrow::*;
-use crate::gender::*;
 use crate::ids::codes::*;
 use crate::prelude::*;
 
@@ -62,7 +61,7 @@ fn save_genders(clusters: Vec<i32>, genders: clusters::ClusterTable, outf: &Path
             } else if stats.genders.is_empty() {
                 gender = "no-gender".to_owned()
             } else {
-                gender = resolve_gender(&stats.genders).to_string()
+                gender = stats.genders.to_gender().to_string()
             };
         }
         out.write_object(ClusterGenderInfo { cluster, gender })?;
