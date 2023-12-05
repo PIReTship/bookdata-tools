@@ -7,10 +7,11 @@ use crate::parsing::dates::*;
 use crate::parsing::*;
 use crate::prelude::*;
 
-use super::ids::read_id_links;
+use super::ids::load_id_links;
 use super::ids::BookId;
 use super::ids::BookLinkMap;
 use super::ids::WorkId;
+use super::users::load_user_index;
 
 const OUT_FILE: &'static str = "gr-reviews.parquet";
 
@@ -61,7 +62,7 @@ pub struct ReviewRecord {
 // Object writer to transform and write GoodReads reviews
 pub struct ReviewWriter {
     writer: TableWriter<ReviewRecord>,
-    users: IdIndex<Vec<u8>>,
+    users: IdIndex<String>,
     books: BookLinkMap,
     n_recs: u32,
 }
@@ -70,10 +71,11 @@ impl ReviewWriter {
     // Open a new output
     pub fn open() -> Result<ReviewWriter> {
         let writer = TableWriter::open(OUT_FILE)?;
-        let books = read_id_links()?;
+        let users = load_user_index()?.freeze();
+        let books = load_id_links()?;
         Ok(ReviewWriter {
             writer,
-            users: IdIndex::new(),
+            users,
             books,
             n_recs: 0,
         })
@@ -91,8 +93,7 @@ impl ObjectWriter<RawReview> for ReviewWriter {
     fn write_object(&mut self, row: RawReview) -> Result<()> {
         self.n_recs += 1;
         let rec_id = self.n_recs;
-        let user_key = hex::decode(row.user_id.as_bytes())?;
-        let user_id = self.users.intern_owned(user_key)?;
+        let user_id = self.users.intern_owned(row.user_id)?;
         let book_id: i32 = row.book_id.parse()?;
         let (rev_hi, rev_lo) = decode_hex_i64_pair(&row.review_id)?;
         // review ids were checked for dupluicates in interaction scan, don't repeat here

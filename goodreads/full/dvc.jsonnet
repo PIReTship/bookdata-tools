@@ -50,6 +50,8 @@ local review_stages = if bd.config.goodreads.reviews then {
       '../../src/cli/goodreads',
       '../../src/goodreads',
       '../../data/goodreads/goodreads_reviews_dedup.json.gz',
+      '../gr-book-link.parquet',
+      'gr-users.parquet',
     ],
     outs: [
       'gr-reviews.parquet',

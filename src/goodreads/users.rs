@@ -2,22 +2,24 @@
 use anyhow::Result;
 use log::*;
 
-use crate::ids::index::IdIndex;
+use crate::{ids::index::IdIndex, prelude::BDPath};
 
-const GR_USER_FILE: &str = "gr-users.parquet";
+const GR_USER_FILE: BDPath<'static> = BDPath::new("goodreads/gr-users.parquet");
 const UID_COL: &'static str = "user";
 const UHASH_COL: &'static str = "user_hash";
 
 pub type UserIndex = IdIndex<String>;
 
 pub fn save_user_index(users: &UserIndex) -> Result<()> {
-    info!("saving {} users", users.len());
-    users.save(GR_USER_FILE, UID_COL, UHASH_COL)?;
+    let path = GR_USER_FILE.resolve()?;
+    info!("saving {} users to {}", users.len(), path.display());
+    users.save(&path, UID_COL, UHASH_COL)?;
     Ok(())
 }
 
 pub fn load_user_index() -> Result<UserIndex> {
-    let users = IdIndex::load(GR_USER_FILE, UID_COL, UHASH_COL)?;
-    info!("loaded {} users from {}", users.len(), GR_USER_FILE);
+    let path = GR_USER_FILE.resolve()?;
+    let users = IdIndex::load(&path, UID_COL, UHASH_COL)?;
+    info!("loaded {} users from {}", users.len(), path.display());
     Ok(users)
 }
