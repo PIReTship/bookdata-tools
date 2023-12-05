@@ -95,6 +95,7 @@ impl ObjectWriter<RawReview> for ReviewWriter {
         let user_id = self.users.intern_owned(user_key)?;
         let book_id: i32 = row.book_id.parse()?;
         let (rev_hi, rev_lo) = decode_hex_i64_pair(&row.review_id)?;
+        // review ids were checked for dupluicates in interaction scan, don't repeat here
         let review_id = rev_hi ^ rev_lo;
         let link = self
             .books
