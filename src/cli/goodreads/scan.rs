@@ -47,11 +47,7 @@ where
     W: ObjectWriter<R> + DataSink + Send + Sync + 'static,
     R: DeserializeOwned + Send + Sync + 'static,
 {
-    let outs: Vec<_> = proc
-        .output_files()
-        .iter()
-        .map(|p| p.to_path_buf())
-        .collect();
+    let outs: Vec<_> = proc.output_files();
 
     info!("reading data from {}", path.display());
     let pb = data_progress(0);
