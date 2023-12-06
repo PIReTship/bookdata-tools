@@ -55,7 +55,7 @@ where
 {
     #[allow(dead_code)]
     pub fn new(delegate: W) -> UnchunkWriter<T, W> {
-        UnchunkWriter::with_size(delegate, 1000)
+        UnchunkWriter::with_size(delegate, 1024)
     }
 
     pub fn with_size(delegate: W, size: usize) -> UnchunkWriter<T, W> {

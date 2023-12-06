@@ -1,5 +1,5 @@
 use crate::goodreads::*;
-use crate::io::object::ThreadObjectWriter;
+use crate::io::object::{ChunkWriter, ThreadObjectWriter, UnchunkWriter};
 use crate::prelude::*;
 use crate::util::logging::data_progress;
 use serde::de::DeserializeOwned;
@@ -52,7 +52,9 @@ where
     info!("reading data from {}", path.display());
     let pb = data_progress(0);
     let read = LineProcessor::open_gzip(path, pb.clone())?;
-    let mut writer = ThreadObjectWriter::wrap(proc).with_name("output").spawn();
+    let proc = ChunkWriter::new(proc);
+    let writer = ThreadObjectWriter::wrap(proc).with_name("output").spawn();
+    let mut writer = UnchunkWriter::new(writer);
     read.process_json(&mut writer)?;
     pb.finish_and_clear();
 

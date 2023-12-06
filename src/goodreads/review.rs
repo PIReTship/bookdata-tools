@@ -42,7 +42,7 @@ pub struct ReviewRecord {
     /// GoodReads book identifier.
     pub book_id: BookId,
     /// GoodReads work identifier.
-    pub work_id: WorkId,
+    pub work_id: Option<WorkId>,
     /// Cluster identifier (from [integration clustering][clust]).
     ///
     /// [clust]: https://bookdata.piret.info/data/cluster.html

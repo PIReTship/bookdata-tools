@@ -17,7 +17,7 @@ const GR_LINK_FILE: BDPath<'static> = BDPath::new("goodreads/gr-book-link.parque
 #[derive(Debug, TableRow, Serialize, Deserialize)]
 pub struct BookLinkRecord {
     pub book_id: BookId,
-    pub work_id: WorkId,
+    pub work_id: Option<WorkId>,
     pub cluster: i32,
 }
 

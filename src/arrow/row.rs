@@ -7,8 +7,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RowError {
-    #[error("required field was null")]
-    NullField,
+    #[error("required field {0} was null")]
+    NullField(&'static str),
     #[error("conversion error: {0}")]
     ConvertError(&'static str),
     #[error("polars error: {0}")]
@@ -128,7 +128,7 @@ pub trait ColType: Sized {
     fn cast_series<'a>(s: &'a Series) -> PolarsResult<&'a Self::Array>;
 
     /// Read a value from an array.
-    fn read_from_column(a: &Self::Array, pos: usize) -> Result<Self, RowError>;
+    fn read_from_column(name: &'static str, a: &Self::Array, pos: usize) -> Result<Self, RowError>;
 }
 
 macro_rules! col_type {
@@ -156,8 +156,14 @@ macro_rules! col_type {
                 s.$cast()
             }
 
-            fn read_from_column(a: &Self::Array, pos: usize) -> Result<Self, RowError> {
-                a.get(pos).ok_or(RowError::NullField).map(|x| x.into())
+            fn read_from_column(
+                name: &'static str,
+                a: &Self::Array,
+                pos: usize,
+            ) -> Result<Self, RowError> {
+                a.get(pos)
+                    .ok_or(RowError::NullField(name))
+                    .map(|x| x.into())
             }
         }
         // just manually derive the option, bounds are being a pain
@@ -178,7 +184,11 @@ macro_rules! col_type {
                 s.$cast()
             }
 
-            fn read_from_column(a: &Self::Array, pos: usize) -> Result<Self, RowError> {
+            fn read_from_column(
+                _name: &'static str,
+                a: &Self::Array,
+                pos: usize,
+            ) -> Result<Self, RowError> {
                 Ok(a.get(pos).map(|x| x.into()))
             }
         }
@@ -232,9 +242,9 @@ impl ColType for NaiveDate {
         s.date()
     }
 
-    fn read_from_column(a: &Self::Array, pos: usize) -> Result<Self, RowError> {
+    fn read_from_column(name: &'static str, a: &Self::Array, pos: usize) -> Result<Self, RowError> {
         let res = a.get(pos).map(convert_to_naive_date).transpose()?;
-        res.ok_or(RowError::NullField)
+        res.ok_or(RowError::NullField(name))
     }
 }
 
@@ -256,7 +266,11 @@ impl ColType for Option<NaiveDate> {
         s.date()
     }
 
-    fn read_from_column(a: &Self::Array, pos: usize) -> Result<Self, RowError> {
+    fn read_from_column(
+        _name: &'static str,
+        a: &Self::Array,
+        pos: usize,
+    ) -> Result<Self, RowError> {
         a.get(pos).map(convert_to_naive_date).transpose()
     }
 }
