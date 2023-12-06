@@ -61,16 +61,16 @@ fn is_bookdata_root(path: &Path) -> Result<bool> {
 pub fn find_root_relpath() -> Result<RelativePathBuf> {
     let mut rp = RelativePathBuf::new();
     let cwd = current_dir()?;
-    debug!("working directory: {}", cwd.display());
+    debug!("looking for root from working directory {}", cwd.display());
     loop {
         let path = rp.to_path(&cwd);
-        trace!("looking for DVC in {}", path.display());
+        debug!("looking for DVC in {}", path.display());
         if is_bookdata_root(&path)? {
             info!("found bookdata root at {}", path.display());
             return Ok(rp);
         }
 
-        if path.parent().is_none() {
+        if path.parent().is_some() {
             rp.push("..");
         } else {
             error!("scanned parents and could not find bookdata root");
