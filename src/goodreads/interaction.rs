@@ -102,8 +102,8 @@ impl ObjectWriter<RawInteraction> for IntWriter {
             } else {
                 None
             },
-            added: parse_gr_date(&row.date_added).map(check_ts("added", 2005))?,
-            updated: parse_gr_date(&row.date_updated).map(check_ts("updated", 2005))?,
+            added: parse_gr_date(&row.date_added).map(check_ts("added", 2000))?,
+            updated: parse_gr_date(&row.date_updated).map(check_ts("updated", 2000))?,
             read_started: trim_opt(&row.started_at)
                 .map(parse_gr_date)
                 .transpose()?

@@ -63,7 +63,7 @@ pub fn find_root_relpath() -> Result<RelativePathBuf> {
     let cwd = current_dir()?;
     debug!("looking for root from working directory {}", cwd.display());
     loop {
-        let path = rp.to_path(&cwd);
+        let path = rp.to_logical_path(&cwd);
         debug!("looking for DVC in {}", path.display());
         if is_bookdata_root(&path)? {
             info!("found bookdata root at {}", path.display());
@@ -89,8 +89,10 @@ pub fn find_root_abspath() -> Result<PathBuf> {
 pub fn resolve_path<P: AsRef<RelativePath>>(path: P) -> Result<PathBuf> {
     let root = find_root_relpath()?;
     let rrp = root.join_normalized(path.as_ref());
-    let resolved = rrp.to_logical_path(".");
+    let resolved = rrp.to_logical_path(current_dir()?);
     debug!("resolved {} to {}", path.as_ref(), resolved.display());
+    debug!("root: {}", root);
+    debug!("rrp: {}", rrp);
     Ok(resolved)
 }
 
