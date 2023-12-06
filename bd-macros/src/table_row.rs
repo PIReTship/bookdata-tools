@@ -71,7 +71,7 @@ pub fn derive_table_row(ast: &syn::DeriveInput) -> TokenStream {
         fn read_row(&mut self, idx: usize) -> ::std::result::Result<#name, crate::arrow::row::RowError> {
             use crate::arrow::row::ColType;
             Ok(#name {
-                #(#f_names: <#f_types as ColType>::read_from_column(&self.#f_names, idx)?),*
+                #(#f_names: <#f_types as ColType>::read_from_column(#f_ns, &self.#f_names, idx)?),*
             })
         }
       }
