@@ -9,7 +9,7 @@ use crate::parsing::dates::*;
 use crate::parsing::*;
 use crate::prelude::*;
 
-pub const OUT_FILE: &'static str = "gr-interactions.parquet";
+pub const OUT_FILE: BDPath<'static> = BDPath::new("goodreads/full/gr-interactions.parquet");
 
 /// Interaction records we read from JSON.
 #[derive(Deserialize)]
@@ -62,7 +62,7 @@ pub struct IntWriter {
 impl IntWriter {
     /// Open a new output
     pub fn open() -> Result<IntWriter> {
-        let writer = TableWriter::open(OUT_FILE)?;
+        let writer = TableWriter::open(OUT_FILE.resolve()?)?;
         Ok(IntWriter {
             writer,
             users: IdIndex::new(),
@@ -74,7 +74,7 @@ impl IntWriter {
 
 impl DataSink for IntWriter {
     fn output_files(&self) -> Vec<PathBuf> {
-        path_list(&[OUT_FILE])
+        path_list(&[])
     }
 }
 
