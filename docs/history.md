@@ -18,6 +18,7 @@ following:
 -   Make the pipeline configurable so individual rating datasets can be disabled.
 -   Use [jsonnet](implementation/pipeline.md) to generate DVC pipelines, taking
     configuration settings into account.
+-   Update to newer VIAF and OpenLibrary dumps.
 -   Extract GoodReads author information into {{< file goodreads/gr-author-info.parquet >}}.
 -   Support full-text reviews from the GoodReads and Amazon 2018 data sets (disabled by default).
 -   Extract 5-cores of interaction files.
