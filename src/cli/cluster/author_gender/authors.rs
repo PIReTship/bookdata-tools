@@ -78,6 +78,7 @@ fn viaf_load_genders() -> Result<HashMap<u32, GenderBag>> {
 }
 
 /// Load the VIAF author gender records.
+#[inline(never)]
 pub fn viaf_author_table() -> Result<AuthorTable> {
     let mut table = AuthorTable::new();
 
