@@ -19,7 +19,11 @@ following:
 -   Use [jsonnet](implementation/pipeline.md) to generate DVC pipelines, taking
     configuration settings into account.
 -   Extract GoodReads author information into {{< file goodreads/gr-author-info.parquet >}}.
+-   Support full-text reviews from the GoodReads and Amazon 2018 data sets (disabled by default).
 -   Extract 5-cores of interaction files.
+
+### Bugs Fixed
+
 -   🪲 GoodReads cluster & work rating timestamps were on incorrect scale
 
 ## Book Data 2.1
