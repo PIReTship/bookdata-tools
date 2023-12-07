@@ -129,23 +129,18 @@
 <a href="#129" id="129">129</a>
 <a href="#130" id="130">130</a>
 <a href="#131" id="131">131</a>
-<a href="#132" id="132">132</a>
-<a href="#133" id="133">133</a>
-<a href="#134" id="134">134</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! GoodReads interaction record schemas and processing.
 </span><span class="kw">use </span>hashbrown::HashSet;
 <span class="kw">use </span>serde::Deserialize;
 
 <span class="kw">use </span><span class="kw">crate</span>::arrow::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::goodreads::users::save_user_index;
 <span class="kw">use </span><span class="kw">crate</span>::ids::index::IdIndex;
 <span class="kw">use </span><span class="kw">crate</span>::parsing::dates::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::parsing::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">pub const </span>OUT_FILE: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str = <span class="string">&quot;gr-interactions.parquet&quot;</span>;
-<span class="kw">pub const </span>USER_FILE: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str = <span class="string">&quot;gr-users.parquet&quot;</span>;
-<span class="kw">pub const </span>UID_COL: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str = <span class="string">&quot;user&quot;</span>;
-<span class="kw">pub const </span>UHASH_COL: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str = <span class="string">&quot;user_hash&quot;</span>;
+<span class="kw">pub const </span>OUT_FILE: BDPath&lt;<span class="lifetime">&#39;static</span>&gt; = BDPath::new(<span class="string">&quot;goodreads/full/gr-interactions.parquet&quot;</span>);
 
 <span class="doccomment">/// Interaction records we read from JSON.
 </span><span class="attr">#[derive(Deserialize)]
@@ -198,7 +193,7 @@
 <span class="kw">impl </span>IntWriter {
     <span class="doccomment">/// Open a new output
     </span><span class="kw">pub fn </span>open() -&gt; <span class="prelude-ty">Result</span>&lt;IntWriter&gt; {
-        <span class="kw">let </span>writer = TableWriter::open(OUT_FILE)<span class="question-mark">?</span>;
+        <span class="kw">let </span>writer = TableWriter::open(OUT_FILE.resolve()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(IntWriter {
             writer,
             users: IdIndex::new(),
@@ -210,7 +205,7 @@
 
 <span class="kw">impl </span>DataSink <span class="kw">for </span>IntWriter {
     <span class="kw">fn </span>output_files(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PathBuf&gt; {
-        path_list(<span class="kw-2">&amp;</span>[OUT_FILE])
+        path_list(<span class="kw-2">&amp;</span>[])
     }
 }
 
@@ -238,8 +233,8 @@
             } <span class="kw">else </span>{
                 <span class="prelude-val">None
             </span>},
-            added: parse_gr_date(<span class="kw-2">&amp;</span>row.date_added).map(check_ts(<span class="string">&quot;added&quot;</span>, <span class="number">2005</span>))<span class="question-mark">?</span>,
-            updated: parse_gr_date(<span class="kw-2">&amp;</span>row.date_updated).map(check_ts(<span class="string">&quot;updated&quot;</span>, <span class="number">2005</span>))<span class="question-mark">?</span>,
+            added: parse_gr_date(<span class="kw-2">&amp;</span>row.date_added).map(check_ts(<span class="string">&quot;added&quot;</span>, <span class="number">2000</span>))<span class="question-mark">?</span>,
+            updated: parse_gr_date(<span class="kw-2">&amp;</span>row.date_updated).map(check_ts(<span class="string">&quot;updated&quot;</span>, <span class="number">2000</span>))<span class="question-mark">?</span>,
             read_started: trim_opt(<span class="kw-2">&amp;</span>row.started_at)
                 .map(parse_gr_date)
                 .transpose()<span class="question-mark">?
@@ -261,8 +256,7 @@
             <span class="self">self</span>.users.len()
         );
         <span class="kw">let </span>res = <span class="self">self</span>.writer.finish()<span class="question-mark">?</span>;
-        <span class="macro">info!</span>(<span class="string">&quot;saving {} users&quot;</span>, <span class="self">self</span>.users.len());
-        <span class="self">self</span>.users.save(USER_FILE, UID_COL, UHASH_COL)<span class="question-mark">?</span>;
+        save_user_index(<span class="kw-2">&amp;</span><span class="self">self</span>.users)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(res)
     }
 }

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["GR_USER_FILE","UHASH_COL","UID_COL"],"fn":["load_user_index","save_user_index"],"type":["UserIndex"]};

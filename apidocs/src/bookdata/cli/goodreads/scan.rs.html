@@ -107,8 +107,12 @@
 <a href="#107" id="107">107</a>
 <a href="#108" id="108">108</a>
 <a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::goodreads::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::io::object::ThreadObjectWriter;
+<span class="kw">use </span><span class="kw">crate</span>::io::object::{ChunkWriter, ThreadObjectWriter, UnchunkWriter};
 <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::util::logging::data_progress;
 <span class="kw">use </span>serde::de::DeserializeOwned;
@@ -125,6 +129,8 @@
     </span>Authors(ScanInput),
     <span class="doccomment">/// Scan GoodReads interactions.
     </span>Interactions(InterInput),
+    <span class="doccomment">/// Scan GoodReads reviews.
+    </span>Reviews(ScanInput),
 }
 
 <span class="attr">#[derive(Args, Debug)]
@@ -154,16 +160,14 @@
     </span>W: ObjectWriter&lt;R&gt; + DataSink + Send + Sync + <span class="lifetime">&#39;static</span>,
     R: DeserializeOwned + Send + Sync + <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">let </span>outs: Vec&lt;<span class="kw">_</span>&gt; = proc
-        .output_files()
-        .iter()
-        .map(|p| p.to_path_buf())
-        .collect();
+    <span class="kw">let </span>outs: Vec&lt;<span class="kw">_</span>&gt; = proc.output_files();
 
     <span class="macro">info!</span>(<span class="string">&quot;reading data from {}&quot;</span>, path.display());
     <span class="kw">let </span>pb = data_progress(<span class="number">0</span>);
     <span class="kw">let </span>read = LineProcessor::open_gzip(path, pb.clone())<span class="question-mark">?</span>;
-    <span class="kw">let </span><span class="kw-2">mut </span>writer = ThreadObjectWriter::wrap(proc).with_name(<span class="string">&quot;output&quot;</span>).spawn();
+    <span class="kw">let </span>proc = ChunkWriter::new(proc);
+    <span class="kw">let </span>writer = ThreadObjectWriter::wrap(proc).with_name(<span class="string">&quot;output&quot;</span>).spawn();
+    <span class="kw">let </span><span class="kw-2">mut </span>writer = UnchunkWriter::new(writer);
     read.process_json(<span class="kw-2">&amp;mut </span>writer)<span class="question-mark">?</span>;
     pb.finish_and_clear();
 
@@ -210,6 +214,10 @@
                     <span class="macro">info!</span>(<span class="string">&quot;scanning GoodReads interactions&quot;</span>);
                     scan_gr(<span class="kw-2">&amp;</span>opts.scan.infile, interaction::IntWriter::open()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
                 }
+            }
+            GRScan::Reviews(opts) =&gt; {
+                <span class="macro">info!</span>(<span class="string">&quot;scanning GoodReads reviews&quot;</span>);
+                scan_gr(<span class="kw-2">&amp;</span>opts.infile, review::ReviewWriter::open()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
             }
         };
 

@@ -104,7 +104,7 @@
 <a href="#104" id="104">104</a>
 <a href="#105" id="105">105</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Support for loading author info.
-</span><span class="kw">use </span>std::collections::{HashMap, HashSet};
+</span><span class="kw">use </span>std::collections::HashMap;
 
 <span class="kw">use </span><span class="kw">crate</span>::arrow::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::gender::<span class="kw-2">*</span>;
@@ -114,7 +114,7 @@
 <span class="attr">#[derive(Debug, Default)]
 </span><span class="kw">pub struct </span>AuthorInfo {
     <span class="kw">pub </span>n_author_recs: u32,
-    <span class="kw">pub </span>genders: HashSet&lt;Gender&gt;,
+    <span class="kw">pub </span>genders: GenderBag,
 }
 
 <span class="kw">pub type </span>AuthorTable = HashMap&lt;String, AuthorInfo&gt;;
@@ -157,8 +157,8 @@
 }
 
 <span class="doccomment">/// Load VIAF author genders
-</span><span class="kw">fn </span>viaf_load_genders() -&gt; <span class="prelude-ty">Result</span>&lt;HashMap&lt;u32, HashSet&lt;Gender&gt;&gt;&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>map: HashMap&lt;u32, HashSet&lt;Gender&gt;&gt; = HashMap::new();
+</span><span class="kw">fn </span>viaf_load_genders() -&gt; <span class="prelude-ty">Result</span>&lt;HashMap&lt;u32, GenderBag&gt;&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>map: HashMap&lt;u32, GenderBag&gt; = HashMap::new();
     <span class="kw">let </span>timer = Timer::new();
 
     <span class="macro">info!</span>(<span class="string">&quot;loading VIAF author genders&quot;</span>);
@@ -170,7 +170,7 @@
     <span class="kw">for </span>row <span class="kw">in </span>iter {
         <span class="kw">let </span>row: GenderRow = row<span class="question-mark">?</span>;
         <span class="kw">let </span>gender: Gender = row.gender.into();
-        map.entry(row.rec_id).or_default().insert(gender);
+        map.entry(row.rec_id).or_default().add(gender);
     }
 
     <span class="macro">info!</span>(
@@ -183,23 +183,23 @@
 }
 
 <span class="doccomment">/// Load the VIAF author gender records.
+</span><span class="attr">#[inline(never)]
 </span><span class="kw">pub fn </span>viaf_author_table() -&gt; <span class="prelude-ty">Result</span>&lt;AuthorTable&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>table = AuthorTable::new();
 
     <span class="kw">let </span>rec_names = viaf_load_names()<span class="question-mark">?</span>;
     <span class="kw">let </span>rec_genders = viaf_load_genders()<span class="question-mark">?</span>;
-    <span class="kw">let </span>empty = HashSet::new();
 
     <span class="macro">info!</span>(<span class="string">&quot;merging gender records&quot;</span>);
     <span class="kw">let </span>pb = item_progress(rec_names.len() <span class="kw">as </span>u64, <span class="string">&quot;clusters&quot;</span>);
     <span class="kw">let </span>timer = Timer::new();
     <span class="kw">for </span>(rec_id, names) <span class="kw">in </span>pb.wrap_iter(rec_names.into_iter()) {
-        <span class="kw">let </span>genders = rec_genders.get(<span class="kw-2">&amp;</span>rec_id).unwrap_or(<span class="kw-2">&amp;</span>empty);
+        <span class="kw">let </span>genders = rec_genders.get(<span class="kw-2">&amp;</span>rec_id);
         <span class="kw">for </span>name <span class="kw">in </span>names {
             <span class="kw">let </span>rec = table.entry(name).or_default();
             rec.n_author_recs += <span class="number">1</span>;
-            <span class="kw">for </span>g <span class="kw">in </span>genders {
-                rec.genders.insert(g.clone());
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(bag) = genders {
+                rec.genders.merge_from(bag);
             }
         }
     }

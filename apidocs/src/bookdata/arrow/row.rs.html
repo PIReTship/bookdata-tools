@@ -260,6 +260,20 @@
 <a href="#260" id="260">260</a>
 <a href="#261" id="261">261</a>
 <a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Table row interface.
 
 </span><span class="kw">use </span>anyhow::Result;
@@ -269,8 +283,8 @@
 
 <span class="attr">#[derive(Error, Debug)]
 </span><span class="kw">pub enum </span>RowError {
-    <span class="attr">#[error(<span class="string">&quot;required field was null&quot;</span>)]
-    </span>NullField,
+    <span class="attr">#[error(<span class="string">&quot;required field {0} was null&quot;</span>)]
+    </span>NullField(<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str),
     <span class="attr">#[error(<span class="string">&quot;conversion error: {0}&quot;</span>)]
     </span>ConvertError(<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str),
     <span class="attr">#[error(<span class="string">&quot;polars error: {0}&quot;</span>)]
@@ -390,7 +404,7 @@
     </span><span class="kw">fn </span>cast_series&lt;<span class="lifetime">&#39;a</span>&gt;(s: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Series) -&gt; PolarsResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">Self</span>::Array&gt;;
 
     <span class="doccomment">/// Read a value from an array.
-    </span><span class="kw">fn </span>read_from_column(a: <span class="kw-2">&amp;</span><span class="self">Self</span>::Array, pos: usize) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, RowError&gt;;
+    </span><span class="kw">fn </span>read_from_column(name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, a: <span class="kw-2">&amp;</span><span class="self">Self</span>::Array, pos: usize) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, RowError&gt;;
 }
 
 <span class="macro">macro_rules! </span>col_type {
@@ -418,8 +432,14 @@
                 s.<span class="macro-nonterminal">$cast</span>()
             }
 
-            <span class="kw">fn </span>read_from_column(a: <span class="kw-2">&amp;</span><span class="self">Self</span>::Array, pos: usize) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, RowError&gt; {
-                a.get(pos).ok_or(RowError::NullField).map(|x| x.into())
+            <span class="kw">fn </span>read_from_column(
+                name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+                a: <span class="kw-2">&amp;</span><span class="self">Self</span>::Array,
+                pos: usize,
+            ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, RowError&gt; {
+                a.get(pos)
+                    .ok_or(RowError::NullField(name))
+                    .map(|x| x.into())
             }
         }
         <span class="comment">// just manually derive the option, bounds are being a pain
@@ -440,7 +460,11 @@
                 s.<span class="macro-nonterminal">$cast</span>()
             }
 
-            <span class="kw">fn </span>read_from_column(a: <span class="kw-2">&amp;</span><span class="self">Self</span>::Array, pos: usize) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, RowError&gt; {
+            <span class="kw">fn </span>read_from_column(
+                _name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+                a: <span class="kw-2">&amp;</span><span class="self">Self</span>::Array,
+                pos: usize,
+            ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, RowError&gt; {
                 <span class="prelude-val">Ok</span>(a.get(pos).map(|x| x.into()))
             }
         }
@@ -494,9 +518,9 @@
         s.date()
     }
 
-    <span class="kw">fn </span>read_from_column(a: <span class="kw-2">&amp;</span><span class="self">Self</span>::Array, pos: usize) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, RowError&gt; {
+    <span class="kw">fn </span>read_from_column(name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, a: <span class="kw-2">&amp;</span><span class="self">Self</span>::Array, pos: usize) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, RowError&gt; {
         <span class="kw">let </span>res = a.get(pos).map(convert_to_naive_date).transpose()<span class="question-mark">?</span>;
-        res.ok_or(RowError::NullField)
+        res.ok_or(RowError::NullField(name))
     }
 }
 
@@ -518,7 +542,11 @@
         s.date()
     }
 
-    <span class="kw">fn </span>read_from_column(a: <span class="kw-2">&amp;</span><span class="self">Self</span>::Array, pos: usize) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, RowError&gt; {
+    <span class="kw">fn </span>read_from_column(
+        _name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+        a: <span class="kw-2">&amp;</span><span class="self">Self</span>::Array,
+        pos: usize,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, RowError&gt; {
         a.get(pos).map(convert_to_naive_date).transpose()
     }
 }

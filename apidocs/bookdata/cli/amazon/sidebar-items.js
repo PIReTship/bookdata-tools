@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["cluster_ratings","scan_ratings"]};
+window.SIDEBAR_ITEMS = {"mod":["cluster_ratings","scan_ratings","scan_reviews"]};

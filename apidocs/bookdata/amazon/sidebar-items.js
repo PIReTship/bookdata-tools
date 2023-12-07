@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["RatingRow","RatingRowFrame","RatingRowFrameBuilder","SourceRating"]};
+window.SIDEBAR_ITEMS = {"struct":["RatingRow","RatingRowFrame","RatingRowFrameBuilder","ReviewRow","ReviewRowFrame","ReviewRowFrameBuilder","SourceRating","SourceReview"]};

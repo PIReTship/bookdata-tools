@@ -130,6 +130,60 @@
 <a href="#130" id="130">130</a>
 <a href="#131" id="131">131</a>
 <a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Code for working with genders.
 </span><span class="kw">use </span>std::fmt;
 <span class="kw">use </span>std::str::FromStr;
@@ -151,6 +205,20 @@
     Female,
     Male,
     Open(String),
+}
+
+<span class="doccomment">/// A collection of genders.
+</span><span class="attr">#[derive(Default, Debug)]
+</span><span class="kw">pub struct </span>GenderBag {
+    size: usize,
+    mask: u32,
+    resolved: Gender,
+}
+
+<span class="kw">impl </span>Default <span class="kw">for </span>Gender {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        Gender::Unknown
+    }
 }
 
 <span class="kw">impl </span>FromStr <span class="kw">for </span>Gender {
@@ -212,54 +280,94 @@
             <span class="kw">_ </span>=&gt; Gender::Ambiguous,
         }
     }
-}
 
-<span class="kw">pub fn </span>resolve_gender&lt;I, G&gt;(genders: I) -&gt; Gender
-<span class="kw">where
-    </span>I: IntoIterator&lt;Item = G&gt;,
-    G: Into&lt;Gender&gt;,
-{
-    <span class="kw">let </span><span class="kw-2">mut </span>gender = Gender::Unknown;
-    <span class="kw">for </span>g <span class="kw">in </span>genders {
-        <span class="kw">let </span>g: Gender = g.into();
-        gender = gender.merge(<span class="kw-2">&amp;</span>g);
+    <span class="doccomment">/// Get an integer usable as a mask for this gender.
+    </span><span class="kw">fn </span>mask_val(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
+        <span class="kw">match </span><span class="self">self </span>{
+            Gender::Unknown =&gt; <span class="number">1</span>,
+            Gender::Ambiguous =&gt; <span class="number">2</span>,
+            Gender::Female =&gt; <span class="number">4</span>,
+            Gender::Male =&gt; <span class="number">8</span>,
+            Gender::Open(<span class="kw">_</span>) =&gt; <span class="number">0x8000_0000</span>,
+        }
     }
-    gender.to_owned()
+}
+
+<span class="kw">impl </span>GenderBag {
+    <span class="doccomment">/// Add a gender to this bag.
+    </span><span class="kw">pub fn </span>add(<span class="kw-2">&amp;mut </span><span class="self">self</span>, gender: Gender) {
+        <span class="self">self</span>.size += <span class="number">1</span>;
+        <span class="self">self</span>.mask |= gender.mask_val();
+        <span class="self">self</span>.resolved = <span class="self">self</span>.resolved.merge(<span class="kw-2">&amp;</span>gender);
+    }
+
+    <span class="doccomment">/// Merge another gender bag into this one.
+    </span><span class="kw">pub fn </span>merge_from(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bag: <span class="kw-2">&amp;</span>GenderBag) {
+        <span class="self">self</span>.size += bag.size;
+        <span class="self">self</span>.mask |= bag.mask;
+        <span class="self">self</span>.resolved = <span class="self">self</span>.resolved.merge(<span class="kw-2">&amp;</span>bag.resolved);
+    }
+
+    <span class="doccomment">/// Get the number of gender entries recorded to make this gender record.
+    </span><span class="attr">#[allow(dead_code)]
+    </span><span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.size
+    }
+
+    <span class="doccomment">/// Check whether the gender bag is empty.
+    </span><span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.size == <span class="number">0
+    </span>}
+
+    <span class="doccomment">/// Get the gender, returning [None] if no genders are seen.
+    </span><span class="attr">#[allow(dead_code)]
+    </span><span class="kw">pub fn </span>maybe_gender(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Gender&gt; {
+        <span class="kw">if </span><span class="self">self</span>.is_empty() {
+            <span class="prelude-val">None
+        </span>} <span class="kw">else </span>{
+            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.resolved)
+        }
+    }
+
+    <span class="doccomment">/// Get the gender, returning [Gender::Unknown] if no genders are seen.
+    </span><span class="kw">pub fn </span>to_gender(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Gender {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.resolved
+    }
 }
 
 <span class="attr">#[test]
-</span><span class="kw">pub fn </span>test_resolve_empty() {
-    <span class="kw">let </span>g = resolve_gender(Vec::&lt;String&gt;::new());
-    <span class="macro">assert_eq!</span>(g, Gender::Unknown);
+</span><span class="kw">pub fn </span>test_bag_empty() {
+    <span class="kw">let </span>bag = GenderBag::default();
+    <span class="macro">assert_eq!</span>(bag.to_gender(), <span class="kw-2">&amp;</span>Gender::Unknown);
 }
 
 <span class="attr">#[test]
-</span><span class="kw">pub fn </span>test_resolve_female() {
-    <span class="kw">let </span>g = resolve_gender(<span class="macro">vec!</span>[<span class="string">&quot;female&quot;</span>]);
-    <span class="macro">assert_eq!</span>(g, Gender::Female);
+</span><span class="kw">pub fn </span>test_bag_female() {
+    <span class="kw">let </span><span class="kw-2">mut </span>bag = GenderBag::default();
+    bag.add(<span class="string">&quot;female&quot;</span>.into());
+    <span class="macro">assert_eq!</span>(bag.to_gender(), <span class="kw-2">&amp;</span>Gender::Female);
 }
 
 <span class="attr">#[test]
-</span><span class="kw">pub fn </span>test_resolve_male() {
-    <span class="kw">let </span>g = resolve_gender(<span class="macro">vec!</span>[<span class="string">&quot;male&quot;</span>]);
-    <span class="macro">assert_eq!</span>(g, Gender::Male);
+</span><span class="kw">pub fn </span>test_bag_male() {
+    <span class="kw">let </span><span class="kw-2">mut </span>bag = GenderBag::default();
+    bag.add(<span class="string">&quot;male&quot;</span>.into());
+    <span class="macro">assert_eq!</span>(bag.to_gender(), <span class="kw-2">&amp;</span>Gender::Male);
 }
 
 <span class="attr">#[test]
-</span><span class="kw">pub fn </span>test_resolve_mf() {
-    <span class="kw">let </span>g = resolve_gender(<span class="macro">vec!</span>[<span class="string">&quot;male&quot;</span>, <span class="string">&quot;female&quot;</span>]);
-    <span class="macro">assert_eq!</span>(g, Gender::Ambiguous);
+</span><span class="kw">pub fn </span>test_bag_mf() {
+    <span class="kw">let </span><span class="kw-2">mut </span>bag = GenderBag::default();
+    bag.add(<span class="string">&quot;male&quot;</span>.into());
+    bag.add(<span class="string">&quot;female&quot;</span>.into());
+    <span class="macro">assert_eq!</span>(bag.to_gender(), <span class="kw-2">&amp;</span>Gender::Ambiguous);
 }
 
 <span class="attr">#[test]
-</span><span class="kw">pub fn </span>test_resolve_f_unknown() {
-    <span class="kw">let </span>g = resolve_gender(<span class="macro">vec!</span>[<span class="string">&quot;female&quot;</span>, <span class="string">&quot;unknown&quot;</span>]);
-    <span class="macro">assert_eq!</span>(g, Gender::Female);
-}
-
-<span class="attr">#[test]
-</span><span class="kw">pub fn </span>test_resolve_u_f() {
-    <span class="kw">let </span>g = resolve_gender(<span class="macro">vec!</span>[<span class="string">&quot;unknown&quot;</span>, <span class="string">&quot;female&quot;</span>]);
-    <span class="macro">assert_eq!</span>(g, Gender::Female);
+</span><span class="kw">pub fn </span>test_bag_ff() {
+    <span class="kw">let </span><span class="kw-2">mut </span>bag = GenderBag::default();
+    bag.add(<span class="string">&quot;female&quot;</span>.into());
+    bag.add(<span class="string">&quot;female&quot;</span>.into());
+    <span class="macro">assert_eq!</span>(bag.to_gender(), <span class="kw-2">&amp;</span>Gender::Female);
 }
 </code></pre></div></section></main></body></html>

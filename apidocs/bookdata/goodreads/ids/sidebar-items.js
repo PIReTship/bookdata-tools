@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["GR_LINK_FILE"],"fn":["load_id_links"],"struct":["BookLinkRecord","BookLinkRecordFrame","BookLinkRecordFrameBuilder"],"type":["BookId","BookLinkMap","WorkId"]};
