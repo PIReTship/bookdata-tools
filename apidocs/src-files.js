@@ -35,7 +35,6 @@ var srcIndex = JSON.parse('{\
 "clap_lex":["",[],["ext.rs","lib.rs"]],\
 "colorchoice":["",[],["lib.rs"]],\
 "colored":["",[],["color.rs","control.rs","lib.rs","style.rs"]],\
-"comfy_table":["",[["style",[],["attribute.rs","cell.rs","color.rs","column.rs","mod.rs","modifiers.rs","presets.rs","table.rs"]],["utils",[["arrangement",[],["constraint.rs","disabled.rs","dynamic.rs","helper.rs","mod.rs"]],["formatting",[["content_split",[],["mod.rs","normal.rs"]]],["borders.rs","content_format.rs","mod.rs"]]],["mod.rs"]]],["cell.rs","column.rs","lib.rs","row.rs","table.rs"]],\
 "console":["",[],["ansi.rs","common_term.rs","kb.rs","lib.rs","term.rs","unix_term.rs","utils.rs"]],\
 "cpu_time":["",[],["clock_gettime.rs","lib.rs"]],\
 "cpufeatures":["",[],["lib.rs","x86.rs"]],\
@@ -46,7 +45,6 @@ var srcIndex = JSON.parse('{\
 "crossbeam_epoch":["",[["sync",[],["list.rs","mod.rs","once_lock.rs","queue.rs"]]],["atomic.rs","collector.rs","default.rs","deferred.rs","epoch.rs","guard.rs","internal.rs","lib.rs"]],\
 "crossbeam_queue":["",[],["array_queue.rs","lib.rs","seg_queue.rs"]],\
 "crossbeam_utils":["",[["atomic",[],["atomic_cell.rs","consume.rs","mod.rs","seq_lock.rs"]],["sync",[],["mod.rs","once_lock.rs","parker.rs","sharded_lock.rs","wait_group.rs"]]],["backoff.rs","cache_padded.rs","lib.rs","thread.rs"]],\
-"crossterm":["",[["cursor",[],["sys.rs"]],["style",[["types",[],["attribute.rs","color.rs","colored.rs","colors.rs"]]],["attributes.rs","content_style.rs","styled_content.rs","stylize.rs","sys.rs","types.rs"]],["terminal",[["sys",[],["file_descriptor.rs","unix.rs"]]],["sys.rs"]]],["command.rs","cursor.rs","lib.rs","macros.rs","style.rs","terminal.rs","tty.rs"]],\
 "crypto_common":["",[],["lib.rs"]],\
 "csv":["",[],["byte_record.rs","cookbook.rs","debug.rs","deserializer.rs","error.rs","lib.rs","reader.rs","serializer.rs","string_record.rs","tutorial.rs","writer.rs"]],\
 "csv_core":["",[],["lib.rs","reader.rs","writer.rs"]],\
@@ -181,14 +179,10 @@ var srcIndex = JSON.parse('{\
 "structdump_derive":["",[],["lib.rs"]],\
 "structmeta":["",[],["arg_types.rs","helpers.rs","lib.rs"]],\
 "structmeta_derive":["",[],["lib.rs","parse.rs","struct_meta.rs","syn_utils.rs","to_tokens.rs","to_tokens_attribute.rs"]],\
-"strum":["",[],["additional_attributes.rs","lib.rs"]],\
 "strum_macros":["",[["helpers",[],["case_style.rs","metadata.rs","mod.rs","type_props.rs","variant_props.rs"]],["macros",[["strings",[],["as_ref_str.rs","display.rs","from_string.rs","mod.rs","to_string.rs"]]],["enum_count.rs","enum_discriminants.rs","enum_is.rs","enum_iter.rs","enum_messages.rs","enum_properties.rs","enum_try_as.rs","enum_variant_names.rs","from_repr.rs","mod.rs"]]],["lib.rs"]],\
 "target_features":["",[],["lib.rs","simd.rs"]],\
-"text_template":["",[],["lib.rs"]],\
 "thiserror":["",[],["aserror.rs","display.rs","lib.rs"]],\
 "thiserror_impl":["",[],["ast.rs","attr.rs","expand.rs","fmt.rs","generics.rs","lib.rs","prop.rs","span.rs","valid.rs"]],\
-"tikv_jemalloc_sys":["",[],["env.rs","lib.rs"]],\
-"tikv_jemallocator":["",[],["lib.rs"]],\
 "tinyvec":["",[["array",[],["generated_impl.rs"]]],["array.rs","arrayvec.rs","arrayvec_drain.rs","lib.rs","slicevec.rs","tinyvec.rs"]],\
 "tinyvec_macros":["",[],["lib.rs"]],\
 "toml":["",[],["de.rs","edit.rs","fmt.rs","lib.rs","macros.rs","map.rs","ser.rs","table.rs","value.rs"]],\
