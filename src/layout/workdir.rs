@@ -1,5 +1,3 @@
-use std::fs::read_to_string;
-use std::io;
 use std::path::Path;
 use std::{env::current_dir, path::PathBuf};
 
@@ -7,50 +5,17 @@ use anyhow::{anyhow, Result};
 use log::*;
 use relative_path::{RelativePath, RelativePathBuf};
 
-/// Check the TOML manifest to see if we're bookdata.
-fn check_project_manifest(path: &Path) -> Result<bool> {
-    let mut path = path.to_path_buf();
-    path.push("Cargo.toml");
-
-    let manifest = read_to_string(&path);
-    match manifest {
-        Ok(txt) => {
-            let val: toml::Value = toml::de::from_str(&txt)?;
-            if let Some(pkg) = val.get("package") {
-                if let Some(name) = pkg.get("name") {
-                    if name.as_str().unwrap_or_default() == "bookdata" {
-                        Ok(true)
-                    } else {
-                        error!("Cargo.toml has package name {}", name);
-                        Ok(false)
-                    }
-                } else {
-                    error!("Cargo.toml has no name");
-                    Ok(false)
-                }
-            } else {
-                error!("Cargo.toml has no package section");
-                Ok(false)
-            }
-        }
-        Err(e) if e.kind() == io::ErrorKind::NotFound => {
-            error!("Cargo.toml not found alongside .dvc");
-            Ok(false)
-        }
-        Err(e) => Err(e.into()),
-    }
-}
-
 fn is_bookdata_root(path: &Path) -> Result<bool> {
-    let mut dvc = path.to_path_buf();
-    dvc.push(".dvc");
+    let dvc = path.join(".dvc");
+    let config = path.join("config.yaml");
     if dvc.try_exists()? {
         debug!("found DVC path at {}", dvc.display());
-        if check_project_manifest(path)? {
+        if config.try_exists()? {
+            debug!("found config.yaml at {}", config.display());
             Ok(true)
         } else {
-            error!("found .dvc but not bookdata, running from a weird directory?");
-            Err(anyhow!("bookdata not found"))
+            warn!("found .dvc but not config.yaml, weird directory?");
+            Ok(false)
         }
     } else {
         Ok(false)
