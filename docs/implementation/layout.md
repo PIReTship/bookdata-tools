@@ -1,17 +1,8 @@
 # Code Layout
 
-The import code consists of Python and Rust, wired together with DVC, with data
-in several directories to facilitate ease of discovery.
-
-## Python Scripts
-
-Python scripts live in the various directories in which they operate. They should not be launched
-directly, but rather via `run.py`, which will make sure the environment is set up properly for them:
-
-    python run.py my-script-file.py
-
-The `bookdata` package contains a little Python utility code.  The `run.py` script ensures it is
-available in the Python import path.
+The import code consists primarily of Rust, wired together with DVC, with data
+in several directories to facilitate ease of discovery.  We use Python and R
+in Quarto documents for analytics and reporting.
 
 ## Rust
 
@@ -21,17 +12,12 @@ disk space and compile time.  To see the help:
 
     cargo run help
 
-Or through Python:
+The programs are run through `cargo run` in `--release` mode; the
+[`bd.cmd`](pipeline.md#bd.cmd) jsonnet function automates this, so we only need
+to specify the subcommand and its options in our pipeline definitions.
 
-    python run.py --rust help
-
-The `run.py` script with the `--rust` option sets up some environment variables to ensure that
-the Rust code builds correctly inside a Conda environment, and also defaults to using a release
-build (`cargo run` uses debug builds by default).  All DVC pipeline stages use `run.py` to run
-the Rust tools.
-
-For writing new commands, there is a lot of utility code under `src`.  Consult the
-{{< rust-mod Rust API documentation <bookdata> >}} for further details.
+For writing new commands, there is a lot of utility code under `src`.  Consult
+the [Rust API documentation](/apidocs/bookdata/) for further details.
 
 The Rust code makes extensive use of the [polars][], [arrow2][], and
 [parquet2][] crates for data analysis and IO.  [arrow2_convert][] is used to
