@@ -95,8 +95,9 @@ return {
 
         local caption = {"Schema for ", pandoc.Code(path), "."}
         return pandoc.Table({ long = { pandoc.Div({caption}) }, short = caption },
-            { { pandoc.AlignLeft, 60 }, { pandoc.AlignRight, 40 } },
+            { { pandoc.AlignLeft, .6 }, { pandoc.AlignRight, .4 } },
             pandoc.TableHead({ header }),
-            { { attr = pandoc.Attr(), body = rows, head = {}, row_head_columns = 0 } }, pandoc.TableFoot(), pandoc.Attr())
+            { { attr = pandoc.Attr(), body = rows, head = {}, row_head_columns = 0 } }, pandoc.TableFoot(),
+            pandoc.Attr("", {"file-schema"}))
     end,
 }
