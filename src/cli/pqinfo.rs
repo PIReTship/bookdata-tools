@@ -37,6 +37,7 @@ struct InfoStruct {
     row_count: usize,
     file_size: u64,
     fields: Vec<FieldStruct>,
+    markdown: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -96,10 +97,15 @@ impl Command for PQInfo {
         let schema = meta.schema();
         let fields = parquet_to_arrow_schema(schema.fields());
 
+        let mut tbl = Vec::new();
+        writeln!(tbl, "field | type")?;
+        writeln!(tbl, ":-----|----:")?;
+
         let out = stdout();
         let mut ol = out.lock();
         for field in &fields {
             writeln!(&mut ol, "{:?}", field)?;
+            writeln!(tbl, "{} | {:?}", field.name, field.data_type)?;
         }
         drop(ol);
 
@@ -109,6 +115,7 @@ impl Command for PQInfo {
                 row_count: meta.num_rows,
                 file_size: fmeta.len() as u64,
                 fields: fields.iter().map(|f| f.into()).collect(),
+                markdown: String::from_utf8(tbl)?,
             };
 
             serde_json::to_writer_pretty(&mut out, &info)?;
