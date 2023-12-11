@@ -10,7 +10,7 @@ function load_overrides()
         end
         text = f:read("a")
         overrides = quarto.json.decode(text)
-        quarto.log.output(overrides)
+        quarto.log.debug(overrides)
     end
 end
 
@@ -19,16 +19,16 @@ return {
         local path, fn, name, link, pat, sub, m, ms
         load_overrides()
         path = pandoc.utils.stringify(args[1])
-        quarto.log.output('finding link for', path)
+        quarto.log.debug('finding link for', path)
 
         for pat, sub in pairs(overrides) do
-            quarto.log.output('trying pattern', pat)
+            quarto.log.trace('trying pattern', pat)
             m = string.match(path, pat)
             if m ~= nil and (ms == nil or string.len(m) > string.len(ms)) then
-                quarto.log.output('match')
+                quarto.log.trace('match')
                 ms = m
                 if string.find(sub, "%", 1, true) ~= nil then
-                    quarto.log.output('substition', sub)
+                    quarto.log.trace('substition', sub)
                     link = string.gsub(path, pat, sub)
                 else
                     fn = sub
