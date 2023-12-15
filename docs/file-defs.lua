@@ -23,8 +23,6 @@ function rust_link(arg, type)
     return pandoc.Link(label, tgt)
 end
 
-bd_file_defs = {}
-
 function _load_schema(file)
     local path, base, ext, f, text
     path = pandoc.path.join({ quarto.project.directory, "..", file })
@@ -76,10 +74,6 @@ Div = function(el)
         el.attr.identifier = id
     end
     quarto.log.debug("found file", file, "in", quarto.doc.input_file, "with anchor", id)
-    bd_file_defs[file] = {
-        file = quarto.doc.input_file,
-        anchor = id
-    }
     el.classes:extend({"file-block"})
 
     local header = pandoc.List({
