@@ -1,7 +1,7 @@
 # Papers Using BookData
 
 These are papers we know to be using this book data integration.
-If you use this data in published research, please cite [our paper][]
+If you use this data in published research, please cite [our paper][].
 
 [our paper]: https://md.ekstrandom.net/pubs/bag-extended
 
