@@ -84,94 +84,24 @@
 <a href="#84" id="84">84</a>
 <a href="#85" id="85">85</a>
 <a href="#86" id="86">86</a>
-<a href="#87" id="87">87</a>
-<a href="#88" id="88">88</a>
-<a href="#89" id="89">89</a>
-<a href="#90" id="90">90</a>
-<a href="#91" id="91">91</a>
-<a href="#92" id="92">92</a>
-<a href="#93" id="93">93</a>
-<a href="#94" id="94">94</a>
-<a href="#95" id="95">95</a>
-<a href="#96" id="96">96</a>
-<a href="#97" id="97">97</a>
-<a href="#98" id="98">98</a>
-<a href="#99" id="99">99</a>
-<a href="#100" id="100">100</a>
-<a href="#101" id="101">101</a>
-<a href="#102" id="102">102</a>
-<a href="#103" id="103">103</a>
-<a href="#104" id="104">104</a>
-<a href="#105" id="105">105</a>
-<a href="#106" id="106">106</a>
-<a href="#107" id="107">107</a>
-<a href="#108" id="108">108</a>
-<a href="#109" id="109">109</a>
-<a href="#110" id="110">110</a>
-<a href="#111" id="111">111</a>
-<a href="#112" id="112">112</a>
-<a href="#113" id="113">113</a>
-<a href="#114" id="114">114</a>
-<a href="#115" id="115">115</a>
-<a href="#116" id="116">116</a>
-<a href="#117" id="117">117</a>
-<a href="#118" id="118">118</a>
-<a href="#119" id="119">119</a>
-<a href="#120" id="120">120</a>
-<a href="#121" id="121">121</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::fs::read_to_string;
-<span class="kw">use </span>std::io;
-<span class="kw">use </span>std::path::Path;
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::path::Path;
 <span class="kw">use </span>std::{env::current_dir, path::PathBuf};
 
 <span class="kw">use </span>anyhow::{anyhow, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>log::<span class="kw-2">*</span>;
 <span class="kw">use </span>relative_path::{RelativePath, RelativePathBuf};
 
-<span class="doccomment">/// Check the TOML manifest to see if we&#39;re bookdata.
-</span><span class="kw">fn </span>check_project_manifest(path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>path = path.to_path_buf();
-    path.push(<span class="string">&quot;Cargo.toml&quot;</span>);
-
-    <span class="kw">let </span>manifest = read_to_string(<span class="kw-2">&amp;</span>path);
-    <span class="kw">match </span>manifest {
-        <span class="prelude-val">Ok</span>(txt) =&gt; {
-            <span class="kw">let </span>val: toml::Value = toml::de::from_str(<span class="kw-2">&amp;</span>txt)<span class="question-mark">?</span>;
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(pkg) = val.get(<span class="string">&quot;package&quot;</span>) {
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(name) = pkg.get(<span class="string">&quot;name&quot;</span>) {
-                    <span class="kw">if </span>name.as_str().unwrap_or_default() == <span class="string">&quot;bookdata&quot; </span>{
-                        <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
-                    } <span class="kw">else </span>{
-                        <span class="macro">error!</span>(<span class="string">&quot;Cargo.toml has package name {}&quot;</span>, name);
-                        <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
-                    }
-                } <span class="kw">else </span>{
-                    <span class="macro">error!</span>(<span class="string">&quot;Cargo.toml has no name&quot;</span>);
-                    <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
-                }
-            } <span class="kw">else </span>{
-                <span class="macro">error!</span>(<span class="string">&quot;Cargo.toml has no package section&quot;</span>);
-                <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
-            }
-        }
-        <span class="prelude-val">Err</span>(e) <span class="kw">if </span>e.kind() == io::ErrorKind::NotFound =&gt; {
-            <span class="macro">error!</span>(<span class="string">&quot;Cargo.toml not found alongside .dvc&quot;</span>);
-            <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
-        }
-        <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(e.into()),
-    }
-}
-
 <span class="kw">fn </span>is_bookdata_root(path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>dvc = path.to_path_buf();
-    dvc.push(<span class="string">&quot;.dvc&quot;</span>);
+    <span class="kw">let </span>dvc = path.join(<span class="string">&quot;.dvc&quot;</span>);
+    <span class="kw">let </span>config = path.join(<span class="string">&quot;config.yaml&quot;</span>);
     <span class="kw">if </span>dvc.try_exists()<span class="question-mark">? </span>{
         <span class="macro">debug!</span>(<span class="string">&quot;found DVC path at {}&quot;</span>, dvc.display());
-        <span class="kw">if </span>check_project_manifest(path)<span class="question-mark">? </span>{
+        <span class="kw">if </span>config.try_exists()<span class="question-mark">? </span>{
+            <span class="macro">debug!</span>(<span class="string">&quot;found config.yaml at {}&quot;</span>, config.display());
             <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
         } <span class="kw">else </span>{
-            <span class="macro">error!</span>(<span class="string">&quot;found .dvc but not bookdata, running from a weird directory?&quot;</span>);
-            <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;bookdata not found&quot;</span>))
+            <span class="macro">warn!</span>(<span class="string">&quot;found .dvc but not config.yaml, weird directory?&quot;</span>);
+            <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
         }
     } <span class="kw">else </span>{
         <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
