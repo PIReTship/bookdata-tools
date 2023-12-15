@@ -1,3 +1,28 @@
+function rust_parse_ref(name)
+    local tpath, tname, label
+    tpath, tname = string.match(name, "^~(.*::([^:]+))")
+    if tpath then
+        label = pandoc.Code(tname)
+    else
+        tpath = name
+        label = pandoc.Code(name)
+    end
+    return tpath, label
+end
+
+function rust_link(arg, type)
+    local name, path, label, tgt
+    name = pandoc.utils.stringify(arg)
+    path, label = rust_parse_ref(name)
+    tgt = "/apidocs/" .. string.gsub(path, "::", "/")
+    if type == "mod" then
+        tgt = tgt .. "/"
+    else
+        tgt = string.gsub(tgt, "/([^/]*)$", "/" .. type .. ".%1.html")
+    end
+    return pandoc.Link(label, tgt)
+end
+
 bd_file_defs = {}
 
 function _load_schema(file)
@@ -57,9 +82,19 @@ Div = function(el)
     }
     el.classes:extend({"file-block"})
 
-    el.content:insert(1, pandoc.Div({
+    local header = pandoc.List({
         pandoc.Code(file)
-    }, pandoc.Attr("", {"file-header"})))
+    })
+    local struct = el.attributes['struct']
+    if struct ~= nil then
+        header:extend({
+            " (struct ",
+            rust_link(struct, "struct"),
+            ")"
+        })
+    end
+
+    el.content:insert(1, pandoc.Div({header}, pandoc.Attr("", {"file-header"})))
 
     local meta = {}
     if el.classes:includes('parquet') then
