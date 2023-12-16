@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["flatten","range_portion"]};

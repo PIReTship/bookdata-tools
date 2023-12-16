@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["AtoiSimdError"],"fn":["parse","parse_neg","parse_pos","parse_skipped","parse_until_invalid","parse_until_invalid_neg","parse_until_invalid_pos"]};

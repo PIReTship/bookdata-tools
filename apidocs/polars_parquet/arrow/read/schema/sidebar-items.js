@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["infer_schema","infer_schema_with_options","parquet_to_arrow_schema","parquet_to_arrow_schema_with_options","read_schema_from_metadata"],"struct":["KeyValue","SchemaInferenceOptions"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["BuiltinParam","NativeCallback","ParamName"],"trait":["Builtin","NativeCallbackHandler","StaticBuiltin"]};

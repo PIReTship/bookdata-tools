@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["_broadcast_descending","arg_sort_no_nulls","sort_slice_ascending","sort_slice_descending"],"mod":["arg_sort_multiple"]};

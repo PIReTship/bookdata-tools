@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["dtype_strategy","scalar","simd"],"trait":["ArgMinMax","NaNArgMinMax"]};

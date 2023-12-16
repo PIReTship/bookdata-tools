@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["TlaArg"],"trait":["ArgLike","ArgsLike","OptionalContext"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["DEBUG_ENABLED"],"derive":["Trace"],"fn":["collect_thread_cycles","count_thread_tracked","with_thread_object_space"],"macro":["trace_acyclic","trace_fields"],"struct":["ObjectSpace","RawCc","RawWeak","ThreadedCcRef","ThreadedObjectSpace"],"trait":["Trace"],"type":["Cc","ThreadedCc","Tracer","Weak"]};

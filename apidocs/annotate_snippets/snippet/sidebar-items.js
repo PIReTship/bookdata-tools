@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["AnnotationType"],"struct":["Annotation","Slice","Snippet","SourceAnnotation"]};

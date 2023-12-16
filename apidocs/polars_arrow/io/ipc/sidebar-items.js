@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["append","read","write"],"struct":["IpcField","IpcSchema"]};

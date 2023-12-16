@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["ZipError"],"struct":["DateTimeRangeError","InvalidPassword"],"type":["ZipResult"]};

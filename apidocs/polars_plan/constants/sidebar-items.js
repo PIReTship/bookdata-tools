@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"static":["CSE_REPLACED","MAP_LIST_NAME"]};

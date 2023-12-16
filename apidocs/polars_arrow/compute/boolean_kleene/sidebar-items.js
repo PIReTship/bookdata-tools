@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["all","and","and_scalar","any","or","or_scalar"]};

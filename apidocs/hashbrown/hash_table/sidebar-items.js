@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["Entry"],"mod":["rayon"],"struct":["AbsentEntry","Drain","ExtractIf","HashTable","IntoIter","Iter","IterMut","OccupiedEntry","VacantEntry"]};

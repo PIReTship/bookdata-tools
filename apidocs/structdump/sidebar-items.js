@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"derive":["Codegen"],"struct":["CodegenResult","Named","StructBuilder","Unit","Unnamed"],"trait":["Codegen"]};

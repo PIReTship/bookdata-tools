@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["add","add_scalar","checked_div","checked_div_scalar","checked_negate","div","div_scalar","mul","mul_scalar","negate","rem","rem_scalar","sub","sub_scalar","wrapping_negate"],"trait":["NativeArithmetics"]};

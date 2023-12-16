@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["chunked_array","frame","prelude"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["ClosedWindow"],"fn":["date_range","in_nanoseconds_window","time_range"],"mod":["chunkedarray","prelude","series"],"struct":["Duration","DynamicGroupOptions","RollingGroupOptions","Window"],"trait":["PolarsMonthEnd","PolarsMonthStart","PolarsRound","PolarsTemporalGroupby","PolarsTruncate","PolarsUpsample"]};

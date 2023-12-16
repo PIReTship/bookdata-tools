@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["sum","sum_with_validity"]};

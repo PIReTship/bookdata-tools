@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/arrow/writer.rs`."><title>writer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="bookdata" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0 (79e9716c9 2023-11-13)" data-channel="1.74.0" data-search-js="search-8be46b629f5f14a8.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../bookdata/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/arrow/writer.rs`."><title>writer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-c67e44d78ab2db17.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="bookdata" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0-nightly (503e12932 2023-12-07)" data-channel="nightly" data-search-js="search-5a66c239c06b3a66.js" data-settings-js="settings-fe03fdc259827cd2.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-77dede896d6ac08e.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -256,7 +256,7 @@
         data_pagesize_limit: <span class="prelude-val">None</span>,
     };
 
-    <span class="macro">info!</span>(<span class="string">&quot;creating Parquet file {:?}&quot;</span>, path.as_ref());
+    <span class="macro">info!</span>(<span class="string">"creating Parquet file {:?}"</span>, path.as_ref());
     <span class="kw">let </span>file = OpenOptions::new()
         .create(<span class="bool-val">true</span>)
         .truncate(<span class="bool-val">true</span>)
@@ -269,7 +269,7 @@
 
 <span class="doccomment">/// Open a Polars data frame Parquet writer using BookData defaults.
 </span><span class="kw">pub fn </span>open_polars_writer&lt;P: AsRef&lt;Path&gt;&gt;(path: P) -&gt; <span class="prelude-ty">Result</span>&lt;ParquetWriter&lt;File&gt;&gt; {
-    <span class="macro">info!</span>(<span class="string">&quot;creating Parquet file {:?}&quot;</span>, path.as_ref());
+    <span class="macro">info!</span>(<span class="string">"creating Parquet file {:?}"</span>, path.as_ref());
     <span class="kw">let </span>file = OpenOptions::new()
         .create(<span class="bool-val">true</span>)
         .truncate(<span class="bool-val">true</span>)
@@ -285,14 +285,14 @@
 <span class="doccomment">/// Save a data frame to a Parquet file.
 </span><span class="kw">pub fn </span>save_df_parquet&lt;P: AsRef&lt;Path&gt;&gt;(df: DataFrame, path: P) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>path = path.as_ref();
-    <span class="macro">debug!</span>(<span class="string">&quot;writing file {}&quot;</span>, path.display());
-    <span class="macro">debug!</span>(<span class="string">&quot;{}: schema {:?}&quot;</span>, path.display(), df.schema());
+    <span class="macro">debug!</span>(<span class="string">"writing file {}"</span>, path.display());
+    <span class="macro">debug!</span>(<span class="string">"{}: schema {:?}"</span>, path.display(), df.schema());
     <span class="kw">let </span><span class="kw-2">mut </span>df = df;
     <span class="kw">let </span>writer = open_polars_writer(path)<span class="question-mark">?</span>;
     <span class="kw">let </span>size = writer
         .with_row_group_size(<span class="prelude-val">Some</span>(BATCH_SIZE))
         .finish(<span class="kw-2">&amp;mut </span>df)<span class="question-mark">?</span>;
-    <span class="macro">debug!</span>(<span class="string">&quot;{}: wrote {}&quot;</span>, path.display(), friendly::bytes(size));
+    <span class="macro">debug!</span>(<span class="string">"{}: wrote {}"</span>, path.display(), friendly::bytes(size));
     <span class="prelude-val">Ok</span>(())
 }
 
@@ -300,16 +300,16 @@
 ///
 /// A table writer is an [ObjectWriter] for structs implementing [TableRow], that writes
 /// them out to a Parquet file.
-</span><span class="kw">pub struct </span>TableWriter&lt;R: TableRow + Send + Sync + <span class="lifetime">&#39;static</span>&gt; {
+</span><span class="kw">pub struct </span>TableWriter&lt;R: TableRow + Send + Sync + <span class="lifetime">'static</span>&gt; {
     _phantom: PhantomData&lt;R&gt;,
-    writer: <span class="prelude-ty">Option</span>&lt;UnchunkWriter&lt;R, ThreadObjectWriter&lt;<span class="lifetime">&#39;static</span>, Vec&lt;R&gt;&gt;&gt;&gt;,
+    writer: <span class="prelude-ty">Option</span>&lt;UnchunkWriter&lt;R, ThreadObjectWriter&lt;<span class="lifetime">'static</span>, Vec&lt;R&gt;&gt;&gt;&gt;,
     out_path: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
     row_count: usize,
 }
 
 <span class="kw">impl</span>&lt;R&gt; TableWriter&lt;R&gt;
 <span class="kw">where
-    </span>R: TableRow + Send + Sync + <span class="lifetime">&#39;static</span>,
+    </span>R: TableRow + Send + Sync + <span class="lifetime">'static</span>,
 {
     <span class="doccomment">/// Open a table writer for a path.
     </span><span class="kw">pub fn </span>open&lt;P: AsRef&lt;Path&gt;&gt;(path: P) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
@@ -317,13 +317,13 @@
 
         <span class="comment">// extract struct schema
         </span><span class="kw">let </span>schema = R::schema();
-        <span class="macro">debug!</span>(<span class="string">&quot;{}: opening for schema {:?}&quot;</span>, path.display(), schema);
+        <span class="macro">debug!</span>(<span class="string">"{}: opening for schema {:?}"</span>, path.display(), schema);
 
         <span class="kw">let </span>writer = open_polars_writer(path)<span class="question-mark">?</span>;
         <span class="kw">let </span>writer = writer.batched(<span class="kw-2">&amp;</span>schema)<span class="question-mark">?</span>;
         <span class="kw">let </span>writer = writer.with_transform(vec_to_df);
         <span class="kw">let </span>writer = ThreadObjectWriter::wrap(writer)
-            .with_name(<span class="macro">format!</span>(<span class="string">&quot;write:{}&quot;</span>, path.display()))
+            .with_name(<span class="macro">format!</span>(<span class="string">"write:{}"</span>, path.display()))
             .with_capacity(<span class="number">4</span>)
             .spawn();
         <span class="kw">let </span>writer = UnchunkWriter::with_size(writer, BATCH_SIZE);
@@ -339,20 +339,20 @@
 
 <span class="kw">impl</span>&lt;R&gt; TableWriter&lt;R&gt;
 <span class="kw">where
-    </span>R: TableRow + Send + Sync + <span class="lifetime">&#39;static</span>,
+    </span>R: TableRow + Send + Sync + <span class="lifetime">'static</span>,
 {
-    <span class="kw">fn </span>display_path(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Cow&lt;<span class="lifetime">&#39;static</span>, str&gt; {
+    <span class="kw">fn </span>display_path(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Cow&lt;<span class="lifetime">'static</span>, str&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(p) = <span class="kw-2">&amp;</span><span class="self">self</span>.out_path {
-            <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, p.display()).into()
+            <span class="macro">format!</span>(<span class="string">"{}"</span>, p.display()).into()
         } <span class="kw">else </span>{
-            <span class="string">&quot;&lt;unknown&gt;&quot;</span>.into()
+            <span class="string">"&lt;unknown&gt;"</span>.into()
         }
     }
 }
 
 <span class="kw">impl</span>&lt;R&gt; DataSink <span class="kw">for </span>TableWriter&lt;R&gt;
 <span class="kw">where
-    </span>R: TableRow + Send + Sync + <span class="lifetime">&#39;static</span>,
+    </span>R: TableRow + Send + Sync + <span class="lifetime">'static</span>,
 {
     <span class="kw">fn </span>output_files(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PathBuf&gt; {
         <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.out_path {
@@ -364,13 +364,13 @@
 
 <span class="kw">impl</span>&lt;R&gt; ObjectWriter&lt;R&gt; <span class="kw">for </span>TableWriter&lt;R&gt;
 <span class="kw">where
-    </span>R: TableRow + Send + Sync + <span class="lifetime">&#39;static</span>,
+    </span>R: TableRow + Send + Sync + <span class="lifetime">'static</span>,
 {
     <span class="kw">fn </span>write_object(<span class="kw-2">&amp;mut </span><span class="self">self</span>, row: R) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>w = <span class="self">self
             </span>.writer
             .as_mut()
-            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;writer is closed&quot;</span>))<span class="question-mark">?</span>;
+            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"writer is closed"</span>))<span class="question-mark">?</span>;
 
         w.write_object(row)<span class="question-mark">?</span>;
         <span class="self">self</span>.row_count += <span class="number">1</span>;
@@ -379,10 +379,10 @@
 
     <span class="kw">fn </span>finish(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(writer) = <span class="self">self</span>.writer.take() {
-            <span class="macro">info!</span>(<span class="string">&quot;closing Parquet writer for {}&quot;</span>, <span class="self">self</span>.display_path());
+            <span class="macro">info!</span>(<span class="string">"closing Parquet writer for {}"</span>, <span class="self">self</span>.display_path());
             writer.finish()<span class="question-mark">?</span>;
         } <span class="kw">else </span>{
-            <span class="macro">warn!</span>(<span class="string">&quot;{}: writer already closed&quot;</span>, <span class="self">self</span>.display_path());
+            <span class="macro">warn!</span>(<span class="string">"{}: writer already closed"</span>, <span class="self">self</span>.display_path());
         }
         <span class="prelude-val">Ok</span>(<span class="self">self</span>.row_count)
     }
@@ -390,22 +390,22 @@
 
 <span class="kw">impl</span>&lt;R&gt; Drop <span class="kw">for </span>TableWriter&lt;R&gt;
 <span class="kw">where
-    </span>R: TableRow + Send + Sync + <span class="lifetime">&#39;static</span>,
+    </span>R: TableRow + Send + Sync + <span class="lifetime">'static</span>,
 {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="comment">// make sure we closed the writer
         </span><span class="kw">if </span><span class="self">self</span>.writer.is_some() {
-            <span class="macro">error!</span>(<span class="string">&quot;{}: Parquet table writer not closed&quot;</span>, <span class="self">self</span>.display_path());
+            <span class="macro">error!</span>(<span class="string">"{}: Parquet table writer not closed"</span>, <span class="self">self</span>.display_path());
         }
     }
 }
 
 <span class="doccomment">/// Implementation of object writer for Polars Arrow writers
-</span><span class="kw">impl</span>&lt;W&gt; ObjectWriter&lt;PChunk&lt;Box&lt;<span class="kw">dyn </span>PArray + <span class="lifetime">&#39;static</span>&gt;&gt;&gt; <span class="kw">for </span>FileWriter&lt;W&gt;
+</span><span class="kw">impl</span>&lt;W&gt; ObjectWriter&lt;PChunk&lt;Box&lt;<span class="kw">dyn </span>PArray + <span class="lifetime">'static</span>&gt;&gt;&gt; <span class="kw">for </span>FileWriter&lt;W&gt;
 <span class="kw">where
     </span>W: Write,
 {
-    <span class="kw">fn </span>write_object(<span class="kw-2">&amp;mut </span><span class="self">self</span>, chunk: PChunk&lt;Box&lt;<span class="kw">dyn </span>PArray + <span class="lifetime">&#39;static</span>&gt;&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">fn </span>write_object(<span class="kw-2">&amp;mut </span><span class="self">self</span>, chunk: PChunk&lt;Box&lt;<span class="kw">dyn </span>PArray + <span class="lifetime">'static</span>&gt;&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>schema = <span class="self">self</span>.schema();
         <span class="kw">let </span>encodings: Vec&lt;<span class="kw">_</span>&gt; = schema
             .fields

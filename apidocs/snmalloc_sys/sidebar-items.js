@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["sn_calloc","sn_free","sn_malloc","sn_malloc_usable_size","sn_realloc","sn_rust_alloc","sn_rust_alloc_zeroed","sn_rust_dealloc","sn_rust_realloc"]};
