@@ -3,6 +3,7 @@
 use v5.32;
 use utf8;
 use warnings;
+use File::Path qw(make_path);
 
 my $outdir = $ENV{QUARTO_PROJECT_OUTPUT_DIR};
 $outdir = "_site" if (!defined $outdir);
@@ -10,7 +11,7 @@ my @pages = glob "data/*.qmd";
 my $n = @pages;
 print "scanning $n doc pages, writing to $outdir\n";
 
-mkdir $outdir or die "$outdir: $!" if ! -d $outdir;
+make_path($outdir) or die "$outdir: $!" if ! -d $outdir;
 
 open(my $ofh, ">$outdir/files.json") or die "$outdir/files.json: $!";
 print $ofh "{\n";
