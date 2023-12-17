@@ -19,7 +19,7 @@ In general, to add new data, you need to do a few things:
     subsequent stages.  This typically includes a new Rust command to process
     the data, and a DVC stage to run it.
 3.  If the data source provides additional ISBNs, add them to
-    `book-links/all-isbns.toml` so that they are included in ISBN indexing.
+    `src/cli/collect_isbns.rs` so that they are included in ISBN indexing.
 4.  Implement code to process the extracted source files into cluster-aggregated
     files, if needed (typically used for rating data).
 5.  Update the analytics and statistics to include the new data.
