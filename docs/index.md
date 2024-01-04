@@ -43,7 +43,7 @@ See the [Setup page](using/setup.md) to get started and for system requirements.
 I recorded a video walking through the integration as an example for my [Data Science class](https://cs533.ekstrandom.net).
 This discusses the PostgreSQL version of the integration, but the concepts have remained the same in terms of linking logic.
 
-<iframe src="https://boisestate.hosted.panopto.com/Panopto/Pages/Embed.aspx?id=3ddd5f50-f4bf-4c27-94fb-ac4a0042ab0b&autoplay=false&offerviewer=true&showtitle=true&showbrand=false&start=0&interactivity=all" height="405" width="720" style="border: 1px solid #464646;" allowfullscreen allow="autoplay"></iframe>
+<div style="position: relative; padding-top: 56.25%;"><iframe src="https://iframe.mediadelivery.net/embed/114107/60f24ed2-4a71-4fa7-b1f4-82d95ab62c67?autoplay=false" loading="lazy" style="border: none; position: absolute; top: 0; height: 100%; width: 100%;" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;" allowfullscreen="true"></iframe></div>
 
 ## License
 
