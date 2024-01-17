@@ -111,8 +111,8 @@ pub struct OLEditionRecord {
     #[serde(default)]
     pub authors: Vec<Author>,
 
-    #[serde(default)]
-    pub subjects: Vec<String>,
+    #[serde(flatten)]
+    pub subjects: OLSubjects,
 }
 
 /// An author record parsed from OpenLibrary JSON.
@@ -122,6 +122,19 @@ pub struct OLWorkRecord {
     pub authors: Vec<Author>,
     #[serde(default)]
     pub title: Option<String>,
+    #[serde(flatten)]
+    pub subjects: OLSubjects,
+}
+
+/// Information about a work or edition's subjects.
+#[derive(Deserialize)]
+pub struct OLSubjects {
     #[serde(default)]
     pub subjects: Vec<String>,
+    #[serde(default)]
+    pub subject_people: Vec<String>,
+    #[serde(default)]
+    pub subject_places: Vec<String>,
+    #[serde(default)]
+    pub subject_times: Vec<String>,
 }

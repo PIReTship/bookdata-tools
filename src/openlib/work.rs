@@ -7,6 +7,7 @@ use crate::prelude::*;
 
 pub use super::source::OLWorkRecord;
 use super::source::Row;
+use super::subject::{SubjectEntry, SubjectType};
 
 /// Work row in extracted Parquet.
 #[derive(Debug, Clone, TableRow)]
@@ -28,7 +29,18 @@ pub struct WorkAuthorRec {
 #[derive(Debug, Clone, TableRow)]
 pub struct WorkSubjectRec {
     pub id: i32,
+    pub subj_type: SubjectType,
     pub subject: String,
+}
+
+impl From<SubjectEntry> for WorkSubjectRec {
+    fn from(value: SubjectEntry) -> Self {
+        WorkSubjectRec {
+            id: value.entity,
+            subj_type: value.subj_type.into(),
+            subject: value.subject,
+        }
+    }
 }
 
 /// Process author source records into Parquet.
@@ -79,9 +91,8 @@ impl ObjectWriter<Row<OLWorkRecord>> for WorkProcessor {
             }
         }
 
-        for subject in row.record.subjects {
-            self.subject_writer
-                .write_object(WorkSubjectRec { id, subject })?;
+        for sr in row.record.subjects.subject_records(id) {
+            self.subject_writer.write_object(sr.into())?;
         }
 
         Ok(())

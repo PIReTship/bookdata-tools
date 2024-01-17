@@ -2,6 +2,7 @@
 pub mod author;
 pub mod edition;
 pub mod source;
+pub mod subject;
 pub mod work;
 
 pub use author::AuthorProcessor;

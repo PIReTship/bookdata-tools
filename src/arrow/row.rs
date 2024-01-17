@@ -131,6 +131,11 @@ pub trait ColType: Sized {
     fn read_from_column(name: &'static str, a: &Self::Array, pos: usize) -> Result<Self, RowError>;
 }
 
+/// Marker trait for column types that can be mapped with Into
+pub trait MappableColType: Sized + TryFrom<Self::ColumnType> {
+    type ColumnType: ColType + From<Self>;
+}
+
 macro_rules! col_type {
     ($rs:ident, $pl:ty) => {
         col_type!($rs, $pl, ChunkedArray<$pl>, PrimitiveChunkedBuilder<$pl>);
@@ -272,5 +277,32 @@ impl ColType for Option<NaiveDate> {
         pos: usize,
     ) -> Result<Self, RowError> {
         a.get(pos).map(convert_to_naive_date).transpose()
+    }
+}
+
+impl<T> ColType for T
+where
+    T: MappableColType,
+{
+    type PolarsType = <<T as MappableColType>::ColumnType as ColType>::PolarsType;
+    type Array = <<T as MappableColType>::ColumnType as ColType>::Array;
+    type Builder = <<T as MappableColType>::ColumnType as ColType>::Builder;
+
+    fn column_builder(name: &str, cap: usize) -> Self::Builder {
+        T::ColumnType::column_builder(name, cap)
+    }
+
+    fn append_to_column(self, b: &mut Self::Builder) {
+        T::ColumnType::from(self).append_to_column(b)
+    }
+
+    fn cast_series<'a>(s: &'a Series) -> PolarsResult<&'a Self::Array> {
+        T::ColumnType::cast_series(s)
+    }
+
+    fn read_from_column(name: &'static str, a: &Self::Array, pos: usize) -> Result<Self, RowError> {
+        let val = T::ColumnType::read_from_column(name, a, pos)?;
+        val.try_into()
+            .map_err(|_| RowError::ConvertError("failed to convert primitive"))
     }
 }
