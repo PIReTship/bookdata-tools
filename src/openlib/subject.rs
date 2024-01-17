@@ -1,3 +1,4 @@
+/// Recording OpenLibrary subjects and subject-entity links.
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use parse_display::*;
 
@@ -5,6 +6,7 @@ use crate::arrow::row::MappableColType;
 
 use super::source::OLSubjects;
 
+/// The type of a subject relationship.
 #[derive(Debug, Clone, FromStr, Display, IntoPrimitive, TryFromPrimitive)]
 #[display(style = "kebab-case")]
 #[repr(u8)]
