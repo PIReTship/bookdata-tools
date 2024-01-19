@@ -3,6 +3,8 @@ use serde::Deserialize;
 
 use crate::arrow::*;
 use crate::cleaning::isbns::*;
+use crate::ids::codes::NS_GR_BOOK;
+use crate::ids::codes::NS_GR_WORK;
 use crate::parsing::*;
 use crate::prelude::*;
 
@@ -46,6 +48,7 @@ pub struct RawAuthor {
 pub struct BookIdRecord {
     pub book_id: i32,
     pub work_id: Option<i32>,
+    pub gr_item: i32,
     pub isbn10: Option<String>,
     pub isbn13: Option<String>,
     pub asin: Option<String>,
@@ -106,11 +109,18 @@ impl DataSink for BookWriter {
 
 impl ObjectWriter<RawBook> for BookWriter {
     fn write_object(&mut self, row: RawBook) -> Result<()> {
-        let book_id: i32 = row.book_id.parse()?;
+        let book_id = row.book_id.parse()?;
+        let work_id = parse_opt(&row.work_id)?;
+        let gr_item = if let Some(w) = work_id {
+            NS_GR_WORK.to_code(w)
+        } else {
+            NS_GR_BOOK.to_code(book_id)
+        };
 
         self.id_out.write_object(BookIdRecord {
             book_id,
-            work_id: parse_opt(&row.work_id)?,
+            work_id,
+            gr_item,
             isbn10: trim_opt(&row.isbn)
                 .map(|s| clean_asin_chars(s))
                 .filter(|s| s.len() >= 7),
