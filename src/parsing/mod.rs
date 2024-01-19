@@ -5,8 +5,6 @@ use std::str::FromStr;
 use anyhow::{anyhow, Result};
 
 pub mod bindata;
-#[cfg(feature = "nom")]
-pub mod combinators;
 pub mod dates;
 #[cfg(test)]
 mod test_dates;
@@ -43,5 +41,3 @@ where
         }),
     })
 }
-
-pub use dates::maybe_date;

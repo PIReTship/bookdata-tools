@@ -1,5 +1,4 @@
 //! GoodReads book schemas and record processing.
-use chrono::NaiveDate;
 use serde::Deserialize;
 
 use crate::arrow::*;
@@ -59,7 +58,6 @@ pub struct BookRecord {
     pub title: Option<String>,
     pub pub_year: Option<u16>,
     pub pub_month: Option<u8>,
-    pub pub_date: Option<NaiveDate>,
 }
 
 /// book series linking records
@@ -126,15 +124,12 @@ impl ObjectWriter<RawBook> for BookWriter {
 
         let pub_year = parse_opt(&row.publication_year)?;
         let pub_month = parse_opt(&row.publication_month)?;
-        let pub_day: Option<u32> = parse_opt(&row.publication_day)?;
-        let pub_date = maybe_date(pub_year, pub_month, pub_day);
 
         self.info_out.write_object(BookRecord {
             book_id,
             title: trim_owned(&row.title),
             pub_year,
             pub_month,
-            pub_date,
         })?;
 
         for author in row.authors {
