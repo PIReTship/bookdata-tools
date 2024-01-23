@@ -2,20 +2,11 @@ use std::fs::read_to_string;
 
 use anyhow::Result;
 use log::*;
-use parse_display::Display;
 use serde::Deserialize;
 
 use super::path::BDPath;
 
 const CFG_PATH: BDPath<'static> = BDPath::new("config.yaml");
-
-#[derive(Debug, Deserialize, Clone, Display)]
-#[serde(rename_all = "kebab-case")]
-#[display(style = "kebab-case")]
-pub enum GRInteractionMode {
-    Simple,
-    Full,
-}
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct DSConfig {
@@ -25,7 +16,6 @@ pub struct DSConfig {
 #[derive(Debug, Deserialize, Clone)]
 pub struct GRConfig {
     pub enabled: bool,
-    pub interactions: GRInteractionMode,
 }
 
 #[derive(Debug, Deserialize, Clone)]
