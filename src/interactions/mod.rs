@@ -10,9 +10,6 @@ use std::path::Path;
 mod actions;
 mod ratings;
 
-pub use actions::*;
-pub use ratings::*;
-
 /// Trait for an interaction.
 pub trait Interaction {
     fn get_user(&self) -> i32;

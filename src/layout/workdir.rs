@@ -45,6 +45,7 @@ pub fn find_root_relpath() -> Result<RelativePathBuf> {
 }
 
 /// Get the absolute path to the repository root.
+#[allow(dead_code)]
 pub fn find_root_abspath() -> Result<PathBuf> {
     Ok(find_root_relpath()?.to_path(current_dir()?))
 }
