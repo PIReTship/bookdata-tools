@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 
 use clap::Args;
-use parse_display::Display;
 
 use crate::arrow::*;
 use crate::ids::codes::{NS_GR_BOOK, NS_GR_WORK};
@@ -19,10 +18,6 @@ pub struct CICommand {
     #[arg(long = "add-actions")]
     add_actions: bool,
 
-    /// Cluster using simple data instead of full data.
-    #[arg(long = "simple")]
-    simple: bool,
-
     /// Cluster using native GoodReads works instead of book clusters.
     #[arg(long = "native-works")]
     native_works: bool,
@@ -30,13 +25,6 @@ pub struct CICommand {
     /// Write output to FILE.
     #[arg(short = 'o', long = "output", name = "FILE")]
     output: PathBuf,
-}
-
-#[derive(Debug, PartialEq, Eq, Display)]
-#[display(style = "kebab-case")]
-enum SrcType {
-    Simple,
-    Full,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -54,7 +42,6 @@ enum AggType {
 #[derive(Debug)]
 pub struct ClusterOp {
     actions: ActionType,
-    data: SrcType,
     clusters: AggType,
     output: PathBuf,
 }
@@ -72,9 +59,6 @@ impl CICommand {
         if self.native_works {
             op = op.native_works();
         }
-        if self.simple {
-            op = op.simple();
-        }
 
         op.cluster()
     }
@@ -85,7 +69,6 @@ impl ClusterOp {
     pub fn add_actions<P: AsRef<Path>>(path: P) -> ClusterOp {
         ClusterOp {
             actions: ActionType::AddActions,
-            data: SrcType::Full,
             clusters: AggType::Clusters,
             output: path.as_ref().to_path_buf(),
         }
@@ -95,17 +78,8 @@ impl ClusterOp {
     pub fn ratings<P: AsRef<Path>>(path: P) -> ClusterOp {
         ClusterOp {
             actions: ActionType::Ratings,
-            data: SrcType::Full,
             clusters: AggType::Clusters,
             output: path.as_ref().to_path_buf(),
-        }
-    }
-
-    /// Set operation to cluster simple records instead of full records.
-    pub fn simple(self) -> ClusterOp {
-        ClusterOp {
-            data: SrcType::Simple,
-            ..self
         }
     }
 
@@ -142,11 +116,7 @@ impl ClusterOp {
 
     /// Load the interaction file.
     fn load_interactions(&self) -> Result<LazyFrame> {
-        let dir = match self.data {
-            SrcType::Full => "full",
-            SrcType::Simple => "simple",
-        };
-        let path = format!("goodreads/{}/gr-interactions.parquet", dir);
+        let path = "goodreads/gr-interactions.parquet";
         let data = LazyFrame::scan_parquet(path, Default::default())?;
 
         let links = LazyFrame::scan_parquet("goodreads/gr-book-link.parquet", Default::default())?;
@@ -186,31 +156,18 @@ impl ClusterOp {
 
     /// Project and sort (if possible) the data.
     fn project_and_sort(&self, frame: LazyFrame) -> LazyFrame {
-        match self.data {
-            SrcType::Simple => frame.select(&[
-                col("user_id").alias("user"),
-                self.id_col().alias("item"),
-                col("rating"),
-            ]),
-            SrcType::Full => frame.select(&[
-                col("user_id").alias("user"),
-                self.id_col().alias("item"),
-                (col("updated").cast(DataType::Int64)).alias("timestamp"),
-                col("rating"),
-            ]),
-        }
+        frame.select(&[
+            col("user_id").alias("user"),
+            self.id_col().alias("item"),
+            (col("updated").cast(DataType::Int64)).alias("timestamp"),
+            col("rating"),
+        ])
     }
 
     /// Aggreate the interactions.
     fn aggregates(&self) -> Vec<Expr> {
-        match (&self.actions, &self.data) {
-            (ActionType::Ratings, SrcType::Simple) => {
-                vec![
-                    col("rating").median().alias("rating"),
-                    col("item").count().alias("nratings"),
-                ]
-            }
-            (ActionType::Ratings, SrcType::Full) => {
+        match &self.actions {
+            ActionType::Ratings => {
                 vec![
                     col("rating").median().alias("rating"),
                     col("rating").last().alias("last_rating"),
@@ -219,10 +176,7 @@ impl ClusterOp {
                     col("item").count().alias("nratings"),
                 ]
             }
-            (ActionType::AddActions, SrcType::Simple) => {
-                vec![col("item").count().alias("nactions")]
-            }
-            (ActionType::AddActions, SrcType::Full) => {
+            ActionType::AddActions => {
                 vec![
                     col("timestamp").min().alias("first_time"),
                     col("timestamp").max().alias("last_time"),

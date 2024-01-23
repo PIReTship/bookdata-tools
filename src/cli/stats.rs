@@ -15,8 +15,8 @@ static ACTION_FILES: &[(&str, &str)] = &[
     ("BX-E", "bx/bx-cluster-ratings.parquet"),
     ("AZ14", "az2014/az-cluster-ratings.parquet"),
     ("AZ18", "az2018/az-cluster-ratings.parquet"),
-    ("GR-I", "goodreads/@GRSRC@/gr-cluster-actions.parquet"),
-    ("GR-E", "goodreads/@GRSRC@/gr-cluster-ratings.parquet"),
+    ("GR-I", "goodreads/gr-cluster-actions.parquet"),
+    ("GR-E", "goodreads/gr-cluster-ratings.parquet"),
 ];
 
 /// Compute integration statistics.
@@ -36,7 +36,6 @@ impl Command for IntegrationStats {
 
         for (name, file) in ACTION_FILES {
             if cfg.ds_enabled(name) {
-                let file = file.replace("@GRSRC@", &cfg.goodreads.interactions.to_string());
                 agg_frames.push(scan_actions(&file, genders.clone(), *name)?);
             }
         }

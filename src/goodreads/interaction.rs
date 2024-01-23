@@ -9,7 +9,7 @@ use crate::parsing::dates::*;
 use crate::parsing::*;
 use crate::prelude::*;
 
-pub const OUT_FILE: BDPath<'static> = BDPath::new("goodreads/full/gr-interactions.parquet");
+pub const OUT_FILE: BDPath<'static> = BDPath::new("goodreads/gr-interactions.parquet");
 
 /// Interaction records we read from JSON.
 #[derive(Deserialize)]

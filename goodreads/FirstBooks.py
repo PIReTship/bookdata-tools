@@ -35,7 +35,7 @@ import seaborn as sns
 
 # %%
 links = pl.scan_parquet('gr-book-ids.parquet')
-ixs = pl.scan_parquet('full/gr-interactions.parquet')
+ixs = pl.scan_parquet('gr-interactions.parquet')
 ixs = ixs.join(links, on='book_id')
 
 # %% [markdown]

@@ -4,7 +4,7 @@ use log::*;
 
 use crate::{ids::index::IdIndex, prelude::BDPath};
 
-const GR_USER_FILE: BDPath<'static> = BDPath::new("goodreads/full/gr-users.parquet");
+const GR_USER_FILE: BDPath<'static> = BDPath::new("goodreads/gr-users.parquet");
 const UID_COL: &'static str = "user";
 const UHASH_COL: &'static str = "user_hash";
 
