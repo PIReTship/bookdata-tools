@@ -35,6 +35,15 @@ stages:
       - "../data/goodreads/goodreads_book_authors.json.gz"
     outs:
       - gr-author-info.parquet
+  scan-interactions:
+    cmd: cargo run --release -- goodreads scan interactions --csv --book-map ../data/goodreads/book_id_map.csv ../data/goodreads/goodreads_interactions.csv.gz
+    deps:
+      - "../src/cli/goodreads"
+      - "../src/goodreads"
+      - "../data/goodreads/book_id_map.csv"
+      - "../data/goodreads/goodreads_interactions.csv.gz"
+    outs:
+      - gr-interactions.parquet
   book-isbn-ids:
     wdir: ".."
     cmd: cargo run --release -- link-isbn-ids -o goodreads/book-isbn-ids.parquet -R book_id -I isbn10 -I isbn13 -I asin goodreads/gr-book-ids.parquet
@@ -52,6 +61,84 @@ stages:
       - book-links/cluster-graph-nodes.parquet
     outs:
       - goodreads/gr-book-link.parquet
+  cluster-actions:
+    wdir: ".."
+    cmd: cargo run --release -- goodreads cluster-interactions --add-actions -o goodreads/gr-cluster-actions.parquet
+    deps:
+      - src/cli/goodreads/cluster.rs
+      - goodreads/gr-book-link.parquet
+      - goodreads/gr-interactions.parquet
+    outs:
+      - goodreads/gr-cluster-actions.parquet
+  cluster-ratings:
+    wdir: ".."
+    cmd: cargo run --release -- goodreads cluster-interactions --ratings -o goodreads/gr-cluster-ratings.parquet
+    deps:
+      - src/cli/goodreads/cluster.rs
+      - goodreads/gr-book-link.parquet
+      - goodreads/gr-interactions.parquet
+    outs:
+      - goodreads/gr-cluster-ratings.parquet
+  cluster-ratings-5core:
+    cmd: cargo run --release -- kcore -o gr-cluster-ratings-5core.parquet gr-cluster-ratings.parquet
+    deps:
+      - "../src/cli/kcore.rs"
+      - gr-cluster-ratings.parquet
+    outs:
+      - gr-cluster-ratings-5core.parquet
+  cluster-actions-5core:
+    cmd: cargo run --release -- kcore -o gr-cluster-actions-5core.parquet gr-cluster-actions.parquet
+    deps:
+      - "../src/cli/kcore.rs"
+      - gr-cluster-actions.parquet
+    outs:
+      - gr-cluster-actions-5core.parquet
+  work-actions:
+    wdir: ".."
+    cmd: cargo run --release -- goodreads cluster-interactions --add-actions --native-works -o goodreads/gr-work-actions.parquet
+    deps:
+      - src/cli/goodreads/cluster.rs
+      - goodreads/gr-book-link.parquet
+      - goodreads/gr-interactions.parquet
+    outs:
+      - goodreads/gr-work-actions.parquet
+  work-ratings:
+    wdir: ".."
+    cmd: cargo run --release -- goodreads cluster-interactions --ratings --native-works -o goodreads/gr-work-ratings.parquet
+    deps:
+      - src/cli/goodreads/cluster.rs
+      - goodreads/gr-book-link.parquet
+      - goodreads/gr-interactions.parquet
+    outs:
+      - goodreads/gr-work-ratings.parquet
+  work-ratings-5core:
+    cmd: cargo run --release -- kcore -o gr-work-ratings-5core.parquet gr-work-ratings.parquet
+    deps:
+      - "../src/cli/kcore.rs"
+      - gr-work-ratings.parquet
+    outs:
+      - gr-work-ratings-5core.parquet
+  work-actions-5core:
+    cmd: cargo run --release -- kcore -o gr-work-actions-5core.parquet gr-work-actions.parquet
+    deps:
+      - "../src/cli/kcore.rs"
+      - gr-work-actions.parquet
+    outs:
+      - gr-work-actions-5core.parquet
+  work-ratings-2015-100-10core:
+    cmd: cargo run --release -- kcore --user-k 10 --item-k 100 --year 2015 -o gr-work-ratings-2015-100-10core.parquet gr-work-ratings.parquet
+    deps:
+      - gr-work-ratings.parquet
+      - "../src/cli/kcore.rs"
+    outs:
+      - gr-work-ratings-2015-100-10core.parquet
+  work-actions-2015-100-10core:
+    cmd: cargo run --release -- kcore --user-k 10 --item-k 100 --year 2015 -o gr-work-actions-2015-100-10core.parquet gr-work-actions.parquet
+    deps:
+      - gr-work-actions.parquet
+      - "../src/cli/kcore.rs"
+    outs:
+      - gr-work-actions-2015-100-10core.parquet
   work-gender:
     cmd: cargo run --release -- goodreads work-gender
     deps:

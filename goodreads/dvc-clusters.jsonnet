@@ -2,7 +2,7 @@ local bd = import '../lib.jsonnet';
 
 {
   'cluster-actions': {
-    wdir: '../..',
+    wdir: '..',
     cmd: bd.cmd('goodreads cluster-interactions --add-actions -o goodreads/gr-cluster-actions.parquet'),
     deps: [
       'src/cli/goodreads/cluster.rs',
@@ -15,7 +15,7 @@ local bd = import '../lib.jsonnet';
   },
 
   'cluster-ratings': {
-    wdir: '../..',
+    wdir: '..',
     cmd: bd.cmd('goodreads cluster-interactions --ratings -o goodreads/gr-cluster-ratings.parquet'),
     deps: [
       'src/cli/goodreads/cluster.rs',
@@ -30,7 +30,7 @@ local bd = import '../lib.jsonnet';
   'cluster-ratings-5core': {
     cmd: bd.cmd('kcore -o gr-cluster-ratings-5core.parquet gr-cluster-ratings.parquet'),
     deps: [
-      '../../src/cli/kcore.rs',
+      '../src/cli/kcore.rs',
       'gr-cluster-ratings.parquet',
     ],
     outs: [
@@ -41,7 +41,7 @@ local bd = import '../lib.jsonnet';
   'cluster-actions-5core': {
     cmd: bd.cmd('kcore -o gr-cluster-actions-5core.parquet gr-cluster-actions.parquet'),
     deps: [
-      '../../src/cli/kcore.rs',
+      '../src/cli/kcore.rs',
       'gr-cluster-actions.parquet',
     ],
     outs: [

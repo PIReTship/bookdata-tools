@@ -2,7 +2,7 @@ local bd = import '../lib.jsonnet';
 
 {
   'work-actions': {
-    wdir: '../..',
+    wdir: '..',
     cmd: bd.cmd('goodreads cluster-interactions --add-actions --native-works -o goodreads/gr-work-actions.parquet'),
     deps: [
       'src/cli/goodreads/cluster.rs',
@@ -15,7 +15,7 @@ local bd = import '../lib.jsonnet';
   },
 
   'work-ratings': {
-    wdir: '../..',
+    wdir: '..',
     cmd: bd.cmd('goodreads cluster-interactions --ratings --native-works -o goodreads/gr-work-ratings.parquet'),
     deps: [
       'src/cli/goodreads/cluster.rs',
@@ -30,7 +30,7 @@ local bd = import '../lib.jsonnet';
   'work-ratings-5core': {
     cmd: bd.cmd('kcore -o gr-work-ratings-5core.parquet gr-work-ratings.parquet'),
     deps: [
-      '../../src/cli/kcore.rs',
+      '../src/cli/kcore.rs',
       'gr-work-ratings.parquet',
     ],
     outs: [
@@ -41,7 +41,7 @@ local bd = import '../lib.jsonnet';
   'work-actions-5core': {
     cmd: bd.cmd('kcore -o gr-work-actions-5core.parquet gr-work-actions.parquet'),
     deps: [
-      '../../src/cli/kcore.rs',
+      '../src/cli/kcore.rs',
       'gr-work-actions.parquet',
     ],
     outs: [
@@ -53,7 +53,7 @@ local bd = import '../lib.jsonnet';
     cmd: bd.cmd('kcore --user-k 10 --item-k 100 --year 2015 -o gr-work-ratings-2015-100-10core.parquet gr-work-ratings.parquet'),
     deps: [
       'gr-work-ratings.parquet',
-      '../../src/cli/kcore.rs',
+      '../src/cli/kcore.rs',
     ],
     outs: [
       'gr-work-ratings-2015-100-10core.parquet',
@@ -64,7 +64,7 @@ local bd = import '../lib.jsonnet';
     cmd: bd.cmd('kcore --user-k 10 --item-k 100 --year 2015 -o gr-work-actions-2015-100-10core.parquet gr-work-actions.parquet'),
     deps: [
       'gr-work-actions.parquet',
-      '../../src/cli/kcore.rs',
+      '../src/cli/kcore.rs',
     ],
     outs: [
       'gr-work-actions-2015-100-10core.parquet',

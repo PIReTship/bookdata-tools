@@ -68,11 +68,11 @@ local bd = import '../lib.jsonnet';
 
 } + if bd.config.goodreads.reviews then {
   'scan-reviews': {
-    cmd: bd.cmd('goodreads scan reviews ../../data/goodreads/goodreads_reviews_dedup.json.gz'),
+    cmd: bd.cmd('goodreads scan reviews ../data/goodreads/goodreads_reviews_dedup.json.gz'),
     deps: [
-      '../../src/cli/goodreads',
-      '../../src/goodreads',
-      '../../data/goodreads/goodreads_reviews_dedup.json.gz',
+      '../src/cli/goodreads',
+      '../src/goodreads',
+      '../data/goodreads/goodreads_reviews_dedup.json.gz',
       '../gr-book-link.parquet',
       'gr-users.parquet',
     ],
