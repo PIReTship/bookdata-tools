@@ -62,6 +62,7 @@ local bd = import '../lib.jsonnet';
     ],
     outs: [
       'gr-interactions.parquet',
+      'gr-users.parquet',
     ],
   },
 
