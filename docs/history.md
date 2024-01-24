@@ -16,11 +16,13 @@ following:
 ## Book Data 3.0 (in progress)
 
 -   Make the pipeline configurable so individual rating datasets can be disabled.
+-   Only support the full JSON GoodReads interaction data, because it is now
+    publicly available.
 -   Use [jsonnet](implementation/pipeline.md) to generate DVC pipelines, taking
     configuration settings into account.
 -   Update to newer VIAF and OpenLibrary dumps.
 -   Extract GoodReads author information into {{< file goodreads/gr-author-info.parquet >}}.
--   Support full-text reviews from the GoodReads and Amazon 2018 data sets (disabled by default).
+-   Support full-text reviews from the GoodReads and Amazon 2018 data sets (enabled by default).
 -   Disable the [BookCrossing](data/bx.qmd) data by default since the source website is offline.
 -   Extract 5-cores of interaction files.
 
