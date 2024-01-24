@@ -54,7 +54,7 @@ local bd = import '../lib.jsonnet';
   },
 
   'scan-interactions': {
-    cmd: bd.cmd('goodreads scan interactions ../data/goodreads/goodreads_interactions.json.jgz'),
+    cmd: bd.cmd('goodreads scan interactions ../data/goodreads/goodreads_interactions.json.gz'),
     deps: [
       '../src/cli/goodreads',
       '../src/goodreads',
