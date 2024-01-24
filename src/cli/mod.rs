@@ -16,7 +16,6 @@ pub mod index_names;
 pub mod kcore;
 pub mod link_isbns;
 pub mod openlib;
-pub mod pipeline;
 pub mod pqinfo;
 pub mod scan_marc;
 pub mod stats;
@@ -65,7 +64,6 @@ pub trait Command {
 #[enum_dispatch(Command)]
 #[derive(Subcommand, Debug)]
 pub enum RootCommand {
-    Pipeline(PipelineCommandWrapper),
     ScanMARC(scan_marc::ScanMARC),
     FilterMARC(filter_marc::FilterMARC),
     ClusterBooks(cluster_books::ClusterBooks),
@@ -88,17 +86,9 @@ pub enum RootCommand {
     IntegrationStats(stats::IntegrationStats),
 }
 
-wrap_subcommands!(PipelineCommand);
 wrap_subcommands!(AmazonCommand);
 wrap_subcommands!(BXCommand);
 wrap_subcommands!(ClusterCommand);
-
-#[enum_dispatch(Command)]
-#[derive(Subcommand, Debug)]
-enum PipelineCommand {
-    /// Re-render the pipeline from jsonnet specifications.
-    Render(pipeline::RenderPipeline),
-}
 
 #[enum_dispatch(Command)]
 #[derive(Subcommand, Debug)]
