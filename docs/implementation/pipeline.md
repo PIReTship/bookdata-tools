@@ -19,12 +19,11 @@ allows us to generate the pipeline with loops, conditionals, etc.  The
 pipeline primary sources are in the `dvc.jsonnet` files, which we render
 to produce `dvc.yaml`.
 
-The pipelines are updated through the Rust `jrsonnet` implementation of the
-jsonnet language, so it is integrated into our main executable.  You can
-run this with:
+A Python script renders the pipelines to YAML using the Python `jsonnet`
+bindings.  You can run this with:
 
 ```sh
-./update-pipeline.sh
+./update-pipeline.py
 ```
 
 There are two exceptions to our use of jsonnet for pipelines:
@@ -44,12 +43,12 @@ The `lib.jsonnet` file provides helper routines for generating pipelines:
 ## Configuring the Pipeline {#config}
 
 The pipeline can be configured through the `config.yaml` file.  We keep this
-file, along with the generated pipeline, committed to git; if you change it,
-we recommend working in a branch.
+file, along with the generated pipeline, committed to git; if you change it, we
+recommend working in a branch.  After changing the file, you need to regenerate
+the pipeline with `update-pipeline.py` for changes to take effect.
 
 See the comments in that file for details.  Right now, two things can be
 configured:
 
 - Which sources of book rating and interaction data are used.
-- When [GoodReads data](../data/goodreads.qmd) is enabled, which version of the
-  interaction file to use.
+- Whether to use full review data.
