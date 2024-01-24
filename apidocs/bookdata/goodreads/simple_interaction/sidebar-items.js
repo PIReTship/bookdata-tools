@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["OUT_FILE"],"fn":["read_book_map","scan_interaction_csv"],"struct":["IntRecord","IntRecordFrame","IntRecordFrameBuilder","RawBookMap","RawInteraction"]};

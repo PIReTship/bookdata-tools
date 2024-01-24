@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Author","RowError"],"struct":["Keyed","OLAuthorSource","OLEditionRecord","OLWorkRecord","Row"]};
+window.SIDEBAR_ITEMS = {"enum":["Author","RowError"],"struct":["Keyed","OLAuthorSource","OLEditionRecord","OLSubjects","OLWorkRecord","Row"]};

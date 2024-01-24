@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["author","edition","source","work"]};
+window.SIDEBAR_ITEMS = {"mod":["author","edition","source","subject","work"]};

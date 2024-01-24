@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["GRScan"],"fn":["scan_gr"],"struct":["InterInput","ScanInput"]};
+window.SIDEBAR_ITEMS = {"enum":["GRScan"],"fn":["scan_gr"],"struct":["ScanInput"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ActionType","AggType","SrcType"],"struct":["CICommand","ClusterOp"]};
+window.SIDEBAR_ITEMS = {"enum":["ActionType","AggType"],"struct":["CICommand","ClusterOp"]};
