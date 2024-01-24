@@ -54,12 +54,11 @@ local bd = import '../lib.jsonnet';
   },
 
   'scan-interactions': {
-    cmd: bd.cmd('goodreads scan interactions --csv --book-map ../data/goodreads/book_id_map.csv ../data/goodreads/goodreads_interactions.csv.gz'),
+    cmd: bd.cmd('goodreads scan interactions ../data/goodreads/goodreads_interactions.json.jgz'),
     deps: [
       '../src/cli/goodreads',
       '../src/goodreads',
-      '../data/goodreads/book_id_map.csv',
-      '../data/goodreads/goodreads_interactions.csv.gz',
+      '../data/goodreads/goodreads_interactions.json.gz',
     ],
     outs: [
       'gr-interactions.parquet',
