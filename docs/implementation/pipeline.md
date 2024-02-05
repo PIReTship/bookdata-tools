@@ -26,13 +26,6 @@ bindings.  You can run this with:
 ./update-pipeline.py
 ```
 
-There are two exceptions to our use of jsonnet for pipelines:
-
--   `data/dvc.yaml` — this is maintained directly in the YAML file, because
-    DVC's frozen stages don't work very well with rendering pipelines.
--   The `.dvc` files — these just record files that are added (possibly
-    downloaded), we don't generate them.
-
 The `lib.jsonnet` file provides helper routines for generating pipelines:
 
 -   `pipeline` produces a DVC pipeline given a record of stages.
