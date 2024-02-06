@@ -11,7 +11,7 @@ following:
 2.  Cite the papers corresponding to the individual ratings, review, or
     consumption data sets you are using.
 3.  Clearly state the version of the data tools you are using in your paper.
-4.  [Let us know](papers.md) about your use so we can add you to the list.
+4.  [Let us know](papers.md) about your work so we can add you to the list.
 
 ## Book Data 3.0 (in progress)
 
@@ -25,6 +25,8 @@ following:
 -   Support full-text reviews from the GoodReads and Amazon 2018 data sets (enabled by default).
 -   Disable the [BookCrossing](data/bx.qmd) data by default since the source website is offline.
 -   Extract 5-cores of interaction files.
+-   Update to OpenLibrary and VIAF dumps from the beginning of 2024 (OpenLibrary
+    2023-12-31, VIAF 2024-01-01).
 
 ### Bugs Fixed
 
