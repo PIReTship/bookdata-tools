@@ -126,15 +126,32 @@ pub struct OLWorkRecord {
     pub subjects: OLSubjects,
 }
 
+/// Text entries
+#[derive(Deserialize, Clone)]
+#[serde(untagged)]
+pub enum Text {
+    String(String),
+    Object { value: String },
+}
+
+impl Into<String> for Text {
+    fn into(self) -> String {
+        match self {
+            Text::String(s) => s,
+            Text::Object { value } => value,
+        }
+    }
+}
+
 /// Information about a work or edition's subjects.
 #[derive(Deserialize)]
 pub struct OLSubjects {
     #[serde(default)]
-    pub subjects: Vec<String>,
+    pub subjects: Vec<Text>,
     #[serde(default)]
-    pub subject_people: Vec<String>,
+    pub subject_people: Vec<Text>,
     #[serde(default)]
-    pub subject_places: Vec<String>,
+    pub subject_places: Vec<Text>,
     #[serde(default)]
-    pub subject_times: Vec<String>,
+    pub subject_times: Vec<Text>,
 }

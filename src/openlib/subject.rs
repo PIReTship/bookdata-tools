@@ -36,7 +36,7 @@ impl OLSubjects {
             records.push(SubjectEntry {
                 entity,
                 subj_type: SubjectType::General,
-                subject,
+                subject: subject.into(),
             });
         }
 
@@ -44,7 +44,7 @@ impl OLSubjects {
             records.push(SubjectEntry {
                 entity,
                 subj_type: SubjectType::Person,
-                subject,
+                subject: subject.into(),
             });
         }
 
@@ -52,7 +52,7 @@ impl OLSubjects {
             records.push(SubjectEntry {
                 entity,
                 subj_type: SubjectType::Place,
-                subject,
+                subject: subject.into(),
             });
         }
 
@@ -60,7 +60,7 @@ impl OLSubjects {
             records.push(SubjectEntry {
                 entity,
                 subj_type: SubjectType::Time,
-                subject,
+                subject: subject.into(),
             });
         }
 
