@@ -25,9 +25,9 @@ We also ask that you contact Michael Ekstrand to let us know about your use of t
 include your paper in our list of relying publications.
 
 ::: callout-warning
-The limitations section of the paper contains important information about
+The “Limitations” section of the paper contains important information about
 the limitations of the data these scripts compile.  **Do not use the gender information
-in this data data or tools without understanding those limitations**.  In particular,
+in this data or tools without understanding those limitations**.  In particular,
 VIAF's gender information is incomplete and, in a number of cases, incorrect.
 :::
 
