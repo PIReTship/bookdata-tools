@@ -177,13 +177,6 @@
 <a href="#175" id="175">175</a>
 <a href="#176" id="176">176</a>
 <a href="#177" id="177">177</a>
-<a href="#178" id="178">178</a>
-<a href="#179" id="179">179</a>
-<a href="#180" id="180">180</a>
-<a href="#181" id="181">181</a>
-<a href="#182" id="182">182</a>
-<a href="#183" id="183">183</a>
-<a href="#184" id="184">184</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Collect ISBNs from across the data sources.
 </span><span class="kw">use </span>std::fmt::Debug;
 
@@ -304,9 +297,9 @@
         <span class="macro">info!</span>(<span class="string">"counting column {}"</span>, id_col);
         <span class="kw">let </span>df = read.clone().select(<span class="kw-2">&amp;</span>[col(id_col).alias(<span class="string">"isbn"</span>)]);
         <span class="kw">let </span>df = df.drop_nulls(<span class="prelude-val">None</span>);
-        <span class="kw">let </span>df = df.group_by([<span class="string">"isbn"</span>]).agg([count().alias(<span class="string">"nrecs"</span>)]);
+        <span class="kw">let </span>df = df.group_by([<span class="string">"isbn"</span>]).agg([len().alias(<span class="string">"nrecs"</span>)]);
         <span class="kw">if let </span><span class="prelude-val">Some</span>(prev) = counted {
-            <span class="kw">let </span>joined = prev.join(df, <span class="kw-2">&amp;</span>[col(<span class="string">"isbn"</span>)], <span class="kw-2">&amp;</span>[col(<span class="string">"isbn"</span>)], JoinType::Outer.into());
+            <span class="kw">let </span>joined = prev.outer_join(df, col(<span class="string">"isbn"</span>), col(<span class="string">"isbn"</span>));
             counted = <span class="prelude-val">Some</span>(joined.select([
                 col(<span class="string">"isbn"</span>),
                 (col(src.name).fill_null(<span class="number">0</span>) + col(<span class="string">"nrecs"</span>).fill_null(<span class="number">0</span>)).alias(src.name),
@@ -336,19 +329,12 @@
             .transpose_into_fallible()
             .fold(<span class="prelude-val">None</span>, |cur, df2| {
                 <span class="prelude-val">Ok</span>(cur
-                    .map(|df1: LazyFrame| {
-                        df1.join(
-                            df2.clone(),
-                            <span class="kw-2">&amp;</span>[col(<span class="string">"isbn"</span>)],
-                            <span class="kw-2">&amp;</span>[col(<span class="string">"isbn"</span>)],
-                            JoinType::Outer.into(),
-                        )
-                    })
+                    .map(|df1: LazyFrame| df1.outer_join(df2.clone(), col(<span class="string">"isbn"</span>), col(<span class="string">"isbn"</span>)))
                     .or(<span class="prelude-val">Some</span>(df2)))
             })<span class="question-mark">?</span>;
 
         <span class="kw">let </span>df = df.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"no sources loaded"</span>))<span class="question-mark">?</span>;
-        <span class="kw">let </span>df = df.with_row_count(<span class="string">"isbn_id"</span>, <span class="prelude-val">Some</span>(<span class="number">1</span>));
+        <span class="kw">let </span>df = df.with_row_index(<span class="string">"isbn_id"</span>, <span class="prelude-val">Some</span>(<span class="number">1</span>));
         <span class="kw">let </span><span class="kw-2">mut </span>cast = <span class="macro">vec!</span>[col(<span class="string">"isbn_id"</span>).cast(DataType::Int32), col(<span class="string">"isbn"</span>)];
         <span class="kw">for </span>src <span class="kw">in </span><span class="kw-2">&amp;</span>active {
             cast.push(col(src.name).fill_null(<span class="number">0</span>));
