@@ -55,7 +55,7 @@ impl Command for HashCmd {
 
         info!("computing ISBN hashes");
         let mut hashes: HashMap<i32, Md5> = HashMap::new();
-        let isbn_col = isbns.column("isbn")?.utf8()?;
+        let isbn_col = isbns.column("isbn")?.str()?;
         let clus_col = isbns.column("cluster")?.i32()?;
         for pair in isbn_col.into_iter().zip(clus_col.into_iter()) {
             if let (Some(i), Some(c)) = pair {

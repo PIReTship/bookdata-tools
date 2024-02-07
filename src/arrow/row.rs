@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
-use polars::{chunked_array::builder::Utf8ChunkedBuilderCow, prelude::*};
+use polars::{chunked_array::builder::StringChunkedBuilder, prelude::*};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -154,7 +154,7 @@ macro_rules! col_type {
             }
 
             fn append_to_column(self, b: &mut Self::Builder) {
-                b.append_value(self.into());
+                b.append_value(self);
             }
 
             fn cast_series<'a>(s: &'a Series) -> PolarsResult<&'a Self::Array> {
@@ -182,7 +182,7 @@ macro_rules! col_type {
             }
 
             fn append_to_column(self, b: &mut Self::Builder) {
-                b.append_option(self.map(Into::into));
+                b.append_option(self);
             }
 
             fn cast_series<'a>(s: &'a Series) -> PolarsResult<&'a Self::Array> {
@@ -212,7 +212,7 @@ col_type!(u64, UInt64Type);
 col_type!(f32, Float32Type);
 col_type!(f64, Float64Type);
 // col_type!(&str, Utf8Type, Utf8Chunked, Utf8ChunkedBuilderCow, utf8);
-col_type!(String, Utf8Type, Utf8Chunked, Utf8ChunkedBuilderCow, utf8);
+col_type!(String, StringType, StringChunked, StringChunkedBuilder, str);
 
 // It would be nice to shrink this, but Polars doesn't expose the expected types
 // — its date handling only supports operating on chunks, not individual values.

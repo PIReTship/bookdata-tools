@@ -69,7 +69,7 @@ fn scan_openlib(first_only: bool) -> Result<LazyFrame> {
         col("cluster"),
         col("name")
             .alias("author_name")
-            .map(udf_clean_name, GetOutput::from_type(DataType::Utf8)),
+            .map(udf_clean_name, GetOutput::from_type(DataType::String)),
     ]);
 
     Ok(authors)
@@ -107,7 +107,7 @@ fn scan_loc(first_only: bool) -> Result<LazyFrame> {
     );
     let authors = linked.select(vec![
         col("cluster"),
-        col("author_name").map(udf_clean_name, GetOutput::from_type(DataType::Utf8)),
+        col("author_name").map(udf_clean_name, GetOutput::from_type(DataType::String)),
     ]);
 
     Ok(authors)
@@ -161,7 +161,7 @@ impl Command for ClusterAuthors {
             .with_name("author parquet")
             .spawn();
         let pb = data_progress(authors.n_chunks());
-        for chunk in authors.iter_chunks() {
+        for chunk in authors.iter_chunks(false) {
             writer.write_object(chunk)?;
             pb.tick();
         }

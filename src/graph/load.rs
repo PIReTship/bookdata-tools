@@ -28,7 +28,7 @@ impl GraphBuilder {
         let code_s = node_df.drop_in_place("code")?;
         let code_s = code_s.cast(&DataType::Int32)?;
         let codes = code_s.i32()?;
-        let labels = node_df.column("label").ok().map(|c| c.utf8()).transpose()?;
+        let labels = node_df.column("label").ok().map(|c| c.str()).transpose()?;
         for i in 0..codes.len() {
             let code = codes.get(i).unwrap();
             let label = labels.map(|c| c.get(i)).flatten();

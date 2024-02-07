@@ -136,7 +136,7 @@ fn write_records(out: &OutputSpec, recv: Receiver<FieldRecord>) -> Result<usize>
         .unwrap_or("content".into());
     let mut schema = Schema::new();
     schema.with_column("rec_id".into(), DataType::UInt32);
-    schema.with_column(out_name.as_str().into(), DataType::Utf8);
+    schema.with_column(out_name.as_str().into(), DataType::String);
 
     let writer = File::options()
         .create(true)

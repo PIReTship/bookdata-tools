@@ -5,8 +5,8 @@ use polars::prelude::*;
 use crate::cleaning::names::clean_name;
 
 pub fn udf_clean_name(col: Series) -> PolarsResult<Option<Series>> {
-    let col = col.utf8()?;
-    let res: Utf8Chunked = col
+    let col = col.str()?;
+    let res: StringChunked = col
         .into_iter()
         .map(|n| {
             if let Some(s) = n {
@@ -21,7 +21,7 @@ pub fn udf_clean_name(col: Series) -> PolarsResult<Option<Series>> {
 
 /// Get a schema from a data frame with maximal nullability.
 pub fn nonnull_schema(df: &DataFrame) -> ArrowSchema {
-    let schema = df.schema().to_arrow();
+    let schema = df.schema().to_arrow(false);
     debug!("de-nullifying schema: {:?}", schema);
     let clean = ArrowSchema {
         fields: schema

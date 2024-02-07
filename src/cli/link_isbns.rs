@@ -88,7 +88,7 @@ impl Command for LinkISBNIds {
         info!("saving {} links to {:?}", frame.height(), &self.outfile);
         let schema = nonnull_schema(&frame);
         let writer = open_parquet_writer(&self.outfile, schema)?;
-        writer.write_and_finish(frame.iter_chunks())?;
+        writer.write_and_finish(frame.iter_chunks(false))?;
 
         Ok(())
     }

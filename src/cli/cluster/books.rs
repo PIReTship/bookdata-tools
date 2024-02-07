@@ -86,7 +86,7 @@ impl Command for ExtractBooks {
         frame.as_single_chunk_par();
         let schema = nonnull_schema(&frame);
         let writer = open_parquet_writer(&self.output, schema)?;
-        writer.write_and_finish(frame.iter_chunks())?;
+        writer.write_and_finish(frame.iter_chunks(false))?;
 
         Ok(())
     }

@@ -115,13 +115,13 @@ impl Command for Kcore {
                 .column("item")?
                 .value_counts(true, true)?
                 .column("counts")?
-                .min::<u32>()
+                .min::<u32>()?
                 .unwrap(),
             actions
                 .column("user")?
                 .value_counts(true, true)?
                 .column("counts")?
-                .min::<u32>()
+                .min::<u32>()?
                 .unwrap(),
         );
 
@@ -136,7 +136,7 @@ fn filter_counts(actions: DataFrame, column: &'static str, k: u32) -> Result<Dat
     let counts = actions.column(column)?.value_counts(true, true)?;
     let min_count: u32 = counts
         .column("counts")?
-        .min()
+        .min()?
         .ok_or_else(|| anyhow!("data frame is empty"))?;
     if min_count < k {
         info!("filtering {}s (smallest count: {})", column, min_count);

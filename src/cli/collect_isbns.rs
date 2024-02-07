@@ -118,9 +118,9 @@ fn scan_source(src: &ISBNSource) -> Result<LazyFrame> {
         info!("counting column {}", id_col);
         let df = read.clone().select(&[col(id_col).alias("isbn")]);
         let df = df.drop_nulls(None);
-        let df = df.group_by(["isbn"]).agg([count().alias("nrecs")]);
+        let df = df.group_by(["isbn"]).agg([len().alias("nrecs")]);
         if let Some(prev) = counted {
-            let joined = prev.join(df, &[col("isbn")], &[col("isbn")], JoinType::Outer.into());
+            let joined = prev.outer_join(df, col("isbn"), col("isbn"));
             counted = Some(joined.select([
                 col("isbn"),
                 (col(src.name).fill_null(0) + col("nrecs").fill_null(0)).alias(src.name),
@@ -150,19 +150,12 @@ impl Command for CollectISBNs {
             .transpose_into_fallible()
             .fold(None, |cur, df2| {
                 Ok(cur
-                    .map(|df1: LazyFrame| {
-                        df1.join(
-                            df2.clone(),
-                            &[col("isbn")],
-                            &[col("isbn")],
-                            JoinType::Outer.into(),
-                        )
-                    })
+                    .map(|df1: LazyFrame| df1.outer_join(df2.clone(), col("isbn"), col("isbn")))
                     .or(Some(df2)))
             })?;
 
         let df = df.ok_or_else(|| anyhow!("no sources loaded"))?;
-        let df = df.with_row_count("isbn_id", Some(1));
+        let df = df.with_row_index("isbn_id", Some(1));
         let mut cast = vec![col("isbn_id").cast(DataType::Int32), col("isbn")];
         for src in &active {
             cast.push(col(src.name).fill_null(0));

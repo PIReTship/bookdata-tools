@@ -123,7 +123,7 @@ impl IdIndex<String> {
         let n = self.map.len() as i32;
         let keys = self.key_vec();
         let ids = Int32Chunked::new(id_col, 1..(n + 1));
-        let keys = Utf8Chunked::new(key_col, keys);
+        let keys = StringChunked::new(key_col, keys);
 
         DataFrame::new(vec![ids.into_series(), keys.into_series()])
     }
@@ -151,7 +151,7 @@ impl IdIndex<String> {
         debug!("file schema: {:?}", frame.schema());
 
         let ic = frame.column(id_col)?.i32()?;
-        let kc = frame.column(key_col)?.utf8()?;
+        let kc = frame.column(key_col)?.str()?;
 
         let mut map = HashMap::new();
 
