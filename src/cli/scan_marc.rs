@@ -14,7 +14,7 @@ use crate::marc::book_fields::BookOutput;
 use crate::marc::flat_fields::FieldOutput;
 use crate::marc::parse::{scan_records, scan_records_delim};
 use crate::marc::MARCRecord;
-use crate::util::logging::data_progress;
+use crate::util::logging::{data_progress, item_progress};
 
 /// Scan MARC records and extract basic information.
 ///
@@ -96,9 +96,12 @@ impl ScanMARC {
         let mut nfiles = 0;
         let mut all_recs = 0;
         let all_start = Instant::now();
+        let files = self.find_files()?;
+        let fpb = item_progress(files.len(), "input files");
 
-        for inf in self.find_files()? {
+        for inf in files {
             nfiles += 1;
+            fpb.inc(1);
             let inf = inf.as_path();
             let file_start = Instant::now();
             info!("reading from compressed file {}", inf.display());
@@ -118,6 +121,7 @@ impl ScanMARC {
             );
             all_recs += nrecs;
         }
+        fpb.finish_and_clear();
 
         let outs = output.output_files();
         let written = output.finish()?;
