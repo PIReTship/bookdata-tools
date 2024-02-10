@@ -11,10 +11,10 @@ use super::source::OLSubjects;
 #[display(style = "kebab-case")]
 #[repr(u8)]
 pub enum SubjectType {
-    General = 0,
-    Person,
-    Place,
-    Time,
+    General = b'G',
+    Person = b'P',
+    Place = b'L',
+    Time = b'T',
 }
 
 impl MappableColType for SubjectType {
