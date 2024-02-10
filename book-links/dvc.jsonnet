@@ -28,8 +28,8 @@ bd.pipeline({
       'loc-mds/book-ids.parquet',
       'loc-mds/book-isbn-ids.parquet',
       'openlibrary/editions.parquet',
+      'openlibrary/works.parquet',
       'openlibrary/edition-isbn-ids.parquet',
-      'openlibrary/all-works.parquet',
       'openlibrary/edition-works.parquet',
     ] + if bd.config.goodreads.enabled then [
       'goodreads/gr-book-ids.parquet',
