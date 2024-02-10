@@ -6,6 +6,9 @@ use serde::de;
 use serde::Deserialize;
 use thiserror::Error;
 
+use super::key::parse_ol_key;
+use super::key::OLKeyError;
+use super::key::KS_AUTHOR;
 use crate::tsv::split_first;
 
 /// Struct representing a row of the OpenLibrary dump file.
@@ -79,6 +82,11 @@ impl Author {
             Author::Key(ref ks) => Some(ks.as_ref()),
             Author::Empty {} => None,
         }
+    }
+
+    /// Get the numeric ID for this author.
+    pub fn id(&self) -> Result<Option<u32>, OLKeyError> {
+        self.key().map(|k| parse_ol_key(k, KS_AUTHOR)).transpose()
     }
 }
 

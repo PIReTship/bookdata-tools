@@ -6,13 +6,14 @@ use crate::cleaning::names::clean_name;
 use crate::cleaning::strings::norm_unicode;
 use crate::prelude::*;
 
+use super::key::{parse_ol_key, KS_AUTHOR};
 pub use super::source::OLAuthorSource;
 use super::source::Row;
 
 /// An author record in the extracted Parquet.
 #[derive(ParquetRecordWriter)]
 pub struct AuthorRec {
-    pub id: i32,
+    pub id: u32,
     pub key: String,
     pub name: Option<String>,
 }
@@ -20,13 +21,13 @@ pub struct AuthorRec {
 /// An author-name record in the extracted Parquet.
 #[derive(ParquetRecordWriter)]
 pub struct AuthorNameRec {
-    pub id: i32,
+    pub id: u32,
     pub source: u8,
     pub name: String,
 }
 
 /// Get a list of author name records for an author.
-pub fn author_name_records(src: &OLAuthorSource, id: i32) -> Vec<AuthorNameRec> {
+pub fn author_name_records(src: &OLAuthorSource, id: u32) -> Vec<AuthorNameRec> {
     let mut names = Vec::new();
 
     if let Some(n) = &src.name {
@@ -58,7 +59,6 @@ pub fn author_name_records(src: &OLAuthorSource, id: i32) -> Vec<AuthorNameRec> 
 
 /// Process author records into Parquet.
 pub struct AuthorProcessor {
-    last_id: i32,
     rec_writer: TableWriter<AuthorRec>,
     name_writer: TableWriter<AuthorNameRec>,
 }
@@ -66,7 +66,6 @@ pub struct AuthorProcessor {
 impl AuthorProcessor {
     pub fn new() -> Result<AuthorProcessor> {
         Ok(AuthorProcessor {
-            last_id: 0,
             rec_writer: TableWriter::open("authors.parquet")?,
             name_writer: TableWriter::open("author-names.parquet")?,
         })
@@ -75,8 +74,7 @@ impl AuthorProcessor {
 
 impl ObjectWriter<Row<OLAuthorSource>> for AuthorProcessor {
     fn write_object(&mut self, row: Row<OLAuthorSource>) -> Result<()> {
-        self.last_id += 1;
-        let id = self.last_id;
+        let id = parse_ol_key(&row.key, KS_AUTHOR)?;
 
         self.rec_writer.write_object(AuthorRec {
             id,
@@ -96,8 +94,8 @@ impl ObjectWriter<Row<OLAuthorSource>> for AuthorProcessor {
     }
 
     fn finish(self) -> Result<usize> {
-        self.rec_writer.finish()?;
+        let nr = self.rec_writer.finish()?;
         self.name_writer.finish()?;
-        Ok(self.last_id as usize)
+        Ok(nr)
     }
 }

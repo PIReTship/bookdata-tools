@@ -1,6 +1,7 @@
 //! OpenLibrary data layouts and parsing logic.
 pub mod author;
 pub mod edition;
+pub mod key;
 pub mod source;
 pub mod subject;
 pub mod work;

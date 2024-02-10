@@ -19,13 +19,11 @@ bd.pipeline({
       '../src/cli/openlib.rs',
       '../src/openlib/',
       '../data/openlib/ol_dump_works.txt.gz',
-      'authors.parquet',
     ],
     outs: [
       'works.parquet',
       'work-authors.parquet',
       'work-subjects.parquet',
-      'author-ids-after-works.parquet',
     ],
   },
   'scan-editions': {
@@ -34,9 +32,6 @@ bd.pipeline({
       '../src/cli/openlib.rs',
       '../src/openlib/',
       '../data/openlib/ol_dump_editions.txt.gz',
-      'authors.parquet',
-      'works.parquet',
-      'author-ids-after-works.parquet',
     ],
     outs: [
       'editions.parquet',
@@ -44,8 +39,6 @@ bd.pipeline({
       'edition-isbns.parquet',
       'edition-authors.parquet',
       'edition-subjects.parquet',
-      'all-works.parquet',
-      'all-authors.parquet',
     ],
   },
   'edition-isbn-ids': {

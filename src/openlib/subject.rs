@@ -18,13 +18,13 @@ pub enum SubjectType {
 /// Schema for subject linking records.
 #[derive(Debug, Clone)]
 pub struct SubjectEntry {
-    pub entity: i32,
+    pub entity: u32,
     pub subj_type: SubjectType,
     pub subject: String,
 }
 
 impl OLSubjects {
-    pub fn subject_records(self, entity: i32) -> Vec<SubjectEntry> {
+    pub fn subject_records(self, entity: u32) -> Vec<SubjectEntry> {
         let mut records = Vec::new();
         for subject in self.subjects {
             records.push(SubjectEntry {
