@@ -1,16 +1,18 @@
 //! Command to filter MARC output.
 use std::fs::File;
-use std::io::Write;
-use std::mem;
 use std::path::{Path, PathBuf};
-use std::thread::{spawn, JoinHandle};
+use std::sync::Arc;
 
-use crossbeam::channel::{bounded, Receiver, Sender};
+use arrow::array::StringBuilder;
+use arrow::array::UInt32Builder;
+use arrow::datatypes::{DataType, Field, Schema};
+use arrow::record_batch::RecordBatch;
 use friendly::scalar;
-use polars::io::parquet::BatchedWriter;
-use polars::prelude::*;
+use parquet::arrow::ArrowWriter;
 
 use crate::arrow::scan_parquet_file;
+use crate::arrow::writer::parquet_writer_defaults;
+use crate::io::object::UnchunkWriter;
 use crate::marc::flat_fields::FieldRecord;
 use crate::prelude::*;
 
@@ -97,6 +99,39 @@ impl FilterSpec {
     }
 }
 
+struct FilterOutput<W: ObjectWriter<RecordBatch>> {
+    schema: Arc<Schema>,
+    writer: W,
+}
+
+impl<W: ObjectWriter<RecordBatch>> ObjectWriter<Vec<FieldRecord>> for FilterOutput<W> {
+    fn write_object(&mut self, object: Vec<FieldRecord>) -> Result<()> {
+        let size = object.len();
+
+        let mut id_col = UInt32Builder::with_capacity(size);
+        let mut val_col = StringBuilder::with_capacity(size, size * 10);
+
+        for rec in object {
+            id_col.append_value(rec.rec_id);
+            val_col.append_value(rec.contents);
+        }
+
+        let id_col = id_col.finish();
+        let val_col = val_col.finish();
+        let batch = RecordBatch::try_new(
+            self.schema.clone(),
+            vec![Arc::new(id_col), Arc::new(val_col)],
+        )?;
+
+        self.writer.write_object(batch)?;
+        Ok(())
+    }
+
+    fn finish(self) -> Result<usize> {
+        self.writer.finish()
+    }
+}
+
 /// Scan MARC records from a file.
 ///
 /// Failes quickly if there is an error opening the file; errors reading the file are
@@ -104,110 +139,62 @@ impl FilterSpec {
 fn scan_records(
     path: &Path,
     filter: &FilterSpec,
-    send: Sender<FieldRecord>,
-) -> Result<JoinHandle<Result<usize>>> {
+    out: impl ObjectWriter<FieldRecord> + Send,
+) -> Result<(usize, usize)> {
     info!("reading names from authority fields in {:?}", path);
     let scanner = scan_parquet_file(path)?;
-    let filter = filter.clone(); // to transfer to thread
+    let mut out = out;
 
-    Ok(spawn(move || {
-        let scanner = scanner;
-        let mut n = 0;
-        for rec in scanner {
-            n += 1;
-            let mut rec: FieldRecord = rec?;
-            if filter.matches(&rec) {
-                rec.contents = filter.transform(rec.contents.as_str()).into();
-                send.send(rec)?;
-            }
+    let scanner = scanner;
+    let mut nr = 0;
+    let mut nw = 0;
+    for rec in scanner {
+        nr += 1;
+        let mut rec: FieldRecord = rec?;
+        if filter.matches(&rec) {
+            nw += 1;
+            rec.contents = filter.transform(rec.contents.as_str()).into();
+            out.write_object(rec)?;
         }
-        debug!("finished scanning parquet");
-        Ok(n)
-    }))
+    }
+    debug!("finished scanning parquet");
+    out.finish()?;
+    Ok((nr, nw))
 }
 
-/// Write field records to an output file.
-fn write_records(out: &OutputSpec, recv: Receiver<FieldRecord>) -> Result<usize> {
+/// Create an output for the records.
+fn write_records(out: &OutputSpec) -> Result<impl ObjectWriter<FieldRecord> + Send> {
     info!("writing output to {:?}", out.file);
     let out_name = out
         .content_name
         .as_ref()
         .map(|s| s.clone())
         .unwrap_or("content".into());
-    let mut schema = Schema::new();
-    schema.with_column("rec_id".into(), DataType::UInt32);
-    schema.with_column(out_name.as_str().into(), DataType::String);
+    let schema = Schema::new(vec![
+        Field::new("rec_id", DataType::UInt32, false),
+        Field::new(&out_name, DataType::Utf8, false),
+    ]);
+    let schema = Arc::new(schema);
 
-    let writer = File::options()
+    let file = File::options()
         .create(true)
         .truncate(true)
         .write(true)
         .open(&out.file)?;
-    let mut writer = ParquetWriter::new(writer)
-        .with_compression(ParquetCompression::Zstd(None))
-        .with_statistics(true)
-        .batched(&schema)?;
+    let props = parquet_writer_defaults().set_column_dictionary_enabled(out_name.into(), true);
+    let writer = ArrowWriter::try_new(file, schema.clone(), Some(props.build()))?;
+    let writer = FilterOutput { schema, writer };
+    let writer = UnchunkWriter::with_size(writer, BATCH_SIZE);
 
-    let mut rec_ids = Vec::with_capacity(BATCH_SIZE);
-    let mut values = Vec::with_capacity(BATCH_SIZE);
-    let mut n = 0;
-
-    for rec in recv {
-        rec_ids.push(rec.rec_id);
-        values.push(rec.contents);
-        if rec_ids.len() >= BATCH_SIZE {
-            n += write_cols(&mut writer, &mut rec_ids, &mut values, &out_name)?;
-            rec_ids.clear();
-            values.clear();
-        }
-    }
-
-    n += write_cols(&mut writer, &mut rec_ids, &mut values, &out_name)?;
-
-    writer.finish()?;
-
-    Ok(n)
-}
-
-fn write_cols<W: Write>(
-    writer: &mut BatchedWriter<W>,
-    rec_ids: &mut Vec<u32>,
-    values: &mut Vec<String>,
-    val_name: &str,
-) -> Result<usize> {
-    let size = rec_ids.len();
-    assert_eq!(values.len(), size);
-
-    // turn record ids into a column - take ownership and swap out with new blank vector
-    let mut rid_owned = Vec::with_capacity(BATCH_SIZE);
-    mem::swap(&mut rid_owned, rec_ids);
-    let id_col = Series::new("rec_id", &rid_owned);
-
-    // create a value column
-    let val_col = Series::new(val_name, &values);
-
-    // make a batch
-    let batch = DataFrame::new(vec![id_col, val_col])?;
-
-    // and write
-    writer.write_batch(&batch)?;
-
-    Ok(size)
+    Ok(writer)
 }
 
 impl Command for FilterMARC {
     fn exec(&self) -> Result<()> {
-        let (send, recv) = bounded(4096);
-        let h = scan_records(self.field_file.as_path(), &self.filter, send)?;
+        let out = write_records(&self.output)?;
+        let (nr, nw) = scan_records(self.field_file.as_path(), &self.filter, out)?;
 
-        let nwritten = write_records(&self.output, recv)?;
-
-        let nread = h.join().expect("thread join failed")?;
-        info!(
-            "wrote {} out of {} records",
-            scalar(nwritten),
-            scalar(nread)
-        );
+        info!("wrote {} out of {} records", scalar(nw), scalar(nr));
 
         Ok(())
     }

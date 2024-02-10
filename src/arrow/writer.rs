@@ -6,9 +6,11 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
+use arrow::record_batch::RecordBatch;
 use log::*;
+use parquet::arrow::ArrowWriter;
 use parquet::basic::{Compression, ZstdLevel as PQZstdLevel};
-use parquet::file::properties::{WriterProperties, WriterVersion};
+use parquet::file::properties::{WriterProperties, WriterPropertiesBuilder, WriterVersion};
 use parquet::file::writer::SerializedFileWriter;
 use parquet::record::RecordWriter;
 use parquet::schema::types::TypePtr;
@@ -66,6 +68,14 @@ pub fn open_polars_writer<P: AsRef<Path>>(path: P) -> Result<ParquetWriter<File>
     Ok(writer)
 }
 
+pub fn parquet_writer_defaults() -> WriterPropertiesBuilder {
+    WriterProperties::builder()
+        .set_compression(Compression::ZSTD(
+            PQZstdLevel::try_new(ZSTD_LEVEL).expect("invalid zstd level"),
+        ))
+        .set_writer_version(WriterVersion::PARQUET_2_0)
+}
+
 /// Open an Arrow Parquet writer using BookData defaults.
 pub fn open_parquet_writer<P: AsRef<Path>>(
     path: P,
@@ -77,10 +87,8 @@ pub fn open_parquet_writer<P: AsRef<Path>>(
         .truncate(true)
         .write(true)
         .open(path)?;
-    let props = WriterProperties::builder()
-        .set_compression(Compression::ZSTD(PQZstdLevel::try_new(ZSTD_LEVEL)?))
-        .set_writer_version(WriterVersion::PARQUET_2_0);
-    let writer = SerializedFileWriter::new(file, schema, Arc::new(props.build()))?;
+    let props = parquet_writer_defaults().build();
+    let writer = SerializedFileWriter::new(file, schema, Arc::new(props))?;
 
     Ok(writer)
 }
@@ -258,6 +266,21 @@ where
     fn finish(mut self) -> Result<usize> {
         self.end(None)?;
         Ok(0)
+    }
+}
+
+impl<W> ObjectWriter<RecordBatch> for ArrowWriter<W>
+where
+    W: Write + Send,
+{
+    fn write_object(&mut self, batch: RecordBatch) -> Result<()> {
+        self.write(&batch)?;
+        Ok(())
+    }
+
+    fn finish(self) -> Result<usize> {
+        let meta = self.close()?;
+        Ok(meta.num_rows as usize)
     }
 }
 
