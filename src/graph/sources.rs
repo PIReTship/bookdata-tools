@@ -97,10 +97,6 @@ impl NodeRead for OLWorks {
             [col("code")],
             JoinArgs::new(JoinType::Outer { coalesce: true }),
         );
-        let df = df.select([
-            id_col("id", NS_WORK).alias("code"),
-            col("key").alias("label"),
-        ]);
         Ok(df)
     }
 }
