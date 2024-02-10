@@ -43,7 +43,7 @@ bd.pipeline({
       'book-links/cluster-graph-edges.parquet',
     ],
     metrics: [
-      'book-links/cluster-metrics.json',
+      { 'book-links/cluster-metrics.json': { cache: false } },
     ],
   },
 
