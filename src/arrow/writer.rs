@@ -29,7 +29,7 @@ const BATCH_SIZE: usize = 1024 * 1024;
 const ZSTD_LEVEL: i32 = 3;
 
 /// Open a Parquet writer using BookData defaults.
-fn open_parquet_writer<P: AsRef<Path>>(path: P, schema: ArrowSchema) -> Result<FileWriter<File>> {
+fn open_plpq_writer<P: AsRef<Path>>(path: P, schema: ArrowSchema) -> Result<FileWriter<File>> {
     let compression = CompressionOptions::Zstd(None);
     let options = WriteOptions {
         write_statistics: true,
@@ -65,7 +65,7 @@ pub fn open_polars_writer<P: AsRef<Path>>(path: P) -> Result<ParquetWriter<File>
 }
 
 /// Open an Arrow Parquet writer using BookData defaults.
-pub fn open_apq_writer<P: AsRef<Path>>(
+pub fn open_parquet_writer<P: AsRef<Path>>(
     path: P,
     schema: TypePtr,
 ) -> Result<SerializedFileWriter<File>> {
@@ -104,7 +104,7 @@ pub fn save_df_parquet_nonnull<P: AsRef<Path>>(df: DataFrame, path: P) -> Result
     debug!("{}: initial schema {:?}", path.display(), df.schema());
     let schema = nonnull_schema(&df);
     debug!("{}: nonnull schema {:?}", path.display(), schema);
-    let mut writer = open_parquet_writer(path, schema)?;
+    let mut writer = open_plpq_writer(path, schema)?;
     let pb = item_progress(df.n_chunks(), "writing chunks");
     for chunk in df.iter_chunks(false) {
         writer.write_object(chunk)?;
@@ -149,7 +149,7 @@ where
         let schema = (&empty as &[R]).schema()?;
         debug!("{}: opening for schema {:?}", path.display(), schema);
 
-        let writer = open_apq_writer(path, schema)?;
+        let writer = open_parquet_writer(path, schema)?;
         let writer = ThreadObjectWriter::wrap(writer)
             .with_name(format!("write:{}", path.display()))
             .with_capacity(4)
