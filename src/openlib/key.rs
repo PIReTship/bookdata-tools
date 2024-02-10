@@ -11,10 +11,10 @@ pub struct OLKS {
 /// Error parsing an OpenLibrary key.
 #[derive(Error, Debug)]
 pub enum OLKeyError {
-    #[error("key parse error: {0}")]
-    InvalidFormat(String),
-    #[error("bad keyspace, expected {0}")]
-    BadKeyspace(&'static str),
+    #[error("could not parse {0}: {1}")]
+    InvalidFormat(String, String),
+    #[error("bad keyspace for ‘{0}’, expected {1}")]
+    BadKeyspace(String, &'static str),
     #[error("trailing code character mismatch")]
     InvalidCodeChar,
 }
@@ -62,11 +62,12 @@ peg::parser! {
 
 /// Parse an OpenLibrary key.
 pub fn parse_ol_key(key: &str, ks: OLKS) -> Result<u32, OLKeyError> {
-    let k = key_parser::ol_key(key).map_err(|e| OLKeyError::InvalidFormat(format!("{:?}", e)))?;
+    let k = key_parser::ol_key(key)
+        .map_err(|e| OLKeyError::InvalidFormat(key.to_string(), format!("{:?}", e)))?;
     if k.codechar != ks.codechar {
         Err(OLKeyError::InvalidCodeChar)
     } else if k.keyspace != ks.keyspace {
-        Err(OLKeyError::BadKeyspace(ks.keyspace))
+        Err(OLKeyError::BadKeyspace(key.to_string(), ks.keyspace))
     } else {
         Ok(k.id)
     }
