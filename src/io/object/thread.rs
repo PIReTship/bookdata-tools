@@ -31,8 +31,8 @@ where
     writer.finish()
 }
 
-pub struct ThreadObjectWriterBuilder<W> {
-    writer: W,
+pub struct ThreadObjectWriterBuilder<W, F: Send + FnOnce() -> Result<W>> {
+    thunk: F,
     name: String,
     capacity: usize,
 }
@@ -51,19 +51,31 @@ impl<'scope, T> ThreadObjectWriter<'scope, T>
 where
     T: Send + Sync + 'scope,
 {
-    pub fn wrap<W>(writer: W) -> ThreadObjectWriterBuilder<W>
+    pub fn wrap<W>(writer: W) -> ThreadObjectWriterBuilder<W, impl Send + FnOnce() -> Result<W>>
     where
         W: ObjectWriter<T> + Send + Sync + 'scope,
     {
         ThreadObjectWriterBuilder {
-            writer,
+            thunk: move || Ok(writer),
+            name: "unnamed".into(),
+            capacity: 100,
+        }
+    }
+
+    pub fn bg_open<W, F>(thunk: F) -> ThreadObjectWriterBuilder<W, F>
+    where
+        W: ObjectWriter<T> + 'scope,
+        F: Send + FnOnce() -> Result<W>,
+    {
+        ThreadObjectWriterBuilder {
+            thunk,
             name: "unnamed".into(),
             capacity: 100,
         }
     }
 }
 
-impl<W> ThreadObjectWriterBuilder<W> {
+impl<W, F: Send + FnOnce() -> Result<W>> ThreadObjectWriterBuilder<W, F> {
     /// Set the channel capacity for this thread writer.  Defaults to 100.
     pub fn with_capacity(self, cap: usize) -> Self {
         ThreadObjectWriterBuilder {
@@ -87,14 +99,16 @@ impl<W> ThreadObjectWriterBuilder<W> {
         scope: &'scope Scope<'scope, 'env>,
     ) -> ThreadObjectWriter<'scope, T>
     where
-        W: ObjectWriter<T> + Send + Sync + 'scope,
+        W: ObjectWriter<T> + 'scope,
+        F: 'scope,
         T: Send + Sync + 'scope,
     {
         let (sender, receiver) = bounded(self.capacity);
         let pb = meter_bar(self.capacity, &format!("{} buffer", self.name));
 
         let rpb = pb.clone();
-        let h = scope.spawn(move || ferry(receiver, self.writer, rpb));
+        let thunk = self.thunk;
+        let h = scope.spawn(move || ferry(receiver, thunk()?, rpb));
 
         ThreadObjectWriter {
             meter: pb,
@@ -102,20 +116,20 @@ impl<W> ThreadObjectWriterBuilder<W> {
             handle: WorkHandle::Scoped(h),
         }
     }
-}
 
-impl<W> ThreadObjectWriterBuilder<W> {
     /// Spawn the thread writer.
     pub fn spawn<T>(self) -> ThreadObjectWriter<'static, T>
     where
-        W: ObjectWriter<T> + Send + Sync + 'static,
+        W: ObjectWriter<T> + 'static,
+        F: 'static,
         T: Send + Sync + 'static,
     {
         let (sender, receiver) = bounded(self.capacity);
         let pb = meter_bar(self.capacity, &format!("{} buffer", self.name));
 
         let rpb = pb.clone();
-        let h = spawn(move || ferry(receiver, self.writer, rpb));
+        let thunk = self.thunk;
+        let h = spawn(move || ferry(receiver, thunk()?, rpb));
 
         ThreadObjectWriter {
             meter: pb,

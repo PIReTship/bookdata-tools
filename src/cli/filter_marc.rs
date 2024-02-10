@@ -12,7 +12,7 @@ use parquet::arrow::ArrowWriter;
 
 use crate::arrow::scan_parquet_file;
 use crate::arrow::writer::parquet_writer_defaults;
-use crate::io::object::UnchunkWriter;
+use crate::io::object::{ThreadObjectWriter, UnchunkWriter};
 use crate::marc::flat_fields::FieldRecord;
 use crate::prelude::*;
 
@@ -163,7 +163,7 @@ fn scan_records(
 }
 
 /// Create an output for the records.
-fn write_records(out: &OutputSpec) -> Result<impl ObjectWriter<FieldRecord> + Send> {
+fn open_output(out: &OutputSpec) -> Result<impl ObjectWriter<FieldRecord> + Send> {
     info!("writing output to {:?}", out.file);
     let out_name = out
         .content_name
@@ -176,14 +176,19 @@ fn write_records(out: &OutputSpec) -> Result<impl ObjectWriter<FieldRecord> + Se
     ]);
     let schema = Arc::new(schema);
 
+    // we'll open the file early, so bg open failures are only in Parquet.
     let file = File::options()
         .create(true)
         .truncate(true)
         .write(true)
         .open(&out.file)?;
-    let props = parquet_writer_defaults().set_column_dictionary_enabled(out_name.into(), true);
-    let writer = ArrowWriter::try_new(file, schema.clone(), Some(props.build()))?;
-    let writer = FilterOutput { schema, writer };
+
+    let writer = ThreadObjectWriter::bg_open(move || {
+        let props = parquet_writer_defaults().set_column_dictionary_enabled(out_name.into(), true);
+        let writer = ArrowWriter::try_new(file, schema.clone(), Some(props.build()))?;
+        Ok(FilterOutput { schema, writer })
+    })
+    .spawn();
     let writer = UnchunkWriter::with_size(writer, BATCH_SIZE);
 
     Ok(writer)
@@ -191,7 +196,7 @@ fn write_records(out: &OutputSpec) -> Result<impl ObjectWriter<FieldRecord> + Se
 
 impl Command for FilterMARC {
     fn exec(&self) -> Result<()> {
-        let out = write_records(&self.output)?;
+        let out = open_output(&self.output)?;
         let (nr, nw) = scan_records(self.field_file.as_path(), &self.filter, out)?;
 
         info!("wrote {} out of {} records", scalar(nw), scalar(nr));
