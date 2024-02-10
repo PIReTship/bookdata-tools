@@ -89,7 +89,7 @@ impl NodeRead for OLWorks {
             col("key").alias("label"),
         ]);
         let ewdf = LazyFrame::scan_parquet("openlibrary/edition-works.parquet", default())?
-            .select([id_col("id", NS_WORK).alias("code")])
+            .select([id_col("work", NS_WORK).alias("code")])
             .unique(None, UniqueKeepStrategy::Any);
         let df = wdf.join(
             ewdf,
