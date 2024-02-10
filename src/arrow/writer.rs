@@ -20,17 +20,16 @@ use polars_parquet::write::{
     transverse, CompressionOptions, Encoding, FileWriter, RowGroupIterator, Version, WriteOptions,
 };
 
+use crate::arrow::nonnull_schema;
 use crate::io::object::{ObjectWriter, ThreadObjectWriter, UnchunkWriter};
 use crate::io::DataSink;
+use crate::util::logging::item_progress;
 
 const BATCH_SIZE: usize = 1024 * 1024;
 const ZSTD_LEVEL: i32 = 3;
 
 /// Open a Parquet writer using BookData defaults.
-pub fn open_parquet_writer<P: AsRef<Path>>(
-    path: P,
-    schema: ArrowSchema,
-) -> Result<FileWriter<File>> {
+fn open_parquet_writer<P: AsRef<Path>>(path: P, schema: ArrowSchema) -> Result<FileWriter<File>> {
     let compression = CompressionOptions::Zstd(None);
     let options = WriteOptions {
         write_statistics: true,
@@ -95,6 +94,29 @@ pub fn save_df_parquet<P: AsRef<Path>>(df: DataFrame, path: P) -> Result<()> {
         .with_row_group_size(Some(BATCH_SIZE))
         .finish(&mut df)?;
     debug!("{}: wrote {}", path.display(), friendly::bytes(size));
+    Ok(())
+}
+
+/// Save a data frame to a Prquet file without nulls in the schema.
+pub fn save_df_parquet_nonnull<P: AsRef<Path>>(df: DataFrame, path: P) -> Result<()> {
+    let path = path.as_ref();
+    debug!("writing file {}", path.display());
+    debug!("{}: initial schema {:?}", path.display(), df.schema());
+    let schema = nonnull_schema(&df);
+    debug!("{}: nonnull schema {:?}", path.display(), schema);
+    let mut writer = open_parquet_writer(path, schema)?;
+    let pb = item_progress(df.n_chunks(), "writing chunks");
+    for chunk in df.iter_chunks(false) {
+        writer.write_object(chunk)?;
+        pb.tick();
+    }
+    let size = writer.end(None)?;
+    debug!(
+        "{}: wrote {} chunks in {}",
+        path.display(),
+        df.n_chunks(),
+        friendly::bytes(size)
+    );
     Ok(())
 }
 

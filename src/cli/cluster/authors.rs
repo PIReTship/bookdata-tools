@@ -4,10 +4,8 @@ use std::path::PathBuf;
 use parse_display::{Display, FromStr};
 
 use crate::arrow::dfext::*;
-use crate::arrow::writer::open_parquet_writer;
-use crate::io::object::ThreadObjectWriter;
+use crate::arrow::writer::save_df_parquet_nonnull;
 use crate::prelude::*;
-use crate::util::logging::data_progress;
 use anyhow::Result;
 use polars::prelude::*;
 
@@ -151,22 +149,7 @@ impl Command for ClusterAuthors {
         info!("found {} cluster-author links", authors.height());
 
         info!("saving to {:?}", &self.output);
-        // clean up nullability
-        // we do the writing ourself because we have no nulls, but polars doesn't deal with that
-        let schema = nonnull_schema(&authors);
-        debug!("schema: {:?}", schema);
-
-        let writer = open_parquet_writer(&self.output, schema)?;
-        let mut writer = ThreadObjectWriter::wrap(writer)
-            .with_name("author parquet")
-            .spawn();
-        let pb = data_progress(authors.n_chunks());
-        for chunk in authors.iter_chunks(false) {
-            writer.write_object(chunk)?;
-            pb.tick();
-        }
-        writer.finish()?;
-        std::mem::drop(pb);
+        save_df_parquet_nonnull(authors, &self.output)?;
 
         info!(
             "output file is {}",
