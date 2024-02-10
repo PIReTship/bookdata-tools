@@ -30,7 +30,7 @@ pub struct RawReview {
 }
 
 /// Review records to write to the Parquet table.
-#[derive(TableRow, ParquetRecordWriter)]
+#[derive(ParquetRecordWriter)]
 pub struct ReviewRecord {
     /// Internal auto-genereated record identifier.
     pub rec_id: u32,

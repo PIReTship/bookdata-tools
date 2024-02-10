@@ -1,33 +1,44 @@
 //! GoodReads book identifier and linking support.
-use std::collections::HashMap;
+use std::{collections::HashMap, fs::File};
 
 use anyhow::Result;
 use log::*;
+use polars::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{arrow::*, prelude::BDPath};
+use crate::prelude::BDPath;
 
-pub type BookId = i32;
-pub type WorkId = i32;
-pub type BookLinkMap = HashMap<BookId, BookLinkRecord>;
+pub type BookLinkMap = HashMap<i32, BookLinkRecord>;
 
 const GR_LINK_FILE: BDPath<'static> = BDPath::new("goodreads/gr-book-link.parquet");
 
 /// Book-link record.
-#[derive(Debug, TableRow, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BookLinkRecord {
-    pub book_id: BookId,
-    pub work_id: Option<WorkId>,
+    pub book_id: i32,
+    pub work_id: Option<i32>,
     pub cluster: i32,
 }
 
 /// Read a map of book IDs to linking identifiers.
 pub fn load_id_links() -> Result<BookLinkMap> {
-    let mut map = HashMap::with_capacity(1_000_000);
-    let scan = scan_parquet_file(GR_LINK_FILE.resolve()?)?;
+    let path = GR_LINK_FILE.resolve()?;
+    let file = File::open(path)?;
+    let pqf = ParquetReader::new(file);
+    let df = pqf.finish()?;
 
-    for rec in scan {
-        let rec: BookLinkRecord = rec?;
+    let mut map = HashMap::with_capacity(df.height());
+
+    let c_book = df.column("book_id")?.i32()?;
+    let c_work = df.column("work_id")?.i32()?;
+    let c_cluster = df.column("cluster")?.i32()?;
+
+    for i in 0..df.height() {
+        let rec: BookLinkRecord = BookLinkRecord {
+            book_id: c_book.get(i).unwrap(),
+            work_id: c_work.get(i),
+            cluster: c_cluster.get(i).unwrap(),
+        };
         map.insert(rec.book_id, rec);
     }
 

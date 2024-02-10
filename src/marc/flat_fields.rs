@@ -1,14 +1,14 @@
-use anyhow::Result;
 use std::path::Path;
 
-use parquet_derive::ParquetRecordWriter;
+use anyhow::Result;
+use parquet_derive::{ParquetRecordReader, ParquetRecordWriter};
 
 use super::record::*;
 use crate::arrow::*;
 use crate::io::*;
 
 /// Flat MARC field record.
-#[derive(TableRow, ParquetRecordWriter, Debug, Default)]
+#[derive(ParquetRecordWriter, ParquetRecordReader, Debug, Default)]
 pub struct FieldRecord {
     pub rec_id: u32,
     pub fld_no: u32,

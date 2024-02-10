@@ -25,7 +25,7 @@ pub struct HashCmd {
     cluster_file: PathBuf,
 }
 
-#[derive(TableRow, ParquetRecordWriter)]
+#[derive(ParquetRecordWriter)]
 struct ClusterHash {
     cluster: i32,
     isbn_hash: String,

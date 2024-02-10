@@ -15,7 +15,7 @@ use crate::util::logging::item_progress;
 use crate::util::Timer;
 
 /// Record for a single output action.
-#[derive(TableRow, ParquetRecordWriter, Debug)]
+#[derive(ParquetRecordWriter, Debug)]
 pub struct TimestampActionRecord {
     pub user: i32,
     pub item: i32,
@@ -26,7 +26,7 @@ pub struct TimestampActionRecord {
 }
 
 /// Record for a single output action without time.
-#[derive(TableRow, ParquetRecordWriter, Debug)]
+#[derive(ParquetRecordWriter, Debug)]
 pub struct TimelessActionRecord {
     pub user: i32,
     pub item: i32,

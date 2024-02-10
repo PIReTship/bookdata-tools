@@ -13,7 +13,7 @@ use super::source::Row;
 use super::subject::SubjectEntry;
 
 /// An edition row in the extracted Parquet.
-#[derive(TableRow, ParquetRecordWriter)]
+#[derive(ParquetRecordWriter)]
 pub struct EditionRec {
     pub id: i32,
     pub key: String,
@@ -21,21 +21,21 @@ pub struct EditionRec {
 }
 
 /// Link between edition and work.
-#[derive(TableRow, ParquetRecordWriter)]
+#[derive(ParquetRecordWriter)]
 pub struct LinkRec {
     pub edition: i32,
     pub work: i32,
 }
 
 /// Edition ISBN record.
-#[derive(TableRow, ParquetRecordWriter)]
+#[derive(ParquetRecordWriter)]
 pub struct ISBNrec {
     pub edition: i32,
     pub isbn: String,
 }
 
 /// Edition author record.
-#[derive(TableRow, ParquetRecordWriter)]
+#[derive(ParquetRecordWriter)]
 pub struct EditionAuthorRec {
     pub edition: i32,
     pub pos: i16,
@@ -43,7 +43,7 @@ pub struct EditionAuthorRec {
 }
 
 /// Edition-subject record in extracted Parquet.
-#[derive(TableRow, ParquetRecordWriter)]
+#[derive(ParquetRecordWriter)]
 pub struct EditionSubjectRec {
     pub id: i32,
     pub subj_type: u8,

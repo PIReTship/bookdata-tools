@@ -15,7 +15,7 @@ use crate::util::logging::item_progress;
 use crate::util::Timer;
 
 /// Record for a single output rating.
-#[derive(TableRow, ParquetRecordWriter, Debug)]
+#[derive(ParquetRecordWriter, Debug)]
 pub struct TimestampRatingRecord {
     pub user: i32,
     pub item: i32,
@@ -27,7 +27,7 @@ pub struct TimestampRatingRecord {
 }
 
 /// Record for a single output rating without time.
-#[derive(TableRow, ParquetRecordWriter, Debug)]
+#[derive(ParquetRecordWriter, Debug)]
 pub struct TimelessRatingRecord {
     pub user: i32,
     pub item: i32,

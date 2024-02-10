@@ -1,5 +1,4 @@
 //! Support for streaming objects from a Parquet file.
-use std::io::Seek;
 use std::iter::zip;
 use std::path::Path;
 use std::thread::spawn;
@@ -10,15 +9,13 @@ use crossbeam::channel::{bounded, Receiver, Sender};
 use fallible_iterator::{FallibleIterator, IteratorExt};
 use indicatif::ProgressBar;
 use log::*;
+use parquet::file::reader::{ChunkReader, FileReader};
+use parquet::file::serialized_reader::SerializedFileReader;
+use parquet::record::RecordReader;
 use polars::prelude::*;
-use polars_parquet::read::{infer_schema, read_metadata, FileReader};
+use polars_parquet::read::{infer_schema, read_metadata};
 
-use crate::{
-    arrow::row::iter_df_rows,
-    util::logging::{item_progress, measure_and_send, meter_bar},
-};
-
-use super::TableRow;
+use crate::util::logging::{item_progress, measure_and_send, meter_bar};
 
 /// Scan a Parquet file into a data frame.
 pub fn scan_df_parquet<P: AsRef<Path>>(file: P) -> Result<LazyFrame> {
@@ -32,7 +29,8 @@ pub fn scan_df_parquet<P: AsRef<Path>>(file: P) -> Result<LazyFrame> {
 /// Iterator over deserialized records from a Parquet file.
 pub struct RecordIter<R>
 where
-    R: TableRow + Send + Sync + 'static,
+    R: Send + Sync + 'static,
+    Vec<R>: RecordReader<R>,
 {
     remaining: usize,
     channel: Receiver<Result<Vec<R>>>,
@@ -41,37 +39,26 @@ where
 
 impl<R> RecordIter<R>
 where
-    R: TableRow + Send + Sync + 'static,
+    R: Send + Sync + 'static,
+    Vec<R>: RecordReader<R>,
 {
     pub fn remaining(&self) -> usize {
         self.remaining
     }
 }
 
-fn decode_chunk<R>(chunk: DataFrame) -> Result<Vec<R>>
-where
-    R: TableRow + Send + Sync + 'static,
-{
-    let iter = iter_df_rows(&chunk)?;
-    let mut records = Vec::with_capacity(chunk.height());
-    for row in iter {
-        records.push(row?);
-    }
-    Ok(records)
-}
-
 /// Scan a Parquet file in a background thread and deserialize records.
 pub fn scan_parquet_file<R, P>(path: P) -> Result<RecordIter<R>>
 where
     P: AsRef<Path>,
-    R: TableRow + Send + Sync + 'static,
+    R: Send + Sync + 'static,
+    Vec<R>: RecordReader<R>,
 {
     let path = path.as_ref();
     let mut reader = File::open(&path)?;
-    let meta = read_metadata(&mut reader)?;
-    let row_count = meta.num_rows;
-    let schema = infer_schema(&meta)?;
-    let reader = FileReader::new(reader, meta.row_groups, schema.clone(), None, None, None);
+    let reader = SerializedFileReader::new(reader)?;
+    let meta = reader.metadata().file_metadata();
+    let row_count = meta.num_rows();
 
     info!(
         "scanning {} with {} rows",
@@ -86,7 +73,7 @@ where
 
     spawn(move || {
         let send = send;
-        if let Err(e) = scan_backend(reader, &send, schema, &p2, pb) {
+        if let Err(e) = scan_backend(reader, &send, &p2, pb) {
             send.send(Err(e)).expect("failed to send error message");
         }
     });
@@ -96,7 +83,7 @@ where
         path.display()
     );
     Ok(RecordIter {
-        remaining: row_count,
+        remaining: row_count as usize,
         channel: receive,
         batch: None,
     })
@@ -104,7 +91,8 @@ where
 
 impl<R> Iterator for RecordIter<R>
 where
-    R: TableRow + Send + Sync + 'static,
+    R: Send + Sync + 'static,
+    Vec<R>: RecordReader<R>,
 {
     type Item = Result<R>;
 
@@ -136,26 +124,30 @@ where
     }
 }
 
-fn scan_backend<R: Read + Seek, E: TableRow + Send + Sync + 'static>(
-    reader: FileReader<R>,
+fn scan_backend<R, E>(
+    reader: SerializedFileReader<R>,
     send: &Sender<Result<Vec<E>>>,
-    schema: ArrowSchema,
     path: &Path,
     pb: ProgressBar,
-) -> Result<()> {
+) -> Result<()>
+where
+    R: ChunkReader + 'static,
+    E: Send + Sync + 'static,
+    Vec<E>: RecordReader<E>,
+{
     debug!("{}: beginning batched read", path.display());
     let meter = meter_bar(5, &format!("{} read buffer", path.display()));
-    for chunk in reader {
-        let chunk = chunk?;
+    let ngroups = reader.num_row_groups();
+    for gi in 0..ngroups {
+        let mut group = reader.get_row_group(gi)?;
+        let gmeta = group.metadata();
+        let glen = gmeta.num_rows();
 
-        trace!("{}: received batch of {} rows", path.display(), chunk.len());
-        pb.inc(chunk.len() as u64);
-        let columns: Vec<_> = zip(&schema.fields, chunk.into_arrays())
-            .map(|(f, c)| Series::from_arrow(&f.name, c))
-            .transpose_into_fallible()
-            .collect()?;
-        let df = DataFrame::new(columns)?;
-        let batch = decode_chunk(df)?;
+        trace!("{}: received batch of {} rows", path.display(), glen);
+        pb.inc(glen as u64);
+        let mut batch = Vec::with_capacity(glen as usize);
+        batch.read_from_row_group(group.as_mut(), glen as usize)?;
+        assert_eq!(batch.len(), glen as usize);
         trace!("{}: decoded chunk, sending to consumer", path.display());
         measure_and_send(&send, Ok(batch), &meter)?;
     }

@@ -9,6 +9,7 @@ use crate::gender::*;
 use crate::prelude::*;
 use crate::util::logging::item_progress;
 use anyhow::Result;
+use parquet_derive::ParquetRecordReader;
 use polars::prelude::*;
 
 /// Record for storing a cluster's gender statistics while aggregating.
@@ -20,7 +21,7 @@ pub struct ClusterStats {
 }
 
 /// Row struct for reading cluster author names.
-#[derive(Debug, TableRow)]
+#[derive(Debug, ParquetRecordReader)]
 struct ClusterAuthor {
     cluster: i32,
     author_name: String,

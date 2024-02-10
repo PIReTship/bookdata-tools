@@ -20,14 +20,14 @@ pub struct ClusterBooks {
     save_graph: Option<PathBuf>,
 }
 
-#[derive(TableRow, ParquetRecordWriter, Debug)]
+#[derive(ParquetRecordWriter, Debug)]
 struct ISBNClusterRec {
     isbn: Option<String>,
     isbn_id: i32,
     cluster: i32,
 }
 
-#[derive(TableRow, ParquetRecordWriter, Debug)]
+#[derive(ParquetRecordWriter, Debug)]
 struct ClusterCode {
     book_code: i32,
     cluster: i32,
@@ -35,13 +35,13 @@ struct ClusterCode {
     label: Option<String>,
 }
 
-#[derive(TableRow, ParquetRecordWriter, Debug)]
+#[derive(ParquetRecordWriter, Debug)]
 struct GraphEdge {
     src: i32,
     dst: i32,
 }
 
-#[derive(TableRow, ParquetRecordWriter, Debug, Default)]
+#[derive(ParquetRecordWriter, Debug, Default)]
 struct ClusterStat {
     cluster: i32,
     n_nodes: u32,

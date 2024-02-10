@@ -45,7 +45,7 @@ pub struct RawAuthor {
 }
 
 /// the book ID records to write to Parquet.
-#[derive(TableRow, ParquetRecordWriter)]
+#[derive(ParquetRecordWriter)]
 pub struct BookIdRecord {
     pub book_id: i32,
     pub work_id: Option<i32>,
@@ -56,7 +56,7 @@ pub struct BookIdRecord {
 }
 
 /// book info records to actually write
-#[derive(TableRow, ParquetRecordWriter)]
+#[derive(ParquetRecordWriter)]
 pub struct BookRecord {
     pub book_id: i32,
     pub title: Option<String>,
@@ -65,14 +65,14 @@ pub struct BookRecord {
 }
 
 /// book series linking records
-#[derive(TableRow, ParquetRecordWriter)]
+#[derive(ParquetRecordWriter)]
 pub struct BookSeriesRecord {
     pub book_id: i32,
     pub series: String,
 }
 
 /// book author linking records
-#[derive(TableRow, ParquetRecordWriter)]
+#[derive(ParquetRecordWriter)]
 pub struct BookAuthorRecord {
     pub book_id: i32,
     pub author_id: i32,

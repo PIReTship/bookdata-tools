@@ -2,8 +2,6 @@
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use parse_display::*;
 
-use crate::arrow::row::MappableColType;
-
 use super::source::OLSubjects;
 
 /// The type of a subject relationship.
@@ -15,10 +13,6 @@ pub enum SubjectType {
     Person = b'P',
     Place = b'L',
     Time = b'T',
-}
-
-impl MappableColType for SubjectType {
-    type ColumnType = u8;
 }
 
 /// Schema for subject linking records.

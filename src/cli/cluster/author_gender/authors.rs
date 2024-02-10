@@ -1,6 +1,8 @@
 //! Support for loading author info.
 use std::collections::HashMap;
 
+use parquet_derive::ParquetRecordReader;
+
 use crate::arrow::*;
 use crate::gender::*;
 use crate::prelude::*;
@@ -14,13 +16,13 @@ pub struct AuthorInfo {
 
 pub type AuthorTable = HashMap<String, AuthorInfo>;
 
-#[derive(TableRow, Debug)]
+#[derive(Debug, ParquetRecordReader)]
 struct NameRow {
     rec_id: u32,
     name: String,
 }
 
-#[derive(TableRow, Debug)]
+#[derive(Debug, ParquetRecordReader)]
 struct GenderRow {
     rec_id: u32,
     gender: String,

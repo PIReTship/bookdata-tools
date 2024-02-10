@@ -36,7 +36,7 @@ pub struct IndexNames {
 
 type NameIndex = HashMap<String, HashSet<u32>>;
 
-#[derive(TableRow, ParquetRecordWriter, Serialize, Clone)]
+#[derive(ParquetRecordWriter, Serialize, Clone)]
 struct IndexEntry {
     rec_id: u32,
     name: String,

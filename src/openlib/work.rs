@@ -11,7 +11,7 @@ use super::source::Row;
 use super::subject::SubjectEntry;
 
 /// Work row in extracted Parquet.
-#[derive(Debug, Clone, TableRow, ParquetRecordWriter)]
+#[derive(Debug, Clone, ParquetRecordWriter)]
 pub struct WorkRec {
     pub id: i32,
     pub key: String,
@@ -19,7 +19,7 @@ pub struct WorkRec {
 }
 
 /// Work-author link in extracted Parquet.
-#[derive(Debug, Clone, TableRow, ParquetRecordWriter)]
+#[derive(Debug, Clone, ParquetRecordWriter)]
 pub struct WorkAuthorRec {
     pub id: i32,
     pub pos: i16,
@@ -27,7 +27,7 @@ pub struct WorkAuthorRec {
 }
 
 /// Work-subject record in extracted Parquet.
-#[derive(Debug, Clone, TableRow, ParquetRecordWriter)]
+#[derive(Debug, Clone, ParquetRecordWriter)]
 pub struct WorkSubjectRec {
     pub id: i32,
     pub subj_type: u8,
