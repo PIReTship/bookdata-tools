@@ -15,17 +15,6 @@ pub enum RowError {
     Polars(#[from] PolarsError),
 }
 
-/// Convert a vector of records to a chunk.
-pub fn vec_to_df<R>(vec: Vec<R>) -> Result<DataFrame>
-where
-    R: TableRow,
-{
-    let mut batch = R::Builder::with_capacity(vec.len());
-    batch.extend(vec.into_iter());
-    let df = batch.build()?;
-    Ok(df)
-}
-
 /// Convert a data frame into a vector.
 pub fn iter_df_rows<'a, R>(df: &'a DataFrame) -> Result<FrameRecordIter<'a, R>>
 where

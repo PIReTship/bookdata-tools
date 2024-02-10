@@ -20,7 +20,6 @@ use polars_parquet::write::{
     transverse, CompressionOptions, Encoding, FileWriter, RowGroupIterator, Version, WriteOptions,
 };
 
-use super::row::{vec_to_df, TableRow};
 use crate::io::object::{ObjectWriter, ThreadObjectWriter, UnchunkWriter};
 use crate::io::DataSink;
 
