@@ -120,7 +120,12 @@ fn scan_source(src: &ISBNSource) -> Result<LazyFrame> {
         let df = df.drop_nulls(None);
         let df = df.group_by(["isbn"]).agg([len().alias("nrecs")]);
         if let Some(prev) = counted {
-            let joined = prev.outer_join(df, col("isbn"), col("isbn"));
+            let joined = prev.join(
+                df,
+                [col("isbn")],
+                [col("isbn")],
+                JoinArgs::new(JoinType::Outer { coalesce: true }),
+            );
             counted = Some(joined.select([
                 col("isbn"),
                 (col(src.name).fill_null(0) + col("nrecs").fill_null(0)).alias(src.name),
@@ -139,7 +144,7 @@ impl Command for CollectISBNs {
         let sources = all_sources(&cfg);
         let active: Vec<_> = sources.iter().filter(|s| s.enabled).collect();
         info!(
-            "collecting ISBNs from {} active sources (of {} known)",
+            "preparing to collect ISBNs from {} active sources (of {} known)",
             active.len(),
             sources.len()
         );
@@ -148,10 +153,20 @@ impl Command for CollectISBNs {
             .iter()
             .map(|s| scan_source(*s))
             .transpose_into_fallible()
-            .fold(None, |cur, df2| {
-                Ok(cur
-                    .map(|df1: LazyFrame| df1.outer_join(df2.clone(), col("isbn"), col("isbn")))
-                    .or(Some(df2)))
+            .fold(None, |cur: Option<LazyFrame>, df2| {
+                let out = if let Some(df1) = cur {
+                    df1.join(
+                        df2.clone(),
+                        [col("isbn")],
+                        [col("isbn")],
+                        JoinArgs::new(JoinType::Outer { coalesce: true }),
+                    )
+                } else {
+                    df2
+                };
+                debug!("join result schema:\n{:?}", out.schema()?);
+                debug!("join result plan:\n{:?}", out.logical_plan);
+                Ok(Some(out))
             })?;
 
         let df = df.ok_or_else(|| anyhow!("no sources loaded"))?;
