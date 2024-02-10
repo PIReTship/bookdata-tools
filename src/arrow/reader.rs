@@ -1,19 +1,16 @@
 //! Support for streaming objects from a Parquet file.
-use std::iter::zip;
+use std::fs::File;
 use std::path::Path;
 use std::thread::spawn;
-use std::{fs::File, io::Read};
 
 use anyhow::Result;
 use crossbeam::channel::{bounded, Receiver, Sender};
-use fallible_iterator::{FallibleIterator, IteratorExt};
 use indicatif::ProgressBar;
 use log::*;
 use parquet::file::reader::{ChunkReader, FileReader};
 use parquet::file::serialized_reader::SerializedFileReader;
 use parquet::record::RecordReader;
 use polars::prelude::*;
-use polars_parquet::read::{infer_schema, read_metadata};
 
 use crate::util::logging::{item_progress, measure_and_send, meter_bar};
 
@@ -55,7 +52,7 @@ where
     Vec<R>: RecordReader<R>,
 {
     let path = path.as_ref();
-    let mut reader = File::open(&path)?;
+    let reader = File::open(&path)?;
     let reader = SerializedFileReader::new(reader)?;
     let meta = reader.metadata().file_metadata();
     let row_count = meta.num_rows();
