@@ -1,5 +1,6 @@
 //! Structs defining Amazon data sets.
 use crate::arrow::*;
+use parquet_derive::ParquetRecordWriter;
 use serde::{Deserialize, Serialize};
 
 /// A rating as described in a source CSV file.
@@ -30,7 +31,7 @@ pub struct SourceReview {
 /// Structure for scanned ratings.
 ///
 /// This data structure is serialized to `ratings.parquet` in the Amazon directories.
-#[derive(TableRow, Serialize, Deserialize)]
+#[derive(TableRow, ParquetRecordWriter, Serialize, Deserialize)]
 pub struct RatingRow {
     pub user: i32,
     pub asin: String,
@@ -41,7 +42,7 @@ pub struct RatingRow {
 /// Structure for scanned reviews.
 ///
 /// This data structure is serialized to `reviews.parquet` in the Amazon directories.
-#[derive(TableRow, Serialize, Deserialize)]
+#[derive(TableRow, ParquetRecordWriter, Serialize, Deserialize)]
 pub struct ReviewRow {
     pub user: i32,
     pub asin: String,

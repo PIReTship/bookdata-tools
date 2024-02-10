@@ -1,4 +1,5 @@
 //! GoodReads review data model.
+use parquet_derive::ParquetRecordWriter;
 pub use serde::Deserialize;
 
 use crate::arrow::*;
@@ -8,9 +9,7 @@ use crate::parsing::*;
 use crate::prelude::*;
 
 use super::ids::load_id_links;
-use super::ids::BookId;
 use super::ids::BookLinkMap;
-use super::ids::WorkId;
 use super::users::load_user_index;
 
 const OUT_FILE: &'static str = "gr-reviews.parquet";
@@ -31,7 +30,7 @@ pub struct RawReview {
 }
 
 /// Review records to write to the Parquet table.
-#[derive(TableRow)]
+#[derive(TableRow, ParquetRecordWriter)]
 pub struct ReviewRecord {
     /// Internal auto-genereated record identifier.
     pub rec_id: u32,
@@ -40,9 +39,9 @@ pub struct ReviewRecord {
     /// User identifier.
     pub user_id: i32,
     /// GoodReads book identifier.
-    pub book_id: BookId,
+    pub book_id: i32,
     /// GoodReads work identifier.
-    pub work_id: Option<WorkId>,
+    pub work_id: Option<i32>,
     /// Cluster identifier (from [integration clustering][clust]).
     ///
     /// [clust]: https://bookdata.piret.info/data/cluster.html

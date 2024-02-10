@@ -1,5 +1,7 @@
 //! OpenLibrary work schemas.
 use friendly::scalar;
+use parquet::record::RecordWriter;
+use parquet_derive::ParquetRecordWriter;
 
 use crate::arrow::*;
 use crate::ids::index::IdIndex;
@@ -10,7 +12,7 @@ use super::source::Row;
 use super::subject::{SubjectEntry, SubjectType};
 
 /// Work row in extracted Parquet.
-#[derive(Debug, Clone, TableRow)]
+#[derive(Debug, Clone, TableRow, ParquetRecordWriter)]
 pub struct WorkRec {
     pub id: i32,
     pub key: String,
@@ -18,7 +20,7 @@ pub struct WorkRec {
 }
 
 /// Work-author link in extracted Parquet.
-#[derive(Debug, Clone, TableRow)]
+#[derive(Debug, Clone, TableRow, ParquetRecordWriter)]
 pub struct WorkAuthorRec {
     pub id: i32,
     pub pos: i16,
@@ -31,6 +33,19 @@ pub struct WorkSubjectRec {
     pub id: i32,
     pub subj_type: SubjectType,
     pub subject: String,
+}
+
+impl RecordWriter<WorkSubjectRec> for &[WorkSubjectRec] {
+    fn write_to_row_group<W: std::io::Write + Send>(
+        &self,
+        row_group_writer: &mut parquet::file::writer::SerializedRowGroupWriter<W>,
+    ) -> Result<(), parquet::errors::ParquetError> {
+        todo!()
+    }
+
+    fn schema(&self) -> Result<parquet::schema::types::TypePtr, parquet::errors::ParquetError> {
+        todo!()
+    }
 }
 
 impl From<SubjectEntry> for WorkSubjectRec {

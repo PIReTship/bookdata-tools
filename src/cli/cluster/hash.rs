@@ -4,6 +4,7 @@ use std::path::PathBuf;
 
 use hex;
 use md5::{Digest, Md5};
+use parquet_derive::ParquetRecordWriter;
 
 use crate::arrow::*;
 use crate::prelude::*;
@@ -24,7 +25,7 @@ pub struct HashCmd {
     cluster_file: PathBuf,
 }
 
-#[derive(TableRow)]
+#[derive(TableRow, ParquetRecordWriter)]
 struct ClusterHash {
     cluster: i32,
     isbn_hash: String,

@@ -8,6 +8,7 @@ use crate::graph::*;
 use crate::ids::codes::{ns_of_book_code, NS_ISBN};
 use crate::prelude::*;
 
+use parquet_derive::ParquetRecordWriter;
 use petgraph::algo::kosaraju_scc;
 use serde::Serialize;
 
@@ -19,14 +20,14 @@ pub struct ClusterBooks {
     save_graph: Option<PathBuf>,
 }
 
-#[derive(TableRow, Debug)]
+#[derive(TableRow, ParquetRecordWriter, Debug)]
 struct ISBNClusterRec {
     isbn: Option<String>,
     isbn_id: i32,
     cluster: i32,
 }
 
-#[derive(TableRow, Debug)]
+#[derive(TableRow, ParquetRecordWriter, Debug)]
 struct ClusterCode {
     book_code: i32,
     cluster: i32,
@@ -34,13 +35,13 @@ struct ClusterCode {
     label: Option<String>,
 }
 
-#[derive(TableRow, Debug)]
+#[derive(TableRow, ParquetRecordWriter, Debug)]
 struct GraphEdge {
     src: i32,
     dst: i32,
 }
 
-#[derive(TableRow, Debug, Default)]
+#[derive(TableRow, ParquetRecordWriter, Debug, Default)]
 struct ClusterStat {
     cluster: i32,
     n_nodes: u32,

@@ -1,6 +1,7 @@
 //! GoodReads book genre records.
 use std::collections::HashMap;
 
+use parquet_derive::ParquetRecordWriter;
 use serde::Deserialize;
 
 use crate::arrow::*;
@@ -19,7 +20,7 @@ pub struct RawBookGenre {
 }
 
 /// Rows in the processed book-genre Parquet table.
-#[derive(TableRow)]
+#[derive(TableRow, ParquetRecordWriter)]
 pub struct BookGenreRecord {
     pub book_id: i32,
     pub genre_id: i32,

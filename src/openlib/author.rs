@@ -1,4 +1,6 @@
 //! OpenLibrary author schemas.
+use parquet_derive::ParquetRecordWriter;
+
 use crate::arrow::*;
 use crate::cleaning::names::clean_name;
 use crate::cleaning::strings::norm_unicode;
@@ -8,7 +10,7 @@ pub use super::source::OLAuthorSource;
 use super::source::Row;
 
 /// An author record in the extracted Parquet.
-#[derive(TableRow)]
+#[derive(TableRow, ParquetRecordWriter)]
 pub struct AuthorRec {
     pub id: i32,
     pub key: String,
@@ -16,7 +18,7 @@ pub struct AuthorRec {
 }
 
 /// An author-name record in the extracted Parquet.
-#[derive(TableRow)]
+#[derive(TableRow, ParquetRecordWriter)]
 pub struct AuthorNameRec {
     pub id: i32,
     pub source: u8,

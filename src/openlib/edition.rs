@@ -1,5 +1,7 @@
 //! OpenLibrary edition schemas.
 use friendly::scalar;
+use parquet::record::RecordWriter;
+use parquet_derive::ParquetRecordWriter;
 
 use crate::arrow::*;
 use crate::cleaning::isbns::clean_asin_chars;
@@ -13,7 +15,7 @@ use super::subject::SubjectEntry;
 use super::subject::SubjectType;
 
 /// An edition row in the extracted Parquet.
-#[derive(TableRow)]
+#[derive(TableRow, ParquetRecordWriter)]
 pub struct EditionRec {
     pub id: i32,
     pub key: String,
@@ -21,21 +23,21 @@ pub struct EditionRec {
 }
 
 /// Link between edition and work.
-#[derive(TableRow)]
+#[derive(TableRow, ParquetRecordWriter)]
 pub struct LinkRec {
     pub edition: i32,
     pub work: i32,
 }
 
 /// Edition ISBN record.
-#[derive(TableRow)]
+#[derive(TableRow, ParquetRecordWriter)]
 pub struct ISBNrec {
     pub edition: i32,
     pub isbn: String,
 }
 
 /// Edition author record.
-#[derive(TableRow)]
+#[derive(TableRow, ParquetRecordWriter)]
 pub struct EditionAuthorRec {
     pub edition: i32,
     pub pos: i16,
@@ -48,6 +50,19 @@ pub struct EditionSubjectRec {
     pub id: i32,
     pub subj_type: SubjectType,
     pub subject: String,
+}
+
+impl RecordWriter<EditionSubjectRec> for &[EditionSubjectRec] {
+    fn write_to_row_group<W: std::io::Write + Send>(
+        &self,
+        row_group_writer: &mut parquet::file::writer::SerializedRowGroupWriter<W>,
+    ) -> Result<(), parquet::errors::ParquetError> {
+        todo!()
+    }
+
+    fn schema(&self) -> Result<parquet::schema::types::TypePtr, parquet::errors::ParquetError> {
+        todo!()
+    }
 }
 
 impl From<SubjectEntry> for EditionSubjectRec {

@@ -8,6 +8,7 @@ use crossbeam::channel::{bounded, Receiver, Sender};
 
 use csv;
 use flate2::write::GzEncoder;
+use parquet_derive::ParquetRecordWriter;
 use serde::Serialize;
 
 use rayon::prelude::*;
@@ -35,7 +36,7 @@ pub struct IndexNames {
 
 type NameIndex = HashMap<String, HashSet<u32>>;
 
-#[derive(TableRow, Serialize, Clone)]
+#[derive(TableRow, ParquetRecordWriter, Serialize, Clone)]
 struct IndexEntry {
     rec_id: u32,
     name: String,
