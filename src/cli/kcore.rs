@@ -114,13 +114,13 @@ impl Command for Kcore {
             actions
                 .column("item")?
                 .value_counts(true, true)?
-                .column("counts")?
+                .column("count")?
                 .min::<u32>()?
                 .unwrap(),
             actions
                 .column("user")?
                 .value_counts(true, true)?
-                .column("counts")?
+                .column("count")?
                 .min::<u32>()?
                 .unwrap(),
         );
@@ -134,15 +134,16 @@ impl Command for Kcore {
 fn filter_counts(actions: DataFrame, column: &'static str, k: u32) -> Result<DataFrame> {
     let nstart = actions.height();
     let counts = actions.column(column)?.value_counts(true, true)?;
+    debug!("value count schema: {:?}", counts.schema());
     let min_count: u32 = counts
-        .column("counts")?
+        .column("count")?
         .min()?
         .ok_or_else(|| anyhow!("data frame is empty"))?;
     if min_count < k {
         info!("filtering {}s (smallest count: {})", column, min_count);
         let ifilt = counts
             .lazy()
-            .filter(col("counts").gt_eq(lit(k)))
+            .filter(col("count").gt_eq(lit(k)))
             .select(&[col(column)]);
         let afilt = actions.lazy().inner_join(ifilt, column, column);
         let actions = afilt.collect()?;
