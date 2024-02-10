@@ -66,7 +66,7 @@ pub fn parse_ol_key(key: &str, ks: OLKS) -> Result<u32, OLKeyError> {
         .map_err(|e| OLKeyError::InvalidFormat(key.to_string(), format!("{:?}", e)))?;
     if k.codechar != ks.codechar {
         Err(OLKeyError::InvalidCodeChar)
-    } else if k.keyspace != ks.keyspace {
+    } else if k.keyspace != ks.keyspace && k.keyspace[0..1] != ks.keyspace[0..1] {
         Err(OLKeyError::BadKeyspace(key.to_string(), ks.keyspace))
     } else {
         Ok(k.id)
