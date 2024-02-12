@@ -1,6 +1,6 @@
 use clap::Args;
 
-use crate::{arrow::*, prelude::*};
+use crate::{arrow::*, cli::link_isbns::writer::save_df_parquet_nonnull, prelude::*};
 use polars::prelude::*;
 
 static ALL_ISBNS_FILE: &str = "book-links/all-isbns.parquet";
@@ -86,9 +86,7 @@ impl Command for LinkISBNIds {
         }
 
         info!("saving {} links to {:?}", frame.height(), &self.outfile);
-        let schema = nonnull_schema(&frame);
-        let writer = open_parquet_writer(&self.outfile, schema)?;
-        writer.write_and_finish(frame.iter_chunks(false))?;
+        save_df_parquet_nonnull(frame, &self.outfile)?;
 
         Ok(())
     }

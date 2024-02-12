@@ -5,6 +5,8 @@ use std::path::Path;
 
 use anyhow::{anyhow, Result};
 use log::*;
+use parquet::record::RecordWriter;
+use parquet_derive::ParquetRecordWriter;
 
 use super::{Dedup, Interaction, Key};
 use crate::arrow::*;
@@ -13,7 +15,7 @@ use crate::util::logging::item_progress;
 use crate::util::Timer;
 
 /// Record for a single output rating.
-#[derive(TableRow, Debug)]
+#[derive(ParquetRecordWriter, Debug)]
 pub struct TimestampRatingRecord {
     pub user: i32,
     pub item: i32,
@@ -25,7 +27,7 @@ pub struct TimestampRatingRecord {
 }
 
 /// Record for a single output rating without time.
-#[derive(TableRow, Debug)]
+#[derive(ParquetRecordWriter, Debug)]
 pub struct TimelessRatingRecord {
     pub user: i32,
     pub item: i32,
@@ -120,6 +122,7 @@ impl FromRatingSet for TimelessRatingRecord {
 pub struct RatingDedup<R>
 where
     R: FromRatingSet,
+    for<'a> &'a [R]: RecordWriter<R>,
 {
     _phantom: PhantomData<R>,
     table: HashMap<Key, Vec<(f32, i64)>>,
@@ -127,7 +130,8 @@ where
 
 impl<I: Interaction, R> Dedup<I> for RatingDedup<R>
 where
-    R: FromRatingSet + TableRow + Send + Sync + 'static,
+    R: FromRatingSet + Send + Sync + 'static,
+    for<'a> &'a [R]: RecordWriter<R>,
 {
     fn add_interaction(&mut self, act: I) -> Result<()> {
         let rating = act
@@ -144,7 +148,8 @@ where
 
 impl<R> Default for RatingDedup<R>
 where
-    R: FromRatingSet + TableRow + Send + Sync + 'static,
+    R: FromRatingSet + Send + Sync + 'static,
+    for<'a> &'a [R]: RecordWriter<R>,
 {
     fn default() -> RatingDedup<R> {
         RatingDedup {
@@ -156,7 +161,8 @@ where
 
 impl<R> RatingDedup<R>
 where
-    R: FromRatingSet + TableRow + Send + Sync + 'static,
+    R: FromRatingSet + Send + Sync + 'static,
+    for<'a> &'a [R]: RecordWriter<R>,
 {
     /// Add a rating to the deduplicator.
     pub fn record(&mut self, user: i32, item: i32, rating: f32, timestamp: i64) {

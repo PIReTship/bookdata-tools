@@ -1,42 +1,44 @@
 //! OpenLibrary work schemas.
 use friendly::scalar;
+use parquet_derive::ParquetRecordWriter;
 
 use crate::arrow::*;
-use crate::ids::index::IdIndex;
 use crate::prelude::*;
 
+use super::key::parse_ol_key;
+use super::key::KS_WORK;
 pub use super::source::OLWorkRecord;
 use super::source::Row;
-use super::subject::{SubjectEntry, SubjectType};
+use super::subject::SubjectEntry;
 
 /// Work row in extracted Parquet.
-#[derive(Debug, Clone, TableRow)]
+#[derive(Debug, Clone, ParquetRecordWriter)]
 pub struct WorkRec {
-    pub id: i32,
+    pub id: u32,
     pub key: String,
     pub title: Option<String>,
 }
 
 /// Work-author link in extracted Parquet.
-#[derive(Debug, Clone, TableRow)]
+#[derive(Debug, Clone, ParquetRecordWriter)]
 pub struct WorkAuthorRec {
-    pub id: i32,
+    pub id: u32,
     pub pos: i16,
-    pub author: i32,
+    pub author: u32,
 }
 
 /// Work-subject record in extracted Parquet.
-#[derive(Debug, Clone, TableRow)]
+#[derive(Debug, Clone, ParquetRecordWriter)]
 pub struct WorkSubjectRec {
-    pub id: i32,
-    pub subj_type: SubjectType,
+    pub id: u32,
+    pub subj_type: u8,
     pub subject: String,
 }
 
 impl From<SubjectEntry> for WorkSubjectRec {
     fn from(value: SubjectEntry) -> Self {
         WorkSubjectRec {
-            id: value.entity,
+            id: value.entity as u32,
             subj_type: value.subj_type.into(),
             subject: value.subject,
         }
@@ -47,8 +49,6 @@ impl From<SubjectEntry> for WorkSubjectRec {
 ///
 /// This must be run **after** the author processor.
 pub struct WorkProcessor {
-    last_id: i32,
-    author_ids: IdIndex<String>,
     rec_writer: TableWriter<WorkRec>,
     author_writer: TableWriter<WorkAuthorRec>,
     subject_writer: TableWriter<WorkSubjectRec>,
@@ -58,8 +58,6 @@ impl WorkProcessor {
     /// Create a new work processor.
     pub fn new() -> Result<WorkProcessor> {
         Ok(WorkProcessor {
-            last_id: 0,
-            author_ids: IdIndex::load_standard("authors.parquet")?,
             rec_writer: TableWriter::open("works.parquet")?,
             author_writer: TableWriter::open("work-authors.parquet")?,
             subject_writer: TableWriter::open("work-subjects.parquet")?,
@@ -69,8 +67,7 @@ impl WorkProcessor {
 
 impl ObjectWriter<Row<OLWorkRecord>> for WorkProcessor {
     fn write_object(&mut self, row: Row<OLWorkRecord>) -> Result<()> {
-        self.last_id += 1;
-        let id = self.last_id;
+        let id = parse_ol_key(&row.key, KS_WORK)?;
 
         self.rec_writer.write_object(WorkRec {
             id,
@@ -79,9 +76,8 @@ impl ObjectWriter<Row<OLWorkRecord>> for WorkProcessor {
         })?;
 
         for pos in 0..row.record.authors.len() {
-            let akey = row.record.authors[pos].key();
-            if let Some(akey) = akey {
-                let aid = self.author_ids.intern(akey)?;
+            let akey = row.record.authors[pos].id()?;
+            if let Some(aid) = akey {
                 let pos = pos as i16;
                 self.author_writer.write_object(WorkAuthorRec {
                     id,
@@ -105,8 +101,6 @@ impl ObjectWriter<Row<OLWorkRecord>> for WorkProcessor {
         info!("wrote {} work-author records", scalar(na));
         let ns = self.subject_writer.finish()?;
         info!("wrote {} work-subject records", scalar(ns));
-        self.author_ids
-            .save_standard("author-ids-after-works.parquet")?;
-        Ok(self.last_id as usize)
+        Ok(nr)
     }
 }

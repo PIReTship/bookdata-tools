@@ -5,6 +5,8 @@ use std::path::Path;
 
 use anyhow::Result;
 use log::*;
+use parquet::record::RecordWriter;
+use parquet_derive::ParquetRecordWriter;
 
 use super::{Dedup, Interaction, Key};
 use crate::arrow::*;
@@ -13,7 +15,7 @@ use crate::util::logging::item_progress;
 use crate::util::Timer;
 
 /// Record for a single output action.
-#[derive(TableRow, Debug)]
+#[derive(ParquetRecordWriter, Debug)]
 pub struct TimestampActionRecord {
     pub user: i32,
     pub item: i32,
@@ -24,7 +26,7 @@ pub struct TimestampActionRecord {
 }
 
 /// Record for a single output action without time.
-#[derive(TableRow, Debug)]
+#[derive(ParquetRecordWriter, Debug)]
 pub struct TimelessActionRecord {
     pub user: i32,
     pub item: i32,
@@ -92,7 +94,8 @@ impl FromActionSet for TimelessActionRecord {
 /// Action deduplicator.
 pub struct ActionDedup<R>
 where
-    R: FromActionSet + TableRow,
+    R: FromActionSet,
+    for<'a> &'a [R]: RecordWriter<R>,
 {
     _phantom: PhantomData<R>,
     table: HashMap<Key, Vec<ActionInstance>>,
@@ -100,7 +103,8 @@ where
 
 impl<R> Default for ActionDedup<R>
 where
-    R: FromActionSet + TableRow + 'static,
+    R: FromActionSet + 'static,
+    for<'a> &'a [R]: RecordWriter<R>,
 {
     fn default() -> ActionDedup<R> {
         ActionDedup {
@@ -112,7 +116,8 @@ where
 
 impl<I: Interaction, R> Dedup<I> for ActionDedup<R>
 where
-    R: FromActionSet + TableRow + Send + Sync + 'static,
+    R: FromActionSet + Send + Sync + 'static,
+    for<'a> &'a [R]: RecordWriter<R>,
 {
     fn add_interaction(&mut self, act: I) -> Result<()> {
         self.record(
@@ -131,7 +136,8 @@ where
 
 impl<R> ActionDedup<R>
 where
-    R: FromActionSet + TableRow + Send + Sync + 'static,
+    R: FromActionSet + Send + Sync + 'static,
+    for<'a> &'a [R]: RecordWriter<R>,
 {
     /// Add an action to the deduplicator.
     pub fn record(&mut self, user: i32, item: i32, timestamp: i64, rating: Option<f32>) {

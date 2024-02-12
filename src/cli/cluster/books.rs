@@ -1,7 +1,7 @@
 //! Extract author information for book clusters.
 use std::path::PathBuf;
 
-use crate::arrow::{nonnull_schema, open_parquet_writer};
+use crate::arrow::writer::save_df_parquet_nonnull;
 use crate::ids::codes::*;
 use crate::prelude::*;
 use polars::prelude::*;
@@ -84,9 +84,7 @@ impl Command for ExtractBooks {
         let mut frame = results.collect()?;
         info!("got {} book links", frame.height());
         frame.as_single_chunk_par();
-        let schema = nonnull_schema(&frame);
-        let writer = open_parquet_writer(&self.output, schema)?;
-        writer.write_and_finish(frame.iter_chunks(false))?;
+        save_df_parquet_nonnull(frame, &self.output)?;
 
         Ok(())
     }

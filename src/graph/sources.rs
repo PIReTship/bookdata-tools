@@ -84,11 +84,19 @@ impl EdgeRead for OLEditions {
 
 impl NodeRead for OLWorks {
     fn read_node_ids(&self) -> Result<LazyFrame> {
-        let df = LazyFrame::scan_parquet("openlibrary/all-works.parquet", default())?;
-        let df = df.select([
+        let wdf = LazyFrame::scan_parquet("openlibrary/works.parquet", default())?.select([
             id_col("id", NS_WORK).alias("code"),
             col("key").alias("label"),
         ]);
+        let ewdf = LazyFrame::scan_parquet("openlibrary/edition-works.parquet", default())?
+            .select([id_col("work", NS_WORK).alias("code")])
+            .unique(None, UniqueKeepStrategy::Any);
+        let df = wdf.join(
+            ewdf,
+            [col("code")],
+            [col("code")],
+            JoinArgs::new(JoinType::Outer { coalesce: true }),
+        );
         Ok(df)
     }
 }

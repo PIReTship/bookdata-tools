@@ -7,6 +7,7 @@
 //! the integration pipeline.
 use std::path::{Path, PathBuf};
 
+use parquet_derive::ParquetRecordWriter;
 use serde::{Deserialize, Serialize};
 
 use crate::arrow::*;
@@ -36,7 +37,7 @@ pub struct AuthorGender {
 }
 
 /// Record format for saving gender information.
-#[derive(Serialize, Deserialize, Clone, TableRow)]
+#[derive(Serialize, Deserialize, Clone, ParquetRecordWriter)]
 struct ClusterGenderInfo {
     cluster: i32,
     gender: String,

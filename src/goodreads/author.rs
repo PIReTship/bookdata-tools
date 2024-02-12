@@ -1,4 +1,5 @@
 //! GoodReads work schemas and record processing.
+use parquet_derive::ParquetRecordWriter;
 use serde::Deserialize;
 
 use crate::arrow::*;
@@ -15,7 +16,7 @@ pub struct RawAuthor {
 }
 
 /// Rows in the processed work Parquet table.
-#[derive(TableRow)]
+#[derive(ParquetRecordWriter)]
 pub struct AuthorRecord {
     pub author_id: i32,
     pub name: Option<String>,
