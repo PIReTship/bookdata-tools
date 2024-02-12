@@ -128,7 +128,7 @@ pub fn save_graph_cluster_data(graph: &IdGraph, clusters: Vec<Vec<IdNode>>) -> R
         if n_isbns > m_isbns {
             m_isbns = n_isbns;
         }
-        pb.tick();
+        pb.inc(1);
     }
 
     ic_w.finish()?;
