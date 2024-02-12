@@ -32,7 +32,7 @@ pub use load::construct_graph;
 /// Save a graph to a compressed, encoded file.
 pub fn save_graph<P: AsRef<Path>>(graph: &IdGraph, path: P) -> Result<()> {
     let file = File::create(path)?;
-    let mut out = Encoder::new(file, 6)?;
+    let mut out = Encoder::new(file, 4)?;
     // out.multithread(2)?;
     rmp_serde::encode::write(&mut out, &graph)?;
     out.finish()?;
