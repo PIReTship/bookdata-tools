@@ -23,6 +23,7 @@ pub type IdNode = NodeIndex<DefaultIx>;
 
 mod gml;
 mod load;
+pub mod model;
 mod sources;
 
 pub use gml::save_gml;

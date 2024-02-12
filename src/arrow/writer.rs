@@ -74,6 +74,7 @@ pub fn parquet_writer_defaults() -> WriterPropertiesBuilder {
             PQZstdLevel::try_new(ZSTD_LEVEL).expect("invalid zstd level"),
         ))
         .set_writer_version(WriterVersion::PARQUET_2_0)
+        .set_dictionary_enabled(false)
 }
 
 /// Open an Arrow Parquet writer using BookData defaults.
