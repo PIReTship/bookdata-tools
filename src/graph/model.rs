@@ -9,6 +9,7 @@ use super::{BookID, IdGraph, IdNode};
 use crate::arrow::TableWriter;
 use crate::ids::codes::{ns_of_book_code, NS_ISBN};
 use crate::io::object::ObjectWriter;
+use crate::util::logging::item_progress;
 
 const ISBN_CLUSTER_PATH: &str = "book-links/isbn-clusters.parquet";
 const GRAPH_NODE_PATH: &str = "book-links/cluster-graph-nodes.parquet";
@@ -53,6 +54,7 @@ pub struct ClusterStat {
 struct ClusteringStatistics {
     clusters: usize,
     largest: usize,
+    max_isbns: usize,
 }
 
 impl ClusterStat {
@@ -87,8 +89,10 @@ pub fn save_graph_cluster_data(graph: &IdGraph, clusters: Vec<Vec<IdNode>>) -> R
 
     let mut m_size = 0;
     let mut m_id = 0;
+    let mut m_isbns = 0;
 
     info!("writing graph nodes");
+    let pb = item_progress(clusters.len(), "clusters");
     for ci in 0..clusters.len() {
         let verts = &clusters[ci];
         let vids: Vec<_> = verts
@@ -101,6 +105,7 @@ pub fn save_graph_cluster_data(graph: &IdGraph, clusters: Vec<Vec<IdNode>>) -> R
             m_id = cluster;
         }
         cs_w.write_object(ClusterStat::create(cluster, &vids))?;
+        let mut n_isbns = 0;
         for v in &vids {
             n_w.write_object(ClusterCode {
                 cluster,
@@ -117,13 +122,19 @@ pub fn save_graph_cluster_data(graph: &IdGraph, clusters: Vec<Vec<IdNode>>) -> R
                         .clone()
                         .ok_or_else(|| anyhow!("graph node missing ISBN label"))?,
                 })?;
+                n_isbns += 1;
             }
         }
+        if n_isbns > m_isbns {
+            m_isbns = n_isbns;
+        }
+        pb.tick();
     }
 
     ic_w.finish()?;
     n_w.finish()?;
     cs_w.finish()?;
+    pb.finish_and_clear();
 
     info!("largest cluster {} has {} nodes", m_id, m_size);
 
@@ -141,6 +152,7 @@ pub fn save_graph_cluster_data(graph: &IdGraph, clusters: Vec<Vec<IdNode>>) -> R
     let stats = ClusteringStatistics {
         clusters: clusters.len(),
         largest: m_size,
+        max_isbns: m_isbns,
     };
     let statf = File::create(CLUSTER_METRICS_PATH)?;
     serde_json::to_writer(statf, &stats)?;
