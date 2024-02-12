@@ -45,7 +45,7 @@ impl Command for ClusterBooks {
             save_graph_cluster_data(&graph, clusters)?;
 
             if let Some(h) = sthread {
-                debug!("waiting on background thread");
+                info!("waiting for saving to finish");
                 let br = h.join().expect("thread join failed");
                 br?;
             }
