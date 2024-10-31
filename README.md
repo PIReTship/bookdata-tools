@@ -29,27 +29,25 @@ This project uses submodules — clone with `git clone --recursive`.
 
 ## Running Everything
 
-The dependencies are declared in `environment.yml`, in a format suitable for use with
-[conda-lock][].  We also provide a lockfile for reproducible dependencies; to install
-the environment, run:
+[Pixi]: https://pixi.sh
 
-    conda-lock install -n bookdata conda-lock.yml
+The dependencies are managed with [Pixi][] and declared in `pixi.toml`.  To
+install the environment, run:
+
+    pixi install
+
+The `dev` environment provides additional useful software for making
+modifications to the code, such as the Python linter.
 
 You can run the entire import process with:
 
     dvc repro
 
-To regenerate or update the lockfiles, run:
-
-    conda lock -f environment.yml
-
-[conda-lock]: https://github.com/conda-incubator/conda-lock/
-
 ## Copyright and Acknowledgements
 
-Copyright ⓒ 2020–2022 Boise State University.  Distributed under the MIT
-License; see LICENSE.md. This material is based upon work supported by the
-National Science Foundation under Grant No. IIS 17-51278. Any opinions,
-findings, and conclusions or recommendations expressed in this material are
-those of the author(s) and do not necessarily reflect the views of the National
-Science Foundation.
+Copyright ⓒ 2023–2024 Drexel University, 2020–2023 Boise State University.
+Distributed under the MIT License; see LICENSE.md. This material is based upon
+work supported by the National Science Foundation under Grant No. IIS 17-51278.
+Any opinions, findings, and conclusions or recommendations expressed in this
+material are those of the author(s) and do not necessarily reflect the views of
+the National Science Foundation.
