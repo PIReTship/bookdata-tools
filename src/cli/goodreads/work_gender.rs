@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{ids::codes::NS_GR_WORK, prelude::*};
 use polars::prelude::*;
 
 pub fn link_work_genders() -> Result<()> {
@@ -14,6 +14,14 @@ pub fn link_work_genders() -> Result<()> {
         JoinType::Inner.into(),
     );
     let dedup = merged.unique(None, UniqueKeepStrategy::First);
+    let dedup = dedup.select([
+        col("*"),
+        coalesce(&[
+            col("work_id") + lit(NS_GR_WORK.base()),
+            col("book_id") + lit(NS_GR_WORK.base()),
+        ])
+        .alias("gr_item"),
+    ]);
 
     info!("computing results");
     let results = dedup.collect()?;
