@@ -17,12 +17,12 @@ local mdsCurl = function(folder, base, range) {
   local url = std.format('%s%s[%s].xml.gz', [loc.dl_base, base, range]),
   local out = std.format('%s/%s#1.xml.gz', [folder, base]),
 
-  cmd: std.format('curl -L %s -o %s --create-dirs', [url, out]),
+  cmd: std.format('curl -fsSL %s -o %s --create-dirs', [url, out]),
   outs: [folder],
 };
 
 local curl = function(url, file) {
-  cmd: std.format('curl -L --retry 100 -o %s %s', [file, url]),
+  cmd: std.format('curl -fsSL --retry 100 -o %s %s', [file, url]),
   outs: [file],
 };
 
