@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["decode_chunk","scan_backend","scan_df_parquet","scan_parquet_file"],"struct":["RecordIter"]};
+window.SIDEBAR_ITEMS = {"fn":["scan_backend","scan_df_parquet","scan_parquet_file"],"struct":["RecordIter"]};

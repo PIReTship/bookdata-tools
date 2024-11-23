@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["FieldOutput","FieldRecord","FieldRecordFrame","FieldRecordFrameBuilder"]};
+window.SIDEBAR_ITEMS = {"struct":["FieldOutput","FieldRecord"]};

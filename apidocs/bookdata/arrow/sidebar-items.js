@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"derive":["TableRow"],"mod":["dfext","reader","row","writer"]};
+window.SIDEBAR_ITEMS = {"mod":["dfext","reader","writer"]};

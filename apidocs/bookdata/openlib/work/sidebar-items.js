@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["WorkAuthorRec","WorkAuthorRecFrame","WorkAuthorRecFrameBuilder","WorkProcessor","WorkRec","WorkRecFrame","WorkRecFrameBuilder","WorkSubjectRec","WorkSubjectRecFrame","WorkSubjectRecFrameBuilder"]};
+window.SIDEBAR_ITEMS = {"struct":["WorkAuthorRec","WorkProcessor","WorkRec","WorkSubjectRec"]};

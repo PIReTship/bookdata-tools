@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["load_graph","save_graph"],"mod":["gml","load","sources"],"struct":["BookID"],"type":["IdGraph","IdNode"]};
+window.SIDEBAR_ITEMS = {"fn":["load_graph","save_graph"],"mod":["gml","load","model","sources"],"struct":["BookID"],"type":["IdGraph","IdNode"]};

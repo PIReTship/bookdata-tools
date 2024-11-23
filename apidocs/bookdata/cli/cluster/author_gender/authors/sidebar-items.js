@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["viaf_author_table","viaf_load_genders","viaf_load_names"],"struct":["AuthorInfo","GenderRow","GenderRowFrame","GenderRowFrameBuilder","NameRow","NameRowFrame","NameRowFrameBuilder"],"type":["AuthorTable"]};
+window.SIDEBAR_ITEMS = {"fn":["viaf_author_table","viaf_load_genders","viaf_load_names"],"struct":["AuthorInfo","GenderRow","NameRow"],"type":["AuthorTable"]};

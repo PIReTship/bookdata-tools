@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["OUT_FILE"],"struct":["IntRecord","IntRecordFrame","IntRecordFrameBuilder","IntWriter","RawInteraction"]};
+window.SIDEBAR_ITEMS = {"constant":["OUT_FILE"],"struct":["IntRecord","IntWriter","RawInteraction"]};

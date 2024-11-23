@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["RatingDedup","TimelessRatingRecord","TimelessRatingRecordFrame","TimelessRatingRecordFrameBuilder","TimestampRatingRecord","TimestampRatingRecordFrame","TimestampRatingRecordFrameBuilder"],"trait":["FromRatingSet"]};
+window.SIDEBAR_ITEMS = {"struct":["RatingDedup","TimelessRatingRecord","TimestampRatingRecord"],"trait":["FromRatingSet"]};

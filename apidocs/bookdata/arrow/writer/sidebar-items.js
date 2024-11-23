@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["BATCH_SIZE","ZSTD_LEVEL"],"fn":["open_parquet_writer","open_polars_writer","save_df_parquet"],"struct":["TableWriter"]};
+window.SIDEBAR_ITEMS = {"constant":["BATCH_SIZE","ZSTD_LEVEL"],"fn":["open_parquet_writer","open_plpq_writer","open_polars_writer","parquet_writer_defaults","save_df_parquet","save_df_parquet_nonnull"],"struct":["TableWriter"]};

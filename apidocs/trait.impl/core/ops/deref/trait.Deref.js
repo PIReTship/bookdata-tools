@@ -1,3 +1,9 @@
-(function() {var implementors = {
-"bookdata":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/deref/trait.Deref.html\" title=\"trait core::ops::deref::Deref\">Deref</a> for <a class=\"struct\" href=\"bookdata/cleaning/isbns/struct.IGNORE_RE.html\" title=\"struct bookdata::cleaning::isbns::IGNORE_RE\">IGNORE_RE</a>"]]
-};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
+(function() {
+    var implementors = Object.fromEntries([["bookdata",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/deref/trait.Deref.html\" title=\"trait core::ops::deref::Deref\">Deref</a> for <a class=\"struct\" href=\"bookdata/cleaning/isbns/struct.IGNORE_RE.html\" title=\"struct bookdata::cleaning::isbns::IGNORE_RE\">IGNORE_RE</a>"]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[314]}

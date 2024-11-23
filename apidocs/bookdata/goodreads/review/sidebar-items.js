@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["OUT_FILE"],"derive":["Deserialize"],"struct":["RawReview","ReviewRecord","ReviewRecordFrame","ReviewRecordFrameBuilder","ReviewWriter"],"trait":["Deserialize"]};
+window.SIDEBAR_ITEMS = {"constant":["OUT_FILE"],"derive":["Deserialize"],"struct":["RawReview","ReviewRecord","ReviewWriter"],"trait":["Deserialize"]};
