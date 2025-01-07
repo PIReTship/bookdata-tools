@@ -32,15 +32,15 @@ def main():
         .unique()
     )
 
-    book_info = pl.scan_parquet("gr-book-info.parquet")
-    work_info = pl.scan_parquet("gr-work-info.parquet")
+    book_info = pl.scan_parquet("gr-book-info.parquet").select("book_id", "title")
+    work_info = pl.scan_parquet("gr-work-info.parquet").select("work_id", "title")
 
     books = books.join(book_info, "book_id", how="left")
     works = works.join(work_info, "work_id", how="left")
     items = pl.concat([books, works])
 
     items = items.collect()
-    items.write_parquet("gr-work-item-info.parquet", compression="zstd")
+    items.write_parquet("gr-work-item-titles.parquet", compression="zstd")
 
 
 if __name__ == "__main__":
