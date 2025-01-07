@@ -32,7 +32,7 @@ pub struct SourceReview {
 /// This data structure is serialized to `ratings.parquet` in the Amazon directories.
 #[derive(ParquetRecordWriter, Serialize, Deserialize)]
 pub struct RatingRow {
-    pub user: i32,
+    pub user_id: i32,
     pub asin: String,
     pub rating: f32,
     pub timestamp: i64,
@@ -43,7 +43,7 @@ pub struct RatingRow {
 /// This data structure is serialized to `reviews.parquet` in the Amazon directories.
 #[derive(ParquetRecordWriter, Serialize, Deserialize)]
 pub struct ReviewRow {
-    pub user: i32,
+    pub user_id: i32,
     pub asin: String,
     pub rating: f32,
     pub timestamp: i64,

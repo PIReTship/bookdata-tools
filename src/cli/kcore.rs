@@ -94,14 +94,14 @@ impl Command for Kcore {
                 iters + 1,
                 friendly::scalar(actions.height())
             );
-            actions = filter_counts(actions, "item", ik)?;
+            actions = filter_counts(actions, "item_id", ik)?;
 
             info!(
                 "pass {}: checking users of {} actions",
                 iters + 1,
                 friendly::scalar(actions.height())
             );
-            actions = filter_counts(actions, "user", ik)?;
+            actions = filter_counts(actions, "user_id", ik)?;
 
             iters += 1;
         }
@@ -112,13 +112,13 @@ impl Command for Kcore {
             friendly::scalar(n_initial),
             // re-compute this in case it changed
             actions
-                .column("item")?
+                .column("item_id")?
                 .value_counts(true, true)?
                 .column("count")?
                 .min::<u32>()?
                 .unwrap(),
             actions
-                .column("user")?
+                .column("user_id")?
                 .value_counts(true, true)?
                 .column("count")?
                 .min::<u32>()?

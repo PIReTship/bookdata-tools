@@ -46,9 +46,9 @@ impl Command for ScanRatings {
             if self.swap_columns {
                 std::mem::swap(&mut row.user, &mut row.asin);
             }
-            let user = index.intern(row.user.as_str())?;
+            let user_id = index.intern(row.user.as_str())?;
             writer.write_object(RatingRow {
-                user,
+                user_id,
                 asin: row.asin,
                 rating: row.rating,
                 timestamp: row.timestamp,

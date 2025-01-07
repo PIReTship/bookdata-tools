@@ -98,7 +98,7 @@ impl ClusterOp {
         let interactions = self.project_and_sort(interactions);
         let actions = interactions
             .clone()
-            .group_by(&[col("user"), col("item")])
+            .group_by(&[col("user_id"), col("item_id")])
             .agg(self.aggregates());
 
         let actions = self.maybe_integrate_ratings(actions, &interactions);
@@ -157,8 +157,8 @@ impl ClusterOp {
     /// Project and sort (if possible) the data.
     fn project_and_sort(&self, frame: LazyFrame) -> LazyFrame {
         frame.select(&[
-            col("user_id").alias("user"),
-            self.id_col().alias("item"),
+            col("user_id"),
+            self.id_col().alias("item_id"),
             (col("updated").cast(DataType::Int64)).alias("timestamp"),
             col("rating"),
         ])
@@ -173,14 +173,14 @@ impl ClusterOp {
                     col("rating").last().alias("last_rating"),
                     col("timestamp").min().alias("first_time"),
                     col("timestamp").max().alias("last_time"),
-                    col("item").count().alias("nratings"),
+                    col("item_id").count().alias("nratings"),
                 ]
             }
             ActionType::AddActions => {
                 vec![
                     col("timestamp").min().alias("first_time"),
                     col("timestamp").max().alias("last_time"),
-                    col("item").count().alias("nactions"),
+                    col("item_id").count().alias("nactions"),
                 ]
             }
         }
@@ -191,12 +191,12 @@ impl ClusterOp {
             ActionType::AddActions => {
                 let ratings = source.clone().filter(col("rating").is_not_null());
                 let ratings = ratings
-                    .group_by(["user", "item"])
+                    .group_by(["user_id", "item_id"])
                     .agg(&[col("rating").last().alias("last_rating")]);
                 actions.join(
                     ratings,
-                    &[col("user"), col("item")],
-                    &[col("user"), col("item")],
+                    &[col("user_id"), col("item_id")],
+                    &[col("user_id"), col("item_id")],
                     JoinType::Left.into(),
                 )
             }

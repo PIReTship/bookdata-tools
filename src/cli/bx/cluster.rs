@@ -39,8 +39,13 @@ impl Command for Cluster {
         } else {
             ratings
         };
-        let joined = ratings.join(isbns, &[col("isbn")], &[col("isbn")], JoinType::Inner.into());
-        let grouped = joined.group_by(&[col("user"), col("cluster").alias("item")]);
+        let joined = ratings.join(
+            isbns,
+            &[col("isbn")],
+            &[col("isbn")],
+            JoinType::Inner.into(),
+        );
+        let grouped = joined.group_by(&[col("user_id"), col("cluster").alias("item_id")]);
         let agg = if self.ratings {
             grouped.agg(&[
                 col("rating").median().alias("rating"),

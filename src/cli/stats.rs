@@ -87,15 +87,15 @@ fn scan_actions(file: &str, genders: LazyFrame, name: &str) -> Result<DataFrame>
 
     let df = df.join(
         genders,
-        &[col("item")],
+        &[col("item_id")],
         &[col("cluster")],
         JoinType::Inner.into(),
     );
     let df = df
         .group_by([col("gender")])
         .agg(&[
-            col("item").n_unique().alias("n_books"),
-            col("item").count().alias("n_actions"),
+            col("item_id").n_unique().alias("n_books"),
+            col("item_id").count().alias("n_actions"),
         ])
         .select([
             lit(name).alias("dataset"),
