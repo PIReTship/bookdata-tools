@@ -1,6 +1,18 @@
 local bd = import '../lib.jsonnet';
 
 {
+  'work-item-info':{
+    cmd: 'python gr-work-items.py',
+    deps: [
+      'gr-work-items.py',
+      'gr-book-ids.parquet',
+      'gr-book-info.parquet',
+      'gr-work-info.parquet',
+    ],
+    outs: [
+      'gr-work-item-info.parquet',
+    ]
+  },
   'work-actions': {
     wdir: '..',
     cmd: bd.cmd('goodreads cluster-interactions --add-actions --native-works -o goodreads/gr-work-actions.parquet'),
