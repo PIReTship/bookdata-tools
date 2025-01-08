@@ -102,6 +102,7 @@ impl ClusterOp {
             .agg(self.aggregates());
 
         let actions = self.maybe_integrate_ratings(actions, &interactions);
+        let actions = actions.sort("first_time", SortOptions::default());
 
         debug!("logical plan: {:?}", actions.describe_plan());
         debug!("optimized plan: {:?}", actions.describe_optimized_plan()?);
