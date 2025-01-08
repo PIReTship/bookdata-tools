@@ -21,7 +21,7 @@ local parquets = [
 ];
 
 local notebook = function(name, deps=[]) {
-  cmd: std.format('quarto render %s.qmd --to html', name),
+  cmd: std.format('quarto render %s.qmd', name),
   deps: [
     name + '.qmd',
   ] + deps,
