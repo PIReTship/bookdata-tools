@@ -22,7 +22,7 @@ local mdsCurl = function(folder, base, range) {
 };
 
 local curl = function(url, file) {
-  cmd: std.format('curl -fsSL --retry 100 -o %s %s', [file, url]),
+  cmd: std.format('aria2c --max-tries=100 -s 2 -o %s %s', [file, url]),
   outs: [file],
 };
 
