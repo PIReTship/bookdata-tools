@@ -19,7 +19,7 @@ local bd = import '../lib.jsonnet';
     deps: [
       'gr-work-item-genres.py',
       'gr-book-ids.parquet',
-      'gr-genres.parquet',
+      'gr-book-genres.parquet',
     ],
     outs: [
       'gr-work-item-genres.parquet',
