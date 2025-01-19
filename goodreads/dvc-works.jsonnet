@@ -13,6 +13,19 @@ local bd = import '../lib.jsonnet';
       'gr-work-item-titles.parquet',
     ]
   },
+
+  'work-item-genres':{
+    cmd: 'python gr-work-item-genres.py',
+    deps: [
+      'gr-work-item-genres.py',
+      'gr-book-ids.parquet',
+      'gr-genres.parquet',
+    ],
+    outs: [
+      'gr-work-item-genres.parquet',
+    ]
+  },
+
   'work-actions': {
     wdir: '..',
     cmd: bd.cmd('goodreads cluster-interactions --add-actions --native-works -o goodreads/gr-work-actions.parquet'),
