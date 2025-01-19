@@ -15,6 +15,7 @@ const SERIES_FILE: &'static str = "gr-book-series.parquet";
 const AUTHOR_FILE: &'static str = "gr-book-authors.parquet";
 
 /// The raw records we read from JSON
+#[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct RawBook {
     pub book_id: String,
@@ -47,9 +48,12 @@ pub struct RawAuthor {
 /// the book ID records to write to Parquet.
 #[derive(ParquetRecordWriter)]
 pub struct BookIdRecord {
+    /// The book ID, converted from UUID.
     pub book_id: i32,
+    /// The work ID, converted from UUID.
     pub work_id: Option<i32>,
-    pub gr_item: i32,
+    /// The integrated item ID, converted from book and work IDs projected into number spaces.
+    pub item_id: i32,
     pub isbn10: Option<String>,
     pub isbn13: Option<String>,
     pub asin: Option<String>,
@@ -112,7 +116,7 @@ impl ObjectWriter<RawBook> for BookWriter {
     fn write_object(&mut self, row: RawBook) -> Result<()> {
         let book_id = row.book_id.parse()?;
         let work_id = parse_opt(&row.work_id)?;
-        let gr_item = if let Some(w) = work_id {
+        let item_id = if let Some(w) = work_id {
             NS_GR_WORK.to_code(w)
         } else {
             NS_GR_BOOK.to_code(book_id)
@@ -121,7 +125,7 @@ impl ObjectWriter<RawBook> for BookWriter {
         self.id_out.write_object(BookIdRecord {
             book_id,
             work_id,
-            gr_item,
+            item_id,
             isbn10: trim_opt(&row.isbn)
                 .map(|s| clean_asin_chars(s))
                 .filter(|s| s.len() >= 7),
