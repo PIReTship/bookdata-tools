@@ -56,6 +56,7 @@ impl Command for Kcore {
 
         let file = File::open(&self.input)?;
         let mut actions = ParquetReader::new(file).finish()?;
+        info!("loaded {} actions", friendly::scalar(actions.height()));
 
         let start = self
             .start
@@ -69,17 +70,19 @@ impl Command for Kcore {
             info!("removing actions before {}", start);
             let start = start.and_hms_opt(0, 0, 0).unwrap().timestamp();
             // currently hard-coded for goodreads
-            let col = actions.column("last_time")?;
+            let col = actions.column("first_time")?;
             let mask = col.gt_eq(start)?;
             actions = actions.filter(&mask)?;
+            info!("filtered to {} actions", friendly::scalar(actions.height()));
         }
         if let Some(end) = end {
             info!("removing actions after {}", end);
             let end = end.and_hms_opt(0, 0, 0).unwrap().timestamp();
             // currently hard-coded for goodreads
-            let col = actions.column("last_time")?;
+            let col = actions.column("first_time")?;
             let mask = col.lt(end)?;
             actions = actions.filter(&mask)?;
+            info!("filtered to {} actions", friendly::scalar(actions.height()));
         }
 
         let n_initial = actions.height();
