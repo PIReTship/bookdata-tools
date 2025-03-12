@@ -6,7 +6,10 @@ use log::*;
 use polars::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::prelude::BDPath;
+use crate::{
+    ids::codes::{NS_GR_BOOK, NS_GR_WORK},
+    prelude::BDPath,
+};
 
 pub type BookLinkMap = HashMap<i32, BookLinkRecord>;
 
@@ -18,6 +21,17 @@ pub struct BookLinkRecord {
     pub book_id: i32,
     pub work_id: Option<i32>,
     pub cluster: i32,
+}
+
+impl BookLinkRecord {
+    /// Get the GoodReads item ID for the book (work id, with fallback to book, in numberspace).
+    pub fn item_id(&self) -> i32 {
+        if let Some(w) = &self.work_id {
+            NS_GR_WORK.base() + w
+        } else {
+            NS_GR_BOOK.base() + self.book_id
+        }
+    }
 }
 
 /// Read a map of book IDs to linking identifiers.

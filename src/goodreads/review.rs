@@ -46,6 +46,8 @@ pub struct ReviewRecord {
     ///
     /// [clust]: https://bookdata.piret.info/data/cluster.html
     pub cluster: i32,
+    /// GoodReads “item” identifier
+    pub item_id: i32,
     /// Rating associated with this review (if provided).
     pub rating: Option<f32>,
     /// Review text.
@@ -108,6 +110,7 @@ impl ObjectWriter<RawReview> for ReviewWriter {
             user_id,
             book_id,
             work_id: link.work_id,
+            item_id: link.item_id(),
             cluster: link.cluster,
             review: row.review_text,
             rating: if row.rating > 0.0 {
