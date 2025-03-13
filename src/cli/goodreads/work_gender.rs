@@ -20,14 +20,23 @@ pub fn link_work_genders() -> Result<()> {
             col("work_id") + lit(NS_GR_WORK.base()),
             col("book_id") + lit(NS_GR_WORK.base()),
         ])
-        .alias("gr_item"),
+        .alias("item_id"),
     ]);
 
-    info!("computing results");
-    let results = dedup.collect()?;
+    info!("computing book genders");
+    let results = dedup.clone().collect()?;
 
-    info!("saving {} work-gender records", results.height());
-    save_df_parquet(results, "gr-work-gender.parquet")?;
+    info!("saving {} book-gender records", results.height());
+    save_df_parquet(results, "gr-book-gender.parquet")?;
+
+    info!("computing item genders");
+    let dd2 = dedup
+        .select(&[col("item_id"), col("gender")])
+        .unique(Some(vec!["item_id".into()]), UniqueKeepStrategy::First);
+    let results = dd2.collect()?;
+
+    info!("saving {} item-gender records", results.height());
+    save_df_parquet(results, "gr-work-item-gender.parquet")?;
 
     Ok(())
 }
