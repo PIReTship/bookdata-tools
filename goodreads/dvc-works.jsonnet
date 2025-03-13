@@ -104,7 +104,8 @@ local bd = import '../lib.jsonnet';
       '../book-links/cluster-genders.parquet',
     ],
     outs: [
-      'gr-work-gender.parquet',
+      'gr-book-gender.parquet',
+      'gr-work-item-gender.parquet',
     ],
   },
 }

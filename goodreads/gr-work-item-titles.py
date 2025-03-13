@@ -2,7 +2,7 @@
 Compute work-level "item" information for GoodReads.
 
 Usage:
-    gr-work-items.py
+    gr-work-item-titles.py
 """
 
 import polars as pl
@@ -16,7 +16,7 @@ def main():
     works = (
         ids.filter(pl.col("work_id").is_not_null())
         .select(
-            (pl.col("work_id") + GR_WORK_BASE).alias("item_id"),
+            pl.col("item_id"),
             pl.col("work_id"),
             pl.lit(None).alias("book_id"),
         )
@@ -25,7 +25,7 @@ def main():
     books = (
         ids.filter(pl.col("work_id").is_null())
         .select(
-            (pl.col("book_id") + GR_BOOK_BASE).alias("item_id"),
+            pl.col("item_id"),
             pl.col("work_id"),
             pl.col("book_id"),
         )
