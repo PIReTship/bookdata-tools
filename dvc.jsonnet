@@ -21,14 +21,12 @@ local parquets = [
 ];
 
 local notebook = function(name, deps=[]) {
-  cmd: std.format('quarto render %s.qmd', name),
+  cmd: std.format('quarto render %s.qmd --to ipynb', name),
   deps: [
     name + '.qmd',
   ] + deps,
   outs: [
     { [name + '.ipynb']: { cache: false } },
-    name + '.html',
-    name + '_files',
   ],
 };
 
