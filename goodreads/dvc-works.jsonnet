@@ -108,4 +108,16 @@ local bd = import '../lib.jsonnet';
       'gr-work-item-gender.parquet',
     ],
   },
+
+  'work-all-actions': {
+    cmd: 'python gr-work-all-actions.py',
+    deps: [
+      'gr-interactions.parquet',
+      'gr-book-ids.parquet',
+      'gr-work-all-actions.py',
+    ],
+    outs: [
+      'gr-work-all-actions.parquet'
+    ]
+  }
 }
