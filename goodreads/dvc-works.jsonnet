@@ -1,7 +1,7 @@
 local bd = import '../lib.jsonnet';
 
 {
-  'work-item-titles':{
+  'work-item-titles': {
     cmd: 'python gr-work-item-titles.py',
     deps: [
       'gr-work-item-titles.py',
@@ -11,10 +11,10 @@ local bd = import '../lib.jsonnet';
     ],
     outs: [
       'gr-work-item-titles.parquet',
-    ]
+    ],
   },
 
-  'work-item-genres':{
+  'work-item-genres': {
     cmd: 'python gr-work-item-genres.py',
     deps: [
       'gr-work-item-genres.py',
@@ -23,7 +23,7 @@ local bd = import '../lib.jsonnet';
     ],
     outs: [
       'gr-work-item-genres.parquet',
-    ]
+    ],
   },
 
   'work-actions': {
@@ -96,6 +96,19 @@ local bd = import '../lib.jsonnet';
     ],
   },
 
+  'work-author': {
+    cmd: 'python gr-work-item-authors.py',
+    deps: [
+      'gr-work-item-authors.py',
+      'gr-book-ids.parquet',
+      'gr-book-authors.parquet',
+      'gr-author-info.parquet',
+    ],
+    outs: [
+      'gr-work-item-authors.parquet',
+    ],
+  },
+
   'work-gender': {
     cmd: bd.cmd('goodreads work-gender'),
     deps: [
@@ -117,7 +130,7 @@ local bd = import '../lib.jsonnet';
       'gr-work-all-actions.py',
     ],
     outs: [
-      'gr-work-all-actions.parquet'
-    ]
-  }
+      'gr-work-all-actions.parquet',
+    ],
+  },
 }
