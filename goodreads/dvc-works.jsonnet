@@ -99,7 +99,7 @@ local bd = import '../lib.jsonnet';
   'works-dataset': {
     cmd: 'python gr-dataset.py --works gr-works-dataset',
     deps: [
-      'gr-gr-dataset.py',
+      'gr-dataset.py',
       'gr-work-actions.parquet',
     ],
     outs: [
@@ -110,7 +110,7 @@ local bd = import '../lib.jsonnet';
   'works-5core-dataset': {
     cmd: 'python gr-dataset.py --works --core gr-works-5core-dataset',
     deps: [
-      'gr-gr-dataset.py',
+      'gr-dataset.py',
       'gr-work-actions-5core.parquet',
     ],
     outs: [
