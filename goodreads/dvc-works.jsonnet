@@ -101,6 +101,9 @@ local bd = import '../lib.jsonnet';
     deps: [
       'gr-dataset.py',
       'gr-work-actions.parquet',
+      'gr-genres.parquet',
+      'gr-work-item-genres.parquet',
+      'gr-work-item-titles.parquet',
     ],
     outs: [
       'gr-works-dataset',
@@ -112,6 +115,9 @@ local bd = import '../lib.jsonnet';
     deps: [
       'gr-dataset.py',
       'gr-work-actions-5core.parquet',
+      'gr-genres.parquet',
+      'gr-work-item-genres.parquet',
+      'gr-work-item-titles.parquet',
     ],
     outs: [
       'gr-works-5core-dataset',
