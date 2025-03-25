@@ -58,15 +58,18 @@ def work_dataset(opts) -> DatasetBuilder:
     log.info("loaded actions", action_count=len(actions))
     actions = actions.rename(
         columns={
-            "last_time": "timestamp",
+            "first_time": "timestamp",
             "last_rating": "rating",
         }
     )
     actions["timestamp"] = pd.to_datetime(actions["timestamp"], unit="s")
     actions["last_time"] = pd.to_datetime(actions["last_time"], unit="s")
+    log.info("adding actions to builder")
     bld.add_interactions(
         "shelve", actions, entities=["user", "item"], missing="insert", default=True
     )
+
+    return bld
 
 
 if __name__ == "__main__":
