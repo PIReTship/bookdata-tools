@@ -96,6 +96,28 @@ local bd = import '../lib.jsonnet';
     ],
   },
 
+  'works-dataset': {
+    cmd: 'python gr-dataset.py --works gr-works-dataset',
+    deps: [
+      'gr-gr-dataset.py',
+      'gr-work-actions.parquet',
+    ],
+    outs: [
+      'gr-works-dataset',
+    ],
+  },
+
+  'works-5core-dataset': {
+    cmd: 'python gr-dataset.py --works --core gr-works-5core-dataset',
+    deps: [
+      'gr-gr-dataset.py',
+      'gr-work-actions-5core.parquet',
+    ],
+    outs: [
+      'gr-works-5core-dataset',
+    ],
+  },
+
   'work-author': {
     cmd: 'python gr-work-item-authors.py',
     deps: [
