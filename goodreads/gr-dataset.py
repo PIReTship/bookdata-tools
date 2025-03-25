@@ -14,9 +14,7 @@ Options:
 import sys
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
-import polars as pl
 from docopt import docopt
 from lenskit.data import DatasetBuilder
 from lenskit.logging import LoggingConfig, get_logger
