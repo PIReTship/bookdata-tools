@@ -80,6 +80,7 @@ pub struct BookSeriesRecord {
 pub struct BookAuthorRecord {
     pub book_id: i32,
     pub author_id: i32,
+    pub position: i16,
     pub role: Option<String>,
 }
 
@@ -147,10 +148,11 @@ impl ObjectWriter<RawBook> for BookWriter {
             pub_month,
         })?;
 
-        for author in row.authors {
+        for (i, author) in row.authors.into_iter().enumerate() {
             self.author_out.write_object(BookAuthorRecord {
                 book_id,
                 author_id: author.author_id.parse()?,
+                position: (i as i16) + 1,
                 role: Some(author.role).filter(|s| !s.is_empty()),
             })?;
         }
