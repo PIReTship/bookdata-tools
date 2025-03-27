@@ -137,6 +137,19 @@ local bd = import '../lib.jsonnet';
     ],
   },
 
+  'work-first-author': {
+    cmd: 'python gr-work-item-authors.py --first',
+    deps: [
+      'gr-work-item-authors.py',
+      'gr-book-ids.parquet',
+      'gr-book-authors.parquet',
+      'gr-author-info.parquet',
+    ],
+    outs: [
+      'gr-work-item-first-authors.parquet',
+    ],
+  },
+
   'work-gender': {
     cmd: bd.cmd('goodreads work-gender'),
     deps: [
