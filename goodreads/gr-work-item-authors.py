@@ -20,11 +20,18 @@ def main():
         db.execute(
             """
             COPY (
-                WITH book_authors AS (
-                    SELECT DISTINCT item_id, author_id
-                    FROM book_ids
-                    JOIN authors USING (book_id)
-                )
+                WITH
+                    first_authors AS (
+                        SELECT book_id, any_value(author_id ORDER BY position) AS author_id
+                        FROM authors
+                        WHERE role IS NULL
+                        GROUP BY book_id
+                    ),
+                    book_authors AS (
+                        SELECT DISTINCT item_id, author_id
+                        FROM book_ids
+                        JOIN authors USING (book_id)
+                    )
                 SELECT item_id, author_id, name as author_name
                 FROM book_authors
                 LEFT JOIN 'gr-author-info.parquet' USING (author_id)
