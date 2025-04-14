@@ -1,16 +1,17 @@
 # Overview {.unnumbered}
 
-The PIReT Book Data Tools are a set of tools for ingesting, integrating, and
-indexing a variety of sources of book data, created by the [People and
-Information Research Team](https://piret.info) at [Boise State
-University](https://boisestate.edu).  The result of running these tools is a set
-of Parquet files with raw data in a more usable form, various useful extracted
-features, and integrated identifiers across the various data sources for
-cross-linking.  These tools are updated from the version used to support our
-original paper; we have dropped PostgreSQL in favor of a pipeline using DVC to
-script extraction and integration tools implemented in Rust that is more
-efficient (integration times have dropped from 8 hours to less than 3) and
-requires significantly less disk space.[^bftag]
+The PIReT/INERTIAL Book Data Tools are a set of tools for ingesting, integrating, and
+indexing a variety of sources of book data, originally created by the [People
+and Information Research Team](https://piret.info) at [Boise State
+University](https://boisestate.edu) and now maintained by the [INERTIA
+Lab](https://inertial.science) at [Drexel University](https://drexel.edu/cci/).
+The result of running these tools is a set of Parquet files with raw data in a
+more usable form, various useful extracted features, and integrated identifiers
+across the various data sources for cross-linking.  These tools are updated from
+the version used to support our original paper; we have dropped PostgreSQL in
+favor of a pipeline using DVC to script extraction and integration tools
+implemented in Rust that is more efficient (integration times have dropped from
+8 hours to less than 3) and requires significantly less disk space.[^bftag]
 
 [^bftag]: The original tools are available on the `before-fusion` tag in the Git repository.
 
