@@ -4,8 +4,8 @@ on:
     branches: [main]
 
 jobs:
-  doc-site:
-    name: Build and deploy docs
+  build:
+    name: Build documentation site
     runs-on: ubuntu-latest
 
     steps:
@@ -27,8 +27,20 @@ jobs:
           cargo doc --no-deps -Zrustdoc-map
           mv target/doc target/site/apidocs
 
-      - name: Deploy 🚀
-        uses: JamesIves/github-pages-deploy-action@4.1.0
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          branch: gh-pages
-          folder: target/site
+          path: target/site
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Deploy to GitHub Pages 🚀
+        id: deployment
+        uses: actions/deploy-pages@v4
