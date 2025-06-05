@@ -16,9 +16,7 @@ def main():
     bgs = pl.scan_parquet("gr-book-genres.parquet")
 
     bgs = ids.join(bgs, "book_id", how="inner")
-    item_genres = bgs.group_by("item_id", "genre_id").agg(
-        pl.col("count").sum().alias("count")
-    )
+    item_genres = bgs.group_by("item_id", "genre_id").agg(pl.col("count").sum().alias("count"))
 
     item_genres = item_genres.collect()
     item_genres.write_parquet("gr-work-item-genres.parquet", compression="zstd")
