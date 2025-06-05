@@ -25,9 +25,9 @@ following:
 -   Support full-text reviews from the GoodReads and Amazon 2018 data sets (enabled by default).
 -   Disable the [BookCrossing](data/bx.qmd) data by default since the source website is offline.
 -   Extract 5-cores of interaction files.
--   Update to OpenLibrary and VIAF dumps from the beginning of 2024 (OpenLibrary
-    2023-12-31, VIAF 2024-01-01).  Users will need to manually specify a current
-    VIAF dump, since those are not archived.
+-   Update to newer OpenLibrary and VIAF dumps (OpenLibrary 2023-12-31, VIAF
+    2024-08-04).  Users will need to manually specify a current VIAF dump, since
+    those are not archived.
 
 ### Bugs Fixed
 
