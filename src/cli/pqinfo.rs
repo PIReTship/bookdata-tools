@@ -112,6 +112,7 @@ impl Command for PQInfo {
             };
 
             serde_json::to_writer_pretty(&mut out, &info)?;
+            out.write(b"\n")?;
         }
 
         if self.check_length {
