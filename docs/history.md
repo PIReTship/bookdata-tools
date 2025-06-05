@@ -13,20 +13,21 @@ following:
 3.  Clearly state the version of the data tools you are using in your paper.
 4.  [Let us know](papers.md) about your work so we can add you to the list.
 
-## Book Data 3.0 (in progress)
+## Book Data 3.0
 
 -   Make the pipeline configurable so individual rating datasets can be disabled.
 -   Only support the full JSON GoodReads interaction data, because it is now
     publicly available.
 -   Use [jsonnet](implementation/pipeline.md) to generate DVC pipelines, taking
     configuration settings into account.
--   Update to newer VIAF and OpenLibrary dumps.
 -   Extract GoodReads author information into {{< file goodreads/gr-author-info.parquet >}}.
+-   Extract more work-specific GoodReads information.
 -   Support full-text reviews from the GoodReads and Amazon 2018 data sets (enabled by default).
 -   Disable the [BookCrossing](data/bx.qmd) data by default since the source website is offline.
 -   Extract 5-cores of interaction files.
 -   Update to OpenLibrary and VIAF dumps from the beginning of 2024 (OpenLibrary
-    2023-12-31, VIAF 2024-01-01).
+    2023-12-31, VIAF 2024-01-01).  Users will need to manually specify a current
+    VIAF dump, since those are not archived.
 
 ### Bugs Fixed
 
