@@ -23,26 +23,31 @@ What you need to do:
 -   Configure your remote as the default (with `dvc remote default`).
 
 ::: {.callout-tip}
-If you don't want to pay for cloud storage for hte data, there are several good
+If you don't want to pay for cloud storage for the data, there are several good
 options for local hosting if you have a server with sufficient storage space:
 
+-   DVC supports SSH remotes. These are much slower than S3 or WebDAV, but they
+    work.
+-   [rclone][] with [`rclone serve`][rclone-serve] is probably the easiest
+    way to set up either a WebDAV or S3 remote.
+-   For publicly-accessible repositories, [Caddy][] with the [webdav
+    plugin][caddy-webdav] is a very good option to run a WebDAV server.  Apache
+    HTTPD also has good WebDAV support, and it is what the INERTIA Lab uses, but
+    it is somewhat more cumbersome to configure.
 -   [Garage][] and [Minio][] provide S3-compatible storage APIs.  Both store the
     data in an internal format (allowing checksums and deduplication), not in
     raw files on your file system, so you can only access the data through the
-    S3 api.
--   [Caddy][] with the [webdav plugin][caddy-webdav] is the easiest way I have
-    found to run a webdav server.  I've started moving towards webdav instead
-    of S3 for in-house remotes so that the data can be accessed directly on the
-    server filesystem.  Apache HTTPD also has good webdav support, but it is
-    somewhat more cumbersome to configure.
+    S3 API.
 :::
 
 ::: {.callout-note}
-If you are a member of our research group, or a direct collaborator, using these
+If you are a member of our research group or a direct collaborator using these
 tools, contact Michael for access to our remote.
 :::
 
 [garage]: https://garagehq.deuxfleurs.fr/
 [minio]: https://min.io/
 [caddy]: https://caddyserver.com/
-[caddy-webdav]: https://caddyserver.com/
+[caddy-webdav]: https://github.com/mholt/caddy-webdav
+[rclone]: https://rclone.org
+[rclone-serve]: https://rclone.org/commands/rclone_serve/
