@@ -44,3 +44,13 @@ You can then either use `pixi run` to run individual commands, or you can spawn
 a new shell with the dependencies loaded with `pixi shell`.
 
 All tool dependencies are specified in `pixi.toml`.
+
+## Development Setup
+
+If you are going to do development work on the tools, install the `dev` Pixi
+environment, and also set up the `pre-commit` hooks:
+
+```console
+$ pixi install -e dev
+$ pixi run -e dev pre-commit install
+```
