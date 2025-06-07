@@ -45,7 +45,7 @@ normalization flow.
 
 The tools now support the GoodReads interaction CSV file, which is available
 without registration, and uses this by default.  See the [GoodReads data
-docs](data/goodreads.md) for the details.  This means that, in their default
+docs](data/goodreads.qmd) for the details.  This means that, in their default
 configuration, the book data integration uses only data that is publicly
 available without special request.
 
