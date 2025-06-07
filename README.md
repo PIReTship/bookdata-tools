@@ -34,14 +34,26 @@ This project uses submodules — clone with `git clone --recursive`.
 The dependencies are managed with [Pixi][] and declared in `pixi.toml`.  To
 install the environment, run:
 
-    pixi install
+```console
+$ pixi install
+```
 
 The `dev` environment provides additional useful software for making
 modifications to the code, such as the Python linter.
 
 You can run the entire import process with:
 
-    dvc repro
+```console
+$ pixi run repro-all
+```
+
+> [!NOTE]
+>
+> If you are going to develop on the tools, set up `pre-commit` with:
+>
+> ```console
+> $ pixi run -e dev pre-commit install
+> ```
 
 ## Copyright and Acknowledgements
 
