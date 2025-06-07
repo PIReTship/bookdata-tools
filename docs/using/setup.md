@@ -1,12 +1,13 @@
 # Environment Setup
 
-These tools require an Anaconda installation.  It is possible to use them without Anaconda, but we have provided
-the environment definitions to automate use with Anaconda.
+[Pixi]: https://pixi.sh
 
-This project uses Git submodules, so you should clone it with:
+The Git repository includes everything you need to run these tools, except for
+the data, the [Pixi][] package/environment manager, and `git` itself.  To get
+started, clone the repository:
 
-```sh
-git clone --recursive https://github.com/PIReTship/bookdata-tools.git
+```console
+$ git clone https://github.com/inertia-lab/bookdata-tools.git
 ```
 
 ## System Requirements
@@ -14,53 +15,32 @@ git clone --recursive https://github.com/PIReTship/bookdata-tools.git
 You will need:
 
 - A Unix-like environment (macOS or Linux)
-- Anaconda or Miniconda
+- [Pixi][]
 - 250GB of disk space
 - At least 24 GB of memory (lower may be possible)
 
 ## Import Tool Dependencies
 
-The import tools are written in Python and Rust.  The provided Conda lockfiles,
-along with `environment.yml`, provide the data to define an Anaconda environment
-that contains all required runtimes and libraries:
+The import tools are written in Python and Rust.  The provided [Pixi][] dependency
+and lock files provide all you need to set up the environment.
 
-```sh
-conda-lock install -n bookdata
-conda activate bookdata
+You can install Pixi with their [installation
+instructions](https://pixi.sh/latest/installation/) on Linux and macOS:
+
+```console
+$ curl -fsSL https://pixi.sh/install.sh | sh
 ```
 
-If you don't want to use Anaconda, see the following for more details on
-dependencies.  If you don't yet have `conda-lock` installed in your base
-environment, run:
+Pixi is also available through Homebrew, so `brew install pixi` is the easiest
+way to get it on macOS.
 
-```sh
-conda install -c conda-forge -n base conda-lock=2
+Once you have installed Pixi, you can install the environment:
+
+```console
+$ pixi install
 ```
-### Python
 
-This needs the following Python dependencies:
+You can then either use `pixi run` to run individual commands, or you can spawn
+a new shell with the dependencies loaded with `pixi shell`.
 
-- Python 3.8 or later
-- numpy
-- pandas
-- seaborn
-- jupyter
-- jupytext
-- dvc (3 or later)
-
-The Python dependencies are defined in `environment.yml`.
-
-### Rust
-
-The Rust tools need Rust version 1.59 or later.  The easiest way to install this — besides Anaconda — is with
-[rustup](https://www.rust-lang.org/learn/get-started).
-
-The `cargo` build tool will automatically download all Rust libraries required.  The Rust code does not depend on any specific system libraries.
-
-### Regenerating Lockfiles
-
-If you update dependencies, you can re-generate the Conda lockfiles with `conda-lock`:
-
-```sh
-conda-lock lock --mamba -f pyproject.toml
-```
+All tool dependencies are specified in `pixi.toml`.
