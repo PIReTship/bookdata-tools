@@ -16,6 +16,7 @@ following:
 ## Book Data 3.0
 
 -   Make the pipeline configurable so individual rating datasets can be disabled.
+-   Switched from base Anaconda to [Pixi][] for easier environment management.
 -   Only support the full JSON GoodReads interaction data, because it is now
     publicly available.
 -   Use [jsonnet](implementation/pipeline.md) to generate DVC pipelines, taking
@@ -28,6 +29,8 @@ following:
 -   Update to newer OpenLibrary and VIAF dumps (OpenLibrary 2023-12-31, VIAF
     2024-08-04).  Users will need to manually specify a current VIAF dump, since
     those are not archived.
+
+[Pixi]: https://pixi.sh
 
 ### Bugs Fixed
 
