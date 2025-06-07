@@ -1,4 +1,4 @@
-local bd = import '../lib.jsonnet';
+local bd = import '../bookdata.libsonnet';
 
 local clusters = import 'dvc-clusters.jsonnet';
 local scan = import 'dvc-scan.jsonnet';

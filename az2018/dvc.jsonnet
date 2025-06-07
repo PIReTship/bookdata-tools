@@ -1,4 +1,4 @@
-local bd = import '../lib.jsonnet';
+local bd = import '../bookdata.libsonnet';
 local source_stages = {
   ratings: {
     'scan-ratings': {

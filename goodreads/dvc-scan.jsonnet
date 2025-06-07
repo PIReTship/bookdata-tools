@@ -1,4 +1,4 @@
-local bd = import '../lib.jsonnet';
+local bd = import '../bookdata.libsonnet';
 
 {
   'scan-book-info': {

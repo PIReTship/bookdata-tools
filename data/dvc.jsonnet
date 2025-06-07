@@ -1,4 +1,4 @@
-local bd = import '../lib.jsonnet';
+local bd = import '../bookdata.libsonnet';
 
 local loc = {
   dl_base: 'https://www.loc.gov/cds/downloads/MDSConnect/',

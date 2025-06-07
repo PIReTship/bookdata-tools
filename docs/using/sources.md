@@ -7,8 +7,8 @@ need to download yourself and save in the `data` directory.  The data sources ar
 -   [LoC MDSConnect Name Authorities](https://www.loc.gov/cds/products/MDSConnect-name_authorities.html) (auto-downloaded).
 -   [Virtual Internet Authority File](http://viaf.org/viaf/data/) MARC 21 XML data (auto-downloaded, but usually needs configuration to access current data file; see the [documentation](../data/viaf) for details).
 -   [OpenLibrary Dump](https://openlibrary.org/developers/dumps) (auto-downloaded).
--   [Amazon Ratings (2014)](http://jmcauley.ucsd.edu/data/amazon/) 'ratings only' data for _Books_ (**not** auto-downloaded — save CSV file in `data/az2014`).  **If you use this data, cite the paper on that site.**
--   [Amazon Ratings (2018)](https://nijianmo.github.io/amazon/index.html) 'ratings only' data for _Books_ (**not** auto-downloaded — save CSV file in `data/az2014`).  **If you use this data, cite the paper on that site.**
+-   [Amazon Ratings (2014)](http://jmcauley.ucsd.edu/data/amazon/) “ratings only” data for _Books_ (**not** auto-downloaded — save CSV file in `data/az2014`).  **If you use this data, cite the paper on that site.**
+-   [Amazon Ratings (2018)](https://nijianmo.github.io/amazon/index.html) either “ratings only” or full review data for _Books_ (**not** auto-downloaded — save CSV file in `data/az2014`).  **If you use this data, cite the paper on that site.**
 -   [BookCrossing](http://www2.informatik.uni-freiburg.de/~cziegler/BX/) (auto-downloaded). **If you use this data, cite the paper on that site.**
 -   GoodReads data from [UCSD Book Graph](https://mengtingwan.github.io/data/goodreads) — the GoodReads books, works, authors, series, and interaction files (**not** auto-downloaded - save GZip'd JSON files in `data/goodreads`).  **If you use this data, cite the paper on that site.**  More information on the required data files are in [the GoodReads data documentation](../data/goodreads).
 

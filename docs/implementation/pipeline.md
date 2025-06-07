@@ -8,7 +8,7 @@
 files with limited configurability, and substantial redundancy.  That redundancy
 makes updates error-prone, and also limits our ability to do things such as
 enable and disable data sets, and reconfigure which version of the [GoodReads
-interaction files](/data/goodreads.qmd) we want to use.
+interaction files](/data/goodreads.md) we want to use.
 
 ## Generating the Pipeline {#render}
 
@@ -19,14 +19,20 @@ allows us to generate the pipeline with loops, conditionals, etc.  The
 pipeline primary sources are in the `dvc.jsonnet` files, which we render
 to produce `dvc.yaml`.
 
-A Python script renders the pipelines to YAML using the Python `jsonnet`
+A Python `invoke` task renders the pipelines to YAML using the Python `jsonnet`
 bindings.  You can run this with:
 
-```sh
-./update-pipeline.py
+```console
+$ invoke render-pipeline
 ```
 
-The `lib.jsonnet` file provides helper routines for generating pipelines:
+This is also automated through a Pixi task:
+
+```console
+$ pixi run rerender-pipeline
+```
+
+The `bookdata.libsonnet` file provides helper routines for generating pipelines:
 
 -   `pipeline` produces a DVC pipeline given a record of stages.
 -   `cmd` takes a book data command (that would be passed to the book data

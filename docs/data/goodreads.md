@@ -106,6 +106,8 @@ GoodReads author information.
 
 ## Cluster-Level Tables
 
+These files provide action and rating data at the level of [Book Clusters](./cluster.qmd).
+
 ::: {.parquet file="goodreads/gr-cluster-actions.parquet"}
 Cluster-level implicit-feedback records, suitable for use in LensKit. The `item` column contains cluster IDs.  This version of the table is processed from the JSON version of the full interaction log, which is only available by request.
 :::
