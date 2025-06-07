@@ -33,6 +33,8 @@ def render_pipeline(c, dir=None, stdout=False):
     if not specs:
         err("no spec files found")
 
+    rendered_files = []
+
     for path in specs:
         msg("rendering {}", path)
         results = evaluate_file(os.fspath(path))
@@ -43,4 +45,8 @@ def render_pipeline(c, dir=None, stdout=False):
             ymlf = path.with_suffix(".yaml")
             with ymlf.open("w") as pf:
                 safe_dump(results, pf, width=200)
-            check_call(["dprint", "fmt", os.fspath(ymlf)])
+            rendered_files.append(os.fspath(ymlf))
+
+    if rendered_files:
+        msg("formatting {} files", len(rendered_files))
+        check_call(["dprint", "fmt"] + rendered_files)
