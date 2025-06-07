@@ -44,7 +44,7 @@ The `bookdata.libsonnet` file provides helper routines for generating pipelines:
 The pipeline can be configured through the `config.yaml` file.  We keep this
 file, along with the generated pipeline, committed to git; if you change it, we
 recommend working in a branch.  After changing the file, you need to regenerate
-the pipeline with `update-pipeline.py` for changes to take effect.
+the pipeline with `render-pipeline` for changes to take effect.
 
 See the comments in that file for details.  Right now, two things can be
 configured:
