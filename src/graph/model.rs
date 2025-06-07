@@ -1,4 +1,5 @@
 use std::fs::File;
+use std::io::Write;
 
 use anyhow::{anyhow, Result};
 use log::*;
@@ -156,6 +157,7 @@ pub fn save_graph_cluster_data(graph: &IdGraph, clusters: Vec<Vec<IdNode>>) -> R
     };
     let statf = File::create(CLUSTER_METRICS_PATH)?;
     serde_json::to_writer(statf, &stats)?;
+    statf.write(b"\n")?;
 
     Ok(())
 }
