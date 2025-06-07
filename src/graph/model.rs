@@ -155,8 +155,8 @@ pub fn save_graph_cluster_data(graph: &IdGraph, clusters: Vec<Vec<IdNode>>) -> R
         largest: m_size,
         max_isbns: m_isbns,
     };
-    let statf = File::create(CLUSTER_METRICS_PATH)?;
-    serde_json::to_writer(statf, &stats)?;
+    let mut statf = File::create(CLUSTER_METRICS_PATH)?;
+    serde_json::to_writer(&mut statf, &stats)?;
     statf.write(b"\n")?;
 
     Ok(())
