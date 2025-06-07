@@ -1,7 +1,7 @@
 # History
 
 This page documents the release history of the Book Data Tools. Each numbered,
-released version has a corresponding Git tag (e.g. `v2.0`).
+released version has a corresponding Git tag (e.g. `v3.0`).
 
 If you use the Book Data Tools in published research, we ask that you do the
 following:
