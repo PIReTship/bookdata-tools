@@ -2,6 +2,7 @@ import json
 import os
 import sys
 from pathlib import Path
+from subprocess import check_call
 
 from _jsonnet import evaluate_file
 from invoke.tasks import task
@@ -39,5 +40,7 @@ def render_pipeline(c, dir=None, stdout=False):
         if stdout:
             safe_dump(results, sys.stdout, width=200)
         else:
-            with path.with_suffix(".yaml").open("w") as pf:
+            ymlf = path.with_suffix(".yaml")
+            with ymlf.open("w") as pf:
                 safe_dump(results, pf, width=200)
+            check_call(["dprint", "fmt", os.fspath(ymlf)])
