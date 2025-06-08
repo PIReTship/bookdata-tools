@@ -45,8 +45,9 @@ def render_pipeline(c, dir=None, stdout=False):
             ymlf = path.with_suffix(".yaml")
             with ymlf.open("w") as pf:
                 safe_dump(results, pf, width=200)
-            rendered_files.append(os.fspath(ymlf))
+            rendered_files.append(os.fspath(ymlf.relative_to(root)))
 
     if rendered_files:
         msg("formatting {} files", len(rendered_files))
-        check_call(["dprint", "fmt"] + rendered_files)
+        print(["dprint", "fmt"] + rendered_files)
+        check_call(["dprint", "fmt"] + rendered_files, cwd=root)
